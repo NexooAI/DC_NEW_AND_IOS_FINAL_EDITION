@@ -1,2 +1,2 @@
-# DC_NEW_AND_IOS_FINAL_EDITION
-DC_NEW_AND_IOS_FINAL_EDITION 20_12_2025
+# akila_mobileApp_final_edition
+this version recently cloned form DC Jewls

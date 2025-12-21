@@ -1,0 +1,138 @@
+﻿
+> reactnativegoldapp@1.0.0 test
+> jest
+
+npm : FAIL __tests__/flows/Au
+thFlow.test.tsx
+At line:1 char:1
++ npm test 2>&1 | Out-File 
+-Encoding UTF8 
+test_results_retry.txt
++ ~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (FAIL __  
+  tests__/flows/AuthFlow.t   
+ est.tsx:String) [], Remo    
+teException
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+  ΓùÅ Test suite failed to 
+run
+
+    ReferenceError: You are 
+trying to `import` a file 
+outside of the scope of the 
+test code.
+
+      at Runtime._execModule 
+(node_modules/jest-runtime/bu
+ild/index.js:1216:13)
+      at require (node_module
+s/expo/src/winter/runtime.nat
+ive.ts:20:43)
+      at getValue (node_modul
+es/expo/src/winter/installGlo
+bal.ts:97:21)
+      at Object.get [as 
+__ExpoImportMetaRegistry] (no
+de_modules/expo/src/winter/in
+stallGlobal.ts:44:16)
+
+FAIL __tests__/flows/PaymentF
+low.test.tsx
+  ΓùÅ Test suite failed to 
+run
+
+    ReferenceError: You are 
+trying to `import` a file 
+outside of the scope of the 
+test code.
+
+      at Runtime._execModule 
+(node_modules/jest-runtime/bu
+ild/index.js:1216:13)
+      at require (node_module
+s/expo/src/winter/runtime.nat
+ive.ts:20:43)
+      at getValue (node_modul
+es/expo/src/winter/installGlo
+bal.ts:97:21)
+      at Object.get [as 
+__ExpoImportMetaRegistry] (no
+de_modules/expo/src/winter/in
+stallGlobal.ts:44:16)
+
+FAIL __tests__/flows/MenuNavi
+gation.test.tsx
+  ΓùÅ Test suite failed to 
+run
+
+    Cannot find module 
+'src/constants/colors' from '
+src/app/(app)/(tabs)/home/ind
+ex.tsx'
+
+    Require stack:
+      src/app/(app)/(tabs)/ho
+me/index.tsx
+      __tests__/flows/MenuNav
+igation.test.tsx
+
+    [0m [90m 48 |[39m 
+[36mimport[39m { [33mScale
+dSheet[39m[33m,[39m 
+moderateScale } 
+[36mfrom[39m [32m"react-na
+tive-size-matters"[39m[33m;
+[39m
+     [90m 49 |[39m 
+[36mimport[39m { theme } 
+[36mfrom[39m [32m"@/consta
+nts/theme"[39m[33m;[39m
+    
+[31m[1m>[22m[39m[90m 50 
+|[39m [36mimport[39m { 
+[33mCOLORS[39m } 
+[36mfrom[39m [32m"src/cons
+tants/colors"[39m[33m;[39m
+     [90m    |[39m 
+[31m[1m^[22m[39m
+     [90m 51 |[39m 
+[36mimport[39m 
+[33mAsyncStorage[39m 
+[36mfrom[39m [32m"@react-n
+ative-async-storage/async-sto
+rage"[39m[33m;[39m
+     [90m 52 |[39m 
+[36mimport[39m 
+[33mFlashBanner[39m 
+[36mfrom[39m [32m"@/compon
+ents/FlashBanner"[39m[33m;
+[39m
+     [90m 53 |[39m 
+[36mimport[39m { 
+[33mIonicons[39m } 
+[36mfrom[39m [32m"@expo/ve
+ctor-icons"[39m[33m;[39m[
+0m
+
+      at Resolver._throwModNo
+tFoundError (node_modules/jes
+t-resolve/build/index.js:863:
+11)
+      at Object.require (C:\U
+sers\nithy\Videos\akila\akila
+_mobileApp_final_edition\src\
+app\(app)\(tabs)../../../../.
+./home/index.tsx:50:1)
+      at Object.require (__te
+sts__/flows/MenuNavigation.te
+st.tsx:3:1)
+
+Test Suites: 3 failed, 3 
+total
+Tests:       0 total
+Snapshots:   0 total
+Time:        12.217 s
+Ran all test suites.

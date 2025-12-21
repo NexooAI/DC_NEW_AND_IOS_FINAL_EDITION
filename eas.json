@@ -1,0 +1,25 @@
+{
+  "cli": { "version": ">= 5.9.1", "appVersionSource": "local" },
+  "build": {
+    "base": { "node": "20.19.4" },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": { "buildType": "apk", "gradleCommand": ":app:assembleDebug" },
+      "ios": { "resourceClass": "m-medium" }
+    },
+    "preview": {
+      "extends": "development",
+      "distribution": "internal",
+      "android": { "buildType": "apk", "gradleCommand": ":app:assembleRelease" },
+      "ios": { "simulator": true }
+    },
+    "production": {
+      "extends": "base",
+      "distribution": "store",
+      "android": { "buildType": "app-bundle", "image": "latest", "gradleCommand": ":app:bundleRelease" },
+      "ios": { "resourceClass": "m-medium" }
+    }
+  }
+}
