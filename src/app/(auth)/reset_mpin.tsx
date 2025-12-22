@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: "transparent", // Changed to transparent to show background image
+    backgroundColor: theme.colors.primary,
   },
   keyboardView: {
     flex: 1,
@@ -222,18 +222,10 @@ const styles = StyleSheet.create({
     width: 34, // Same width as back button for centering
   },
   card: {
-    backgroundColor: "rgba(64, 64, 64, 0.9)", // Dark gray with transparency
+    backgroundColor: theme.colors.primary, // Dark gray with transparency
     borderRadius: 12,
     padding: 24,
     marginTop: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   cardTitle: {
     fontSize: 24,

@@ -197,7 +197,7 @@ const StoreLocator = () => {
                 <View key={store.id} style={styles.storeListItem}>
                   <Text style={styles.storeName}>{store.name}</Text>
                   <Text style={styles.storeAddress}>
-                    {t(`store_address_${store.id}`) || store.address}
+                    {store.address}
                   </Text>
                 </View>
               ))}

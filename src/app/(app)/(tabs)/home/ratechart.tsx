@@ -42,7 +42,7 @@ export default function RateChart() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedRateType, setSelectedRateType] = useState<RateType>("gold");
-    const [selectedDateFilter, setSelectedDateFilter] = useState<DateFilter>("thisWeek");
+    const [selectedDateFilter, setSelectedDateFilter] = useState<DateFilter>("all");
     const [isFocus, setIsFocus] = useState(false);
 
     const dateFilterOptions = useMemo(() => [

@@ -217,14 +217,21 @@ export default function SetMpinPage() {
   };
 
   return (
-    <ImageBackground
-      source={require("../../../assets/images/bg_login.jpg")}
-      style={styles.backgroundImage}
-    >
-      <LinearGradient
-        colors={["rgba(0,0,0,0.7)", "rgba(0,0,0,0.5)", "rgba(0,0,0,0.7)"]}
-        style={styles.gradient}
-      >
+   <View
+              style={[
+                styles.backgroundImage,
+                {
+                  // Ensure background doesn't move with keyboard
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: theme.colors.primary,
+                },
+              ]}
+            >
+      <View style={styles.gradient}>
         {showError && (
           <View style={styles.errorAlert}>
             <View style={styles.errorContent}>
@@ -366,8 +373,8 @@ export default function SetMpinPage() {
             </View>
           </View>
         </KeyboardAvoidingView>
-      </LinearGradient>
-    </ImageBackground>
+      </View>
+    </View>
   );
 }
 

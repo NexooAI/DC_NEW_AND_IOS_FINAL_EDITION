@@ -55,10 +55,7 @@ export default function PaymentNewOverView() {
   const [minAmount, setMinAmount] = useState(0);
   const [maxAmount, setMaxAmount] = useState(100000); // Default fallback
   // Scheme calculation slider state
-  const [installmentNumber, setInstallmentNumber] = useState(1);
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [isCalculationExpanded, setIsCalculationExpanded] = useState(false);
-  const calculationHeight = useRef(new Animated.Value(0)).current;
+
   const [isUserDetailsExpanded, setIsUserDetailsExpanded] = useState(false);
   const userDetailsHeight = useRef(new Animated.Value(0)).current;
   const [isSchemeDetailsExpanded, setIsSchemeDetailsExpanded] = useState(false);
@@ -379,109 +376,7 @@ export default function PaymentNewOverView() {
     setAmountError(""); // Clear error when toggling edit mode
   };
 
-  // Calculate percentage based on installment number
-  const calculateSchemePercentage = (installment: number): number => {
-    if (installment >= 1 && installment <= 75) {
-      return 5.0;
-    } else if (installment >= 76 && installment <= 150) {
-      return 3.75;
-    } else if (installment >= 151 && installment <= 225) {
-      return 2.0;
-    } else if (installment >= 226 && installment <= 300) {
-      return 0.75;
-    } else if (installment >= 301 && installment <= 330) {
-      return 0.0;
-    }
-    return 0.0; // Default for values outside range
-  };
 
-  // Get current percentage for display
-  const currentPercentage = useMemo(() => {
-    return calculateSchemePercentage(installmentNumber);
-  }, [installmentNumber]);
-
-  // Calculate days from start date to today
-  const calculateDaysFromStart = useCallback((start: Date | null): number => {
-    if (!start) return 1;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const startDateOnly = new Date(start);
-    startDateOnly.setHours(0, 0, 0, 0);
-    const diffTime = today.getTime() - startDateOnly.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return Math.max(1, Math.min(diffDays, 330)); // Clamp between 1 and 330
-  }, []);
-
-  // Calculate percentage amount
-  const percentageAmount = useMemo(() => {
-    if (currentPercentage === 0 || currentAmount === 0) return 0;
-    return (currentAmount * currentPercentage) / 100;
-  }, [currentAmount, currentPercentage]);
-
-  // Calculate total amount with percentage
-  const totalAmountWithPercentage = useMemo(() => {
-    return currentAmount + percentageAmount;
-  }, [currentAmount, percentageAmount]);
-
-  // Initialize start date and calculate days
-  useEffect(() => {
-    if (isFlexi && userDetails) {
-      // Try to get start date from various possible fields
-      const startDateStr =
-        userDetails.startDate ||
-        userDetails.start_date ||
-        userDetails.joiningDate ||
-        userDetails.joining_date ||
-        params.startDate ||
-        params.start_date;
-
-      if (startDateStr) {
-        try {
-          const parsedDate = new Date(startDateStr);
-          if (!isNaN(parsedDate.getTime())) {
-            setStartDate(parsedDate);
-            const days = calculateDaysFromStart(parsedDate);
-            setInstallmentNumber(days);
-          }
-        } catch (error) {
-          logger.error("Error parsing start date:", error);
-        }
-      } else {
-        // If no start date, use today as start (day 1)
-        setStartDate(new Date());
-        setInstallmentNumber(1);
-      }
-    }
-  }, [isFlexi, userDetails, params.startDate, params.start_date, calculateDaysFromStart]);
-
-  // Get range label for current installment
-  const getRangeLabel = (installment: number): string => {
-    if (installment >= 1 && installment <= 75) {
-      return "1-75";
-    } else if (installment >= 76 && installment <= 150) {
-      return "76-150";
-    } else if (installment >= 151 && installment <= 225) {
-      return "151-225";
-    } else if (installment >= 226 && installment <= 300) {
-      return "226-300";
-    } else if (installment >= 301 && installment <= 330) {
-      return "301-330";
-    }
-    return "N/A";
-  };
-
-  // Toggle calculation card expand/collapse
-  const toggleCalculationCard = useCallback(() => {
-    const toValue = isCalculationExpanded ? 0 : 1;
-    setIsCalculationExpanded(!isCalculationExpanded);
-
-    Animated.spring(calculationHeight, {
-      toValue,
-      useNativeDriver: false,
-      tension: 50,
-      friction: 8,
-    }).start();
-  }, [isCalculationExpanded, calculationHeight]);
 
   // Toggle user details card expand/collapse
   const toggleUserDetailsCard = useCallback(() => {
@@ -881,22 +776,7 @@ export default function PaymentNewOverView() {
                 ) : (
                   <>
                     <Text style={styles.amountValue}>{formattedAmount}</Text>
-                    {currentPercentage > 0 && percentageAmount > 0 && !isFirstPayment && (
-                      <View style={styles.bonusAmountContainer}>
-                        <View style={styles.bonusAmountRow}>
-                          <Text style={styles.bonusLabel}>Bonus ({currentPercentage}%):</Text>
-                          <Text style={styles.bonusAmount}>
-                            +₹{percentageAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                          </Text>
-                        </View>
-                        <View style={styles.totalAmountRow}>
-                          <Text style={styles.totalAmountLabel}>Total Amount:</Text>
-                          <Text style={styles.totalAmountValue}>
-                            ₹{totalAmountWithPercentage.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                          </Text>
-                        </View>
-                      </View>
-                    )}
+
                   </>
                 )}
                 <Text style={styles.weightText}>
@@ -1001,132 +881,7 @@ export default function PaymentNewOverView() {
             </View>
           </View>
         )}
-        {/* Scheme Calculation Slider - Only for Flexi and after 2nd payment */}
-        {isFlexi && !isFirstPayment && (
-          <View style={styles.schemeCalculationCard}>
-            {/* Gradient Header - Clickable to expand/collapse */}
-            <TouchableOpacity
-              style={styles.schemeCardHeader}
-              onPress={toggleCalculationCard}
-              activeOpacity={0.8}
-            >
-              <View style={styles.schemeHeaderGradient}>
-                <MaterialCommunityIcons
-                  name="chart-line"
-                  size={28}
-                  color="#fff"
-                />
-                <Text style={styles.schemeCardTitle}>
-                  {t("digigoldCalculation") || "Digigold Calculation"}
-                </Text>
-                <Ionicons
-                  name={isCalculationExpanded ? "chevron-up" : "chevron-down"}
-                  size={24}
-                  color="#fff"
-                  style={styles.expandIcon}
-                />
-              </View>
-              {startDate && (
-                <Text style={styles.schemeDateText}>
-                  Day {installmentNumber} of 330
-                </Text>
-              )}
-            </TouchableOpacity>
 
-            {/* Collapsible Content */}
-            <Animated.View
-              style={[
-                styles.calculationContent,
-                {
-                  maxHeight: calculationHeight.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, 1000],
-                  }),
-                  opacity: calculationHeight,
-                },
-              ]}
-            >
-              {/* Main Value Display with Gradient */}
-              <View style={styles.schemeMainValueContainer}>
-                <View style={styles.schemeMainValueBox}>
-                  <View style={styles.schemeMainValueGradient}>
-                    <Text style={styles.schemeMainValueLabel}>Days</Text>
-                    <Text style={styles.schemeMainValueText}>{installmentNumber}</Text>
-                  </View>
-                </View>
-                <View style={styles.schemeMainValueBox}>
-                  <View style={styles.schemeMainValueGradient}>
-                    <Text style={styles.schemeMainValueLabel}>Bonus %</Text>
-                    <Text style={styles.schemeMainValueText}>{currentPercentage}%</Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Slider with Bonus Structure Visualization */}
-              <View style={styles.sliderContainer}>
-                {/* Bonus Structure Track - Colored segments showing bonus percentages */}
-                <View style={styles.bonusTrackContainer}>
-                  <View style={[styles.bonusTrackSegment, { backgroundColor: "#4CAF50", width: "22.7%" }]}>
-                    <Text style={styles.bonusTrackLabel}>5%</Text>
-                  </View>
-                  <View style={[styles.bonusTrackSegment, { backgroundColor: "#8BC34A", width: "22.7%" }]}>
-                    <Text style={styles.bonusTrackLabel}>3.75%</Text>
-                  </View>
-                  <View style={[styles.bonusTrackSegment, { backgroundColor: "#FFC107", width: "22.7%" }]}>
-                    <Text style={styles.bonusTrackLabel}>2%</Text>
-                  </View>
-                  <View style={[styles.bonusTrackSegment, { backgroundColor: "#FF9800", width: "22.7%" }]}>
-                    <Text style={styles.bonusTrackLabel}>0.75%</Text>
-                  </View>
-                  <View style={[styles.bonusTrackSegment, { backgroundColor: "#9E9E9E", width: "9.1%" }]}>
-                    <Text style={styles.bonusTrackLabel}>0%</Text>
-                  </View>
-                </View>
-
-                {/* Slider positioned over the track */}
-                <View style={styles.sliderWrapper}>
-                  <Slider
-                    style={styles.slider}
-                    minimumValue={1}
-                    maximumValue={330}
-                    step={1}
-                    value={installmentNumber}
-                    onValueChange={setInstallmentNumber}
-                    minimumTrackTintColor="transparent"
-                    maximumTrackTintColor="transparent"
-                    thumbTintColor={theme.colors.primary}
-                  />
-                </View>
-
-                {/* Range Markers showing breakpoints */}
-                <View style={styles.rangeMarkersContainer}>
-                  <View style={[styles.rangeMarker, { left: "22.7%" }]}>
-                    <View style={styles.markerDot} />
-                    <Text style={styles.markerLabel}>75</Text>
-                  </View>
-                  <View style={[styles.rangeMarker, { left: "45.4%" }]}>
-                    <View style={styles.markerDot} />
-                    <Text style={styles.markerLabel}>150</Text>
-                  </View>
-                  <View style={[styles.rangeMarker, { left: "68.1%" }]}>
-                    <View style={styles.markerDot} />
-                    <Text style={styles.markerLabel}>225</Text>
-                  </View>
-                  <View style={[styles.rangeMarker, { left: "90.8%" }]}>
-                    <View style={styles.markerDot} />
-                    <Text style={styles.markerLabel}>300</Text>
-                  </View>
-                </View>
-
-                {/* Slider Labels */}
-                <View style={styles.sliderLabels}>
-                  <Text style={styles.sliderLabel}>Day 1</Text>
-                  <Text style={styles.sliderLabel}>Day 330</Text>
-                </View>
-              </View>
-            </Animated.View>
-          </View>
-        )}
         {/* User Details Card */}
         <View style={styles.userDetailsCard}>
           <TouchableOpacity

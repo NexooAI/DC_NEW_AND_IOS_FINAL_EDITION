@@ -152,56 +152,56 @@ export default function BasicDetailsForm() {
   }, []);
 
   // Use useEffect for initial setup
-  useEffect(() => {
-    // logger.log('🔍 useEffect triggered - mobileStr:', mobileStr);
+  // useEffect(() => {
+  //   // logger.log('🔍 useEffect triggered - mobileStr:', mobileStr);
 
-    if (
-      mobileStr &&
-      mobileStr.length === 10 &&
-      /^\d{10}$/.test(mobileStr) &&
-      !otpPromptShown
-    ) {
-      logger.log("🔍 Setting mobile input from param:", mobileStr);
-      setMobileInput(mobileStr);
+  //   if (
+  //     mobileStr &&
+  //     mobileStr.length === 10 &&
+  //     /^\d{10}$/.test(mobileStr) &&
+  //     !otpPromptShown
+  //   ) {
+  //     logger.log("🔍 Setting mobile input from param:", mobileStr);
+  //     setMobileInput(mobileStr);
 
-      // Ask user if they want to trigger OTP
-      logger.log("🔍 Asking user to trigger OTP for mobile:", mobileStr);
-      setOtpPromptShown(true);
-      Alert.alert(
-        t("sendOtp"),
-        t("doYouWantToSendOtp").replace("{mobile}", mobileStr),
-        [
-          {
-            text: t("no"),
-            style: "cancel",
-            onPress: () => {
-              logger.log("🔍 User declined OTP trigger");
-              setAutoOtpSent(false);
-              setAutoOtpLoading(false);
-            },
-          },
-          {
-            text: t("yes"),
-            onPress: () => {
-              logger.log("🔍 User confirmed OTP trigger");
-              setAutoOtpSent(true);
-              setAutoOtpLoading(true);
-              // Small delay to ensure the component is fully mounted
-              setTimeout(() => {
-                // Pass the mobile number directly to avoid state timing issues
-                handleGetOtpWithMobile(mobileStr);
-              }, 500);
-            },
-          },
-        ],
-        { cancelable: false }
-      );
-    } else {
-      // logger.log('🔍 Not auto-triggering OTP - mobileStr:', mobileStr, 'length:', mobileStr?.length);
-      setAutoOtpSent(false);
-      setAutoOtpLoading(false);
-    }
-  }, [mobileStr, otpPromptShown]);
+  //     // Ask user if they want to trigger OTP
+  //     logger.log("🔍 Asking user to trigger OTP for mobile:", mobileStr);
+  //     setOtpPromptShown(true);
+  //     Alert.alert(
+  //       t("sendOtp"),
+  //       t("doYouWantToSendOtp").replace("{mobile}", mobileStr),
+  //       [
+  //         {
+  //           text: t("no"),
+  //           style: "cancel",
+  //           onPress: () => {
+  //             logger.log("🔍 User declined OTP trigger");
+  //             setAutoOtpSent(false);
+  //             setAutoOtpLoading(false);
+  //           },
+  //         },
+  //         {
+  //           text: t("yes"),
+  //           onPress: () => {
+  //             logger.log("🔍 User confirmed OTP trigger");
+  //             setAutoOtpSent(true);
+  //             setAutoOtpLoading(true);
+  //             // Small delay to ensure the component is fully mounted
+  //             setTimeout(() => {
+  //               // Pass the mobile number directly to avoid state timing issues
+  //               handleGetOtpWithMobile(mobileStr);
+  //             }, 500);
+  //           },
+  //         },
+  //       ],
+  //       { cancelable: false }
+  //     );
+  //   } else {
+  //     // logger.log('🔍 Not auto-triggering OTP - mobileStr:', mobileStr, 'length:', mobileStr?.length);
+  //     setAutoOtpSent(false);
+  //     setAutoOtpLoading(false);
+  //   }
+  // }, [mobileStr, otpPromptShown]);
 
   // Immediate effect to set mobile input if available
   useEffect(() => {

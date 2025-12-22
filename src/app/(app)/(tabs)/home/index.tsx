@@ -1955,7 +1955,12 @@ export default function Home() {
       });
       setQuickJoinErrors({});
       setCalculatedGoldWeight(null);
-      setQuickJoinModalVisible(true);
+      
+      // Wait for the scheme info modal to close completely (animation duration is ~250ms)
+      // iOS MIGHT fail to open the second modal if the first one is still animating out
+      setTimeout(() => {
+        setQuickJoinModalVisible(true);
+      }, 450);
     } else {
       // KYC status is still loading, wait a bit and check again
       setTimeout(() => {

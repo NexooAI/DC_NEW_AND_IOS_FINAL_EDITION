@@ -18,10 +18,9 @@ import {
 } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Picker } from "@react-native-picker/picker";
+import { Dropdown } from "react-native-element-dropdown";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import useGlobalStore from "@/store/global.store";
-import RNPickerSelect from "react-native-picker-select";
 import api from "@/services/api";
 import { theme } from "@/constants/theme";
 import { LinearGradient } from "expo-linear-gradient";
@@ -143,6 +142,7 @@ export default function KycForm() {
   const [kycId, setKycId] = useState<string | null>(null);
   const [pincodeData, setPincodeData] = useState<PincodeData[]>([]);
   const [isLoadingPincode, setIsLoadingPincode] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
   const isMountedRef = React.useRef(true); // Track component mount state for async operations
 
   const navBarHeight = 56; // Typical bottom nav bar height
@@ -644,7 +644,7 @@ export default function KycForm() {
         resizeMode="cover"
       >
         <LinearGradient
-          colors={["rgba(0,0,0,0.6)", "rgba(0,0,0,0.8)"]}
+          colors={[theme.colors.primary, theme.colors.primary]}
           style={StyleSheet.absoluteFillObject}
         />
         <SafeAreaView style={styles.safeArea}>
@@ -715,17 +715,28 @@ export default function KycForm() {
                     <View style={styles.formGroup}>
                       <Text style={styles.label}>City</Text>
                       {pincodeData.length > 0 ? (
-                        <RNPickerSelect
-                          onValueChange={handleCitySelection}
-                          onDonePress={() => { }}
-                          placeholder={{ label: "Select your city", value: "" }}
-                          value={formData.city}
-                          items={pincodeData.map((city) => ({
+                        <Dropdown
+                          style={[
+                            styles.dropdown,
+                            focusedField === "city" && styles.dropdownFocused,
+                          ]}
+                          placeholderStyle={styles.placeholderStyle}
+                          selectedTextStyle={styles.selectedTextStyle}
+                          data={pincodeData.map((city) => ({
                             label: city.Name,
                             value: city.Name,
                           }))}
-                          style={pickerSelectStyles}
-                          useNativeAndroidPickerStyle={false}
+                          maxHeight={300}
+                          labelField="label"
+                          valueField="value"
+                          placeholder="Select your city"
+                          value={formData.city}
+                          onFocus={() => setFocusedField("city")}
+                          onBlur={() => setFocusedField(null)}
+                          onChange={(item) => {
+                            handleCitySelection(item.value);
+                            setFocusedField(null);
+                          }}
                         />
                       ) : (
                         <TextInput
@@ -857,22 +868,29 @@ export default function KycForm() {
                     </View>
                     <View style={styles.formGroup}>
                       <Text style={styles.label}>Address Proof Type</Text>
-                      <RNPickerSelect
-                        onValueChange={(value) =>
-                          handleChange("addressprooftype", value)
-                        }
-                        onDonePress={() => { }}
-                        placeholder={{
-                          label: "Select your ID proof",
-                          value: "",
-                        }}
-                        value={formData.addressprooftype}
-                        items={idTypes.map((id) => ({
+                      <Dropdown
+                        style={[
+                          styles.dropdown,
+                          focusedField === "addressprooftype" &&
+                            styles.dropdownFocused,
+                        ]}
+                        placeholderStyle={styles.placeholderStyle}
+                        selectedTextStyle={styles.selectedTextStyle}
+                        data={idTypes.map((id) => ({
                           label: id.name,
                           value: id.value,
                         }))}
-                        style={pickerSelectStyles}
-                        useNativeAndroidPickerStyle={false}
+                        maxHeight={300}
+                        labelField="label"
+                        valueField="value"
+                        placeholder="Select your ID proof"
+                        value={formData.addressprooftype}
+                        onFocus={() => setFocusedField("addressprooftype")}
+                        onBlur={() => setFocusedField(null)}
+                        onChange={(item) => {
+                          handleChange("addressprooftype", item.value);
+                          setFocusedField(null);
+                        }}
                       />
                       {errors.addressprooftype && (
                         <Text style={styles.errorText}>
@@ -924,19 +942,29 @@ export default function KycForm() {
                   </View>
                   <View style={styles.formGroup}>
                     <Text style={styles.label}>Nominee Relationship</Text>
-                    <RNPickerSelect
-                      onValueChange={(value) =>
-                        handleChange("nominee_relationship", value)
-                      }
-                      onDonePress={() => { }}
-                      placeholder={{ label: "Select relationship", value: "" }}
-                      value={formData.nominee_relationship}
-                      items={nomineeRelationship.map((id) => ({
+                    <Dropdown
+                      style={[
+                        styles.dropdown,
+                        focusedField === "nominee_relationship" &&
+                          styles.dropdownFocused,
+                      ]}
+                      placeholderStyle={styles.placeholderStyle}
+                      selectedTextStyle={styles.selectedTextStyle}
+                      data={nomineeRelationship.map((id) => ({
                         label: id.name,
                         value: id.value,
                       }))}
-                      style={pickerSelectStyles}
-                      useNativeAndroidPickerStyle={false}
+                      maxHeight={300}
+                      labelField="label"
+                      valueField="value"
+                      placeholder="Select relationship"
+                      value={formData.nominee_relationship}
+                      onFocus={() => setFocusedField("nominee_relationship")}
+                      onBlur={() => setFocusedField(null)}
+                      onChange={(item) => {
+                        handleChange("nominee_relationship", item.value);
+                        setFocusedField(null);
+                      }}
                     />
                     {errors.nominee_relationship && (
                       <Text style={styles.errorText}>
@@ -1002,31 +1030,7 @@ export default function KycForm() {
   );
 }
 
-const pickerSelectStyles = StyleSheet.create({
-  inputIOS: {
-    backgroundColor: "#fff",
-    borderColor: "#E0E0E0",
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    fontSize: 16,
-    color: "#333",
-    paddingRight: 30,
-    marginBottom: 10,
-  },
-  inputAndroid: {
-    fontSize: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-    borderRadius: 12,
-    color: "#333",
-    paddingRight: 30,
-    backgroundColor: "#fff",
-  },
-});
+
 
 const styles = StyleSheet.create({
   container: {
@@ -1045,12 +1049,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollViewContent: {
-    padding: 16,
-    paddingTop: 8,
+    padding: 24,
+    paddingTop: 0,
   },
   mainCard: {
     borderRadius: 20,
-    padding: 20,
+    padding: 24,
     marginBottom: 16,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     shadowColor: "#000",
@@ -1240,5 +1244,26 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "600",
     fontSize: 16,
+  },
+  dropdown: {
+    height: 55,
+    backgroundColor: "#fff",
+    borderColor: "#E0E0E0",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+  },
+  dropdownFocused: {
+    borderColor: theme.colors.primary,
+    borderWidth: 2,
+  },
+  placeholderStyle: {
+    fontSize: 16,
+    color: "gray",
+  },
+  selectedTextStyle: {
+    fontSize: 16,
+    color: "#333",
   },
 });

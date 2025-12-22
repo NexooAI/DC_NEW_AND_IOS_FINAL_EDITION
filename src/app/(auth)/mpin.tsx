@@ -26,6 +26,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import ResponsiveButton from "@/components/ResponsiveButton";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { registerStyles } from "../../_styles/registerStyles";
+import { theme } from "@/constants";
 
 const { width } = Dimensions.get("window");
 
@@ -181,7 +182,7 @@ export default function MpinSetup() {
         style={styles.backgroundImage}
       >
         <LinearGradient
-          colors={["rgba(0,0,0,0.6)", "transparent"]}
+          colors={[theme.colors.primary, theme.colors.primary]}
           style={styles.gradient}
         >
           <KeyboardAvoidingView
