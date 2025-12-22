@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Animated,
   Easing,
+  BackHandler
 } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,11 +15,38 @@ import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
 import { logger } from "@/utils/logger";
+import { responsiveUtils } from "@/utils/responsiveUtils";
+
+// Responsive constants
+const { wp, hp, rf, rp, rm, rb, getShadows } = responsiveUtils;
+const shadows = getShadows();
 
 export default function PaymentSuccess() {
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const router = useRouter();
+  const { setTabVisibility } = useGlobalStore();
+
+  // Hide tab bar on focus
+  useFocusEffect(
+    useCallback(() => {
+      setTabVisibility(false);
+      
+      // Handle back button to go to home instead of back
+      const onBackPress = () => {
+        router.replace("/(tabs)/home");
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => {
+        // Show tabs again when leaving
+        setTabVisibility(true);
+        backHandler.remove();
+      };
+    }, [setTabVisibility, router])
+  );
 
   // Log payment success data when component mounts
   useEffect(() => {
@@ -126,7 +154,7 @@ export default function PaymentSuccess() {
                 { transform: [{ scale: checkmarkScale }] },
               ]}
             >
-              <Ionicons name="checkmark-circle" size={100} color="#16c72e" />
+              <Ionicons name="checkmark-circle" size={rp(80)} color="#16c72e" />
             </Animated.View>
           </Animated.View>
         </View>
@@ -141,13 +169,13 @@ export default function PaymentSuccess() {
             <View style={styles.detailIcon}>
               <Ionicons
                 name="receipt-outline"
-                size={20}
+                size={rp(20)}
                 color={theme.colors.primary}
               />
             </View>
             <View style={styles.detailTextContainer}>
               <Text style={styles.detailLabel}>{t("transactionId")}</Text>
-              <Text style={styles.detailValue}>{Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || "N/A")}</Text>
+              <Text style={styles.detailValue} numberOfLines={1}>{Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || "N/A")}</Text>
             </View>
           </View>
 
@@ -157,13 +185,13 @@ export default function PaymentSuccess() {
             <View style={styles.detailIcon}>
               <Ionicons
                 name="document-text-outline"
-                size={20}
+                size={rp(20)}
                 color={theme.colors.primary}
               />
             </View>
             <View style={styles.detailTextContainer}>
               <Text style={styles.detailLabel}>{t("orderId")}</Text>
-              <Text style={styles.detailValue}>{Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || "N/A")}</Text>
+              <Text style={styles.detailValue} numberOfLines={1}>{Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || "N/A")}</Text>
             </View>
           </View>
 
@@ -173,7 +201,7 @@ export default function PaymentSuccess() {
             <View style={styles.detailIcon}>
               <Ionicons
                 name="wallet-outline"
-                size={20}
+                size={rp(20)}
                 color={theme.colors.primary}
               />
             </View>
@@ -198,7 +226,7 @@ export default function PaymentSuccess() {
             onPress={handleHomePress}
             activeOpacity={0.9}
           >
-            <Ionicons name="home" size={20} color="#fff" />
+            <Ionicons name="home" size={rp(18)} color="#fff" />
             <Text style={styles.buttonText}>{t("home")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -206,7 +234,7 @@ export default function PaymentSuccess() {
             onPress={handleSavingsPress}
             activeOpacity={0.9}
           >
-            <Ionicons name="wallet" size={20} color="#fff" />
+            <Ionicons name="wallet" size={rp(18)} color="#fff" />
             <Text style={styles.buttonText}>{t("savings")}</Text>
           </TouchableOpacity>
         </View>
@@ -222,19 +250,19 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: rp(20),
     alignItems: "center",
     justifyContent: "center",
   },
   iconContainer: {
-    marginBottom: 20,
+    marginBottom: rp(20),
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1, // Ensure icon is above background
   },
   checkmarkContainer: {
-    width: 120,
-    height: 120,
+    width: rp(120),
+    height: rp(120),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -243,66 +271,63 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   title: {
-    fontSize: 20,
+    fontSize: rf(22, { minSize: 20, maxSize: 26 }),
     fontWeight: "800",
-    color: "#2e7d32",
-    marginBottom: 12,
+    color: "#16c72e", // Matches tick color
+    marginBottom: rp(12),
     textAlign: "center",
     fontFamily: "Inter_700Bold",
   },
   message: {
-    fontSize: 17,
+    fontSize: rf(15, { minSize: 13, maxSize: 17 }),
     color: "#616161",
     textAlign: "center",
-    marginBottom: 32,
-    lineHeight: 24,
-    maxWidth: "85%",
+    marginBottom: rp(32),
+    lineHeight: rp(22),
+    maxWidth: "90%",
     fontFamily: "Inter_400Regular",
   },
   detailsCard: {
     width: "100%",
     backgroundColor: "#ffffff",
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 32,
-    shadowColor: "#3d5afe",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
+    borderRadius: rb(20),
+    padding: rp(24),
+    marginBottom: rp(32),
+    ...shadows.medium,
     elevation: 8,
   },
   detailsTitle: {
-    fontSize: 18,
+    fontSize: rf(18, { minSize: 16, maxSize: 20 }),
     fontWeight: "700",
     color: "#2d3748",
-    marginBottom: 20,
+    marginBottom: rp(20),
     fontFamily: "Inter_600SemiBold",
   },
   detailRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: rp(12),
   },
   detailIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: rp(36),
+    height: rp(36),
+    borderRadius: rb(12),
     backgroundColor: "#e3f2fd",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 16,
+    marginRight: rp(16),
   },
   detailTextContainer: {
     flex: 1,
   },
   detailLabel: {
-    fontSize: 14,
+    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
     color: "#718096",
-    marginBottom: 4,
+    marginBottom: rp(4),
     fontFamily: "Inter_400Regular",
   },
   detailValue: {
-    fontSize: 16,
+    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
     color: "#1a202c",
     fontWeight: "600",
     fontFamily: "Inter_600SemiBold",
@@ -310,49 +335,45 @@ const styles = StyleSheet.create({
   amountValue: {
     color: "#2e7d32",
     fontWeight: "700",
-    fontSize: 18,
+    fontSize: rf(18, { minSize: 16, maxSize: 22 }),
   },
   divider: {
     height: 1,
     backgroundColor: "#edf2f7",
-    marginVertical: 4,
+    marginVertical: rp(4),
   },
   buttonRow: {
     width: "100%",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
-    gap: 16, // Consistent spacing between buttons
+    marginBottom: rp(20),
+    gap: rp(16),
   },
   button: {
     backgroundColor: theme.colors.primary,
-    paddingVertical: 18,
-    paddingHorizontal: 24, // Add horizontal padding for better text spacing
-    borderRadius: 14,
+    paddingVertical: rp(16),
+    paddingHorizontal: rp(20),
+    borderRadius: rb(14),
     alignItems: "center",
-    justifyContent: "center", // Center content both horizontally and vertically
-    flexDirection: "row", // Align icon and text horizontally
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-    marginBottom: 0,
-    minHeight: 56, // Ensure consistent button height
-    flex: 1, // Equal width for both buttons
+    justifyContent: "center",
+    flexDirection: "row",
+    ...shadows.small,
+    elevation: 6,
+    flex: 1,
+    minHeight: rp(56),
   },
   buttonLeft: {
-    marginRight: 0, // Remove margin since we're using gap
+    // Left button styling
   },
   buttonRight: {
-    marginLeft: 0, // Remove margin since we're using gap
+    // Right button styling
   },
   buttonText: {
     color: "#ffffff",
-    fontSize: 16,
+    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
-    marginLeft: 8, // Consistent spacing from icon
+    marginLeft: rp(8),
   },
 });

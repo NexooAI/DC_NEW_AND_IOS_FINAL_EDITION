@@ -476,7 +476,7 @@ const SavingsDetail = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#f3f4f6" }} edges={["bottom"]}>
       {/* Custom Header with Back Button */}
-      <View style={[styles.headerContainer, { paddingTop: top + 12 }]}>
+      <View style={[styles.headerContainer, { paddingTop: 12 }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}

@@ -756,7 +756,7 @@ export default function SavingsScreen() {
 
         <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
           {/* Custom Header with Page Name */}
-          <View style={[styles.pageHeaderContainer, { paddingTop: top + 12 }]}>
+          <View style={[styles.pageHeaderContainer, { paddingTop: 12 }]}>
             <Text style={styles.pageHeaderTitle}>
               {t("mySchemes") || "My Schemes"}
             </Text>

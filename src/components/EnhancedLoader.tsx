@@ -302,7 +302,7 @@ const EnhancedLoader: React.FC<EnhancedLoaderProps> = ({
             },
           ]}
         >
-          {/* Akila Jewellers logo */}
+          {/* DC Jewellers logo */}
           <Image
             source={require("../../assets/images/adaptive-icon.png")}
             style={[styles.logo, { width: logoSize, height: logoSize }]}

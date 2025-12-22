@@ -8,9 +8,11 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useSegments } from "expo-router";
 import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
+import useGlobalStore from "@/store/global.store";
 
 export default function TabsLayout() {
   const { t } = useTranslation();
+  const { isTabVisible } = useGlobalStore();
   const insets = useSafeAreaInsets();
   const segments = useSegments();
 
@@ -33,14 +35,15 @@ export default function TabsLayout() {
               backgroundColor: COLORS.white,
               borderTopWidth: 1,
               borderTopColor: COLORS.border?.primary || '#e5e5e5',
+              display: isTabVisible ? 'flex' : 'none',
             },
             headerStyle: {
               backgroundColor: theme.colors.primary,
-              height: 100, // Explicitly set header height
+              height: Platform.OS === 'android' ? 60 : 60, // Reduced height for Android, larger for iOS (includes status bar)
               elevation: 0,
               shadowOpacity: 0,
             },
-            headerStatusBarHeight: Platform.OS === 'ios' ? Math.max(0, insets.top - 20) : 0, // Reduce header height for iOS
+            headerStatusBarHeight: Platform.OS === 'ios' ? 0 : 0, // Let the safe area handle it or explicit height
             headerTitleContainerStyle: {
               paddingVertical: Platform.OS === 'android' ? 0 : undefined, // Remove vertical padding on Android to reduce height
             },

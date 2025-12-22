@@ -21,7 +21,7 @@ export default function HomeLayout() {
         headerShown: true,
         headerStyle: {
           backgroundColor: theme.colors.primary,
-          height: 100, // Explicitly set header height
+          height: 60, // Standard header height
         },
         headerTintColor: COLORS.white,
         headerTitleAlign: 'center', // Center align the header title
@@ -115,11 +115,21 @@ export default function HomeLayout() {
       />
       <Stack.Screen
         name="payment-success"
-        options={{ title: "Payment Success" }}
+        options={{ 
+          title: "Payment Success",
+          headerBackVisible: false,
+          gestureEnabled: false,
+          headerLeft: () => null 
+        }}
       />
       <Stack.Screen
         name="payment-failure"
-        options={{ title: "Payment Failure" }}
+        options={{ 
+          title: "Payment Failure",
+          headerBackVisible: false,
+          gestureEnabled: false,
+          headerLeft: () => null
+        }}
       />
       <Stack.Screen
         name="faq-chat"

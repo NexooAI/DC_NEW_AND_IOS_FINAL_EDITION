@@ -13,7 +13,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   visible,
   onClose,
 }) => {
-  const { locale, setLocale, supportedLocales } = useTranslation();
+  const { locale, setLocale, supportedLocales, t } = useTranslation();
 
   const handleLanguageSelect = async (selectedLocale: string) => {
     await setLocale(selectedLocale as any);
@@ -31,7 +31,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         <View style={styles.container}>
           <Text style={styles.title}>Select Language</Text>
           <Text style={styles.subtitle}>
-            ഭാഷ തിരഞ്ഞെടുക്കുക / மொழியைத் தேர்ந்தெடுக்கவும்
+            {t("selectLanguageSubtitle")}
           </Text>
 
           {supportedLocales.map((lang) => (
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: "500",
-    color: theme.colors.textPrimary,
+    color: theme.colors.primary,
   },
   selectedLanguageText: {
     color: theme.colors.primary,
@@ -136,8 +136,8 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 16,
-    color: theme.colors.textSecondary,
-    fontWeight: "500",
+    color: theme.colors.primary,
+    fontWeight: "600",
   },
 });
 

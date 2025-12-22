@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
-import { AppState, AppStateStatus } from "react-native";
-import { logger } from "@/utils/logger";
+import { useRouter } from "expo-router";
+import paymentService from "@/services/payment.service";
+import api from "@/services/api";
+import { Alert } from 'react-native';
 import { theme } from "@/constants/theme";
+import { AppState, AppStateStatus } from "react-native";
 
 interface PaymentSocketProps {
   onPaymentSuccess?: (data: any) => void;
@@ -10,7 +13,7 @@ interface PaymentSocketProps {
   onPaymentError?: (error: any) => void;
   onPaymentExpired?: () => void;
   parsedUserDetails: any;
-  router: any;
+  router: ReturnType<typeof useRouter>;
   orderId?: string;
 }
 
@@ -23,684 +26,246 @@ export const usePaymentSocket = ({
   router,
   orderId,
 }: PaymentSocketProps) => {
-  // refs
   const socketRef = useRef<Socket | null>(null);
-  const isPaymentCompletedRef = useRef(false);
-  const parsedUserDetailsRef = useRef(parsedUserDetails);
-  const orderIdRef = useRef(orderId);
-  const appStateSubscriptionRef = useRef<any>(null);
-  const mountedRef = useRef(true);
+  const isPaymentCompleted = useRef(false);
 
-  // keep latest callbacks in refs to avoid stale closures
-  const onPaymentSuccessRef = useRef(onPaymentSuccess);
-  const onPaymentFailureRef = useRef(onPaymentFailure);
-  const onPaymentErrorRef = useRef(onPaymentError);
-  const onPaymentExpiredRef = useRef(onPaymentExpired);
 
-  useEffect(() => { parsedUserDetailsRef.current = parsedUserDetails; }, [parsedUserDetails]);
-  useEffect(() => { orderIdRef.current = orderId; }, [orderId]);
-
-  useEffect(() => { onPaymentSuccessRef.current = onPaymentSuccess; }, [onPaymentSuccess]);
-  useEffect(() => { onPaymentFailureRef.current = onPaymentFailure; }, [onPaymentFailure]);
-  useEffect(() => { onPaymentErrorRef.current = onPaymentError; }, [onPaymentError]);
-  useEffect(() => { onPaymentExpiredRef.current = onPaymentExpired; }, [onPaymentExpired]);
-
-  // Build metadata safely (defaults to 0 / empty string rather than magic numbers)
-  const buildPaymentMetadata = (pd: any, currentOrderId?: string) => {
-    const d = pd || {};
-    const inner = d?.data?.data || {};
-    return {
-      orderId: currentOrderId || d?.orderId || "",
-      investmentId: inner?.id || d?.id || d?.investmentId || 0,
-      userId: inner?.userId || d?.userId || 0,
-      schemeId: inner?.schemeId || d?.schemeId || 0,
-      chitId: inner?.chitId || d?.chitId || 0,
-      amount: inner?.amount || d?.amount || 0,
-      isManual: "no",
-      utr_reference_number: "",
-      accountNumber: inner?.accountNo || d?.accountNo || d?.accNo || "",
-      accountName: inner?.accountName || d?.accountName || d?.accountname || "",
-      userMobile: inner?.mobile || d?.mobile || d?.userMobile || "",
-    };
-  };
-
-  // Join room and send metadata (reads latest refs)
-  const joinRoomAndStoreMetadata = (socket: Socket) => {
-    // Safety check - ensure socket is valid
-    if (!socket) {
-      logger.error("🔌 [Socket] CRITICAL: joinRoomAndStoreMetadata called with null socket", {
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
-
-    const currentOrderId = orderIdRef.current || parsedUserDetailsRef.current?.orderId;
-
-    logger.log("🔌 [Socket] joinRoomAndStoreMetadata called", {
-      timestamp: new Date().toISOString(),
-      hasOrderId: !!currentOrderId,
-      orderId: currentOrderId,
-      socketConnected: socket.connected,
-      socketId: socket.id || "none",
+  useEffect(() => {
+    // Initialize socket connection
+    const socketInstance = io(theme.baseUrl, {
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
-    if (!currentOrderId) {
-      logger.error("🔌 [Socket] ERROR: No orderId available to join room", {
-        orderIdRef: orderIdRef.current,
-        parsedUserDetailsOrderId: parsedUserDetailsRef.current?.orderId,
-        parsedUserDetails: parsedUserDetailsRef.current,
-      });
-      return;
-    }
+    socketRef.current = socketInstance;
 
-    // Safety check - ensure socket is connected before emitting
-    if (!socket.connected) {
-      logger.warn("🔌 [Socket] WARNING: Socket not connected, cannot join room", {
-        socketId: socket.id || "none",
-        connected: socket.connected,
-        orderId: currentOrderId,
-      });
-      return;
-    }
+    // Handle connection events
+    socketInstance.on("connect", () => {
+      const currentOrderId = orderId || parsedUserDetails?.orderId;
+      console.log("=== SOCKET CONNECTION DEBUG ===");
+      console.log("✅ Socket connected successfully!");
+      console.log("Socket ID:", socketInstance.id);
+      console.log("Socket connected status:", socketInstance.connected);
+      console.log("Current orderId:", currentOrderId);
+      console.log("parsedUserDetails?.orderId:", parsedUserDetails?.orderId);
+      console.log("parsedUserDetails", parsedUserDetails);
 
-    try {
-      logger.log("🔌 [Socket] Joining order room...", {
-        orderId: currentOrderId,
-        socketId: socket.id || "none",
-        connected: socket.connected,
-      });
+      if (currentOrderId) {
+        console.log("🎯 Emitting joinOrderRoom for orderId:", currentOrderId);
+        socketInstance.emit("joinOrderRoom", currentOrderId);
+        console.log("✅ joinOrderRoom emission completed");
 
-      // Safety check before emit
-      if (typeof socket.emit !== 'function') {
-        logger.error("🔌 [Socket] CRITICAL: socket.emit is not a function", {
-          socketType: typeof socket,
-          socketId: socket.id,
-        });
-        return;
-      }
+        // Emit store_payment_metadata after successful connection
+        const paymentMetadata = {
+          orderId: currentOrderId,
+          userMobile: parsedUserDetails?.data?.data?.mobile || parsedUserDetails?.mobile || parsedUserDetails?.userMobile,
+          investmentId: parsedUserDetails?.data?.data?.id || parsedUserDetails?.id || parsedUserDetails?.investmentId,
+          userId: parsedUserDetails?.data?.data?.userId || parsedUserDetails?.userId,
+          schemeId: parsedUserDetails?.data?.data?.schemeId || parsedUserDetails?.schemeId,
+          chitId: parsedUserDetails?.data?.data?.chitId || parsedUserDetails?.chitId,
+          amount: parsedUserDetails?.data?.data?.amount || parsedUserDetails?.amount,
+          isManual: "no",
+          utr_reference_number: "",
+          accountNumber: parsedUserDetails?.data?.data?.accountNo || parsedUserDetails?.accountNo || parsedUserDetails?.accNo || "",
+          accountName: parsedUserDetails?.data?.data?.accountName || parsedUserDetails?.accountName || parsedUserDetails?.accountname || ""
+        };
 
-      socket.emit("joinOrderRoom", currentOrderId);
-      logger.log("🔌 [Socket] joinOrderRoom event emitted", {
-        orderId: currentOrderId,
-        timestamp: new Date().toISOString(),
-      });
-
-      const metadata = buildPaymentMetadata(parsedUserDetailsRef.current, currentOrderId);
-      logger.log("🔌 [Socket] Sending payment metadata...", {
-        metadata: metadata,
-        orderId: currentOrderId,
-      });
-
-      socket.emit("store_payment_metadata", metadata);
-      logger.log("🔌 [Socket] store_payment_metadata event emitted", {
-        metadata: metadata,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (err) {
-      logger.error("🔌 [Socket] CRITICAL ERROR in join/store metadata:", {
-        error: err,
-        errorMessage: (err as Error)?.message,
-        stack: (err as Error)?.stack,
-        orderId: currentOrderId,
-        socketConnected: socket.connected,
-        socketId: socket.id || "none",
-      });
-    }
-  };
-
-  // Payment event handler — tolerant parsing of status
-  const handlePaymentStatusPayload = (payload: any) => {
-    logger.log("📨 [Socket] handlePaymentStatusPayload called", {
-      timestamp: new Date().toISOString(),
-      hasPayload: !!payload,
-      payloadKeys: payload ? Object.keys(payload) : [],
-      orderId: orderIdRef.current,
-    });
-
-    try {
-      const rawStatus =
-        (payload?.status ?? payload?.payment_status ?? (payload?.success ? "success" : undefined) ?? "")
-          .toString()
-          .toLowerCase();
-
-      logger.log("📨 [Socket] Payment status parsed", {
-        rawStatus: rawStatus,
-        status: payload?.status,
-        payment_status: payload?.payment_status,
-        success: payload?.success,
-      });
-
-      if (rawStatus === "success" || rawStatus === "paid") {
-        logger.log("✅ [Socket] Payment SUCCESS detected", {
-          timestamp: new Date().toISOString(),
-          status: rawStatus,
-          orderId: payload?.paymentResponse?.order_id,
-          trackingId: payload?.paymentResponse?.tracking_id,
-        });
-        isPaymentCompletedRef.current = true;
-        onPaymentSuccessRef.current?.(payload);
-      } else if (rawStatus === "failure" || rawStatus === "failed") {
-        logger.log("❌ [Socket] Payment FAILURE detected", {
-          timestamp: new Date().toISOString(),
-          status: rawStatus,
-          orderId: payload?.paymentResponse?.order_id,
-          trackingId: payload?.paymentResponse?.tracking_id,
-        });
-        isPaymentCompletedRef.current = true;
-        onPaymentFailureRef.current?.(payload);
+        console.log("🎯 Emitting store_payment_metadata:", paymentMetadata);
+        socketInstance.emit("store_payment_metadata", paymentMetadata);
+        console.log("✅ store_payment_metadata emission completed");
       } else {
-        // Unknown status — forward to error handler for visibility
-        logger.warn("⚠️ [Socket] payment_status_update (unknown status):", {
-          status: rawStatus,
-          payload: payload,
-          orderId: orderIdRef.current,
-        });
+        console.warn("⚠️ No orderId found on connect");
+        console.log("Available orderId sources:");
+        console.log("- orderId prop:", orderId);
+        console.log("- parsedUserDetails?.orderId:", parsedUserDetails?.orderId);
       }
-    } catch (err) {
-      logger.error("❌ [Socket] CRITICAL ERROR in handlePaymentStatusPayload:", {
-        error: err,
-        errorMessage: (err as Error)?.message,
-        stack: (err as Error)?.stack,
-        payload: payload,
-        orderId: orderIdRef.current,
-      });
-    }
-  };
-
-  // Initialize socket (safe: removes previous socket listeners before creating new one)
-  const initSocketConnection = useCallback(() => {
-    logger.log("🔌 [Socket] Initializing socket connection...", {
-      timestamp: new Date().toISOString(),
-      baseUrl: theme.baseUrl,
-      orderId: orderIdRef.current,
-      hasExistingSocket: !!socketRef.current,
     });
 
-    // Clean old socket if exists
-    if (socketRef.current) {
-      try {
-        logger.log("🔌 [Socket] Cleaning up existing socket...", {
-          socketId: socketRef.current.id,
-          connected: socketRef.current.connected,
-        });
-        socketRef.current.removeAllListeners();
-        socketRef.current.disconnect();
-        logger.log("🔌 [Socket] Old socket cleaned up successfully");
-      } catch (e) {
-        logger.error("🔌 [Socket] Error cleaning old socket:", e);
-      }
-      socketRef.current = null;
-    }
-
-    try {
-      logger.log("🔌 [Socket] Creating new socket instance...", {
-        baseUrl: theme.baseUrl,
-        transports: ["websocket"],
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-      });
-
-      const socket = io(theme.baseUrl, {
-        transports: ["websocket"],
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-      });
-
-      socketRef.current = socket;
-      logger.log("🔌 [Socket] Socket instance created", {
-        socketId: socket.id || "pending",
-        connected: socket.connected,
-      });
-    } catch (error) {
-      logger.error("🔌 [Socket] CRITICAL: Failed to create socket instance:", error);
-      onPaymentErrorRef.current?.({
-        error: "Socket Creation Error",
-        message: "Failed to initialize socket connection",
-        details: error,
-      });
-      return null;
-    }
-
-    const socket = socketRef.current;
-
-    // Safety check - ensure socket was created
-    if (!socket) {
-      logger.error("🔌 [Socket] CRITICAL: Socket is null after creation", {
-        timestamp: new Date().toISOString(),
-        baseUrl: theme.baseUrl,
-      });
-      onPaymentErrorRef.current?.({
-        error: "Socket Creation Failed",
-        message: "Failed to create socket instance",
-      });
-      return null;
-    }
-
-    // named handlers (so they can be removed if needed)
-    const onConnect = () => {
-      // Safety check - ensure socket still exists
-      if (!socket || !socketRef.current) {
-        logger.error("🔌 [Socket] CRITICAL: Socket is null in onConnect handler", {
-          timestamp: new Date().toISOString(),
-        });
-        return;
-      }
-
-      logger.log("✅ [Socket] CONNECTED successfully", {
-        timestamp: new Date().toISOString(),
-        socketId: socket.id || "none",
-        connected: socket.connected,
-        orderId: orderIdRef.current,
-      });
-      try {
-        joinRoomAndStoreMetadata(socket);
-      } catch (error) {
-        logger.error("🔌 [Socket] Error in joinRoomAndStoreMetadata after connect:", {
-          error: error,
-          errorMessage: (error as Error)?.message,
-          stack: (error as Error)?.stack,
-        });
-      }
-    };
-
-    const onConnectError = (err: any) => {
-      logger.error("❌ [Socket] CONNECTION ERROR", {
-        timestamp: new Date().toISOString(),
-        error: err,
-        errorType: err?.type || "unknown",
-        errorMessage: err?.message || String(err),
-        socketId: socket.id || "none",
-        connected: socket.connected,
-        orderId: orderIdRef.current,
-        baseUrl: theme.baseUrl,
-        stack: err?.stack,
-      });
-      onPaymentErrorRef.current?.({
+    socketInstance.on("connect_error", (error) => {
+      console.error("=== SOCKET CONNECTION ERROR ===");
+      console.error("Socket connection error:", error);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+      onPaymentError?.({
         error: "Connection Error",
         message: "Failed to connect to payment server",
-        details: err,
       });
-    };
+    });
 
-    const onDisconnect = (reason: any) => {
-      logger.log("🔌 [Socket] DISCONNECTED", {
-        timestamp: new Date().toISOString(),
-        reason: reason,
-        reasonType: typeof reason,
-        socketId: socket.id || "none",
-        wasConnected: socket.connected,
-        orderId: orderIdRef.current,
-        paymentCompleted: isPaymentCompletedRef.current,
-      });
-
-      if (!isPaymentCompletedRef.current) {
-        // Check if it's a transport error (common with UPI URL interception)
-        const isTransportError = reason === "transport error" || reason === "transport close";
-
-        logger.log("🔌 [Socket] Disconnect details", {
-          isTransportError,
-          reason,
-          willReload: isTransportError,
-        });
-
-        onPaymentErrorRef.current?.({
+    socketInstance.on("disconnect", (reason) => {
+      console.log("=== SOCKET DISCONNECT ===");
+      console.log("Socket disconnected. Reason:", reason);
+      console.log("isPaymentCompleted:", isPaymentCompleted.current);
+      if (!isPaymentCompleted.current) {
+        console.log("⚠️ Payment not completed, showing error");
+        onPaymentError?.({
           error: "Disconnected",
-          message: isTransportError
-            ? "Connection lost during payment process - webview will reload automatically"
-            : "Lost connection to payment server",
-          reason,
-          isTransportError,
+          message: "Lost connection to payment server",
         });
       } else {
-        logger.log("🔌 [Socket] Disconnect ignored - payment already completed");
+        console.log("✅ Payment completed, disconnect is expected");
       }
-    };
+    });
 
-    const onPaymentStatus = (data: any) => {
-      // Safety check - ensure socket still exists and component is mounted
-      if (!socket || !socketRef.current || !mountedRef.current) {
-        logger.warn("🔌 [Socket] Ignoring payment_status_update - socket null or component unmounted", {
-          hasSocket: !!socket,
-          hasSocketRef: !!socketRef.current,
-          isMounted: mountedRef.current,
+    // Listen for payment status updates
+    socketInstance.on("payment_status_update", async (data: any) => {
+      console.log("Payment status update received:---------------->> ", data);
+
+      // Check both the top-level status and the payment response status
+      const isSuccess = data?.status === "success" ||
+        data?.paymentResponse?.status === "CHARGED" ||
+        data?.paymentResponse?.txn_detail?.status === "CHARGED";
+
+      try {
+        if (isSuccess) {
+          console.log('Payment charged successfully');
+          isPaymentCompleted.current = true;
+
+          if (parsedUserDetails && router) {
+            try {
+              // await handlePaymentSuccess(data);
+              // onPaymentSuccess?.(data);
+
+              // Navigate to success page
+              router.replace({
+                pathname: '/(tabs)/home/payment-success',
+                params: {
+                  amount: data?.paymentResponse?.amount,
+                  txnId: data?.paymentResponse?.txn_id,
+                  orderId: data?.paymentResponse?.order_id,
+                  message: data?.paymentResponse?.payment_gateway_response?.resp_message || 'Payment Successful'
+                }
+              });
+            } catch (error) {
+              console.error("Error processing successful payment:", error);
+              onPaymentError?.({
+                error: "Payment Processing Error",
+                message: "Failed to process successful payment",
+              });
+            }
+          }
+
+          if (socketInstance && socketInstance.connected) {
+            socketInstance.disconnect();
+          }
+        } else {
+          console.log('Payment not charged');
+          isPaymentCompleted.current = true;
+
+          if (parsedUserDetails && router) {
+            // const transactionPayload = {
+            //   userId: parsedUserDetails.data?.data?.userId || parsedUserDetails.userId || '',
+            //   investmentId: parsedUserDetails.data?.data?.id || parsedUserDetails.id || parsedUserDetails.investmentId ||'',
+            //   schemeId: parsedUserDetails.data?.data?.schemeId || parsedUserDetails.schemeId || '',
+            //   chitId: parsedUserDetails.data?.data?.chitId || parsedUserDetails.chitId || '',
+            //   accountNumber: parsedUserDetails.data?.data?.accountNo || parsedUserDetails.accountNo || parsedUserDetails.accNo ||'',
+            //   paymentId: 0,
+            //   orderId: data?.paymentResponse?.order_id || '',
+            //   amount: data?.paymentResponse?.amount || '',
+            //   currency: data?.paymentResponse?.currency || 'INR',
+            //   paymentMethod: data?.paymentResponse?.payment_method || '',
+            //   signature: '000',
+            //   paymentStatus: data?.paymentResponse?.payment_gateway_response?.resp_message || 'Failed',
+            //   paymentDate: data?.paymentResponse?.date_created || '',
+            //   status: data?.paymentResponse?.status || 'FAILED',
+            //   gatewayTransactionId: data?.paymentResponse?.txn_id || '',
+            //   "gatewayresponse": JSON.stringify(data?.paymentResponse),
+            //   "isManual":"no",
+            //   "utr_reference_number":""
+            // };
+
+            // try {
+            //   await paymentService.createTransaction(transactionPayload);
+            // } catch (error) {
+            //   console.error("Error posting failed transaction:", error);
+            // }
+
+            router.replace({
+              pathname: '/(tabs)/home/payment-failure',
+              params: {
+                message: data?.paymentResponse?.payment_gateway_response?.resp_message ||
+                  data?.paymentResponse?.txn_detail?.error_message ||
+                  'Payment Failed',
+                orderId: data?.paymentResponse?.order_id,
+                txnId: data?.paymentResponse?.txn_id,
+                amount: data?.paymentResponse?.amount,
+                status: data?.paymentResponse?.status
+              }
+            });
+          }
+
+          onPaymentFailure?.(data);
+          if (socketInstance && socketInstance.connected) {
+            socketInstance.disconnect();
+          }
+        }
+      } catch (error) {
+        console.error('Error in payment status update API sequence:', error);
+        onPaymentError?.({
+          error: "API Error",
+          message: "Failed to process payment status",
         });
-        return;
       }
-
-      logger.log("📨 [Socket] payment_status_update received", {
-        timestamp: new Date().toISOString(),
-        hasData: !!data,
-        status: data?.status || data?.payment_status,
-        orderId: data?.paymentResponse?.order_id,
-        trackingId: data?.paymentResponse?.tracking_id,
-        amount: data?.paymentResponse?.amount,
-      });
-      try {
-        handlePaymentStatusPayload(data);
-      } catch (error) {
-        logger.error("🔌 [Socket] Error handling payment status:", {
-          error: error,
-          errorMessage: (error as Error)?.message,
-          stack: (error as Error)?.stack,
-        });
-      }
-    };
-
-    const onPaymentErrorEvent = (err: any) => {
-      logger.error("❌ [Socket] Server emitted payment_error", {
-        timestamp: new Date().toISOString(),
-        error: err,
-        errorType: err?.type || typeof err,
-        errorMessage: err?.message || String(err),
-        orderId: orderIdRef.current,
-        fullError: JSON.stringify(err, null, 2),
-      });
-      onPaymentErrorRef.current?.(err);
-    };
-
-    const onPaymentExpired = (data?: any) => {
-      logger.log("⏰ [Socket] payment_expired event received", {
-        timestamp: new Date().toISOString(),
-        data: data,
-        orderId: orderIdRef.current,
-      });
-      isPaymentCompletedRef.current = true;
-      onPaymentExpiredRef.current?.();
-    };
-
-    // Add reconnection event handlers
-    const onReconnect = (attemptNumber: number) => {
-      logger.log("🔄 [Socket] RECONNECTING", {
-        timestamp: new Date().toISOString(),
-        attemptNumber: attemptNumber,
-        socketId: socket.id || "none",
-        orderId: orderIdRef.current,
-      });
-    };
-
-    const onReconnectAttempt = (attemptNumber: number) => {
-      logger.log("🔄 [Socket] Reconnection attempt", {
-        timestamp: new Date().toISOString(),
-        attemptNumber: attemptNumber,
-        maxAttempts: 5,
-        orderId: orderIdRef.current,
-      });
-    };
-
-    const onReconnectError = (error: any) => {
-      logger.error("❌ [Socket] RECONNECTION ERROR", {
-        timestamp: new Date().toISOString(),
-        error: error,
-        errorMessage: error?.message || String(error),
-        orderId: orderIdRef.current,
-      });
-    };
-
-    const onReconnectFailed = () => {
-      logger.error("❌ [Socket] RECONNECTION FAILED - Max attempts reached", {
-        timestamp: new Date().toISOString(),
-        maxAttempts: 5,
-        orderId: orderIdRef.current,
-      });
-      onPaymentErrorRef.current?.({
-        error: "Reconnection Failed",
-        message: "Failed to reconnect to payment server after multiple attempts",
-      });
-    };
-
-    // attach event listeners with logging
-    logger.log("🔌 [Socket] Attaching event listeners...");
-
-    socket.on("connect", onConnect);
-    socket.on("connect_error", onConnectError);
-    socket.on("disconnect", onDisconnect);
-    socket.on("payment_status_update", onPaymentStatus);
-    socket.on("payment_error", onPaymentErrorEvent);
-    socket.on("payment_expired", onPaymentExpired);
-    socket.on("reconnect", onReconnect);
-    socket.on("reconnect_attempt", onReconnectAttempt);
-    socket.on("reconnect_error", onReconnectError);
-    socket.on("reconnect_failed", onReconnectFailed);
-
-    logger.log("🔌 [Socket] Event listeners attached", {
-      listenersCount: 9,
-      socketId: socket.id || "pending",
     });
 
-    // Log initial connection state
-    logger.log("🔌 [Socket] Initial connection state", {
-      connected: socket.connected,
-      disconnected: socket.disconnected,
-      socketId: socket.id || "none",
-    });
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === "active") {
+        // App has come to the foreground
+        const socketInstance = socketRef.current;
+        const currentOrderId = orderId || parsedUserDetails?.orderId;
+        console.log("[AppState] App is active. Socket connected:", socketInstance?.connected, "OrderId:", currentOrderId);
+        if (socketInstance && !socketInstance.connected) {
+          console.log("[AppState] Socket not connected. Attempting to reconnect...");
+          socketInstance.connect();
+        }
+        if (socketInstance && socketInstance.connected && currentOrderId) {
+          console.log("[AppState] Emitting joinOrderRoom after reconnect for orderId:", currentOrderId);
+          socketInstance.emit("joinOrderRoom", currentOrderId);
 
-    return socket;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // uses refs for dynamic values, so no deps needed
+          // Also emit store_payment_metadata when app becomes active
+          const paymentMetadata = {
+            orderId: currentOrderId,
+            investmentId: parsedUserDetails?.data?.data?.id || parsedUserDetails?.id || parsedUserDetails?.investmentId || 0,
+            userId: parsedUserDetails?.data?.data?.userId || parsedUserDetails?.userId || 0,
+            schemeId: parsedUserDetails?.data?.data?.schemeId || parsedUserDetails?.schemeId || 0,
+            chitId: parsedUserDetails?.data?.data?.chitId || parsedUserDetails?.chitId || 0,
+            amount: parsedUserDetails?.data?.data?.amount || parsedUserDetails?.amount || 0,
+            isManual: "no",
+            utr_reference_number: "",
+            accountNumber: parsedUserDetails?.data?.data?.accountNo || parsedUserDetails?.accountNo || parsedUserDetails?.accNo || "",
+            accountName: parsedUserDetails?.data?.data?.accountName || parsedUserDetails?.accountName || parsedUserDetails?.accountname || ""
+          };
 
-  // AppState handling (use current refs inside)
-  const handleAppStateChange = useCallback((nextAppState: AppStateStatus) => {
-    logger.log("📱 [Socket] AppState changed", {
-      timestamp: new Date().toISOString(),
-      nextAppState: nextAppState,
-      isActive: nextAppState === "active",
-    });
-
-    if (nextAppState !== "active") {
-      logger.log("📱 [Socket] AppState not active, skipping socket check");
-      return;
-    }
-
-    const s = socketRef.current;
-    const currentOrderId = orderIdRef.current || parsedUserDetailsRef.current?.orderId;
-
-    logger.log("📱 [Socket] AppState active - Checking socket...", {
-      hasSocket: !!s,
-      socketConnected: s?.connected,
-      socketId: s?.id || "none",
-      orderId: currentOrderId,
-    });
-
-    if (!s) {
-      logger.log("📱 [Socket] No socket found - initializing new connection");
-      try {
-        initSocketConnection();
-      } catch (error) {
-        logger.error("📱 [Socket] Error initializing socket from AppState:", error);
+          console.log("[AppState] Emitting store_payment_metadata after reconnect:", paymentMetadata);
+          socketInstance.emit("store_payment_metadata", paymentMetadata);
+        } else if (socketInstance && !socketInstance.connected) {
+          console.warn("[AppState] Socket still not connected after reconnect attempt.");
+        }
       }
-      return;
-    }
+    };
 
-    if (!s.connected) {
-      logger.log("📱 [Socket] Socket not connected - attempting to connect...", {
-        socketId: s.id || "none",
-        disconnected: s.disconnected,
-      });
-      try {
-        s.connect();
-        logger.log("📱 [Socket] Socket.connect() called");
-      } catch (error) {
-        logger.error("📱 [Socket] Error calling socket.connect():", error);
-      }
-      return;
-    }
+    const appStateSubscription = AppState.addEventListener("change", handleAppStateChange);
 
-    // socket is connected; re-join room and resend metadata (ensures server has latest context)
-    if (s.connected && currentOrderId) {
-      logger.log("📱 [Socket] Socket connected - rejoining room and resending metadata");
-      try {
-        joinRoomAndStoreMetadata(s);
-      } catch (error) {
-        logger.error("📱 [Socket] Error in joinRoomAndStoreMetadata from AppState:", error);
-      }
-    } else {
-      logger.warn("📱 [Socket] Socket connected but missing orderId", {
-        connected: s.connected,
-        hasOrderId: !!currentOrderId,
-      });
-    }
-  }, [initSocketConnection]);
-
-  // Start connection + subscribe AppState once
-  useEffect(() => {
-    logger.log("🔌 [Socket] useEffect - Initializing socket connection", {
-      timestamp: new Date().toISOString(),
-      orderId: orderIdRef.current,
-    });
-
-    mountedRef.current = true;
-
-    let socket: Socket | null = null;
-    try {
-      socket = initSocketConnection();
-      if (!socket) {
-        logger.error("🔌 [Socket] CRITICAL: initSocketConnection returned null");
-      }
-    } catch (error) {
-      logger.error("🔌 [Socket] CRITICAL ERROR in initSocketConnection:", {
-        error: error,
-        errorMessage: (error as Error)?.message,
-        stack: (error as Error)?.stack,
-      });
-    }
-
-    // AppState subscription
-    try {
-      logger.log("📱 [Socket] Subscribing to AppState changes...");
-      const subscription = AppState.addEventListener("change", handleAppStateChange);
-      appStateSubscriptionRef.current = subscription;
-      logger.log("📱 [Socket] AppState subscription created successfully");
-    } catch (e) {
-      logger.error("📱 [Socket] Error creating AppState subscription:", e);
-      // older RN fallback
-      try {
-        // @ts-ignore legacy
-        AppState.removeEventListener && AppState.removeEventListener; // noop to satisfy lint
-      } catch { /* ignore */ }
-    }
-
+    // Cleanup on unmount
     return () => {
-      logger.log("🔌 [Socket] Cleanup - Component unmounting", {
-        timestamp: new Date().toISOString(),
-        hasSocket: !!socketRef.current,
-        socketConnected: socketRef.current?.connected,
-      });
-
-      mountedRef.current = false;
-
-      // cleanup socket
-      if (socketRef.current) {
-        try {
-          logger.log("🔌 [Socket] Cleaning up socket...", {
-            socketId: socketRef.current.id || "none",
-            connected: socketRef.current.connected,
-          });
-          socketRef.current.removeAllListeners();
-          socketRef.current.disconnect();
-          logger.log("🔌 [Socket] Socket cleaned up successfully");
-        } catch (err) {
-          logger.error("🔌 [Socket] Error during socket cleanup:", err);
-        }
-        socketRef.current = null;
+      if (socketInstance && socketInstance.connected) {
+        socketInstance.disconnect();
       }
-
-      // cleanup AppState listener
-      if (appStateSubscriptionRef.current && typeof appStateSubscriptionRef.current.remove === "function") {
-        try {
-          appStateSubscriptionRef.current.remove();
-          logger.log("📱 [Socket] AppState subscription removed");
-        } catch (e) {
-          logger.error("📱 [Socket] Error removing AppState subscription:", e);
-        }
-      }
+      appStateSubscription.remove();
     };
-    // initSocketConnection and handleAppStateChange are stable (init uses refs)
-  }, [initSocketConnection, handleAppStateChange]);
+  }, [parsedUserDetails, router, onPaymentSuccess, onPaymentFailure, onPaymentError, onPaymentExpired, orderId]);
 
-  // Manual reconnect helper
-  const reconnectSocket = useCallback(() => {
-    logger.log("🔄 [Socket] Manual reconnect requested", {
-      timestamp: new Date().toISOString(),
-      hasExistingSocket: !!socketRef.current,
-      orderId: orderIdRef.current,
-    });
-
-    try {
-      if (socketRef.current) {
-        logger.log("🔄 [Socket] Cleaning up existing socket for reconnect...", {
-          socketId: socketRef.current.id || "none",
-          connected: socketRef.current.connected,
-        });
-        socketRef.current.removeAllListeners();
-        socketRef.current.disconnect();
-        socketRef.current = null;
-        logger.log("🔄 [Socket] Existing socket cleaned up");
-      }
-    } catch (e) {
-      logger.error("🔄 [Socket] Error during reconnect cleanup:", e);
+  const handleCancel = () => {
+    if (socketRef.current && socketRef.current.connected) {
+      socketRef.current.disconnect();
     }
+    router.replace({ pathname: '/(tabs)/home/payment-failure', params: {} });
+  };
 
-    logger.log("🔄 [Socket] Initiating new socket connection...");
-    try {
-      // create new socket immediately
-      const newSocket = initSocketConnection();
-      if (!newSocket) {
-        logger.error("🔄 [Socket] CRITICAL: reconnectSocket - initSocketConnection returned null");
-      } else {
-        logger.log("🔄 [Socket] New socket connection initiated", {
-          socketId: newSocket.id || "pending",
-        });
-      }
-    } catch (error) {
-      logger.error("🔄 [Socket] CRITICAL ERROR in reconnectSocket:", {
-        error: error,
-        errorMessage: (error as Error)?.message,
-        stack: (error as Error)?.stack,
-      });
-    }
-  }, [initSocketConnection]);
-
-  // Cancel handler (disconnect + navigate to failure page)
-  const handleCancel = useCallback(() => {
-    logger.log("🚫 [Socket] handleCancel called", {
-      timestamp: new Date().toISOString(),
-      hasSocket: !!socketRef.current,
-      socketConnected: socketRef.current?.connected,
-      orderId: orderIdRef.current,
-    });
-
-    try {
-      if (socketRef.current && socketRef.current.connected) {
-        logger.log("🚫 [Socket] Disconnecting socket for cancel...", {
-          socketId: socketRef.current.id || "none",
-        });
-        socketRef.current.removeAllListeners();
-        socketRef.current.disconnect();
-        logger.log("🚫 [Socket] Socket disconnected for cancel");
-      } else {
-        logger.log("🚫 [Socket] No socket or socket not connected, skipping disconnect");
-      }
-    } catch (e) {
-      logger.error("🚫 [Socket] Error during cancel disconnect:", e);
-    }
-
-    // navigate to failure page (keep simple replace)
-    try {
-      logger.log("🚫 [Socket] Navigating to payment-failure page...");
-      router.replace("/(tabs)/home/payment-failure");
-      logger.log("🚫 [Socket] Navigation to payment-failure initiated");
-    } catch (e) {
-      logger.error("🚫 [Socket] Error navigating to payment-failure:", e);
-    }
-  }, [router]);
-
-  // Expose both the ref and the current socket (for compatibility)
   return {
-    socketRef, // preferred: use socketRef.current to access live socket
     socket: socketRef.current,
     handleCancel,
-    reconnectSocket,
   };
-};
+}; 

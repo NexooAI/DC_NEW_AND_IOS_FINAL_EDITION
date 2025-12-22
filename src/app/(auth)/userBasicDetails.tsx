@@ -728,12 +728,22 @@ export default function BasicDetailsForm() {
   };
 
   return (
-    <ImageBackground
-      source={require("../../../assets/images/bg_new.jpg")}
-      style={styles.backgroundImage}
-    >
+   <View
+           style={[
+             styles.backgroundImage,
+             {
+               // Ensure background doesn't move with keyboard
+               position: "absolute",
+               top: 0,
+               left: 0,
+               right: 0,
+               bottom: 0,
+               backgroundColor: theme.colors.primary,
+             },
+           ]}
+         >
       <LinearGradient
-        colors={["#1a2a39", "#1a2a39", "#1a2a39"]}
+       colors={[theme.colors.primary, theme.colors.primary, theme.colors.primary]}
         style={styles.gradient}
       >
         {showError && (
@@ -1803,7 +1813,7 @@ export default function BasicDetailsForm() {
           </View>
         </View>
       </Modal>
-    </ImageBackground>
+    </View>
   );
 }
 
@@ -1925,7 +1935,7 @@ const styles = StyleSheet.create({
     width: getResponsiveSize(40, 45),
     height: getResponsiveSize(40, 45),
     borderRadius: getResponsiveSize(20, 22),
-    backgroundColor: "rgba(208, 38, 38, 0.9)",
+    backgroundColor: theme.colors.primary,
     justifyContent: "center",
     alignItems: "center",
     marginRight: getResponsiveSize(12, 15),

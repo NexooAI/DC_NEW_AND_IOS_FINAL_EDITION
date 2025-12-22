@@ -41,14 +41,14 @@ interface RatingModalProps {
 }
 
 const RATING_STORAGE_KEY = 'app_rating_data';
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.nexooai.akilajewellers';
-const APP_STORE_URL = 'https://apps.apple.com/app/id123456789'; // Replace with your App Store ID
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.nexooai.dcjewellery&hl=en_IN';
+const APP_STORE_URL = 'https://apps.apple.com/us/app/dc-jewellers-gold-diamonds/id6755081937'; // Replace with your App Store ID
 
 export default function RatingModal({
     visible,
     onClose,
     onSubmitFeedback,
-    appName = 'Akila Jewellers',
+    appName = 'DC Jewellers',
 }: RatingModalProps) {
     const [rating, setRating] = useState(0);
     const [feedback, setFeedback] = useState('');

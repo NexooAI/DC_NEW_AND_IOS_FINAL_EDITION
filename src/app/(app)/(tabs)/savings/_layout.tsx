@@ -6,16 +6,7 @@ export default function SavingsLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: false, // Hide Stack header - Tabs layout already provides header
-        headerStyle: {
-          backgroundColor: theme.colors.primary,
-          height: 100, // Explicitly set header height
-        },
-        headerTintColor: COLORS.white,
-        headerTitleStyle: {
-          fontWeight: 'bold',
-          fontSize: 18,
-        },
+        headerShown: false,
       }}
     >
       <Stack.Screen

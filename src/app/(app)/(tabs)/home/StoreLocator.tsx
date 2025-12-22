@@ -67,14 +67,6 @@ const stores = [
     address:
       "205/64A, Main Bazar, Udangudi, Thoothukudi(D), Tamil Nadu - 628203",
   },
-  //   {
-  //     id: 2,
-  //     name: "Akila Theni Branch",
-  //     latitude: 10.063998494766125,
-  //     longitude: 77.51565016360244,
-  //     address: "Madurai Main Rd, Suppan Ragavan Colony, NRT Nagar, Theni, 625531",
-  //   },
-  // Add more stores as needed
 ];
 
 const StoreLocator = () => {

@@ -527,6 +527,10 @@ export const userAPI = {
     return apiClient.put('/user/profile', userData);
   },
 
+  deactivateUser: async (userId: number | string) => {
+    return apiClient.post(`/deactivateUser/${userId}`);
+  },
+
   uploadProfileImage: async (userId: number | string, fileUri: string) => {
     try {
       // Extract file extension from URI

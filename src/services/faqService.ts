@@ -106,7 +106,7 @@ class FAQService {
             {
                 id: "5",
                 question: "How to contact customer support?",
-                answer: "You can contact our customer support by calling +91-1234567890 or emailing support@akila.com. Our support team is available 24/7 to help you.",
+                answer: "You can contact our customer support by calling +91-1234567890 or emailing dcjewellerstcr@gmail.com. Our support team is available 24/7 to help you.",
                 category: "Support",
                 priority: 1,
                 isActive: true,

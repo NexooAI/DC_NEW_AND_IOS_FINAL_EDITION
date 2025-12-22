@@ -45,7 +45,7 @@ export default function ReferCodeScreen() {
         title: t("refer_earn_title"),
         message: (
           t("refer_earn_share_message") ||
-          "Use my referral code {code} to sign up and earn rewards! Download the app here: https://play.google.com/store/apps/details?id=com.nexooai.akilajewellers&hl=en"
+          "Use my referral code {code} to sign up and earn rewards! Download the app here: https://play.google.com/store/apps/details?id=com.nexooai.dcjewellery&hl=en_IN"
         ).replace("{code}", code),
       });
       if (result.action === Share.sharedAction) {

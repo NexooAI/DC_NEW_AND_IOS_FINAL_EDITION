@@ -649,17 +649,18 @@ export default function PaymentNewOverView() {
       const payload: PaymentInitPayload | any = {
         userId: userDetails.userId || user?.id,
         amount: currentAmount,
-        accountNo: accountNo,
+        // amount:1,
+        accountNo: userDetails.accountNo,
         investmentId: userDetails.investmentId,
-        schemeId: params?.schemeId ? String(params.schemeId) : undefined,
-        userEmail: userDetails?.email || user?.email || "",
-        userMobile: userDetails?.mobile || user?.mobile || "",
-        userName: userDetails?.accountname || userDetails?.name || "",
+        schemeId: params?.schemeId,
+        userEmail: userDetails?.email || user?.email,
+        userMobile: userDetails?.mobile || user?.mobile,
+        userName: userDetails?.accountname,
+        // Ensure backend-required identifiers are present
         chitId:
           userDetails?.chitId ||
-          (Array.isArray(params.chitId) ? params.chitId[0] : params.chitId) ||
-          undefined,
-        paymentFrequency: params.paymentFrequency || "",
+          (Array.isArray(params.chitId) ? params.chitId[0] : params.chitId),
+        paymentFrequency: params.paymentFrequency,
       };
 
       logger.log("initialpayment ======>", payload);
@@ -667,163 +668,65 @@ export default function PaymentNewOverView() {
       const response: any = await paymentService.initiatePayment(payload);
       logger.log("response ======>", response);
 
-      if (response?.success && response?.data) {
+       if (response?.success && response?.session?.payment_links?.web) {
         // Extract order ID from the payment response
-        const orderId = response?.order_id || response?.data?.order_id || null;
+        const orderId = response?.session?.order_id;
+        const paymentUrl = response?.session?.payment_links?.web;
 
-        if (!orderId) {
-          logger.crash(new Error("Missing orderId in payment response"), {
-            context: "handlePayment - payment response",
-            response,
-          });
-          // Don't crash - continue with null orderId, but log the issue
-        }
+        console.log("Payment URL:", paymentUrl);
+        console.log("Order ID:", orderId);
 
-        // Validate response.data is a valid URL string
-        const paymentUrl = response.data;
-        if (!paymentUrl || typeof paymentUrl !== 'string' || paymentUrl.trim() === '') {
-          logger.crash(new Error("Invalid payment URL in response"), {
-            context: "handlePayment - invalid URL",
-            response,
-          });
-          if (isMountedRef.current) {
-            Alert.alert("Error", "Invalid payment URL received. Please try again.");
-            setIsProcessing(false);
-          }
-          return;
-        }
-
-        // Validate URL format to prevent navigation crashes
-        try {
-          new URL(paymentUrl);
-        } catch (urlError) {
-          logger.crash(new Error("Invalid URL format"), {
-            context: "handlePayment - URL validation",
-            url: paymentUrl,
-            error: urlError,
-          });
-          if (isMountedRef.current) {
-            Alert.alert("Error", "Invalid payment URL format. Please try again.");
-            setIsProcessing(false);
-          }
-          return;
-        }
-
-        // Prepare userDetails for navigation
-        const navigationUserDetails = {
-          ...userDetails,
-          amount: currentAmount,
-          orderId: orderId,
-          userId: userDetails.userId || user?.id || "",
-          paymentFrequency: params.paymentFrequency || "",
-        };
-
-        let userDetailsString: string;
-        try {
-          userDetailsString = JSON.stringify(navigationUserDetails);
-        } catch (stringifyError) {
-          logger.error("Error stringifying userDetails:", stringifyError);
-          if (isMountedRef.current) {
-            Alert.alert("Error", "Failed to prepare payment data. Please try again.");
-            setIsProcessing(false);
-          }
-          return;
-        }
-
-        // Store payment session in global store for retry functionality
-        const paymentSessionData = {
-          amount: currentAmount,
-          userDetails: {
-            ...userDetails,
-            amount: currentAmount,
-            orderId: orderId,
-            userId: userDetails.userId || user?.id || "",
-            paymentFrequency: params.paymentFrequency || "",
-            schemeType: params.schemeType || "",
-            source: params.source || "paymentNewOverView",
-          },
-          timestamp: new Date().toISOString(),
-        };
-        useGlobalStore.getState().storePaymentSession(paymentSessionData);
-        logger.log("Payment session stored in global store before navigating to PaymentWebView");
-
-        const navigationParams = {
+        router.push({
           pathname: "/(tabs)/home/PaymentWebView",
           params: {
             url: paymentUrl,
-            orderId: orderId ? String(orderId) : "",
-            userDetails: userDetailsString,
+            orderId: orderId, // Add orderId to params
+            userDetails: JSON.stringify({
+              ...userDetails,
+              amount: currentAmount,
+              orderId: orderId, // Include orderId in userDetails
+              // investmentId: params.investmentId,
+              // schemeId: params.schemeId,
+              // chitId:  params.chitId,
+              userId: userDetails.userId || user?.id,
+              paymentFrequency: params.paymentFrequency,
+            }),
           },
-        };
-
-        try {
-          // Prevent multiple simultaneous navigations
-          if (isNavigatingRef.current) {
-            logger.warn("Navigation already in progress, skipping duplicate navigation");
-            setIsProcessing(false);
-            return;
-          }
-          isNavigatingRef.current = true;
-
-          // Use InteractionManager to ensure UI is ready before navigation
-          InteractionManager.runAfterInteractions(() => {
-            // Check if component is still mounted before navigation (use ref for reliability)
-            if (!isMountedRef.current || !isMounted) {
-              logger.log("Component unmounted, skipping navigation");
-              isNavigatingRef.current = false;
-              if (isMountedRef.current) {
-                setIsProcessing(false);
-              }
-              return;
-            }
-
-            try {
-              // Validate router is still available
-              if (!router || typeof router.replace !== 'function') {
-                logger.error("Router not available for navigation");
-                isNavigatingRef.current = false;
-                if (isMountedRef.current) {
-                  setIsProcessing(false);
-                }
-                return;
-              }
-
-              // Use replace instead of push to prevent stack buildup and crashes
-              router.replace(navigationParams);
-            } catch (navError) {
-              isNavigatingRef.current = false;
-              if (isMountedRef.current) {
-                setIsProcessing(false);
-              }
-              logger.error("Error in router.replace:", navError);
-              // Don't throw - gracefully handle the error
-              if (isMountedRef.current) {
-                Alert.alert("Navigation Error", "Failed to open payment gateway. Please try again.");
-              }
-            }
-          });
-        } catch (navError) {
-          isNavigatingRef.current = false;
-          logger.crash(navError as Error, {
-            context: "Navigation to PaymentWebView",
-            navigationParams,
-            response,
-          });
-          if (isMountedRef.current) {
-            Alert.alert("Navigation Error", "Failed to open payment gateway. Please try again.");
-            setIsProcessing(false);
-          }
-        }
-      } else {
-        logger.crash(new Error("Invalid payment response"), {
-          context: "handlePayment - invalid response",
-          response,
-          payload,
         });
-        if (isMountedRef.current) {
-          Alert.alert("Error", response?.message || "No payment URL received. Please try again.");
-          setIsProcessing(false);
-        }
+      }
+      // Fallback for old response structure
+      else if (response?.success && response?.data) {
+        console.log("Using fallback response structure");
+        const orderId = response?.order_id || response?.session?.order_id;
+        const paymentUrl = response?.data;
+
+        console.log("Fallback Payment URL:", paymentUrl);
+        console.log("Fallback Order ID:", orderId);
+
+        router.push({
+          pathname: "/(tabs)/home/PaymentWebView",
+          params: {
+            url: paymentUrl,
+            orderId: orderId,
+            userDetails: JSON.stringify({
+              ...userDetails,
+              amount: currentAmount,
+              orderId: orderId,
+              userId: userDetails.userId || user?.id,
+              paymentFrequency: params.paymentFrequency,
+            }),
+          },
+        });
+      } else {
+        console.log("Payment initiation failed:", {
+          success: response?.success,
+          hasSession: !!response?.session,
+          hasPaymentLinks: !!response?.session?.payment_links,
+          hasWebUrl: !!response?.session?.payment_links?.web,
+          hasData: !!response?.data,
+          response: response
+        });
+        Alert.alert("Error", "No payment URL received. Please try again.");
       }
     } catch (error) {
       logger.crash(error as Error, {

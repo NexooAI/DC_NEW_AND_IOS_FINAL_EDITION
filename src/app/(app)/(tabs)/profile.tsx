@@ -37,6 +37,8 @@ import { getFullImageUrl } from "@/utils/imageUtils";
 import { logger } from "@/utils/logger";
 // Removed RatingModal import
 import { Ionicons } from "@expo/vector-icons";
+import LanguageSelector from "@/components/LanguageSelector";
+import { getLanguageName } from "@/utils/languageUtils";
 
 const ProfileScreen = () => {
   const { t } = useTranslation();
@@ -45,6 +47,9 @@ const ProfileScreen = () => {
   const [editing, setEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [languageSelectorVisible, setLanguageSelectorVisible] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [showCustomerSupportModal, setShowCustomerSupportModal] = useState(false);
 
   // Removed Rating Modal Hook
 
@@ -65,10 +70,10 @@ const ProfileScreen = () => {
 
   // Function to open Rate Us URL directly
   const openRateUs = () => {
-    const packageName = "com.nexooai.akilajewellers"; // Correct Application ID
+    const packageName = "com.nexooai.dcjewellery"; // Correct Application ID
     const url = Platform.OS === 'android' 
       ? `market://details?id=${packageName}` 
-      : `https://apps.apple.com/app/idYOUR_APP_ID`; // Replace with actual iOS ID if available
+      : `https://apps.apple.com/us/app/dc-jewellers-gold-diamonds/id6755081937`; // Replace with actual iOS ID if available
       
     Linking.canOpenURL(url).then(supported => {
       if (supported) {
@@ -352,9 +357,8 @@ const ProfileScreen = () => {
     setEditData({ ...editData, [field]: value });
   };
 
-  const toggleLanguage = async () => {
-    const newLang = language === "en" ? "ta" : "en";
-    await setLanguage(newLang);
+  const toggleLanguage = () => {
+    setLanguageSelectorVisible(true);
   };
 
   const handleCopyReferralCode = () => {
@@ -365,13 +369,13 @@ const ProfileScreen = () => {
   const handleShareApp = async () => {
     try {
       const playStoreLink =
-        "https://play.google.com/store/apps/details?id=com.nexooai.akilajewellers&hl=en_IN";
-      const message = `Join me on Akila Jewellers Gold and Diamonds! Download the app from: ${playStoreLink}`;
+        "https://play.google.com/store/apps/details?id=com.nexooai.dcjewellery&hl=en_IN";
+      const message = `Join me on DC Jewellers Gold and Diamonds! Download the app from: ${playStoreLink}`;
 
       const result = await Share.share({
         message: message,
         url: playStoreLink,
-        title: "Akila Jewellers",
+        title: "DC Jewellers",
       });
     } catch (error) {
       logger.error("Error sharing:", error);
@@ -389,6 +393,102 @@ const ProfileScreen = () => {
       params: { mode: "reset", from: "profile" },
     });
   };
+
+  // Handler to show delete account modal
+  const handleDeleteAccount = () => {
+    setShowDeleteAccountModal(true);
+  };
+
+  // Confirm delete account - calls API and handles response
+  const confirmDeleteAccount = async () => {
+    try {
+      if (!user?.id) {
+        Alert.alert(
+          t("errorTitle") || "Error",
+          t("userIDNotFoundPleaseLoginAgain") ||
+          "User ID not found. Please login again."
+        );
+        return;
+      }
+
+      // Show loading indicator if needed, or rely on API loader
+      
+      const response = await userAPI.deactivateUser(user.id);
+      console.log("Delete account response", response);
+      
+      // Check for success in the response data
+      if (response.data && response.data.success) {
+        Alert.alert(
+          t("success") || "Success",
+          t("deleteAccountSuccess") || "Account deleted successfully",
+          [
+            {
+              text: t("ok") || "OK",
+              onPress: async () => {
+                // Clear user data and redirect to login
+                await handleLogout(); // Reuse existing logout logic if possible, or manual clear
+                // If handleLogout is not available in scope or suitable:
+                /*
+                logout();
+                router.replace("/(auth)/login");
+                */
+               setShowDeleteAccountModal(false);
+              },
+            },
+          ]
+        );
+      } else {
+        // Check if it's the specific investment active error
+        // Adjust condition based on actual API error structure
+        if (
+          response.data?.message ===
+          "Investment is active so user acccount cannot be deactivated"
+        ) {
+          setShowDeleteAccountModal(false);
+          setShowCustomerSupportModal(true);
+        } else {
+          Alert.alert(
+            t("errorTitle") || "Error",
+            t("deleteAccountError") ||
+            response.data?.message || 
+            "Failed to delete account. Please try again."
+          );
+        }
+      }
+    } catch (error: any) {
+      console.error("Delete account error:", error);
+      setShowDeleteAccountModal(false);
+
+      // Check for specific error status codes
+      if (error.response?.status === 404) {
+         // Handle 404 if needed
+      }
+
+      // Check error message in response if available
+      const errorMessage = error.response?.data?.message || error.message;
+      
+      if (
+        errorMessage ===
+        "Investment is active so user acccount cannot be deactivated"
+      ) {
+        setShowCustomerSupportModal(true);
+      } else {
+        Alert.alert(
+          t("errorTitle") || "Error",
+          t("deleteAccountError") ||
+          errorMessage ||
+          "Failed to delete account. Please try again."
+        );
+      }
+    }
+  };
+
+  // Cancel delete account modal
+  const cancelDeleteAccount = () => {
+    setShowDeleteAccountModal(false);
+  };
+
+  // Animation transform
 
   // Animation transform
   const slideTransform = {
@@ -639,11 +739,11 @@ const ProfileScreen = () => {
                   <View style={styles.settingContent}>
                     <Text style={styles.settingText}>{t("language")}</Text>
                     <Text style={styles.settingDesc}>
-                      {language === "en" ? "English" : "தமிழ்"}
+                      {getLanguageName(language as any) || "English"}
                     </Text>
                   </View>
                   <Text style={styles.languageBadge}>
-                    {language === "en" ? "EN" : "TA"}
+                    {language ? language.toUpperCase() : "EN"}
                   </Text>
                   <Icon name="chevron-right" size={24} color="#9E9E9E" />
                 </TouchableOpacity>
@@ -663,16 +763,22 @@ const ProfileScreen = () => {
 
                 <View style={styles.divider} />
 
-                {/* Rate Us Button */}
-                <TouchableOpacity style={styles.settingItem} onPress={openRateUs}>
-                  <View style={[styles.settingIcon, { backgroundColor: '#FFF8E1' }]}>
-                    <Ionicons name="star" size={24} color="#FFD700" />
+                 {/* Delete Account Button */}
+                <TouchableOpacity
+                  style={styles.settingItem}
+                  onPress={handleDeleteAccount}
+                >
+                  <View
+                    style={[styles.settingIcon, { backgroundColor: "#FFEBEE" }]}
+                  >
+                    <Icon name="delete-forever" size={24} color="#D32F2F" />
                   </View>
                   <View style={styles.settingContent}>
-                    <Text style={styles.settingText}>{t("rateUs") || "Rate Us"}</Text>
-                    <Text style={styles.settingDesc}>{t("rateUsDesc") || "Love the app? Rate us on the store!"}</Text>
+                    <Text style={[styles.settingText, { color: "#D32F2F" }]}>
+                      {t("deleteAccount")}
+                    </Text>
+                     <Text style={styles.settingDesc}>Delete your account permanently</Text>
                   </View>
-                  <Icon name="chevron-right" size={24} color="#9E9E9E" />
                 </TouchableOpacity>
               </View>
 
@@ -728,6 +834,87 @@ const ProfileScreen = () => {
             </View>
           </View>
         </BlurView>
+      </Modal>
+
+      <LanguageSelector
+        visible={languageSelectorVisible}
+        onClose={() => setLanguageSelectorVisible(false)}
+      />
+
+      {/* Delete Account Confirmation Modal */}
+      <Modal
+        visible={showDeleteAccountModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={cancelDeleteAccount}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              {t("deleteAccount_confirmation_title")}
+            </Text>
+            <Text style={styles.modalMessage}>
+              {t("deleteAccount_confirmation_message")}
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={cancelDeleteAccount}
+              >
+                <Text style={styles.modalCancelText}>{t("cancel")}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalConfirmButton,
+                  { backgroundColor: "#D32F2F" },
+                ]}
+                onPress={confirmDeleteAccount}
+              >
+                <Text style={styles.modalConfirmText}>
+                  {t("deleteAccount")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Customer Support Modal (for Active Investment case) */}
+      <Modal
+        visible={showCustomerSupportModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowCustomerSupportModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+             <View style={{ marginBottom: 15 }}>
+                <Icon name="support-agent" size={50} color={theme.colors.primary} />
+            </View>
+            <Text style={styles.modalTitle}>
+              {t("contactUs")}
+            </Text>
+            <Text style={styles.modalMessage}>
+              {t("investmentActiveError") ||
+                "Investment is active so user acccount cannot be deactivated. Please contact support."}
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalConfirmButton, { backgroundColor: theme.colors.primary }]}
+                onPress={() => {
+                   setShowCustomerSupportModal(false);
+                   // Navigate to support or open dialer
+                   // router.push("/(app)/support"); // If you have a support route
+                   // Or just close
+                }}
+              >
+                <Text style={styles.modalConfirmText}>
+                  {t("ok")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
 
 

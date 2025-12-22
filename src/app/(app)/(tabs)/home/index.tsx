@@ -33,6 +33,7 @@ import { useRouter } from "expo-router";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LanguageSwitcher from "@/contexts/LanguageSwitcher";
+import LanguageSelector from "@/components/LanguageSelector";
 import LiveRateCard from "@/components/LiveRateCard";
 import ImageSlider from "@/components/ImageSlider";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -807,6 +808,7 @@ export default function Home() {
   const [retryCount, setRetryCount] = useState<number>(0);
   const [kycStatus, setKycStatus] = useState<boolean | null>(null);
   const [isKycLoading, setIsKycLoading] = useState(false);
+  const [languageSelectorVisible, setLanguageSelectorVisible] = useState(false);
 
   // Scheme Info Modal States
   const [schemeInfoModalVisible, setSchemeInfoModalVisible] = useState(false);
@@ -1634,14 +1636,8 @@ export default function Home() {
   }, []);
 
   // Language change handler
-  const handleLanguageChange = async (currentLang: AppLocale) => {
-    let newLocale: AppLocale;
-    if (currentLang === "en") {
-      newLocale = "ta";
-    } else {
-      newLocale = "en";
-    }
-    await setLanguage(newLocale);
+  const handleLanguageChange = () => {
+    setLanguageSelectorVisible(true);
   };
 
   // Get language display name and image
@@ -2558,7 +2554,7 @@ export default function Home() {
           <View style={styles.headerRight}>
             {/* Translate Icon */}
             <TouchableOpacity
-              onPress={() => handleLanguageChange(language as AppLocale)}
+              onPress={handleLanguageChange}
               style={styles.headerIconButton}
               activeOpacity={0.7}
             >
@@ -2647,21 +2643,19 @@ export default function Home() {
               </View>
             )}
 
-            {/* Gold and Silver Rate Card - Combined Card (only show when both are visible) */}
+            {/* Gold Rate Card Only */}
             {isVisible("showGoldRate") &&
-              isVisible("showSilverRate") &&
-              homeData?.data?.currentRates?.gold_rate &&
-              homeData?.data?.currentRates?.silver_rate && (
-                <View style={styles.goldRateCardWrapper}>
-                  <GoldSilverRateCard
-                    data={{
-                      goldRate: homeData.data.currentRates.gold_rate,
-                      silverRate: homeData.data.currentRates.silver_rate,
-                      updatedAt: homeData.data.currentRates.updated_at || "",
-                    }}
-                    onPress={() => router.push("/home/ratechart")}
+              homeData?.data?.currentRates?.gold_rate && (
+                <TouchableOpacity
+                  style={styles.goldRateCardWrapper}
+                  onPress={() => router.push("/home/ratechart")}
+                  activeOpacity={0.9}
+                >
+                  <AnimatedGoldRate
+                    goldRate={homeData.data.currentRates.gold_rate}
+                    updatedAt={homeData.data.currentRates.updated_at || ""}
                   />
-                </View>
+                </TouchableOpacity>
               )}
             {/* Gold and Silver Rates - Conditionally rendered based on API */}
             {/* {(isVisible("showGoldRate") || isVisible("showSilverRate")) && (
@@ -3615,6 +3609,10 @@ export default function Home() {
         }}
         appName="DC Jewellers"
       />
+        <LanguageSelector
+          visible={languageSelectorVisible}
+          onClose={() => setLanguageSelectorVisible(false)}
+        />
     </AuthGuard>
   );
 }
@@ -3649,7 +3647,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: rp(16),
     paddingVertical: rp(12),
-    paddingTop: Platform.OS === "ios" ? rp(50) : rp(12),
+    paddingTop: Platform.OS === "ios" ? rp(12) : rp(12),
     backgroundColor: "transparent",
     zIndex: 10,
     elevation: 10,
@@ -4923,7 +4921,7 @@ const skeletonStyles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: rp(16),
     paddingVertical: rp(12),
-    paddingTop: Platform.OS === "ios" ? rp(50) : rp(12),
+    paddingTop: Platform.OS === "ios" ? rp(12) : rp(12),
   },
 });
 
