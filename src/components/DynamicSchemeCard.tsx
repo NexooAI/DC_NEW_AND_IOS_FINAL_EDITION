@@ -279,46 +279,43 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
             JSON.stringify(schemeDataToStore)
           );
 
-          logger.log("Scheme data stored, navigating directly to:", isFlexi ? "digigold_payment_calculator" : "join_savings");
+          logger.log("Scheme data stored, navigating directly to: join_savings");
 
-          // Navigate directly to the appropriate page
-          if (isFlexi) {
-            router.push({
-              pathname: "/home/digigold_payment_calculator",
-              params: {
-                schemeId: (scheme.SCHEMEID || 0).toString(),
-              },
-            });
-          } else {
-            router.push({
-              pathname: "/home/join_savings",
-              params: {
-                schemeId: (scheme.SCHEMEID || 0).toString(),
-              },
-            });
-          }
-        } else {
-          logger.log("showSchemsPage is 1, navigating to schemes page");
-          // Determine scheme type for auto-selection
-          const targetTab = getSchemeTypeForTab(scheme);
-
-          logger.log("Navigating to schemes page with:", {
-            schemeId: scheme.SCHEMEID,
-            schemeType: targetTab,
-            schemeName: getLocalizedText(scheme.SCHEMENAME),
-            chits: scheme.chits?.map(chit => ({
-              id: chit.CHITID,
-              frequency: chit.PAYMENT_FREQUENCY,
-              active: chit.ACTIVE
-            })) || []
+          // Navigate directly to join_savings page
+          router.push({
+            pathname: "/home/join_savings",
+            params: {
+              schemeId: (scheme.SCHEMEID || 0).toString(),
+            },
           });
+        }
+        // Always force direct navigation to join_savings for DynamicSchemeCard
+        // regardless of showSchemsPage, per user request to bypass other flows
+        else {
+          logger.log("Redirecting dynamic card directly to join_savings (bypassing schemes/calculator)");
+          
+           // Store scheme data in AsyncStorage if not already stored
+           const schemeDataToStore = {
+            ...scheme,
+            schemeId: scheme.SCHEMEID,
+            name: getLocalizedText(scheme.SCHEMENAME),
+            description: getLocalizedText(scheme.DESCRIPTION),
+            type: getSchemeTypeForTab(scheme),
+             // Default to "flexi" if unclear, to trigger the new Flexi UI in join_savings
+            schemeType: getSchemeTypeForTab(scheme) === "flexi" ? "flexi" : "fixed",
+            savingType: scheme.savingType || (scheme.SCHEMETYPE?.toLowerCase() === "weight" ? "weight" : "amount"),
+            timestamp: new Date().toISOString(),
+          };
+
+          await AsyncStorage.setItem(
+            "@current_scheme_data",
+            JSON.stringify(schemeDataToStore)
+          );
 
           router.push({
-            pathname: "/(app)/(tabs)/home/schemes",
+            pathname: "/home/join_savings",
             params: {
-              schemeId: scheme.SCHEMEID?.toString() || "",
-              schemeType: targetTab,
-              mode: "join", // Add mode to indicate this is a join action
+              schemeId: (scheme.SCHEMEID || 0).toString(),
             },
           });
         }

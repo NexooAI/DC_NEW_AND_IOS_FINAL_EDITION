@@ -81,7 +81,7 @@ const HallmarkSlider: React.FC<HallmarkSliderProps> = () => {
           />
           <Text style={styles.hallmarkImageLabel}>{t("goldHallmarking")}</Text>
         </View>
-        {/* <View style={styles.hallmarkImageWrapper}>
+        <View style={styles.hallmarkImageWrapper}>
           <Image
             source={hallmark2Image}
             style={styles.hallmarkImage}
@@ -90,7 +90,7 @@ const HallmarkSlider: React.FC<HallmarkSliderProps> = () => {
           <Text style={styles.hallmarkImageLabel}>
             {t("certifiedDiamonds")}
           </Text>
-        </View> */}
+        </View>
       </ScrollView>
 
       {/* Dots indicator */}

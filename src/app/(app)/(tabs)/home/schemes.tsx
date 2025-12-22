@@ -570,22 +570,12 @@ export default function SchemeList() {
         JSON.stringify(schemeDataToStore)
       );
 
-      const isFlexi = activeTab.toLowerCase() === "flexi";
-      if (isFlexi) {
-        router.push({
-          pathname: "/home/digigold_payment_calculator",
-          params: {
-            schemeId: schemeId.toString(),
-          },
-        });
-      } else {
-        router.push({
-          pathname: "/home/join_savings",
-          params: {
-            schemeId: schemeId.toString(),
-          },
-        });
-      }
+      router.push({
+        pathname: "/home/join_savings",
+        params: {
+          schemeId: schemeId.toString(),
+        },
+      });
     } catch (error) {
       logger.error("Error storing scheme data:", error);
       Alert.alert(t("schemes.error"), t("schemes.failedToLoadSchemeData"));

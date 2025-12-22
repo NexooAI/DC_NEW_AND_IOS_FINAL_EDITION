@@ -148,6 +148,7 @@ export default function StaticSchemesHorizontalScroll({
         maxAmount: scheme.MAXAMOUNT || "No limit",
         duration: scheme.DURATION || "12 months",
         returns: scheme.RETURNS || "Gold",
+        schemeType: (scheme.TYPE === "flexible" || !scheme.TYPE) ? "flexi" : "fixed",
         timestamp: new Date().toISOString(),
       };
 
@@ -160,10 +161,9 @@ export default function StaticSchemesHorizontalScroll({
         onSchemePress(scheme);
       } else {
         router.push({
-          pathname: "/home/schemes",
+          pathname: "/home/join_savings",
           params: {
             schemeId: scheme.SCHEMEID.toString(),
-            schemeType: scheme.TYPE || "flexible",
           },
         });
       }
@@ -591,10 +591,9 @@ export default function StaticSchemesHorizontalScroll({
                     onPress={() => {
                       setModalVisible(false);
                       router.push({
-                        pathname: "/home/schemes",
+                        pathname: "/home/join_savings",
                         params: {
                           schemeId: selectedSchemeForModal.SCHEMEID.toString(),
-                          schemeType: selectedSchemeForModal.TYPE || "flexible",
                         },
                       });
                     }}

@@ -1857,21 +1857,12 @@ export default function Home() {
         closeSchemeInfoModal();
 
         // Navigate directly to the appropriate page
-        if (isFlexi) {
-          router.push({
-            pathname: "/home/digigold_payment_calculator",
-            params: {
-              schemeId: (selectedScheme?.SCHEMEID || 0).toString(),
-            },
-          });
-        } else {
-          router.push({
-            pathname: "/home/join_savings",
-            params: {
-              schemeId: (selectedScheme?.SCHEMEID || 0).toString(),
-            },
-          });
-        }
+        router.push({
+          pathname: "/home/join_savings",
+          params: {
+            schemeId: (selectedScheme?.SCHEMEID || 0).toString(),
+          },
+        });
       } else {
         // Normal flow: Navigate to schemes page
         logger.log("showSchemsPage is 1, navigating to schemes page");
@@ -2973,21 +2964,21 @@ export default function Home() {
                           );
 
                           // Navigate directly to the appropriate page
-                          if (isFlexi) {
-                            router.push({
-                              pathname: "/home/digigold_payment_calculator",
-                              params: {
-                                schemeId: ((scheme?.SCHEMEID || 0)).toString(),
-                              },
-                            });
-                          } else {
+                          // if (isFlexi) {
+                          //   router.push({
+                          //     pathname: "/home/digigold_payment_calculator",
+                          //     params: {
+                          //       schemeId: ((scheme?.SCHEMEID || 0)).toString(),
+                          //     },
+                          //   });
+                          // } else {
                             router.push({
                               pathname: "/home/join_savings",
                               params: {
                                 schemeId: ((scheme?.SCHEMEID || 0)).toString(),
                               },
                             });
-                          }
+                          // }
                         } catch (error) {
                           logger.error("Error in onJoinPress (skip schemes):", error);
                           Alert.alert(t("schemes.error") || "Error", t("schemes.failedToLoadSchemeData") || "Failed to load scheme data");

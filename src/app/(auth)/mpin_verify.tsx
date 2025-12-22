@@ -651,7 +651,8 @@ export default function MpinVerify() {
           );
         }
 
-        resetMpinAndFocus();
+        // resetMpinAndFocus(); // Handled by modal close
+        setMpinPins(["", "", "", ""]); // Just clear visual state
       }
     } catch (error: any) {
       logger.error("Error verifying MPIN:", error);
@@ -686,7 +687,8 @@ export default function MpinVerify() {
           );
         }
 
-        resetMpinAndFocus();
+        // resetMpinAndFocus(); // Handled by modal close
+        setMpinPins(["", "", "", ""]); // Just clear visual state
         return;
       }
 
@@ -712,7 +714,9 @@ export default function MpinVerify() {
         showErrorModal(t("error"), t("failedToVerifyMpin"));
       }
 
-      resetMpinAndFocus();
+
+      
+      setMpinPins(["", "", "", ""]); // Just clear visual state
     } finally {
       setLoading(false);
     }
@@ -1042,7 +1046,15 @@ export default function MpinVerify() {
         message={modalData.message}
         type={modalData.type}
         showCancelButton={modalData.type === "warning"}
-        onClose={() => setShowModal(false)}
+        onClose={() => {
+          setShowModal(false);
+          // Auto-focus on first input when error modal is closed
+          if (modalData.type === "error") {
+            setTimeout(() => {
+              resetMpinAndFocus();
+            }, 300); // Slight delay to ensure modal is fully gone
+          }
+        }}
         t={t}
         onConfirm={async () => {
           if (modalData.type === "warning") {
@@ -1053,6 +1065,11 @@ export default function MpinVerify() {
             } catch (error) {
               logger.error("Logout error:", error);
             }
+          } else if (modalData.type === "error") {
+             // Also handle the OK button press for error modals
+             setTimeout(() => {
+              resetMpinAndFocus();
+            }, 300);
           }
           setShowModal(false);
         }}

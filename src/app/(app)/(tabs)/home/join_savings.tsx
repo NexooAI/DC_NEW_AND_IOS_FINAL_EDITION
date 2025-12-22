@@ -183,7 +183,10 @@ export default function JoinSavings() {
     setStepState(newStep);
   };
   const [schemeType, setSchemeType] = useState(() => {
-    // Set initial scheme type based on payment frequency
+    // Set initial scheme type based on payment frequency or explicit scheme type
+    if (parsedData?.schemeType === "flexi" || parsedData?.type?.toLowerCase() === "flexible" || parsedData?.type?.toLowerCase() === "flexi") {
+      return "flexi";
+    }
 
     const frequency = parsedData?.chits?.[0]?.PAYMENT_FREQUENCY?.toLowerCase();
     return frequency === "flexi" ? "flexi" : "fixed";
@@ -524,13 +527,15 @@ export default function JoinSavings() {
     // First update input value
     setInputValue(numericValue);
 
-    // Check if scheme is weight-based (declare once at the top)
+    // Check if scheme is weight-based or amount-based
     const isWeightBased = parsedData?.savingType === "weight";
+    const isFlexi = parsedData?.schemeType === "flexi" || parsedData?.type?.toLowerCase()?.includes("flexi");
+    const allowWeightCalc = isWeightBased || isFlexi;
 
     // Handle empty input
     if (numericValue === "0") {
       setAmount(0);
-      if (isWeightBased) {
+      if (allowWeightCalc) {
         setGoldWeight(0);
       }
       handleChange("amount", "0");
@@ -539,13 +544,13 @@ export default function JoinSavings() {
 
     // If amount exceeds max limit
     if (newAmount > maxAmount) {
-      // Calculate gold weight for max amount (only if weight-based)
-      const maxGoldWeight = isWeightBased ? calculateGoldWeight(maxAmount) : 0;
+      // Calculate gold weight for max amount (only if weight-based or flexi)
+      const maxGoldWeight = allowWeightCalc ? calculateGoldWeight(maxAmount) : 0;
 
       // Update all values to max (no alert during typing, validation on Next click)
       setInputValue(String(maxAmount));
       setAmount(maxAmount);
-      if (isWeightBased) {
+      if (allowWeightCalc) {
         setGoldWeight(maxGoldWeight);
       }
       handleChange("amount", String(maxAmount));
@@ -563,11 +568,11 @@ export default function JoinSavings() {
     const minAmount = getMinAmount();
     const validAmount = Math.min(maxAmount, newAmount);
 
-    // Calculate exact gold weight for the amount (only if weight-based)
-    const exactGoldWeight = isWeightBased ? calculateGoldWeight(validAmount) : 0;
+    // Calculate exact gold weight for the amount (only if weight-based or flexi)
+    const exactGoldWeight = allowWeightCalc ? calculateGoldWeight(validAmount) : 0;
 
     setAmount(validAmount);
-    if (isWeightBased) {
+    if (allowWeightCalc) {
       setGoldWeight(exactGoldWeight);
     }
     handleChange("amount", String(validAmount));
@@ -603,9 +608,12 @@ export default function JoinSavings() {
       finalAmount === 0 ? "0" : String(finalAmount).replace(/^0+/, "")
     );
     handleChange("amount", String(finalAmount));
-    // Only calculate gold weight if it's a weight-based scheme
+    // Only calculate gold weight if it's a weight-based scheme or flexi
     const isWeightBased = parsedData?.savingType === "weight";
-    if (isWeightBased) {
+    const isFlexi = parsedData?.schemeType === "flexi" || parsedData?.type?.toLowerCase()?.includes("flexi");
+    const allowWeightCalc = isWeightBased || isFlexi;
+    
+    if (allowWeightCalc) {
       setGoldWeight(calculateGoldWeight(finalAmount));
     }
 
@@ -675,9 +683,12 @@ export default function JoinSavings() {
     setInputValue(String(newAmount));
     handleChange("amount", String(newAmount));
 
-    // Update gold weight if weight-based
+    // Update gold weight if weight-based or flexi
     const isWeightBased = parsedData?.savingType === "weight";
-    if (isWeightBased && goldRate > 0) {
+    const isFlexi = parsedData?.schemeType === "flexi" || parsedData?.type?.toLowerCase()?.includes("flexi");
+    const allowWeightCalc = isWeightBased || isFlexi;
+
+    if (allowWeightCalc && goldRate > 0) {
       setGoldWeight(calculateGoldWeight(newAmount));
     }
 
@@ -695,9 +706,12 @@ export default function JoinSavings() {
     setInputValue(String(newAmount));
     handleChange("amount", String(newAmount));
 
-    // Update gold weight if weight-based
+    // Update gold weight if weight-based or flexi
     const isWeightBased = parsedData?.savingType === "weight";
-    if (isWeightBased && goldRate > 0) {
+    const isFlexi = parsedData?.schemeType === "flexi" || parsedData?.type?.toLowerCase()?.includes("flexi");
+    const allowWeightCalc = isWeightBased || isFlexi;
+
+    if (allowWeightCalc && goldRate > 0) {
       setGoldWeight(calculateGoldWeight(newAmount));
     }
 
@@ -1298,7 +1312,8 @@ export default function JoinSavings() {
 
     // Check if scheme is weight-based or amount-based
     const isWeightBased = parsedData?.savingType === "weight";
-    const showWeightInput = isWeightBased;
+    const isFlexi = parsedData?.schemeType === "flexi" || parsedData?.type?.toLowerCase()?.includes("flexi");
+    const showWeightInput = isWeightBased || isFlexi;
 
     // Get quick amounts from API if available, otherwise use default
     let quickAmounts: number[] = [];
