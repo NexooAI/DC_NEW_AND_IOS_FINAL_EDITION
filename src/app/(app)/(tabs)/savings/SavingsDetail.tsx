@@ -453,13 +453,75 @@ const SavingsDetail = () => {
       return;
     }
 
-    // Show maintenance message instead of calling API
-    setAlertMessage(
-      "Advance payment feature is currently under maintenance. Please try again later."
-    );
-    setAlertType("info");
-    setAlertVisible(true);
-    return;
+    setIsLoading(true);
+
+    let payload = {
+      userId: user.id,
+      investmentId: params.id,
+    };
+
+    try {
+      let responce = await api.post("investments/check-payment", payload);
+      logger.log(responce.data);
+      if (responce?.data?.success === false) {
+        setAlertMessage(responce?.data.message || "Something went wrong");
+        setAlertType("error");
+        setAlertVisible(true);
+        return;
+      }
+
+      // Safely parse schemes data
+      let parseSchemes;
+      try {
+        parseSchemes = JSON.parse(params.schemesData);
+      } catch (parseError) {
+        logger.error("Error parsing schemes data:", parseError);
+        // Fallback to a default structure
+        parseSchemes = {
+          schemeTypeName: "Fixed",
+          paymentFrequencyName: params.paymentFrequency || "Monthly",
+        };
+      }
+
+      router.push({
+        pathname: "/(tabs)/home/paymentNewOverView",
+        params: {
+          amount: totalSelectedAmount,
+          schemeName: params.schemeName,
+          schemeId: responce?.data.data.schemeId,
+          chitId: responce?.data.data?.chitId,
+          paymentFrequency:
+            parseSchemes.paymentFrequencyName || params.paymentFrequency,
+          schemeType: parseSchemes.schemeTypeName,
+          source: params.source || "savings_detail_bulk",
+          savinsTypes: parseSchemes.schemeType,
+          userDetails: JSON.stringify({
+            amount: totalSelectedAmount,
+            accountname: params.accountHolder,
+            accNo: params.accNo,
+            associated_branch: 1,
+            investmentId: responce?.data.data?.investmentId,
+            schemeId: responce?.data.data?.schemeId,
+            schemeType: parseSchemes.schemeTypeName,
+            schemeName: params?.schemeName,
+            paymentFrequency:
+              parseSchemes.paymentFrequencyName || params.paymentFrequency,
+            chitId: responce?.data.data?.chitId,
+            selectedMonths: selectedPayments.map((p) => p.monthNumber).join(","),
+          }),
+          paidPaymentCount: String(
+            (paymentHistrory?.length || 0) + selectedPayments.length
+          ),
+        },
+      });
+    } catch (error) {
+      logger.error("Error in handleBulkPayment:", error);
+      setAlertMessage("An error occurred. Please try again.");
+      setAlertType("error");
+      setAlertVisible(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSelectAll = () => {
@@ -747,6 +809,177 @@ const SavingsDetail = () => {
           </View>
 
           {/* Advance Payment Card: Show all PENDING payments */}
+          {advancePayments.length > 0 && false &&(
+            <View
+              style={[
+                styles.transactionsCard,
+                { backgroundColor: theme.colors.cardBackground },
+              ]}
+            >
+              <View style={styles.transactionsHeader}>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                >
+                  <Text style={styles.sectionTitle}>
+                    {translations.advancePayment}
+                  </Text>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      {
+                        backgroundColor: theme.colors.primary,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statusText,
+                        { color: theme.colors.white },
+                      ]}
+                    >
+                      {advancePayments.filter((p) => p.status === "PENDING")
+                        .length}{" "}
+                      {translations.due}
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.filterButton}
+                  onPress={() => setShowAdvancePayment(!showAdvancePayment)}
+                >
+                  <Text
+                    style={{
+                      color: theme.colors.primary,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {showAdvancePayment ? translations.hide : translations.show}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {showAdvancePayment && (
+                <View>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "flex-end",
+                      marginBottom: 16,
+                      gap: 12,
+                    }}
+                  >
+                    <TouchableOpacity onPress={handleSelectAll}>
+                      <Text
+                        style={{
+                          color: theme.colors.primary,
+                          fontWeight: "600",
+                        }}
+                      >
+                        {translations.selectAll}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleUnselectAll}>
+                      <Text
+                        style={{
+                          color: theme.colors.textSecondary,
+                          fontWeight: "600",
+                        }}
+                      >
+                        {translations.unselectAll}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.transactionsList}>
+                    {advancePayments
+                      .filter((p) => p.status === "PENDING")
+                      .map((item, index) => {
+                        const isSelected = selectedPayments.some(
+                          (p) => p.monthNumber === item.monthNumber
+                        );
+                        return (
+                          <TouchableOpacity
+                            key={item.monthNumber || index}
+                            style={[
+                              styles.transactionItem,
+                              {
+                                backgroundColor: isSelected
+                                  ? "rgba(139, 69, 19, 0.05)"
+                                  : theme.colors.backgroundSecondary,
+                                borderColor: isSelected
+                                  ? theme.colors.primary
+                                  : "transparent",
+                                borderWidth: 1,
+                              },
+                            ]}
+                            onPress={() => handleSelectPayment(item)}
+                          >
+                            <View style={{ padding: 5 }}>
+                              <Ionicons
+                                name={isSelected ? "checkbox" : "square-outline"}
+                                size={24}
+                                color={
+                                  isSelected
+                                    ? theme.colors.primary
+                                    : theme.colors.textSecondary
+                                }
+                              />
+                            </View>
+                            <View style={styles.transactionInfo}>
+                              <Text style={styles.transactionDate}>
+                                {translations.month} {item.monthNumber}
+                              </Text>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <Ionicons name="calendar-outline" size={12} color={theme.colors.textSecondary} />
+                                <Text style={styles.transactionId}>
+                                  {item.displayDate || item.dueDate}
+                                </Text>
+                              </View>
+                            </View>
+                            <Text style={styles.transactionAmount}>
+                              ₹{Number(params.emiAmount).toLocaleString()}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                  </View>
+
+                  {selectedPayments.length > 0 && (
+                    <View style={{ marginTop: 20 }}>
+                      <TouchableOpacity
+                        style={styles.payButton}
+                        onPress={handleBulkPayment}
+                        disabled={isLoading}
+                      >
+                        <LinearGradient
+                          colors={theme.colors.gradientPrimary}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={styles.payButtonGradient}
+                        >
+                          {isLoading ? (
+                            <ActivityIndicator color="#fff" />
+                          ) : (
+                            <>
+                              <Text style={styles.payButtonText}>
+                                {translations.paySelected} (₹{totalSelectedAmount.toLocaleString()})
+                              </Text>
+                              <Ionicons
+                                name="arrow-forward"
+                                size={24}
+                                color="#fff"
+                              />
+                            </>
+                          )}
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
 
 
           {/* Pay Now Button */}

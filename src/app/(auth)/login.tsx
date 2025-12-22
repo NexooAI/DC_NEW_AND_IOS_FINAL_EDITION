@@ -627,7 +627,7 @@ export default function Login() {
   } = useResponsiveLayout();
 
   // OTP related state
-  const [pins, setPins] = useState(["", "", "", ""]);
+  const [otpCode, setOtpCode] = useState("");
   const [timer, setTimer] = useState(120);
   const [resendAttempts, setResendAttempts] = useState(3);
   const [isShowOtp, setIsShowOtp] = useState(false);
@@ -636,9 +636,6 @@ export default function Login() {
 
   // Refs for OTP inputs
   const inputRefs = [
-    useRef<TextInput>(null),
-    useRef<TextInput>(null),
-    useRef<TextInput>(null),
     useRef<TextInput>(null),
   ];
 
@@ -673,7 +670,7 @@ export default function Login() {
 
   useFocusEffect(
     React.useCallback(() => {
-      setPins(["", "", "", ""]);
+      setOtpCode("");
       setIsShowOtp(false);
       setIsNavigatingToRegister(false);
     }, [])
@@ -710,49 +707,18 @@ export default function Login() {
     ]);
   };
 
-  const handlePinChange = (text: string, index: number) => {
-    // Only allow numeric input
-    const numericValue = text.replace(/[^0-9]/g, "");
-    if (numericValue === "" || /^\d+$/.test(numericValue)) {
-      const newPins = [...pins];
-      newPins[index] = numericValue;
-      setPins(newPins);
-
-      // Auto-focus next input if there's a value
-      if (numericValue && index < 3 && inputRefs[index + 1]?.current) {
-        inputRefs[index + 1].current?.focus();
-      }
-
-      // Auto-submit when all digits are entered
-      const isOtpComplete = newPins.every((pin) => pin.trim() !== "");
-      if (isOtpComplete) {
-        verifyOtp(newPins.join(""));
-      }
-    }
-  };
-
   // OTP Auto-read functionality (Android only) - using SMS Retriever API
   useOtpAutoFetch({
     onOtpReceived: (otp: string) => {
-      const arr = otp.split("");
-      arr.forEach((digit, index) => {
-        handlePinChange(digit, index);
-      });
+      // Clean and set OTP
+      const cleanOtp = otp.slice(0, 4);
+      setOtpCode(cleanOtp);
+      if (cleanOtp.length === 4) {
+        verifyOtp(cleanOtp);
+      }
     },
     isActive: isShowOtp, // Only listen when OTP screen is shown
   });
-
-  const handleKeyPress = (
-    e: NativeSyntheticEvent<TextInputKeyPressEventData>,
-    index: number
-  ) => {
-    if (e.nativeEvent.key === "Backspace" && !pins[index] && index > 0) {
-      const newPins = [...pins];
-      newPins[index - 1] = "";
-      setPins(newPins);
-      inputRefs[index - 1]?.current?.focus();
-    }
-  };
 
   const extractOtpFromMessage = (message: string) => {
     const otpMatch = message.match(/\d{4}/); // Assuming 4-digit OTP
@@ -832,7 +798,7 @@ export default function Login() {
             ]);
           }
         } else {
-          setPins(["", "", "", ""]);
+          setOtpCode("");
           Alert.alert(
             t("error"),
             data.message || data.error || t("invalidOtp"),
@@ -841,7 +807,7 @@ export default function Login() {
         }
       })
       .catch((error) => {
-        setPins(["", "", "", ""]);
+        setOtpCode("");
         logger.error("OTP verification error:", error);
 
         let errorMessage = t("anUnexpectedError");
@@ -971,7 +937,7 @@ export default function Login() {
       if (response.ok) {
         setResendAttempts((prev) => prev - 1);
         setTimer(120);
-        setPins(["", "", "", ""]);
+        setOtpCode("");
         Alert.alert(t("success"), t("otpResentSuccess"));
         // Auto-focus first OTP input
         setTimeout(() => inputRefs[0]?.current?.focus(), 100);
@@ -1001,7 +967,7 @@ export default function Login() {
     if (isShowOtp) {
       // If OTP fields are showing, hide them and go back to mobile input
       setIsShowOtp(false);
-      setPins(["", "", "", ""]);
+      setOtpCode("");
       setTimer(120);
       setResendAttempts(3);
       setShowOtp(false); // Reset OTP visibility
@@ -1455,9 +1421,35 @@ export default function Login() {
                       <View
                         style={[
                           registerStyles.otpInputsWrapper,
-                          { alignItems: "center", justifyContent: "center" },
+                          { alignItems: "center", justifyContent: "center", position: "relative" },
                         ]}
                       >
+                        {/* Hidden TextInput for OTP Autofill */}
+                        <TextInput
+                          ref={inputRefs[0]}
+                          value={otpCode}
+                          onChangeText={(text) => {
+                            const numericValue = text.replace(/[^0-9]/g, "");
+                            setOtpCode(numericValue);
+                            if (numericValue.length === 4) {
+                              verifyOtp(numericValue);
+                            }
+                          }}
+                          style={{
+                            position: "absolute",
+                            width: "100%",
+                            height: "100%",
+                            opacity: 0,
+                            zIndex: 10,
+                          }}
+                          keyboardType="numeric"
+                          maxLength={4}
+                          textContentType="oneTimeCode"
+                          autoComplete="sms-otp"
+                          editable={!loading}
+                          autoFocus={true}
+                        />
+                        
                         <View
                           style={[
                             registerStyles.otpInputsContainer,
@@ -1467,36 +1459,38 @@ export default function Login() {
                               minWidth: isSmallScreen ? 160 : 180,
                               alignItems: "center",
                               justifyContent: "center",
+                              zIndex: 1, // Ensure visual elements are below the hidden input touch area
                             },
                           ]}
+                          pointerEvents="none" // Pass touches to the hidden input
                         >
-                          {pins.map((pin, index) => (
-                            <TextInput
+                          {[0, 1, 2, 3].map((index) => (
+                            <View
                               key={index}
-                              ref={inputRefs[index]}
                               style={[
                                 registerStyles.otpInput,
                                 {
                                   width: isSmallScreen ? 42 : 48,
                                   height: isSmallScreen ? 42 : 48,
-                                  fontSize: isSmallScreen ? 20 : 22,
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  borderColor: otpCode.length === index ? theme.colors.primary : theme.colors.white,
+                                  backgroundColor: theme.colors.white,
                                 },
                               ]}
-                              keyboardType="numeric"
-                              maxLength={1}
-                              value={pin}
-                              onChangeText={(text) =>
-                                handlePinChange(text, index)
-                              }
-                              onKeyPress={(e) => handleKeyPress(e, index)}
-                              secureTextEntry={!showOtp}
-                              textContentType="oneTimeCode"
-                              autoComplete="sms-otp"
-                              editable={!loading}
-                              blurOnSubmit={false}
-                              returnKeyType="next"
-                              selectTextOnFocus={true}
-                            />
+                            >
+                              <ResponsiveText
+                                variant="title"
+                                size="lg"
+                                weight="bold"
+                                color={theme.colors.textDark}
+                                style={{
+                                  fontSize: isSmallScreen ? 20 : 22,
+                                }}
+                              >
+                                {otpCode[index] || ""}
+                              </ResponsiveText>
+                            </View>
                           ))}
                         </View>
                         <TouchableOpacity
@@ -1506,6 +1500,7 @@ export default function Login() {
                             {
                               right: isSmallScreen ? -35 : -40,
                               top: isSmallScreen ? 15 : 20,
+                              zIndex: 20, // Keep eye button clickable above hidden input
                             },
                           ]}
                         >
@@ -1593,12 +1588,12 @@ export default function Login() {
                         style={[
                           registerStyles.loginButton,
                           (loading ||
-                            !pins.every((pin) => pin.trim() !== "")) &&
+                            otpCode.length !== 4) &&
                           registerStyles.loginButtonDisabled,
                         ]}
-                        onPress={() => verifyOtp(pins.join(""))}
+                        onPress={() => verifyOtp(otpCode)}
                         disabled={
-                          loading || !pins.every((pin) => pin.trim() !== "")
+                          loading || otpCode.length !== 4
                         }
                       >
                         <LinearGradient

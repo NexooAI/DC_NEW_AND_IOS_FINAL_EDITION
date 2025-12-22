@@ -35,7 +35,7 @@ import { userAPI } from "@/services/api";
 import apiWithLoader from "@/services/apiWithLoader";
 import { getFullImageUrl } from "@/utils/imageUtils";
 import { logger } from "@/utils/logger";
-// Removed RatingModal import
+import RatingModal from "@/components/RatingModal"; // Added RatingModal import
 import { Ionicons } from "@expo/vector-icons";
 import LanguageSelector from "@/components/LanguageSelector";
 import { getLanguageName } from "@/utils/languageUtils";
@@ -50,6 +50,7 @@ const ProfileScreen = () => {
   const [languageSelectorVisible, setLanguageSelectorVisible] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [showCustomerSupportModal, setShowCustomerSupportModal] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false); // State to control Rating Modal
 
   // Removed Rating Modal Hook
 
@@ -760,6 +761,24 @@ const ProfileScreen = () => {
                   </View>
                   <Icon name="chevron-right" size={24} color="#9E9E9E" />
                 </TouchableOpacity>
+                <View style={styles.divider} />
+
+                {/* Rate Us Menu Item */}
+                <TouchableOpacity
+                  style={styles.settingItem}
+                  onPress={() => setShowRatingModal(true)}
+                >
+                  <View style={[styles.settingIcon, { backgroundColor: "#fff0f5" }]}>
+                    <Icon name="star-rate" size={24} color="#E91E63" />
+                  </View>
+                  <View style={styles.settingContent}>
+                    <Text style={styles.settingText}>{t("rateUs") || "Rate Us"}</Text>
+                    <Text style={styles.settingDesc}>
+                      {t("rateUsDesc") || "Rate our app on Play Store / App Store"}
+                    </Text>
+                  </View>
+                  <Icon name="chevron-right" size={24} color="#9E9E9E" />
+                </TouchableOpacity>
 
                 <View style={styles.divider} />
 
@@ -791,6 +810,12 @@ const ProfileScreen = () => {
           </ScrollView>
         </KeyboardAvoidingView>
       </View>
+
+      {/* Rating Modal */}
+      <RatingModal
+        visible={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+      />
 
       {/* Logout Modal */}
       <Modal
