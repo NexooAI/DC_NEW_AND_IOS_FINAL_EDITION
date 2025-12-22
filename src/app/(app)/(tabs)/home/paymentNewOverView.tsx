@@ -585,6 +585,7 @@ export default function PaymentNewOverView() {
               // chitId:  params.chitId,
               userId: userDetails.userId || user?.id,
               paymentFrequency: params.paymentFrequency,
+              schemeType: params.schemeType,
             }),
           },
         });
@@ -609,6 +610,7 @@ export default function PaymentNewOverView() {
               orderId: orderId,
               userId: userDetails.userId || user?.id,
               paymentFrequency: params.paymentFrequency,
+              schemeType: params.schemeType,
             }),
           },
         });

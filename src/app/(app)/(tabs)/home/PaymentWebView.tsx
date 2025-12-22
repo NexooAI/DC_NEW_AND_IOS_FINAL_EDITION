@@ -32,19 +32,29 @@ export default function PaymentWebView() {
   });
 
   const { socket, handleCancel } = usePaymentSocket({
-    onPaymentSuccess: (data) => {
+  onPaymentSuccess: (data) => {
       // Disconnect socket before navigation
       if (socket && socket.connected) {
         socket.disconnect();
       }
-      router.replace({
+
+      console.log("params.userDetails", params.userDetails);
+      const userDetails = params.userDetails ? JSON.parse(params.userDetails as string) : {};
+
+      const routerParams = {
         pathname: "/(tabs)/home/payment-success",
         params: {
           txnId: data?.paymentResponse?.txn_id,
           orderId: data?.paymentResponse?.order_id,
           amount: data?.paymentResponse?.amount,
+          investmentId: userDetails?.investmentId,
+          schemeType: userDetails?.schemeType,
+          paymentFrequency: userDetails?.paymentFrequency,
         },
-      });
+      }
+      console.log("routerParams", routerParams);
+      
+      router.replace(routerParams);
     },
     onPaymentFailure: (data) => {
       // Disconnect socket before navigation

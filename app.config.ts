@@ -73,6 +73,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
             NSPhotoLibraryUsageDescription: "This app needs access to your photo library so you can select and upload your profile picture, receipts, jewellery images, or documents for order verification and customer support. For example, you can upload a photo of a receipt to verify a purchase or share an image of jewellery for a support inquiry.",
             NSCameraUsageDescription: "This app needs access to your camera so you can take photos of receipts, jewellery, or documents for order verification, profile pictures, and customer support. For example, you can take a photo of your receipt to verify a transaction.",
             NSPhotoLibraryAddUsageDescription: "This app needs permission to save images to your photo library so you can keep copies of receipts, order confirmations, or jewellery images for your records.",
+            NSFaceIDUsageDescription: "This app uses Face ID / Touch ID to securely authenticate you without entering your MPIN.",
             "NSAppTransportSecurity": {
                 "NSAllowsArbitraryLoads": true,
                 "NSAllowsArbitraryLoadsInWebContent": true,

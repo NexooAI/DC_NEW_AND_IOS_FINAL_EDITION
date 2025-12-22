@@ -30,6 +30,7 @@ import { t } from "@/i18n";
 import { AppLocale } from "@/i18n";
 import apiClient from "@/services/api";
 import useGlobalStore from "@/store/global.store";
+import { useOtpAutoFetch } from "@/hooks/useOtpAutoFetch";
 
 import { logger } from "@/utils/logger";
 const { width } = Dimensions.get("window");
@@ -160,6 +161,77 @@ const ConfirmationModal = ({
   );
 };
 
+// Output Input Component with Hidden Input (Better for Auto-fill)
+const OtpInput = ({
+  value,
+  onChange,
+  onComplete,
+  length = 4,
+  secureTextEntry = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onComplete: (value: string) => void;
+  length?: number;
+  secureTextEntry?: boolean;
+}) => {
+  const inputRef = useRef<TextInput>(null);
+
+  // Auto-focus logic
+  useEffect(() => {
+    // Small delay to ensure component is mounted and visible
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleChange = (text: string) => {
+    // Only numeric
+    const numericValue = text.replace(/[^0-9]/g, "");
+    onChange(numericValue);
+    
+    if (numericValue.length === length) {
+      onComplete(numericValue);
+    }
+  };
+
+  return (
+    <View style={styles.otpInputsWrapper}>
+       <TextInput
+        ref={inputRef}
+        value={value}
+        onChangeText={handleChange}
+        style={styles.hiddenInput}
+        keyboardType="numeric"
+        maxLength={length}
+        textContentType="oneTimeCode"
+        autoComplete="sms-otp"
+        autoFocus={true}
+      />
+      <View style={styles.otpVisualContainer} pointerEvents="none">
+        {Array(length).fill(0).map((_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.otpBox,
+              {
+                borderColor: value.length === index ? theme.colors.secondary : (value[index] ? theme.colors.secondary : theme.colors.borderWhiteMedium),
+                backgroundColor: theme.colors.white,
+                borderWidth: value.length === index ? 2 : 1,
+              },
+            ]}
+          >
+            <Text style={styles.otpText}>
+              {value[index] ? (secureTextEntry ? "•" : value[index]) : ""}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+};
+
 // MPIN Input Component
 const MpinInput = ({
   length = 4,
@@ -179,9 +251,15 @@ const MpinInput = ({
   const [values, setValues] = useState(Array(length).fill(""));
   const inputs = useRef<(TextInput | null)[]>([]);
 
-  // Reset values when external value changes
+  // Sync internal state with external value prop
   useEffect(() => {
-    if (value === "") {
+    if (value) {
+      const newValues = value.split("").slice(0, length);
+      while (newValues.length < length) {
+        newValues.push("");
+      }
+      setValues(newValues);
+    } else {
       setValues(Array(length).fill(""));
     }
   }, [value, length]);
@@ -451,8 +529,8 @@ export default function ForgotMpin() {
       const response = await apiClient.post("/auth/check-mobile", {
         mobile_number: numberToUse,
       });
-
-      if (response.data.success) {
+      console.log("🚀 ~ handleSendOtp ~ response:", response ,response.data.message);
+      if (response.data.message === 'OTP sent successfully') {
         const countdownDuration = getCountdownDuration(resendAttempts);
         logger.log(
           "Setting countdown to:",
@@ -465,6 +543,7 @@ export default function ForgotMpin() {
         setSuccess(t("otpSentSuccessfully"));
         setError("");
       } else {
+        console.log("🚀 ~ handleSendOtp ~ response:", response ,response.data.message);
         setError(response.data.message || t("failedToSendOtp"));
         shakeError();
         setInitializing(false);
@@ -739,6 +818,18 @@ export default function ForgotMpin() {
     }
   };
 
+  // OTP Auto-read functionality
+  useOtpAutoFetch({
+    onOtpReceived: (otpCode) => {
+      const cleanOtp = otpCode.slice(0, 4);
+      setOtp(cleanOtp);
+      if (cleanOtp.length === 4) {
+        handleVerifyOtp(cleanOtp);
+      }
+    },
+    isActive: step === "verifyOtp",
+  });
+
   // Modal handlers
   const handleConfirmSendOtp = async () => {
     setShowConfirmationModal(false);
@@ -784,20 +875,17 @@ export default function ForgotMpin() {
         ]}
       >
         <Text style={styles.inputLabel}>{t("enterOtp")}</Text>
-        <MpinInput
+        <OtpInput
           length={4}
-          onComplete={setOtp}
-          onAutoSubmit={
-            (value) => {
-              // Pass the value directly to ensure all 4 digits are captured
-              setTimeout(() => {
-                handleVerifyOtp(value);
-              }, 100);
-            }
-          }
-          secureTextEntry={true}
-          autoFocus={true}
           value={otp}
+          onChange={setOtp}
+          onComplete={(value) => {
+             setOtp(value);
+             setTimeout(() => {
+                handleVerifyOtp(value);
+             }, 100);
+          }}
+          secureTextEntry={true}
         />
       </Animated.View>
 
@@ -951,9 +1039,9 @@ export default function ForgotMpin() {
     >
       <LinearGradient
         colors={[
-          theme.colors.transparent,
-          theme.colors.transparent,
-          theme.colors.bgPrimaryLight,
+          theme.colors.primary,
+          theme.colors.primary,
+          theme.colors.primary,
         ]}
         style={styles.gradient}
       >
@@ -981,6 +1069,41 @@ export default function ForgotMpin() {
 }
 
 const styles = StyleSheet.create({
+  otpInputsWrapper: {
+    position: "relative",
+    width: "100%",
+    height: 60,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  hiddenInput: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    opacity: 0,
+    zIndex: 10,
+    color: 'transparent',
+  },
+  otpVisualContainer: {
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    width: "100%",
+    zIndex: 1,
+  },
+  otpBox: {
+    width: 45,
+    height: 50,
+    borderWidth: 1,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: theme.colors.white,
+  },
+  otpText: {
+    fontSize: 24,
+    color: theme.colors.black,
+    fontWeight: "bold",
+  },
   backgroundImage: {
     flex: 1,
     resizeMode: "cover",
@@ -1156,7 +1279,7 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.colors.bgErrorLight,
+    backgroundColor: theme.colors.white,
     padding: 12,
     borderRadius: 8,
     marginBottom: 15,
@@ -1171,7 +1294,7 @@ const styles = StyleSheet.create({
   successContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.colors.bgSuccessLight,
+    backgroundColor: theme.colors.secondary,
     padding: 12,
     borderRadius: 8,
     marginBottom: 15,

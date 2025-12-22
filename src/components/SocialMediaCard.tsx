@@ -191,7 +191,7 @@ const SocialMediaCard = ({ socialMediaUrls }: { socialMediaUrls: any }) => {
 
   const handleFacebook = () => {
     let facebookUrl = "https://www.facebook.com/dcjewellers.official/";
-    if (socialMediaUrls[0].facebook_url !== null) {
+    if (socialMediaUrls?.[0]?.facebook_url) {
       facebookUrl = socialMediaUrls[0].facebook_url;
     }
     Linking.openURL(facebookUrl).catch((err) =>
@@ -201,7 +201,7 @@ const SocialMediaCard = ({ socialMediaUrls }: { socialMediaUrls: any }) => {
 
   const handleInstagram = () => {
     let instagramUrl = "https://www.instagram.com/dcjewellers.official/?hl=en";
-    if (socialMediaUrls[0].intsa_url !== null) {
+    if (socialMediaUrls?.[0]?.intsa_url) {
       instagramUrl = socialMediaUrls[0].intsa_url;
     }
     Linking.openURL(instagramUrl).catch((err) =>

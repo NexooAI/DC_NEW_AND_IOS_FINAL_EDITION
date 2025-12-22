@@ -1032,5 +1032,14 @@
   "deleteAccountError": "Failed to delete account. Please try again.",
   "userIDNotFoundPleaseLoginAgain": "User ID not found. Please login again.",
   "investmentActiveError": "Investment is active so user acccount cannot be deactivated",
-  "contactCustomerSupport": "Please contact customer support."
+  "contactCustomerSupport": "Please contact customer support.",
+  "setupBiometrics": "Enable Biometrics",
+  "setupBiometricsMsg": "Would you like to use Face ID / Fingerprint for faster login next time?",
+  "biometricsEnabled": "Biometrics enabled successfully",
+  "biometricLogin": "Biometric Login",
+  "faceIdTouchId": "Face ID / Touch ID",
+  "biometricsDisabled": "Biometrics disabled",
+  "verifyMpinToEnableBiometrics": "Please enter your MPIN to enable biometric login",
+  "enable": "Enable",
+  "failedToEnableBiometrics": "Failed to enable biometrics"
 }

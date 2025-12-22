@@ -25,6 +25,10 @@ export default function PaymentSuccess() {
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const router = useRouter();
+  
+  useEffect(() => {
+    logger.log("Payment Success Params:", params);
+  }, [params]);
   const { setTabVisibility } = useGlobalStore();
 
   // Hide tab bar on focus
@@ -55,6 +59,9 @@ export default function PaymentSuccess() {
       txnId: params.txnId,
       orderId: params.orderId,
       amount: params.amount,
+      investmentId: params.investmentId,
+      schemeType: params.schemeType,
+      paymentFrequency: params.paymentFrequency,
       allParams: params,
     };
 
@@ -125,7 +132,14 @@ export default function PaymentSuccess() {
       toValue: 0,
       duration: 300,
       useNativeDriver: true,
-    }).start(() => router.replace("/(tabs)/savings"));
+    }).start(() => router.replace({
+      pathname: "/(tabs)/savings",
+      params: {
+        investmentId: params.investmentId,
+        schemeType: params.schemeType,
+        paymentFrequency: params.paymentFrequency,
+      }
+    }));
   };
 
   const checkmarkScale = checkmarkAnim.interpolate({

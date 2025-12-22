@@ -39,6 +39,8 @@ import RatingModal from "@/components/RatingModal"; // Added RatingModal import
 import { Ionicons } from "@expo/vector-icons";
 import LanguageSelector from "@/components/LanguageSelector";
 import { getLanguageName } from "@/utils/languageUtils";
+import { useBiometrics } from "@/hooks/useBiometrics";
+import { Switch } from "react-native";
 
 const ProfileScreen = () => {
   const { t } = useTranslation();
@@ -54,9 +56,21 @@ const ProfileScreen = () => {
 
   // Removed Rating Modal Hook
 
+  // Biometric Hook
+  const { 
+    isSupported, 
+    isEnrolled, 
+    isEnabled: isBiometricEnabled, 
+    enableBiometrics, 
+    disableBiometrics 
+  } = useBiometrics();
+  
   const [localProfilePhoto, setLocalProfilePhoto] = useState<string | null>(
     null
   );
+  const [showMpinModal, setShowMpinModal] = useState(false);
+  const [mpinInput, setMpinInput] = useState("");
+  
   const [editData, setEditData] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -399,6 +413,53 @@ const ProfileScreen = () => {
   const handleDeleteAccount = () => {
     setShowDeleteAccountModal(true);
   };
+  
+  // Handle Biometric Toggle
+  const handleBiometricToggle = async (value: boolean) => {
+    if (value) {
+      // To enable, we need to confirm MPIN
+      setShowMpinModal(true);
+    } else {
+      // To disable, just do it
+      await disableBiometrics();
+      Alert.alert(t("success"), t("biometricsDisabled") || "Biometrics disabled");
+    }
+  };
+
+  const handleConfirmMpinForBiometrics = async () => {
+    if (mpinInput.length !== 4) {
+      Alert.alert(t("error"), t("pleaseEnterValidMpin"));
+      return;
+    }
+    
+    // Here we should verify MPIN with backend to be 100% sure, 
+    // but for now we'll assume if they know it, it's fine or we can assume successful login earlier
+    // In a real app, verify MPIN with API before enabling
+    
+    // Better: Verify with API
+    try {
+        const response = await apiWithLoader.post("/auth/login-mpin", {
+            mobileNumber: user?.mobile,
+            mpin: mpinInput
+        });
+        
+        if (response.data.success) {
+            const success = await enableBiometrics(mpinInput);
+            if (success) {
+                Alert.alert(t("success"), t("biometricsEnabled"));
+                setShowMpinModal(false);
+                setMpinInput("");
+            } else {
+                Alert.alert(t("error"), t("failedToEnableBiometrics") || "Failed to enable biometrics");
+            }
+        } else {
+             Alert.alert(t("error"), t("incorrectMpin"));
+        }
+    } catch (error) {
+        // Fallback or error handling
+        Alert.alert(t("error"), t("incorrectMpin"));
+    }
+  };
 
   // Confirm delete account - calls API and handles response
   const confirmDeleteAccount = async () => {
@@ -733,6 +794,30 @@ const ProfileScreen = () => {
 
                 <View style={styles.divider} />
 
+                {/* Biometric Toggle */}
+                {isSupported && isEnrolled && (
+                  <>
+                    <View style={styles.settingItem}>
+                      <View style={[styles.settingIcon, { backgroundColor: '#E0F7FA' }]}>
+                        <Icon name="fingerprint" size={24} color={theme.colors.primary} />
+                      </View>
+                      <View style={styles.settingContent}>
+                        <Text style={styles.settingText}>{t("biometricLogin") || "Biometric Login"}</Text>
+                        <Text style={styles.settingDesc}>{t("setupBiometricsMsg") || "Use Fingerprint/FaceID to login"}</Text>
+                      </View>
+                      <Switch
+                        value={isBiometricEnabled}
+                        onValueChange={handleBiometricToggle}
+                        trackColor={{ false: "#767577", true: theme.colors.secondary }}
+                        thumbColor={isBiometricEnabled ? theme.colors.primary : "#f4f3f4"}
+                      />
+                    </View>
+                    <View style={styles.divider} />
+                  </>
+                )}
+
+                <View style={styles.divider} />
+
                 <TouchableOpacity style={styles.settingItem} onPress={toggleLanguage}>
                   <View style={[styles.settingIcon, { backgroundColor: '#FFF3E0' }]}>
                     <Icon name="language" size={24} color={theme.colors.primary} />
@@ -865,6 +950,50 @@ const ProfileScreen = () => {
         visible={languageSelectorVisible}
         onClose={() => setLanguageSelectorVisible(false)}
       />
+
+      {/* MPIN Input Modal for Biometrics */}
+      <Modal
+        visible={showMpinModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowMpinModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+            <View style={styles.mpinModalContainer}>
+                <Text style={styles.mpinModalTitle}>{t("enterMpin") || "Enter MPIN"}</Text>
+                <Text style={styles.mpinModalDesc}>{t("verifyMpinToEnableBiometrics") || "Please enter your MPIN to enable biometric login"}</Text>
+                
+                <TextInput 
+                    style={styles.mpinInput}
+                    value={mpinInput}
+                    onChangeText={(text) => setMpinInput(text.replace(/[^0-9]/g, '').slice(0, 4))}
+                    keyboardType="numeric"
+                    maxLength={4}
+                    secureTextEntry
+                    autoFocus
+                />
+                
+                <View style={styles.mpinModalActions}>
+                    <TouchableOpacity 
+                        style={styles.mpinModalCancel}
+                        onPress={() => {
+                            setShowMpinModal(false);
+                            setMpinInput("");
+                        }}
+                    >
+                        <Text style={styles.mpinModalCancelText}>{t("cancel")}</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                        style={styles.mpinModalConfirm}
+                        onPress={handleConfirmMpinForBiometrics}
+                    >
+                        <Text style={styles.mpinModalConfirmText}>{t("enable") || "Enable"}</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </View>
+      </Modal>
 
       {/* Delete Account Confirmation Modal */}
       <Modal
@@ -1423,6 +1552,70 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  
+  // MPIN Modal Styles
+  mpinModalContainer: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    elevation: 10,
+  },
+  mpinModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: theme.colors.textDark,
+  },
+  mpinModalDesc: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  mpinInput: {
+    width: '100%',
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 12,
+    textAlign: 'center',
+    fontSize: 24,
+    marginBottom: 24,
+    color: theme.colors.textDark,
+  },
+  mpinModalActions: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  mpinModalCancel: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    alignItems: 'center',
+  },
+  mpinModalConfirm: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+  },
+  mpinModalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  mpinModalConfirmText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
   },
 });
 

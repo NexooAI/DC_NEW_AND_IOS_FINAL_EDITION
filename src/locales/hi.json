@@ -1022,5 +1022,14 @@
   "deleteAccountSuccess": "खाता सफलतापूर्वक हटा दिया गया",
   "deleteAccountError": "खाता हटाने में विफल। कृपया पुन: प्रयास करें।",
   "investmentActiveError": "निवेश सक्रिय है इसलिए उपयोगकर्ता खाता निष्क्रिय नहीं किया जा सकता",
-  "contactCustomerSupport": "कृपया ग्राहक सहायता से संपर्क करें।"
+  "contactCustomerSupport": "कृपया ग्राहक सहायता से संपर्क करें।",
+  "setupBiometrics": "बायोमेट्रिक्स सक्षम करें",
+  "setupBiometricsMsg": "क्या आप अगली बार तेजी से लॉगिन करने के लिए फेस आईडी / फिंगरप्रिंट का उपयोग करना चाहेंगे?",
+  "biometricsEnabled": "बायोमेट्रिक्स सफलतापूर्वक सक्षम किया गया",
+  "biometricLogin": "बायोमेट्रिक लॉगिन",
+  "faceIdTouchId": "फेस आईडी / टच आईडी",
+  "biometricsDisabled": "बायोमेट्रिक्स अक्षम किया गया",
+  "verifyMpinToEnableBiometrics": "कृपया बायोमेट्रिक लॉगिन सक्षम करने के लिए अपना MPIN दर्ज करें",
+  "enable": "सक्षम करें",
+  "failedToEnableBiometrics": "बायोमेट्रिक्स सक्षम करने में विफल"
 }

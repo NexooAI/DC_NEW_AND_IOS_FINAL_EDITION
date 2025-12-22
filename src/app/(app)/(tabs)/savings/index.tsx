@@ -24,7 +24,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient"; // For gradient background
 // AppHeader is now handled by the layout wrapper
@@ -107,17 +107,68 @@ interface InvestmentResponse {
 
 export default function SavingsScreen() {
   const { t } = useTranslation();
+
   const router = useRouter();
   const { language, user } = useGlobalStore();
+  const params = useLocalSearchParams();
+  const flatListRef = useRef<FlatList>(null);
 
   const [savings, setSavings] = useState<Scheme[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<"Fixed" | "Flexi">("Fixed");
+  
+  // Set initial tab based on params
+  const [selectedType, setSelectedType] = useState<"Fixed" | "Flexi">(() => {
+    const pFreq = params.paymentFrequency?.toString().toLowerCase();
+    const sType = params.schemeType?.toString().toLowerCase();
+    
+    if (sType === "flexi" || pFreq === "flexi") {
+      return "Flexi";
+    }
+    return "Fixed";
+  });
+  
   const { bottom, top } = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   // Increased bottomPadding multiplier from 0.1 to 0.2
   const bottomPadding = height * 0.1 + bottom;
+
+  // React to param changes to switch tabs even if component is already mounted
+  useEffect(() => {
+    logger.log("Params changed in SavingsScreen:", params);
+    
+    // Preliminary switch based on params (faster feedback)
+    const pFreq = params.paymentFrequency?.toString().toLowerCase();
+    const sType = params.schemeType?.toString().toLowerCase();
+
+    if (sType === "flexi" || pFreq === "flexi") {
+      logger.log("Switching to Flexi tab based on params");
+      setSelectedType("Flexi");
+    } else if (sType === "fixed" || pFreq === "fixed") {
+      logger.log("Switching to Fixed tab based on params");
+      setSelectedType("Fixed");
+    }
+  }, [params.schemeType, params.paymentFrequency]);
+
+  // Robust switch based on actual data
+  useEffect(() => {
+    if (!loading && savings.length > 0 && params.investmentId) {
+       const targetId = params.investmentId.toString();
+       const targetItem = savings.find(s => s.id.toString() === targetId);
+       
+       if (targetItem) {
+         const itemType = targetItem.schemesData?.paymentFrequencyName;
+         const derivedType = itemType === "Flexi" ? "Flexi" : "Fixed";
+         
+         if (selectedType !== derivedType) {
+           logger.log(`Found target investment ${targetId} in ${derivedType} list. Switching tab.`);
+           setSelectedType(derivedType);
+         }
+       } else {
+         logger.warn(`Target investment ${targetId} not found in user savings list.`);
+       }
+    }
+  }, [loading, savings, params.investmentId]);
 
   // Fetch user investment data
   const fetchUserData = useCallback(async () => {
@@ -450,8 +501,11 @@ export default function SavingsScreen() {
 
   // Filtered savings based on selectedType
   const filteredSavings = useMemo(() => {
+    logger.log("Filtering savings for type:", selectedType);
     return savings.filter((item: any) => {
-      const schemeType = item.schemesData.paymentFrequencyName;
+      const schemeType = item.schemesData?.paymentFrequencyName;
+      // logger.log("Item scheme type:", schemeType, "ID:", item.id);
+      
       if (selectedType === "Flexi") {
         return schemeType === "Flexi";
       } else {
@@ -460,12 +514,46 @@ export default function SavingsScreen() {
     });
   }, [savings, selectedType]);
 
+  // Auto-scroll to specific investment
+  useEffect(() => {
+    logger.log("Auto-scroll effect triggered:", {
+      investmentId: params.investmentId,
+      filteredSavingsLength: filteredSavings.length,
+      loading,
+      selectedType
+    });
+
+    if (params.investmentId && filteredSavings.length > 0 && !loading) {
+      const index = filteredSavings.findIndex(
+        (item) => item.id.toString() === params.investmentId?.toString()
+      );
+      
+      logger.log("Auto-scroll index found:", index);
+
+      if (index !== -1) {
+        // Wait a bit for list to render
+        setTimeout(() => {
+          logger.log("Executing scrollToIndex", index);
+          flatListRef.current?.scrollToIndex({
+            index,
+            animated: true,
+            viewPosition: 0.1, // Position toward top/middle
+          });
+        }, 500);
+      }
+    }
+  }, [filteredSavings, params.investmentId, loading]);
+
   // Memoized renderItem for FlatList
   const renderSchemeItem = useCallback(
     ({ item }: { item: any }) => (
-      <EnhancedSchemeCard item={item} translations={translations} />
+      <EnhancedSchemeCard 
+        item={item} 
+        translations={translations}
+        autoExpand={params.investmentId?.toString() === item.id.toString()}
+      />
     ),
-    [translations]
+    [translations, params.investmentId]
   );
 
   // Component definitions - moved before early returns
@@ -763,6 +851,7 @@ export default function SavingsScreen() {
           </View>
 
           <FlatList
+            ref={flatListRef}
             data={filteredSavings}
             keyExtractor={(item, index) =>
               item.id && item.id !== "" ? item.id : index.toString()
@@ -778,6 +867,12 @@ export default function SavingsScreen() {
             maxToRenderPerBatch={10}
             windowSize={5}
             initialNumToRender={10}
+            onScrollToIndexFailed={(info) => {
+              const wait = new Promise(resolve => setTimeout(resolve, 500));
+              wait.then(() => {
+                flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+              });
+            }}
           />
         </SafeAreaView>
         </View>

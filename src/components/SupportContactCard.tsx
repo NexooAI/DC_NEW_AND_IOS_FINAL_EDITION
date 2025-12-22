@@ -89,10 +89,25 @@ const SupportContactCard = () => {
     );
   };
 
-  const handleWhatsApp = () => {
-    Linking.openURL(
-      `https://wa.me/${theme.constants.whatsapp.replace("+", "")}`
-    ).catch((err) => Alert.alert(t("error"), t("couldNotOpenWhatsApp")));
+  const handleWhatsApp = async () => {
+    const phoneNumber = theme.constants.whatsapp.replace(/[^\d]/g, "");
+    const text = "Hello, I need support.";
+    const whatsappUrl = `whatsapp://send?phone=${phoneNumber}&text=${text}`;
+    const webUrl = `https://wa.me/${phoneNumber}?text=${text}`;
+
+    try {
+      const supported = await Linking.canOpenURL(whatsappUrl);
+      if (supported) {
+        await Linking.openURL(whatsappUrl);
+      } else {
+        await Linking.openURL(webUrl);
+      }
+    } catch (error) {
+      // If checking support creates an error, try opening web url directly
+      Linking.openURL(webUrl).catch((err) =>
+        Alert.alert(t("error"), t("couldNotOpenWhatsApp"))
+      );
+    }
   };
 
   return (

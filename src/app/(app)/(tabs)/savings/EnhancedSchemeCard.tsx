@@ -52,17 +52,19 @@ type Scheme = {
 interface EnhancedSchemeCardProps {
   item: Scheme;
   translations: any;
+  autoExpand?: boolean;
 }
 
 const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
   item,
   translations,
+  autoExpand = false,
 }) => {
   const { t, locale } = useTranslation();
   const { user } = useGlobalStore();
-  const [isExpanded, setIsExpanded] = useState(false);
-  const animatedHeight = useRef(new Animated.Value(0)).current;
-  const [isActive, setIsActive] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(autoExpand);
+  const animatedHeight = useRef(new Animated.Value(autoExpand ? 1 : 0)).current;
+  const [isActive, setIsActive] = useState(autoExpand);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -140,6 +142,20 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
 
     return total;
   }, [item.rewards]);
+
+  useEffect(() => {
+    if (autoExpand) {
+      console.log("Auto-expanding card:", item.id);
+      setIsExpanded(true);
+      setIsActive(true);
+      Animated.spring(animatedHeight, {
+        toValue: 1,
+        useNativeDriver: false,
+        friction: 8,
+        tension: 40,
+      }).start();
+    }
+  }, [autoExpand]);
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);

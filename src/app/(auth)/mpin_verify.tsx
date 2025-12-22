@@ -34,68 +34,101 @@ import { AppLocale } from "@/i18n";
 import apiClient from "@/services/api";
 
 import { logger } from "@/utils/logger";
+import LanguageSelector from "@/components/LanguageSelector";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import { SHADOW_UTILS } from "@/utils/shadowUtils";
+import { getBorderRadius, rf } from "@/utils/responsiveUtils";
+import ResponsiveText from "@/components/ResponsiveText";
+import { useBiometrics } from "@/hooks/useBiometrics";
+
+
+const borderRadius = getBorderRadius();
+
 // Simple Language Switcher Component
 const SimpleLanguageSwitcher = () => {
-  const { language, setLanguage } = useGlobalStore();
+  const { language } = useGlobalStore();
+  const [showSelector, setShowSelector] = useState(false);
+ 
+  const insets = useSafeAreaInsets();
+  const {
+    deviceScale,
+    getResponsiveFontSize,
+    getResponsivePadding,
+    spacing,
+    fontSize,
+    padding,
+  } = useResponsiveLayout();
 
   const handleLanguageChange = () => {
-    let newLang: AppLocale;
-    switch (language) {
-      case "en":
-        newLang = "ta";
-        break;
-      case "ta":
-        newLang = "en";
-        break;
-      default:
-        newLang = "en";
-    }
-    setLanguage(newLang);
+    setShowSelector(true);
   };
 
   const getLanguageDisplayName = () => {
     switch (language) {
       case "en":
-        return "தமிழ்";
-      case "ta":
         return "English";
-      default:
+      case "ta":
         return "தமிழ்";
+      case "mal":
+        return "മലയാളം";
+      case "te":
+        return "తెలుగు";
+      case "hi":
+        return "हिन्दी";
+      default:
+        return "English";
     }
   };
 
   return (
-    <TouchableOpacity
-      onPress={handleLanguageChange}
-      style={{
-        position: "absolute",
-        top: Platform.OS === "ios" ? 60 : 40,
-        right: 20,
-        zIndex: 1000,
-        backgroundColor: theme.colors.overlayDark,
-        padding: 12,
-        borderRadius: 25,
-        flexDirection: "row",
-        alignItems: "center",
-        borderWidth: 1,
-        borderColor: theme.colors.overlayLight,
-      }}
-    >
-      <Image
-        source={theme.images.translate.malayalam as any}
+    <>
+      <TouchableOpacity
+        onPress={handleLanguageChange}
         style={{
-          width: 20,
-          height: 20,
-          marginRight: 8,
-          tintColor: COLORS.white,
+          position: "absolute",
+          top: insets.top + (Platform.OS === "ios" ? 10 : 20),
+          right: spacing.lg,
+          zIndex: 1000,
+          backgroundColor: "rgba(0, 0, 0, 0.7)",
+          padding: spacing.sm,
+          borderRadius: borderRadius.round,
+          flexDirection: "row",
+          alignItems: "center",
+          borderWidth: 1,
+          borderColor: "rgba(255, 255, 255, 0.3)",
+          ...SHADOW_UTILS.card(),
         }}
+      >
+        <Image
+          source={require("../../../assets/images/translate.png")}
+          style={{
+            width: rf(20),
+            height: rf(20),
+            marginRight: spacing.xs,
+            tintColor: COLORS.white,
+          }}
+        />
+        <ResponsiveText
+          variant="caption"
+          size="sm"
+          weight="bold"
+          color={COLORS.white}
+          allowWrap={false}
+          maxLines={1}
+        >
+          {getLanguageDisplayName()}
+        </ResponsiveText>
+      </TouchableOpacity>
+
+      <LanguageSelector
+        visible={showSelector}
+        onClose={() => setShowSelector(false)}
       />
-      <Text style={{ color: COLORS.white, fontSize: 14, fontWeight: "bold" }}>
-        {getLanguageDisplayName()}
-      </Text>
-    </TouchableOpacity>
+    </>
   );
 };
+
 
 // Custom Modal Component
 const CustomModal = ({
@@ -286,6 +319,47 @@ export default function MpinVerify() {
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Biometric Auth Hook
+  const { 
+    isSupported, 
+    isEnrolled, 
+    isEnabled, 
+    authenticate, 
+    enableBiometrics 
+  } = useBiometrics();
+
+  // Handle Biometric Authentication
+  const handleBiometricAuth = async () => {
+    if (loading || isLocked) return;
+    
+    // Don't show modal if already showing one
+    if (showModal) return;
+
+    logger.log("🧬 Starting biometric authentication");
+    const result = await authenticate();
+    
+    if (result.success && result.mpin) {
+      logger.log("🧬 Biometric auth success, verifying MPIN");
+      verifyMpin(result.mpin, true); // true = via biometrics
+    } else if (result.error) {
+      logger.log("🧬 Biometric auth failed:", result.error);
+      if (result.error !== "User canceled" && result.error !== "Canceled") {
+         // Optional: show error toast
+      }
+    }
+  };
+
+  // Auto-trigger biometrics only once when ready
+  useEffect(() => {
+    if (!initializing && isEnabled && !isLocked && !loading) {
+      // Small delay to ensure UI is ready
+      const timer = setTimeout(() => {
+        handleBiometricAuth();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [initializing, isEnabled]);
+
   // Animation for button press
   const animatePress = () => {
     Animated.sequence([
@@ -473,8 +547,8 @@ export default function MpinVerify() {
     }, 100);
   };
 
-  const verifyMpin = async (enteredMpin: string) => {
-    logger.log("🚀 verifyMpin function called with:", enteredMpin);
+  const verifyMpin = async (enteredMpin: string, isBiometric: boolean = false) => {
+    logger.log("🚀 verifyMpin function called with:", isBiometric ? "Biometrics" : "Manual Input");
 
     // Prevent multiple simultaneous calls
     if (loading) {
@@ -619,7 +693,36 @@ export default function MpinVerify() {
             "==========================================================================="
           );
           // Navigate to home page after successful MPIN verification
-          router.replace("/(app)/(tabs)/home");
+          // Navigate to home page after successful MPIN verification
+          
+          // Check if we should ask for biometric enrollment
+          if (!isBiometric && !isEnabled && isSupported && isEnrolled) {
+             Alert.alert(
+                t("setupBiometrics") || "Enable Biometrics",
+                t("setupBiometricsMsg") || "Would you like to use Face ID / Fingerprint for faster login next time?",
+                [
+                  { 
+                    text: t("no") || "No", 
+                    onPress: () => router.replace("/(app)/(tabs)/home") 
+                  },
+                  { 
+                    text: t("yes") || "Yes", 
+                    onPress: async () => {
+                      const success = await enableBiometrics(enteredMpin);
+                      if (success) {
+                        Alert.alert(t("success"), t("biometricsEnabled") || "Biometrics enabled successfully", [
+                          { text: "OK", onPress: () => router.replace("/(app)/(tabs)/home") }
+                        ]);
+                      } else {
+                        router.replace("/(app)/(tabs)/home");
+                      }
+                    }
+                  }
+                ]
+             );
+          } else {
+             router.replace("/(app)/(tabs)/home");
+          }
         } catch (storageError) {
           logger.error("Error storing authentication data:", storageError);
           Alert.alert(t("error"), t("failedToStoreAuthData"), [
@@ -992,6 +1095,20 @@ export default function MpinVerify() {
                     </TouchableOpacity>
                   </Animated.View>
 
+                  {/* Biometric Button */}
+                  {(isSupported && isEnrolled && isEnabled) && (
+                    <TouchableOpacity
+                      style={styles.biometricButton}
+                      onPress={handleBiometricAuth}
+                      disabled={loading || isLocked}
+                    >
+                       <Icon name="fingerprint" size={40} color={COLORS.white} />
+                       <Text style={styles.biometricText}>
+                         {Platform.OS === 'ios' ? (t('faceIdTouchId') || 'Face ID / Touch ID') : (t('biometricLogin') || 'Biometric Login')}
+                       </Text>
+                    </TouchableOpacity>
+                  )}
+
                   <View style={styles.bottomButtonsContainer}>
                     <TouchableOpacity
                       style={styles.logoutContainer}
@@ -1038,6 +1155,7 @@ export default function MpinVerify() {
         </KeyboardAvoidingView>
       </LinearGradient>
       <SimpleLanguageSwitcher />
+
 
       {/* Custom Modal */}
       <CustomModal
@@ -1251,7 +1369,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255, 107, 107, 0.1)",
+    backgroundColor: "rgba(255, 255, 255, 0.97)",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -1364,7 +1482,7 @@ const styles = StyleSheet.create({
   clearButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(220, 53, 69, 0.8)",
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -1376,5 +1494,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginLeft: 4,
+  },
+  biometricButton: {
+    alignItems: 'center',
+    marginVertical: 20,
+    opacity: 0.9,
+  },
+  biometricText: {
+    color: COLORS.white,
+    marginTop: 5,
+    fontSize: 14,
   },
 });
