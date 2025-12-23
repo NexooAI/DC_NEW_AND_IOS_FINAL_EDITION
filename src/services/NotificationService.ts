@@ -340,9 +340,9 @@ class NotificationService {
             type: "fcm",
             deviceId: generateUUID(), // Generate UUID like in the screenshot
             development: __DEV__, // true for development, false for production
-            appId: "com.nexooai.dcjewellery", // Use the exact app bundle ID
+            appId: "com.dcjewellers.dcjewellers", // Use the exact app bundle ID
             deviceToken: fcmToken, // This is the actual FCM token
-            projectId: "9af1745a-105c-44f9-9e53-a111bc6ed9ce" // Use the exact project ID
+            projectId: "07310377-0452-4d15-8e38-d42462be6fd8" // Use the exact project ID
           };
         } else {
           // Use the exact same payload without modifying deviceToken
