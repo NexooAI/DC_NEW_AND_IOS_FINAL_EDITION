@@ -1,4 +1,12 @@
 // Learn more https://docs.expo.io/guides/customizing-metro
+// Learn more https://docs.expo.io/guides/customizing-metro
+// Polyfill for Array.prototype.toReversed (required by Metro in newer Expo versions on Node < 20)
+if (!Array.prototype.toReversed) {
+  Array.prototype.toReversed = function () {
+    return this.slice().reverse();
+  };
+}
+
 const { getDefaultConfig } = require("@expo/metro-config");
 const { withNativeWind } = require("nativewind/metro");
 const path = require("path");
