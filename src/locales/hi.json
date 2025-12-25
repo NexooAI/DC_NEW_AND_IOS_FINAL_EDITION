@@ -1032,5 +1032,8 @@
   "biometricsDisabled": "बायोमेट्रिक्स अक्षम किया गया",
   "verifyMpinToEnableBiometrics": "कृपया बायोमेट्रिक लॉगिन सक्षम करने के लिए अपना MPIN दर्ज करें",
   "enable": "सक्षम करें",
-  "failedToEnableBiometrics": "बायोमेट्रिक्स सक्षम करने में विफल"
+  "failedToEnableBiometrics": "बायोमेट्रिक्स सक्षम करने में विफल",
+  "recentActivity": "हाल की गतिविधि",
+  "statusActive": "सक्रिय",
+  "downloadReceipt": "रसीद डाउनलोड करें"
 }

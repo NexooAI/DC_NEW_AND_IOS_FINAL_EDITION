@@ -1033,5 +1033,8 @@
   "biometricsDisabled": "ബയോമെട്രിക്സ് പ്രവർത്തനരഹിതമാക്കി",
   "verifyMpinToEnableBiometrics": "ബയോമെട്രിക് ലോഗിൻ പ്രവർത്തനക്ഷമമാക്കാൻ ദയവായി നിങ്ങളുടെ MPIN നൽകുക",
   "enable": "പ്രവർത്തനക്ഷമമാക്കുക",
-  "failedToEnableBiometrics": "ബയോമെട്രിക്സ് പ്രവർത്തനക്ഷമമാക്കുന്നതിൽ പരാജയപ്പെട്ടു"
+  "failedToEnableBiometrics": "ബയോമെട്രിക്സ് പ്രവർത്തനക്ഷമമാക്കുന്നതിൽ പരാജയപ്പെട്ടു",
+  "recentActivity": "സമീപകാല പ്രവർത്തനങ്ങൾ",
+  "statusActive": "സജീവം",
+  "downloadReceipt": "രസീത് ഡൗൺലോഡ് ചെയ്യുക"
 }

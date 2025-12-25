@@ -1041,5 +1041,8 @@
   "biometricsDisabled": "பயோமெட்ரிக்ஸ் முடக்கப்பட்டது",
   "verifyMpinToEnableBiometrics": "பயோமெட்ரிக் உள்நுழைவை இயக்க உங்கள் எம்பிஐஎன் (MPIN) ஐ உள்ளிடவும்",
   "enable": "இயக்கு",
-  "failedToEnableBiometrics": "பயோமெட்ரிக்ஸை இயக்க முடியவில்லை"
+  "failedToEnableBiometrics": "பயோமெட்ரிக்ஸை இயக்க முடியவில்லை",
+  "recentActivity": "சமீபத்திய செயல்பாடு",
+  "statusActive": "செயலில்",
+  "downloadReceipt": "ரசீதைப் பதிவிறக்கவும்"
 }

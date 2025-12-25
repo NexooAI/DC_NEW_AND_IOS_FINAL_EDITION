@@ -1032,5 +1032,8 @@
   "biometricsDisabled": "బయోమెట్రిక్స్ నిలిపివేయబడింది",
   "verifyMpinToEnableBiometrics": "బయోమెట్రిక్ లాగిన్‌ను ప్రారంభించడానికి దయచేసి మీ MPINని నమోదు చేయండి",
   "enable": "ప్రారంభించు",
-  "failedToEnableBiometrics": "బయోమెట్రిక్స్‌ను ప్రారంభించడంలో విఫలమైంది"
+  "failedToEnableBiometrics": "బయోమెట్రిక్స్‌ను ప్రారంభించడంలో విఫలమైంది",
+  "recentActivity": "ఇటీవలి కార్యకలాపాలు",
+  "statusActive": "యాక్టివ్",
+  "downloadReceipt": "రసీదును డౌన్‌లోడ్ చేయండి"
 }

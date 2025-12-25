@@ -558,33 +558,33 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
 );
 
 // AnimatedGoldRate: Decorative gold rate label with theme color, 22KT, live dot, and last updated timestamp
+// AnimatedGoldRate: Decorative gold rate label with theme color, 22KT, live dot, and last updated timestamp
 const AnimatedGoldRate: React.FC<{ goldRate: string; updatedAt?: string }> = ({
   goldRate,
   updatedAt,
 }) => {
   const { t } = useTranslation();
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  // Animation for the live dot opacity
+  const opacityAnim = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
     const pulse = Animated.loop(
       Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 1.08,
-          duration: 700,
-          easing: Easing.inOut(Easing.ease),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 1000,
           useNativeDriver: true,
         }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 700,
-          easing: Easing.inOut(Easing.ease),
+        Animated.timing(opacityAnim, {
+          toValue: 0.4,
+          duration: 1000,
           useNativeDriver: true,
         }),
       ])
     );
     pulse.start();
     return () => pulse.stop();
-  }, [scaleAnim]);
+  }, [opacityAnim]);
 
   // Format timestamp
   const formatDateToIndian = (isoString: string | undefined) => {
@@ -592,8 +592,7 @@ const AnimatedGoldRate: React.FC<{ goldRate: string; updatedAt?: string }> = ({
     const date = new Date(isoString);
     return date.toLocaleString("en-IN", {
       day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
+      month: "short",
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
@@ -601,39 +600,143 @@ const AnimatedGoldRate: React.FC<{ goldRate: string; updatedAt?: string }> = ({
   };
 
   return (
-    <View
-      style={styles.goldRateLabelContainer}
-      accessibilityLabel="Gold Rate Label"
-    >
-      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-        <LinearGradient
-          colors={["#850111", "#2e0406"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.goldRateLabel}
-        >
-          <Text style={styles.goldRateTitle}>{t("goldRate")}</Text>
-          <View style={styles.goldRateRow}>
-            <Ionicons
-              name="star"
-              size={18}
-              color="#FFD700"
-              style={{ marginRight: 4 }}
-            />
-            <Text style={styles.goldRatePrice}>₹{goldRate}/-</Text>
-            <Text style={styles.goldRatePurity}>22KT</Text>
-            <View style={styles.liveDot} />
+    <View style={agrStyles.container}>
+      <LinearGradient
+        colors={[theme.colors.primary, theme.colors.primaryDark || '#8A0F16']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={agrStyles.card}
+      >
+        <View style={agrStyles.headerRow}>
+          <View style={agrStyles.liveBadge}>
+            <Animated.View style={[agrStyles.liveDot, { opacity: opacityAnim }]} />
+            <Text style={agrStyles.liveText}>{t("goldRate") || "LIVE RATE"}</Text>
           </View>
-          {updatedAt && (
-            <Text style={styles.goldRateUpdatedAt}>
-              Last updated: {formatDateToIndian(updatedAt)}
+          <View style={agrStyles.purityBadge}>
+            <Ionicons name="diamond-outline" size={12} color="#FFD700" style={{ marginRight: 4 }} />
+            <Text style={agrStyles.purityText}>22KT</Text>
+          </View>
+        </View>
+
+        <View style={agrStyles.priceContainer}>
+          <Text style={agrStyles.currencySymbol}>₹</Text>
+          <Text style={agrStyles.priceText}>{goldRate}</Text>
+          <Text style={agrStyles.perGramText}>/g</Text>
+        </View>
+
+        {updatedAt && (
+          <View style={agrStyles.footerRow}>
+            <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.6)" />
+            <Text style={agrStyles.updatedText}>
+              Updated: {formatDateToIndian(updatedAt)}
             </Text>
-          )}
-        </LinearGradient>
-      </Animated.View>
+          </View>
+        )}
+      </LinearGradient>
     </View>
   );
 };
+
+const agrStyles = StyleSheet.create({
+  container: {
+    width: "90%",
+    alignSelf: "center",
+    marginVertical: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  card: {
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  liveBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.2)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#4CAF50",
+    marginRight: 6,
+  },
+  liveText: {
+    color: "#FFF",
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  purityBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  purityText: {
+    color: "#FFD700",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  priceContainer: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  currencySymbol: {
+    color: "#FFF",
+    fontSize: 20,
+    fontWeight: "600",
+    marginRight: 2,
+  },
+  priceText: {
+    color: "#FFF",
+    fontSize: 34,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+    textShadowColor: "rgba(0,0,0,0.2)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  perGramText: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 14,
+    fontWeight: "500",
+    marginLeft: 4,
+  },
+  footerRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 4,
+  },
+  updatedText: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 11,
+    fontStyle: "italic",
+  },
+});
 
 // BannerCard component for FlatList renderItem
 interface BannerCardProps {

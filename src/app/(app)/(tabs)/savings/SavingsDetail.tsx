@@ -10,14 +10,17 @@ import {
   ActivityIndicator,
   Modal,
   Alert,
+  StatusBar,
+  Animated,
+  RefreshControl,
+  LayoutAnimation,
+  ImageBackground,
 } from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-
-// AppHeader is now handled by the layout wrapper
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -44,9 +47,11 @@ import { Socket } from "socket.io-client";
 import { CommonActions, useNavigationState } from "@react-navigation/native";
 import { formatGoldWeight } from "@/utils/imageUtils";
 import { theme } from "@/constants/theme";
+import COLORS from "@/constants/colors";
 import { SkeletonSavingsDetailPage } from "@/components/SkeletonLoader";
 
 import { logger } from "@/utils/logger";
+
 type Transaction = {
   paymentId: number;
   amountPaid: string;
@@ -93,11 +98,6 @@ interface DetailRowProps {
   icon?: string;
 }
 
-// Payment data storage keys
-const PAYMENT_DATA_KEY = "@payment_data_retry";
-const INVESTMENT_DATA_KEY = "@investment_data_retry";
-const TRANSACTION_DATA_KEY = "@transaction_data_retry";
-
 const SavingsDetail = () => {
   const { t } = useTranslation();
   const router = useRouter();
@@ -107,9 +107,10 @@ const SavingsDetail = () => {
   const [paymentHistrory, setPaymentHistrory] = useState<Transaction[]>([]);
   const [inversement, setInversement] = useState<any>();
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [socket, setSocket] = useState<Socket | null>(null);
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const { bottom, top } = useSafeAreaInsets();
   const bottomPadding = height * 0.1 + bottom;
   const [isNavigationReady, setIsNavigationReady] = useState(false);
@@ -122,6 +123,10 @@ const SavingsDetail = () => {
   );
   const [selectedPayments, setSelectedPayments] = useState<any[]>([]);
   const [showAdvancePayment, setShowAdvancePayment] = useState(false);
+  
+  // Animation for scrolling
+  const scrollY = new Animated.Value(0);
+
   const translations = useMemo(
     () => ({
       totalInvested: t("totalInvested"),
@@ -152,36 +157,54 @@ const SavingsDetail = () => {
       totalPaid: t("totalPaid"),
       monthsPaid: t("monthsPaid"),
       rewards: t("rewards"),
+      viewAll: t("viewAll") || "View All",
+      recentActivity: t("recentActivity") || "Recent Activity",
+      schemeDetails: t("schemeDetails") || "Scheme Details",
+      statusActive: t("statusActive"),
+      downloadReceipt: t("downloadReceipt"),
     }),
     [language]
   );
   const state = useNavigationState((state) => state);
   const [advancePayments, setAdvancePayments] = useState<any[]>([]);
+  
   const totalSelectedAmount = useMemo(() => {
     if (selectedPayments.length === 0) return 0;
-    // Use emiAmount from params as it's the fixed installment amount
     return selectedPayments.length * Number(params.emiAmount);
   }, [selectedPayments, params.emiAmount]);
+
   const schemesData = useMemo(() => {
-    return JSON.parse(params.schemesData);
+    try {
+      return JSON.parse(params.schemesData);
+    } catch (e) {
+      return {};
+    }
   }, [params.schemesData]);
+
   const rewardsData = useMemo(() => {
-    return JSON.parse(params?.rewards || "[]");
+    try {
+      return JSON.parse(params?.rewards || "[]");
+    } catch {
+      return [];
+    }
   }, [params?.rewards]);
+
   const totalAmountandRewards = useMemo(() => {
     return Number(params?.totalPaid) + Number(rewardsData.reduce((acc: number, curr: any) => acc + curr.amount, 0));
   }, [params?.totalPaid, rewardsData]);
+
   const onlyTotalRewards = useMemo(() => {
     return Number(rewardsData.reduce((acc: number, curr: any) => acc + curr.amount, 0));
   }, [rewardsData]);
-  // Recipt cretion
+
   const sanitizeFileName = (str: string) => str.replace(/[^a-zA-Z0-9]/g, "_");
-  // PDF Generation function
+
+  // PDF Generation function (kept largely the same)
   const createAndShareReceiptPDF = async (
     transaction: Transaction,
     inversement: any
   ) => {
-    // Extract reward amount and gold grams from rewardsList
+     // Extract reward amount and gold grams from rewardsList
     const rewardAmount = transaction.rewardsList?.amount
       ? Number(transaction.rewardsList.amount)
       : undefined;
@@ -204,72 +227,50 @@ const SavingsDetail = () => {
       rewardGoldGrams: rewardGoldGrams,
       inversement: inversement,
     };
-    logger.log(
-      "createAndShareReceiptPDF",
-      generatePaymentReceiptHTML(receiptData)
-    );
-    const htmlContent = generatePaymentReceiptHTML(receiptData);
-    const { uri } = await Print.printToFileAsync({ html: htmlContent }); // e.g. file:///.../ABC123.pdf [web:1]
-    // 2) Rename/move to desired filename
-    const customerName = sanitizeFileName(user?.name || "Customer");
-    const accountNo = sanitizeFileName(user?.id?.toString() || "000000");
-    const paymentId = sanitizeFileName(
-      transaction.paymentId?.toString() || "000000"
-    );
-    const fileName = `${customerName}_${accountNo}_${paymentId}.pdf`;
+    
+    try {
+      const htmlContent = generatePaymentReceiptHTML(receiptData);
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+      
+      const customerName = sanitizeFileName(user?.name || "Customer");
+      const accountNo = sanitizeFileName(user?.id?.toString() || "000000");
+      const paymentId = sanitizeFileName(
+        transaction.paymentId?.toString() || "000000"
+      );
+      const fileName = `${customerName}_${accountNo}_${paymentId}.pdf`;
 
-    const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory; // prefer persistent [web:20]
-    const targetUri = `${targetDir}${fileName}`;
-    await FileSystem.moveAsync({ from: uri, to: targetUri }); // gives custom filename [web:24][web:20]
+      const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+      const targetUri = `${targetDir}${fileName}`;
+      await FileSystem.moveAsync({ from: uri, to: targetUri });
 
-    // 3) Share or open in browser-like view
-    const canShare = await Sharing.isAvailableAsync(); // native sheet availability [web:12]
-    if (canShare) {
-      await Sharing.shareAsync(targetUri, {
-        UTI: "com.adobe.pdf", // iOS UTI [web:12]
-        mimeType: "application/pdf", // Android MIME [web:12]
-        dialogTitle: "Share payment receipt", // Android/Web title [web:12]
-      });
-    } else {
-      // Fallback: attempt to open via system browser or viewer
-      // WebBrowser supports http/https; for file://, many Androids will not open; consider Linking.openURL or a PDF viewer screen [web:30][web:33]
-      if (Platform.OS === "ios") {
-        await WebBrowser.openBrowserAsync(targetUri); // may work with iOS file URLs depending on handlers [web:30]
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(targetUri, {
+          UTI: "com.adobe.pdf",
+          mimeType: "application/pdf",
+          dialogTitle: "Share payment receipt",
+        });
       } else {
-        Alert.alert("Saved", `Receipt saved at: ${targetUri}`);
+        if (Platform.OS === "ios") {
+          await WebBrowser.openBrowserAsync(targetUri);
+        } else {
+          Alert.alert("Saved", `Receipt saved at: ${targetUri}`);
+        }
       }
+    } catch (e) {
+      console.error("Receipt generation failed", e);
+      Alert.alert("Error", "Failed to generate receipt");
     }
-
-    Alert.alert("Success", "Payment receipt generated and ready to share!");
-    // await generateInvoicePDF(transaction, inversement);
   };
 
   // Initialize socket connection
   useEffect(() => {
     const socketInstance = initializeSocket();
     setSocket(socketInstance);
-    socketInstance.on("connect", () => { });
     return () => {
       socketInstance.disconnect();
     };
   }, []);
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("state", () => {
-      setIsNavigationReady(true);
-    });
-    return unsubscribe;
-  }, [navigation]);
-
-  // Construct user details in the format expected by payment function
-  const parsedUserDetails = useMemo(
-    () => ({
-      name: params.accountHolder,
-      email: user?.email || "",
-      mobile: user?.mobile || "",
-      data: { data: { userId: user?.id, schemeId: params.schemeCode } },
-    }),
-    [params, user]
-  );
 
   const PaymentNow = async () => {
     if (!user) {
@@ -279,7 +280,6 @@ const SavingsDetail = () => {
       return;
     }
 
-    // Set loading state
     setIsLoading(true);
 
     let payload = {
@@ -289,7 +289,7 @@ const SavingsDetail = () => {
 
     try {
       let responce = await api.post("investments/check-payment", payload);
-      logger.log(responce.data);
+      
       if (responce?.data?.success === false) {
         setAlertMessage(responce?.data.message || "Something went wrong");
         setAlertType("error");
@@ -297,20 +297,16 @@ const SavingsDetail = () => {
         return;
       }
 
-      // Safely parse schemes data
       let parseSchemes;
       try {
         parseSchemes = JSON.parse(params.schemesData);
-        console.log("parseSchemes=-=========", parseSchemes);
       } catch (parseError) {
-        logger.error("Error parsing schemes data:", parseError);
-        // Fallback to a default structure
         parseSchemes = {
           schemeTypeName: "Fixed",
           paymentFrequencyName: params.paymentFrequency || "Monthly",
         };
       }
-      logger.log("params---------------history", paymentHistrory);
+
       router.push({
         pathname: "/(tabs)/home/paymentNewOverView",
         params: {
@@ -318,10 +314,9 @@ const SavingsDetail = () => {
           schemeName: params.schemeName,
           schemeId: responce?.data.data.schemeId,
           chitId: responce?.data.data?.chitId,
-          paymentFrequency:
-            parseSchemes.paymentFrequencyName || params.paymentFrequency, // Use the correct paymentFrequency
+          paymentFrequency: parseSchemes.paymentFrequencyName || params.paymentFrequency,
           schemeType: parseSchemes.schemeTypeName,
-          source: params.source || "savings_detail", // Track source
+          source: params.source || "savings_detail",
           savinsTypes: parseSchemes.schemeType,
           userDetails: JSON.stringify({
             amount: params.emiAmount,
@@ -331,9 +326,8 @@ const SavingsDetail = () => {
             investmentId: responce?.data.data?.investmentId,
             schemeId: responce?.data.data?.schemeId,
             schemeType: parseSchemes.schemeTypeName,
-            schemeName: params?.schemeName, // Also inside userDetails for redundancy
-            paymentFrequency:
-              parseSchemes.paymentFrequencyName || params.paymentFrequency, // Use the correct paymentFrequency
+            schemeName: params?.schemeName,
+            paymentFrequency: parseSchemes.paymentFrequencyName || params.paymentFrequency,
             chitId: responce?.data.data?.chitId,
           }),
           paidPaymentCount: String(paymentHistrory?.length + 1 || 0),
@@ -345,94 +339,58 @@ const SavingsDetail = () => {
       setAlertType("error");
       setAlertVisible(true);
     } finally {
-      // Clear loading state
       setIsLoading(false);
     }
   };
 
-  // Auto-trigger PaymentNow if autoPayNow param is set
+  // Auto-trigger PaymentNow
   useEffect(() => {
     if (params.autoPayNow === "1") {
-      // Set loading state immediately
       setIsLoading(true);
       setLoading(true);
-
-      // Add a small delay to show loading state
       const timer = setTimeout(() => {
         PaymentNow();
       }, 1000);
-
       return () => clearTimeout(timer);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        const response = await api.get(`investments/${params.id}`, { skipLoading: true } as any);
-        if (response.data.data.paymentHistory) {
-          setPaymentHistrory(response.data.data.paymentHistory);
-        }
-        if (response.data.data.paymentStatus) {
-          setAdvancePayments(response.data.data.paymentStatus);
-        }
-        if (response.data.data.investmentList) {
-          setInversement(response.data.data.investmentList);
-        }
-      } catch (error) {
-        logger.error("Error fetching transactions:", error);
-      } finally {
-        setLoading(false);
+  const fetchTransactions = async () => {
+    try {
+      const response = await api.get(`investments/${params.id}`, { skipLoading: true } as any);
+      if (response.data.data.paymentHistory) {
+        setPaymentHistrory(response.data.data.paymentHistory);
       }
-    };
+      if (response.data.data.paymentStatus) {
+        setAdvancePayments(response.data.data.paymentStatus);
+      }
+      if (response.data.data.investmentList) {
+        setInversement(response.data.data.investmentList);
+      }
+    } catch (error) {
+      logger.error("Error fetching transactions:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
     fetchTransactions();
   }, [params.id]);
 
-  const DetailRow: React.FC<DetailRowProps> = ({
-    label,
-    value,
-    labelColor = theme.colors.textSecondary,
-    valueColor = theme.colors.textSecondary,
-    icon,
-  }) => {
-    return (
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          paddingVertical: 4,
-        }}
-      >
-        {icon && (
-          <Icon
-            name={icon}
-            size={16}
-            color="#bfbfbf"
-            style={{ marginRight: 8 }}
-          />
-        )}
-        <Text style={{ flex: 1, color: labelColor, fontSize: 14 }}>
-          {label}
-        </Text>
-        <Text style={{ color: valueColor, fontSize: 14, fontWeight: "500" }}>
-          {value}
-        </Text>
-      </View>
-    );
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    fetchTransactions();
+  }, []);
+
+  const getProgressPercentage = () => {
+    const paid = Number(params.monthsPaid) || 0;
+    const total = Number(params.noOfIns) || 1;
+    return Math.min((paid / total) * 100, 100);
   };
 
-  // Parse schemesData for payment_duration
-  let parsedSchemesData: any = {};
-  try {
-    parsedSchemesData = params.schemesData
-      ? JSON.parse(params.schemesData)
-      : {};
-  } catch (e) {
-    parsedSchemesData = {};
-  }
-
-  const handleSelectPayment = (payment: any) => {
+   const handleSelectPayment = (payment: any) => {
     setSelectedPayments((prev) => {
       const isSelected = prev.some(
         (p) => p.monthNumber === payment.monthNumber
@@ -446,1252 +404,749 @@ const SavingsDetail = () => {
   };
 
   const handleBulkPayment = async () => {
-    if (!user || selectedPayments.length === 0) {
-      setAlertMessage("Please select at least one installment to pay.");
-      setAlertType("error");
-      setAlertVisible(true);
-      return;
-    }
-
-    setIsLoading(true);
-
-    let payload = {
-      userId: user.id,
-      investmentId: params.id,
-    };
-
-    try {
-      let responce = await api.post("investments/check-payment", payload);
-      logger.log(responce.data);
-      if (responce?.data?.success === false) {
-        setAlertMessage(responce?.data.message || "Something went wrong");
+      if (!user || selectedPayments.length === 0) {
+        setAlertMessage("Please select at least one installment to pay.");
         setAlertType("error");
         setAlertVisible(true);
         return;
       }
-
-      // Safely parse schemes data
-      let parseSchemes;
+  
+      setIsLoading(true);
+  
+      let payload = {
+        userId: user.id,
+        investmentId: params.id,
+      };
+  
       try {
-        parseSchemes = JSON.parse(params.schemesData);
-      } catch (parseError) {
-        logger.error("Error parsing schemes data:", parseError);
-        // Fallback to a default structure
-        parseSchemes = {
-          schemeTypeName: "Fixed",
-          paymentFrequencyName: params.paymentFrequency || "Monthly",
-        };
-      }
-
-      router.push({
-        pathname: "/(tabs)/home/paymentNewOverView",
-        params: {
-          amount: totalSelectedAmount,
-          schemeName: params.schemeName,
-          schemeId: responce?.data.data.schemeId,
-          chitId: responce?.data.data?.chitId,
-          paymentFrequency:
-            parseSchemes.paymentFrequencyName || params.paymentFrequency,
-          schemeType: parseSchemes.schemeTypeName,
-          source: params.source || "savings_detail_bulk",
-          savinsTypes: parseSchemes.schemeType,
-          userDetails: JSON.stringify({
+        let responce = await api.post("investments/check-payment", payload);
+        logger.log(responce.data);
+        if (responce?.data?.success === false) {
+          setAlertMessage(responce?.data.message || "Something went wrong");
+          setAlertType("error");
+          setAlertVisible(true);
+          return;
+        }
+  
+        // Safely parse schemes data
+        let parseSchemes;
+        try {
+          parseSchemes = JSON.parse(params.schemesData);
+        } catch (parseError) {
+          logger.error("Error parsing schemes data:", parseError);
+          // Fallback to a default structure
+          parseSchemes = {
+            schemeTypeName: "Fixed",
+            paymentFrequencyName: params.paymentFrequency || "Monthly",
+          };
+        }
+  
+        router.push({
+          pathname: "/(tabs)/home/paymentNewOverView",
+          params: {
             amount: totalSelectedAmount,
-            accountname: params.accountHolder,
-            accNo: params.accNo,
-            associated_branch: 1,
-            investmentId: responce?.data.data?.investmentId,
-            schemeId: responce?.data.data?.schemeId,
-            schemeType: parseSchemes.schemeTypeName,
-            schemeName: params?.schemeName,
+            schemeName: params.schemeName,
+            schemeId: responce?.data.data.schemeId,
+            chitId: responce?.data.data?.chitId,
             paymentFrequency:
               parseSchemes.paymentFrequencyName || params.paymentFrequency,
-            chitId: responce?.data.data?.chitId,
-            selectedMonths: selectedPayments.map((p) => p.monthNumber).join(","),
-          }),
-          paidPaymentCount: String(
-            (paymentHistrory?.length || 0) + selectedPayments.length
-          ),
-        },
-      });
-    } catch (error) {
-      logger.error("Error in handleBulkPayment:", error);
-      setAlertMessage("An error occurred. Please try again.");
-      setAlertType("error");
-      setAlertVisible(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+            schemeType: parseSchemes.schemeTypeName,
+            source: params.source || "savings_detail_bulk",
+            savinsTypes: parseSchemes.schemeType,
+            userDetails: JSON.stringify({
+              amount: totalSelectedAmount,
+              accountname: params.accountHolder,
+              accNo: params.accNo,
+              associated_branch: 1,
+              investmentId: responce?.data.data?.investmentId,
+              schemeId: responce?.data.data?.schemeId,
+              schemeType: parseSchemes.schemeTypeName,
+              schemeName: params?.schemeName,
+              paymentFrequency:
+                parseSchemes.paymentFrequencyName || params.paymentFrequency,
+              chitId: responce?.data.data?.chitId,
+              selectedMonths: selectedPayments.map((p) => p.monthNumber).join(","),
+            }),
+            paidPaymentCount: String(
+              (paymentHistrory?.length || 0) + selectedPayments.length
+            ),
+          },
+        });
+      } catch (error) {
+        logger.error("Error in handleBulkPayment:", error);
+        setAlertMessage("An error occurred. Please try again.");
+        setAlertType("error");
+        setAlertVisible(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
+    const handleSelectAll = () => {
+      const pendingPayments = advancePayments.filter(
+        (p) => p.status === "PENDING"
+      );
+      setSelectedPayments(pendingPayments);
+    };
+  
+    const handleUnselectAll = () => {
+      setSelectedPayments([]);
+    };
 
-  const handleSelectAll = () => {
-    const pendingPayments = advancePayments.filter(
-      (p) => p.status === "PENDING"
-    );
-    setSelectedPayments(pendingPayments);
-  };
+  // New Component Renderers
 
-  const handleUnselectAll = () => {
-    setSelectedPayments([]);
-  };
+  const renderHeroCard = () => (
+    <View style={styles.heroContainer}>
+      <LinearGradient
+        colors={theme.colors.gradientPrimary}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.heroCard}
+      >
+        <View style={styles.heroBackground}>
+           <View style={styles.heroHeaderRow}>
+             <View>
+                 <Text style={styles.heroSchemeName}>{params.schemeName}</Text>
+                 <Text style={styles.heroSchemeCode}>{params.schemeCode}</Text>
+             </View>
+             {/* <View style={styles.heroStatusBadge}>
+               <View style={styles.heroStatusDot} />
+               <Text style={styles.heroStatusText}>{translations.statusActive || "Active"}</Text>
+             </View> */}
+           </View>
+           
+           <View style={styles.heroStatsRow}>
+             <View style={styles.heroStatItem}>
+               <Text style={styles.heroStatLabel}>{translations.totalInvested}</Text>
+               <Text style={styles.heroStatValue}>₹{Number(totalAmountandRewards).toLocaleString()}</Text>
+             </View>
+              {schemesData?.schemeType?.toLowerCase() === "weight" && (
+                <View style={styles.heroStatItem}>
+                   <Text style={styles.heroStatLabel}>{translations.goldAccumulated}</Text>
+                   <Text style={styles.heroStatValue}>{formatGoldWeight(parseFloat(params.goldWeight) || 0)}</Text>
+                </View>
+              )}
+           </View>
+
+           {schemesData?.paymentFrequencyName !== "Flexi" && (
+               <View style={styles.progressContainer}>
+                 <View style={styles.progressLabels}>
+                   <Text style={styles.progressLabelText}>{translations.paymentProgress}</Text>
+                   <Text style={styles.progressValueText}>{params.monthsPaid}/{params.noOfIns} {translations.months}</Text>
+                 </View>
+                 <View style={styles.progressBarBg}>
+                   <View style={[styles.progressBarFill, { width: `${getProgressPercentage()}%` }]} />
+                 </View>
+               </View>
+           )}
+        </View>
+      </LinearGradient>
+    </View>
+  );
+
+  const renderInfoGrid = () => (
+    <View style={styles.sectionContainer}>
+      <Text style={styles.sectionTitle}>{translations.schemeDetails}</Text>
+      <View style={styles.gridContainer}>
+        
+        <View style={styles.gridItem}>
+           <View style={[styles.gridIcon, { backgroundColor: '#E3F2FD' }]}>
+             <Ionicons name="person" size={20} color={theme.colors.primary} />
+           </View>
+           <View>
+             <Text style={styles.gridLabel}>{translations.accountHolder}</Text>
+             <Text style={styles.gridValue} numberOfLines={1}>{params.accountHolder}</Text>
+           </View>
+        </View>
+
+        <View style={styles.gridItem}>
+           <View style={[styles.gridIcon, { backgroundColor: '#FFF3E0' }]}>
+             <Ionicons name="card" size={20} color="#F57C00" />
+           </View>
+           <View>
+             <Text style={styles.gridLabel}>{translations.schemeType}</Text>
+             <Text style={styles.gridValue}>{schemesData?.paymentFrequencyName || params.paymentFrequency}</Text>
+           </View>
+        </View>
+
+        <View style={styles.gridItem}>
+           <View style={[styles.gridIcon, { backgroundColor: '#E8F5E9' }]}>
+             <Ionicons name="cash" size={20} color="#388E3C" />
+           </View>
+           <View>
+             <Text style={styles.gridLabel}>{translations.monthlyEMI}</Text>
+             <Text style={styles.gridValue}>₹{Number(params.emiAmount).toLocaleString()}</Text>
+           </View>
+        </View>
+
+        <View style={styles.gridItem}>
+           <View style={[styles.gridIcon, { backgroundColor: '#FFEBEE' }]}>
+             <Ionicons name="calendar" size={20} color="#D32F2F" />
+           </View>
+           <View>
+            <Text style={styles.gridLabel}>{translations.maturityDate}</Text>
+            <Text style={styles.gridValue}>{params.maturityDate}</Text>
+           </View>
+        </View>
+
+        <View style={styles.gridItem}>
+           <View style={[styles.gridIcon, { backgroundColor: '#F3E5F5' }]}>
+             <Ionicons name="bookmark" size={20} color="#7B1FA2" />
+           </View>
+           <View>
+            <Text style={styles.gridLabel}>{translations.accountNo}</Text>
+            <Text style={styles.gridValue}>DCJ-{params.accNo}</Text>
+           </View>
+        </View>
+
+        {onlyTotalRewards > 0 && (
+          <View style={styles.gridItem}>
+             <View style={[styles.gridIcon, { backgroundColor: '#FFF8E1' }]}>
+               <Ionicons name="trophy" size={20} color="#FFD700" />
+             </View>
+             <View>
+              <Text style={styles.gridLabel}>{translations.rewards}</Text>
+              <Text style={styles.gridValue}>₹{Number(onlyTotalRewards).toLocaleString()}</Text>
+             </View>
+          </View>
+        )}
+
+      </View>
+    </View>
+  );
+
+  const renderTransactionHistory = () => (
+    <View style={[styles.sectionContainer, { marginBottom: 100 }]}>
+      <View style={styles.sectionHeaderRow}>
+         <Text style={styles.sectionTitle}>{translations.recentActivity}</Text>
+         {/* <TouchableOpacity>
+           <Text style={styles.viewAllText}>{translations.viewAll}</Text>
+         </TouchableOpacity> */}
+      </View>
+      
+      {paymentHistrory.length === 0 ? (
+        <View style={styles.emptyState}>
+           <Ionicons name="receipt-outline" size={48} color="#CCC" />
+           <Text style={styles.emptyStateText}>{translations.noTransactionsFound}</Text>
+        </View>
+      ) : (
+        paymentHistrory.slice(0, 5).map((txn, index) => (
+          <View key={txn.transactionId || index} style={styles.transactionCard}>
+             <View style={styles.transactionLeft}>
+               <View style={styles.transactionIconContainer}>
+                  <Ionicons name={txn.status === "SUCCESS" ? "checkmark" : "time"} size={16} color="#FFF" />
+               </View>
+               <View style={styles.verticalLine} />
+             </View>
+             
+             <View style={styles.transactionContent}>
+                <View style={styles.transactionHeader}>
+                   <Text style={styles.transactionDate}>
+                    {new Date(txn.paymentDate).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                    })}
+                   </Text>
+                   <Text style={styles.transactionAmount}>- ₹{Number(txn.amountPaid).toLocaleString()}</Text>
+                </View>
+                <View style={styles.transactionFooter}>
+                   <Text style={styles.transactionId}>ID: {txn.transactionId}</Text>
+                   <TouchableOpacity onPress={() => setSelectedTransaction(txn)} style={styles.receiptButton}>
+                      <Ionicons name="download-outline" size={16} color={theme.colors.primary} />
+                   </TouchableOpacity>
+                </View>
+             </View>
+          </View>
+        ))
+      )}
+    </View>
+  );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#f3f4f6" }} edges={["bottom"]}>
-      {/* Custom Header with Back Button */}
-      <View style={[styles.headerContainer, { paddingTop: 12 }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {t("savingsDetail")}
-        </Text>
-        <View style={styles.headerSpacer} />
-      </View>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+        {/* Header */}
+        <View style={[styles.header, { paddingTop: Platform.OS === 'android' ? top + 10: top -60 }]}>
+           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color="#FFF" />
+           </TouchableOpacity>
+           <Text style={styles.headerTitle}>{translations.schemeDetails}</Text>
+           <View style={{ width: 40 }} /> 
+        </View>
 
-      {/* Skeleton Loading */}
-      {loading && (
-        <ScrollView
-          contentContainerStyle={{
-            padding: 16,
-            paddingTop: 24,
-            paddingBottom: bottomPadding,
-          }}
-          style={{ flex: 1 }}
-          showsVerticalScrollIndicator={false}
-        >
-          <SkeletonSavingsDetailPage />
-        </ScrollView>
-      )}
-
-      {!loading && (
-        <ScrollView
-          contentContainerStyle={{
-            padding: 16,
-            paddingTop: 24,
-            paddingBottom: bottomPadding,
-          }}
-          style={{ flex: 1 }}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Summary Card */}
-          <LinearGradient
-            colors={theme.colors.gradientPrimary}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.summaryCard}
+        {loading ? (
+             <SkeletonSavingsDetailPage />
+        ) : (
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           >
-            <View style={styles.summaryHeader}>
-              <View style={styles.schemeInfo}>
-                <View style={styles.schemeIconContainer}>
-                  <Ionicons name="diamond-outline" size={20} color="#fff" />
-                </View>
-                <View style={styles.schemeTextContainer}>
-                  <Text style={styles.schemeName}>{params.schemeName}</Text>
-                  <View style={styles.schemeDetails}>
-                    <Text style={styles.schemeCode}>{params.schemeCode}</Text>
-                    <View style={styles.statusBadge}>
-                      <View style={styles.statusDot} />
-                      <Text style={styles.statusText}>Active</Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.summaryStats}>
-              <View style={styles.statItem}>
-                <View style={styles.statIconContainer}>
-                  <Ionicons name="wallet-outline" size={18} color="#fff" />
-                </View>
-                <View style={styles.statInfo}>
-                  <Text style={styles.statLabel}>
-                    {translations.totalInvested}
-                  </Text>
-                  <Text style={styles.statValue}>
-                    ₹{Number(totalAmountandRewards).toLocaleString()}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.statDivider} />
-              {schemesData?.schemeType?.toLowerCase() === "weight" && (
-                <View style={styles.statItem}>
-                  <View style={styles.statIconContainer}>
-                    <Ionicons name="diamond-outline" size={18} color="#fff" />
-                  </View>
-                  <View style={styles.statInfo}>
-                    <Text style={styles.statLabel}>
-                      {translations.goldAccumulated}
-                    </Text>
-                    <Text style={styles.statValue}>
-                      {formatGoldWeight(parseFloat(params.goldWeight) || 0)}
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </View>
-
-            {/* Progress Bar: Hide if payment_duration === '0.00' */}
-            {parsedSchemesData.payment_duration !== "0.00" && (
-              <View style={styles.progressSection}>
-                <View style={styles.progressHeader}>
-                  <Text style={styles.progressLabel}>
-                    {translations.paymentProgress}
-                  </Text>
-                  <Text style={styles.progressValue}>
-                    {params.monthsPaid}/{params.noOfIns} {t("months")}
-                  </Text>
-                </View>
-                <View style={styles.progressBar}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      {
-                        width: `${(Number(params.monthsPaid) / Number(params.noOfIns)) *
-                          100
-                          }%`,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-            )}
-          </LinearGradient>
-
-          {/* Details Section */}
-          {/* Details Section */}
-          <View style={[styles.detailsCard, { backgroundColor: theme.colors.cardBackground }]}>
-            <Text style={styles.sectionTitle}>{translations.accountDetails}</Text>
-            <View style={styles.detailsGrid}>
-              <View style={styles.detailItem}>
-                <Ionicons name="person-outline" size={16} color={theme.colors.primary} />
-                <Text style={styles.detailLabel}>
-                  {translations.accountHolder}
-                </Text>
-                <Text style={styles.detailValue}>{params.accountHolder}</Text>
-              </View>
-              <View style={styles.detailItem}>
-                <Ionicons name="card-outline" size={16} color={theme.colors.primary} />
-                <Text style={styles.detailLabel}>{translations.schemeType}</Text>
-                <Text style={styles.detailValue}>
-                  {JSON.parse(params.schemesData).paymentFrequencyName}
-                </Text>
-              </View>
-              <View style={styles.detailItem}>
-                <Ionicons name="wallet-outline" size={16} color={theme.colors.primary} />
-                <Text style={styles.detailLabel}>{translations.monthlyEMI}</Text>
-                <Text style={styles.detailValue}>
-                  ₹{Number(params.emiAmount).toLocaleString()}
-                </Text>
-              </View>
-              <View style={styles.detailItem}>
-                <Ionicons name="time-outline" size={16} color={theme.colors.primary} />
-                <Text style={styles.detailLabel}>
-                  {translations.maturityDate}
-                </Text>
-                <Text style={styles.detailValue}>{params.maturityDate}</Text>
-              </View>
-              <View style={styles.detailItem}>
-                <Ionicons name="calendar-outline" size={16} color={theme.colors.primary} />
-                <Text style={styles.detailLabel}>{translations.accountNo}</Text>
-                <Text style={styles.detailValue}>DCJ-{params.accNo}</Text>
-              </View>
-              {onlyTotalRewards > 0 && (
-                <View style={styles.detailItem}>
-                  <Ionicons name="diamond-outline" size={16} color={theme.colors.primary} />
-                  <Text style={styles.detailLabel}>{translations.rewards}</Text>
-                  <Text style={styles.detailValue}>₹{Number(onlyTotalRewards).toLocaleString()}</Text>
-                </View>
-              )}
-              {/* {schemesData?.schemeType?.toLowerCase() === "weight" && (
-              <View style={styles.detailItem}>
-                <Ionicons name="diamond-outline" size={16} color="#8B4513" />
-                <Text style={styles.detailLabel}>{translations.goldWeight}</Text>
-                <Text style={styles.detailValue}>
-                  {formatGoldWeight(parseFloat(params.goldWeight) || 0)}
-                </Text>
-              </View>)} */}
-              {/* <View style={styles.detailItem}>
-              <Ionicons name="trending-up-outline" size={16} color="#8B4513" />
-              <Text style={styles.detailLabel}>{translations.totalPaid}</Text>
-              <Text style={styles.detailValue}>
-                ₹{Number(params.totalPaid).toLocaleString()}
-              </Text>
-            </View> */}
-              {/* <View style={styles.detailItem}>
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={16}
-                color="#8B4513"
-              />
-              <Text style={styles.detailLabel}>{translations.monthsPaid}</Text>
-              <Text style={styles.detailValue}>
-                {JSON.parse(params.schemesData).paymentFrequencyName === "Flexi"
-                  ? params.monthsPaid
-                  : params.monthsPaid / params.noOfIns}
-              </Text>
-            </View> */}
-            </View>
-          </View>
-
-          {/* Transactions Section */}
-          {/* Transactions Section */}
-          <View style={[styles.transactionsCard, { backgroundColor: theme.colors.cardBackground }]}>
-            <View style={styles.transactionsHeader}>
-              <Text style={styles.sectionTitle}>
-                {translations.transactionHistory}
-              </Text>
-              <TouchableOpacity style={styles.filterButton}>
-                <Ionicons name="filter" size={20} color={theme.colors.primary} />
-              </TouchableOpacity>
-            </View>
-
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
-              </View>
-            ) : paymentHistrory.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Ionicons name="receipt-outline" size={48} color={theme.colors.primary} />
-                <Text style={styles.emptyText}>
-                  {translations.noTransactionsFound}
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.transactionsList}>
-                {paymentHistrory.map((transaction, index) => (
-                  <View
-                    key={transaction.paymentId?.toString() || index.toString()}
-                  >
-                    <TouchableOpacity
-                      style={styles.transactionItem}
-                      onPress={() => setSelectedTransaction(transaction)}
-                    >
-                      <View style={{ padding: 5 }}>
-                        <Text>{index + 1}</Text>
-                      </View>
-                      <View style={styles.transactionIcon}>
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={24}
-                          color={theme.colors.success}
-                        />
-                      </View>
-                      <View style={styles.transactionInfo}>
-                        <Text style={styles.transactionDate}>
-                          {new Date(transaction.paymentDate).toLocaleDateString(
-                            "en-GB",
-                            {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            }
-                          )}
-                        </Text>
-                      </View>
-                      <Text style={styles.transactionAmount}>
-                        ₹{Number(transaction.amountPaid).toLocaleString()}
-                      </Text>
-                      <Ionicons
-                        name="receipt-outline"
-                        size={22}
-                        color={theme.colors.primary}
-                        style={{ marginLeft: 10 }}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-
-          {/* Advance Payment Card: Show all PENDING payments */}
-          {advancePayments.length > 0 && false &&(
-            <View
-              style={[
-                styles.transactionsCard,
-                { backgroundColor: theme.colors.cardBackground },
-              ]}
-            >
-              <View style={styles.transactionsHeader}>
-                <View
-                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-                >
-                  <Text style={styles.sectionTitle}>
-                    {translations.advancePayment}
-                  </Text>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      {
-                        backgroundColor: theme.colors.primary,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusText,
-                        { color: theme.colors.white },
-                      ]}
-                    >
-                      {advancePayments.filter((p) => p.status === "PENDING")
-                        .length}{" "}
-                      {translations.due}
-                    </Text>
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.filterButton}
-                  onPress={() => setShowAdvancePayment(!showAdvancePayment)}
-                >
-                  <Text
-                    style={{
-                      color: theme.colors.primary,
-                      fontWeight: "600",
-                    }}
-                  >
-                    {showAdvancePayment ? translations.hide : translations.show}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {showAdvancePayment && (
-                <View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "flex-end",
-                      marginBottom: 16,
-                      gap: 12,
-                    }}
-                  >
-                    <TouchableOpacity onPress={handleSelectAll}>
-                      <Text
-                        style={{
-                          color: theme.colors.primary,
-                          fontWeight: "600",
-                        }}
-                      >
-                        {translations.selectAll}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={handleUnselectAll}>
-                      <Text
-                        style={{
-                          color: theme.colors.textSecondary,
-                          fontWeight: "600",
-                        }}
-                      >
-                        {translations.unselectAll}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.transactionsList}>
-                    {advancePayments
-                      .filter((p) => p.status === "PENDING")
-                      .map((item, index) => {
-                        const isSelected = selectedPayments.some(
-                          (p) => p.monthNumber === item.monthNumber
-                        );
-                        return (
-                          <TouchableOpacity
-                            key={item.monthNumber || index}
-                            style={[
-                              styles.transactionItem,
-                              {
-                                backgroundColor: isSelected
-                                  ? "rgba(139, 69, 19, 0.05)"
-                                  : theme.colors.backgroundSecondary,
-                                borderColor: isSelected
-                                  ? theme.colors.primary
-                                  : "transparent",
-                                borderWidth: 1,
-                              },
-                            ]}
-                            onPress={() => handleSelectPayment(item)}
-                          >
-                            <View style={{ padding: 5 }}>
-                              <Ionicons
-                                name={isSelected ? "checkbox" : "square-outline"}
-                                size={24}
-                                color={
-                                  isSelected
-                                    ? theme.colors.primary
-                                    : theme.colors.textSecondary
-                                }
-                              />
-                            </View>
-                            <View style={styles.transactionInfo}>
-                              <Text style={styles.transactionDate}>
-                                {translations.month} {item.monthNumber}
-                              </Text>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                <Ionicons name="calendar-outline" size={12} color={theme.colors.textSecondary} />
-                                <Text style={styles.transactionId}>
-                                  {item.displayDate || item.dueDate}
-                                </Text>
-                              </View>
-                            </View>
-                            <Text style={styles.transactionAmount}>
-                              ₹{Number(params.emiAmount).toLocaleString()}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                  </View>
-
-                  {selectedPayments.length > 0 && (
-                    <View style={{ marginTop: 20 }}>
-                      <TouchableOpacity
-                        style={styles.payButton}
-                        onPress={handleBulkPayment}
-                        disabled={isLoading}
-                      >
-                        <LinearGradient
-                          colors={theme.colors.gradientPrimary}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={styles.payButtonGradient}
-                        >
-                          {isLoading ? (
-                            <ActivityIndicator color="#fff" />
-                          ) : (
-                            <>
-                              <Text style={styles.payButtonText}>
-                                {translations.paySelected} (₹{totalSelectedAmount.toLocaleString()})
-                              </Text>
-                              <Ionicons
-                                name="arrow-forward"
-                                size={24}
-                                color="#fff"
-                              />
-                            </>
-                          )}
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              )}
-            </View>
-          )}
-
-
-          {/* Pay Now Button */}
-          {selectedPayments.length === 0 && (
-            <TouchableOpacity
-              style={styles.payButton}
+             {renderHeroCard()}
+             {renderInfoGrid()}
+             {renderTransactionHistory()}
+             <View style={{ height: bottomPadding + 60 }} />
+          </ScrollView>
+        )}
+        
+        {/* Floating Bottom Bar for Payment */}
+         <View style={[styles.bottomBar, { paddingBottom: bottom || 20 }]}>
+            <TouchableOpacity 
+              style={[styles.payButton, isLoading && styles.payButtonDisabled]}
               onPress={PaymentNow}
               disabled={isLoading}
             >
-              <LinearGradient
-                colors={theme.colors.gradientPrimary}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.payButtonGradient}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <>
-                    <Text style={styles.payButtonText}>{t("payNow")}</Text>
-                    <Ionicons name="arrow-forward" size={24} color="#fff" />
-                  </>
-                )}
-              </LinearGradient>
+              {isLoading ? (
+                  <ActivityIndicator color="#FFF" />
+              ) : (
+                 <>
+                  <Text style={styles.payButtonText}>{translations.payNow}</Text>
+                  <Ionicons name="arrow-forward" size={20} color="#FFF" />
+                 </>
+              )}
             </TouchableOpacity>
-          )}
+         </View>
 
-          <CustomAlert
-            visible={alertVisible}
-            message={alertMessage}
-            type={alertType}
-            onClose={() => setAlertVisible(false)}
-          />
-        </ScrollView>
-      )}
+      </SafeAreaView>
 
-      {/* Transaction Details Modal */}
-      <Modal
-        visible={!!selectedTransaction}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setSelectedTransaction(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <LinearGradient
-              colors={theme.colors.gradientPrimary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.modalHeader}
-            >
-              <View style={styles.modalHeaderContent}>
-                <View style={styles.modalTitleContainer}>
-                  <Ionicons name="receipt" size={24} color="#fff" />
-                  <Text style={styles.modalTitle}>{t("transactionDetails")}</Text>
+      <CustomAlert
+        visible={alertVisible}
+        type={alertType}
+        message={alertMessage}
+        onClose={() => setAlertVisible(false)}
+      />
+
+       {/* Transaction Modal (Optional if you want to show detailed receipt view on tap) */}
+       {selectedTransaction && (
+          <Modal
+             visible={!!selectedTransaction}
+             transparent
+             animationType="slide"
+             onRequestClose={() => setSelectedTransaction(null)}
+          >
+             <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                   <View style={styles.modalHeader}>
+                      <Text style={styles.modalTitle}>Transaction Details</Text>
+                      <TouchableOpacity onPress={() => setSelectedTransaction(null)}>
+                         <Ionicons name="close" size={24} color="#333" />
+                      </TouchableOpacity>
+                   </View>
+                   <View style={styles.modalBody}>
+                      <View style={styles.receiptRow}>
+                         <Text style={styles.receiptLabel}>Transaction ID</Text>
+                         <Text style={styles.receiptValue}>{selectedTransaction.transactionId}</Text>
+                      </View>
+                      <View style={styles.receiptRow}>
+                         <Text style={styles.receiptLabel}>Date</Text>
+                         <Text style={styles.receiptValue}>{new Date(selectedTransaction.paymentDate).toLocaleDateString()}</Text>
+                      </View>
+                      <View style={styles.receiptRow}>
+                         <Text style={styles.receiptLabel}>Amount</Text>
+                         <Text style={styles.receiptValueHighlight}>₹{Number(selectedTransaction.amountPaid).toLocaleString()}</Text>
+                      </View>
+                      <View style={styles.receiptRow}>
+                         <Text style={styles.receiptLabel}>Status</Text>
+                         <Text style={[styles.receiptValue, { color: 'green' }]}>{selectedTransaction.status}</Text>
+                      </View>
+                      
+                      <TouchableOpacity 
+                        style={styles.downloadButton}
+                        onPress={() => createAndShareReceiptPDF(selectedTransaction, inversement)}
+                      >
+                         <Ionicons name="document-text-outline" size={20} color="#FFF" />
+                         <Text style={styles.downloadButtonText}>{translations.downloadReceipt || "Download Receipt"}</Text>
+                      </TouchableOpacity>
+                   </View>
                 </View>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setSelectedTransaction(null)}
-                >
-                  <Ionicons name="close" size={24} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
+             </View>
+          </Modal>
+       )}
 
-            <View style={styles.modalBody}>
-              <View style={styles.transactionStatus}>
-                <View style={styles.statusIconContainer}>
-                  <Ionicons name="checkmark-circle" size={32} color={theme.colors.success} />
-                </View>
-                <Text style={styles.modalStatusText}>{t("paymentSuccessful")}</Text>
-              </View>
-
-              <View style={styles.amountRowContainer}>
-                <View style={styles.amountItem}>
-                  <Text style={styles.amountLabel}>{t("amountPaid")}</Text>
-                  <Text style={styles.amountValue}>
-                    ₹
-                    {selectedTransaction
-                      ? Number(selectedTransaction.amountPaid).toLocaleString()
-                      : "0"}
-                  </Text>
-                </View>
-                {selectedTransaction?.rewardsList?.amount && (
-                  <View>
-                    <View style={[styles.amountDivider, { backgroundColor: theme.colors.border }]} />
-                    <View style={styles.amountItem}>
-                      <Text style={styles.amountLabel}>{t("interestAmount")}</Text>
-                      <Text style={styles.amountValue}>
-                        ₹{Number(selectedTransaction.rewardsList.amount).toLocaleString()}
-                      </Text>
-                    </View>
-                  </View>
-                )}
-              </View>
-
-              <View style={styles.detailsContainer}>
-                <View style={styles.detailCard}>
-                  <View style={styles.detailRow}>
-                    <View style={styles.detailIconContainer}>
-                      <Ionicons
-                        name="calendar-outline"
-                        size={20}
-                        color={theme.colors.primary}
-                      />
-                    </View>
-                    <View style={styles.detailInfo}>
-                      <Text style={styles.modalDetailLabel}>{t("date")}</Text>
-                      <Text style={styles.modalDetailValue}>
-                        {selectedTransaction
-                          ? new Date(
-                            selectedTransaction.paymentDate
-                          ).toLocaleDateString("en-GB", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })
-                          : ""}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.detailRow}>
-                    <View style={styles.detailIconContainer}>
-                      <Ionicons name="card-outline" size={20} color={theme.colors.primary} />
-                    </View>
-                    <View style={styles.detailInfo}>
-                      <Text style={styles.modalDetailLabel}>
-                        {t("transactionId")}
-                      </Text>
-                      <Text style={styles.modalDetailValue}>
-                        {selectedTransaction?.transactionId || ""}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.detailRow}>
-                    <View style={styles.detailIconContainer}>
-                      <Ionicons
-                        name="wallet-outline"
-                        size={20}
-                        color={theme.colors.primary}
-                      />
-                    </View>
-                    <View style={styles.detailInfo}>
-                      <Text style={styles.modalDetailLabel}>{t("paymentMode")}</Text>
-                      <Text style={styles.modalDetailValue}>
-                        {(
-                          selectedTransaction?.paymentMode || "NB"
-                        ).toUpperCase()}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.shareButton}
-                onPress={() =>
-                  selectedTransaction &&
-                  createAndShareReceiptPDF(selectedTransaction, inversement)
-                }
-              >
-                <Ionicons name="share-outline" size={20} color="#fff" />
-                <Text style={styles.shareButtonText}>{t("shareReceipt")}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: theme.colors.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e5e5",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+  container: {
+    flex: 1,
+    backgroundColor: "#F8F9FA",
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#f3f4f6",
-    justifyContent: "center",
-    alignItems: "center",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
+  safeArea: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    backgroundColor: theme.colors.primary,
+    zIndex: 10,
   },
   headerTitle: {
-    flex: 1,
     fontSize: 18,
-    fontWeight: "500",
-    color: theme.colors.white,
-    textAlign: "center",
-    marginHorizontal: 12,
+    fontWeight: '700',
+    color: '#ffffffff',
   },
-  headerSpacer: {
-    width: 40,
+  backButton: {
+    padding: 8,
+    marginLeft: -8,
   },
-  payButton: {
-    marginBottom: 20,
-    borderRadius: 16,
-    overflow: "hidden",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+  scrollContent: {
+    paddingBottom: 20,
   },
-  payButtonGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 16,
-    gap: 8,
+  // Hero Card Styles
+  heroContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 25,
+    marginTop: 10,
   },
-  payButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "700",
+  heroCard: {
+    borderRadius: 24,
+    padding: 2, // Gradient border effect if needed, otherwise padding for inner content
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+    overflow: 'hidden',
   },
-  summaryCard: {
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 14,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.2,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
+  heroBackground: {
+    padding: 24,
   },
-  summaryHeader: {
-    marginBottom: 14,
+  heroHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 25,
   },
-  schemeInfo: {
-    flexDirection: "row",
-    alignItems: "center",
+  heroSchemeName: {
+     fontSize: 22,
+     fontWeight: '800',
+     color: '#FFF',
+     marginBottom: 4,
   },
-  schemeIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
+  heroSchemeCode: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
   },
-  schemeTextContainer: {
-    flex: 1,
-  },
-  schemeName: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#fff",
-    marginBottom: 3,
-  },
-  schemeDetails: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  schemeCode: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.8)",
-  },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.15)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    gap: 4,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#4caf50",
-  },
-  statusText: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  summaryStats: {
-    flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.1)",
+  heroStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 12,
-    padding: 12,
-    marginBottom: 14,
   },
-  statItem: {
+  heroStatusDot: {
+     width: 8,
+     height: 8,
+     borderRadius: 4,
+     backgroundColor: '#4CAF50',
+     marginRight: 6,
+  },
+  heroStatusText: {
+     color: '#FFF',
+     fontSize: 12,
+     fontWeight: '600',
+  },
+  heroStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 25,
+  },
+  heroStatItem: {
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
   },
-  statIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
+  heroStatLabel: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
-  statInfo: {
-    flex: 1,
+  heroStatValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFF',
   },
-  statLabel: {
-    fontSize: 11,
-    color: "rgba(255,255,255,0.8)",
-    marginBottom: 3,
+  progressContainer: {
+    marginTop: 5,
   },
-  statValue: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#fff",
+  progressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    marginHorizontal: 12,
+  progressLabelText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
   },
-  progressSection: {
-    marginTop: 14,
+  progressValueText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
-  progressHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
+  progressBarBg: {
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 3,
+    overflow: 'hidden',
   },
-  progressLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#fff",
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#FFF',
+    borderRadius: 3,
   },
-  progressValue: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#fff",
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    backgroundColor: "#4caf50",
-    borderRadius: 4,
-  },
-  detailsCard: {
-    backgroundColor: theme.colors.cardBackground,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+  
+  // Section Styles
+  sectionContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 25,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#2C1810",
-    marginBottom: 16,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 15,
   },
-  detailsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 0,
   },
-  detailItem: {
-    flex: 1,
-    minWidth: "48%",
-    backgroundColor: theme.colors.backgroundSecondary,
-    padding: 12,
-    borderRadius: 10,
+  viewAllText: {
+    color: theme.colors.primary,
+    fontWeight: '600',
+    fontSize: 14,
   },
-  detailLabel: {
-    fontSize: 10,
-    color: theme.colors.textSecondary,
-    marginTop: 6,
-    marginBottom: 2,
-  },
-  detailValue: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: theme.colors.textDark,
-  },
-  transactionsCard: {
-    backgroundColor: theme.colors.cardBackground,
+  
+  // Grid Styles
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFF',
     borderRadius: 20,
-    padding: 20,
+    padding: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  gridItem: {
+    width: '48%', // 2 columns
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
   },
-  transactionsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  filterButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: theme.colors.backgroundSecondary,
-  },
-  transactionsList: {
-    gap: 12,
-  },
-  transactionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: theme.colors.backgroundSecondary,
-    padding: 16,
-    borderRadius: 12,
-  },
-  transactionIcon: {
+  gridIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(0,204,68,0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
   },
-  transactionInfo: {
+  gridLabel: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 2,
+  },
+  gridValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+
+  // Transactions
+  transactionCard: {
+    flexDirection: 'row',
+    marginBottom: 0,
+    height: 70,
+  },
+  transactionLeft: {
+    alignItems: 'center',
+    width: 30,
+    marginRight: 10,
+  },
+  transactionIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  verticalLine: {
+    width: 1,
     flex: 1,
+    backgroundColor: '#E0E0E0',
+    marginVertical: 4,
+  },
+  transactionContent: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 1,
+  },
+  transactionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
   },
   transactionDate: {
     fontSize: 14,
-    fontWeight: "600",
-    color: theme.colors.textDark,
-    marginBottom: 4,
+    fontWeight: '600',
+    color: '#333',
+  },
+  transactionAmount: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#E53935', // Red for debit concept, or use primary
+  },
+  transactionFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   transactionId: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
+    color: '#999',
   },
-  transactionAmount: {
+  receiptButton: {
+    padding: 4,
+  },
+
+  // Bottom Bar
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFF',
+    paddingTop: 15,
+    paddingHorizontal: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 20,
+  },
+  payButton: {
+    backgroundColor: theme.colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 16,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  payButtonDisabled: {
+    opacity: 0.7,
+  },
+  payButtonText: {
+    color: '#FFF',
     fontSize: 16,
-    fontWeight: "700",
-    color: theme.colors.textDark,
+    fontWeight: '700',
+    marginRight: 8,
   },
-  emptyContainer: {
-    padding: 40,
-    alignItems: "center",
-  },
-  emptyText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-    textAlign: "center",
-  },
+
+  // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
   },
   modalContent: {
-    width: "90%",
-    backgroundColor: "#fff",
-    borderRadius: 24,
-    overflow: "hidden",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    minHeight: '40%',
   },
   modalHeader: {
-    padding: 20,
-  },
-  modalHeaderContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  modalTitleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: "700",
-    color: "#fff",
-  },
-  closeButton: {
-    padding: 4,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 12,
+    fontWeight: '700',
+    color: '#333',
   },
   modalBody: {
-    padding: 20,
+    gap: 16,
   },
-  transactionStatus: {
-    alignItems: "center",
-    marginBottom: 24,
+  receiptRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
-  statusIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "rgba(0,204,68,0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  modalStatusText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: theme.colors.success,
-  },
-  amountRowContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 24,
-    padding: 16,
-    backgroundColor: theme.colors.backgroundSecondary,
-    borderRadius: 16,
-  },
-  amountItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-  amountDivider: {
-    width: 1,
-    height: 50,
-    backgroundColor: "rgba(139, 69, 19, 0.3)",
-    marginHorizontal: 16,
-  },
-  amountLabel: {
+  receiptLabel: {
     fontSize: 14,
-    color: theme.colors.textSecondary,
-    marginBottom: 4,
+    color: '#666',
   },
-  amountValue: {
-    fontSize: 24,
-    fontWeight: "700",
+  receiptValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  receiptValueHighlight: {
+    fontSize: 18,
+    fontWeight: '700',
     color: theme.colors.primary,
   },
-  detailsContainer: {
-    marginBottom: 24,
-  },
-  detailCard: {
-    backgroundColor: theme.colors.backgroundSecondary,
-    borderRadius: 16,
-    padding: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  detailIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: theme.colors.white,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  detailInfo: {
-    flex: 1,
-  },
-  modalDetailLabel: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginBottom: 2,
-  },
-  modalDetailValue: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: theme.colors.textDark,
-  },
-  modalFooter: {
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
-  },
-  shareButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+  downloadButton: {
     backgroundColor: theme.colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: 16,
     borderRadius: 12,
-    gap: 8,
+    marginTop: 20,
   },
-  shareButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+  downloadButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
+    marginLeft: 8,
   },
-  loadingOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  loadingContainer: {
-    backgroundColor: "#fff",
-    padding: 30,
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+    backgroundColor: '#FFF',
     borderRadius: 16,
-    alignItems: "center",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderStyle: 'dashed',
   },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1a2a39",
+  emptyStateText: {
+    marginTop: 10,
+    color: '#999',
+    fontSize: 14,
   },
 });
 
