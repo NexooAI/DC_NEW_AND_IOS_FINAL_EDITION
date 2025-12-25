@@ -199,7 +199,7 @@ export default function JoinSavings() {
   const [branch, setBranch] = useState<Branch[]>([]);
   const [formData, setFormData] = useState({
     amount: "",
-    accountname: "",
+    accountname: user?.name || "",
     associated_branch: "",
     name: "",
     mobile: "",
@@ -224,7 +224,7 @@ export default function JoinSavings() {
   const [inputValue, setInputValue] = useState("0");
   const [goldWeight, setGoldWeight] = useState(0);
   const [goldRate, setGoldRate] = useState(5847); // Default fallback
-  const [useLoginName, setUseLoginName] = useState(false);
+
 
   // State for collapsible KYC cards
   const [addressExpanded, setAddressExpanded] = useState(false);
@@ -1628,14 +1628,14 @@ export default function JoinSavings() {
         {/* Account Details Section */}
         <View style={styles.detailsSection}>
           <View style={styles.accountDetailsCard}>
-            <View style={styles.cardHeader}>
+            {/* <View style={styles.cardHeader}>
               <MaterialCommunityIcons
                 name="account-circle"
                 size={24}
                 color="#1a237e"
               />
               <Text style={styles.cardTitle}>{translations.accountDetails}</Text>
-            </View>
+            </View> */}
 
             {/* Account Name Field */}
             <View style={styles.fieldContainer}>
@@ -1647,44 +1647,18 @@ export default function JoinSavings() {
                 style={[
                   styles.modernInput,
                   errors.accountname ? styles.modernInputError : null,
-                  !useLoginName && styles.modernInputActive,
+                  styles.modernInputActive,
                 ]}
                 placeholder="Enter your account name"
                 placeholderTextColor={"#999"}
                 value={formData.accountname}
                 onChangeText={(value) => handleChange("accountname", value)}
-                editable={!useLoginName}
               />
               {errors.accountname && (
                 <Text style={styles.modernErrorText}>{errors.accountname}</Text>
               )}
 
-              {/* Use Login Name Checkbox */}
-              <TouchableOpacity
-                style={styles.modernCheckboxRow}
-                onPress={() => {
-                  const checked = !useLoginName;
-                  setUseLoginName(checked);
-                  if (checked && user?.name) {
-                    handleChange("accountname", user.name);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <View
-                  style={[
-                    styles.modernCheckbox,
-                    useLoginName && styles.modernCheckboxChecked,
-                  ]}
-                >
-                  {useLoginName && (
-                    <Ionicons name="checkmark" size={14} color="#fff" />
-                  )}
-                </View>
-                <Text style={styles.modernCheckboxLabel}>
-                  {translations.useMyLoginName}
-                </Text>
-              </TouchableOpacity>
+
             </View>
 
             {/* Branch Field */}
@@ -4283,7 +4257,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: width < 350 ? 12 : width < 400 ? 13 : 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#180303ff',
     marginLeft: 4,
     flex: 1,
     flexWrap: 'wrap',

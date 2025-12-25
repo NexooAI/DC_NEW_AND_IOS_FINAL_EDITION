@@ -68,7 +68,6 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
   const [alertConfig, setAlertConfig] = useState({
     visible: false,
     title: "",
@@ -109,7 +108,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
     // Fallback for any other type
     return String(textObj);
   };
-
+  
   const progressPercentage = useMemo(() => {
     const monthsPaid = Number(item.monthsPaid) || 0;
     const totalMonths = Number(item.noOfIns) || 1;
@@ -567,17 +566,16 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                   {formatGoldWeight(item.goldWeight + totalRewardGoldGrams)}
                 </Text>
               </View> */}
-              {item.schemesData?.paymentFrequencyId !== 4 && (
+              {item?.schemesData?.paymentFrequencyId !== 4 && (
                 <View style={styles.enhancedInfoItem}>
                   <View style={styles.enhancedInfoIconContainer}>
                     <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
                   </View>
                   <Text style={styles.enhancedInfoLabel}>
-                    {translations.remainingLabel}
+                    {translations.maturityDateLabel}
                   </Text>
                   <Text style={styles.enhancedInfoValue}>
-                    {Number(item.noOfIns) - Number(item.monthsPaid)}{" "}
-                    {translations.monthsLabel}
+                    {item?.maturityDate}
                   </Text>
                 </View>
               )}
@@ -1042,7 +1040,7 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: theme.colors.secondary,
+    color: theme.colors.primary,
   },
   progressStats: {
     flexDirection: "row",
@@ -1052,7 +1050,7 @@ const styles = StyleSheet.create({
   progressMonths: {
     fontSize: 14,
     fontWeight: "600",
-    color: theme.colors.secondary,
+    color: theme.colors.primary,
   },
   progressBar: {
     height: 8,
@@ -1063,7 +1061,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: "100%",
-    backgroundColor: theme.colors.gold,
+    backgroundColor: theme.colors.primary,
     borderRadius: 4,
   },
   monthsInfo: {
