@@ -56,10 +56,10 @@ export default function PaymentNewOverView() {
   const [maxAmount, setMaxAmount] = useState(100000); // Default fallback
   // Scheme calculation slider state
 
-  const [isUserDetailsExpanded, setIsUserDetailsExpanded] = useState(false);
-  const userDetailsHeight = useRef(new Animated.Value(0)).current;
-  const [isSchemeDetailsExpanded, setIsSchemeDetailsExpanded] = useState(false);
-  const schemeDetailsHeight = useRef(new Animated.Value(0)).current;
+  const [isUserDetailsExpanded, setIsUserDetailsExpanded] = useState(true);
+  const userDetailsHeight = useRef(new Animated.Value(1)).current;
+  const [isSchemeDetailsExpanded, setIsSchemeDetailsExpanded] = useState(true);
+  const schemeDetailsHeight = useRef(new Animated.Value(1)).current;
 
   // Check if it's first payment based on paid payment count from params
   const isFirstPayment = useMemo(() => {

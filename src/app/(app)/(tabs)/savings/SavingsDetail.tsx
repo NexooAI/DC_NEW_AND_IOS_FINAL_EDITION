@@ -644,7 +644,7 @@ const SavingsDetail = () => {
           <View key={txn.transactionId || index} style={styles.transactionCard}>
              <View style={styles.transactionLeft}>
                <View style={styles.transactionIconContainer}>
-                  <Ionicons name={txn.status === "SUCCESS" ? "checkmark" : "time"} size={16} color="#FFF" />
+                  <Ionicons name={txn.status === "ACTIVE" ? "checkmark" : "time"} size={16} color="#FFF" />
                </View>
                <View style={styles.verticalLine} />
              </View>
@@ -658,7 +658,7 @@ const SavingsDetail = () => {
                         year: "numeric",
                     })}
                    </Text>
-                   <Text style={styles.transactionAmount}>- ₹{Number(txn.amountPaid).toLocaleString()}</Text>
+                   <Text style={styles.transactionAmount}> ₹{Number(txn.amountPaid).toLocaleString()}</Text>
                 </View>
                 <View style={styles.transactionFooter}>
                    <Text style={styles.transactionId}>ID: {txn.transactionId}</Text>
@@ -1025,7 +1025,7 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#E53935', // Red for debit concept, or use primary
+    color: '#0e9022ff', // Red for debit concept, or use primary
   },
   transactionFooter: {
     flexDirection: 'row',

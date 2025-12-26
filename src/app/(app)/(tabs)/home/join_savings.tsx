@@ -2352,143 +2352,50 @@ export default function JoinSavings() {
               },
             };
             // Show success alert with countdown (3, 2, 1)
-            setCountdown(3);
-            setKycModalData({
-              title: "Success!",
-              message: "Savings scheme created successfully. Redirecting to payment in 3...",
-              type: "success",
-              buttons: [
-                {
-                  text: "OK",
-                  onPress: () => {
-                    // Clear countdown timer if user clicks OK manually
-                    if (countdownTimerRef.current) {
-                      clearInterval(countdownTimerRef.current);
-                      countdownTimerRef.current = null;
-                    }
-                    setCountdown(null);
-                    setKycModalVisible(false);
-                    // Add small delay to ensure modal is fully closed before navigation
-                    setTimeout(() => {
-                      // Prevent multiple simultaneous navigations
-                      if (isNavigatingRef.current) {
-                        logger.warn("Navigation already in progress, skipping duplicate navigation");
-                        return;
-                      }
-                      isNavigatingRef.current = true;
+            // Navigate directly without showing success modal
+            // Prevent multiple simultaneous navigations
+            if (isNavigatingRef.current) {
+              logger.warn("Navigation already in progress, skipping duplicate navigation");
+              return;
+            }
+            isNavigatingRef.current = true;
 
-                      try {
-                        logger.log("Navigating to paymentNewOverView", {
-                          hasUserDetails: !!navigationParams.params.userDetails,
-                          userDetailsSize: navigationParams.params.userDetails?.length || 0,
-                        });
+            try {
+              logger.log("Navigating to paymentNewOverView", {
+                hasUserDetails: !!navigationParams.params.userDetails,
+                userDetailsSize: navigationParams.params.userDetails?.length || 0,
+              });
 
-                        // Use InteractionManager to ensure UI is ready before navigation
-                        InteractionManager.runAfterInteractions(() => {
-                          try {
-                            // Use replace instead of push to prevent stack buildup and crashes
-                            router.replace(navigationParams);
-                          } catch (navError) {
-                            isNavigatingRef.current = false;
-                            throw navError;
-                          }
-                        });
-                      } catch (navError) {
-                        isNavigatingRef.current = false;
-                        logger.crash(navError as Error, {
-                          context: "Navigation after payment session creation",
-                          navigationParams: {
-                            ...navigationParams,
-                            params: {
-                              ...navigationParams.params,
-                              userDetails: navigationParams.params.userDetails?.substring(0, 100) + "..."
-                            }
-                          },
-                        });
-                        setKycModalData({
-                          title: "Navigation Error",
-                          message: "Failed to navigate to payment page. Please try again.",
-                          type: "error",
-                          buttons: [{ text: "OK", onPress: () => { }, style: "default" }],
-                        });
-                        setKycModalVisible(true);
-                      }
-                    }, 300); // 300ms delay to ensure modal is closed
-                  },
-                  style: "default",
-                },
-              ],
-            });
-            setKycModalVisible(true);
-
-            // Start countdown timer (3, 2, 1, then navigate)
-            let currentCount = 3;
-            countdownTimerRef.current = setInterval(() => {
-              currentCount -= 1;
-              setCountdown(currentCount);
-
-              if (currentCount > 0) {
-                // Update modal message with countdown
-                setKycModalData(prev => ({
-                  ...prev,
-                  message: `Savings scheme created successfully. Redirecting to payment in ${currentCount}...`,
-                }));
-              } else {
-                // Countdown finished, navigate
-                if (countdownTimerRef.current) {
-                  clearInterval(countdownTimerRef.current);
-                  countdownTimerRef.current = null;
+              // Use InteractionManager to ensure UI is ready before navigation
+              InteractionManager.runAfterInteractions(() => {
+                try {
+                  // Use replace instead of push to prevent stack buildup and crashes
+                  router.replace(navigationParams);
+                } catch (navError) {
+                  isNavigatingRef.current = false;
+                  throw navError;
                 }
-                setCountdown(null);
-                setKycModalVisible(false);
-                // Add small delay to ensure modal is fully closed before navigation
-                setTimeout(() => {
-                  // Prevent multiple simultaneous navigations
-                  if (isNavigatingRef.current) {
-                    logger.warn("Navigation already in progress, skipping duplicate navigation");
-                    return;
+              });
+            } catch (navError) {
+              isNavigatingRef.current = false;
+              logger.crash(navError as Error, {
+                context: "Navigation after payment session creation",
+                navigationParams: {
+                  ...navigationParams,
+                  params: {
+                    ...navigationParams.params,
+                    userDetails: navigationParams.params.userDetails?.substring(0, 100) + "..."
                   }
-                  isNavigatingRef.current = true;
-
-                  try {
-                    logger.log("Auto-navigating to paymentNewOverView after countdown", {
-                      hasUserDetails: !!navigationParams.params.userDetails,
-                      userDetailsSize: navigationParams.params.userDetails?.length || 0,
-                    });
-
-                    // Use InteractionManager to ensure UI is ready before navigation
-                    InteractionManager.runAfterInteractions(() => {
-                      try {
-                        // Use replace instead of push to prevent stack buildup and crashes
-                        router.replace(navigationParams);
-                      } catch (navError) {
-                        isNavigatingRef.current = false;
-                        throw navError;
-                      }
-                    });
-                  } catch (navError) {
-                    isNavigatingRef.current = false;
-                    logger.crash(navError as Error, {
-                      context: "Auto-navigation after countdown",
-                      navigationParams: {
-                        ...navigationParams,
-                        params: {
-                          ...navigationParams.params,
-                          userDetails: navigationParams.params.userDetails?.substring(0, 100) + "..."
-                        }
-                      },
-                    });
-                    setKycModalData({
-                      title: "Navigation Error",
-                      message: "Failed to navigate to payment page. Please try again.",
-                      type: "error",
-                      buttons: [{ text: "OK", onPress: () => { }, style: "default" }],
-                    });
-                    setKycModalVisible(true);
-                  }
-                }, 300); // 300ms delay to ensure modal is closed
-              }
-            }, 1000); // Update every 1 second
+                },
+              });
+              setKycModalData({
+                title: "Navigation Error",
+                message: "Failed to navigate to payment page. Please try again.",
+                type: "error",
+                buttons: [{ text: "OK", onPress: () => { }, style: "default" }],
+              });
+              setKycModalVisible(true);
+            }
           } catch (processingError) {
             logger.crash(processingError as Error, {
               context: "Processing investment API response",

@@ -96,6 +96,8 @@ import SkeletonLoader, {
   SkeletonHomePage,
 } from "@/components/SkeletonLoader";
 import { fetchSchemesWithCache } from "@/utils/apiCache";
+import UserInfoCard from "@/components/home/UserInfoCard";
+import AnimatedGoldRate from "@/components/home/AnimatedGoldRate";
 
 // Constants - Using responsive layout hook instead
 const REFRESH_INTERVAL = 15000; // 15 seconds
@@ -306,336 +308,8 @@ interface Video {
   created_at: string;
 }
 
-interface UserInfoCardProps {
-  userName: string | undefined;
-  activeSchemesCount: number;
-  onPress: () => void;
-  totalGoldSavings?: number;
-  totalAmount?: number;
-  showTotalGold?: boolean;
-  userId: number;
-  profilePhoto?: string;
-  profileImageError?: boolean;
-  retryCount?: number;
-  onImageError?: () => void;
-  onImageLoad?: () => void;
-}
+// Components extracted to separate files in src/components/home/
 
-// Components
-const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
-  ({
-    userName,
-    activeSchemesCount,
-    onPress,
-    userId,
-    totalGoldSavings = 0,
-    totalAmount = 0,
-    showTotalGold = true,
-    profilePhoto,
-    profileImageError = false,
-    retryCount = 0,
-    onImageError,
-    onImageLoad,
-  }) => {
-    const { t } = useTranslation();
-    const [isExpanded, setIsExpanded] = useState(false);
-    const arrowOpacity = useRef(new Animated.Value(1)).current;
-    const expandAnimation = useRef(new Animated.Value(0)).current;
-    const rotateAnimation = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-      const blink = Animated.loop(
-        Animated.sequence([
-          Animated.timing(arrowOpacity, {
-            toValue: 0.3,
-            duration: 800,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(arrowOpacity, {
-            toValue: 1,
-            duration: 800,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      blink.start();
-      return () => blink.stop();
-    }, [arrowOpacity]);
-
-    const handleExpandCollapse = () => {
-      const newExpandedState = !isExpanded;
-      setIsExpanded(newExpandedState);
-
-      // Animate expansion/collapse
-      Animated.parallel([
-        Animated.timing(expandAnimation, {
-          toValue: newExpandedState ? 1 : 0,
-          duration: 300,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false, // Height animation needs false
-        }),
-        Animated.timing(rotateAnimation, {
-          toValue: newExpandedState ? 1 : 0,
-          duration: 300,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true, // Rotation animation can use native driver
-        }),
-      ]).start();
-    };
-
-    const rotateInterpolate = rotateAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: ["0deg", "180deg"],
-    });
-
-    const statsHeight = expandAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, 120], // Height of stats section
-    });
-
-    const statsOpacity = expandAnimation.interpolate({
-      inputRange: [0, 0.1, 1],
-      outputRange: [0, 0, 1], // Completely hidden when collapsed
-    });
-
-    return (
-      <View style={styles.userInfoCard}>
-        <LinearGradient
-          colors={[theme.colors.primary, theme.colors.bgPrimaryHeavy]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.userInfoGradient}
-        >
-          <TouchableOpacity
-            style={styles.userInfoTopRow}
-            onPress={handleExpandCollapse}
-            activeOpacity={0.8}
-          >
-            <View style={styles.welcomeContainer}>
-              <Text style={styles.welcomeText}>{t("welcomeBack")}</Text>
-              <Text style={styles.userName}>
-                {userName?.toUpperCase() + " "}
-                <Text style={styles.userIdText}>( {userId} )</Text>
-              </Text>
-            </View>
-            <View style={styles.userAvatarContainer}>
-              {profilePhoto && !profileImageError ? (
-                <Image
-                  key={`${profilePhoto}-${retryCount}`}
-                  source={{ uri: profilePhoto }}
-                  style={styles.userAvatar}
-                  resizeMode="cover"
-                  onLoad={() => {
-                    logger.log(
-                      "✅ Profile image loaded successfully:",
-                      profilePhoto
-                    );
-                    onImageLoad?.();
-                  }}
-                  onError={(error) => {
-                    logger.log(
-                      "❌ Profile image failed to load:",
-                      error.nativeEvent,
-                      "URL:",
-                      profilePhoto,
-                      "Retry count:",
-                      retryCount
-                    );
-                    onImageError?.();
-                  }}
-                />
-              ) : (
-                <Ionicons
-                  name="person-circle"
-                  size={45}
-                  color={theme.colors.secondary}
-                />
-              )}
-            </View>
-            <View style={styles.expandCollopse}>
-              <Animated.View
-                style={{
-                  transform: [{ rotate: rotateInterpolate }],
-                }}
-              >
-                <Ionicons
-                  name="chevron-down"
-                  size={20}
-                  color={theme.colors.secondary}
-                />
-              </Animated.View>
-            </View>
-          </TouchableOpacity>
-
-          <Animated.View
-            style={[
-              styles.statsRow,
-              {
-                height: statsHeight,
-                opacity: statsOpacity,
-                overflow: "hidden",
-              },
-            ]}
-          >
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>{t("activeInvestments")}</Text>
-                <View style={styles.statValue}>
-                  <Text style={styles.countText}>
-                    {activeSchemesCount || 0}
-                  </Text>
-                  <Ionicons name="trending-up" size={16} color="#FFD700" />
-                </View>
-              </View>
-              <View style={styles.statDivider} />
-              {showTotalGold && (
-                <>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>{t("totalGold")}</Text>
-                    <View style={styles.statValue}>
-                      <Text style={styles.countText}>
-                        {formatGoldWeight(totalGoldSavings).replace(" g", "")}
-                      </Text>
-                      <Text style={styles.unitText}>g</Text>
-                    </View>
-                  </View>
-                  <View style={styles.statDivider} />
-                </>
-              )}
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>{t("totalAmount")}</Text>
-                <View style={styles.statValue}>
-                  <Text style={styles.countText}>
-                    ₹{totalAmount.toLocaleString()}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </Animated.View>
-          {isExpanded && (
-            <TouchableOpacity
-              style={styles.viewDetailsContainer}
-              onPress={onPress}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={[
-                  theme.colors.secondary,
-                  theme.colors.secondary,
-                  theme.colors.secondary,
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.viewDetailsGradient}
-              >
-                {/* <Ionicons name="eye-outline" size={20} color="#850111" /> */}
-                <Text style={styles.viewDetailsText}>
-                  {t("viewInvestmentDetails")}
-                </Text>
-                <Animated.View
-                  style={[
-                    styles.doubleArrowContainer,
-                    { opacity: arrowOpacity },
-                  ]}
-                >
-                  <Ionicons name="chevron-forward" size={16} color="#850111" />
-                  <Ionicons
-                    name="chevron-forward"
-                    size={16}
-                    color="#850111"
-                    style={styles.secondArrow}
-                  />
-                </Animated.View>
-              </LinearGradient>
-            </TouchableOpacity>
-          )}
-        </LinearGradient>
-      </View>
-    );
-  }
-);
-
-// AnimatedGoldRate: Decorative gold rate label with theme color, 22KT, live dot, and last updated timestamp
-// AnimatedGoldRate: Decorative gold rate label with theme color, 22KT, live dot, and last updated timestamp
-const AnimatedGoldRate: React.FC<{ goldRate: string; updatedAt?: string }> = ({
-  goldRate,
-  updatedAt,
-}) => {
-  const { t } = useTranslation();
-  // Animation for the live dot opacity
-  const opacityAnim = useRef(new Animated.Value(0.4)).current;
-
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0.4,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [opacityAnim]);
-
-  // Format timestamp
-  const formatDateToIndian = (isoString: string | undefined) => {
-    if (!isoString) return "-";
-    const date = new Date(isoString);
-    return date.toLocaleString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
-  return (
-    <View style={agrStyles.container}>
-      <LinearGradient
-        colors={[theme.colors.primary, theme.colors.primaryDark || '#8A0F16']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={agrStyles.card}
-      >
-        <View style={agrStyles.headerRow}>
-          <View style={agrStyles.liveBadge}>
-            <Animated.View style={[agrStyles.liveDot, { opacity: opacityAnim }]} />
-            <Text style={agrStyles.liveText}>{t("goldRate") || "LIVE RATE"}</Text>
-          </View>
-          <View style={agrStyles.purityBadge}>
-            <Ionicons name="diamond-outline" size={12} color="#FFD700" style={{ marginRight: 4 }} />
-            <Text style={agrStyles.purityText}>22KT</Text>
-          </View>
-        </View>
-
-        <View style={agrStyles.priceContainer}>
-          <Text style={agrStyles.currencySymbol}>₹</Text>
-          <Text style={agrStyles.priceText}>{goldRate}</Text>
-          <Text style={agrStyles.perGramText}>/g</Text>
-        </View>
-
-        {updatedAt && (
-          <View style={agrStyles.footerRow}>
-            <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.6)" />
-            <Text style={agrStyles.updatedText}>
-              Updated: {formatDateToIndian(updatedAt)}
-            </Text>
-          </View>
-        )}
-      </LinearGradient>
-    </View>
-  );
-};
 
 
 const collectionStyles = StyleSheet.create({
@@ -778,106 +452,7 @@ const collectionStyles = StyleSheet.create({
   },
 });
 
-const agrStyles = StyleSheet.create({
-  container: {
-    width: "90%",
-    alignSelf: "center",
-    marginVertical: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
-  },
-  card: {
-    borderRadius: 20,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  liveBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.2)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#4CAF50",
-    marginRight: 6,
-  },
-  liveText: {
-    color: "#FFF",
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  purityBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  purityText: {
-    color: "#FFD700",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  priceContainer: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  currencySymbol: {
-    color: "#FFF",
-    fontSize: 20,
-    fontWeight: "600",
-    marginRight: 2,
-  },
-  priceText: {
-    color: "#FFF",
-    fontSize: 34,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-    textShadowColor: "rgba(0,0,0,0.2)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  perGramText: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 14,
-    fontWeight: "500",
-    marginLeft: 4,
-  },
-  footerRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 4,
-  },
-  updatedText: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 11,
-    fontStyle: "italic",
-  },
-});
+
 
 // BannerCard component for FlatList renderItem
 interface BannerCardProps {
@@ -2527,7 +2102,7 @@ export default function Home() {
   const renderStatusItem = useCallback(
     ({ item }: { item: Collection }) => (
       <TouchableOpacity
-        style={collectionStyles.cardContainer}
+        style={styles.collectionCardContainer}
         activeOpacity={0.85}
         onPress={() => {
           setSelectedCollection(item);
@@ -2987,9 +2562,9 @@ export default function Home() {
             {isVisible("showCollection") && (
               <View style={styles.statusContainer}>
                 {/* Active Collections Section */}
-                <View style={collectionStyles.container}>
-                  <View style={collectionStyles.header}>
-                    <Text style={collectionStyles.headerTitle}>
+                <View style={styles.collectionContainer}>
+                  <View style={styles.collectionHeader}>
+                    <Text style={styles.collectionHeaderTitle}>
                       {t("activeCollections")}
                     </Text>
                     {/* <TouchableOpacity>
@@ -3002,7 +2577,7 @@ export default function Home() {
                     keyExtractor={(item) => item.id.toString()}
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={collectionStyles.listContent}
+                    contentContainerStyle={styles.collectionListContent}
                     removeClippedSubviews={true}
                     maxToRenderPerBatch={10}
                     windowSize={5}
@@ -4000,10 +3575,10 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    alignItems: "stretch", // Changed from "center" to "stretch" for edge-to-edge
-    paddingVertical: rp(10),
-    paddingTop: rp(5),
-    paddingBottom: rp(80), // Add bottom padding to prevent overlap with tab bar (60px tab bar + 20px safe area)
+    alignItems: "stretch",
+    paddingVertical: rp(20), // Increased padding
+    paddingTop: rp(10),
+    paddingBottom: rp(90),
     zIndex: 1,
     elevation: 1,
   },
@@ -4108,129 +3683,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
-  userInfoCard: {
-    width: wp(90),
-    borderRadius: borderRadius.large,
-    marginVertical: spacing.sm,
-    overflow: "hidden",
-    ...SHADOW_UTILS.card(),
-  },
-  userInfoGradient: {
-    padding: spacing.lg,
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: 120,
-  },
-  userInfoTopRow: {
-    ...commonStyles.row,
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-    marginBottom: spacing.md,
-  },
-  welcomeContainer: {
-    flex: 1,
-  },
-  welcomeText: {
-    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
-    color: "rgba(255, 255, 255, 0.7)",
-    marginBottom: spacing.xs,
-  },
-  userName: {
-    fontSize: rf(18, { minSize: 16, maxSize: 22 }),
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  userIdText: {
-    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
-    fontWeight: "400",
-    color: "rgba(255, 255, 255, 0.7)",
-    marginLeft: spacing.sm,
-  },
-  userAvatarContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 10,
-  },
-  userAvatar: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 20,
-  },
-  expandCollopse: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 10,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
-  },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "rgba(183, 234, 18, 0.2)",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: spacing.md,
-    width: "100%",
-  },
-  statsContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-    justifyContent: "space-between",
-  },
-  statItem: {
-    flex: 1,
-    alignItems: "center",
-    minWidth: 80,
-  },
-  statLabel: {
-    fontSize: moderateScale(10),
-    color: "rgba(255, 255, 255, 0.7)",
-    marginBottom: 2,
-    textAlign: "center",
-  },
-  statValue: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  countText: {
-    fontSize: moderateScale(14),
-    fontWeight: "bold",
-    color: "#FFFFFF",
-  },
-  unitText: {
-    fontSize: moderateScale(12),
-    color: "#FFD700",
-    fontWeight: "600",
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-  },
-  viewMoreContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginLeft: 12,
-  },
-  viewMoreText: {
-    fontSize: moderateScale(11),
-    color: "#FFD700",
-    fontWeight: "600",
-  },
+
   headerLanguageButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -4266,29 +3719,28 @@ const styles = StyleSheet.create({
   statusHeader: {
     ...commonStyles.row,
     alignItems: "center",
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.xs,
+    justifyContent: "center",
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.sm,
   },
   statusHeaderLine: {
-    flex: 1,
-    height: 1.5,
-    backgroundColor: theme.colors.primary,
-    marginHorizontal: spacing.xs,
+    display: 'none', // Hide lines for cleaner look
   },
   statusHeaderText: {
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
-    fontWeight: "700",
+    fontSize: rf(18, { minSize: 16, maxSize: 20 }),
+    fontWeight: "800",
     color: theme.colors.primary,
     textTransform: "uppercase",
-    letterSpacing: 0.3,
+    letterSpacing: 1.5,
     textAlign: "center",
   },
 
   sectionHeader: {
     width: "100%",
-    paddingHorizontal: 10,
-    marginTop: 20,
-    marginBottom: 12,
+    paddingHorizontal: 20,
+    marginTop: 30,
+    marginBottom: 20,
     alignItems: "center",
   },
   sectionHeaderContent: {
@@ -4298,27 +3750,58 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   sectionHeaderLine: {
-    height: 1.5,
-    width: 20,
-    backgroundColor: COLORS.secondary,
-    marginHorizontal: 5,
+    height: 1,
+    width: 40,
+    backgroundColor: theme.colors.secondary, // Thinner, wider lines
+    marginHorizontal: 15,
+    opacity: 0.6
   },
   sectionHeaderText: {
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(18),
     fontWeight: "700",
-    color: COLORS.error,
+    color: theme.colors.primary,
     textTransform: "uppercase",
-    letterSpacing: 0.3,
-    textShadowColor: COLORS.overlay,
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
+    letterSpacing: 1.2,
   },
   sectionHeaderSubtext: {
-    fontSize: moderateScale(11),
+    fontSize: moderateScale(12),
     color: COLORS.mediumGrey,
-    marginTop: 4,
+    marginTop: 6,
     textAlign: "center",
-    fontStyle: "italic",
+    fontWeight: '500',
+    letterSpacing: 0.5
+  },
+  // Collection Styles Added via Implementation Plan
+  collectionContainer: {
+    marginBottom: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  collectionHeader: {
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  collectionHeaderTitle: {
+    fontSize: rf(18),
+    fontWeight: '700',
+    color: theme.colors.primary,
+    letterSpacing: 0.5,
+  },
+  collectionListContent: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  collectionCardContainer: {
+    marginRight: spacing.md,
+    borderRadius: borderRadius.medium,
+    overflow: 'hidden',
+    backgroundColor: COLORS.white,
+    ...SHADOW_UTILS.card(),
+    width: 140, // Fixed width for horizontal scroll items
+    height: 140,
+    elevation: 4,
   },
   videoContainer: {
     width: "100%",
