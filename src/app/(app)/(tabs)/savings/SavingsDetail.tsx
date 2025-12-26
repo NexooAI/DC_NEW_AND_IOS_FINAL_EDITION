@@ -331,6 +331,11 @@ const SavingsDetail = () => {
             chitId: responce?.data.data?.chitId,
           }),
           paidPaymentCount: String(paymentHistrory?.length + 1 || 0),
+          maturityDate: params.maturityDate,
+          totalPaid: params.totalPaid,
+          noOfIns: params.noOfIns,
+          goldWeight: params.goldWeight,
+          accNo: params.accNo,
         },
       });
     } catch (error) {
@@ -470,6 +475,11 @@ const SavingsDetail = () => {
             paidPaymentCount: String(
               (paymentHistrory?.length || 0) + selectedPayments.length
             ),
+            maturityDate: params.maturityDate,
+            totalPaid: params.totalPaid,
+            noOfIns: params.noOfIns,
+            goldWeight: params.goldWeight,
+            accNo: params.accNo,
           },
         });
       } catch (error) {

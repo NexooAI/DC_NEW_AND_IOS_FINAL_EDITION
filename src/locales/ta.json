@@ -1044,5 +1044,17 @@
   "failedToEnableBiometrics": "பயோமெட்ரிக்ஸை இயக்க முடியவில்லை",
   "recentActivity": "சமீபத்திய செயல்பாடு",
   "statusActive": "செயலில்",
-  "downloadReceipt": "ரசீதைப் பதிவிறக்கவும்"
+  "downloadReceipt": "ரசீதைப் பதிவிறக்கவும்",
+  "connectOnWhatsApp": "வாட்ஸ்அப்பில் இணையுங்கள்",
+  "connectWhatsAppDesc": "இந்த டிசைன் பற்றி வாட்ஸ்அப் மூலம் விசாரிக்க விரும்புகிறீர்களா?",
+  "cancel": "ரத்துசெய்",
+  "general": "பொது",
+  "information": "தகவல்",
+  "legal": "சட்ட ரீதியான",
+  "goodMorning": "காலை வணக்கம்",
+  "goodAfternoon": "மதிய வணக்கம்",
+  "goodEvening": "மாலை வணக்கம்",
+  "monSat": "திங்கள் - சனி",
+  "closed": "விடுமுறை",
+  "visitWebsite": "வலைத்தளத்தைப் பார்வையிடவும்"
 }

@@ -1035,5 +1035,17 @@
   "failedToEnableBiometrics": "बायोमेट्रिक्स सक्षम करने में विफल",
   "recentActivity": "हाल की गतिविधि",
   "statusActive": "सक्रिय",
-  "downloadReceipt": "रसीद डाउनलोड करें"
+  "downloadReceipt": "रसीद डाउनलोड करें",
+  "connectOnWhatsApp": "व्हाट्सएप पर जुड़ें",
+  "connectWhatsAppDesc": "क्या आप व्हाट्सएप के माध्यम से इस डिजाइन के बारे में पूछताछ करना चाहते हैं?",
+  "cancel": "रद्द करें",
+  "general": "सामान्य",
+  "information": "जानकारी",
+  "legal": "कानूनी",
+  "goodMorning": "शुभ प्रभात",
+  "goodAfternoon": "शुभ दोपहर",
+  "goodEvening": "शुभ संध्या",
+  "monSat": "सोमवार - शनिवार",
+  "closed": "बंद",
+  "visitWebsite": "हमारी वेबसाइट देखें"
 }

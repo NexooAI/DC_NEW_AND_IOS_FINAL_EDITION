@@ -1035,5 +1035,17 @@
   "failedToEnableBiometrics": "బయోమెట్రిక్స్‌ను ప్రారంభించడంలో విఫలమైంది",
   "recentActivity": "ఇటీవలి కార్యకలాపాలు",
   "statusActive": "యాక్టివ్",
-  "downloadReceipt": "రసీదును డౌన్‌లోడ్ చేయండి"
+  "downloadReceipt": "రసీదును డౌన్‌లోడ్ చేయండి",
+  "connectOnWhatsApp": "వాట్సాప్‌లో కనెక్ట్ అవ్వండి",
+  "connectWhatsAppDesc": "మీరు వాట్సాప్ ద్వారా ఈ డిజైన్ గురించి ఆరా తీయాలనుకుంటున్నారా?",
+  "cancel": "రద్దు చేయండి",
+  "general": "సాధారణ",
+  "information": "సమాచారం",
+  "legal": "చట్టపరమైన",
+  "goodMorning": "శుభోదయం",
+  "goodAfternoon": "శుభ మధ్యాహ్నం",
+  "goodEvening": "శుభ సాయంత్రం",
+  "monSat": "సోమవారం - శనివారం",
+  "closed": "మూసివేయబడింది",
+  "visitWebsite": "వెబ్‌సైట్‌ను సందర్శించండి"
 }

@@ -444,15 +444,7 @@ export const useRatingPrompt = () => {
 
                 // Don't show if user has already rated
                 if (ratingData.hasRated) {
-                    // Show again after 30 days
-                    const lastRated = new Date(ratingData.timestamp);
-                    const daysSinceRated = Math.floor(
-                        (Date.now() - lastRated.getTime()) / (1000 * 60 * 60 * 24)
-                    );
-
-                    if (daysSinceRated < 30) {
-                        return false;
-                    }
+                    return false;
                 }
             }
 

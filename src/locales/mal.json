@@ -1036,5 +1036,17 @@
   "failedToEnableBiometrics": "ബയോമെട്രിക്സ് പ്രവർത്തനക്ഷമമാക്കുന്നതിൽ പരാജയപ്പെട്ടു",
   "recentActivity": "സമീപകാല പ്രവർത്തനങ്ങൾ",
   "statusActive": "സജീവം",
-  "downloadReceipt": "രസീത് ഡൗൺലോഡ് ചെയ്യുക"
+  "downloadReceipt": "രസീത് ഡൗൺലോഡ് ചെയ്യുക",
+  "connectOnWhatsApp": "വാട്ട്‌സ്ആപ്പിൽ ബന്ധപ്പെടുക",
+  "connectWhatsAppDesc": "വാട്ട്‌സ്ആപ്പ് വഴി ഈ ഡിസൈനെക്കുറിച്ച് അന്വേഷിക്കാൻ നിങ്ങൾ ആഗ്രഹിക്കുന്നുണ്ടോ?",
+  "cancel": "റദ്ദാക്കുക",
+  "general": "പൊതുവായ",
+  "information": "വിവരങ്ങൾ",
+  "legal": "നിയമപരമായ",
+  "goodMorning": "സുപ്രഭാതം",
+  "goodAfternoon": "ശുഭദിനം",
+  "goodEvening": "ശുഭ സായാഹ്നം",
+  "monSat": "തിങ്കൾ - ശനി",
+  "closed": "അവധി",
+  "visitWebsite": "വെബ്സൈറ്റ് സന്ദർശിക്കുക"
 }

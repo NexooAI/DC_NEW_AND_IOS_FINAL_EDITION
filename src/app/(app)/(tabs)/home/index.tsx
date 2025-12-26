@@ -637,6 +637,147 @@ const AnimatedGoldRate: React.FC<{ goldRate: string; updatedAt?: string }> = ({
   );
 };
 
+
+const collectionStyles = StyleSheet.create({
+  container: {
+    marginVertical: 10,
+    width: "100%",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginBottom: 15,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: theme.colors.primary,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  seeAllText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: theme.colors.secondary,
+    textDecorationLine: "underline",
+  },
+  listContent: {
+    paddingHorizontal: 15,
+    paddingBottom: 20,
+  },
+  cardContainer: {
+    width: 160,
+    height: 220,
+    marginHorizontal: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  cardBorder: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 20,
+    padding: 2, // Slight thicker border for the metallic look
+  },
+  cardInner: {
+    flex: 1,
+    backgroundColor: "#111", // Dark background for better contrast
+    borderRadius: 18,
+    overflow: "hidden",
+    position: "relative",
+  },
+  image: {
+    width: "100%",
+    height: "100%",
+  },
+  gradientOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: "100%", // Full height gradient for better text readability
+  },
+  topBadge: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    backgroundColor: "rgba(255, 215, 0, 0.9)", // Gold background
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  topBadgeText: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: "#5D4037", // Dark brown for contrast on gold
+    letterSpacing: 0.5,
+  },
+  bottomContent: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 12,
+    paddingBottom: 16,
+  },
+  collectionName: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+    textShadowColor: "rgba(0,0,0,0.75)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+    marginBottom: 8,
+    letterSpacing: 0.5,
+    fontFamily: Platform.OS === 'ios' ? 'Gill Sans' : 'serif', // Elegant serif font preference
+  },
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  countBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,215,0,0.3)",
+    gap: 4,
+  },
+  countText: {
+    color: "#FFD700",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  arrowBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+  },
+});
+
 const agrStyles = StyleSheet.create({
   container: {
     width: "90%",
@@ -2386,61 +2527,59 @@ export default function Home() {
   const renderStatusItem = useCallback(
     ({ item }: { item: Collection }) => (
       <TouchableOpacity
-        style={styles.statusItem}
+        style={collectionStyles.cardContainer}
+        activeOpacity={0.85}
         onPress={() => {
-          if (__DEV__) {
-            logger.log("🔍 Home: Status item pressed:", item.name);
-            logger.log("🔍 Home: Item thumbnail type:", typeof item.thumbnail);
-            logger.log(
-              "🔍 Home: Item status_images count:",
-              item.status_images?.length
-            );
-          }
           setSelectedCollection(item);
           setShowStatus(true);
         }}
       >
-        <View style={styles.statusItemWrapper}>
-          <View
-            style={[
-              styles.statusImageContainer,
-              {
-                borderColor: viewedCollections[item.id]
-                  ? theme.colors.primary
-                  : theme.colors.primary,
-              }, // Use theme primary color for both states
-            ]}
-          >
+        <LinearGradient
+          colors={['#BF953F', '#FCF6BA', '#B38728', '#FBF5B7', '#AA771C']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={collectionStyles.cardBorder}
+        >
+          <View style={collectionStyles.cardInner}>
             <Image
               source={getImageSource(item.thumbnail) ?? undefined}
-              style={styles.statusImage}
+              style={collectionStyles.image}
               resizeMode="cover"
-              onError={(e) => {
-                logger.error(
-                  "Collection thumbnail failed to load:",
-                  getImageSource(item.thumbnail),
-                  e.nativeEvent
-                );
-              }}
             />
+            {/* Dark Gradient Overlay for text readability */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.95)']}
+              locations={[0, 0.5, 0.8, 1]}
+              style={collectionStyles.gradientOverlay}
+            />
+            
+            {/* Top Right "View" Indicator */}
+            <View style={collectionStyles.topBadge}>
+               <Ionicons name="sparkles" size={10} color="#5D4037" />
+               <Text style={collectionStyles.topBadgeText}>NEW</Text>
+            </View>
+
+            {/* Bottom Content Area */}
+            <View style={collectionStyles.bottomContent}>
+              <Text style={collectionStyles.collectionName} numberOfLines={1}>
+                {item.name}
+              </Text>
+              
+              <View style={collectionStyles.statsRow}>
+                <View style={collectionStyles.countBadge}>
+                  <Ionicons name="images-outline" size={10} color="#FFD700" />
+                  <Text style={collectionStyles.countText}>{item.status_images?.length || 0} Designs</Text>
+                </View>
+                <TouchableOpacity style={collectionStyles.arrowBtn}>
+                  <Ionicons name="arrow-forward" size={12} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-          <ResponsiveText
-            variant="caption"
-            size="xs"
-            color={theme.colors.primary}
-            align="center"
-            allowWrap={false}
-            maxLines={1}
-            adjustsFontSizeToFit={true}
-            minimumFontScale={0.7}
-            style={styles.statusItemName}
-          >
-            {item.name}
-          </ResponsiveText>
-        </View>
+        </LinearGradient>
       </TouchableOpacity>
     ),
-    [getImageSource, viewedCollections]
+    [getImageSource]
   );
 
   // Show skeleton loading screen while data is being fetched
@@ -2847,25 +2986,29 @@ export default function Home() {
             {/* Collections Section - Conditionally rendered based on API */}
             {isVisible("showCollection") && (
               <View style={styles.statusContainer}>
-                <View style={styles.statusHeader}>
-                  <View style={styles.statusHeaderLine} />
-                  <Text style={styles.statusHeaderText}>
-                    {t("activeCollections")}
-                  </Text>
-                  <View style={styles.statusHeaderLine} />
+                {/* Active Collections Section */}
+                <View style={collectionStyles.container}>
+                  <View style={collectionStyles.header}>
+                    <Text style={collectionStyles.headerTitle}>
+                      {t("activeCollections")}
+                    </Text>
+                    {/* <TouchableOpacity>
+                      <Text style={collectionStyles.seeAllText}>{t("seeAll")}</Text>
+                    </TouchableOpacity> */}
+                  </View>
+                  <FlatList
+                    data={collectionsData}
+                    renderItem={renderStatusItem}
+                    keyExtractor={(item) => item.id.toString()}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={collectionStyles.listContent}
+                    removeClippedSubviews={true}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    initialNumToRender={5}
+                  />
                 </View>
-                <FlatList
-                  data={collectionsData}
-                  renderItem={renderStatusItem}
-                  keyExtractor={(item) => item.id.toString()}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.statusListContent}
-                  removeClippedSubviews={true}
-                  maxToRenderPerBatch={10}
-                  windowSize={5}
-                  initialNumToRender={10}
-                />
               </View>
             )}
 
@@ -3280,6 +3423,32 @@ export default function Home() {
               return 0;
             })()}
             onClose={handleStatusClose}
+            onEnquire={(collection, imgIndex) => {
+               Alert.alert(
+                 t("connectOnWhatsApp") || "Connect on WhatsApp",
+                 t("connectWhatsAppDesc") || "Do you want to enquire about this design via WhatsApp?",
+                 [
+                   {
+                     text: t("cancel") || "Cancel",
+                     style: "cancel"
+                   },
+                   {
+                     text: t("continue") || "Continue",
+                     onPress: () => {
+                       // Try to get support number from homeData or fallback
+                       // safely cast to any to avoid type error if interface is incomplete
+                       const supportNumber = theme.constants.whatsappNumber || "+919061803999"; 
+                       const message = `Hello, I am interested in the collection "${collection.name}" (Design #${imgIndex + 1}). Can you share more details?`;
+                       const url = `whatsapp://send?text=${encodeURIComponent(message)}&phone=${supportNumber}`;
+                       
+                       Linking.openURL(url).catch(() => {
+                         Linking.openURL(`https://wa.me/${supportNumber}?text=${encodeURIComponent(message)}`);
+                       });
+                     }
+                   }
+                 ]
+               );
+            }}
           />
           {/* Floating Chat Button - Conditionally rendered based on API */}
           {isVisible("showLiveChatBox") && <FloatingChatButton />}
@@ -4062,67 +4231,6 @@ const styles = StyleSheet.create({
     color: "#FFD700",
     fontWeight: "600",
   },
-  statusContainer: {
-    width: "100%",
-    marginVertical: spacing.sm,
-    marginTop: spacing.md,
-  },
-  statusHeader: {
-    ...commonStyles.row,
-    alignItems: "center",
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.xs,
-  },
-  statusHeaderLine: {
-    flex: 1,
-    height: 1.5,
-    backgroundColor: theme.colors.primary,
-    marginHorizontal: spacing.xs,
-  },
-  statusHeaderText: {
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
-    fontWeight: "700",
-    color: theme.colors.primary,
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-    textAlign: "center",
-  },
-  statusListContent: {
-    paddingHorizontal: spacing.sm,
-  },
-  statusItem: {
-    marginHorizontal: spacing.xs,
-    ...commonStyles.center,
-  },
-  statusItemWrapper: {
-    ...commonStyles.center,
-  },
-  statusImageContainer: {
-    width: rp(70),
-    height: rp(70),
-    borderRadius: rp(35),
-    borderWidth: 2,
-    borderColor: theme.colors.primary,
-    padding: spacing.xs,
-    backgroundColor: COLORS.white,
-    marginBottom: spacing.xs,
-    ...SHADOW_UTILS.avatar(),
-  },
-  statusImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: rp(33),
-  },
-  statusItemName: {
-    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
-    color: theme.colors.primary,
-    textAlign: "center",
-    width: rp(70),
-    fontWeight: "600",
-    textShadowColor: COLORS.overlayLight,
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
-  },
   headerLanguageButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -4150,6 +4258,32 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginVertical: 10,
   },
+  statusContainer: {
+    width: "100%",
+    marginVertical: spacing.sm,
+    marginTop: spacing.md,
+  },
+  statusHeader: {
+    ...commonStyles.row,
+    alignItems: "center",
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.xs,
+  },
+  statusHeaderLine: {
+    flex: 1,
+    height: 1.5,
+    backgroundColor: theme.colors.primary,
+    marginHorizontal: spacing.xs,
+  },
+  statusHeaderText: {
+    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+    fontWeight: "700",
+    color: theme.colors.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+    textAlign: "center",
+  },
+
   sectionHeader: {
     width: "100%",
     paddingHorizontal: 10,

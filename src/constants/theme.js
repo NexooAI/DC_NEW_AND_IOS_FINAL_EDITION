@@ -587,8 +587,8 @@ const theme = {
   constants: {
     customerName: "DC Jewellers",
     address: "Road Fathima Nagar, Mission Quarters, Anchery, Thrissur, Kerala 680005",
-    mobile: "+91 9061803999",
-    whatsapp: "+91 9061803999",
+    mobile: "+919061803999",
+    whatsapp: "+919061803999",
     email: "dcjewellerstcr@gmail.com",
     website: "https://www.dcjewellers.org",
     latitude: 8.427828080550306,

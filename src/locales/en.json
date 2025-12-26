@@ -98,6 +98,12 @@
   "bottom_nav_profile": "Profile",
   "bottom_nav_savings": "Savings",
   "branchName": "Branch Name",
+  "general": "General",
+  "information": "Information",
+  "legal": "Legal",
+  "goodMorning": "Good Morning",
+  "goodAfternoon": "Good Afternoon",
+  "goodEvening": "Good Evening",
   "businessHours": "Business Hours",
   "callNow": "Call Now",
   "call": "Call",
@@ -791,6 +797,9 @@
   "viewAll": "View All",
   "info": "Info",
   "schemeOverview": "Scheme Overview",
+  "monSat": "Monday - Saturday",
+  "closed": "Closed",
+  "visitWebsite": "Visit Our Website",
   "keyDetails": "Key Details",
   "amountRange": "Amount Range",
   "type": "Type",
@@ -1045,5 +1054,8 @@
   "biometricsDisabled": "Biometrics disabled",
   "verifyMpinToEnableBiometrics": "Please enter your MPIN to enable biometric login",
   "enable": "Enable",
-  "failedToEnableBiometrics": "Failed to enable biometrics"
+  "failedToEnableBiometrics": "Failed to enable biometrics",
+  "connectOnWhatsApp": "Connect on WhatsApp",
+  "connectWhatsAppDesc": "Do you want to enquire about this design via WhatsApp?",
+  "cancel": "Cancel"
 }

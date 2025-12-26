@@ -20,6 +20,7 @@ import { moderateScale } from "react-native-size-matters";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 // Types
 interface FAQItem {
@@ -337,34 +338,42 @@ export default function FAQScreen() {
             showsVerticalScrollIndicator={false}
             style={styles.scrollView}
           >
-            <View style={styles.headerContainer}>
-              <LinearGradient
-                colors={[
-                  theme.colors.primary,
-                  theme.colors.support_container[1],
-                ]}
-                style={styles.titleContainer}
-              >
-                <Text style={styles.mainTitle}>{translations.faqQuestion}</Text>
-                <View style={styles.titleUnderline} />
-              </LinearGradient>
-
-              <Text style={styles.subtitle}>
-                {t("findAnswersToCommonlyAsked")}
-              </Text>
+            {/* Hero Section */}
+            <View style={styles.heroContainer}>
+               <LinearGradient
+                  colors={[theme.colors.primary, theme.colors.support_container[1]]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.heroSection}
+                >
+                  <View style={styles.heroContent}>
+                    <View style={styles.iconContainer}>
+                      <Ionicons name="help-buoy-outline" size={48} color="rgba(255,255,255,0.9)" />
+                    </View>
+                    <Text style={styles.heroTitle}>
+                      {translations.faqQuestion}
+                    </Text>
+                     <Text style={styles.heroSubtitle}>
+                      {t("findAnswersToCommonlyAsked")}
+                    </Text>
+                  </View>
+                </LinearGradient>
             </View>
 
-            <View style={styles.faqContainer}>
-              {faqData.map((item, index) => (
-                <FAQItem
-                  key={item.id}
-                  item={item}
-                  isOpen={openItemId === item.id}
-                  toggleOpen={() => toggleItem(item.id)}
-                  translations={translations}
-                  index={index}
-                />
-              ))}
+            <View style={styles.faqContentContainer}>
+              <View style={styles.faqList}>
+                  {faqData.map((item, index) => (
+                    <FAQItem
+                      key={item.id}
+                      item={item}
+                      isOpen={openItemId === item.id}
+                      toggleOpen={() => toggleItem(item.id)}
+                      translations={translations}
+                      index={index}
+                    />
+                  ))}
+              </View>
+              {/* ... Footer ... */}
             </View>
 
             <View style={styles.footerContainer}>
@@ -416,51 +425,55 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContainer: {
-    paddingTop: 10,
-    paddingHorizontal: 16,
+    paddingTop: 0,
+    paddingHorizontal: 0, 
     paddingBottom: 40,
   },
-  headerContainer: {
+  heroContainer: {
+    marginBottom: 0,
+  },
+  heroSection: {
+    paddingTop: 60,
+    paddingBottom: 60,
+    paddingHorizontal: 20,
     alignItems: "center",
-    marginBottom: 32,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
   },
-  titleContainer: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderRadius: 20,
+  heroContent: {
+    alignItems: "center",
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
   },
-  mainTitle: {
-    fontSize: moderateScale(28),
+  heroTitle: {
+    fontSize: 28,
     fontWeight: "800",
     color: "white",
     textAlign: "center",
-    fontFamily: "serif",
-    letterSpacing: 1,
+    marginBottom: 8,
+    letterSpacing: 0.5,
   },
-  titleUnderline: {
-    width: 60,
-    height: 3,
-    backgroundColor: "white",
-    borderRadius: 2,
-    alignSelf: "center",
-    marginTop: 8,
-  },
-  subtitle: {
-    fontSize: moderateScale(16),
-    color: "#666",
-    lineHeight: 24,
+  heroSubtitle: {
+    fontSize: 16,
+    color: "rgba(255,255,255,0.9)",
     textAlign: "center",
-    letterSpacing: 0.4,
     maxWidth: width * 0.8,
   },
-  faqContainer: {
-    marginBottom: 20,
+  faqContentContainer: {
+      paddingHorizontal: 16,
+      marginTop: -40,
+  },
+  faqList: {
+      marginBottom: 20,
   },
   faqItem: {
     backgroundColor: "white",

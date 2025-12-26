@@ -1,430 +1,284 @@
-import React, { useCallback } from "react";
+import React from "react";
 import {
+  StyleSheet,
   View,
   Text,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Linking,
-  Alert,
-  Dimensions,
   ScrollView,
+  TouchableOpacity,
+  Linking,
+  Platform,
+  ImageBackground,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { moderateScale } from "react-native-size-matters";
-
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
-import AppLayoutWrapper from "@/components/AppLayoutWrapper";
-import {
-  Ionicons,
-  MaterialIcons,
-  FontAwesome5,
-  Feather,
-} from "@expo/vector-icons";
+import { Ionicons, FontAwesome5, MaterialIcons, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useFocusEffect } from "@react-navigation/native";
-import useGlobalStore from "@/store/global.store";
+import { LinearGradient } from "expo-linear-gradient";
+import AppLayoutWrapper from "@/components/AppLayoutWrapper";
+import { theme } from "@/constants/theme";
 
-const { width, height } = Dimensions.get("window");
-
-export default function ContactUs() {
+const ContactUs = () => {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   const router = useRouter();
-
-
-  const openGoogleMaps = async () => {
-    const url =
-      "https://www.google.com/maps/place/DC+Jewellers,+Gold+and+Diamonds/@10.5215326,76.2217161,9800m/data=!3m1!1e3!4m6!3m5!1s0x3ba7ef7ed58a6545:0x7ee60c0c1146bf78!8m2!3d10.5192833!4d76.2234851!16s%2Fg%2F11l121j4br?hl=en-IN&entry=ttu&g_ep=EgoyMDI1MTIwOS4wIKXMDSoASAFQAw%3D%3D";
-
-    const supported = await Linking.canOpenURL(url);
-
-    if (supported) {
-      await Linking.openURL(url);
-    } else {
-      Alert.alert(t("cantOpenMapLink"));
-    }
-  };
 
   const handleCall = () => {
     Linking.openURL(`tel:${theme.constants.mobile}`);
+  };
+
+  const handleWhatsApp = () => {
+    const message = t("contactUsMessage") || "Hello, I would like to know more about your services.";
+    const url = `whatsapp://send?text=${encodeURIComponent(message)}&phone=${theme.constants.whatsapp || theme.constants.mobile}`;
+    Linking.openURL(url).catch(() => {
+      // Fallback for when WhatsApp is not installed
+      Linking.openURL(`https://wa.me/${theme.constants.whatsapp || theme.constants.mobile}?text=${encodeURIComponent(message)}`);
+    });
   };
 
   const handleEmail = () => {
     Linking.openURL(`mailto:${theme.constants.email}`);
   };
 
-  const handleWhatsApp = () => {
-    const whatsappUrl = `https://wa.me/${theme.constants.mobile.replace(
-      /\s/g,
-      ""
-    )}`;
-    Linking.openURL(whatsappUrl);
+  const openGoogleMaps = () => {
+    const scheme = Platform.select({
+      ios: "maps:0,0?q=",
+      android: "geo:0,0?q=",
+    });
+    const latLng = `${10.519306421007363},${76.22348998262478}`;
+    const label = "DC Jewellers";
+    const url = Platform.select({
+      ios: `${scheme}${label}@${latLng}`,
+      android: `${scheme}${latLng}(${label})`,
+    });
+    if (url) {
+        Linking.openURL(url);
+    }
   };
 
-  const handleWebsite = () => {
+  const openWebsite = () => {
     Linking.openURL(theme.constants.website);
   };
 
   return (
     <AppLayoutWrapper showHeader={false} showBottomBar={false}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.container}
-      >
-        <SafeAreaView style={styles.safeArea}>
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Hero Section */}
-            <LinearGradient
-              colors={[theme.colors.primary, theme.colors.primary]}
-              style={styles.heroSection}
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Hero Section */}
+          <View style={styles.heroContainer}>
+            <ImageBackground
+              source={require("../../../../../../assets/images/shop.jpg")}
+              style={styles.heroImage}
             >
-              <View style={styles.heroContent}>
-                {/* <View style={styles.iconContainer}>
-              <Feather name="message-circle" size={40} color="white" />
-            </View> */}
-                <Text style={styles.heroTitle}>{t("getInTouch")}</Text>
-                <Text style={styles.heroSubtitle}>
-                  {t("contactUsSubtitle")}
-                </Text>
-              </View>
-            </LinearGradient>
-
-            {/* Contact Cards */}
-            {/* <View style={styles.cardsContainer}> */}
-            {/* Email Card */}
-            {/* <TouchableOpacity style={styles.contactCard} onPress={handleEmail}>
-            <LinearGradient
-              colors={['#FF6B6B', '#FF8E8E']}
-              style={styles.cardGradient}
-            >
-              <View style={styles.cardIcon}>
-                <MaterialIcons name="email" size={28} color="white" />
-              </View>
-              <Text style={styles.cardTitle}>Email Us</Text>
-              <Text style={styles.cardValue}>{theme.constants.email}</Text>
-              <View style={styles.cardArrow}>
-                <Feather name="arrow-right" size={20} color="white" />
-              </View>
-            </LinearGradient>
-          </TouchableOpacity> */}
-
-            {/* Phone Card */}
-            {/* <TouchableOpacity style={styles.contactCard} onPress={handleCall}>
-            <LinearGradient
-              colors={['#4ECDC4', '#44A08D']}
-              style={styles.cardGradient}
-            >
-              <View style={styles.cardIcon}>
-                <Ionicons name="call" size={28} color="white" />
-              </View>
-              <Text style={styles.cardTitle}>Call Us</Text>
-              <Text style={styles.cardValue}>{theme.constants.mobile}</Text>
-              <View style={styles.cardArrow}>
-                <Feather name="arrow-right" size={20} color="white" />
-              </View>
-            </LinearGradient>
-          </TouchableOpacity> */}
-
-            {/* WhatsApp Card */}
-            {/* <TouchableOpacity style={styles.contactCard} onPress={handleWhatsApp}>
-            <LinearGradient
-              colors={['#25D366', '#20BA5A']}
-              style={styles.cardGradient}
-            >
-              <View style={styles.cardIcon}>
-                <FontAwesome5 name="whatsapp" size={28} color="white" />
-              </View>
-              <Text style={styles.cardTitle}>WhatsApp</Text>
-              <Text style={styles.cardValue}>Chat with us instantly</Text>
-              <View style={styles.cardArrow}>
-                <Feather name="arrow-right" size={20} color="white" />
-              </View>
-            </LinearGradient>
-          </TouchableOpacity> */}
-
-            {/* Address Card */}
-            {/* <TouchableOpacity style={styles.contactCard} onPress={openGoogleMaps}>
-            <LinearGradient
-              colors={['#A8E6CF', '#7FCDCD']}
-              style={styles.cardGradient}
-            >
-              <View style={styles.cardIcon}>
-                <Ionicons name="location" size={28} color="white" />
-              </View>
-              <Text style={styles.cardTitle}>Visit Us</Text>
-              <Text style={styles.cardValue} numberOfLines={2}>
-                {theme.constants.address}
-              </Text>
-              <View style={styles.cardArrow}>
-                <Feather name="arrow-right" size={20} color="white" />
-              </View>
-            </LinearGradient>
-          </TouchableOpacity> */}
-            {/* </View> */}
-
-            {/* Quick Actions */}
-            <View style={styles.actionsContainer}>
-              <Text style={styles.actionsTitle}>{t("quickActions")}</Text>
-              <View style={styles.actionButtons}>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={handleCall}
-                >
-                  <View style={styles.actionIcon}>
-                    <Ionicons
-                      name="call"
-                      size={24}
-                      color={theme.colors.primary}
-                    />
-                  </View>
-                  <Text style={styles.actionText}>{t("callNow")}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={handleWhatsApp}
-                >
-                  <View style={styles.actionIcon}>
-                    <FontAwesome5
-                      name="whatsapp"
-                      size={24}
-                      color={theme.colors.primary}
-                    />
-                  </View>
-                  <Text style={styles.actionText}>{t("whatsApp")}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={openGoogleMaps}
-                >
-                  <View style={styles.actionIcon}>
-                    <FontAwesome5
-                      name="map-marker-alt"
-                      size={24}
-                      color={theme.colors.primary}
-                    />
-                  </View>
-                  <Text style={styles.actionText}>{t("maps")}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Website Section */}
-            <View style={styles.websiteContainer}>
-              <Text style={styles.websiteTitle}>{t("visitOurWebsite")}</Text>
-              <TouchableOpacity
-                style={styles.websiteButton}
-                onPress={handleWebsite}
+              <LinearGradient
+                colors={["rgba(0,0,0,0.3)", "rgba(0,0,0,0.8)"]}
+                style={styles.heroGradient}
               >
-                <LinearGradient
-                  colors={[theme.colors.primary, theme.colors.primary]}
-                  style={styles.websiteGradient}
-                >
-                  <Feather name="globe" size={24} color="white" />
-                  <Text style={styles.websiteText}>
-                    {theme.constants.website}
-                  </Text>
-                  <Feather name="external-link" size={20} color="white" />
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
+                <Text style={styles.heroTitle}>{t("getInTouch")}</Text>
+                <Text style={styles.heroSubtitle}>{t("contactUsSubtitle")}</Text>
+              </LinearGradient>
+            </ImageBackground>
+          </View>
 
-            {/* Business Hours */}
-            <View style={styles.hoursContainer}>
-              <Text style={styles.hoursTitle}>{t("businessHours")}</Text>
-              <View style={styles.hoursContent}>
-                <View style={styles.hourRow}>
-                  <Text style={styles.dayText}>{t("mondayFriday")}</Text>
-                  <Text style={styles.timeText}>9:00 AM - 9:00 PM</Text>
-                </View>
-                <View style={styles.hourRow}>
-                  <Text style={styles.dayText}>{t("saturday")}</Text>
-                  <Text style={styles.timeText}>9:00 AM - 9:00 PM</Text>
-                </View>
-                <View style={styles.hourRow}>
-                  <Text style={styles.dayText}>{t("sunday")}</Text>
-                  <Text style={styles.timeText}>10:00 AM - 2:00 PM</Text>
-                </View>
+          {/* Quick Actions */}
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleCall}
+              activeOpacity={0.8}
+            >
+              <View
+                style={[styles.actionIcon, { backgroundColor: "#E3F2FD" }]}
+              >
+                <Ionicons name="call" size={24} color={theme.colors.primary} />
               </View>
-            </View>
+              <Text style={styles.actionText}>{t("callNow")}</Text>
+            </TouchableOpacity>
 
-            {/* Company Info */}
-            <View style={styles.companyContainer}>
-              <Text style={styles.companyTitle}>
-                {theme.constants.customerName}
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleWhatsApp}
+              activeOpacity={0.8}
+            >
+              <View
+                style={[styles.actionIcon, { backgroundColor: "#E8F5E9" }]}
+              >
+                <FontAwesome5 name="whatsapp" size={24} color="#25D366" />
+              </View>
+              <Text style={styles.actionText}>{t("whatsApp")}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={openGoogleMaps}
+              activeOpacity={0.8}
+            >
+              <View
+                style={[styles.actionIcon, { backgroundColor: "#FFF3E0" }]}
+              >
+                <FontAwesome5
+                  name="map-marker-alt"
+                  size={24}
+                  color="#F57C00"
+                />
+              </View>
+              <Text style={styles.actionText}>{t("maps")}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Website Section */}
+          <View style={styles.websiteContainer}>
+            <Text style={styles.websiteTitle}>{t("visitWebsite")}</Text>
+            <TouchableOpacity
+              style={styles.websiteButton}
+              onPress={openWebsite}
+              activeOpacity={0.9}
+            >
+              <LinearGradient
+                colors={[theme.colors.primary, "#D4AF37"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.websiteGradient}
+              >
+                <FontAwesome5 name="globe" size={24} color="white" />
+                <Text style={styles.websiteText}>
+                  {theme.constants.website.replace(/^https?:\/\//, "")}
+                </Text>
+                <Feather name="external-link" size={20} color="white" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          {/* Business Hours */}
+          <View style={styles.hoursContainer}>
+            <Text style={styles.hoursTitle}>{t("businessHours")}</Text>
+            <View style={styles.hourRow}>
+              <Text style={styles.dayText}>{t("monSat")}</Text>
+              <Text style={styles.timeText}>9:30 AM - 7:00 PM</Text>
+            </View>
+            <View style={[styles.hourRow, { borderBottomWidth: 0 }]}>
+              <Text style={[styles.dayText, { color: theme.colors.primary }]}>
+                {t("sunday")}
               </Text>
-              <Text style={styles.companySubtitle}>{t("goldAndDiamonds")}</Text>
-              <Text style={styles.companyAddress}>
-                {theme.constants.address}
+              <Text style={[styles.timeText, { color: theme.colors.primary }]}>
+                {t("closed")}
               </Text>
             </View>
-          </ScrollView>
-        </SafeAreaView>
-      </KeyboardAvoidingView>
+          </View>
+
+          {/* Company Info */}
+          <View style={styles.companyContainer}>
+            <Text style={styles.companyTitle}>DC JEWELLERS</Text>
+            <Text style={styles.companySubtitle}>Since 2020</Text>
+            <Text style={styles.companyAddress}>
+              {theme.constants.address}
+            </Text>
+          </View>
+        </ScrollView>
+      </View>
     </AppLayoutWrapper>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
-  },
-  safeArea: {
-    flex: 1,
+    backgroundColor: "#f8f9fa",
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
+    paddingBottom: 40,
   },
-  heroSection: {
-    height: height * 0.25,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
+  heroContainer: {
+    height: 240,
+    marginHorizontal: 16,
+    marginTop: 10,
+    borderRadius: 24,
+    overflow: "hidden",
   },
-  heroContent: {
-    alignItems: "center",
+  heroImage: {
+    width: "100%",
+    height: "100%",
   },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
+  heroGradient: {
+    flex: 1,
+    justifyContent: "flex-end",
+    padding: 24,
   },
   heroTitle: {
     fontSize: 32,
     fontWeight: "800",
     color: "white",
     marginBottom: 8,
-    textAlign: "center",
+    textShadowColor: "rgba(0,0,0,0.3)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   heroSubtitle: {
     fontSize: 16,
-    color: "rgba(255, 255, 255, 0.9)",
-    textAlign: "center",
+    color: "rgba(255, 255, 255, 0.95)",
     lineHeight: 22,
-  },
-  cardsContainer: {
-    paddingHorizontal: 20,
-    marginTop: -30,
-    gap: 16,
-  },
-  contactCard: {
-    borderRadius: 16,
-    overflow: "hidden",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-  },
-  cardGradient: {
-    padding: 20,
-    position: "relative",
-  },
-  cardIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "white",
-    marginBottom: 4,
-  },
-  cardValue: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.9)",
-    lineHeight: 20,
-    flex: 1,
-  },
-  cardArrow: {
-    position: "absolute",
-    top: 20,
-    right: 20,
+    fontWeight: "500",
   },
   actionsContainer: {
-    paddingHorizontal: 20,
-    marginTop: 24,
-  },
-  actionsTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: theme.colors.primary,
-    marginBottom: 16,
-  },
-  actionButtons: {
     flexDirection: "row",
-    gap: 8,
+    paddingHorizontal: 16,
+    marginTop: 24,
+    gap: 12,
   },
   actionButton: {
     flex: 1,
     backgroundColor: "white",
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    paddingVertical: 20,
+    borderRadius: 20,
     alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    elevation: 4,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   actionIcon: {
-    marginRight: 6,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
   },
   actionText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: theme.colors.primary,
+    fontSize: 13,
+    fontWeight: "700",
+    color: theme.colors.textDarkGrey,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   websiteContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     marginTop: 24,
   },
   websiteTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDarkGrey,
     marginBottom: 16,
+    marginLeft: 4,
   },
   websiteButton: {
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: "hidden",
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
     elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   websiteGradient: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -433,80 +287,80 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "white",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
     marginLeft: 12,
   },
   hoursContainer: {
     marginTop: 24,
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     backgroundColor: "white",
-    borderRadius: 16,
-    padding: 20,
-    elevation: 4,
+    borderRadius: 20,
+    padding: 24,
+    elevation: 3,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
   },
   hoursTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
-    color: theme.colors.primary,
-    marginBottom: 16,
-  },
-  hoursContent: {
-    gap: 12,
+    color: theme.colors.textDarkGrey,
+    marginBottom: 20,
   },
   hourRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
+    borderBottomColor: "#f5f5f5",
   },
   dayText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "500",
-    color: "#333",
+    color: "#666",
   },
   timeText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
     color: theme.colors.primary,
   },
   companyContainer: {
     marginTop: 24,
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     marginBottom: 20,
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 20,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     alignItems: "center",
+    padding: 24,
+    backgroundColor: "rgba(133, 1, 17, 0.03)", // Very light primary tint
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(133, 1, 17, 0.05)",
   },
   companyTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "800",
     color: theme.colors.primary,
     marginBottom: 4,
     textAlign: "center",
+    letterSpacing: 0.5,
   },
   companySubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
-    color: "#666",
-    marginBottom: 12,
+    color: "#888",
+    marginBottom: 16,
     textAlign: "center",
+    textTransform: "uppercase",
+    letterSpacing: 2,
   },
   companyAddress: {
     fontSize: 14,
-    color: "#888",
+    color: "#666",
     textAlign: "center",
-    lineHeight: 20,
+    lineHeight: 22,
+    maxWidth: "80%",
   },
 });
+
+export default ContactUs;

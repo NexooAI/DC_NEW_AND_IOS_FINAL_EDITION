@@ -1395,7 +1395,7 @@ export default function JoinSavings() {
                 <View style={styles.cardHeader}>
                   <View style={styles.titleWithIcon}>
                     <Ionicons name="cash-outline" size={width < 350 ? 14 : 16} color="#FFD700" />
-                    <Text style={styles.cardTitle}>{translations.amountInRupees}</Text>
+                    <Text style={[styles.cardTitle, { color: '#FFF' }]}>{translations.amountInRupees}</Text>
                   </View>
                   <View style={styles.amountBadge}>
                     <Text style={styles.amountBadgeText}>INR</Text>
@@ -2818,9 +2818,9 @@ export default function JoinSavings() {
   return (
     <SafeAreaView
       style={styles.safeAreaContainer}
-      edges={["left", "right", "top"]}
+      edges={["left", "right"]}
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? insets.top : 0 }]}>
         {/* <View style={styles.header}>
           <TouchableOpacity
             onPress={() => {
@@ -3029,7 +3029,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 16,
-    color: "#FFC857",
+    color: theme.colors.white,
   },
   progressContainer: {
     backgroundColor: theme.colors.background,
@@ -3116,7 +3116,7 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
   },
   progressBadgeTextActive: {
-    color: theme.colors.black,
+    color: theme.colors.white,
     fontSize: 12,
   },
   progressStepLabel: {
@@ -3180,7 +3180,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginBottom: 8,
-    color: "#1a237e",
+    color: theme.colors.primary,
     textAlign: "left",
   },
   input: {
@@ -3213,12 +3213,12 @@ const styles = StyleSheet.create({
   returnsAmount: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#15803d",
+    color: theme.colors.success,
     marginVertical: 8,
   },
   returnsRate: {
     fontSize: 14,
-    color: "#15803d",
+    color: theme.colors.success,
   },
   row: {
     flexDirection: "row",
@@ -3554,7 +3554,7 @@ const styles = StyleSheet.create({
   quickAmountText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#1a237e",
+    color: theme.colors.primary,
   },
   selectedQuickAmountText: {
     color: "#fff",
@@ -3618,7 +3618,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    backgroundColor: "rgba(138, 13, 180, 0.54)",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderRadius: 8,
     padding: 10,
     minWidth: 140,
@@ -3692,10 +3692,10 @@ const styles = StyleSheet.create({
   goldRateValue: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#1a237e",
+    color: theme.colors.primary,
   },
   selectedAmountBadge: {
-    backgroundColor: "#1a237e",
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
@@ -3774,7 +3774,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginBottom: 8,
-    color: "#1a237e",
+    color: theme.colors.primary,
     textAlign: "center",
   },
   goldValueContainer: {
@@ -3807,7 +3807,7 @@ const styles = StyleSheet.create({
     padding: 0,
     minWidth: 100,
     textAlign: "center",
-    color: "#1a237e",
+    color: theme.colors.primary,
   },
   goldSymbol: {
     fontSize: 16,
@@ -3815,10 +3815,10 @@ const styles = StyleSheet.create({
     color: "#FFC857",
   },
   selectedGoldRateCard: {
-    borderColor: "#1a237e",
+    borderColor: theme.colors.primary,
     borderWidth: 2,
     backgroundColor: "#fffbe6",
-    shadowColor: "#1a237e",
+    shadowColor: theme.colors.primary,
     shadowOpacity: 0.2,
   },
   summaryCardModern: {
@@ -4001,7 +4001,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   modernInputActive: {
-    borderColor: "#1a237e",
+    borderColor: theme.colors.primary,
     backgroundColor: "#fff",
   },
   modernInputError: {
@@ -4231,7 +4231,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   amountCard: {
-    backgroundColor: '#1A237E',
+    backgroundColor: theme.colors.primary,
   },
   goldCard: {
     backgroundColor: '#FFF8E1',
@@ -4257,7 +4257,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: width < 350 ? 12 : width < 400 ? 13 : 14,
     fontWeight: '600',
-    color: '#180303ff',
+    color: theme.colors.textDarkBrown,
     marginLeft: 4,
     flex: 1,
     flexWrap: 'wrap',
@@ -4491,7 +4491,7 @@ const styles = StyleSheet.create({
     minHeight: width < 350 ? 36 : 44,
   },
   selectedQuickAmountChip: {
-    backgroundColor: '#1A237E',
+    backgroundColor: theme.colors.primary,
     borderColor: '#FFD700',
   },
   lastInRow: {
