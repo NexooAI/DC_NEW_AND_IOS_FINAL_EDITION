@@ -5,14 +5,22 @@ import {
   ImageBackground,
   TouchableOpacity,
   Pressable,
-  Animated,
   Modal,
   ActivityIndicator,
   RefreshControl,
+  Animated as RNAnimated,
+  Platform,
 } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
+import { ScrollView, Swipeable, GestureHandlerRootView } from "react-native-gesture-handler";
+// Bypass type checking for Reanimated due to v4 export issues
+const Reanimated = require("react-native-reanimated");
+const Animated = Reanimated.default || Reanimated;
+const { Layout, FadeOut } = Reanimated;
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { moderateScale } from "react-native-size-matters";
 // AppHeader is now handled by the layout wrapper
 import { theme } from "@/constants/theme";
 import { userAPI } from "@/services/api";
@@ -78,199 +86,189 @@ type NotificationResponse = {
 const NotificationItem = React.memo(
   ({
     item,
+    index,
     onPress,
     onDelete,
   }: {
     item: Notification;
+    index: number;
     onPress: (id: string) => void;
     onDelete: (id: string) => void;
   }) => {
-    const fadeAnim = React.useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }, []);
-
-    const getCategoryColor = (type: string) => {
+    
+    // Gradient colors based on type
+    const getCategoryGradient = (type: string): [string, string, ...string[]] => {
       switch (type) {
         case "offer":
-          return "#FF5722";
+          return ["#FF512F", "#DD2476"];
         case "transaction":
-          return "#2196F3";
+          return ["#2196F3", "#21CBF3"];
         case "reminder":
-          return "#4CAF50";
+          return ["#56ab2f", "#a8e063"];
         case "alert":
-          return "#FFC107";
+          return ["#FFC837", "#FF8008"];
         case "rate":
-          return "#9C27B0";
+          return ["#8E2DE2", "#4A00E0"];
         case "blog":
-          return "#FF9800";
+          return ["#F2994A", "#F2C94C"];
         default:
-          return "#2196F3";
+          return ["#4facfe", "#00f2fe"];
       }
     };
 
     const getCategoryIcon = (type: string) => {
       switch (type) {
         case "offer":
-          return "gift";
+          return "gift-outline";
         case "transaction":
-          return "wallet";
+          return "wallet-outline";
         case "reminder":
-          return "calendar";
+          return "calendar-outline";
         case "alert":
-          return "alert-circle";
+          return "alert-circle-outline";
         case "rate":
-          return "trending-up";
+          return "trending-up-outline";
         case "blog":
-          return "document-text";
+          return "document-text-outline";
         default:
-          return "notifications";
+          return "notifications-outline";
       }
     };
 
-    // Unique design: colored left bar, shadow, bold unread, background color change
     const isUnread = item.status === "unread";
-    return (
-      <Animated.View style={{ opacity: fadeAnim }}>
-        <Pressable
-          onPress={() => onPress(item.id.toString())}
-          style={{
-            flexDirection: "row",
-            backgroundColor: isUnread ? "#FFF7F0" : "#F6F6F6",
-            borderRadius: 12,
-            marginBottom: 14,
-            shadowColor: isUnread ? getCategoryColor(item.type) : "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: isUnread ? 0.18 : 0.08,
-            shadowRadius: 6,
-            elevation: isUnread ? 4 : 1,
-          }}
-        >
-          {/* Colored left bar */}
-          <View
+    
+    const renderRightActions = (progress: any, dragX: any) => {
+      return (
+        <TouchableOpacity
             style={{
-              width: 6,
-              borderTopLeftRadius: 12,
-              borderBottomLeftRadius: 12,
-              backgroundColor: isUnread
-                ? getCategoryColor(item.type)
-                : "transparent",
+                backgroundColor: '#FF4B4B',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: 80,
+                height: '100%',
+                borderRadius: 16,
+                marginBottom: 12,
+                marginLeft: 10
             }}
-          />
-          <View style={{ flex: 1, padding: 16 }}>
-            <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-              <View
+            onPress={() => onDelete(item.id.toString())}
+        >
+            <Ionicons name="trash-outline" size={28} color="white" />
+        </TouchableOpacity>
+      );
+    };
+
+    return (
+      <Animated.View 
+        // entering={FadeIn.delay(index * 50).springify()} // Animation disabled due to import error
+        layout={Layout.springify()}
+        exiting={FadeOut}
+      >
+        <Swipeable renderRightActions={renderRightActions}>
+            <Pressable
+            onPress={() => onPress(item.id.toString())}
+            style={({ pressed }) => ({
+                flexDirection: "row",
+                // Differentiation: Tinted background for unread, White for read
+                backgroundColor: isUnread ? "#FFF5F6" : "white", 
+                borderRadius: 16,
+                marginBottom: 12,
+                marginHorizontal: 2,
+                padding: 16,
+                // Differentiation: Stronger shadow for unread
+                shadowColor: isUnread ? theme.colors.primary : "#999",
+                shadowOffset: { width: 0, height: isUnread ? 4 : 2 },
+                shadowOpacity: isUnread ? 0.2 : 0.08,
+                shadowRadius: isUnread ? 8 : 4,
+                elevation: isUnread ? 5 : 2,
+                // Differentiation: Left border accent for unread
+                borderLeftWidth: isUnread ? 4 : 0,
+                borderLeftColor: theme.colors.primary,
+                // Differentiation: Slight opacity for read items to make them recede
+                opacity: isUnread ? 1 : 0.95,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+            })}
+            >
+            {/* Icon Container with Gradient */}
+            <LinearGradient
+                colors={getCategoryGradient(item.type)}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 22,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 14,
-                  backgroundColor: `${getCategoryColor(item.type)}10`,
-                  flexShrink: 0,
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 16,
+                // Greyscale the icon slightly for read items? Optional, but let's keep it vibrant.
+                opacity: isUnread ? 1 : 0.8
                 }}
-              >
+            >
                 <Ionicons
-                  name={getCategoryIcon(item.type) as any}
-                  size={22}
-                  color={getCategoryColor(item.type)}
+                name={getCategoryIcon(item.type) as any}
+                size={24}
+                color="white"
                 />
-              </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
+            </LinearGradient>
+
+            <View style={{ flex: 1 }}>
                 <View
-                  style={{
+                style={{
                     flexDirection: "row",
                     justifyContent: "space-between",
                     alignItems: "flex-start",
                     marginBottom: 6,
-                  }}
+                }}
                 >
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontWeight: isUnread ? "bold" : "600",
-                      color: "#222",
-                      flex: 1,
-                      marginRight: 8,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    {item.title}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => onDelete(item.id.toString())}
-                    style={{
-                      padding: 6,
-                      marginRight: -8,
-                      flexShrink: 0,
-                      alignSelf: "flex-start",
-                    }}
-                  >
-                    {/* <Ionicons name="close" size={18} color="#9E9E9E" /> */}
-                  </TouchableOpacity>
-                </View>
                 <Text
-                  style={{
-                    fontSize: 14,
-                    color: "#555",
-                    lineHeight: 20,
-                    marginRight: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  {item.message}
-                </Text>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginTop: 10,
-                    marginRight: 8,
-                  }}
-                >
-                  <View
                     style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      flex: 1,
+                    fontSize: moderateScale(15),
+                    fontWeight: isUnread ? "700" : "500", // Bolder for unread
+                    color: isUnread ? "#1a1a1a" : "#4b5563", // Darker black for unread, grayish for read
+                    flex: 1,
+                    marginRight: 8,
+                    lineHeight: 22,
                     }}
-                  >
-                    <Ionicons name="time-outline" size={14} color="#9E9E9E" />
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: "#888",
-                        marginLeft: 6,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      {formatDate(item.created_at)}
-                    </Text>
-                  </View>
-                  {isUnread && (
+                    numberOfLines={2}
+                >
+                    {item.title}
+                </Text>
+                
+                {isUnread && (
                     <View
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: getCategoryColor(item.type),
-                        flexShrink: 0,
-                        marginLeft: 8,
-                      }}
-                    />
-                  )}
+                    style={{
+                        backgroundColor: "#FFE5E5",
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                        borderRadius: 10,
+                    }}
+                    >
+                    <Text style={{ fontSize: 10, color: theme.colors.primary, fontWeight: "bold" }}>NEW</Text>
+                    </View>
+                )}
                 </View>
-              </View>
+
+                <Text
+                style={{
+                    fontSize: moderateScale(13),
+                    color: isUnread ? "#444" : "#6b7280", // Darker gray for unread body, lighter for read
+                    lineHeight: 19,
+                    marginBottom: 10,
+                }}
+                numberOfLines={2}
+                >
+                {item.message}
+                </Text>
+
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="time-outline" size={14} color="#9CA3AF" />
+                <Text style={{ fontSize: 12, color: "#9CA3AF", marginLeft: 4 }}>
+                    {formatDate(item.created_at)}
+                </Text>
+                </View>
             </View>
-          </View>
-        </Pressable>
+            </Pressable>
+        </Swipeable>
       </Animated.View>
     );
   }
@@ -282,27 +280,33 @@ const NotificationSection = React.memo(
     notifications,
     onNotificationPress,
     onNotificationDelete,
+    baseIndex = 0,
   }: {
     title: string;
     notifications: Notification[];
     onNotificationPress: (id: string) => void;
     onNotificationDelete: (id: string) => void;
+    baseIndex?: number;
   }) => (
     <View style={{ marginTop: 24 }}>
       <Text
         style={{
-          fontSize: 16,
-          fontWeight: "600",
-          color: "#374151",
+          fontSize: 14,
+          fontWeight: "700",
+          color: theme.colors.primary,
           marginBottom: 16,
           paddingHorizontal: 4,
+          textTransform: "uppercase",
+          letterSpacing: 0.5,
+          opacity: 0.8
         }}
       >
         {title}
       </Text>
-      {notifications.map((notification) => (
+      {notifications.map((notification, index) => (
         <NotificationItem
           key={notification.id}
+          index={baseIndex + index}
           item={notification}
           onPress={onNotificationPress}
           onDelete={onNotificationDelete}
@@ -324,44 +328,6 @@ const NotificationModal = ({
 }) => {
   if (!notification) return null;
 
-  const getCategoryColor = (type: string) => {
-    switch (type) {
-      case "offer":
-        return "#FF5722";
-      case "transaction":
-        return "#2196F3";
-      case "reminder":
-        return "#4CAF50";
-      case "alert":
-        return "#FFC107";
-      case "rate":
-        return "#9C27B0";
-      case "blog":
-        return "#FF9800";
-      default:
-        return "#2196F3";
-    }
-  };
-
-  const getCategoryIcon = (type: string) => {
-    switch (type) {
-      case "offer":
-        return "gift";
-      case "transaction":
-        return "wallet";
-      case "reminder":
-        return "calendar";
-      case "alert":
-        return "alert-circle";
-      case "rate":
-        return "trending-up";
-      case "blog":
-        return "document-text";
-      default:
-        return "notifications";
-    }
-  };
-
   return (
     <Modal
       visible={visible}
@@ -372,131 +338,74 @@ const NotificationModal = ({
       <View
         style={{
           flex: 1,
-          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          backgroundColor: "rgba(0, 0, 0, 0.6)",
           justifyContent: "center",
           alignItems: "center",
-          padding: 20,
+          padding: 24,
         }}
       >
-        <View
-          style={{
-            backgroundColor: "white",
-            borderRadius: 16,
-            padding: 24,
-            width: "100%",
-            maxWidth: 400,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.25,
-            shadowRadius: 12,
-            elevation: 8,
-          }}
+        <Animated.View
+            // entering={FadeIn.springify()} // Animation disabled due to import error
+            layout={Layout.springify()}
+            style={{
+                backgroundColor: "white",
+                borderRadius: 24,
+                width: "100%",
+                maxWidth: 400,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.3,
+                shadowRadius: 20,
+                elevation: 10,
+                overflow: 'hidden'
+            }}
         >
-          {/* Header with icon */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginBottom: 20,
-              paddingBottom: 16,
-              borderBottomWidth: 1,
-              borderBottomColor: "#f0f0f0",
-            }}
-          >
-            <View
-              style={{
-                width: 50,
-                height: 50,
-                borderRadius: 25,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: `${getCategoryColor(notification.type)}15`,
-                marginRight: 16,
-              }}
-            >
-              <Ionicons
-                name={getCategoryIcon(notification.type) as any}
-                size={24}
-                color={getCategoryColor(notification.type)}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "bold",
-                  color: "#222",
-                  marginBottom: 4,
-                }}
-              >
-                {notification.title}
-              </Text>
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: "#888",
-                }}
-              >
-                {formatDate(notification.created_at)}
-              </Text>
-            </View>
-            <TouchableOpacity onPress={onClose} style={{ padding: 8 }}>
-              <Ionicons name="close" size={24} color="#666" />
-            </TouchableOpacity>
-          </View>
+            {/* Header / Banner */}
+             <LinearGradient
+                colors={[theme.colors.primary, '#850111']}
+                style={{ padding: 24, alignItems: 'center' }}
+             >
+                <View style={{
+                    width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.2)',
+                    justifyContent: 'center', alignItems: 'center', marginBottom: 12
+                }}>
+                     <Ionicons name="notifications" size={30} color="white" />
+                </View>
+                 <Text style={{ fontSize: 20, fontWeight: "bold", color: "white", textAlign: "center" }}>
+                    {notification.title}
+                 </Text>
+                 <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 }}>
+                    {formatDate(notification.created_at)}
+                 </Text>
+                 
+                <TouchableOpacity 
+                    onPress={onClose} 
+                    style={{ position: 'absolute', top: 16, right: 16, padding: 8 }}
+                >
+                    <Ionicons name="close-circle" size={30} color="rgba(255,255,255,0.5)" />
+                </TouchableOpacity>
+             </LinearGradient>
 
-          {/* Message */}
-          <Text
-            style={{
-              fontSize: 16,
-              color: "#444",
-              lineHeight: 24,
-              marginBottom: 20,
-            }}
-          >
-            {notification.message}
-          </Text>
-
-          {/* Footer */}
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              paddingTop: 16,
-              borderTopWidth: 1,
-              borderTopColor: "#f0f0f0",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                color: "#888",
-              }}
-            >
-              {formatDate(notification.created_at)}
-            </Text>
-            <TouchableOpacity
-              onPress={onClose}
-              style={{
-                backgroundColor: getCategoryColor(notification.type),
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-                borderRadius: 8,
-              }}
-            >
-              <Text
-                style={{
-                  color: "white",
-                  fontWeight: "600",
-                  fontSize: 14,
-                }}
-              >
-                Close
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+            {/* Content */}
+             <View style={{ padding: 24 }}>
+                 <Text style={{ fontSize: 16, lineHeight: 26, color: "#333", textAlign: "left" }}>
+                    {notification.message}
+                 </Text>
+                 
+                 <TouchableOpacity
+                    onPress={onClose}
+                    style={{
+                        marginTop: 24,
+                        backgroundColor: "#f5f5f5",
+                        paddingVertical: 14,
+                        borderRadius: 12,
+                        alignItems: "center"
+                    }}
+                 >
+                     <Text style={{ fontSize: 16, fontWeight: "600", color: "#666" }}>Dismiss</Text>
+                 </TouchableOpacity>
+             </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -805,29 +714,67 @@ export default function NotificationsScreen() {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#f9fafb" }}>
-      <ImageBackground
-        source={theme.image.menu_bg as any}
-        resizeMode="repeat"
-        style={{ flex: 1 }}
-        imageStyle={{
-          width: "100%",
-          height: "100%",
-          resizeMode: "repeat" as any,
-          opacity: 0.02,
-        }}
-      >
-        {/* Fixed Header */}
-        {/* Header is now handled by the layout wrapper */}
+    <SafeAreaView style={{ flex: 1, backgroundColor: "white" }} edges={['right', 'bottom', 'left']}>
+      {/* Header Container */}
+      <View style={{ 
+          backgroundColor: 'white',
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 10,
+          elevation: 5,
+          zIndex: 10,
+      }}>
+        <View style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingHorizontal: 20,
+            paddingVertical: 12, // Reduced from 16
+        }}>
+            <View>
+                <Text style={{ 
+                    fontSize: moderateScale(24), 
+                    fontWeight: "800", 
+                    color: theme.colors.primary,
+                    letterSpacing: -0.5
+                }}>
+                    Notifications
+                </Text>
+                <Text style={{ fontSize: moderateScale(13), color: "#666", marginTop: 2 }}>
+                    Stay updated with your activities
+                </Text>
+            </View>
+            
+            {unreadCount > 0 && (
+                <LinearGradient
+                    colors={[theme.colors.primary, '#E6B800']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 20,
+                    }}
+                >
+                    <Text style={{ color: "white", fontWeight: "700", fontSize: 12 }}>
+                        {unreadCount} NEW
+                    </Text>
+                </LinearGradient>
+            )}
+        </View>
+      </View>
 
         {/* Scrollable Content */}
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingBottom: 80,
-            paddingHorizontal: 20,
-          }}
+        <View style={{ flex: 1, backgroundColor: "#F8F9FA" }}>
+            <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{
+                flexGrow: 1,
+                paddingBottom: 80,
+                paddingHorizontal: 20,
+                paddingTop: 20,
+            }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -838,88 +785,6 @@ export default function NotificationsScreen() {
             />
           }
         >
-          {/* Header */}
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              marginBottom: 32,
-            }}
-          >
-            <View style={{ flex: 1, marginRight: 16 }}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginBottom: 8,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 24,
-                    fontWeight: "bold",
-                    color: "#1f2937",
-                  }}
-                >
-                  Notifications
-                </Text>
-                {unreadCount > 0 && (
-                  <View
-                    style={{
-                      marginLeft: 12,
-                      backgroundColor: "#ef4444",
-                      borderRadius: 12,
-                      paddingHorizontal: 10,
-                      paddingVertical: 4,
-                      minWidth: 20,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: "white",
-                        fontSize: 12,
-                        fontWeight: "500",
-                      }}
-                    >
-                      {unreadCount}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: "#6b7280",
-                }}
-              >
-                Stay updated with your Digi Gold activities
-              </Text>
-            </View>
-            {/* <TouchableOpacity
-              onPress={markAllAsRead}
-              style={{
-                backgroundColor: "#f3f4f6",
-                paddingHorizontal: 16,
-                paddingVertical: 10,
-                borderRadius: 8,
-                flexShrink: 0,
-              }}
-            >
-              <Text
-                style={{
-                  color: "#374151",
-                  fontWeight: "500",
-                  fontSize: 14,
-                }}
-              >
-                Mark All as Read
-              </Text>
-            </TouchableOpacity> */}
-          </View>
-
           {/* Loading State */}
           {loading && !refreshing && (
             <View
@@ -931,14 +796,7 @@ export default function NotificationsScreen() {
               }}
             >
               <ActivityIndicator size="large" color={theme.colors.primary} />
-              <Text
-                style={{
-                  marginTop: 16,
-                  fontSize: 16,
-                  color: "#666",
-                  textAlign: "center",
-                }}
-              >
+              <Text style={{ marginTop: 16, fontSize: 16, color: "#666" }}>
                 Loading notifications...
               </Text>
             </View>
@@ -946,71 +804,55 @@ export default function NotificationsScreen() {
 
           {/* Error State */}
           {error && !loading && (
-            <View
-              style={{
-                paddingVertical: 40,
-                alignItems: "center",
-              }}
-            >
-              <Ionicons name="alert-circle" size={48} color="#ff6b6b" />
-              <Text
-                style={{
-                  marginTop: 16,
-                  fontSize: 16,
-                  color: "#666",
-                  textAlign: "center",
-                  marginBottom: 20,
-                }}
-              >
+            <View style={{ paddingVertical: 40, alignItems: "center" }}>
+              <Ionicons name="cloud-offline-outline" size={48} color="#ff6b6b" />
+              <Text style={{ marginTop: 16, fontSize: 16, color: "#666" }}>
                 {error}
               </Text>
               <TouchableOpacity
                 onPress={() => fetchNotifications()}
                 style={{
+                  marginTop: 20,
                   backgroundColor: theme.colors.primary,
                   paddingHorizontal: 24,
                   paddingVertical: 12,
-                  borderRadius: 8,
+                  borderRadius: 12,
                 }}
               >
-                <Text style={{ color: "white", fontWeight: "600" }}>
-                  Try Again
-                </Text>
+                <Text style={{ color: "white", fontWeight: "600" }}>Try Again</Text>
               </TouchableOpacity>
             </View>
           )}
 
-          {/* Notification Sections by Category */}
+          {/* Notification Sections */}
           {!loading &&
             !error &&
             notifications.length > 0 &&
             Object.entries(groupedNotifications)
               .filter(([category, dateGroups]) =>
-                Object.values(dateGroups).some(
-                  (notifications) => notifications.length > 0
-                )
+                Object.values(dateGroups).some((n) => n.length > 0)
               )
               .map(([category, dateGroups]) => (
-                <View key={category} style={{ marginBottom: 32 }}>
-                  {/* Category Header */}
-                  <Text
-                    style={{
-                      fontSize: 20,
-                      fontWeight: "bold",
-                      color: "#1f2937",
-                      marginBottom: 16,
-                      paddingHorizontal: 4,
+                <View key={category} style={{ marginBottom: 24 }}>
+                  <LinearGradient
+                    colors={['rgba(0,0,0,0.02)', 'rgba(0,0,0,0)']}
+                    style={{ 
+                        paddingVertical: 8, 
+                        paddingHorizontal: 12, 
+                        borderRadius: 8, 
+                        marginBottom: 12,
+                        flexDirection: 'row',
+                        alignItems: 'center'
                     }}
                   >
-                    {getCategoryDisplayName(category)}
-                  </Text>
+                    <View style={{ width: 4, height: 16, backgroundColor: theme.colors.primary, borderRadius: 2, marginRight: 8 }} />
+                    <Text style={{ fontSize: 14, fontWeight: "700", color: "#666", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                        {getCategoryDisplayName(category)}
+                    </Text>
+                  </LinearGradient>
 
-                  {/* Notifications for this category grouped by date */}
                   {Object.entries(dateGroups)
-                    .filter(
-                      ([date, notificationsForDate]) =>
-                        notificationsForDate.length > 0
-                    )
+                    .filter(([_, n]) => n.length > 0)
                     .map(([date, notificationsForDate]) => (
                       <NotificationSection
                         key={`${category}-${date}`}
@@ -1028,49 +870,58 @@ export default function NotificationsScreen() {
             !error &&
             (Object.keys(categorizedNotifications).length === 0 ||
               Object.values(categorizedNotifications).every(
-                (notifications) =>
-                  Array.isArray(notifications) && notifications.length === 0
+                (n) => Array.isArray(n) && n.length === 0
               )) && (
               <View
                 style={{
                   flex: 1,
                   justifyContent: "center",
                   alignItems: "center",
-                  paddingVertical: 60,
+                  marginTop: 60,
                 }}
               >
-                <Ionicons name="notifications-off" size={64} color="#ccc" />
+                <View style={{
+                    width: 120,
+                    height: 120,
+                    borderRadius: 60,
+                    backgroundColor: 'rgba(133, 1, 17, 0.05)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 24,
+                }}>
+                    <Ionicons name="notifications-outline" size={60} color={theme.colors.primary} style={{ opacity: 0.5 }} />
+                </View>
                 <Text
                   style={{
-                    marginTop: 16,
-                    fontSize: 18,
-                    color: "#666",
-                    textAlign: "center",
+                    fontSize: 20,
+                    fontWeight: "700",
+                    color: "#333",
                     marginBottom: 8,
                   }}
                 >
-                  No notifications yet
+                  No New Notifications
                 </Text>
                 <Text
                   style={{
-                    fontSize: 14,
-                    color: "#999",
+                    fontSize: 15,
+                    color: "#666",
                     textAlign: "center",
+                    maxWidth: "70%",
+                    lineHeight: 22,
                   }}
                 >
-                  You'll see important updates here when they arrive
+                  You're all caught up! Check back later for updates on your gold investments.
                 </Text>
               </View>
             )}
         </ScrollView>
+      </View>
 
-        {/* Notification Modal */}
         <NotificationModal
           visible={modalVisible}
           notification={selectedNotification}
           onClose={closeModal}
         />
-      </ImageBackground>
     </SafeAreaView>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   TouchableOpacity,
   Modal,
@@ -9,6 +9,12 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Linking,
+  Animated,
+  Easing,
+  Dimensions,
+  Image,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -16,6 +22,8 @@ import { theme } from "@/constants/theme";
 import { moderateScale } from "react-native-size-matters";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
+
+const { width, height } = Dimensions.get("window");
 
 interface Message {
   id: string;
@@ -29,9 +37,15 @@ const FloatingChatButton = () => {
   const [isChatVisible, setIsChatVisible] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const { user } = useGlobalStore();
   const flatListRef = useRef<FlatList>(null);
+  
+  // Animations
+  const scaleValue = useRef(new Animated.Value(1)).current;
+  const pulseValue = useRef(new Animated.Value(1)).current;
+  const modalSlide = useRef(new Animated.Value(height)).current;
+
+  // Support Number (from FAQ)
+  const SUPPORT_NUMBER = "919061803999"; 
 
   // FAQ Data
   const FAQ_QUESTIONS = [
@@ -39,7 +53,7 @@ const FloatingChatButton = () => {
       id: "1",
       question: "How to reset my password?",
       answer:
-        "To reset your password, go to the Profile tab, tap on 'Change Password', enter your current password, then set your new password. Make sure to use a strong password with at least 8 characters.",
+        "To reset your password, go to the Profile tab, tap on 'Change Password', enter your current password, then set your new password.",
     },
     {
       id: "2",
@@ -51,53 +65,83 @@ const FloatingChatButton = () => {
       id: "3",
       question: "How to check my savings balance?",
       answer:
-        "Your savings balance is displayed on the home screen. You can also go to the Savings tab to see detailed information about your savings schemes and transactions.",
+        "Your savings balance is displayed on the home screen. You can also go to the Savings tab to see detailed information about your schemes.",
     },
     {
       id: "4",
       question: "How to make a payment?",
       answer:
-        "To make a payment, go to the home screen and tap on 'Make Payment'. Select your payment method, enter the amount, and follow the on-screen instructions.",
-    },
-    {
-      id: "5",
-      question: "How to contact customer support?",
-      answer:
-        "You can contact our customer support by calling +91 9061803999 or emailing dcjewellerstcr@gmail.com. Our support team is available 24/7 to help you.",
-    },
-    {
-      id: "6",
-      question: "How to track my transactions?",
-      answer:
-        "You can track your transactions by going to the Savings tab and selecting 'Transaction History'. All your recent transactions will be displayed there.",
+        "To make a payment, go to the home screen and tap on 'Make Payment'. Select your payment method and follow the on-screen instructions.",
     },
   ];
 
+  useEffect(() => {
+    // Pulse animation for the floating button
+    const pulseAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseValue, {
+          toValue: 1.1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulseAnimation.start();
+    return () => pulseAnimation.stop();
+  }, []);
+
+  useEffect(() => {
+    if (isChatVisible) {
+      Animated.spring(modalSlide, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 8,
+      }).start();
+    } else {
+      modalSlide.setValue(height);
+    }
+  }, [isChatVisible]);
+
+  const handlePressIn = () => {
+    Animated.spring(scaleValue, {
+      toValue: 0.9,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleValue, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const openWhatsApp = async (initialText: string = "") => {
+    const url = `whatsapp://send?phone=${SUPPORT_NUMBER}&text=${encodeURIComponent(
+      initialText
+    )}`;
+    
+    try {
+      // Attempt to open directly to bypass Android 11+ query visibility restrictions
+      await Linking.openURL(url);
+    } catch (err) {
+      Alert.alert("Error", "WhatsApp is not installed on this device");
+      console.error("WhatsApp Open Error:", err);
+    }
+  };
+
   const sendMessage = () => {
     if (inputText.trim() === "") return;
-
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text: inputText.trim(),
-      isUser: true,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, newMessage]);
+    
+    // Redirect to WhatsApp with the message
+    openWhatsApp(inputText.trim());
     setInputText("");
-
-    // Simulate bot response
-    setIsTyping(true);
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "Thank you for your message! Our support team will get back to you shortly. In the meantime, you can check our FAQ section for quick answers to common questions.",
-        isUser: false,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botResponse]);
-      setIsTyping(false);
-    }, 1500);
   };
 
   const sendFAQResponse = (question: string, answer: string) => {
@@ -116,6 +160,11 @@ const FloatingChatButton = () => {
     };
 
     setMessages((prev) => [...prev, userMessage, botMessage]);
+    
+    // Scroll to bottom
+    setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
@@ -141,6 +190,7 @@ const FloatingChatButton = () => {
             {item.text}
           </Text>
         </View>
+        {/* Timestamp could go here */}
       </View>
     );
   };
@@ -148,106 +198,156 @@ const FloatingChatButton = () => {
   return (
     <>
       {/* Floating Button */}
-      <TouchableOpacity
-        style={styles.floatingChatButton}
-        onPress={() => setIsChatVisible(true)}
-        activeOpacity={0.8}
-      >
-        <LinearGradient
-          colors={[theme.colors.primary, theme.colors.support_container[1]]}
-          style={styles.floatingButtonGradient}
-        >
-          <Ionicons name="chatbubble" size={24} color="white" />
-        </LinearGradient>
-      </TouchableOpacity>
+      {/* Container for the pulsing effect */}
+      <View style={styles.fabContainer}>
+          <Animated.View style={[
+              styles.fabPulseRing, 
+              { transform: [{ scale: pulseValue }] }
+          ]} />
+          
+          <TouchableOpacity
+            onPress={() => setIsChatVisible(true)}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            activeOpacity={1}
+          >
+            <Animated.View style={[
+                styles.floatingChatButton,
+                { transform: [{ scale: scaleValue }] }
+            ]}>
+                <LinearGradient
+                colors={[theme.colors.primary, '#E6B800']} // Gold-ish gradient
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.floatingButtonGradient}
+                >
+                <Ionicons name="chatbubbles-outline" size={28} color="white" />
+                </LinearGradient>
+            </Animated.View>
+          </TouchableOpacity>
+      </View>
 
       {/* Chat Modal */}
       <Modal
         visible={isChatVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        transparent={true}
+        animationType="none"
         onRequestClose={() => setIsChatVisible(false)}
       >
-        <KeyboardAvoidingView
-          style={styles.chatModalContainer}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.modalOverlay}
         >
-          {/* Header */}
-          <LinearGradient
-            colors={[theme.colors.primary, theme.colors.support_container[1]]}
-            style={styles.chatHeader}
-          >
-            <View style={styles.chatHeaderContent}>
-              <Text style={styles.chatHeaderTitle}>Live Chat Support</Text>
-              <Text style={styles.chatHeaderSubtitle}>Get instant help</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setIsChatVisible(false)}
+            <Animated.View 
+                style={[
+                    styles.chatModalContainer,
+                    { transform: [{ translateY: modalSlide }] }
+                ]}
             >
-              <Ionicons name="close" size={24} color="white" />
-            </TouchableOpacity>
-          </LinearGradient>
+                    {/* Header */}
+                    <View style={styles.chatHeader}> 
+                    {/* Replaced Gradient with solid view for testing or use simple style if Gradient problematic */}
+                        <View style={styles.headerTopRow}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={styles.avatarContainer}>
+                                    <Image 
+                                        source={require("../../assets/images/logo.png")} 
+                                        style={styles.avatarImage} 
+                                        resizeMode="contain"
+                                    />
+                                </View>
+                                <View style={{ marginLeft: 12 }}>
+                                    <Text style={styles.chatHeaderTitle}>Support Assistant</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <View style={styles.onlineDot} />
+                                        <Text style={styles.chatHeaderSubtitle}>Online</Text>
+                                    </View>
+                                </View>
+                            </View>
+                            
+                            <TouchableOpacity
+                                style={styles.closeButton}
+                                onPress={() => setIsChatVisible(false)}
+                            >
+                                <Ionicons name="close-circle" size={32} color="white" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
 
-          {/* Messages */}
-          <View style={styles.chatContainer}>
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              renderItem={renderMessage}
-              keyExtractor={(item) => item.id}
-              style={styles.messagesList}
-              contentContainerStyle={styles.messagesContent}
-              onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
-            />
+                    {/* Messages Area */}
+                    <View style={styles.chatBody}>
+                         {/* Default Welcome Message if empty */}
+                         {messages.length === 0 && (
+                            <View style={styles.welcomeContainer}>
+                                <Text style={styles.welcomeText}>
+                                    👋 Hi there! How can we help you today?
+                                </Text>
+                                <Text style={styles.welcomeSubtext}>
+                                    Select a topic below or type your question to chat with us on WhatsApp.
+                                </Text>
+                            </View>
+                        )}
+                        
+                        <FlatList
+                            ref={flatListRef}
+                            data={messages}
+                            renderItem={renderMessage}
+                            keyExtractor={(item) => item.id}
+                            style={styles.messagesList}
+                            contentContainerStyle={styles.messagesContent}
+                            showsVerticalScrollIndicator={false}
+                        />
+                        
+                        {/* FAQ Chips */}
+                        <View style={styles.faqContainer}>
+                            <Text style={styles.sectionHeader}>Common Questions</Text>
+                            <View>
+                                {FAQ_QUESTIONS.map((faq) => (
+                                    <TouchableOpacity
+                                        key={faq.id}
+                                        style={styles.faqChip}
+                                        onPress={() => sendFAQResponse(faq.question, faq.answer)}
+                                    >
+                                        <Text style={styles.faqText}>{faq.question}</Text>
+                                        <Ionicons name="chevron-forward" size={16} color={theme.colors.primary} />
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                    </View>
 
-            {/* Typing Indicator */}
-            {isTyping && (
-              <View style={styles.typingContainer}>
-                <Text style={styles.typingText}>Support is typing...</Text>
-              </View>
-            )}
-
-            {/* FAQ Section */}
-            <View style={styles.faqSection}>
-              <Text style={styles.faqTitle}>Quick Help</Text>
-              {FAQ_QUESTIONS.map((faq) => (
-                <TouchableOpacity
-                  key={faq.id}
-                  style={styles.faqItem}
-                  onPress={() => sendFAQResponse(faq.question, faq.answer)}
-                >
-                  <Text style={styles.faqQuestion}>{faq.question}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Input */}
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.textInput}
-                value={inputText}
-                onChangeText={setInputText}
-                placeholder="Type your message..."
-                placeholderTextColor="#999"
-                multiline
-                maxLength={500}
-              />
-              <TouchableOpacity
-                style={styles.sendButton}
-                onPress={sendMessage}
-                disabled={inputText.trim() === ""}
-              >
-                <Ionicons
-                  name="send"
-                  size={20}
-                  color={
-                    inputText.trim() === "" ? "#ccc" : theme.colors.primary
-                  }
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
+                    {/* Input Area */}
+                    <View style={styles.inputWrapper}>
+                        <View style={styles.inputContainer}>
+                            <TextInput
+                                style={styles.textInput}
+                                value={inputText}
+                                onChangeText={setInputText}
+                                placeholder="Type a message..."
+                                placeholderTextColor="#999"
+                                multiline
+                                maxLength={500}
+                            />
+                            <TouchableOpacity
+                                style={[
+                                    styles.sendButton,
+                                    { backgroundColor: inputText.trim() ? '#25D366' : '#e0e0e0' } // WhatsApp Green if active
+                                ]}
+                                onPress={sendMessage}
+                                disabled={inputText.trim() === ""}
+                            >
+                                <Ionicons
+                                    name="logo-whatsapp"
+                                    size={20}
+                                    color={inputText.trim() ? "white" : "#999"}
+                                />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={styles.whatsappHint}>
+                            Redirects to WhatsApp for live support
+                        </Text>
+                    </View>
+            </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
     </>
@@ -255,69 +355,146 @@ const FloatingChatButton = () => {
 };
 
 const styles = StyleSheet.create({
-  floatingChatButton: {
+  fabContainer: {
     position: "absolute",
-    bottom: Platform.OS === "ios" ? 100 : 80,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    bottom: Platform.OS === "ios" ? 100 : 90,
+    right: 24,
+    width: 64,
+    height: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1001,
+  },
+  fabPulseRing: {
+    position: "absolute",
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: theme.colors.primary,
+    opacity: 0.3,
+  },
+  floatingChatButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
     elevation: 8,
-    zIndex: 1001, // Higher than home button
   },
   floatingButtonGradient: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: "100%",
+    height: "100%",
+    borderRadius: 28,
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
   },
   chatModalContainer: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
+    height: "85%",
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 20,
   },
   chatHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingVertical: 20,
-    paddingTop: 50,
+    paddingTop: 20,
+    paddingBottom: 20,
+    backgroundColor: theme.colors.primary, // Force background color
   },
-  chatHeaderContent: {
-    flex: 1,
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  avatarContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 2,
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 20,
   },
   chatHeaderTitle: {
-    fontSize: moderateScale(20),
-    fontWeight: "bold",
+    fontSize: moderateScale(18),
+    fontWeight: "800",
     color: "white",
+    letterSpacing: 0.5,
   },
   chatHeaderSubtitle: {
-    fontSize: moderateScale(14),
-    color: "rgba(255,255,255,0.8)",
-    marginTop: 2,
+    fontSize: moderateScale(12),
+    color: "rgba(255,255,255,0.9)",
+    fontWeight: "500",
+  },
+  onlineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#4CAF50',
+    marginRight: 6,
+    borderWidth: 1,
+    borderColor: 'white',
   },
   closeButton: {
-    padding: 5,
+    opacity: 0.9,
   },
-  chatContainer: {
+  
+  // Chat Body
+  chatBody: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#F5F7F9",
   },
   messagesList: {
     flex: 1,
   },
   messagesContent: {
-    padding: 10,
+    padding: 16,
     paddingBottom: 20,
   },
+  welcomeContainer: {
+    alignItems: 'center',
+    marginVertical: 30,
+    paddingHorizontal: 30,
+  },
+  welcomeText: {
+    fontSize: moderateScale(16),
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  welcomeSubtext: {
+    fontSize: moderateScale(13),
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  
+  // Messages
   messageContainer: {
     flexDirection: "row",
-    marginVertical: 4,
+    marginVertical: 6,
   },
   userMessage: {
     justifyContent: "flex-end",
@@ -329,20 +506,26 @@ const styles = StyleSheet.create({
     maxWidth: "80%",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 20,
+    borderRadius: 18,
   },
   userBubble: {
     backgroundColor: theme.colors.primary,
     borderBottomRightRadius: 4,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
   botBubble: {
     backgroundColor: "white",
     borderBottomLeftRadius: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 2,
-    elevation: 2,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   messageText: {
     fontSize: moderateScale(14),
@@ -354,64 +537,82 @@ const styles = StyleSheet.create({
   botText: {
     color: "#333",
   },
-  typingContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+  
+  // FAQ Section
+  faqContainer: {
+    padding: 16,
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
-  typingText: {
-    fontSize: moderateScale(12),
-    color: "#666",
-    fontStyle: "italic",
+  sectionHeader: {
+    fontSize: moderateScale(13),
+    fontWeight: '700',
+    color: '#999',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  faqSection: {
+  faqChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  faqText: {
+    fontSize: moderateScale(13),
+    color: '#444',
+    flex: 1,
+    fontWeight: '500',
+  },
+  
+  // Input Area
+  inputWrapper: {
     backgroundColor: "white",
-    margin: 10,
-    borderRadius: 10,
-    padding: 15,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === "ios" ? 30 : 16,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  faqTitle: {
-    fontSize: moderateScale(16),
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
-  },
-  faqItem: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  faqQuestion: {
-    fontSize: moderateScale(14),
-    color: theme.colors.primary,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 5,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    backgroundColor: "white",
-    borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
+    backgroundColor: '#F5F7F9',
+    borderRadius: 24,
+    padding: 4,
   },
   textInput: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 20,
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
     paddingVertical: 10,
-    marginRight: 10,
     maxHeight: 100,
     fontSize: moderateScale(14),
     color: "#333",
   },
   sendButton: {
-    padding: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  whatsappHint: {
+    fontSize: 10,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 6,
   },
 });
 
