@@ -99,7 +99,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
                         "NSIncludesSubdomains": true
                     }
                 }
-            }
+            },
+            LSApplicationQueriesSchemes: [
+                "phonepe",
+                "tez",
+                "paytm",
+                "bhim",
+                "upi",
+                "gpay"
+            ]
         }
     },
 

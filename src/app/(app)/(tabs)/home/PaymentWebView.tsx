@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, Modal, StyleSheet, Alert, Text, TouchableOpacity, ActivityIndicator, Platform, StatusBar } from "react-native";
+import { View, Modal, StyleSheet, Alert, Text, TouchableOpacity, ActivityIndicator, Platform, StatusBar, Linking } from "react-native";
 import { WebView } from "react-native-webview";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { usePaymentSocket } from "@/hooks/usePaymentSocket";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import NetInfo from "@react-native-community/netinfo";
 import { hp } from "@/utils/responsiveUtils";
 import { theme } from "@/constants/theme";
@@ -23,6 +23,7 @@ export default function PaymentWebView() {
   const urlBlockedAlertShown = useRef(false);
   const webViewRef = useRef<any>(null);
   const wasDisconnectedRef = useRef(false);
+  const { top } = useSafeAreaInsets();
 
   // Debug logging
   console.log("PaymentWebView params:", {
@@ -32,7 +33,7 @@ export default function PaymentWebView() {
   });
 
   const { socket, handleCancel } = usePaymentSocket({
-  onPaymentSuccess: (data) => {
+    onPaymentSuccess: (data) => {
       // Disconnect socket before navigation
       if (socket && socket.connected) {
         socket.disconnect();
@@ -235,6 +236,66 @@ export default function PaymentWebView() {
     };
   }, [socket]);
 
+  // Custom function to handle navigation state changes and URL interception
+  const handleShouldStartLoadWithRequest = (request: any) => {
+    const { url } = request;
+    
+    // Allow HTTP/HTTPS navigation within WebView
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('about:blank')) {
+      return true;
+    }
+
+    // Handle custom schemes (UPI, Tez, PhonePe, etc.)
+    // These should be opened in their respective apps
+    const customSchemes = ['upi:', 'tez:', 'phonepe:', 'paytm:', 'gpay:', 'bhim:', 'intent:'];
+    const isCustomScheme = customSchemes.some(scheme => url.toLowerCase().startsWith(scheme));
+
+    if (isCustomScheme) {
+      if (Platform.OS === 'android') {
+        // On Android, directly try to open
+        Linking.openURL(url).catch(err => {
+          console.log('Error opening custom URL on Android:', err);
+          // Show the actual error to the user for debugging
+          Alert.alert(
+            'Payment App Not Found', 
+            `Could not open the payment app.\n\nError: ${err.message || 'Unknown error'}\nURL: ${url.substring(0, 50)}...`
+          );
+        });
+      } else {
+        // iOS
+        Linking.canOpenURL(url).then(supported => {
+          if (supported) {
+            Linking.openURL(url).catch(err => {
+              console.log('Error opening custom URL:', err);
+              Alert.alert('Error', `Could not open payment app: ${err.message}`);
+            });
+          } else {
+            // Even if canOpenURL returns false (e.g., scheme not in Info.plist), 
+            // openURL might still work if the app is installed.
+            console.log(`canOpenURL returned false for ${url}, trying openURL anyway...`);
+            Linking.openURL(url).catch(err => {
+              console.log('Error opening undeclared custom URL:', err);
+              Alert.alert(
+                'Payment App Not Found', 
+                `Could not open payment app for scheme: ${url.split(':')[0]}.\n\nPlease ensure the app is installed.`
+              );
+            });
+          }
+        }).catch(err => {
+            console.log('Error checking URL support:', err);
+            // Fallback try open
+            Linking.openURL(url).catch(openErr => {
+                Alert.alert('Error', 'Could not open payment app.');
+            });
+        });
+      }
+      
+      return false; // Prevent WebView from loading this URL
+    }
+
+    return true; // Use default behavior for others
+  };
+
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
@@ -247,7 +308,7 @@ export default function PaymentWebView() {
               <Text style={styles.loadingText}>Cancelling payment...</Text>
             </View>
           )}
-          <SafeAreaView style={styles.safeAreaContainer}>
+          <View style={[styles.safeAreaContainer, { paddingTop: Platform.OS === 'ios' ? top : 0 }]}>
             {/* Header with back button */}
             <View style={styles.header}>
               <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
@@ -289,7 +350,7 @@ export default function PaymentWebView() {
                 mixedContentMode="always"
                 setSupportMultipleWindows={false}
                 cacheEnabled={true}
-                onShouldStartLoadWithRequest={() => true}
+                onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
                 onOpenWindow={(event) => {
                   console.log("OPEN WINDOW:", event.nativeEvent);
                 }}
@@ -338,7 +399,7 @@ export default function PaymentWebView() {
                                 txnId: "",
                                 amount: params.amount as string,
                                 status: "blocked",
-                              },
+                                },
                             });
                           },
                         },
@@ -441,7 +502,7 @@ export default function PaymentWebView() {
                 sharedCookiesEnabled={true}
                 thirdPartyCookiesEnabled={true}
                 setSupportMultipleWindows={true}
-                onShouldStartLoadWithRequest={(req) => true}
+                onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
                 onOpenWindow={(event) => {
                   console.log("OPEN WINDOW:", event.nativeEvent);
                 }}
@@ -587,7 +648,7 @@ export default function PaymentWebView() {
               />
             )}
             </View>
-          </SafeAreaView>
+          </View>
         </View>
       </Modal>
 
