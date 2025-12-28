@@ -12,7 +12,9 @@ import {
   ActivityIndicator,
   Image,
   ImageBackground,
+  Platform,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { COLORS } from "../constants/colors";
@@ -85,6 +87,7 @@ interface Scheme {
 interface DynamicSchemeCardProps {
   onJoinPress?: (scheme: Scheme) => void;
   onInfoPress?: (scheme: Scheme) => void;
+  onQuickJoinPress?: (scheme: Scheme) => void;
   showDots?: boolean; // Show pagination dots
   visibilityFlags?: {
     showFlexiScheme: boolean;
@@ -98,6 +101,7 @@ interface DynamicSchemeCardProps {
 const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
   onJoinPress,
   onInfoPress,
+  onQuickJoinPress,
   showDots = true,
   visibilityFlags,
 }) => {
@@ -220,117 +224,95 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
     return "Monthly"; // Default fallback
   };
 
-  const handleJoinPress = async (scheme: Scheme, manageLoading = true) => {
-    if (manageLoading) {
-      setIsLoading(true);
+  // Handle Quick Join (Popup)
+  const handleQuickJoinPress = (scheme: Scheme | null = null) => {
+    const schemeToJoin = scheme || selectedScheme;
+    if (!schemeToJoin) return;
+    
+    if (onQuickJoinPress) {
+       onQuickJoinPress(schemeToJoin);
+       closeModal();
+    } else {
+      logger.warn("No onQuickJoinPress handler provided");
     }
+  };
+
+  const handleJoinPress = async (scheme: Scheme | null = null) => {
+    const schemeToJoin = scheme || selectedScheme;
+    if (!schemeToJoin) {
+      console.error("Join Savings - scheme is null");
+      return;
+    }
+
+    setIsLoading(true);
     try {
+      // Standard Navigation Logic Only
       if (onJoinPress) {
-        logger.log("Using custom onJoinPress handler", scheme);
-        await onJoinPress(scheme);
+        logger.log("Using custom onJoinPress handler", schemeToJoin);
+        await onJoinPress(schemeToJoin);
       } else {
-        // Check if schemes page should be skipped
-        if (!showSchemsPage) {
-          logger.log("showSchemsPage is 0, skipping schemes page and navigating directly");
+        // Fallback internal navigation
+         logger.log("Redirecting dynamic card directly to join_savings (bypassing schemes/calculator)");
 
-          // Determine scheme type and active tab
-          const targetTab = getSchemeTypeForTab(scheme);
-          const isFlexi = targetTab.toLowerCase() === "flexi";
+        // Determine scheme type and active tab
+        const targetTab = getSchemeTypeForTab(schemeToJoin);
+        const isFlexi = targetTab.toLowerCase() === "flexi";
 
-          // Get relevant chits for the target tab
-          const chits = scheme.chits || [];
-          const relevantChits = chits.filter(
-            (chit) => {
-              if (!chit || !chit.PAYMENT_FREQUENCY) return false;
-              const chitFreq = chit.PAYMENT_FREQUENCY.toLowerCase().trim();
-              const targetTabLower = targetTab.toLowerCase().trim();
+        // Get relevant chits
+        const chits = schemeToJoin.chits || [];
+        const relevantChits = chits.filter(
+          (chit) => {
+            if (!chit || !chit.PAYMENT_FREQUENCY) return false;
+            const chitFreq = chit.PAYMENT_FREQUENCY.toLowerCase().trim();
+            const targetTabLower = targetTab.toLowerCase().trim();
 
-              if (chitFreq === targetTabLower) return true;
-              if (targetTabLower === "flexi") {
-                return chitFreq.includes("flexi") || chitFreq.includes("flexible");
-              }
-              return false;
+            if (chitFreq === targetTabLower) return true;
+            if (targetTabLower === "flexi") {
+              return chitFreq.includes("flexi") || chitFreq.includes("flexible");
             }
-          );
+            return false;
+          }
+        );
 
-          // Prepare scheme data to store (similar to schemes.tsx)
-          const schemeDataToStore = {
-            schemeId: scheme.SCHEMEID || 0,
-            name: getTranslatedText(scheme.SCHEMENAME as any, language) || "Unnamed Scheme",
-            description: getTranslatedText(scheme.DESCRIPTION as any, language) || "No description available",
-            type: targetTab,
-            chits: relevantChits,
-            schemeType: isFlexi ? "flexi" : "fixed",
-            activeTab: targetTab,
-            benefits: (scheme as any).BENEFITS || [],
-            slogan: getTranslatedText((scheme as any).SLOGAN || { en: "" }, language) || "",
-            image: scheme.IMAGE || "",
-            icon: scheme.ICON || "",
-            durationMonths: scheme.DURATION_MONTHS || 0,
-            metaData: scheme.table_meta || (scheme as any).meta_data || null,
-            instant_intrest: (scheme as any).instant_intrest || false,
-            timestamp: new Date().toISOString(),
-            savingType: scheme.savingType || (scheme.SCHEMETYPE?.toLowerCase() === "weight" ? "weight" : "amount"),
-          };
+        // Prepare scheme data to store
+        const schemeDataToStore = {
+          schemeId: schemeToJoin.SCHEMEID || 0,
+          name: getTranslatedText(schemeToJoin.SCHEMENAME as any, language) || "Unnamed Scheme",
+          description: getTranslatedText(schemeToJoin.DESCRIPTION as any, language) || "No description available",
+          type: targetTab,
+          chits: relevantChits,
+          schemeType: isFlexi ? "flexi" : "fixed",
+          activeTab: targetTab,
+          benefits: (schemeToJoin as any).BENEFITS || [],
+          slogan: getTranslatedText((schemeToJoin as any).SLOGAN || { en: "" }, language) || "",
+          image: schemeToJoin.IMAGE || "",
+          icon: schemeToJoin.ICON || "",
+          durationMonths: schemeToJoin.DURATION_MONTHS || 0,
+          metaData: schemeToJoin.table_meta || (schemeToJoin as any).meta_data || null,
+          instant_intrest: (schemeToJoin as any).instant_intrest || false,
+          timestamp: new Date().toISOString(),
+          savingType: schemeToJoin.savingType || (schemeToJoin.SCHEMETYPE?.toLowerCase() === "weight" ? "weight" : "amount"),
+        };
 
-          // Store scheme data in AsyncStorage
-          await AsyncStorage.setItem(
-            "@current_scheme_data",
-            JSON.stringify(schemeDataToStore)
-          );
+        await AsyncStorage.setItem(
+          "@current_scheme_data",
+          JSON.stringify(schemeDataToStore)
+        );
 
-          logger.log("Scheme data stored, navigating directly to: join_savings");
-
-          // Navigate directly to join_savings page
-          router.push({
-            pathname: "/home/join_savings",
-            params: {
-              schemeId: (scheme.SCHEMEID || 0).toString(),
-            },
-          });
-        }
-        // Always force direct navigation to join_savings for DynamicSchemeCard
-        // regardless of showSchemsPage, per user request to bypass other flows
-        else {
-          logger.log("Redirecting dynamic card directly to join_savings (bypassing schemes/calculator)");
-          
-           // Store scheme data in AsyncStorage if not already stored
-           const schemeDataToStore = {
-            ...scheme,
-            schemeId: scheme.SCHEMEID,
-            name: getLocalizedText(scheme.SCHEMENAME),
-            description: getLocalizedText(scheme.DESCRIPTION),
-            type: getSchemeTypeForTab(scheme),
-             // Default to "flexi" if unclear, to trigger the new Flexi UI in join_savings
-            schemeType: getSchemeTypeForTab(scheme) === "flexi" ? "flexi" : "fixed",
-            savingType: scheme.savingType || (scheme.SCHEMETYPE?.toLowerCase() === "weight" ? "weight" : "amount"),
-            timestamp: new Date().toISOString(),
-          };
-
-          await AsyncStorage.setItem(
-            "@current_scheme_data",
-            JSON.stringify(schemeDataToStore)
-          );
-
-          router.push({
-            pathname: "/home/join_savings",
-            params: {
-              schemeId: (scheme.SCHEMEID || 0).toString(),
-            },
-          });
-        }
+        router.push({
+          pathname: "/home/join_savings",
+          params: {
+            schemeId: (schemeToJoin.SCHEMEID || 0).toString(),
+          },
+        });
       }
-      // Add a small delay to show loading state
-      if (manageLoading) {
-        await new Promise((resolve: any) => setTimeout(resolve, 500));
-      }
+      // Add a small delay
+      await new Promise((resolve: any) => setTimeout(resolve, 500));
     } catch (error) {
       logger.error("Error in handleJoinPress:", error);
       Alert.alert(t("schemes.error") || "Error", t("schemes.failedToLoadSchemeData") || "Failed to load scheme data");
     } finally {
-      if (manageLoading) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   };
 
@@ -469,22 +451,29 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
     }
   };
 
-  const getCardColor = (schemeId: number | null | undefined) => {
-    // Handle null, undefined, or invalid schemeId
+  const getCardGradient = (schemeId: number | null | undefined) => {
     if (schemeId === null || schemeId === undefined || isNaN(schemeId)) {
-      return COLORS.primary; // Default color
+      return ["#1a1a1a", "#000000"];
     }
 
-    const colors = [
-  "#850111", // Primary – Wine / Maroon
-  "#0E0E0E", // Main background (Almost black)
-  "#1A1A1A", // Card / Surface
-  "#2B2B2B", // Border / Divider
-  "#000B58", // Gold – Accent / Highlight
-  "#360185", // Primary text
-  "#0046FF", // Secondary text
-];
-    return colors[Math.abs(schemeId) % colors.length];
+    const gradients = [
+      ["#2C3E50", "#000000"], // Dark Blue - Black
+      ["#434343", "#000000"], // Grey - Black
+      ["#141E30", "#243B55"], // Deep Blue
+      ["#232526", "#414345"], // Midnight City
+      ["#0f0c29", "#302b63", "#24243e"], // Deep Purple
+    ];
+    
+    return gradients[Math.abs(schemeId) % gradients.length];
+  };
+
+  const getCardAccentColor = (schemeId: number | null | undefined) => {
+     if (schemeId === null || schemeId === undefined || isNaN(schemeId)) {
+      return "#FFD700"; // Gold
+    }
+    // const colors = ["#FFD700", "#C0C0C0", "#CD7F32", "#E5E4E2", "#B76E79"]; // Gold, Silver, Bronze, Platinum, Rose Gold
+    // return colors[Math.abs(schemeId) % colors.length];
+    return "#FFD700"; // Uniform Gold for premium feel
   };
 
   const getDefaultBackgroundImage = (schemeId: number | null | undefined) => {
@@ -788,18 +777,6 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
       "baseball-outline",
       "football",
       "football-outline",
-      "football",
-      "football-outline",
-      "basketball",
-      "basketball-outline",
-      "tennisball",
-      "tennisball-outline",
-      "golf",
-      "golf-outline",
-      "baseball",
-      "baseball-outline",
-      "football",
-      "football-outline",
     ];
 
     return validIonicons.includes(iconName.toLowerCase());
@@ -860,68 +837,72 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
       return null;
     }
 
-    const cardColor = getCardColor(item.SCHEMEID); // Use different colors for each card
+    const gradientColors = getCardGradient(item.SCHEMEID);
+    const accentColor = getCardAccentColor(item.SCHEMEID);
 
     return (
-      <View style={[styles.card, { borderColor: cardColor }]}>
-        {/* Full Card Background Image */}
-        <ImageBackground
-          source={getSchemeBackgroundImage(item)}
-          style={styles.cardBackground}
-          imageStyle={styles.cardBackgroundImage}
+      <View style={[styles.card, { borderColor: accentColor }]}>
+        <LinearGradient
+          colors={gradientColors as any}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.cardGradient}
         >
-          <View style={styles.cardBackgroundOverlay} />
-
-          {/* Card Header */}
-          <View
-            style={[styles.cardHeader, { backgroundColor: `${cardColor}90` }]}
+          <ImageBackground
+            source={getSchemeBackgroundImage(item)}
+            style={styles.cardBackground}
+            imageStyle={styles.cardBackgroundImage}
           >
-            <View style={styles.cardHeaderContent}>
-              <View style={[styles.schemeIdBadge, { borderColor: cardColor }]}>
-                <Text style={[styles.schemeIdText, { color: cardColor }]}>
-                  #{item.SCHEMEID || "N/A"}
-                </Text>
-              </View>
-              {/* Scheme Type and Duration */}
-              <View style={styles.schemeInfoContainer}>
-                {item.SCHEMETYPE && getLocalizedText(item.SCHEMETYPE) && (
-                  <View style={styles.schemeInfoBadge}>
-                    <Ionicons
-                      name="time-outline"
-                      size={12}
-                      color={COLORS.white}
-                    />
-                    <Text style={styles.schemeInfoText}>
-                      {getLocalizedText(item.SCHEMETYPE)}
-                    </Text>
-                  </View>
-                )}
-                {/* Saving Type Badge (from savingType field) */}
-                {item.savingType && typeof item.savingType === "string" && (
-                  <View style={styles.schemeInfoBadge}>
+            <View style={styles.cardBackgroundOverlay} />
+
+            {/* Card Header */}
+            <View style={styles.cardHeader}>
+              <View style={styles.cardHeaderContent}>
+                <View style={[styles.schemeIdBadge, { borderColor: accentColor }]}>
+                  <Text style={[styles.schemeIdText, { color: accentColor }]}>
+                    #{item.SCHEMEID || "N/A"}
+                  </Text>
+                </View>
+                {/* Scheme Type and Duration */}
+                <View style={styles.schemeInfoContainer}>
+                  {item.SCHEMETYPE && getLocalizedText(item.SCHEMETYPE) && (
+                    <View style={[styles.schemeInfoBadge, { borderColor: accentColor }]}>
+                      <Ionicons
+                        name="time-outline"
+                        size={12}
+                        color={accentColor}
+                      />
+                      <Text style={[styles.schemeInfoText, { color: accentColor }]}>
+                        {getLocalizedText(item.SCHEMETYPE)}
+                      </Text>
+                    </View>
+                  )}
+                  {/* Saving Type Badge */}
+                   {item.savingType && typeof item.savingType === "string" && (
+                  <View style={[styles.schemeInfoBadge, { borderColor: accentColor }]}>
                     <Ionicons
                       name={item.savingType.toLowerCase() === "amount" ? "cash-outline" : "scale-outline"}
                       size={12}
-                      color={COLORS.white}
+                      color={accentColor}
                     />
-                    <Text style={styles.schemeInfoText}>
+                    <Text style={[styles.schemeInfoText, { color: accentColor }]}>
                       {item.savingType.charAt(0).toUpperCase() + item.savingType.slice(1).toLowerCase()}
                     </Text>
                   </View>
                 )}
-                {/* Amount/Weight Type Badge (fallback from SCHEMETYPE) */}
+                 {/* Amount/Weight Type Badge (fallback from SCHEMETYPE) */}
                 {!item.savingType && (() => {
                   const schemeType = getLocalizedText(item.SCHEMETYPE).toLowerCase();
                   if (schemeType.includes("amount") || schemeType.includes("weight")) {
                     const typeLabel = schemeType.includes("amount") ? "Amount" : "Weight";
                     return (
-                      <View style={styles.schemeInfoBadge}>
+                      <View style={[styles.schemeInfoBadge, { borderColor: accentColor }]}>
                         <Ionicons
                           name={schemeType.includes("amount") ? "cash-outline" : "scale-outline"}
                           size={12}
-                          color={COLORS.white}
+                          color={accentColor}
                         />
-                        <Text style={styles.schemeInfoText}>
+                        <Text style={[styles.schemeInfoText, { color: accentColor }]}>
                           {typeLabel}
                         </Text>
                       </View>
@@ -929,101 +910,85 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
                   }
                   return null;
                 })()}
-                {item.DURATION_MONTHS && !isNaN(item.DURATION_MONTHS) && (
-                  <View style={styles.schemeInfoBadge}>
-                    <Ionicons
-                      name="calendar-outline"
-                      size={12}
-                      color={COLORS.white}
-                    />
-                    <Text style={styles.schemeInfoText}>
-                      {item.DURATION_MONTHS}M
-                    </Text>
-                  </View>
-                )}
+
+                  {item.DURATION_MONTHS && !isNaN(item.DURATION_MONTHS) && (
+                    <View style={[styles.schemeInfoBadge, { borderColor: accentColor }]}>
+                      <Ionicons
+                        name="calendar-outline"
+                        size={12}
+                        color={accentColor}
+                      />
+                      <Text style={[styles.schemeInfoText, { color: accentColor }]}>
+                        {item.DURATION_MONTHS}M
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
-              {/* <View
-                style={[
-                  styles.goldIconContainer,
-                  { backgroundColor: "rgba(255, 255, 255, 0.3)" },
-                ]}
-              >
-                <Ionicons
-                  name={getSchemeIcon(item) as any}
-                  size={28}
-                  color={COLORS.white}
-                />
-              </View> */}
-            </View>
-            <Text style={styles.cardSlogan}>
-              {getLocalizedText(item.SCHEMENAME) || "Unnamed Scheme"}
-            </Text>
 
-            {/* Slogan */}
-            {item.SLOGAN && getLocalizedText(item.SLOGAN) && (
-              <Text style={styles.cardTitle}>
-                {getLocalizedText(item.SLOGAN)}
+              <Text style={[styles.cardSlogan, { color: COLORS.white }]}>
+                {getLocalizedText(item.SCHEMENAME) || "Unnamed Scheme"}
               </Text>
-            )}
 
-            <View style={styles.titleUnderline} />
-          </View>
-
-          {/* Card Footer */}
-          <View
-            style={[styles.cardFooter, { backgroundColor: `${cardColor}20` }]}
-          >
-            <TouchableOpacity
-              style={[
-                styles.infoButton,
-                { borderColor: cardColor, backgroundColor: COLORS.white },
-                isLoading && styles.disabledButton,
-              ]}
-              onPress={() => handleInfoPress(item)}
-              disabled={isLoading}
-            >
-              <Ionicons name="information-circle" size={16} color={cardColor} />
-              <Text style={[styles.infoButtonText, { color: cardColor }]}>
-                {t("info")}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.joinButton,
-                { backgroundColor: cardColor },
-                isLoading && styles.disabledButton,
-              ]}
-              onPress={() => handleJoinPress(item)}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
-              ) : (
-                <Ionicons name="add-circle" size={18} color={COLORS.white} />
+              {/* Slogan */}
+              {item.SLOGAN && getLocalizedText(item.SLOGAN) && (
+                <Text style={[styles.cardTitle, { color: accentColor }]}>
+                  {getLocalizedText(item.SLOGAN)}
+                </Text>
               )}
-              <Text style={styles.joinButtonText}>
-                {isLoading ? t("loading") || "Loading..." : t("joinNow")}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </ImageBackground>
 
-        {/* Decorative Elements */}
-        <View style={styles.cardDecoration}>
-          <View
-            style={[
-              styles.decorationCircle1,
-              { backgroundColor: `${cardColor}20` },
-            ]}
-          />
-          <View
-            style={[
-              styles.decorationCircle2,
-              { backgroundColor: `${cardColor}10` },
-            ]}
-          />
-        </View>
+              <View style={[styles.titleUnderline, { backgroundColor: accentColor }]} />
+            </View>
+
+            {/* Card Footer */}
+            <View style={styles.cardFooter}>
+              <TouchableOpacity
+                style={[
+                  styles.infoButton,
+                  { borderColor: accentColor },
+                  isLoading && styles.disabledButton,
+                ]}
+                onPress={() => handleInfoPress(item)}
+                disabled={isLoading}
+              >
+                <Ionicons name="information-circle-outline" size={18} color={accentColor} />
+                <Text style={[styles.infoButtonText, { color: accentColor }]}>
+                  {t("info")}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                 style={[
+                  styles.joinButton,
+                  isLoading && styles.disabledButton,
+                ]}
+                onPress={() => handleJoinPress(item)}
+                disabled={isLoading}
+              >
+                 <LinearGradient
+                    colors={[accentColor, "#FDB931", accentColor]} // Gold gradient
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.joinButtonGradient}
+                  >
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#000" />
+                  ) : (
+                    <Ionicons name="add-circle" size={20} color="#000" />
+                  )}
+                  <Text style={styles.joinButtonText}>
+                    {isLoading ? t("loading") || "Loading..." : t("joinNow")}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </ImageBackground>
+        </LinearGradient>
+
+        {/* Decorative Elements - Simplified for premium look */}
+        {/* <View style={styles.cardDecoration}>
+           ... elements removed for cleaner look
+        </View> */}
       </View>
     );
   };
@@ -1055,212 +1020,190 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
 
   const renderModalContent = () => {
     if (!selectedScheme) return null;
-    const cardColor = getCardColor(selectedScheme.SCHEMEID);
-    const schemeType = getLocalizedText(selectedScheme.SCHEMETYPE).toLowerCase();
+    const accentColor = "#FFD700"; // Gold
+    const gradientColors = ["#0A0A0A", "#252525"];
 
     return (
-      <ScrollView
-        style={styles.modalContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header Section */}
-        <ImageBackground
-          source={getSchemeBackgroundImage(selectedScheme)}
-          style={[styles.modalHeader, { backgroundColor: cardColor }]}
-          imageStyle={styles.modalHeaderBackground}
-        >
-          <View style={styles.modalHeaderOverlay} />
-          <View style={styles.modalHeaderContent}>
-            <View style={styles.modalSchemeInfo}>
-              <View style={styles.modalTitleContainer}>
-                <View style={styles.modalIconContainer}>
-                  <Ionicons
-                    name={getSchemeIcon(selectedScheme) as any}
-                    size={28}
-                    color={COLORS.white}
-                  />
-                </View>
-                <View style={styles.modalTitleTextContainer}>
-                  <Text style={styles.modalTitle}>
-                    {getLocalizedText(selectedScheme.SCHEMENAME) ||
-                      "Unnamed Scheme"}
-                  </Text>
-                  {selectedScheme.SLOGAN &&
-                    getLocalizedText(selectedScheme.SLOGAN) && (
-                      <Text style={styles.modalSlogan}>
-                        {getLocalizedText(selectedScheme.SLOGAN)}
-                      </Text>
-                    )}
-                </View>
-              </View>
+      <View style={styles.modalContentModern}>
+        
+        {/* Modern Floating Close Button */}
+        <TouchableOpacity style={styles.floatingCloseButton} onPress={closeModal}>
+            <View style={styles.closeButtonBlur}>
+               <Ionicons name="close" size={20} color={COLORS.text.dark} />
+            </View>
+        </TouchableOpacity>
 
-              {/* Scheme Info Badges */}
-              <View style={styles.modalBadgesContainer}>
-                {selectedScheme.SCHEMEID && (
-                  <View style={[styles.modalBadge, { backgroundColor: "rgba(255, 255, 255, 0.25)" }]}>
-                    <Ionicons name="pricetag-outline" size={14} color={COLORS.white} />
-                    <Text style={styles.modalBadgeText}>
-                      #{selectedScheme.SCHEMEID}
-                    </Text>
-                  </View>
+        <ScrollView 
+            style={styles.modalScroll}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.modalScrollContent}
+        >
+             {/* Large Trendy Header (No Background Block) */}
+             <View style={styles.modernHeader}>
+                <Text style={styles.modernTitle}>
+                    {getLocalizedText(selectedScheme.SCHEMENAME) || "Unnamed Scheme"}
+                </Text>
+                 {selectedScheme.SLOGAN && getLocalizedText(selectedScheme.SLOGAN) && (
+                     <Text style={styles.modernSlogan}>
+                         {getLocalizedText(selectedScheme.SLOGAN)}
+                     </Text>
+                 )}
+                 <View style={styles.titleUnderlineGradient} />
+             </View>
+
+
+             {/* Pill Badges Row */}
+            <View style={styles.pillBadgesContainer}>
+                {selectedScheme.SCHEMETYPE && getLocalizedText(selectedScheme.SCHEMETYPE) && (
+                   <View style={styles.pillBadge}>
+                       <Text style={styles.pillBadgeText}>{getLocalizedText(selectedScheme.SCHEMETYPE)}</Text>
+                   </View>
                 )}
-                {selectedScheme.SCHEMETYPE &&
-                  getLocalizedText(selectedScheme.SCHEMETYPE) && (
-                    <View style={[styles.modalBadge, { backgroundColor: "rgba(255, 255, 255, 0.25)" }]}>
-                      <Ionicons name="time-outline" size={14} color={COLORS.white} />
-                      <Text style={styles.modalBadgeText}>
-                        {getLocalizedText(selectedScheme.SCHEMETYPE)}
-                      </Text>
-                    </View>
-                  )}
-                {/* Saving Type Badge (from savingType field) */}
-                {selectedScheme.savingType && typeof selectedScheme.savingType === "string" && (
-                  <View style={[styles.modalBadge, { backgroundColor: "rgba(255, 255, 255, 0.25)" }]}>
-                    <Ionicons
-                      name={selectedScheme.savingType.toLowerCase() === "amount" ? "cash-outline" : "scale-outline"}
-                      size={14}
-                      color={COLORS.white}
-                    />
-                    <Text style={styles.modalBadgeText}>
-                      {selectedScheme.savingType.charAt(0).toUpperCase() + selectedScheme.savingType.slice(1).toLowerCase()}
-                    </Text>
-                  </View>
-                )}
-                {/* Amount/Weight Type Badge (fallback from SCHEMETYPE) */}
-                {!selectedScheme.savingType && (schemeType.includes("amount") || schemeType.includes("weight")) && (
-                  <View style={[styles.modalBadge, { backgroundColor: "rgba(255, 255, 255, 0.25)" }]}>
-                    <Ionicons
-                      name={schemeType.includes("amount") ? "cash-outline" : "scale-outline"}
-                      size={14}
-                      color={COLORS.white}
-                    />
-                    <Text style={styles.modalBadgeText}>
-                      {schemeType.includes("amount") ? "Amount" : "Weight"}
-                    </Text>
-                  </View>
-                )}
-                {selectedScheme.DURATION_MONTHS &&
-                  !isNaN(selectedScheme.DURATION_MONTHS) && (
-                    <View style={[styles.modalBadge, { backgroundColor: "rgba(255, 255, 255, 0.25)" }]}>
-                      <Ionicons name="calendar-outline" size={14} color={COLORS.white} />
-                      <Text style={styles.modalBadgeText}>
-                        {selectedScheme.DURATION_MONTHS}M
-                      </Text>
-                    </View>
-                  )}
+                 {selectedScheme.DURATION_MONTHS && !isNaN(selectedScheme.DURATION_MONTHS) && (
+                     <View style={styles.pillBadge}>
+                         <Text style={styles.pillBadgeText}>{selectedScheme.DURATION_MONTHS} {t("monthsLabel") || "Months"}</Text>
+                     </View>
+                 )}
+                 {/* Saving Type Pill */}
+                 <View style={[styles.pillBadge, { backgroundColor: '#F0F0FF' }]}>
+                     <Text style={[styles.pillBadgeText, { color: '#5D5DFF' }]}>
+                         {selectedScheme.savingType === 'weight' ? (t('goldWeight') || 'Gold Weight') : (t('amount') || 'Amount')}
+                     </Text>
+                 </View>
+            </View>
+
+
+          {/* 2-Column Grid Benefits */}
+            <View style={styles.gridSection}>
+              <Text style={styles.gridSectionTitle}>{t("benefits") || "Benefits"}</Text>
+              <View style={styles.benefitsGrid}>
+                  {(() => {
+                        const benefits = (selectedScheme as any).BENEFITS
+                        ? (selectedScheme as any).BENEFITS.split(",").map((b: string) => b.trim())
+                        : [];
+                        
+                         /* Default benefits if none */
+                         const displayBenefits = benefits.length > 0 ? benefits : [
+                            "No joining fee",
+                            "Bonus on maturity",
+                            "Secure investment",
+                            "Track anytime"
+                         ];
+
+                         return displayBenefits.map((benefit: string, index: number) => (
+                             <View key={index} style={styles.gridBenefitItem}>
+                                <View style={styles.gridIconContainer}>
+                                     <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                                </View>
+                                <Text style={styles.gridBenefitText}>{benefit}</Text>
+                             </View>
+                         ));
+                  })()}
               </View>
             </View>
-            <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-              <Ionicons name="close" size={24} color={COLORS.white} />
-            </TouchableOpacity>
-          </View>
-        </ImageBackground>
 
-        {/* Body Section */}
-        <View style={styles.modalBody}>
           {/* Description Section */}
           {selectedScheme.DESCRIPTION && getLocalizedText(selectedScheme.DESCRIPTION) && (
-            <View style={styles.modalDescriptionContainer}>
-              <View style={styles.sectionHeader}>
-                <Ionicons name="document-text-outline" size={20} color={cardColor} />
-                <Text style={[styles.modalDescriptionTitle, { color: cardColor }]}>
-                  {t("description")}
-                </Text>
-              </View>
-              <View style={styles.descriptionBox}>
-                <Text style={styles.modalDescription}>
+            <View style={styles.modernSection}>
+              <Text style={styles.modernSectionTitle}>{t("description")}</Text>
+              <Text style={styles.modernDescription}>
                   {getLocalizedText(selectedScheme.DESCRIPTION)}
-                </Text>
-              </View>
+              </Text>
             </View>
           )}
 
-          {/* Scheme Details Table */}
-          {selectedScheme.table_meta &&
+           {/* Scheme Details Table */}
+           {selectedScheme.table_meta &&
             selectedScheme.table_meta.headers &&
-            selectedScheme.table_meta.rows !== undefined &&
-            selectedScheme.table_meta.rows !== null &&
+            selectedScheme.table_meta.rows &&
             selectedScheme.table_meta.rows.length > 0 && (
-              <View style={styles.detailsTable}>
-                <View style={styles.sectionHeader}>
-                  <Ionicons name="list-outline" size={20} color={cardColor} />
-                  <Text style={[styles.sectionTitle, { color: cardColor }]}>
-                    {t("schemeDetails")}
-                  </Text>
+                <View style={styles.modernSection}>
+                     <Text style={styles.modernSectionTitle}>{t("schemeDetails")}</Text>
+                     <View style={styles.tableRefinedContainer}>
+                       {/* Headers */}
+                       <View style={styles.tableRefinedHeader}>
+                             {selectedScheme.table_meta.headers[currentLanguage === "ta" ? "ta" : "en"]?.map((header, index) => (
+                                 <Text key={index} style={styles.tableRefinedHeaderText}>{getLocalizedText(header)}</Text>
+                             ))}
+                       </View>
+                        {/* Rows */}
+                        {selectedScheme.table_meta.rows.map((row, rowIndex) => (
+                           <View key={rowIndex} style={[styles.tableRefinedRow, rowIndex % 2 !== 0 && styles.tableRowAlt]}>
+                               {Object.values(row).map((cell, cellIndex) => (
+                                   <Text key={cellIndex} style={styles.tableRefinedCell}>{getLocalizedText(cell)}</Text>
+                               ))}
+                           </View>
+                        ))}
+                     </View>
                 </View>
-
-                <View style={styles.tableContainer}>
-                  {/* Table Headers */}
-                  <View
-                    style={[styles.tableHeader, { backgroundColor: cardColor }]}
-                  >
-                    {selectedScheme.table_meta.headers[
-                      currentLanguage === "ta" ? "ta" : "en"
-                    ]?.map((header, index) => (
-                      <Text key={index} style={styles.tableHeaderText}>
-                        {getLocalizedText(header)}
-                      </Text>
-                    )) || []}
-                  </View>
-
-                  {/* Table Rows */}
-                  {selectedScheme.table_meta.rows.map((row, rowIndex) => (
-                    <View
-                      key={rowIndex}
-                      style={[
-                        styles.tableRow,
-                        rowIndex % 2 === 0
-                          ? styles.tableRowEven
-                          : styles.tableRowOdd,
-                      ]}
-                    >
-                      {Object.values(row).map((cell, cellIndex) => (
-                        <Text key={cellIndex} style={styles.tableCell}>
-                          {getLocalizedText(cell)}
-                        </Text>
-                      ))}
-                    </View>
-                  ))}
-                </View>
-              </View>
             )}
 
-          {/* Join Button */}
-          <TouchableOpacity
-            style={[
-              styles.modalJoinButton,
-              { backgroundColor: cardColor },
-              isLoading && styles.disabledButton,
-            ]}
-            onPress={async () => {
-              if (!isLoading) {
-                setIsLoading(true);
-                try {
-                  await handleJoinPress(selectedScheme, false);
-                  await new Promise((resolve: any) => setTimeout(resolve, 500));
-                  closeModal();
-                } catch (error) {
-                  console.error("Error in modal join:", error);
-                } finally {
-                  setIsLoading(false);
+            <View style={{ height: 100 }} /> 
+        </ScrollView>
+        
+        {/* Sticky Footer */}
+        <View style={styles.stickyModalFooter}>
+             <View style={styles.modalFooter}>
+             {/* Quick Join Button (Lightning) */}
+            <TouchableOpacity
+              style={styles.modalQuickJoinButton}
+              onPress={() => handleQuickJoinPress(selectedScheme)}
+            >
+              <LinearGradient
+                colors={["#FFD700", "#FFA500"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.modalQuickJoinGradient}
+              >
+                <Ionicons name="flash" size={20} color="#000" />
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Join Button */}
+            <TouchableOpacity
+              style={[
+                styles.modalJoinButton,
+                isLoading && styles.disabledButton,
+              ]}
+              onPress={async () => {
+                if (!isLoading) {
+                  setIsLoading(true);
+                  try {
+                    await handleJoinPress(selectedScheme);
+                    await new Promise((resolve: any) => setTimeout(resolve, 500));
+                    closeModal();
+                  } catch (error) {
+                    console.error("Error in modal join:", error);
+                  } finally {
+                    setIsLoading(false);
+                  }
                 }
-              }
-            }}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator size="small" color={COLORS.white} />
-            ) : (
-              <Ionicons name="add-circle" size={22} color={COLORS.white} />
-            )}
-            <Text style={styles.modalJoinButtonText}>
-              {isLoading ? t("loading") || "Loading..." : t("joinThisScheme")}
-            </Text>
-          </TouchableOpacity>
+              }}
+              disabled={isLoading}
+            >
+              <LinearGradient
+                  colors={[accentColor, "#FDB931", accentColor]} // Gold gradient
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.joinButtonGradient}
+                >
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#000" />
+              ) : (
+                <Ionicons name="add-circle" size={22} color="#000" />
+              )}
+              <Text style={styles.joinButtonText}>
+                {isLoading ? t("loading") || "Loading..." : t("joinThisScheme")}
+              </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
-      </ScrollView>
+
+      </View>
     );
   };
+
 
   if (schemes.length === 0) {
     return (
@@ -1341,284 +1284,167 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   card: {
-    backgroundColor: COLORS.white,
-    borderRadius: 28,
-    padding: 0,
-    marginHorizontal: 8,
-    width: screenWidth - 60, // Responsive width for better scrolling
-    height: 240, // Reduced height for more compact card
-    shadowColor: COLORS.primary,
+    borderRadius: 20,
+    marginHorizontal: 10,
+    width: screenWidth - 60,
+    height: 230,
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 16,
+      height: 10,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    // elevation: 15,
-    borderWidth: 0,
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+    elevation: 8,
+    borderWidth: 1, // Subtle border
     overflow: "hidden",
-    position: "relative",
-    transform: [{ scale: 0.98 }],
+  },
+  cardGradient: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
   },
   paginationContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 16,
+    paddingVertical: 12,
   },
   paginationDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: COLORS.border.light,
-    marginHorizontal: 6,
-    shadowColor: COLORS.primary,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#ccc",
+    marginHorizontal: 4,
   },
   activeDot: {
-    backgroundColor: COLORS.primary,
-    width: 16,
-    height: 10,
-    borderRadius: 5,
-    shadowColor: COLORS.primary,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: "#FFD700", // Gold
+    width: 12,
+    height: 6,
+    borderRadius: 3,
   },
-  cardDecoration: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    width: 100,
-    height: 100,
-    zIndex: 0,
-  },
-  decorationCircle1: {
-    position: "absolute",
-    top: -30,
-    right: -30,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "rgba(255, 215, 0, 0.08)",
-    shadowColor: COLORS.primary,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  decorationCircle2: {
-    position: "absolute",
-    top: 20,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "rgba(255, 215, 0, 0.06)",
-    shadowColor: COLORS.primary,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 1,
-  },
+  // Removed decoration circles styles
+  decorationCircle1: { display: 'none' },
+  decorationCircle2: { display: 'none' },
+  cardDecoration: { display: 'none' },
+  
   cardBackground: {
     flex: 1,
     width: "100%",
     height: "100%",
   },
   cardBackgroundImage: {
-    opacity: 0.4,
+    opacity: 0.15, // Subtle texture
     resizeMode: "cover",
   },
   cardBackgroundOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.1)",
+    display: "none",
   },
   cardHeader: {
-    padding: 14,
-    paddingBottom: 10,
-    position: "relative",
-    overflow: "hidden",
-    height: 150, // Reduced height to match card height reduction
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    padding: 16,
+    height: 150,
   },
   cardHeaderContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 8,
   },
   schemeIdBadge: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: COLORS.white,
-    shadowColor: COLORS.primary,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   schemeIdText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "700",
-    color: COLORS.primary,
     letterSpacing: 0.5,
   },
-  //   goldIconContainer: {
-  //     backgroundColor: "rgba(255, 255, 255, 0.2)",
-  //     padding: 14,
-  //     borderRadius: 30,
-  //     shadowColor: COLORS.white,
-  //     shadowOffset: {
-  //       width: 0,
-  //       height: 6,
-  //     },
-  //     shadowOpacity: 0.4,
-  //     shadowRadius: 8,
-  //     elevation: 6,
-  //     borderWidth: 2,
-  //     borderColor: "rgba(255, 255, 255, 0.5)",
-  //   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "800",
-    color: theme.colors.secondary,
     textAlign: "center",
-    marginBottom: 6,
-    textShadowRadius: 6,
+    marginBottom: 4,
+    textShadowColor: "rgba(0,0,0,0.8)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
     letterSpacing: 0.5,
-    lineHeight: 22,
+    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif-condensed", // Or a custom premium font if available
   },
   cardSlogan: {
     fontSize: 12,
-    color: COLORS.white,
     textAlign: "center",
     fontStyle: "italic",
-    marginBottom: 6,
-    opacity: 0.95,
-    fontWeight: "500",
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-    letterSpacing: 0.3,
+    marginBottom: 2,
+    opacity: 0.8,
   },
   schemeInfoContainer: {
     flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-    flexWrap: "wrap",
+    justifyContent: "flex-end",
+    flex: 1,
+    gap: 4,
   },
   schemeInfoBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginHorizontal: 4,
-    marginVertical: 2,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
-    shadowColor: COLORS.white,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
   },
   schemeInfoText: {
-    fontSize: 11,
-    color: COLORS.white,
+    fontSize: 10,
     fontWeight: "600",
-    marginLeft: 6,
-    letterSpacing: 0.3,
+    marginLeft: 4,
   },
   titleUnderline: {
-    width: 80,
-    height: 4,
-    backgroundColor: COLORS.white,
+    width: 40,
+    height: 2,
     alignSelf: "center",
-    borderRadius: 4,
-    shadowColor: COLORS.white,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 2,
+    marginTop: 8,
+    borderRadius: 2,
   },
   cardFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 12,
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(0, 0, 0, 0.05)",
-    height: 90, // Reduced height for footer
+    padding: 16,
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
+    gap: 12,
+   // backgroundColor: "rgba(0,0,0,0.3)", // Optional: slight darkening
   },
   joinButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 30,
     flex: 1,
-    marginLeft: 16,
+    borderRadius: 25,
+    overflow: "hidden", // For gradient
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
+  },
+  joinButtonGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: COLORS.primary,
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 6,
-    borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
   joinButtonText: {
-    color: COLORS.white,
-    fontSize: 13,
-    fontWeight: "700",
-    textAlign: "center",
-    marginLeft: 6,
+    color: "#000",
+    fontWeight: "800",
+    fontSize: 15,
+    marginLeft: 8,
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   infoButton: {
@@ -1648,19 +1474,19 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: COLORS.background.overlay,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "flex-end", // Align to bottom
   },
   modalContainer: {
     backgroundColor: COLORS.white,
-    borderRadius: 16,
-    margin: 20,
-    maxHeight: "80%",
-    width: screenWidth - 40,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    margin: 0,
+    height: "80%", // Tall bottom sheet
+    width: "100%",
     shadowColor: COLORS.shadow.black,
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: -4, // Shadow upwards
     },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -1670,33 +1496,30 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   modalHeader: {
-    padding: 20,
-    paddingBottom: 20,
-    overflow: "hidden",
+    minHeight: 200,
   },
-  modalHeaderBackground: {
-    opacity: 0.3,
+  modalHeaderBackgroundContainer: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
+  modalHeaderBackgroundImage: {
+    opacity: 0.15,
     resizeMode: "cover",
   },
   modalHeaderOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    display: "none",
   },
   modalHeaderContent: {
-    flexDirection: "row",
+    flex: 1,
+    padding: 24,
     justifyContent: "space-between",
-    alignItems: "flex-start",
   },
   modalSchemeInfo: {
     flex: 1,
   },
   modalTitleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    marginBottom: 16,
   },
   modalIconContainer: {
     backgroundColor: "rgba(255, 255, 255, 0.3)",
@@ -1716,11 +1539,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "800",
     color: COLORS.white,
-    marginBottom: 6,
+    marginBottom: 8,
     letterSpacing: 0.5,
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   modalSlogan: {
     fontSize: 14,
@@ -1745,6 +1571,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.3)",
     gap: 6,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
   },
   modalBadgeText: {
     fontSize: 12,
@@ -1752,9 +1579,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   closeButton: {
+    position: "absolute",
+    top: 16,
+    right: 16,
     padding: 8,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    zIndex: 10,
   },
   modalBody: {
     padding: 20,
@@ -1859,25 +1690,257 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   modalJoinButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 18,
     borderRadius: 30,
-    alignItems: "center",
-    marginTop: 8,
-    marginBottom: 8,
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 10,
-    shadowColor: COLORS.primary,
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
+    overflow: 'hidden',
+    marginTop: 0,
+    marginBottom: 0,
+    flex: 1, // Make it take available space in row
+    elevation: 4,
+    shadowColor: "#FFD700",
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 6,
-    borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    shadowRadius: 5,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 20,
+    paddingBottom: 20, // Add some bottom padding
+  },
+  modalQuickJoinButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255, 215, 0, 0.5)",
+    elevation: 3,
+    shadowColor: "#FFD700",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  modalQuickJoinGradient: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  quickJoinButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    overflow: "hidden",
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 215, 0, 0.5)",
+    elevation: 3,
+    shadowColor: "#FFD700",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  quickJoinGradient: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  // Modern Modal Styles
+  modalContentModern: {
+      flex: 1,
+      backgroundColor: COLORS.white,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      overflow: "hidden",
+  },
+  modalScroll: {
+      flex: 1,
+  },
+  modalScrollContent: {
+      paddingBottom: 120, // Space for footer
+  },
+  stickyModalFooter: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: COLORS.white,
+      paddingHorizontal: 20,
+      paddingVertical: 15,
+      borderTopWidth: 1,
+      borderTopColor: '#f0f0f0',
+      elevation: 20,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: -5 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+  },
+  floatingCloseButton: {
+      position: 'absolute',
+      top: 15,
+      right: 15,
+      zIndex: 100,
+  },
+  closeButtonBlur: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: 'rgba(255,255,255,0.9)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 5,
+  },
+  modernHeader: {
+      paddingHorizontal: 24,
+      paddingTop: 30, // Space for close button
+      paddingBottom: 10,
+  },
+  modernTitle: {
+      fontSize: 28,
+      fontWeight: '800',
+      color: COLORS.text.dark,
+      letterSpacing: -0.5,
+      marginBottom: 2,
+  },
+  modernSlogan: {
+      fontSize: 14,
+      color: '#666',
+      fontWeight: '500',
+      marginBottom: 10,
+  },
+  titleUnderlineGradient: {
+      height: 3,
+      width: 60,
+      backgroundColor: '#FFD700',
+      borderRadius: 2,
+      marginBottom: 15
+  },
+  pillBadgesContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+      paddingHorizontal: 24,
+      marginBottom: 25,
+  },
+  pillBadge: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      backgroundColor: '#FFF9E6', // Light gold bg
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  pillBadgeText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: '#B8860B', // Dark gold text
+  },
+  
+  // Grid Section
+  gridSection: {
+      paddingHorizontal: 24,
+      marginBottom: 30,
+  },
+  gridSectionTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      marginBottom: 15,
+      color: COLORS.text.dark,
+  },
+  benefitsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+  },
+  gridBenefitItem: {
+      width: '48%', // 2 columns
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#FAFAFA',
+      padding: 10,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: '#f0f0f0',
+  },
+  gridIconContainer: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: 'rgba(76, 175, 80, 0.1)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 8,
+  },
+  gridBenefitText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: '#444',
+      flex: 1,
+  },
+  
+  // Modern Section
+  modernSection: {
+      paddingHorizontal: 24,
+      marginBottom: 25,
+  },
+  modernSectionTitle: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: COLORS.text.dark,
+      marginBottom: 8,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      opacity: 0.8,
+  },
+  modernDescription: {
+      fontSize: 15,
+      lineHeight: 24,
+      color: '#555',
+  },
+  
+  // Refined Table
+  tableRefinedContainer: {
+      borderRadius: 12,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: '#EEE',
+  },
+  tableRefinedHeader: {
+      flexDirection: 'row',
+      backgroundColor: '#F8F8F8',
+      paddingVertical: 12,
+      paddingHorizontal: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: '#EEE',
+  },
+  tableRefinedHeaderText: {
+      flex: 1,
+      fontWeight: '700',
+      fontSize: 13,
+      color: '#333',
+  },
+  tableRefinedRow: {
+       flexDirection: 'row',
+       paddingVertical: 12,
+       paddingHorizontal: 15,
+       borderBottomWidth: 1,
+       borderBottomColor: '#F5F5F5',
+       backgroundColor: '#FFF',
+  },
+  tableRowAlt: {
+      backgroundColor: '#FAFAFA',
+  },
+  tableRefinedCell: {
+      flex: 1,
+      fontSize: 13,
+      color: '#555',
   },
   modalJoinButtonText: {
     color: COLORS.white,

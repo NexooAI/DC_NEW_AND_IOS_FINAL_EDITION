@@ -562,19 +562,16 @@ const ProfileScreen = () => {
     <AuthGuard>
       <View style={styles.container}>
         {/* Header Background */}
-        <LinearGradient
-          colors={[
-            theme.colors.primary,
-            theme.colors.primary + "CC",
-            theme.colors.primary + "99",
-          ]}
-          style={styles.headerBackground}
-        />
-
-        {/* Decorative Elements */}
-        <View style={styles.decorativeCircle1} />
-        <View style={styles.decorativeCircle2} />
-        <View style={styles.decorativeWave} />
+        <View style={styles.headerContainer}>
+          <LinearGradient
+            colors={[
+              theme.colors.primary,
+              theme.colors.primary,
+            ]}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.headerOverlay} />
+        </View>
 
         <KeyboardAvoidingView
           style={styles.keyboardAvoid}
@@ -585,53 +582,54 @@ const ProfileScreen = () => {
             contentContainerStyle={styles.scrollContent}
           >
             <Animated.View style={[styles.contentWrapper, slideTransform]}>
-              {/* Profile Header */}
-              <View style={styles.profileHeader}>
-                <TouchableOpacity
-                  onPress={handleImageUpload}
-                  style={styles.profileImageContainer}
-                  disabled={isUploading}
-                >
-                  {getProfileImageSource() ? (
-                    <Image
-                      source={getProfileImageSource()}
-                      style={styles.profileImage}
-                    />
-                  ) : (
-                    <View style={styles.profileImagePlaceholder}>
-                      <Icon name="person" size={40} color="white" />
+                {/* Profile Header Card */}
+                <View style={styles.profileCard}>
+                  <View style={styles.profileHeaderTop}>
+                    <TouchableOpacity
+                      onPress={handleImageUpload}
+                      style={styles.profileImageContainer}
+                      disabled={isUploading}
+                    >
+                      {getProfileImageSource() ? (
+                        <Image
+                          source={getProfileImageSource()}
+                          style={styles.profileImage}
+                        />
+                      ) : (
+                        <View style={styles.profileImagePlaceholder}>
+                          <Icon name="person" size={40} color={theme.colors.primary} />
+                        </View>
+                      )}
+                      <View style={styles.profileImageEdit}>
+                        {isUploading ? (
+                          <ActivityIndicator size="small" color="white" />
+                        ) : (
+                          <Icon name="camera-alt" size={16} color="white" />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+
+                    <View style={styles.profileInfo}>
+                      <Text style={styles.profileName} numberOfLines={1}>{user?.name || t("notProvided")}</Text>
+                      <Text style={styles.profileEmail} numberOfLines={1}>{user?.email || t("notProvided")}</Text>
+                      
+                      <View style={styles.userIdBadge}>
+                        <Text style={styles.userIdText}>ID: {user?.id || "N/A"}</Text>
+                      </View>
                     </View>
-                  )}
-                  <View style={styles.profileImageEdit}>
-                    {isUploading ? (
-                      <ActivityIndicator size="small" color="white" />
-                    ) : (
-                      <Icon name="camera-alt" size={18} color="white" />
-                    )}
-                  </View>
-                </TouchableOpacity>
 
-                <View style={styles.profileInfo}>
-                  <Text style={styles.profileName}>{user?.name || t("notProvided")}</Text>
-                  <Text style={styles.profileEmail}>{user?.email || t("notProvided")}</Text>
-
-                  <View style={styles.userIdContainer}>
-                    <Icon name="badge" size={16} color="rgba(255,255,255,0.8)" />
-                    <Text style={styles.userIdText}>ID: {user?.id || "N/A"}</Text>
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={handleEditToggle}
+                    >
+                      <Icon
+                        name={editing ? "close" : "edit"}
+                        size={20}
+                        color={editing ? "#FF4444" : theme.colors.primary}
+                      />
+                    </TouchableOpacity>
                   </View>
                 </View>
-
-                <TouchableOpacity
-                  style={styles.editButton}
-                  onPress={handleEditToggle}
-                >
-                  <Icon
-                    name={editing ? "close" : "edit"}
-                    size={20}
-                    color={editing ? "#FF4444" : "white"}
-                  />
-                </TouchableOpacity>
-              </View>
 
               {/* Edit Mode */}
               {editing ? (
@@ -1079,44 +1077,17 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F7F8FA',
   },
-  headerBackground: {
+  headerContainer: {
+    height: 220,
+    width: '100%',
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
-    height: 280,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
   },
-  decorativeCircle1: {
-    position: 'absolute',
-    top: 50,
-    right: 30,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  decorativeCircle2: {
-    position: 'absolute',
-    top: 120,
-    left: -30,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  decorativeWave: {
-    position: 'absolute',
-    top: 180,
-    left: 0,
-    right: 0,
-    height: 40,
-    backgroundColor: '#F8F9FA',
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
+  headerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.1)',
   },
   keyboardAvoid: {
     flex: 1,
@@ -1124,55 +1095,63 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 100,
+    paddingTop: 50, // Push content down to overlap header
   },
   contentWrapper: {
     paddingHorizontal: 20,
-    paddingTop: 20,
   },
-  profileHeader: {
+  // Profile Card
+  profileCard: {
+    backgroundColor: 'white',
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  profileHeaderTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 20,
-    padding: 20,
-    position: 'relative',
   },
   profileImageContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#F0F2F5',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'white',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 4,
   },
   profileImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 40,
+    borderRadius: 35,
   },
   profileImagePlaceholder: {
     width: '100%',
     height: '100%',
-    borderRadius: 40,
+    borderRadius: 35,
+    backgroundColor: '#F0F2F5',
     justifyContent: 'center',
     alignItems: 'center',
   },
   profileImageEdit: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
+    bottom: -2,
+    right: -2,
     backgroundColor: theme.colors.primary,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -1180,129 +1159,131 @@ const styles = StyleSheet.create({
   },
   profileInfo: {
     flex: 1,
-    marginLeft: 20,
+    marginLeft: 16,
   },
   profileName: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
-    color: 'white',
+    color: '#1A1D1E',
     marginBottom: 4,
   },
   profileEmail: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: '#6E7687',
     marginBottom: 8,
   },
-  userIdContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
+  userIdBadge: {
+    backgroundColor: '#F5F7FA',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
     alignSelf: 'flex-start',
   },
   userIdText: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginLeft: 6,
-    fontWeight: '500',
+    color: '#6E7687',
+    fontWeight: '600',
   },
   editButton: {
-    position: 'absolute',
-    top: 15,
-    right: 15,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F5F7FA',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  
+  // Edit Form
   editFormCard: {
     backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 25,
-    marginBottom: 20,
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+    elevation: 4,
   },
   editFormTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#333',
-    marginBottom: 25,
+    color: '#1A1D1E',
+    marginBottom: 20,
     textAlign: 'center',
   },
   editFormField: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   editFormLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#666',
+    color: '#4A5568',
     marginBottom: 8,
+    marginLeft: 4,
   },
   editFormInput: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: '#E2E8F0',
     borderRadius: 12,
-    paddingVertical: 15,
-    paddingHorizontal: 18,
-    fontSize: 16,
-    color: '#333',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    color: '#1A202C',
   },
   disabledInput: {
-    backgroundColor: '#F1F3F4',
-    color: '#999',
+    backgroundColor: '#F1F5F9',
+    color: '#94A3B8',
   },
   editFormActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
+    marginTop: 8,
+    gap: 12,
   },
   cancelEditButton: {
     flex: 1,
-    marginRight: 10,
-    paddingVertical: 15,
-    backgroundColor: '#F8F9FA',
+    paddingVertical: 14,
+    backgroundColor: 'white',
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: '#E2E8F0',
   },
   cancelEditText: {
-    color: '#666',
-    fontSize: 16,
+    color: '#64748B',
+    fontSize: 15,
     fontWeight: '600',
   },
   saveEditButton: {
     flex: 1,
-    marginLeft: 10,
-    paddingVertical: 15,
+    paddingVertical: 14,
     backgroundColor: theme.colors.primary,
     borderRadius: 12,
     alignItems: 'center',
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
   },
   saveEditText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
+
+  // Referral Card
   referralCard: {
     backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 25,
-    marginBottom: 20,
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+    elevation: 4,
     overflow: 'hidden',
   },
   referralHeader: {
@@ -1311,31 +1292,37 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   referralIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(133, 1, 17, 0.1)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFF0F3', // Light pink/primary tint
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: 12,
   },
   referralTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#333',
+    color: '#1A1D1E',
   },
   referralContent: {
     marginBottom: 20,
   },
   referralDesc: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 15,
+    color: '#6E7687',
+    marginBottom: 16,
+    lineHeight: 20,
   },
   referralCodeCard: {
-    borderRadius: 15,
+    borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 20,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 4,
   },
   referralCodeGradient: {
     padding: 20,
@@ -1350,215 +1337,228 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 4,
+    fontWeight: '500',
   },
   referralCodeText: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: 'white',
-    letterSpacing: 2,
+    letterSpacing: 1.5,
   },
   copyButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   rewardsSection: {
-    backgroundColor: '#FFF9E6',
-    borderRadius: 15,
-    padding: 20,
+    backgroundColor: '#FFF8F0',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#FFE0B2',
   },
   rewardsInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   rewardsDetails: {
-    marginLeft: 15,
+    marginLeft: 12,
   },
   rewardsLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+    fontSize: 13,
+    color: '#D87A04',
+    marginBottom: 2,
+    fontWeight: '600',
   },
   rewardsValue: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#FF9800',
+    color: '#D87A04',
   },
   inviteButton: {
-    borderRadius: 15,
+    borderRadius: 16,
     overflow: 'hidden',
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   inviteButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
+    paddingVertical: 16,
   },
   inviteButtonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    marginLeft: 10,
+    marginLeft: 8,
   },
+
+  // Settings Card
   settingsCard: {
     backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 25,
-    marginBottom: 20,
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+    elevation: 4,
   },
   settingsTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#333',
-    marginBottom: 20,
+    color: '#1A1D1E',
+    marginBottom: 16,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
+    paddingVertical: 16,
   },
   settingIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: 16,
   },
   settingContent: {
     flex: 1,
   },
   settingText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: '#1A1D1E',
     marginBottom: 2,
   },
   settingDesc: {
     fontSize: 12,
-    color: '#999',
+    color: '#94A3B8',
+    lineHeight: 16,
   },
   languageBadge: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: theme.colors.primary,
-    backgroundColor: 'rgba(133, 1, 17, 0.1)',
-    paddingHorizontal: 10,
+    backgroundColor: '#FFF0F3',
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 10,
-    marginRight: 10,
+    borderRadius: 8,
+    marginRight: 8,
   },
   divider: {
     height: 1,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#F1F5F9',
+    marginLeft: 60, // Indent divider to align with text
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'white',
-    borderRadius: 15,
-    paddingVertical: 18,
-    marginBottom: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+    backgroundColor: '#FFF5F5', // Light red bg
+    borderRadius: 16,
+    paddingVertical: 16,
+    marginBottom: 40,
+    borderWidth: 1,
+    borderColor: '#FED7D7',
   },
   logoutText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#FF4444',
-    marginLeft: 10,
+    color: '#E53E3E',
+    marginLeft: 8,
   },
+  
+  // Modals
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   modalCard: {
     backgroundColor: 'white',
-    borderRadius: 25,
-    padding: 30,
+    borderRadius: 24,
+    padding: 24,
     width: '85%',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.3,
     shadowRadius: 30,
-    elevation: 10,
+    elevation: 20,
   },
   modalIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 68, 68, 0.1)',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#FFF5F5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 10,
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1A1D1E',
+    marginBottom: 8,
     textAlign: 'center',
   },
   modalMessage: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 15,
+    color: '#64748B',
     textAlign: 'center',
-    marginBottom: 25,
+    marginBottom: 24,
     lineHeight: 22,
   },
   modalButtons: {
     flexDirection: 'row',
+    gap: 12,
     width: '100%',
   },
   modalCancelButton: {
     flex: 1,
-    paddingVertical: 16,
-    backgroundColor: '#F8F9FA',
+    paddingVertical: 14,
+    backgroundColor: 'white',
     borderRadius: 12,
     alignItems: 'center',
-    marginRight: 10,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: '#E2E8F0',
   },
   modalCancelText: {
-    color: '#666',
-    fontSize: 16,
+    color: '#64748B',
+    fontSize: 15,
     fontWeight: '600',
   },
   modalConfirmButton: {
     flex: 1,
-    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
-    marginLeft: 10,
     overflow: 'hidden',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    backgroundColor: '#E53E3E',
   },
   modalConfirmText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
   
-  // MPIN Modal Styles
+  // MPIN Modal (Specific)
   mpinModalContainer: {
-    width: '80%',
+    width: '85%',
     backgroundColor: 'white',
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 24,
     alignItems: 'center',
     elevation: 10,
@@ -1567,24 +1567,26 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: theme.colors.textDark,
+    color: '#1A1D1E',
   },
   mpinModalDesc: {
     fontSize: 14,
-    color: '#666',
+    color: '#64748B',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   mpinInput: {
     width: '100%',
-    height: 50,
+    height: 56,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
+    borderColor: '#E2E8F0',
+    borderRadius: 16,
     textAlign: 'center',
     fontSize: 24,
     marginBottom: 24,
-    color: theme.colors.textDark,
+    color: '#1A1D1E',
+    backgroundColor: '#F8FAFC',
+    letterSpacing: 8,
   },
   mpinModalActions: {
     flexDirection: 'row',
@@ -1594,26 +1596,26 @@ const styles = StyleSheet.create({
   },
   mpinModalCancel: {
     flex: 1,
-    padding: 14,
+    paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#E2E8F0',
     alignItems: 'center',
   },
   mpinModalConfirm: {
     flex: 1,
-    padding: 14,
+    paddingVertical: 14,
     borderRadius: 12,
     backgroundColor: theme.colors.primary,
     alignItems: 'center',
   },
   mpinModalCancelText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#666',
+    color: '#64748B',
   },
   mpinModalConfirmText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: 'white',
   },

@@ -199,7 +199,7 @@ export default function JoinSavings() {
   const [branch, setBranch] = useState<Branch[]>([]);
   const [formData, setFormData] = useState({
     amount: "",
-    accountname: "",
+    accountname: user?.name || "",
     associated_branch: "",
     name: "",
     mobile: "",
@@ -224,7 +224,7 @@ export default function JoinSavings() {
   const [inputValue, setInputValue] = useState("0");
   const [goldWeight, setGoldWeight] = useState(0);
   const [goldRate, setGoldRate] = useState(5847); // Default fallback
-  const [useLoginName, setUseLoginName] = useState(false);
+
 
   // State for collapsible KYC cards
   const [addressExpanded, setAddressExpanded] = useState(false);
@@ -1395,7 +1395,7 @@ export default function JoinSavings() {
                 <View style={styles.cardHeader}>
                   <View style={styles.titleWithIcon}>
                     <Ionicons name="cash-outline" size={width < 350 ? 14 : 16} color="#FFD700" />
-                    <Text style={styles.cardTitle}>{translations.amountInRupees}</Text>
+                    <Text style={[styles.cardTitle, { color: '#FFF' }]}>{translations.amountInRupees}</Text>
                   </View>
                   <View style={styles.amountBadge}>
                     <Text style={styles.amountBadgeText}>INR</Text>
@@ -1628,14 +1628,14 @@ export default function JoinSavings() {
         {/* Account Details Section */}
         <View style={styles.detailsSection}>
           <View style={styles.accountDetailsCard}>
-            <View style={styles.cardHeader}>
+            {/* <View style={styles.cardHeader}>
               <MaterialCommunityIcons
                 name="account-circle"
                 size={24}
                 color="#1a237e"
               />
               <Text style={styles.cardTitle}>{translations.accountDetails}</Text>
-            </View>
+            </View> */}
 
             {/* Account Name Field */}
             <View style={styles.fieldContainer}>
@@ -1647,44 +1647,18 @@ export default function JoinSavings() {
                 style={[
                   styles.modernInput,
                   errors.accountname ? styles.modernInputError : null,
-                  !useLoginName && styles.modernInputActive,
+                  styles.modernInputActive,
                 ]}
                 placeholder="Enter your account name"
                 placeholderTextColor={"#999"}
                 value={formData.accountname}
                 onChangeText={(value) => handleChange("accountname", value)}
-                editable={!useLoginName}
               />
               {errors.accountname && (
                 <Text style={styles.modernErrorText}>{errors.accountname}</Text>
               )}
 
-              {/* Use Login Name Checkbox */}
-              <TouchableOpacity
-                style={styles.modernCheckboxRow}
-                onPress={() => {
-                  const checked = !useLoginName;
-                  setUseLoginName(checked);
-                  if (checked && user?.name) {
-                    handleChange("accountname", user.name);
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <View
-                  style={[
-                    styles.modernCheckbox,
-                    useLoginName && styles.modernCheckboxChecked,
-                  ]}
-                >
-                  {useLoginName && (
-                    <Ionicons name="checkmark" size={14} color="#fff" />
-                  )}
-                </View>
-                <Text style={styles.modernCheckboxLabel}>
-                  {translations.useMyLoginName}
-                </Text>
-              </TouchableOpacity>
+
             </View>
 
             {/* Branch Field */}
@@ -2378,143 +2352,50 @@ export default function JoinSavings() {
               },
             };
             // Show success alert with countdown (3, 2, 1)
-            setCountdown(3);
-            setKycModalData({
-              title: "Success!",
-              message: "Savings scheme created successfully. Redirecting to payment in 3...",
-              type: "success",
-              buttons: [
-                {
-                  text: "OK",
-                  onPress: () => {
-                    // Clear countdown timer if user clicks OK manually
-                    if (countdownTimerRef.current) {
-                      clearInterval(countdownTimerRef.current);
-                      countdownTimerRef.current = null;
-                    }
-                    setCountdown(null);
-                    setKycModalVisible(false);
-                    // Add small delay to ensure modal is fully closed before navigation
-                    setTimeout(() => {
-                      // Prevent multiple simultaneous navigations
-                      if (isNavigatingRef.current) {
-                        logger.warn("Navigation already in progress, skipping duplicate navigation");
-                        return;
-                      }
-                      isNavigatingRef.current = true;
+            // Navigate directly without showing success modal
+            // Prevent multiple simultaneous navigations
+            if (isNavigatingRef.current) {
+              logger.warn("Navigation already in progress, skipping duplicate navigation");
+              return;
+            }
+            isNavigatingRef.current = true;
 
-                      try {
-                        logger.log("Navigating to paymentNewOverView", {
-                          hasUserDetails: !!navigationParams.params.userDetails,
-                          userDetailsSize: navigationParams.params.userDetails?.length || 0,
-                        });
+            try {
+              logger.log("Navigating to paymentNewOverView", {
+                hasUserDetails: !!navigationParams.params.userDetails,
+                userDetailsSize: navigationParams.params.userDetails?.length || 0,
+              });
 
-                        // Use InteractionManager to ensure UI is ready before navigation
-                        InteractionManager.runAfterInteractions(() => {
-                          try {
-                            // Use replace instead of push to prevent stack buildup and crashes
-                            router.replace(navigationParams);
-                          } catch (navError) {
-                            isNavigatingRef.current = false;
-                            throw navError;
-                          }
-                        });
-                      } catch (navError) {
-                        isNavigatingRef.current = false;
-                        logger.crash(navError as Error, {
-                          context: "Navigation after payment session creation",
-                          navigationParams: {
-                            ...navigationParams,
-                            params: {
-                              ...navigationParams.params,
-                              userDetails: navigationParams.params.userDetails?.substring(0, 100) + "..."
-                            }
-                          },
-                        });
-                        setKycModalData({
-                          title: "Navigation Error",
-                          message: "Failed to navigate to payment page. Please try again.",
-                          type: "error",
-                          buttons: [{ text: "OK", onPress: () => { }, style: "default" }],
-                        });
-                        setKycModalVisible(true);
-                      }
-                    }, 300); // 300ms delay to ensure modal is closed
-                  },
-                  style: "default",
-                },
-              ],
-            });
-            setKycModalVisible(true);
-
-            // Start countdown timer (3, 2, 1, then navigate)
-            let currentCount = 3;
-            countdownTimerRef.current = setInterval(() => {
-              currentCount -= 1;
-              setCountdown(currentCount);
-
-              if (currentCount > 0) {
-                // Update modal message with countdown
-                setKycModalData(prev => ({
-                  ...prev,
-                  message: `Savings scheme created successfully. Redirecting to payment in ${currentCount}...`,
-                }));
-              } else {
-                // Countdown finished, navigate
-                if (countdownTimerRef.current) {
-                  clearInterval(countdownTimerRef.current);
-                  countdownTimerRef.current = null;
+              // Use InteractionManager to ensure UI is ready before navigation
+              InteractionManager.runAfterInteractions(() => {
+                try {
+                  // Use replace instead of push to prevent stack buildup and crashes
+                  router.replace(navigationParams);
+                } catch (navError) {
+                  isNavigatingRef.current = false;
+                  throw navError;
                 }
-                setCountdown(null);
-                setKycModalVisible(false);
-                // Add small delay to ensure modal is fully closed before navigation
-                setTimeout(() => {
-                  // Prevent multiple simultaneous navigations
-                  if (isNavigatingRef.current) {
-                    logger.warn("Navigation already in progress, skipping duplicate navigation");
-                    return;
+              });
+            } catch (navError) {
+              isNavigatingRef.current = false;
+              logger.crash(navError as Error, {
+                context: "Navigation after payment session creation",
+                navigationParams: {
+                  ...navigationParams,
+                  params: {
+                    ...navigationParams.params,
+                    userDetails: navigationParams.params.userDetails?.substring(0, 100) + "..."
                   }
-                  isNavigatingRef.current = true;
-
-                  try {
-                    logger.log("Auto-navigating to paymentNewOverView after countdown", {
-                      hasUserDetails: !!navigationParams.params.userDetails,
-                      userDetailsSize: navigationParams.params.userDetails?.length || 0,
-                    });
-
-                    // Use InteractionManager to ensure UI is ready before navigation
-                    InteractionManager.runAfterInteractions(() => {
-                      try {
-                        // Use replace instead of push to prevent stack buildup and crashes
-                        router.replace(navigationParams);
-                      } catch (navError) {
-                        isNavigatingRef.current = false;
-                        throw navError;
-                      }
-                    });
-                  } catch (navError) {
-                    isNavigatingRef.current = false;
-                    logger.crash(navError as Error, {
-                      context: "Auto-navigation after countdown",
-                      navigationParams: {
-                        ...navigationParams,
-                        params: {
-                          ...navigationParams.params,
-                          userDetails: navigationParams.params.userDetails?.substring(0, 100) + "..."
-                        }
-                      },
-                    });
-                    setKycModalData({
-                      title: "Navigation Error",
-                      message: "Failed to navigate to payment page. Please try again.",
-                      type: "error",
-                      buttons: [{ text: "OK", onPress: () => { }, style: "default" }],
-                    });
-                    setKycModalVisible(true);
-                  }
-                }, 300); // 300ms delay to ensure modal is closed
-              }
-            }, 1000); // Update every 1 second
+                },
+              });
+              setKycModalData({
+                title: "Navigation Error",
+                message: "Failed to navigate to payment page. Please try again.",
+                type: "error",
+                buttons: [{ text: "OK", onPress: () => { }, style: "default" }],
+              });
+              setKycModalVisible(true);
+            }
           } catch (processingError) {
             logger.crash(processingError as Error, {
               context: "Processing investment API response",
@@ -2844,9 +2725,9 @@ export default function JoinSavings() {
   return (
     <SafeAreaView
       style={styles.safeAreaContainer}
-      edges={["left", "right", "top"]}
+      edges={["left", "right"]}
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? insets.top : 0 }]}>
         {/* <View style={styles.header}>
           <TouchableOpacity
             onPress={() => {
@@ -3055,7 +2936,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 16,
-    color: "#FFC857",
+    color: theme.colors.white,
   },
   progressContainer: {
     backgroundColor: theme.colors.background,
@@ -3142,7 +3023,7 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
   },
   progressBadgeTextActive: {
-    color: theme.colors.black,
+    color: theme.colors.white,
     fontSize: 12,
   },
   progressStepLabel: {
@@ -3206,7 +3087,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginBottom: 8,
-    color: "#1a237e",
+    color: theme.colors.primary,
     textAlign: "left",
   },
   input: {
@@ -3239,12 +3120,12 @@ const styles = StyleSheet.create({
   returnsAmount: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#15803d",
+    color: theme.colors.success,
     marginVertical: 8,
   },
   returnsRate: {
     fontSize: 14,
-    color: "#15803d",
+    color: theme.colors.success,
   },
   row: {
     flexDirection: "row",
@@ -3580,7 +3461,7 @@ const styles = StyleSheet.create({
   quickAmountText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#1a237e",
+    color: theme.colors.primary,
   },
   selectedQuickAmountText: {
     color: "#fff",
@@ -3644,7 +3525,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    backgroundColor: "rgba(138, 13, 180, 0.54)",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderRadius: 8,
     padding: 10,
     minWidth: 140,
@@ -3718,10 +3599,10 @@ const styles = StyleSheet.create({
   goldRateValue: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#1a237e",
+    color: theme.colors.primary,
   },
   selectedAmountBadge: {
-    backgroundColor: "#1a237e",
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
@@ -3800,7 +3681,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginBottom: 8,
-    color: "#1a237e",
+    color: theme.colors.primary,
     textAlign: "center",
   },
   goldValueContainer: {
@@ -3833,7 +3714,7 @@ const styles = StyleSheet.create({
     padding: 0,
     minWidth: 100,
     textAlign: "center",
-    color: "#1a237e",
+    color: theme.colors.primary,
   },
   goldSymbol: {
     fontSize: 16,
@@ -3841,10 +3722,10 @@ const styles = StyleSheet.create({
     color: "#FFC857",
   },
   selectedGoldRateCard: {
-    borderColor: "#1a237e",
+    borderColor: theme.colors.primary,
     borderWidth: 2,
     backgroundColor: "#fffbe6",
-    shadowColor: "#1a237e",
+    shadowColor: theme.colors.primary,
     shadowOpacity: 0.2,
   },
   summaryCardModern: {
@@ -4027,7 +3908,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   modernInputActive: {
-    borderColor: "#1a237e",
+    borderColor: theme.colors.primary,
     backgroundColor: "#fff",
   },
   modernInputError: {
@@ -4257,7 +4138,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   amountCard: {
-    backgroundColor: '#1A237E',
+    backgroundColor: theme.colors.primary,
   },
   goldCard: {
     backgroundColor: '#FFF8E1',
@@ -4283,7 +4164,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: width < 350 ? 12 : width < 400 ? 13 : 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: theme.colors.textDarkBrown,
     marginLeft: 4,
     flex: 1,
     flexWrap: 'wrap',
@@ -4517,7 +4398,7 @@ const styles = StyleSheet.create({
     minHeight: width < 350 ? 36 : 44,
   },
   selectedQuickAmountChip: {
-    backgroundColor: '#1A237E',
+    backgroundColor: theme.colors.primary,
     borderColor: '#FFD700',
   },
   lastInRow: {
