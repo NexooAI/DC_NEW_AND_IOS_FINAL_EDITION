@@ -30,6 +30,7 @@ export default function HomeLayout() {
           fontSize: Platform.OS === 'android' ? 16 : 18, // Slightly smaller font on Android
         },
         headerShadowVisible: false,
+        headerBackTitleVisible: false, // Hide back button text on iOS
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />

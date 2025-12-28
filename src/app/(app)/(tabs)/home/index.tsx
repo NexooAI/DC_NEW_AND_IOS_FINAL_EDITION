@@ -96,6 +96,8 @@ import SkeletonLoader, {
   SkeletonHomePage,
 } from "@/components/SkeletonLoader";
 import { fetchSchemesWithCache } from "@/utils/apiCache";
+import UserInfoCard from "@/components/home/UserInfoCard";
+import AnimatedGoldRate from "@/components/home/AnimatedGoldRate";
 
 // Constants - Using responsive layout hook instead
 const REFRESH_INTERVAL = 15000; // 15 seconds
@@ -306,334 +308,151 @@ interface Video {
   created_at: string;
 }
 
-interface UserInfoCardProps {
-  userName: string | undefined;
-  activeSchemesCount: number;
-  onPress: () => void;
-  totalGoldSavings?: number;
-  totalAmount?: number;
-  showTotalGold?: boolean;
-  userId: number;
-  profilePhoto?: string;
-  profileImageError?: boolean;
-  retryCount?: number;
-  onImageError?: () => void;
-  onImageLoad?: () => void;
-}
+// Components extracted to separate files in src/components/home/
 
-// Components
-const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
-  ({
-    userName,
-    activeSchemesCount,
-    onPress,
-    userId,
-    totalGoldSavings = 0,
-    totalAmount = 0,
-    showTotalGold = true,
-    profilePhoto,
-    profileImageError = false,
-    retryCount = 0,
-    onImageError,
-    onImageLoad,
-  }) => {
-    const { t } = useTranslation();
-    const [isExpanded, setIsExpanded] = useState(false);
-    const arrowOpacity = useRef(new Animated.Value(1)).current;
-    const expandAnimation = useRef(new Animated.Value(0)).current;
-    const rotateAnimation = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => {
-      const blink = Animated.loop(
-        Animated.sequence([
-          Animated.timing(arrowOpacity, {
-            toValue: 0.3,
-            duration: 800,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(arrowOpacity, {
-            toValue: 1,
-            duration: 800,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      blink.start();
-      return () => blink.stop();
-    }, [arrowOpacity]);
 
-    const handleExpandCollapse = () => {
-      const newExpandedState = !isExpanded;
-      setIsExpanded(newExpandedState);
+const collectionStyles = StyleSheet.create({
+  container: {
+    marginVertical: 10,
+    width: "100%",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginBottom: 15,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: theme.colors.primary,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  seeAllText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: theme.colors.secondary,
+    textDecorationLine: "underline",
+  },
+  listContent: {
+    paddingHorizontal: 15,
+    paddingBottom: 20,
+  },
+  cardContainer: {
+    width: 160,
+    height: 220,
+    marginHorizontal: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  cardBorder: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 20,
+    padding: 2, // Slight thicker border for the metallic look
+  },
+  cardInner: {
+    flex: 1,
+    backgroundColor: "#111", // Dark background for better contrast
+    borderRadius: 18,
+    overflow: "hidden",
+    position: "relative",
+  },
+  image: {
+    width: "100%",
+    height: "100%",
+  },
+  gradientOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: "100%", // Full height gradient for better text readability
+  },
+  topBadge: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    backgroundColor: "rgba(255, 215, 0, 0.9)", // Gold background
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  topBadgeText: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: "#5D4037", // Dark brown for contrast on gold
+    letterSpacing: 0.5,
+  },
+  bottomContent: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 12,
+    paddingBottom: 16,
+  },
+  collectionName: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+    textShadowColor: "rgba(0,0,0,0.75)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+    marginBottom: 8,
+    letterSpacing: 0.5,
+    fontFamily: Platform.OS === 'ios' ? 'Gill Sans' : 'serif', // Elegant serif font preference
+  },
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  countBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,215,0,0.3)",
+    gap: 4,
+  },
+  countText: {
+    color: "#FFD700",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  arrowBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+  },
+});
 
-      // Animate expansion/collapse
-      Animated.parallel([
-        Animated.timing(expandAnimation, {
-          toValue: newExpandedState ? 1 : 0,
-          duration: 300,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false, // Height animation needs false
-        }),
-        Animated.timing(rotateAnimation, {
-          toValue: newExpandedState ? 1 : 0,
-          duration: 300,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true, // Rotation animation can use native driver
-        }),
-      ]).start();
-    };
 
-    const rotateInterpolate = rotateAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: ["0deg", "180deg"],
-    });
-
-    const statsHeight = expandAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, 120], // Height of stats section
-    });
-
-    const statsOpacity = expandAnimation.interpolate({
-      inputRange: [0, 0.1, 1],
-      outputRange: [0, 0, 1], // Completely hidden when collapsed
-    });
-
-    return (
-      <View style={styles.userInfoCard}>
-        <LinearGradient
-          colors={[theme.colors.primary, theme.colors.bgPrimaryHeavy]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.userInfoGradient}
-        >
-          <TouchableOpacity
-            style={styles.userInfoTopRow}
-            onPress={handleExpandCollapse}
-            activeOpacity={0.8}
-          >
-            <View style={styles.welcomeContainer}>
-              <Text style={styles.welcomeText}>{t("welcomeBack")}</Text>
-              <Text style={styles.userName}>
-                {userName?.toUpperCase() + " "}
-                <Text style={styles.userIdText}>( {userId} )</Text>
-              </Text>
-            </View>
-            <View style={styles.userAvatarContainer}>
-              {profilePhoto && !profileImageError ? (
-                <Image
-                  key={`${profilePhoto}-${retryCount}`}
-                  source={{ uri: profilePhoto }}
-                  style={styles.userAvatar}
-                  resizeMode="cover"
-                  onLoad={() => {
-                    logger.log(
-                      "✅ Profile image loaded successfully:",
-                      profilePhoto
-                    );
-                    onImageLoad?.();
-                  }}
-                  onError={(error) => {
-                    logger.log(
-                      "❌ Profile image failed to load:",
-                      error.nativeEvent,
-                      "URL:",
-                      profilePhoto,
-                      "Retry count:",
-                      retryCount
-                    );
-                    onImageError?.();
-                  }}
-                />
-              ) : (
-                <Ionicons
-                  name="person-circle"
-                  size={45}
-                  color={theme.colors.secondary}
-                />
-              )}
-            </View>
-            <View style={styles.expandCollopse}>
-              <Animated.View
-                style={{
-                  transform: [{ rotate: rotateInterpolate }],
-                }}
-              >
-                <Ionicons
-                  name="chevron-down"
-                  size={20}
-                  color={theme.colors.secondary}
-                />
-              </Animated.View>
-            </View>
-          </TouchableOpacity>
-
-          <Animated.View
-            style={[
-              styles.statsRow,
-              {
-                height: statsHeight,
-                opacity: statsOpacity,
-                overflow: "hidden",
-              },
-            ]}
-          >
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>{t("activeInvestments")}</Text>
-                <View style={styles.statValue}>
-                  <Text style={styles.countText}>
-                    {activeSchemesCount || 0}
-                  </Text>
-                  <Ionicons name="trending-up" size={16} color="#FFD700" />
-                </View>
-              </View>
-              <View style={styles.statDivider} />
-              {showTotalGold && (
-                <>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>{t("totalGold")}</Text>
-                    <View style={styles.statValue}>
-                      <Text style={styles.countText}>
-                        {formatGoldWeight(totalGoldSavings).replace(" g", "")}
-                      </Text>
-                      <Text style={styles.unitText}>g</Text>
-                    </View>
-                  </View>
-                  <View style={styles.statDivider} />
-                </>
-              )}
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>{t("totalAmount")}</Text>
-                <View style={styles.statValue}>
-                  <Text style={styles.countText}>
-                    ₹{totalAmount.toLocaleString()}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </Animated.View>
-          {isExpanded && (
-            <TouchableOpacity
-              style={styles.viewDetailsContainer}
-              onPress={onPress}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={[
-                  theme.colors.secondary,
-                  theme.colors.secondary,
-                  theme.colors.secondary,
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.viewDetailsGradient}
-              >
-                {/* <Ionicons name="eye-outline" size={20} color="#850111" /> */}
-                <Text style={styles.viewDetailsText}>
-                  {t("viewInvestmentDetails")}
-                </Text>
-                <Animated.View
-                  style={[
-                    styles.doubleArrowContainer,
-                    { opacity: arrowOpacity },
-                  ]}
-                >
-                  <Ionicons name="chevron-forward" size={16} color="#850111" />
-                  <Ionicons
-                    name="chevron-forward"
-                    size={16}
-                    color="#850111"
-                    style={styles.secondArrow}
-                  />
-                </Animated.View>
-              </LinearGradient>
-            </TouchableOpacity>
-          )}
-        </LinearGradient>
-      </View>
-    );
-  }
-);
-
-// AnimatedGoldRate: Decorative gold rate label with theme color, 22KT, live dot, and last updated timestamp
-const AnimatedGoldRate: React.FC<{ goldRate: string; updatedAt?: string }> = ({
-  goldRate,
-  updatedAt,
-}) => {
-  const { t } = useTranslation();
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 1.08,
-          duration: 700,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 700,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [scaleAnim]);
-
-  // Format timestamp
-  const formatDateToIndian = (isoString: string | undefined) => {
-    if (!isoString) return "-";
-    const date = new Date(isoString);
-    return date.toLocaleString("en-IN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
-  return (
-    <View
-      style={styles.goldRateLabelContainer}
-      accessibilityLabel="Gold Rate Label"
-    >
-      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-        <LinearGradient
-          colors={["#850111", "#2e0406"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.goldRateLabel}
-        >
-          <Text style={styles.goldRateTitle}>{t("goldRate")}</Text>
-          <View style={styles.goldRateRow}>
-            <Ionicons
-              name="star"
-              size={18}
-              color="#FFD700"
-              style={{ marginRight: 4 }}
-            />
-            <Text style={styles.goldRatePrice}>₹{goldRate}/-</Text>
-            <Text style={styles.goldRatePurity}>22KT</Text>
-            <View style={styles.liveDot} />
-          </View>
-          {updatedAt && (
-            <Text style={styles.goldRateUpdatedAt}>
-              Last updated: {formatDateToIndian(updatedAt)}
-            </Text>
-          )}
-        </LinearGradient>
-      </Animated.View>
-    </View>
-  );
-};
 
 // BannerCard component for FlatList renderItem
 interface BannerCardProps {
@@ -798,6 +617,7 @@ export default function Home() {
   const [totalAmount, setTotalAmount] = useState(0);
   const [flashNews, setFlashNews] = useState<any[]>([]);
   const [sliderImages, setSliderImages] = useState<any[]>([]);
+  const [schemes, setSchemes] = useState<any[]>([]); // Added schemes state
   const [isSliderLoading, setIsSliderLoading] = useState(true);
   const [viewedCollections, setViewedCollections] = useState<{
     [id: number]: boolean;
@@ -953,9 +773,11 @@ export default function Home() {
       logger.log("🔍 Fetching schemes data...", { forceRefresh });
       const schemesData = await fetchSchemesWithCache(forceRefresh);
       logger.log("✅ Schemes data fetched:", { count: schemesData?.length || 0 });
+      setSchemes(schemesData || []);
       return schemesData;
     } catch (error) {
       logger.error("❌ Error fetching schemes data:", error);
+      setSchemes([]);
       return [];
     }
   }, []);
@@ -1889,25 +1711,19 @@ export default function Home() {
       Alert.alert(t("schemes.error") || "Error", t("schemes.failedToLoadSchemeData") || "Failed to load scheme data");
     }
   };
+  
+  // Reusable function to initiate Quick Join
+  const initiateQuickJoin = async (scheme: any) => {
+    if (!scheme) return;
 
-  // Handle Quick Join button click
-  const handleQuickJoinPress = async () => {
-    // Store the selected scheme before closing modal (to prevent it from being cleared)
-    const schemeToUse = selectedScheme;
-
-    // Close the scheme info modal without clearing selectedScheme immediately
-    Animated.timing(schemeInfoModalAnimation, {
-      toValue: 0,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => {
-      setSchemeInfoModalVisible(false);
-      // Don't clear selectedScheme here - we need it for quick join
-    });
-
+    // Set selected scheme if not already set
+    if (selectedScheme?.SCHEMEID !== scheme.SCHEMEID) {
+      setSelectedScheme(scheme);
+    }
+    
     // Fetch amount limits for the selected scheme
-    if (schemeToUse?.SCHEMEID) {
-      await fetchSchemeAmountLimits(Number(schemeToUse.SCHEMEID));
+    if (scheme?.SCHEMEID) {
+      await fetchSchemeAmountLimits(Number(scheme.SCHEMEID));
     }
 
     // Check KYC status
@@ -1923,7 +1739,6 @@ export default function Home() {
             onPress: () => {
               // Clear selectedScheme when canceling
               setSelectedScheme(null);
-              schemeInfoModalAnimation.setValue(0);
             },
           },
           {
@@ -1940,11 +1755,6 @@ export default function Home() {
 
     // If KYC is completed, open quick join modal
     if (kycStatus === true) {
-      // Ensure selectedScheme is set (in case it was cleared)
-      if (!selectedScheme && schemeToUse) {
-        setSelectedScheme(schemeToUse);
-      }
-
       // Fetch branches if not already fetched
       if (branches.length === 0) {
         await fetchBranches();
@@ -1958,11 +1768,7 @@ export default function Home() {
       setQuickJoinErrors({});
       setCalculatedGoldWeight(null);
       
-      // Wait for the scheme info modal to close completely (animation duration is ~250ms)
-      // iOS MIGHT fail to open the second modal if the first one is still animating out
-      setTimeout(() => {
-        setQuickJoinModalVisible(true);
-      }, 450);
+      setQuickJoinModalVisible(true);
     } else {
       // KYC status is still loading, wait a bit and check again
       setTimeout(() => {
@@ -1976,20 +1782,43 @@ export default function Home() {
                 style: "cancel",
                 onPress: () => {
                   setSelectedScheme(null);
-                  schemeInfoModalAnimation.setValue(0);
                 },
               },
               {
                 text: "Update",
-                onPress: () => {
-                  router.push("/(app)/(tabs)/home/kyc");
-                },
+                onPress: () => router.push("/(app)/(tabs)/home/kyc"),
               },
             ]
           );
+        } else {
+           // Retry initiate if KYC loaded
+           initiateQuickJoin(scheme);
         }
-      }, 500);
+      }, 1000);
     }
+  };
+
+  // Handle Quick Join button click from Info Modal
+  const handleQuickJoinPress = async () => {
+    // Store the selected scheme before closing modal
+    const schemeToUse = selectedScheme;
+
+    if (!schemeToUse) return;
+
+    // Close the scheme info modal
+    Animated.timing(schemeInfoModalAnimation, {
+      toValue: 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setSchemeInfoModalVisible(false);
+      
+      // Wait for modal to close before opening Quick Join
+      // This helps with iOS modal interaction
+      setTimeout(() => {
+         initiateQuickJoin(schemeToUse);
+      }, 300);
+    });
   };
 
   // Calculate gold weight from amount
@@ -2019,12 +1848,22 @@ export default function Home() {
 
   // Handle amount change in quick join modal
   const handleQuickJoinAmountChange = (amount: string) => {
-    // Remove non-numeric characters except decimal point
+    // Remove non-numeric characters except decimal point (though keyboard is numeric, pasting is poss)
     const cleanedAmount = amount.replace(/[^0-9.]/g, "");
+    
+    // Check if exceeding max amount (if limits exist and amount is a valid number)
+    if (schemeAmountLimits && schemeAmountLimits.max_amount) {
+         const numericVal = parseFloat(cleanedAmount);
+         if (!isNaN(numericVal) && numericVal > schemeAmountLimits.max_amount) {
+             return;
+         }
+    }
+
     setQuickJoinFormData((prev) => ({ ...prev, amount: cleanedAmount }));
 
-    // Calculate gold weight if scheme type is weight
-    if (selectedScheme?.SCHEMETYPE?.toLowerCase() === "weight") {
+    // Calculate gold weight if scheme type is weight OR flexi/flexible (as users often want to see est. weight)
+    const schemeType = selectedScheme?.SCHEMETYPE?.toLowerCase() || "";
+    if (schemeType === "weight" || schemeType.includes("flexi") || schemeType.includes("flexible")) {
       calculateGoldWeight(cleanedAmount);
     } else {
       setCalculatedGoldWeight(null);
@@ -2086,20 +1925,64 @@ export default function Home() {
       schemeId: selectedScheme.SCHEMEID,
       schemeName: selectedScheme.SCHEMENAME,
       chits: selectedScheme.chits?.length || 0,
+      amount: quickJoinFormData.amount
     });
 
     setIsSubmittingQuickJoin(true);
 
     try {
-      // Get the first active chit for the scheme
-      const activeChit = selectedScheme.chits?.find(
-        (chit: any) => chit.ACTIVE === "Y"
-      );
+      const enteredAmount = parseFloat(quickJoinFormData.amount.replace(/,/g, ""));
+      const schemeType = selectedScheme.SCHEMETYPE?.toLowerCase() || "";
+      const isFlexi = schemeType.includes("flexi") || schemeType.includes("flexible");
+      const isWeight = schemeType === "weight";
+      
+      let activeChit: any = null;
+
+      // Filter active chits
+      const activeChits = selectedScheme.chits?.filter((chit: any) => chit.ACTIVE === "Y") || [];
+
+      if (activeChits.length === 0) {
+        throw new Error("No active payment plan found for this scheme");
+      }
+
+      // Check if chits have specific fixed amounts
+      // If all active chits have 0 amount, treat it as a Flexi scheme regardless of SCHEMETYPE
+      const hasFixedAmounts = activeChits.some((chit: any) => parseFloat(chit.AMOUNT || "0") > 0);
+
+      if (isFlexi || !hasFixedAmounts) {
+        // For Flexi schemes OR schemes with no fixed amount (effectively Flexi):
+        // 1. Try to find a chit explicitly named 'Flexi' or 'Flexible'
+        // 2. Fallback to the first active chit
+        activeChit = activeChits.find((chit: any) => {
+            const freq = (chit.PAYMENT_FREQUENCY || "").toLowerCase();
+            return freq.includes("flexi") || freq.includes("flexible");
+        }) || activeChits[0];
+
+        // Limits are already validated in validateQuickJoinForm via schemeAmountLimits
+      } else if (isWeight) {
+         // Handling weight schemes - usually they act like Flexi but in grams/money conversion
+         // For now, selecting the first active chit is standard unless specific logic needed
+          activeChit = activeChits[0];
+      } else {
+        // For Fixed Schemes (Daily, Weekly, Monthly, Fixed) where amounts are defined:
+        // The entered amount MUST strictly match one of the active chits' AMOUNT
+        activeChit = activeChits.find((chit: any) => {
+           const chitAmount = parseFloat(chit.AMOUNT || "0");
+           return chitAmount === enteredAmount;
+        });
+
+        if (!activeChit) {
+           // Provide a helpful error message listing available amounts
+           const availableAmounts = activeChits
+             .map((c: any) => `₹${parseFloat(c.AMOUNT).toLocaleString('en-IN')}`)
+             .join(", ");
+           
+           throw new Error(`Invalid amount. For this scheme, please choose one of: ${availableAmounts}`);
+        }
+      }
 
       if (!activeChit) {
-        Alert.alert("Error", "No active payment plan found for this scheme");
-        setIsSubmittingQuickJoin(false);
-        return;
+        throw new Error("Unable to select a valid plan for the entered amount.");
       }
 
       // Get branch ID (use selected branch or first available)
@@ -2154,7 +2037,7 @@ export default function Home() {
 
       // Extract all values from selectedScheme and activeChit before clearing
       const schemeId = Number(selectedScheme.SCHEMEID);
-      const schemeType = selectedScheme.SCHEMETYPE?.toLowerCase() || "weight";
+      const selectedSchemeType = selectedScheme.SCHEMETYPE?.toLowerCase() || "weight";
       const chitId = activeChit.CHITID || null;
       const paymentFrequency = activeChit.PAYMENT_FREQUENCY || "";
 
@@ -2178,7 +2061,7 @@ export default function Home() {
         userId: user?.id || "",
         investmentId: investmentId,
         schemeId: schemeId,
-        schemeType: schemeType,
+        schemeType: selectedSchemeType,
         schemeName: schemeName,
         paymentFrequency: paymentFrequency,
         chitId: chitId,
@@ -2205,7 +2088,7 @@ export default function Home() {
             userId: user?.id || "",
             investmentId: investmentId,
             schemeId: schemeId,
-            schemeType: schemeType,
+            schemeType: selectedSchemeType,
             paymentFrequency: paymentFrequency,
             chitId: chitId,
           };
@@ -2259,7 +2142,7 @@ export default function Home() {
           schemeId: String(schemeId),
           chitId: chitId ? String(chitId) : "",
           paymentFrequency: paymentFrequency,
-          schemeType: schemeType,
+          schemeType: selectedSchemeType,
           userDetails: userDetailsString,
         },
       });
@@ -2283,61 +2166,59 @@ export default function Home() {
   const renderStatusItem = useCallback(
     ({ item }: { item: Collection }) => (
       <TouchableOpacity
-        style={styles.statusItem}
+        style={styles.collectionCardContainer}
+        activeOpacity={0.85}
         onPress={() => {
-          if (__DEV__) {
-            logger.log("🔍 Home: Status item pressed:", item.name);
-            logger.log("🔍 Home: Item thumbnail type:", typeof item.thumbnail);
-            logger.log(
-              "🔍 Home: Item status_images count:",
-              item.status_images?.length
-            );
-          }
           setSelectedCollection(item);
           setShowStatus(true);
         }}
       >
-        <View style={styles.statusItemWrapper}>
-          <View
-            style={[
-              styles.statusImageContainer,
-              {
-                borderColor: viewedCollections[item.id]
-                  ? theme.colors.primary
-                  : theme.colors.primary,
-              }, // Use theme primary color for both states
-            ]}
-          >
+        <LinearGradient
+          colors={['#BF953F', '#FCF6BA', '#B38728', '#FBF5B7', '#AA771C']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={collectionStyles.cardBorder}
+        >
+          <View style={collectionStyles.cardInner}>
             <Image
               source={getImageSource(item.thumbnail) ?? undefined}
-              style={styles.statusImage}
+              style={collectionStyles.image}
               resizeMode="cover"
-              onError={(e) => {
-                logger.error(
-                  "Collection thumbnail failed to load:",
-                  getImageSource(item.thumbnail),
-                  e.nativeEvent
-                );
-              }}
             />
+            {/* Dark Gradient Overlay for text readability */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.95)']}
+              locations={[0, 0.5, 0.8, 1]}
+              style={collectionStyles.gradientOverlay}
+            />
+            
+            {/* Top Right "View" Indicator */}
+            <View style={collectionStyles.topBadge}>
+               <Ionicons name="sparkles" size={10} color="#5D4037" />
+               <Text style={collectionStyles.topBadgeText}>NEW</Text>
+            </View>
+
+            {/* Bottom Content Area */}
+            <View style={collectionStyles.bottomContent}>
+              <Text style={collectionStyles.collectionName} numberOfLines={1}>
+                {item.name}
+              </Text>
+              
+              <View style={collectionStyles.statsRow}>
+                <View style={collectionStyles.countBadge}>
+                  <Ionicons name="images-outline" size={10} color="#FFD700" />
+                  <Text style={collectionStyles.countText}>{item.status_images?.length || 0} Designs</Text>
+                </View>
+                <TouchableOpacity style={collectionStyles.arrowBtn}>
+                  <Ionicons name="arrow-forward" size={12} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-          <ResponsiveText
-            variant="caption"
-            size="xs"
-            color={theme.colors.primary}
-            align="center"
-            allowWrap={false}
-            maxLines={1}
-            adjustsFontSizeToFit={true}
-            minimumFontScale={0.7}
-            style={styles.statusItemName}
-          >
-            {item.name}
-          </ResponsiveText>
-        </View>
+        </LinearGradient>
       </TouchableOpacity>
     ),
-    [getImageSource, viewedCollections]
+    [getImageSource]
   );
 
   // Show skeleton loading screen while data is being fetched
@@ -2744,25 +2625,29 @@ export default function Home() {
             {/* Collections Section - Conditionally rendered based on API */}
             {isVisible("showCollection") && (
               <View style={styles.statusContainer}>
-                <View style={styles.statusHeader}>
-                  <View style={styles.statusHeaderLine} />
-                  <Text style={styles.statusHeaderText}>
-                    {t("activeCollections")}
-                  </Text>
-                  <View style={styles.statusHeaderLine} />
+                {/* Active Collections Section */}
+                <View style={styles.collectionContainer}>
+                  <View style={styles.collectionHeader}>
+                    <Text style={styles.collectionHeaderTitle}>
+                      {t("activeCollections")}
+                    </Text>
+                    {/* <TouchableOpacity>
+                      <Text style={collectionStyles.seeAllText}>{t("seeAll")}</Text>
+                    </TouchableOpacity> */}
+                  </View>
+                  <FlatList
+                    data={collectionsData}
+                    renderItem={renderStatusItem}
+                    keyExtractor={(item) => item.id.toString()}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.collectionListContent}
+                    removeClippedSubviews={true}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    initialNumToRender={5}
+                  />
                 </View>
-                <FlatList
-                  data={collectionsData}
-                  renderItem={renderStatusItem}
-                  keyExtractor={(item) => item.id.toString()}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.statusListContent}
-                  removeClippedSubviews={true}
-                  maxToRenderPerBatch={10}
-                  windowSize={5}
-                  initialNumToRender={10}
-                />
               </View>
             )}
 
@@ -3001,7 +2886,7 @@ export default function Home() {
                         });
                       }
                     }}
-                    onInfoPress={handleSchemeInfoPress}
+                    onQuickJoinPress={initiateQuickJoin}
                     showDots={false}
                     visibilityFlags={{
                       showFlexiScheme: isVisible("showFlexiScheme"),
@@ -3120,7 +3005,19 @@ export default function Home() {
 
               {/* YouTube Video - Conditionally rendered based on API */}
               {isVisible("showYoutube") && (
-                <YouTubeVideo videos={homeData?.data?.videos} />
+                <YouTubeVideo
+                  videos={homeData?.data?.videos}
+                  onQuickJoinPress={() => {
+                    if (schemes && schemes.length > 0) {
+                      initiateQuickJoin(schemes[0]);
+                    } else {
+                      Alert.alert(
+                        t("error"),
+                        t("schemes.noSchemesAvailable") || "No schemes available"
+                      );
+                    }
+                  }}
+                />
               )}
 
               {/* Social Media Card - Conditionally rendered based on API */}
@@ -3162,6 +3059,7 @@ export default function Home() {
 
               <View style={styles.spacer} />
             </View>
+
           </ScrollView>
 
           <StatusView
@@ -3177,6 +3075,32 @@ export default function Home() {
               return 0;
             })()}
             onClose={handleStatusClose}
+            onEnquire={(collection, imgIndex) => {
+               Alert.alert(
+                 t("connectOnWhatsApp") || "Connect on WhatsApp",
+                 t("connectWhatsAppDesc") || "Do you want to enquire about this design via WhatsApp?",
+                 [
+                   {
+                     text: t("cancel") || "Cancel",
+                     style: "cancel"
+                   },
+                   {
+                     text: t("continue") || "Continue",
+                     onPress: () => {
+                       // Try to get support number from homeData or fallback
+                       // safely cast to any to avoid type error if interface is incomplete
+                       const supportNumber = theme.constants.whatsappNumber || "+919061803999"; 
+                       const message = `Hello, I am interested in the collection "${collection.name}" (Design #${imgIndex + 1}). Can you share more details?`;
+                       const url = `whatsapp://send?text=${encodeURIComponent(message)}&phone=${supportNumber}`;
+                       
+                       Linking.openURL(url).catch(() => {
+                         Linking.openURL(`https://wa.me/${supportNumber}?text=${encodeURIComponent(message)}`);
+                       });
+                     }
+                   }
+                 ]
+               );
+            }}
           />
           {/* Floating Chat Button - Conditionally rendered based on API */}
           {isVisible("showLiveChatBox") && <FloatingChatButton />}
@@ -3389,7 +3313,7 @@ export default function Home() {
             </View>
           </Modal>
 
-          {/* Quick Join Modal */}
+          {/* Quick Join Modal - Pro Design */}
           <Modal
             visible={quickJoinModalVisible}
             transparent={true}
@@ -3399,9 +3323,17 @@ export default function Home() {
             <KeyboardAvoidingView
               behavior={Platform.OS === "ios" ? "padding" : "height"}
               style={styles2.modalOverlay}
+              keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
             >
+               {/* Dismiss on backdrop press */}
+               <TouchableOpacity 
+                  style={styles2.modalBackdrop} 
+                  activeOpacity={1} 
+                  onPress={() => setQuickJoinModalVisible(false)}
+               />
+
               <View style={styles2.modalContainer}>
-                {/* Header */}
+                {/* Modern Header */}
                 <View style={styles2.header}>
                   <View style={styles2.headerContent}>
                     <Text style={styles2.title}>
@@ -3419,7 +3351,9 @@ export default function Home() {
                     }}
                     style={styles2.closeButton}
                   >
-                    <Ionicons name="close" size={22} color={theme.colors.textPrimary} />
+                     <View style={styles2.closeButtonContainer}>
+                        <Ionicons name="close" size={20} color={COLORS.dark} />
+                     </View>
                   </TouchableOpacity>
                 </View>
 
@@ -3429,19 +3363,14 @@ export default function Home() {
                   showsVerticalScrollIndicator={false}
                   keyboardShouldPersistTaps="handled"
                 >
-                  {/* Name Input */}
+                  {/* Name Input - Floating Label Style */}
                   <View style={styles2.inputSection}>
-                    <View style={styles2.inputHeader}>
-                      <Text style={styles2.inputLabel}>
-                        {t("name") || "Full Name"}
-                      </Text>
-                      <Text style={styles2.required}>*</Text>
-                    </View>
+                    <Text style={styles2.inputLabel}>{t("name") || "Full Name"}</Text>
                     <View style={[
                       styles2.inputContainer,
                       quickJoinErrors.name && styles2.inputError
                     ]}>
-                      <Ionicons name="person" size={20} color={COLORS.mediumGrey} />
+                      <Ionicons name="person-outline" size={20} color={COLORS.mediumGrey} />
                       <TextInput
                         style={styles2.textInput}
                         value={quickJoinFormData.name}
@@ -3453,74 +3382,67 @@ export default function Home() {
                       />
                     </View>
                     {quickJoinErrors.name && (
-                      <View style={styles2.errorContainer}>
-                        <Ionicons name="warning" size={14} color={COLORS.error} />
-                        <Text style={styles2.errorText}>{quickJoinErrors.name}</Text>
-                      </View>
+                      <Text style={styles2.errorText}>{quickJoinErrors.name}</Text>
                     )}
                   </View>
 
                   {/* Amount Input */}
                   <View style={styles2.inputSection}>
-                    <View style={styles2.inputHeader}>
-                      <Text style={styles2.inputLabel}>
-                        {t("amount") || "Investment Amount"}
-                      </Text>
-                      <Text style={styles2.required}>*</Text>
-                    </View>
-
-                    {schemeAmountLimits && (
-                      <View style={styles2.amountHint}>
-                        <Ionicons name="information-circle" size={14} color={theme.colors.primary} />
-                        <Text style={styles2.amountHintText}>
-                          Min: ₹{schemeAmountLimits.min_amount.toLocaleString("en-IN")} • Max: ₹{schemeAmountLimits.max_amount.toLocaleString("en-IN")}
-                        </Text>
-                      </View>
-                    )}
+                     <View style={styles2.amountHeader}>
+                        <Text style={styles2.inputLabel}>{t("amount") || "Investment Amount"}</Text>
+                        {schemeAmountLimits && (
+                            <Text style={styles2.limitText}>
+                              {t('min') || 'Min'} ₹{schemeAmountLimits.min_amount} - {t('max') || 'Max'} ₹{schemeAmountLimits.max_amount}
+                            </Text>
+                        )}
+                     </View>
 
                     <View style={[
                       styles2.inputContainer,
                       quickJoinErrors.amount && styles2.inputError
                     ]}>
-                      <Ionicons name="wallet" size={20} color={COLORS.mediumGrey} />
+                      <Text style={styles2.currencySymbol}>₹</Text>
                       <TextInput
                         style={styles2.textInput}
                         value={quickJoinFormData.amount}
                         onChangeText={handleQuickJoinAmountChange}
-                        placeholder={t("enterAmount") || "Enter investment amount"}
+                        placeholder={t("enterAmount") || "Enter amount"}
                         placeholderTextColor={COLORS.mediumGrey}
                         keyboardType="numeric"
                       />
-                      <Text style={styles2.currencySymbol}>₹</Text>
                     </View>
-                    {quickJoinErrors.amount && (
-                      <View style={styles2.errorContainer}>
-                        <Ionicons name="warning-outline" size={14} color={COLORS.error} />
-                        <Text style={styles2.errorText}>{quickJoinErrors.amount}</Text>
-                      </View>
-                    )}
+                     {quickJoinErrors.amount && (
+                      <Text style={styles2.errorText}>{quickJoinErrors.amount}</Text>
+                     )}
                   </View>
 
-                  {/* Gold Weight Display */}
+                  {/* Gold Weight Display - Gradient Card */}
                   {selectedScheme?.savingType === 'weight' && (
-                    <View style={styles2.goldWeightCard}>
-                      <View style={styles2.goldWeightHeader}>
-                        <Ionicons name="cube-outline" size={20} color={COLORS.warning} />
-                        <Text style={styles2.goldWeightLabel}>
-                          {t("estimatedGoldWeight") || "Estimated Gold Weight"}
+                     <LinearGradient 
+                        colors={['#FFF9E6', '#FFF']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles2.goldWeightCard}
+                     >
+                        <View style={styles2.goldWeightHeader}>
+                            <View style={styles2.goldIconBg}>
+                                <Ionicons name="scale" size={18} color="#B8860B" />
+                            </View>
+                            <Text style={styles2.goldWeightLabel}>
+                            {t("estimatedGoldWeight") || "Est. Gold Weight"}
+                            </Text>
+                        </View>
+                        <Text style={styles2.goldWeightValue}>
+                            {formatGoldWeight(Number(quickJoinFormData.amount) / Number(homeData?.data?.currentRates?.gold_rate || 0))}
                         </Text>
-                      </View>
-                      <Text style={styles2.goldWeightValue}>
-                        {formatGoldWeight(Number(quickJoinFormData.amount) / Number(homeData?.data?.currentRates?.gold_rate || 0))}
-                      </Text>
-                    </View>
+                     </LinearGradient>
                   )}
 
-                  {/* Quick Select Amount Buttons */}
+                  {/* Quick Select Amount Pills */}
                   {(schemeAmountLimits?.quickselectedamount?.length ?? 0) > 0 && (
                     <View style={styles2.quickSelectSection}>
                       <Text style={styles2.quickSelectLabel}>
-                        {t("quickSelect") || "Quick Select Amount"}
+                        {t("quickSelect") || "Quick Select"}
                       </Text>
                       <View style={styles2.quickSelectGrid}>
                         {schemeAmountLimits?.quickselectedamount
@@ -3548,9 +3470,12 @@ export default function Home() {
                       </View>
                     </View>
                   )}
+                  
+                  {/* Spacing for keyboard */}
+                  <View style={{ height: 100 }} />
                 </ScrollView>
 
-                {/* Submit Button */}
+                {/* Footer */}
                 <View style={styles2.footer}>
                   <TouchableOpacity
                     style={[
@@ -3565,27 +3490,20 @@ export default function Home() {
                       colors={
                         isSubmittingQuickJoin
                           ? [COLORS.mediumGrey, COLORS.mediumGrey]
-                          : [theme.colors.primary, theme.colors.bgPrimaryHeavy]
+                          : [theme.colors.secondary, theme.colors.primary] // Gold to Primary
                       }
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       style={styles2.submitGradient}
                     >
                       {isSubmittingQuickJoin ? (
-                        <View style={styles2.loadingContainer}>
                           <ActivityIndicator size="small" color={COLORS.white} />
-                          <Text style={styles2.submitButtonText}>
-                            {t("submitting") || "Processing..."}
-                          </Text>
-                        </View>
                       ) : (
-                        <View style={styles2.submitContent}>
                           <Text style={styles2.submitButtonText}>
-                            {t("submit") || "Join Scheme"}
+                            {t("joinNow") || "Join Now"}
                           </Text>
-                          <Ionicons name="arrow-forward" size={20} color={COLORS.white} />
-                        </View>
                       )}
+                       {!isSubmittingQuickJoin && <Ionicons name="arrow-forward" size={20} color={COLORS.white} />}
                     </LinearGradient>
                   </TouchableOpacity>
                 </View>
@@ -3728,10 +3646,10 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    alignItems: "stretch", // Changed from "center" to "stretch" for edge-to-edge
-    paddingVertical: rp(10),
-    paddingTop: rp(5),
-    paddingBottom: rp(80), // Add bottom padding to prevent overlap with tab bar (60px tab bar + 20px safe area)
+    alignItems: "stretch",
+    paddingVertical: rp(20), // Increased padding
+    paddingTop: rp(10),
+    paddingBottom: rp(90),
     zIndex: 1,
     elevation: 1,
   },
@@ -3836,190 +3754,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
-  userInfoCard: {
-    width: wp(90),
-    borderRadius: borderRadius.large,
-    marginVertical: spacing.sm,
-    overflow: "hidden",
-    ...SHADOW_UTILS.card(),
-  },
-  userInfoGradient: {
-    padding: spacing.lg,
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: 120,
-  },
-  userInfoTopRow: {
-    ...commonStyles.row,
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-    marginBottom: spacing.md,
-  },
-  welcomeContainer: {
-    flex: 1,
-  },
-  welcomeText: {
-    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
-    color: "rgba(255, 255, 255, 0.7)",
-    marginBottom: spacing.xs,
-  },
-  userName: {
-    fontSize: rf(18, { minSize: 16, maxSize: 22 }),
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  userIdText: {
-    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
-    fontWeight: "400",
-    color: "rgba(255, 255, 255, 0.7)",
-    marginLeft: spacing.sm,
-  },
-  userAvatarContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 10,
-  },
-  userAvatar: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 20,
-  },
-  expandCollopse: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 10,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
-  },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "rgba(183, 234, 18, 0.2)",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: spacing.md,
-    width: "100%",
-  },
-  statsContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-    justifyContent: "space-between",
-  },
-  statItem: {
-    flex: 1,
-    alignItems: "center",
-    minWidth: 80,
-  },
-  statLabel: {
-    fontSize: moderateScale(10),
-    color: "rgba(255, 255, 255, 0.7)",
-    marginBottom: 2,
-    textAlign: "center",
-  },
-  statValue: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  countText: {
-    fontSize: moderateScale(14),
-    fontWeight: "bold",
-    color: "#FFFFFF",
-  },
-  unitText: {
-    fontSize: moderateScale(12),
-    color: "#FFD700",
-    fontWeight: "600",
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-  },
-  viewMoreContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginLeft: 12,
-  },
-  viewMoreText: {
-    fontSize: moderateScale(11),
-    color: "#FFD700",
-    fontWeight: "600",
-  },
-  statusContainer: {
-    width: "100%",
-    marginVertical: spacing.sm,
-    marginTop: spacing.md,
-  },
-  statusHeader: {
-    ...commonStyles.row,
-    alignItems: "center",
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.xs,
-  },
-  statusHeaderLine: {
-    flex: 1,
-    height: 1.5,
-    backgroundColor: theme.colors.primary,
-    marginHorizontal: spacing.xs,
-  },
-  statusHeaderText: {
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
-    fontWeight: "700",
-    color: theme.colors.primary,
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-    textAlign: "center",
-  },
-  statusListContent: {
-    paddingHorizontal: spacing.sm,
-  },
-  statusItem: {
-    marginHorizontal: spacing.xs,
-    ...commonStyles.center,
-  },
-  statusItemWrapper: {
-    ...commonStyles.center,
-  },
-  statusImageContainer: {
-    width: rp(70),
-    height: rp(70),
-    borderRadius: rp(35),
-    borderWidth: 2,
-    borderColor: theme.colors.primary,
-    padding: spacing.xs,
-    backgroundColor: COLORS.white,
-    marginBottom: spacing.xs,
-    ...SHADOW_UTILS.avatar(),
-  },
-  statusImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: rp(33),
-  },
-  statusItemName: {
-    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
-    color: theme.colors.primary,
-    textAlign: "center",
-    width: rp(70),
-    fontWeight: "600",
-    textShadowColor: COLORS.overlayLight,
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
-  },
+
   headerLanguageButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -4047,11 +3782,36 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginVertical: 10,
   },
+  statusContainer: {
+    width: "100%",
+    marginVertical: spacing.sm,
+    marginTop: spacing.md,
+  },
+  statusHeader: {
+    ...commonStyles.row,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.sm,
+  },
+  statusHeaderLine: {
+    display: 'none', // Hide lines for cleaner look
+  },
+  statusHeaderText: {
+    fontSize: rf(18, { minSize: 16, maxSize: 20 }),
+    fontWeight: "800",
+    color: theme.colors.primary,
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
+    textAlign: "center",
+  },
+
   sectionHeader: {
     width: "100%",
-    paddingHorizontal: 10,
-    marginTop: 20,
-    marginBottom: 12,
+    paddingHorizontal: 20,
+    marginTop: 30,
+    marginBottom: 20,
     alignItems: "center",
   },
   sectionHeaderContent: {
@@ -4061,27 +3821,58 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   sectionHeaderLine: {
-    height: 1.5,
-    width: 20,
-    backgroundColor: COLORS.secondary,
-    marginHorizontal: 5,
+    height: 1,
+    width: 40,
+    backgroundColor: theme.colors.secondary, // Thinner, wider lines
+    marginHorizontal: 15,
+    opacity: 0.6
   },
   sectionHeaderText: {
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(18),
     fontWeight: "700",
-    color: COLORS.error,
+    color: theme.colors.primary,
     textTransform: "uppercase",
-    letterSpacing: 0.3,
-    textShadowColor: COLORS.overlay,
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
+    letterSpacing: 1.2,
   },
   sectionHeaderSubtext: {
-    fontSize: moderateScale(11),
+    fontSize: moderateScale(12),
     color: COLORS.mediumGrey,
-    marginTop: 4,
+    marginTop: 6,
     textAlign: "center",
-    fontStyle: "italic",
+    fontWeight: '500',
+    letterSpacing: 0.5
+  },
+  // Collection Styles Added via Implementation Plan
+  collectionContainer: {
+    marginBottom: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  collectionHeader: {
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  collectionHeaderTitle: {
+    fontSize: rf(18),
+    fontWeight: '700',
+    color: theme.colors.primary,
+    letterSpacing: 0.5,
+  },
+  collectionListContent: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  collectionCardContainer: {
+    marginRight: spacing.md,
+    borderRadius: borderRadius.medium,
+    overflow: 'hidden',
+    backgroundColor: COLORS.white,
+    ...SHADOW_UTILS.card(),
+    width: 140, // Fixed width for horizontal scroll items
+    height: 140,
+    elevation: 4,
   },
   videoContainer: {
     width: "100%",
@@ -4697,51 +4488,68 @@ const styles = StyleSheet.create({
   },
   schemeInfoModalFooter: {
     flexDirection: "row",
-    paddingHorizontal: rp(20),
-    paddingVertical: rp(16),
-    paddingBottom: rp(20),
-    gap: rp(12),
+    paddingHorizontal: rp(24),
+    paddingVertical: rp(20),
+    paddingBottom: Platform.OS === 'ios' ? rp(34) : rp(24),
+    gap: rp(16),
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.border?.primary || "#e5e5e5",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 10,
   },
   quickJoinButton: {
     flex: 1,
-    borderRadius: borderRadius.medium,
+    borderRadius: 14,
     overflow: "hidden",
-    ...SHADOW_UTILS.button(),
+    shadowColor: theme.colors.secondary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   quickJoinButtonGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: rp(14),
+    paddingVertical: rp(16),
     paddingHorizontal: rp(16),
     gap: rp(8),
+    height: 56,
   },
   quickJoinButtonText: {
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+    fontSize: rf(15, { minSize: 14, maxSize: 17 }),
     fontWeight: "700",
     color: COLORS.dark,
+    letterSpacing: 0.3,
   },
   joinSchemesButton: {
-    flex: 1,
-    borderRadius: borderRadius.medium,
+    flex: 1.2, // Give slightly more weight to the primary action if needed, or keep equal. Let's try balanced.
+    borderRadius: 14,
     overflow: "hidden",
-    ...SHADOW_UTILS.button(),
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   joinSchemesButtonGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: rp(14),
+    paddingVertical: rp(16),
     paddingHorizontal: rp(16),
     gap: rp(8),
+    height: 56,
   },
   joinSchemesButtonText: {
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+    fontSize: rf(15, { minSize: 14, maxSize: 17 }),
     fontWeight: "700",
     color: COLORS.white,
+    letterSpacing: 0.3,
   },
   // Quick Join Modal Styles
   quickJoinModalOverlay: {
@@ -4840,31 +4648,42 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
   },
   quickJoinModalFooter: {
-    paddingHorizontal: rp(20),
-    paddingVertical: rp(16),
+    paddingHorizontal: rp(24),
+    paddingVertical: rp(20),
+    paddingBottom: Platform.OS === 'ios' ? rp(34) : rp(24),
     borderTopWidth: 1,
     borderTopColor: COLORS.border?.primary || "#e5e5e5",
+    backgroundColor: COLORS.white,
   },
   quickJoinSubmitButton: {
-    borderRadius: borderRadius.medium,
+    borderRadius: 14,
     overflow: "hidden",
-    ...SHADOW_UTILS.button(),
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   quickJoinSubmitButtonDisabled: {
     opacity: 0.6,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   quickJoinSubmitButtonGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: rp(14),
+    paddingVertical: rp(16),
     paddingHorizontal: rp(16),
     gap: rp(8),
+    height: 56,
   },
   quickJoinSubmitButtonText: {
     fontSize: rf(16, { minSize: 14, maxSize: 18 }),
     fontWeight: "700",
     color: COLORS.white,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   quickJoinInputHint: {
     fontSize: rf(12, { minSize: 10, maxSize: 14 }),
@@ -4906,6 +4725,7 @@ const styles = StyleSheet.create({
   quickJoinQuickAmountButtonTextActive: {
     color: COLORS.white,
   },
+
 });
 // Skeleton loading styles
 const skeletonStyles = StyleSheet.create({
@@ -4926,50 +4746,64 @@ const skeletonStyles = StyleSheet.create({
 const styles2 = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   modalContainer: {
-    flex: 1,
-    marginTop: 60,
+    height: '85%',
     backgroundColor: COLORS.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
+    shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowRadius: 10,
+    elevation: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 20,
+    alignItems: 'center',
+    paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.primary,
-    backgroundColor: theme.colors.primary,
+    borderBottomColor: '#F0F0F0',
+    backgroundColor: COLORS.white,
   },
   headerContent: {
     flex: 1,
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-    marginBottom: 4,
+    fontWeight: '800',
+    color: COLORS.text.dark,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
-    color: theme.colors.textPrimary,
+    color: COLORS.text.mediumGrey,
+    marginTop: 4,
+    fontWeight: '500',
   },
   closeButton: {
-    padding: 4,
-    marginLeft: 10,
+    marginLeft: 16,
+  },
+  closeButtonContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,
@@ -5006,13 +4840,24 @@ const styles2 = StyleSheet.create({
     color: theme.colors.primary,
     marginLeft: 4,
   },
+  amountHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  limitText: {
+    fontSize: 12,
+    color: theme.colors.primary,
+    fontWeight: '600',
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.bgWhiteLight,
+    backgroundColor: '#FAFAFA',
     borderWidth: 1,
-    borderColor: theme.colors.borderGoldMedium,
-    borderRadius: 12,
+    borderColor: '#EFEFEF',
+    borderRadius: 14,
     paddingHorizontal: 16,
     height: 56,
   },
@@ -5043,12 +4888,20 @@ const styles2 = StyleSheet.create({
     marginLeft: 4,
   },
   goldWeightCard: {
-    backgroundColor: theme.colors.bgWhiteLight,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.warning,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  goldIconBg: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
   },
   goldWeightHeader: {
     flexDirection: 'row',
@@ -5061,9 +4914,10 @@ const styles2 = StyleSheet.create({
     marginLeft: 8,
   },
   goldWeightValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.darkGrey,
+    fontSize: 24,
+    fontWeight: '800',
+    color: COLORS.text.dark,
+    letterSpacing: 0.5,
   },
   quickSelectSection: {
     marginBottom: 20,
@@ -5077,16 +4931,15 @@ const styles2 = StyleSheet.create({
   quickSelectGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
   quickAmountButton: {
     backgroundColor: theme.colors.bgWhiteLight,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 30, // Pill shape
     borderWidth: 1,
-    borderColor: COLORS.lightGrey,
-    minWidth: 100,
+    borderColor: '#E0E0E0',
   },
   quickAmountButtonActive: {
     backgroundColor: theme.colors.primary + '15',
@@ -5103,20 +4956,18 @@ const styles2 = StyleSheet.create({
     fontWeight: '600',
   },
   footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: rp(24),
+    paddingVertical: rp(20),
+    paddingBottom: Platform.OS === 'ios' ? rp(34) : rp(24),
     borderTopWidth: 1,
-    borderTopColor: COLORS.lightGrey,
+    borderTopColor: COLORS.border?.primary || "#e5e5e5",
     backgroundColor: COLORS.white,
   },
   submitButton: {
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
     shadowColor: theme.colors.primary,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
@@ -5124,10 +4975,16 @@ const styles2 = StyleSheet.create({
   submitButtonDisabled: {
     shadowOpacity: 0,
     elevation: 0,
+    opacity: 0.6,
   },
   submitGradient: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: rp(16),
+    paddingHorizontal: rp(16),
+    height: 56,
+    gap: rp(8),
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -5142,8 +4999,10 @@ const styles2 = StyleSheet.create({
     gap: 8,
   },
   submitButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+    fontWeight: '700',
     color: COLORS.white,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
 });

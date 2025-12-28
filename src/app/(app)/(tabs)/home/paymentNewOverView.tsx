@@ -56,10 +56,10 @@ export default function PaymentNewOverView() {
   const [maxAmount, setMaxAmount] = useState(100000); // Default fallback
   // Scheme calculation slider state
 
-  const [isUserDetailsExpanded, setIsUserDetailsExpanded] = useState(false);
-  const userDetailsHeight = useRef(new Animated.Value(0)).current;
-  const [isSchemeDetailsExpanded, setIsSchemeDetailsExpanded] = useState(false);
-  const schemeDetailsHeight = useRef(new Animated.Value(0)).current;
+  const [isUserDetailsExpanded, setIsUserDetailsExpanded] = useState(true);
+  const userDetailsHeight = useRef(new Animated.Value(1)).current;
+  const [isSchemeDetailsExpanded, setIsSchemeDetailsExpanded] = useState(true);
+  const schemeDetailsHeight = useRef(new Animated.Value(1)).current;
 
   // Check if it's first payment based on paid payment count from params
   const isFirstPayment = useMemo(() => {
@@ -971,12 +971,44 @@ export default function PaymentNewOverView() {
               {
                 maxHeight: schemeDetailsHeight.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0, 200],
+                  outputRange: [0, 400], // Increased height for more details
                 }),
                 opacity: schemeDetailsHeight,
               },
             ]}
           >
+            <View style={styles.schemeDetailsRow}>
+              <Text style={styles.schemeDetailLabel}>{t("accountNo")}:</Text>
+              <Text style={styles.schemeDetailValue}>
+                {params.accNo ? `DCJ-${params.accNo}` : (userDetails?.accNo || "N/A")}
+              </Text>
+            </View>
+
+            {params.maturityDate && (
+              <View style={styles.schemeDetailsRow}>
+                <Text style={styles.schemeDetailLabel}>{t("maturityDate")}:</Text>
+                <Text style={styles.schemeDetailValue}>{params.maturityDate}</Text>
+              </View>
+            )}
+
+            {params.noOfIns && (
+              <View style={styles.schemeDetailsRow}>
+                <Text style={styles.schemeDetailLabel}>{t("installmentProgress")}:</Text>
+                <Text style={styles.schemeDetailValue}>
+                  {params.paidPaymentCount || 0}/{params.noOfIns}
+                </Text>
+              </View>
+            )}
+
+            {params.totalPaid && (
+              <View style={styles.schemeDetailsRow}>
+                <Text style={styles.schemeDetailLabel}>{t("totalPaid")}:</Text>
+                <Text style={styles.schemeDetailValue}>
+                  ₹{Number(params.totalPaid).toLocaleString("en-IN")}
+                </Text>
+              </View>
+            )}
+
             <View style={styles.schemeDetailsRow}>
               <Text style={styles.schemeDetailLabel}>{t("schemeType")}:</Text>
               <Text style={styles.schemeDetailValue}>
@@ -1109,14 +1141,16 @@ const styles = StyleSheet.create({
   },
   amountCard: {
     backgroundColor: theme.colors.primary,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 20,
     shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   amountHeader: {
     flexDirection: "row",
@@ -1125,10 +1159,12 @@ const styles = StyleSheet.create({
   },
   amountTitle: {
     fontSize: 16,
-    color: theme.colors.secondary,
-    marginLeft: 8,
+    color: theme.colors.secondary, // Keep gold for title or change to white if preferred
+    marginLeft: 12,
     fontWeight: "600",
     flex: 1,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   amountAdjustmentContainer: {
     flexDirection: "row",
@@ -1146,16 +1182,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   amountValue: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: theme.colors.secondary,
+    fontSize: 42,
+    fontWeight: "800",
+    color: theme.colors.white,
     textAlign: "center",
+    fontVariant: ["tabular-nums"],
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   weightText: {
     fontSize: 14,
     color: theme.colors.secondary,
-    marginTop: 4,
+    marginTop: 8,
     opacity: 0.9,
+    fontWeight: "500",
   },
   quickAdjustButtons: {
     flexDirection: "row",
@@ -1281,9 +1322,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   payButtonText: {
-    color: theme.colors.secondary,
+    color: theme.colors.white,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
+    letterSpacing: 0.5,
   },
   modalOverlay: {
     flex: 1,
@@ -1340,24 +1382,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   acceptButtonText: {
-    color: theme.colors.secondary,
+    color: theme.colors.white, // Ensure white text on primary button
     fontSize: 16,
     fontWeight: "600",
   },
   editButton: {
-    padding: 4,
+    padding: 8,
     marginLeft: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 20,
   },
   amountInput: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: "bold",
-    color: theme.colors.secondary,
+    color: theme.colors.white,
     textAlign: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minWidth: 200,
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minWidth: 160,
+    borderWidth: 1,
+    borderColor: theme.colors.secondary,
   },
   errorText: {
     fontSize: 12,
@@ -1371,16 +1417,16 @@ const styles = StyleSheet.create({
   },
   userDetailsCard: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: "#e5e5e5",
+    borderColor: "rgba(0,0,0,0.05)",
   },
   userDetailsRow: {
     flexDirection: "row",
@@ -1400,16 +1446,16 @@ const styles = StyleSheet.create({
   },
   schemeDetailsCard: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: "#e5e5e5",
+    borderColor: "rgba(0,0,0,0.05)",
   },
   schemeDetailsRow: {
     flexDirection: "row",
@@ -1461,9 +1507,10 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   paymentButtonText: {
-    color: theme.colors.secondary,
+    color: theme.colors.white,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
+    letterSpacing: 0.5,
   },
   fixedBottomCard: {
     position: "absolute",
@@ -1513,9 +1560,10 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   bottomPaymentButtonText: {
-    color: theme.colors.secondary,
+    color: theme.colors.white,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
+    letterSpacing: 0.5,
   },
   exitModalContent: {
     backgroundColor: "#fff",

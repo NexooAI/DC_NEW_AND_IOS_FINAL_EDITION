@@ -7,8 +7,12 @@ import {
   Animated,
   Easing,
   BackHandler,
-  InteractionManager
+  InteractionManager,
+  Alert,
+  ToastAndroid,
+  Platform
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -120,6 +124,16 @@ export default function PaymentFailure() {
       duration: 300,
       useNativeDriver: true,
     }).start(() => router.replace("/(tabs)/home"));
+  };
+
+  const handleCopy = async (text: string, label: string) => {
+    if (!text) return;
+    await Clipboard.setStringAsync(text);
+    if (Platform.OS === 'android') {
+      ToastAndroid.show(`${label} Copied`, ToastAndroid.SHORT);
+    } else {
+      Alert.alert("Copied", `${label} copied to clipboard`);
+    }
   };
 
   const handleRetry = () => {
@@ -242,7 +256,15 @@ export default function PaymentFailure() {
             </View>
             <View style={styles.detailTextContainer}>
               <Text style={styles.detailLabel}>{t("transactionId")}</Text>
-              <Text style={styles.detailValue} numberOfLines={1}>{Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || "N/A")}</Text>
+              <TouchableOpacity 
+                style={styles.copyRow} 
+                onPress={() => handleCopy(Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || ""), t("transactionId"))}
+              >
+                <Text style={styles.detailValue}>
+                  {Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || "N/A")}
+                </Text>
+                <Ionicons name="copy-outline" size={16} color={theme.colors.error} style={{ marginLeft: 8 }} />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -258,7 +280,15 @@ export default function PaymentFailure() {
             </View>
             <View style={styles.detailTextContainer}>
               <Text style={styles.detailLabel}>{t("orderId")}</Text>
-              <Text style={styles.detailValue} numberOfLines={1}>{Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || "N/A")}</Text>
+              <TouchableOpacity 
+                style={styles.copyRow} 
+                onPress={() => handleCopy(Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || ""), t("orderId"))}
+              >
+                <Text style={styles.detailValue}>
+                  {Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || "N/A")}
+                </Text>
+                <Ionicons name="copy-outline" size={16} color={theme.colors.error} style={{ marginLeft: 8 }} />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -299,11 +329,11 @@ export default function PaymentFailure() {
             onPress={handleHomePress}
             activeOpacity={0.9}
           >
-            <Ionicons name="home" size={rp(20)} color="#fff" />
-            <Text style={styles.buttonText}>{t("home")}</Text>
+            <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
+            <Text style={[styles.buttonText, styles.buttonTextHome]}>{t("home")}</Text>
           </TouchableOpacity>
         </View>
-      </Animated.View>
+        </Animated.View>
     </SafeAreaView>
   );
 }
@@ -313,65 +343,82 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f9ff",
   },
-  content: {
-    flex: 1,
-    padding: rp(20),
-    alignItems: "center",
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "center",
+  },
+  content: {
+    padding: rp(16),
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    paddingVertical: rp(20),
   },
   iconContainer: {
-    marginBottom: rp(20),
+    marginBottom: rp(10), // Reduced margin
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 1, // Ensure icon is above background
+    zIndex: 1,
   },
   iconWrapper: {
-    width: rp(140),
-    height: rp(140),
+    width: rp(80), // Reduced size
+    height: rp(80),
+    borderRadius: rp(40),
+    backgroundColor: "#ffebee",
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: rp(12),
   },
   iconInner: {
     alignItems: "center",
     justifyContent: "center",
   },
   title: {
-    fontSize: rf(24, { minSize: 20, maxSize: 28 }),
+    fontSize: rf(22, { minSize: 20, maxSize: 26 }),
     fontWeight: "800",
     color: theme.colors.error,
-    marginBottom: rp(12),
+    marginBottom: rp(8), // Reduced
     textAlign: "center",
     fontFamily: "Inter_700Bold",
   },
   message: {
-    fontSize: rf(17, { minSize: 15, maxSize: 19 }),
+    fontSize: rf(15, { minSize: 13, maxSize: 17 }),
     color: "#616161",
     textAlign: "center",
-    marginBottom: rp(32),
-    lineHeight: rp(24),
-    maxWidth: "85%",
+    marginBottom: rp(20), // Reduced
+    lineHeight: rp(22),
+    maxWidth: "90%",
     fontFamily: "Inter_400Regular",
   },
   detailsCard: {
     width: "100%",
     backgroundColor: "#ffffff",
-    borderRadius: rb(20),
-    padding: rp(24),
-    marginBottom: rp(32),
-    ...shadows.medium,
-    elevation: 8,
+    borderRadius: rb(24),
+    padding: rp(20), // Reduced
+    marginBottom: rp(20), // Reduced
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.1,
+    shadowRadius: 24,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.04)",
   },
   detailsTitle: {
     fontSize: rf(18, { minSize: 16, maxSize: 20 }),
     fontWeight: "700",
     color: "#2d3748",
-    marginBottom: rp(20),
+    marginBottom: rp(16), // Reduced
     fontFamily: "Inter_600SemiBold",
   },
   detailRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: rp(12),
+  },
+  copyRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   detailIcon: {
     width: rp(36),
@@ -421,26 +468,31 @@ const styles = StyleSheet.create({
     gap: rp(16),
   },
   button: {
-    backgroundColor: theme.colors.error,
     paddingVertical: rp(18),
     paddingHorizontal: rp(24),
-    borderRadius: rb(14),
+    borderRadius: rb(16),
     alignItems: "center",
     justifyContent: "center",
-    ...shadows.small,
-    elevation: 8,
     flexDirection: "row",
     minHeight: rp(56),
+    ...shadows.small,
   },
   buttonHalf: {
     flex: 1,
-    minWidth: 0,
   },
   buttonRetry: {
-    flex: 1,
+    backgroundColor: theme.colors.error,
+    elevation: 8,
+    shadowColor: theme.colors.error,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
   },
   buttonHome: {
-    flex: 1,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#e5e5e5",
+    elevation: 2,
   },
   buttonText: {
     color: "#ffffff",
@@ -448,5 +500,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
     marginLeft: rp(8),
+  },
+  buttonTextHome: {
+    color: theme.colors.textDark,
   },
 });

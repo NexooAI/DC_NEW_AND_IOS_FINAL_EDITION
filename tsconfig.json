@@ -6,7 +6,7 @@
     },
     "esModuleInterop": true,
     "jsx": "react-jsx",
-    "types": ["react-native-reanimated", "node", "react-native", "jest"],
+    "types": ["node", "react-native", "jest"],
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,

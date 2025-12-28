@@ -459,6 +459,7 @@ export default function SavingsScreen() {
       monthlyEMI: t("monthlyEMI"),
       monthsRemaining: t("monthsRemaining"),
       maturesOn: t("maturesOn"),
+      maturityDateLabel: t("maturityDateLabel"),
       noActiveSchemes: t("noActiveSavingsSchemesFound"),
       gold: t("gold"),
       viewDetails: t("viewDetails"),

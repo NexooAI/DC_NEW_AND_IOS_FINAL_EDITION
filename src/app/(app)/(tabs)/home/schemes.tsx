@@ -702,9 +702,7 @@ export default function SchemeList() {
 
   const renderTab = (title: string) => {
     const isActive = activeTab === title;
-    const tabGradient = getTabColor(title);
-    const textColor = getTextColorForBackground(title);
-
+    
     return (
       <TouchableOpacity
         key={title}
@@ -719,52 +717,27 @@ export default function SchemeList() {
         <Animated.View
           style={[
             styles.tabContainer,
-            isActive && styles.activeTabContainer,
+
             isActive && {
               transform: [{ scale: tabScaleAnim }]
             },
-            Platform.OS === 'ios' && styles.iosTabContainer,
-            Platform.OS === 'ios' && isActive && styles.iosActiveTabContainer
+            // Always use the "iOS" style container (which is just transparent/clean)
+            styles.iosTabContainer,
+            isActive && styles.iosActiveTabContainer
           ]}
         >
           {isActive ? (
-            Platform.OS === 'ios' ? (
-              <View style={styles.iosActiveTabContent}>
-                <Text style={styles.iosActiveTabText}>{title}</Text>
-              </View>
-            ) : (
-              <LinearGradient
-                colors={tabGradient as [string, string]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.tabGradient}
-              >
-                <Ionicons
-                  name={getTabIcon(title)}
-                  size={22}
-                  color={textColor}
-                  style={styles.tabIcon}
-                />
-                <Text style={[styles.activeTabText, { color: textColor }]}>{title}</Text>
-              </LinearGradient>
-            )
+            <View style={styles.iosActiveTabContent}>
+              <Text style={styles.iosActiveTabText}>{title}</Text>
+            </View>
           ) : (
             <View style={[
               styles.inactiveTabContainer,
-              Platform.OS === 'ios' && styles.iosInactiveTabContainer
+              styles.iosInactiveTabContainer
             ]}>
-              {Platform.OS !== 'ios' && (
-                <Ionicons
-                  name={getTabIcon(title)}
-                  size={18}
-                  color="#666"
-                  style={styles.tabIcon}
-                />
-              )}
               <Text style={[
                 styles.tabText,
-                { color: "#666" },
-                Platform.OS === 'ios' && styles.iosTabText
+                styles.iosTabText
               ]}>
                 {title}
               </Text>
@@ -828,9 +801,6 @@ export default function SchemeList() {
   const renderSchemeItem = ({ item, index }: { item: Scheme; index: number }) => {
     if (!item) return null;
 
-    const tabColor = getTabColor(activeTab);
-    const gradientColors = getDarkerGradient(activeTab); // Use darker gradient for better contrast
-    const textColor = getTextColorForBackground(activeTab);
     const isSelected = selectedSchemeId === item.SCHEMEID;
     const isExpanded = expandedDescriptions.has(item.SCHEMEID || 0);
     const cardAnimation = {
@@ -851,16 +821,17 @@ export default function SchemeList() {
       ],
     };
 
-    const renderHeaderContent = (isIos: boolean) => (
+    // Common header content, styled uniformly now
+    const renderHeaderContent = () => (
       <View style={styles.cardHeaderContent}>
         <View style={styles.cardHeaderTop}>
           <View style={[
             styles.schemeBadge,
-            isIos ? styles.iosSchemeBadge : { backgroundColor: textColor === '#ffffff' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)' }
+            styles.iosSchemeBadge
           ]}>
             <Text style={[
               styles.schemeBadgeText,
-              isIos ? styles.iosSchemeBadgeText : { color: textColor }
+              styles.iosSchemeBadgeText
             ]}>
               {getTranslatedText(item.SCHEMETYPE, language) || activeTab}
             </Text>
@@ -881,7 +852,7 @@ export default function SchemeList() {
               <Ionicons
                 name={isExpanded ? "chevron-up-circle" : "chevron-down-circle"}
                 size={22}
-                color={isIos ? '#000' : textColor}
+                color={'#000'} 
               />
             </TouchableOpacity>
           </View>
@@ -890,20 +861,14 @@ export default function SchemeList() {
         <View style={styles.schemeInfo}>
           <Text style={[
             styles.schemeName,
-            {
-              color: isIos ? '#000' : textColor,
-              textShadowColor: !isIos && textColor === '#ffffff' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)'
-            }
+            { color: '#000' }
           ]}>
             {getTranslatedText(item.SCHEMENAME, language) || "Unnamed Scheme"}
           </Text>
           {item.SLOGAN && getTranslatedText(item.SLOGAN, language) && (
             <Text style={[
               styles.slogan,
-              {
-                color: isIos ? '#666' : (textColor === '#ffffff' ? 'rgba(255,255,255,0.9)' : 'rgba(26,26,26,0.85)'),
-                textShadowColor: !isIos && textColor === '#ffffff' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.2)'
-              }
+              { color: '#666' }
             ]}>
               "{getTranslatedText(item.SLOGAN, language)}"
             </Text>
@@ -913,15 +878,15 @@ export default function SchemeList() {
         <View style={styles.metaChipsContainer}>
           {(item.savingType || item.SCHEMETYPE) && (
             <View style={[styles.metaChip, {
-              backgroundColor: isIos ? '#f2f2f7' : (textColor === '#ffffff' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)'),
-              borderColor: isIos ? 'transparent' : (textColor === '#ffffff' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)')
+              backgroundColor: '#f2f2f7',
+              borderColor: 'transparent'
             }]}>
               <Ionicons
                 name={item.savingType?.toLowerCase() === "weight" || item.SCHEMETYPE?.toLowerCase() === "weight" ? "scale-outline" : "cash-outline"}
                 size={12}
-                color={isIos ? '#666' : textColor}
+                color={'#666'}
               />
-              <Text style={[styles.metaChipText, { color: isIos ? '#666' : textColor }]}>
+              <Text style={[styles.metaChipText, { color: '#666' }]}>
                 {item.savingType?.toLowerCase() === "weight" || item.SCHEMETYPE?.toLowerCase() === "weight"
                   ? ("Weight Based")
                   : ("Amount Based")}
@@ -930,22 +895,22 @@ export default function SchemeList() {
           )}
           {item.INS_TYPE && getTranslatedText(item.INS_TYPE, language) && (
             <View style={[styles.metaChip, {
-              backgroundColor: isIos ? '#f2f2f7' : (textColor === '#ffffff' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)'),
-              borderColor: isIos ? 'transparent' : (textColor === '#ffffff' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)')
+              backgroundColor: '#f2f2f7',
+              borderColor: 'transparent'
             }]}>
-              <Ionicons name="cube-outline" size={12} color={isIos ? '#666' : textColor} />
-              <Text style={[styles.metaChipText, { color: isIos ? '#666' : textColor }]}>
+              <Ionicons name="cube-outline" size={12} color={'#666'} />
+              <Text style={[styles.metaChipText, { color: '#666' }]}>
                 {getTranslatedText(item.INS_TYPE, language)}
               </Text>
             </View>
           )}
           {item.DURATION_MONTHS && !isNaN(item.DURATION_MONTHS) ? (
             <View style={[styles.metaChip, {
-              backgroundColor: isIos ? '#f2f2f7' : (textColor === '#ffffff' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)'),
-              borderColor: isIos ? 'transparent' : (textColor === '#ffffff' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)')
+              backgroundColor: '#f2f2f7',
+              borderColor: 'transparent'
             }]}>
-              <Ionicons name="calendar-outline" size={12} color={isIos ? '#666' : textColor} />
-              <Text style={[styles.metaChipText, { color: isIos ? '#666' : textColor }]}>
+              <Ionicons name="calendar-outline" size={12} color={'#666'} />
+              <Text style={[styles.metaChipText, { color: '#666' }]}>
                 {item.DURATION_MONTHS} {t("schemes.months") || "months"}
               </Text>
             </View>
@@ -963,20 +928,9 @@ export default function SchemeList() {
           { marginTop: index === 0 ? 10 : 0 },
         ]}
       >
-        {Platform.OS === 'ios' ? (
-          <View style={styles.iosCardHeader}>
-            {renderHeaderContent(true)}
-          </View>
-        ) : (
-          <LinearGradient
-            colors={gradientColors}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.cardHeaderGradient}
-          >
-            {renderHeaderContent(false)}
-          </LinearGradient>
-        )}
+        <View style={styles.iosCardHeader}>
+          {renderHeaderContent()}
+        </View>
 
         <View style={styles.cardContent}>
           <View style={styles.descriptionContainer}>
@@ -1013,7 +967,7 @@ export default function SchemeList() {
 
           {item.BENEFITS && item.BENEFITS.length > 0 && (
             <View style={[styles.benefitsContainer, {
-              backgroundColor: textColor === '#ffffff' ? 'rgba(248, 249, 255, 0.8)' : 'rgba(248, 252, 240, 0.8)',
+              backgroundColor: 'rgba(248, 249, 255, 0.8)',
               borderColor: theme.colors.primary + '40'
             }]}>
               <Text style={[styles.benefitsTitle, { color: '#1a1a1a' }]}>Benefits</Text>
@@ -1043,18 +997,18 @@ export default function SchemeList() {
               end={{ x: 1, y: 0 }}
               style={[
                 styles.joinButton,
-                Platform.OS === 'ios' && styles.iosJoinButton,
+                styles.iosJoinButton,
                 joiningScheme === item.SCHEMEID && styles.joinButtonDisabled,
               ]}
             >
               {joiningScheme === item.SCHEMEID ? (
-                <ActivityIndicator size="small" color={textColor === '#ffffff' ? '#fff' : '#1a1a1a'} />
+                <ActivityIndicator size="small" color={'#fff'} />
               ) : (
                 <>
-                  <Text style={[styles.joinButtonText, { color: textColor === '#ffffff' ? '#fff' : '#1a1a1a' }]}>
+                  <Text style={[styles.joinButtonText, { color: '#fff' }]}>
                     {t("schemes.joinNow") || "Join Now"}
                   </Text>
-                  <Ionicons name="arrow-forward-circle" size={20} color={textColor === '#ffffff' ? '#fff' : '#1a1a1a'} />
+                  <Ionicons name="arrow-forward-circle" size={20} color={'#fff'} />
                 </>
               )}
             </LinearGradient>
@@ -1093,32 +1047,18 @@ export default function SchemeList() {
 
       <View style={[
         styles.tabsWrapper,
-        Platform.OS === 'ios' && styles.iosTabsWrapper
+        styles.iosTabsWrapper
       ]}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={[
             styles.tabsScrollContainer,
-            Platform.OS === 'ios' && styles.iosTabsScrollContainer
+            styles.iosTabsScrollContainer
           ]}
         >
           {availableTabs.map((tab) => renderTab(tab))}
         </ScrollView>
-
-        {Platform.OS !== 'ios' && activeTab && tabLayouts[activeTab] && (
-          <Animated.View
-            style={[
-              styles.activeTabIndicator,
-              {
-                width: tabLayouts[activeTab]?.width || 0,
-                transform: [{ translateX: underlineAnim }],
-                backgroundColor: getTabColor(activeTab)[0],
-                shadowColor: getTabColor(activeTab)[0],
-              },
-            ]}
-          />
-        )}
       </View>
 
       <View style={styles.contentContainer}>
@@ -1302,48 +1242,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
-  tabGradient: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  activeTabContainer: {
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  tabIcon: {
-    marginRight: 8,
-  },
+
+
   tabText: {
     fontSize: 14,
     fontWeight: '600',
   },
-  activeTabText: {
-    fontSize: 14,
-    fontWeight: '800',
-    // Color is set dynamically based on background
-  },
-  activeTabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    height: 3,
-    borderRadius: 1.5,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
-  },
+
+
 
   // iOS Specific Styles
   iosTabsWrapper: {
@@ -1367,7 +1273,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   iosActiveTabContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.info,
     borderRadius: 8,
     shadowColor: "#000",
     shadowOffset: {
@@ -1387,7 +1293,7 @@ const styles = StyleSheet.create({
   iosActiveTabText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#000',
+    color: '#fff',
   },
   iosTabText: {
     fontSize: 13,
@@ -1451,10 +1357,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 12,
   },
-  cardHeaderGradient: {
-    padding: 20,
-    borderWidth: 1,
-  },
+
   cardHeaderContent: {
     flexDirection: 'column',
     gap: 12,

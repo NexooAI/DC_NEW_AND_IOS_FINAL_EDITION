@@ -1,9 +1,8 @@
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
   ScrollView,
-  ImageBackground,
   TouchableOpacity,
   Dimensions,
   KeyboardAvoidingView,
@@ -16,19 +15,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import AppLayoutWrapper from "@/components/AppLayoutWrapper";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useFocusEffect } from "@react-navigation/native";
 import useGlobalStore from "@/store/global.store";
 import api from "@/services/api";
 import { theme } from "@/constants/theme";
-import { moderateScale } from "react-native-size-matters";
 
-import { logger } from '@/utils/logger';
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
-// Define a type for the policy object
 interface Policy {
   title?: string;
-  // Add other fields as needed if used
 }
 
 export default function PrivacyPolicy() {
@@ -42,7 +36,7 @@ export default function PrivacyPolicy() {
 
   const translations = useMemo(
     () => ({
-      defaultTitle: t("privacyPolicyTitle"), // e.g., "Privacy Policy"
+      defaultTitle: t("privacyPolicyTitle"),
       defaultContent: t("privacyPolicyContent"),
       defaultDiscription: t("privacyPolicyDiscription"),
       defaultPrivacyPolicyDiscription: t("privacyPolicyDiscription"),
@@ -78,17 +72,14 @@ export default function PrivacyPolicy() {
           .get("/policies/type/privacy_policy")
           .then((response: any) => {
             setPolicy(response.data.data);
-            //logger.log("Privacy Policy loaded successfully:", response.data.data);
           })
           .catch((err: any) => {
-            logger.error("Error fetching Privacy Policy:", err);
             setError(translations.failedToLoadPrivacyPolicy);
           })
           .finally(() => {
             setLoading(false);
           });
       } catch (err: any) {
-        logger.error("Error in fetchPolicy:", err);
         setError(translations.failedToLoadPrivacyPolicy);
         setLoading(false);
       }
@@ -97,24 +88,19 @@ export default function PrivacyPolicy() {
     fetchPolicy();
   }, [translations.failedToLoadPrivacyPolicy]);
 
-
-  // Function to retry fetching policy data
   const retryFetchPolicy = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await api.get("/policies/type/privacy_policy");
       setPolicy(response.data.data);
-      //logger.log("Privacy Policy retried and loaded successfully:", response.data.data);
     } catch (err: any) {
-      logger.error("Error retrying Privacy Policy:", err);
       setError(translations.failedToLoadPrivacyPolicy);
     } finally {
       setLoading(false);
     }
   };
 
-  // Render loading state
   const renderLoadingState = () => (
     <View style={styles.loadingContainer}>
       <LinearGradient
@@ -122,14 +108,11 @@ export default function PrivacyPolicy() {
         style={styles.loadingGradient}
       >
         <ActivityIndicator size="large" color="#FFD700" />
-        <Text style={styles.loadingText}>
-          {translations.loadingPrivacyPolicy}
-        </Text>
+        <Text style={styles.loadingText}>{translations.loadingPrivacyPolicy}</Text>
       </LinearGradient>
     </View>
   );
 
-  // Render error state
   const renderErrorState = () => (
     <View style={styles.errorContainer}>
       <LinearGradient
@@ -137,9 +120,7 @@ export default function PrivacyPolicy() {
         style={styles.errorGradient}
       >
         <Ionicons name="alert-circle-outline" size={60} color="#FFD700" />
-        <Text style={styles.errorTitle}>
-          {translations.oopsSomethingWentWrong}
-        </Text>
+        <Text style={styles.errorTitle}>{translations.oopsSomethingWentWrong}</Text>
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={retryFetchPolicy}>
           <Text style={styles.retryButtonText}>{translations.tryAgain}</Text>
@@ -148,33 +129,32 @@ export default function PrivacyPolicy() {
     </View>
   );
 
-  // Render main content
   const renderMainContent = () => (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={styles.container}
       keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
     >
-      <ImageBackground
-        source={require("../../../../../../assets/images/bg_new.jpg")}
-        style={styles.backgroundImage}
-        resizeMode="contain"
-      >
+      <View style={styles.container}>
         {/* Hero Section */}
         <LinearGradient
-          colors={[theme.colors.primary, theme.colors.support_container[1]]}
+          colors={[theme.colors.primary, theme.colors.primary_dark || "#5a000b"]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          end={{ x: 0, y: 1 }}
           style={styles.heroSection}
         >
           <View style={styles.heroContent}>
-            <View style={{ marginTop: 20 }}>
-              <Ionicons name="shield-outline" size={40} color="#FFD700" />
+            <View style={styles.iconContainer}>
+              <Ionicons
+                name="shield-checkmark"
+                size={36}
+                color="white"
+              />
             </View>
             <Text style={styles.heroTitle}>
               {policy?.title || translations.defaultTitle}
             </Text>
-            <View style={styles.decorativeLine} />
+            <Text style={styles.heroSubtitle}>{translations.yourPrivacyMatters}</Text>
           </View>
         </LinearGradient>
 
@@ -184,108 +164,88 @@ export default function PrivacyPolicy() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.contentCard}>
-            <LinearGradient
-              colors={[
-                "rgba(255, 255, 255, 0.95)",
-                "rgba(255, 255, 255, 0.85)",
-              ]}
-              style={styles.cardGradient}
-            >
-              <View style={styles.contentHeader}>
-                <Ionicons name="lock-closed" size={24} color="#850111" />
-                <Text style={styles.contentHeaderText}>
-                  {translations.yourPrivacyMatters}
-                </Text>
-              </View>
-
-              <Text style={styles.contentText}>
-                {translations.defaultPrivacyPolicyDiscription}
+          {/* Main Privacy Statment Card - Overlaps Hero */}
+          <View style={[styles.card, styles.introCard]}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="lock-closed-outline" size={24} color={theme.colors.primary} />
+              <Text style={styles.cardTitle}>
+                {translations.yourPrivacyMatters}
               </Text>
+            </View>
+            <Text style={styles.cardText}>
+              {translations.defaultPrivacyPolicyDiscription}
+            </Text>
+          </View>
 
-              {/* Data Collection Section */}
-              <View style={styles.sectionContainer}>
-                <View style={styles.sectionHeader}>
-                  <Ionicons
-                    name="cloud-download-outline"
-                    size={20}
-                    color="#850111"
-                  />
-                  <Text style={styles.sectionTitle}>
-                    {translations.dataCollection}
-                  </Text>
-                </View>
-                <Text style={styles.sectionText}>
-                  {translations.dataCollectionDescription}
-                </Text>
-              </View>
+          {/* Data Collection Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons
+                name="cloud-download-outline"
+                size={22}
+                color={theme.colors.primary}
+              />
+              <Text style={styles.cardTitle}>
+                {translations.dataCollection}
+              </Text>
+            </View>
+            <Text style={styles.cardText}>
+              {translations.dataCollectionDescription}
+            </Text>
+          </View>
 
-              {/* Data Usage Section */}
-              <View style={styles.sectionContainer}>
-                <View style={styles.sectionHeader}>
-                  <Ionicons
-                    name="analytics-outline"
-                    size={20}
-                    color="#850111"
-                  />
-                  <Text style={styles.sectionTitle}>
-                    {translations.dataUsage}
-                  </Text>
-                </View>
-                <Text style={styles.sectionText}>
-                  {translations.dataUsageDescription}
-                </Text>
-              </View>
+          {/* Data Usage Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="analytics-outline" size={22} color={theme.colors.primary} />
+              <Text style={styles.cardTitle}>{translations.dataUsage}</Text>
+            </View>
+            <Text style={styles.cardText}>
+              {translations.dataUsageDescription}
+            </Text>
+          </View>
 
-              {/* Data Protection Section */}
-              <View style={styles.sectionContainer}>
-                <View style={styles.sectionHeader}>
-                  <Ionicons name="shield-checkmark" size={20} color="#850111" />
-                  <Text style={styles.sectionTitle}>
-                    {translations.dataProtection}
-                  </Text>
-                </View>
-                <Text style={styles.sectionText}>
-                  {translations.dataProtectionDescription}
-                </Text>
-              </View>
+          {/* Data Protection Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="shield-outline" size={22} color={theme.colors.primary} />
+              <Text style={styles.cardTitle}>
+                {translations.dataProtection}
+              </Text>
+            </View>
+            <Text style={styles.cardText}>
+              {translations.dataProtectionDescription}
+            </Text>
+          </View>
 
-              {/* Contact Section */}
-              <View style={styles.contactSection}>
-                <LinearGradient
-                  colors={[
-                    theme.colors.primary,
-                    theme.colors.support_container[1],
-                  ]}
-                  style={styles.contactGradient}
-                >
-                  <Ionicons
-                    name="information-circle-outline"
-                    size={24}
-                    color="#FFD700"
-                  />
-                  <Text style={styles.contactTitle}>
-                    {translations.privacyQuestions}
-                  </Text>
-                  <Text style={styles.contactText}>
-                    {translations.contactForPrivacy}
-                  </Text>
-                </LinearGradient>
-              </View>
-            </LinearGradient>
+          {/* Contact Section */}
+          <View style={styles.contactCard}>
+            <Ionicons
+              name="help-circle-outline"
+              size={32}
+              color="rgba(255, 255, 255, 0.9)"
+            />
+            <Text style={styles.contactTitle}>
+              {translations.privacyQuestions}
+            </Text>
+            <Text style={styles.contactText}>
+              {translations.contactForPrivacy}
+            </Text>
           </View>
         </ScrollView>
-      </ImageBackground>
+      </View>
     </KeyboardAvoidingView>
   );
 
   return (
     <AppLayoutWrapper showHeader={false} showBottomBar={false}>
-      {loading
-        ? renderLoadingState()
-        : error
-        ? renderErrorState()
-        : renderMainContent()}
+        <View style={{flex: 1}}>
+        {loading
+            ? renderLoadingState()
+            : error
+            ? renderErrorState()
+            : renderMainContent()}
+        </View>
     </AppLayoutWrapper>
   );
 }
@@ -293,122 +253,115 @@ export default function PrivacyPolicy() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f7f7f7",
-  },
-  backgroundImage: {
-    flex: 1,
-    width: "100%",
+    backgroundColor: "#f8f9fa",
   },
   heroSection: {
     paddingTop: 20,
     paddingBottom: 30,
     paddingHorizontal: 20,
     alignItems: "center",
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   heroContent: {
     alignItems: "center",
+    paddingBottom: 10,
+  },
+  iconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
   },
   heroTitle: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: "800",
     color: "#fff",
     textAlign: "center",
-    marginTop: 16,
-    marginBottom: 12,
-    fontFamily: "serif",
+    marginBottom: 4,
+    letterSpacing: 0.5,
   },
-  decorativeLine: {
-    width: 60,
-    height: 3,
-    backgroundColor: "#FFD700",
-    borderRadius: 2,
+  heroSubtitle: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.95)",
+    textAlign: "center",
+    fontWeight: "500",
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
-  contentCard: {
-    borderRadius: 20,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 5,
-  },
-  cardGradient: {
-    padding: 24,
-  },
-  contentHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  contentHeaderText: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#850111",
-    marginLeft: 12,
-  },
-  contentText: {
-    fontSize: 16,
-    color: "#333",
-    lineHeight: 26,
-    letterSpacing: 0.3,
-    marginBottom: 24,
-  },
-  sectionContainer: {
-    marginBottom: 20,
-    padding: 16,
-    backgroundColor: "rgba(133, 1, 17, 0.05)",
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: "#850111",
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#850111",
-    marginLeft: 8,
-  },
-  sectionText: {
-    fontSize: 14,
-    color: "#555555",
-    lineHeight: 20,
-  },
-  contactSection: {
-    marginTop: 20,
+  // New Card Styles
+  card: {
+    backgroundColor: "white",
     borderRadius: 16,
-    overflow: "hidden",
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  contactGradient: {
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: theme.colors.primary,
+    marginLeft: 10,
+  },
+  cardText: {
+    fontSize: 14,
+    color: "#4A4A4A",
+    lineHeight: 22,
+    letterSpacing: 0.2,
+  },
+  // Special styling for the intro card if needed
+  introCard: {
+    marginTop: -24, // Overlap effect
+  },
+  contactCard: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: 16,
     padding: 20,
     alignItems: "center",
+    marginTop: 8,
   },
   contactTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#FFFFFF",
-    marginTop: 8,
-    marginBottom: 4,
+    fontSize: 16,
+    fontWeight: "700",
+    color: "white",
+    marginTop: 10,
+    marginBottom: 6,
   },
   contactText: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 13,
+    color: "rgba(255, 255, 255, 0.9)",
     textAlign: "center",
+    lineHeight: 18,
   },
-  loadingGradient: {
+  loadingContainer: {
     flex: 1,
     justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
+  },
+  loadingGradient: {
+    padding: 30,
+    borderRadius: 20,
     alignItems: "center",
   },
   loadingText: {
@@ -417,15 +370,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 16,
   },
-  errorGradient: {
+  errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    backgroundColor: "#f8f9fa",
+  },
+  errorGradient: {
+    padding: 30,
+    borderRadius: 20,
+    alignItems: "center",
+    width: width * 0.8,
   },
   errorTitle: {
     color: "#FFD700",
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "700",
     marginTop: 20,
     marginBottom: 12,
@@ -433,7 +392,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 15,
     textAlign: "center",
     marginBottom: 24,
     lineHeight: 24,
@@ -448,17 +407,5 @@ const styles = StyleSheet.create({
     color: "#850111",
     fontSize: 16,
     fontWeight: "600",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f7f7f7",
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f7f7f7",
   },
 });

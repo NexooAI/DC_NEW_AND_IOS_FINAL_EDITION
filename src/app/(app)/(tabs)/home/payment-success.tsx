@@ -6,8 +6,12 @@ import {
   TouchableOpacity,
   Animated,
   Easing,
-  BackHandler
+  BackHandler,
+  Alert,
+  ToastAndroid,
+  Platform
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -132,14 +136,32 @@ export default function PaymentSuccess() {
       toValue: 0,
       duration: 300,
       useNativeDriver: true,
-    }).start(() => router.replace({
-      pathname: "/(tabs)/savings",
-      params: {
-        investmentId: params.investmentId,
-        schemeType: params.schemeType,
-        paymentFrequency: params.paymentFrequency,
-      }
-    }));
+    }).start(() => {
+      // First reset the current stack to home root
+      router.replace("/(tabs)/home");
+      
+      // Then navigate to savings after a tick
+      setTimeout(() => {
+        router.push({
+          pathname: "/(tabs)/savings",
+          params: {
+            investmentId: params.investmentId,
+            schemeType: params.schemeType,
+            paymentFrequency: params.paymentFrequency,
+          }
+        });
+      }, 100);
+    });
+  };
+
+  const handleCopy = async (text: string, label: string) => {
+    if (!text) return;
+    await Clipboard.setStringAsync(text);
+    if (Platform.OS === 'android') {
+      ToastAndroid.show(`${label} Copied`, ToastAndroid.SHORT);
+    } else {
+      Alert.alert("Copied", `${label} copied to clipboard`);
+    }
   };
 
   const checkmarkScale = checkmarkAnim.interpolate({
@@ -189,7 +211,15 @@ export default function PaymentSuccess() {
             </View>
             <View style={styles.detailTextContainer}>
               <Text style={styles.detailLabel}>{t("transactionId")}</Text>
-              <Text style={styles.detailValue} numberOfLines={1}>{Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || "N/A")}</Text>
+              <TouchableOpacity 
+                style={styles.copyRow} 
+                onPress={() => handleCopy(Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || ""), t("transactionId"))}
+              >
+                <Text style={styles.detailValue}>
+                  {Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || "N/A")}
+                </Text>
+                <Ionicons name="copy-outline" size={16} color={theme.colors.primary} style={{ marginLeft: 8 }} />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -205,7 +235,15 @@ export default function PaymentSuccess() {
             </View>
             <View style={styles.detailTextContainer}>
               <Text style={styles.detailLabel}>{t("orderId")}</Text>
-              <Text style={styles.detailValue} numberOfLines={1}>{Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || "N/A")}</Text>
+              <TouchableOpacity 
+                style={styles.copyRow} 
+                onPress={() => handleCopy(Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || ""), t("orderId"))}
+              >
+                <Text style={styles.detailValue}>
+                  {Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || "N/A")}
+                </Text>
+                <Ionicons name="copy-outline" size={16} color={theme.colors.primary} style={{ marginLeft: 8 }} />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -234,21 +272,22 @@ export default function PaymentSuccess() {
         </View>
 
         {/* Button Row: Home (left) and Savings (right) */}
+        {/* Button Row: Home (left) and Savings (right) */}
         <View style={styles.buttonRow}>
           <TouchableOpacity
-            style={[styles.button, styles.buttonLeft]}
+            style={[styles.button, styles.buttonLeft, styles.buttonHome]}
             onPress={handleHomePress}
             activeOpacity={0.9}
           >
-            <Ionicons name="home" size={rp(18)} color="#fff" />
-            <Text style={styles.buttonText}>{t("home")}</Text>
+            <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
+            <Text style={[styles.buttonText, styles.buttonTextHome]}>{t("home")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.button, styles.buttonRight]}
+            style={[styles.button, styles.buttonRight, styles.buttonSavings]}
             onPress={handleSavingsPress}
             activeOpacity={0.9}
           >
-            <Ionicons name="wallet" size={rp(18)} color="#fff" />
+            <Ionicons name="wallet" size={rp(20)} color="#fff" />
             <Text style={styles.buttonText}>{t("savings")}</Text>
           </TouchableOpacity>
         </View>
@@ -264,19 +303,20 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: rp(20),
+    padding: rp(16),
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between", // Distribute space
+    paddingVertical: rp(20),
   },
   iconContainer: {
-    marginBottom: rp(20),
+    marginBottom: rp(10),
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 1, // Ensure icon is above background
+    zIndex: 1,
   },
   checkmarkContainer: {
-    width: rp(120),
-    height: rp(120),
+    width: rp(100), // Reduced size
+    height: rp(100),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -287,8 +327,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: rf(22, { minSize: 20, maxSize: 26 }),
     fontWeight: "800",
-    color: "#16c72e", // Matches tick color
-    marginBottom: rp(12),
+    color: "#16c72e",
+    marginBottom: rp(8), // Reduced margin
     textAlign: "center",
     fontFamily: "Inter_700Bold",
   },
@@ -296,7 +336,7 @@ const styles = StyleSheet.create({
     fontSize: rf(15, { minSize: 13, maxSize: 17 }),
     color: "#616161",
     textAlign: "center",
-    marginBottom: rp(32),
+    marginBottom: rp(20), // Reduced margin
     lineHeight: rp(22),
     maxWidth: "90%",
     fontFamily: "Inter_400Regular",
@@ -304,23 +344,32 @@ const styles = StyleSheet.create({
   detailsCard: {
     width: "100%",
     backgroundColor: "#ffffff",
-    borderRadius: rb(20),
-    padding: rp(24),
-    marginBottom: rp(32),
-    ...shadows.medium,
-    elevation: 8,
+    borderRadius: rb(24),
+    padding: rp(20), // Reduced padding
+    marginBottom: rp(20), // Reduced margin
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.1,
+    shadowRadius: 24,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.04)",
   },
   detailsTitle: {
     fontSize: rf(18, { minSize: 16, maxSize: 20 }),
     fontWeight: "700",
     color: "#2d3748",
-    marginBottom: rp(20),
+    marginBottom: rp(16), // Reduced margin
     fontFamily: "Inter_600SemiBold",
   },
   detailRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: rp(12),
+  },
+  copyRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   detailIcon: {
     width: rp(36),
@@ -365,15 +414,13 @@ const styles = StyleSheet.create({
     gap: rp(16),
   },
   button: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: rp(16),
+    paddingVertical: rp(18),
     paddingHorizontal: rp(20),
-    borderRadius: rb(14),
+    borderRadius: rb(16),
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
     ...shadows.small,
-    elevation: 6,
     flex: 1,
     minHeight: rp(56),
   },
@@ -383,11 +430,28 @@ const styles = StyleSheet.create({
   buttonRight: {
     // Right button styling
   },
+  buttonSavings: {
+    backgroundColor: theme.colors.primary,
+    elevation: 8,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+  },
+  buttonHome: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#e5e5e5",
+    elevation: 2,
+  },
   buttonText: {
     color: "#ffffff",
-    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
     marginLeft: rp(8),
+  },
+  buttonTextHome: {
+    color: theme.colors.textDark,
   },
 });
