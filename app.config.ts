@@ -154,6 +154,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         "expo-web-browser",
         "./plugins/withSmsRetriever",
         "./plugins/with-proguard.js",
+        "./plugins/withAndroidQueries.js",
     ],
 
     extra: {

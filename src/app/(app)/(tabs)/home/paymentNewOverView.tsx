@@ -406,10 +406,18 @@ export default function PaymentNewOverView() {
 
   // Get scheme name for display
   const schemeName = useMemo(() => {
-    return Array.isArray(params.schemeName)
+    let name = Array.isArray(params.schemeName)
       ? params.schemeName[0]
       : (params.schemeName || userDetails?.schemeName || t("digiGold") || "DigiGold");
-  }, [params.schemeName, userDetails?.schemeName, t]);
+    
+    // Handle case where name is a localized object (e.g. {en: "...", ta: "..."})
+    if (typeof name === 'object' && name !== null) {
+      // @ts-ignore
+      return name[language] || name['en'] || name['ta'] || "DigiGold";
+    }
+    
+    return name;
+  }, [params.schemeName, userDetails?.schemeName, t, language]);
 
   useEffect(() => {
     fetchGoldRate();

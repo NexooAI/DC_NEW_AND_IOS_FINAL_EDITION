@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, Modal, StyleSheet, Alert, Text, TouchableOpacity, ActivityIndicator, Platform, StatusBar } from "react-native";
+import { View, Modal, StyleSheet, Alert, Text, TouchableOpacity, ActivityIndicator, Platform, StatusBar, Linking } from "react-native";
 import { WebView } from "react-native-webview";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { usePaymentSocket } from "@/hooks/usePaymentSocket";
@@ -235,6 +235,53 @@ export default function PaymentWebView() {
     };
   }, [socket]);
 
+  // Handle WebView requests
+  const handleShouldStartLoadWithRequest = (request: any) => {
+    const { url } = request;
+    console.log("WebView attempting to load:", url);
+
+    // Allow http/https and about:blank
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("about:blank")
+    ) {
+      return true;
+    }
+
+    // Handle special schemes (tez://, upi://, phonepe://, etc.)
+    // We try to open them in the respective app
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(url);
+        } else {
+          // Even if canOpenURL returns false (due to visibility queries issues on Android 11+),
+          // we should still TRY to open it, as it might just work if the app is installed.
+          // This serves as a fail-safe.
+          console.log("canOpenURL returned false, but attempting to open anyway:", url);
+          return Linking.openURL(url).catch((err) => {
+            console.log("Failed to open URL forcibly:", err);
+            // If it really fails, THEN show the alert
+            Alert.alert(
+              "Payment App Not Found", 
+              "Could not open the selected payment app. Please install it or try another method.",
+              [{ text: "OK", onPress: () => {} }]
+            );
+            // Throw to prevent the next catch block from thinking it succeeded? 
+            // Actually catching it here is enough.
+          });
+        }
+      })
+      .catch((err) => {
+          console.error("An error occurred handling the URL:", err);
+          // Only show generic error if we haven't already shown specific one
+          // (Logic simplified above to handle openURL failure directly)
+      });
+
+    return false;
+  };
+
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
@@ -289,7 +336,7 @@ export default function PaymentWebView() {
                 mixedContentMode="always"
                 setSupportMultipleWindows={false}
                 cacheEnabled={true}
-                onShouldStartLoadWithRequest={() => true}
+                onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
                 onOpenWindow={(event) => {
                   console.log("OPEN WINDOW:", event.nativeEvent);
                 }}
@@ -441,7 +488,7 @@ export default function PaymentWebView() {
                 sharedCookiesEnabled={true}
                 thirdPartyCookiesEnabled={true}
                 setSupportMultipleWindows={true}
-                onShouldStartLoadWithRequest={(req) => true}
+                onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
                 onOpenWindow={(event) => {
                   console.log("OPEN WINDOW:", event.nativeEvent);
                 }}
