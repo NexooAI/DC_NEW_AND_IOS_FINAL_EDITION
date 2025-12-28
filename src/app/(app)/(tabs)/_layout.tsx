@@ -1,5 +1,7 @@
 import { Tabs } from "expo-router";
-import { StyleSheet, Platform } from "react-native";
+import { Utils } from "expo-router";
+import { StyleSheet, Platform, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import NavigationErrorBoundary from "@/components/NavigationErrorBoundary";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -96,6 +98,48 @@ export default function TabsLayout() {
               ),
               tabBarLabel: t("mySchemes") || "My Schemes",
               headerShown: false, // Hide header for savings tab
+            }}
+          />
+          <Tabs.Screen
+            name="quick_join"
+            options={{
+              title: t("quickJoin") || "Quick Join",
+              tabBarLabel: () => null,
+              headerShown: false,
+              tabBarIcon: ({ focused }) => (
+                <View
+                  style={{
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: 60,
+                    width: 60,
+                    // Float the icon
+                    marginBottom: 30, // Push it up
+                    borderRadius: 30,
+                    backgroundColor: theme.colors.bgWhite, // Ring border color
+                    elevation: 5,
+                    shadowColor: "#000",
+                    shadowOpacity: 0.3,
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowRadius: 4,
+                  }}
+                >
+                  <LinearGradient
+                    colors={["#FFD700", "#FFA500"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{
+                      height: 50,
+                      width: 50,
+                      borderRadius: 25,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons name="flash" size={26} color={COLORS.white} />
+                  </LinearGradient>
+                </View>
+              ),
             }}
           />
           <Tabs.Screen

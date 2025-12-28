@@ -84,10 +84,10 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
       >
         {/* Left Side: Label */}
         <View style={styles.labelSection}>
-            <View style={styles.liveIndicator}>
+            {/* <View style={styles.liveIndicator}>
                 <Animated.View style={[styles.liveDot, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]} />
                 <Text style={styles.liveText}>LIVE</Text>
-            </View>
+            </View> */}
             <View style={styles.goldLabelContainer}>
                 <Ionicons name="diamond-outline" size={14} color="#FFD700" style={{marginRight: 4}}/>
                 <Text style={styles.goldLabel}>GOLD 22KT</Text>

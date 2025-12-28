@@ -617,6 +617,7 @@ export default function Home() {
   const [totalAmount, setTotalAmount] = useState(0);
   const [flashNews, setFlashNews] = useState<any[]>([]);
   const [sliderImages, setSliderImages] = useState<any[]>([]);
+  const [schemes, setSchemes] = useState<any[]>([]); // Added schemes state
   const [isSliderLoading, setIsSliderLoading] = useState(true);
   const [viewedCollections, setViewedCollections] = useState<{
     [id: number]: boolean;
@@ -772,9 +773,11 @@ export default function Home() {
       logger.log("🔍 Fetching schemes data...", { forceRefresh });
       const schemesData = await fetchSchemesWithCache(forceRefresh);
       logger.log("✅ Schemes data fetched:", { count: schemesData?.length || 0 });
+      setSchemes(schemesData || []);
       return schemesData;
     } catch (error) {
       logger.error("❌ Error fetching schemes data:", error);
+      setSchemes([]);
       return [];
     }
   }, []);
@@ -1708,25 +1711,19 @@ export default function Home() {
       Alert.alert(t("schemes.error") || "Error", t("schemes.failedToLoadSchemeData") || "Failed to load scheme data");
     }
   };
+  
+  // Reusable function to initiate Quick Join
+  const initiateQuickJoin = async (scheme: any) => {
+    if (!scheme) return;
 
-  // Handle Quick Join button click
-  const handleQuickJoinPress = async () => {
-    // Store the selected scheme before closing modal (to prevent it from being cleared)
-    const schemeToUse = selectedScheme;
-
-    // Close the scheme info modal without clearing selectedScheme immediately
-    Animated.timing(schemeInfoModalAnimation, {
-      toValue: 0,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => {
-      setSchemeInfoModalVisible(false);
-      // Don't clear selectedScheme here - we need it for quick join
-    });
-
+    // Set selected scheme if not already set
+    if (selectedScheme?.SCHEMEID !== scheme.SCHEMEID) {
+      setSelectedScheme(scheme);
+    }
+    
     // Fetch amount limits for the selected scheme
-    if (schemeToUse?.SCHEMEID) {
-      await fetchSchemeAmountLimits(Number(schemeToUse.SCHEMEID));
+    if (scheme?.SCHEMEID) {
+      await fetchSchemeAmountLimits(Number(scheme.SCHEMEID));
     }
 
     // Check KYC status
@@ -1742,7 +1739,6 @@ export default function Home() {
             onPress: () => {
               // Clear selectedScheme when canceling
               setSelectedScheme(null);
-              schemeInfoModalAnimation.setValue(0);
             },
           },
           {
@@ -1759,11 +1755,6 @@ export default function Home() {
 
     // If KYC is completed, open quick join modal
     if (kycStatus === true) {
-      // Ensure selectedScheme is set (in case it was cleared)
-      if (!selectedScheme && schemeToUse) {
-        setSelectedScheme(schemeToUse);
-      }
-
       // Fetch branches if not already fetched
       if (branches.length === 0) {
         await fetchBranches();
@@ -1777,11 +1768,7 @@ export default function Home() {
       setQuickJoinErrors({});
       setCalculatedGoldWeight(null);
       
-      // Wait for the scheme info modal to close completely (animation duration is ~250ms)
-      // iOS MIGHT fail to open the second modal if the first one is still animating out
-      setTimeout(() => {
-        setQuickJoinModalVisible(true);
-      }, 450);
+      setQuickJoinModalVisible(true);
     } else {
       // KYC status is still loading, wait a bit and check again
       setTimeout(() => {
@@ -1795,20 +1782,43 @@ export default function Home() {
                 style: "cancel",
                 onPress: () => {
                   setSelectedScheme(null);
-                  schemeInfoModalAnimation.setValue(0);
                 },
               },
               {
                 text: "Update",
-                onPress: () => {
-                  router.push("/(app)/(tabs)/home/kyc");
-                },
+                onPress: () => router.push("/(app)/(tabs)/home/kyc"),
               },
             ]
           );
+        } else {
+           // Retry initiate if KYC loaded
+           initiateQuickJoin(scheme);
         }
-      }, 500);
+      }, 1000);
     }
+  };
+
+  // Handle Quick Join button click from Info Modal
+  const handleQuickJoinPress = async () => {
+    // Store the selected scheme before closing modal
+    const schemeToUse = selectedScheme;
+
+    if (!schemeToUse) return;
+
+    // Close the scheme info modal
+    Animated.timing(schemeInfoModalAnimation, {
+      toValue: 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setSchemeInfoModalVisible(false);
+      
+      // Wait for modal to close before opening Quick Join
+      // This helps with iOS modal interaction
+      setTimeout(() => {
+         initiateQuickJoin(schemeToUse);
+      }, 300);
+    });
   };
 
   // Calculate gold weight from amount
@@ -1838,12 +1848,22 @@ export default function Home() {
 
   // Handle amount change in quick join modal
   const handleQuickJoinAmountChange = (amount: string) => {
-    // Remove non-numeric characters except decimal point
+    // Remove non-numeric characters except decimal point (though keyboard is numeric, pasting is poss)
     const cleanedAmount = amount.replace(/[^0-9.]/g, "");
+    
+    // Check if exceeding max amount (if limits exist and amount is a valid number)
+    if (schemeAmountLimits && schemeAmountLimits.max_amount) {
+         const numericVal = parseFloat(cleanedAmount);
+         if (!isNaN(numericVal) && numericVal > schemeAmountLimits.max_amount) {
+             return;
+         }
+    }
+
     setQuickJoinFormData((prev) => ({ ...prev, amount: cleanedAmount }));
 
-    // Calculate gold weight if scheme type is weight
-    if (selectedScheme?.SCHEMETYPE?.toLowerCase() === "weight") {
+    // Calculate gold weight if scheme type is weight OR flexi/flexible (as users often want to see est. weight)
+    const schemeType = selectedScheme?.SCHEMETYPE?.toLowerCase() || "";
+    if (schemeType === "weight" || schemeType.includes("flexi") || schemeType.includes("flexible")) {
       calculateGoldWeight(cleanedAmount);
     } else {
       setCalculatedGoldWeight(null);
@@ -1905,20 +1925,64 @@ export default function Home() {
       schemeId: selectedScheme.SCHEMEID,
       schemeName: selectedScheme.SCHEMENAME,
       chits: selectedScheme.chits?.length || 0,
+      amount: quickJoinFormData.amount
     });
 
     setIsSubmittingQuickJoin(true);
 
     try {
-      // Get the first active chit for the scheme
-      const activeChit = selectedScheme.chits?.find(
-        (chit: any) => chit.ACTIVE === "Y"
-      );
+      const enteredAmount = parseFloat(quickJoinFormData.amount.replace(/,/g, ""));
+      const schemeType = selectedScheme.SCHEMETYPE?.toLowerCase() || "";
+      const isFlexi = schemeType.includes("flexi") || schemeType.includes("flexible");
+      const isWeight = schemeType === "weight";
+      
+      let activeChit: any = null;
+
+      // Filter active chits
+      const activeChits = selectedScheme.chits?.filter((chit: any) => chit.ACTIVE === "Y") || [];
+
+      if (activeChits.length === 0) {
+        throw new Error("No active payment plan found for this scheme");
+      }
+
+      // Check if chits have specific fixed amounts
+      // If all active chits have 0 amount, treat it as a Flexi scheme regardless of SCHEMETYPE
+      const hasFixedAmounts = activeChits.some((chit: any) => parseFloat(chit.AMOUNT || "0") > 0);
+
+      if (isFlexi || !hasFixedAmounts) {
+        // For Flexi schemes OR schemes with no fixed amount (effectively Flexi):
+        // 1. Try to find a chit explicitly named 'Flexi' or 'Flexible'
+        // 2. Fallback to the first active chit
+        activeChit = activeChits.find((chit: any) => {
+            const freq = (chit.PAYMENT_FREQUENCY || "").toLowerCase();
+            return freq.includes("flexi") || freq.includes("flexible");
+        }) || activeChits[0];
+
+        // Limits are already validated in validateQuickJoinForm via schemeAmountLimits
+      } else if (isWeight) {
+         // Handling weight schemes - usually they act like Flexi but in grams/money conversion
+         // For now, selecting the first active chit is standard unless specific logic needed
+          activeChit = activeChits[0];
+      } else {
+        // For Fixed Schemes (Daily, Weekly, Monthly, Fixed) where amounts are defined:
+        // The entered amount MUST strictly match one of the active chits' AMOUNT
+        activeChit = activeChits.find((chit: any) => {
+           const chitAmount = parseFloat(chit.AMOUNT || "0");
+           return chitAmount === enteredAmount;
+        });
+
+        if (!activeChit) {
+           // Provide a helpful error message listing available amounts
+           const availableAmounts = activeChits
+             .map((c: any) => `₹${parseFloat(c.AMOUNT).toLocaleString('en-IN')}`)
+             .join(", ");
+           
+           throw new Error(`Invalid amount. For this scheme, please choose one of: ${availableAmounts}`);
+        }
+      }
 
       if (!activeChit) {
-        Alert.alert("Error", "No active payment plan found for this scheme");
-        setIsSubmittingQuickJoin(false);
-        return;
+        throw new Error("Unable to select a valid plan for the entered amount.");
       }
 
       // Get branch ID (use selected branch or first available)
@@ -1973,7 +2037,7 @@ export default function Home() {
 
       // Extract all values from selectedScheme and activeChit before clearing
       const schemeId = Number(selectedScheme.SCHEMEID);
-      const schemeType = selectedScheme.SCHEMETYPE?.toLowerCase() || "weight";
+      const selectedSchemeType = selectedScheme.SCHEMETYPE?.toLowerCase() || "weight";
       const chitId = activeChit.CHITID || null;
       const paymentFrequency = activeChit.PAYMENT_FREQUENCY || "";
 
@@ -1997,7 +2061,7 @@ export default function Home() {
         userId: user?.id || "",
         investmentId: investmentId,
         schemeId: schemeId,
-        schemeType: schemeType,
+        schemeType: selectedSchemeType,
         schemeName: schemeName,
         paymentFrequency: paymentFrequency,
         chitId: chitId,
@@ -2024,7 +2088,7 @@ export default function Home() {
             userId: user?.id || "",
             investmentId: investmentId,
             schemeId: schemeId,
-            schemeType: schemeType,
+            schemeType: selectedSchemeType,
             paymentFrequency: paymentFrequency,
             chitId: chitId,
           };
@@ -2078,7 +2142,7 @@ export default function Home() {
           schemeId: String(schemeId),
           chitId: chitId ? String(chitId) : "",
           paymentFrequency: paymentFrequency,
-          schemeType: schemeType,
+          schemeType: selectedSchemeType,
           userDetails: userDetailsString,
         },
       });
@@ -2822,7 +2886,7 @@ export default function Home() {
                         });
                       }
                     }}
-                    onInfoPress={handleSchemeInfoPress}
+                    onQuickJoinPress={initiateQuickJoin}
                     showDots={false}
                     visibilityFlags={{
                       showFlexiScheme: isVisible("showFlexiScheme"),
@@ -2941,7 +3005,19 @@ export default function Home() {
 
               {/* YouTube Video - Conditionally rendered based on API */}
               {isVisible("showYoutube") && (
-                <YouTubeVideo videos={homeData?.data?.videos} />
+                <YouTubeVideo
+                  videos={homeData?.data?.videos}
+                  onQuickJoinPress={() => {
+                    if (schemes && schemes.length > 0) {
+                      initiateQuickJoin(schemes[0]);
+                    } else {
+                      Alert.alert(
+                        t("error"),
+                        t("schemes.noSchemesAvailable") || "No schemes available"
+                      );
+                    }
+                  }}
+                />
               )}
 
               {/* Social Media Card - Conditionally rendered based on API */}
@@ -2983,6 +3059,7 @@ export default function Home() {
 
               <View style={styles.spacer} />
             </View>
+
           </ScrollView>
 
           <StatusView
@@ -3236,7 +3313,7 @@ export default function Home() {
             </View>
           </Modal>
 
-          {/* Quick Join Modal */}
+          {/* Quick Join Modal - Pro Design */}
           <Modal
             visible={quickJoinModalVisible}
             transparent={true}
@@ -3246,9 +3323,17 @@ export default function Home() {
             <KeyboardAvoidingView
               behavior={Platform.OS === "ios" ? "padding" : "height"}
               style={styles2.modalOverlay}
+              keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
             >
+               {/* Dismiss on backdrop press */}
+               <TouchableOpacity 
+                  style={styles2.modalBackdrop} 
+                  activeOpacity={1} 
+                  onPress={() => setQuickJoinModalVisible(false)}
+               />
+
               <View style={styles2.modalContainer}>
-                {/* Header */}
+                {/* Modern Header */}
                 <View style={styles2.header}>
                   <View style={styles2.headerContent}>
                     <Text style={styles2.title}>
@@ -3266,7 +3351,9 @@ export default function Home() {
                     }}
                     style={styles2.closeButton}
                   >
-                    <Ionicons name="close" size={22} color={theme.colors.textPrimary} />
+                     <View style={styles2.closeButtonContainer}>
+                        <Ionicons name="close" size={20} color={COLORS.dark} />
+                     </View>
                   </TouchableOpacity>
                 </View>
 
@@ -3276,19 +3363,14 @@ export default function Home() {
                   showsVerticalScrollIndicator={false}
                   keyboardShouldPersistTaps="handled"
                 >
-                  {/* Name Input */}
+                  {/* Name Input - Floating Label Style */}
                   <View style={styles2.inputSection}>
-                    <View style={styles2.inputHeader}>
-                      <Text style={styles2.inputLabel}>
-                        {t("name") || "Full Name"}
-                      </Text>
-                      <Text style={styles2.required}>*</Text>
-                    </View>
+                    <Text style={styles2.inputLabel}>{t("name") || "Full Name"}</Text>
                     <View style={[
                       styles2.inputContainer,
                       quickJoinErrors.name && styles2.inputError
                     ]}>
-                      <Ionicons name="person" size={20} color={COLORS.mediumGrey} />
+                      <Ionicons name="person-outline" size={20} color={COLORS.mediumGrey} />
                       <TextInput
                         style={styles2.textInput}
                         value={quickJoinFormData.name}
@@ -3300,74 +3382,67 @@ export default function Home() {
                       />
                     </View>
                     {quickJoinErrors.name && (
-                      <View style={styles2.errorContainer}>
-                        <Ionicons name="warning" size={14} color={COLORS.error} />
-                        <Text style={styles2.errorText}>{quickJoinErrors.name}</Text>
-                      </View>
+                      <Text style={styles2.errorText}>{quickJoinErrors.name}</Text>
                     )}
                   </View>
 
                   {/* Amount Input */}
                   <View style={styles2.inputSection}>
-                    <View style={styles2.inputHeader}>
-                      <Text style={styles2.inputLabel}>
-                        {t("amount") || "Investment Amount"}
-                      </Text>
-                      <Text style={styles2.required}>*</Text>
-                    </View>
-
-                    {schemeAmountLimits && (
-                      <View style={styles2.amountHint}>
-                        <Ionicons name="information-circle" size={14} color={theme.colors.primary} />
-                        <Text style={styles2.amountHintText}>
-                          Min: ₹{schemeAmountLimits.min_amount.toLocaleString("en-IN")} • Max: ₹{schemeAmountLimits.max_amount.toLocaleString("en-IN")}
-                        </Text>
-                      </View>
-                    )}
+                     <View style={styles2.amountHeader}>
+                        <Text style={styles2.inputLabel}>{t("amount") || "Investment Amount"}</Text>
+                        {schemeAmountLimits && (
+                            <Text style={styles2.limitText}>
+                              {t('min') || 'Min'} ₹{schemeAmountLimits.min_amount} - {t('max') || 'Max'} ₹{schemeAmountLimits.max_amount}
+                            </Text>
+                        )}
+                     </View>
 
                     <View style={[
                       styles2.inputContainer,
                       quickJoinErrors.amount && styles2.inputError
                     ]}>
-                      <Ionicons name="wallet" size={20} color={COLORS.mediumGrey} />
+                      <Text style={styles2.currencySymbol}>₹</Text>
                       <TextInput
                         style={styles2.textInput}
                         value={quickJoinFormData.amount}
                         onChangeText={handleQuickJoinAmountChange}
-                        placeholder={t("enterAmount") || "Enter investment amount"}
+                        placeholder={t("enterAmount") || "Enter amount"}
                         placeholderTextColor={COLORS.mediumGrey}
                         keyboardType="numeric"
                       />
-                      <Text style={styles2.currencySymbol}>₹</Text>
                     </View>
-                    {quickJoinErrors.amount && (
-                      <View style={styles2.errorContainer}>
-                        <Ionicons name="warning-outline" size={14} color={COLORS.error} />
-                        <Text style={styles2.errorText}>{quickJoinErrors.amount}</Text>
-                      </View>
-                    )}
+                     {quickJoinErrors.amount && (
+                      <Text style={styles2.errorText}>{quickJoinErrors.amount}</Text>
+                     )}
                   </View>
 
-                  {/* Gold Weight Display */}
+                  {/* Gold Weight Display - Gradient Card */}
                   {selectedScheme?.savingType === 'weight' && (
-                    <View style={styles2.goldWeightCard}>
-                      <View style={styles2.goldWeightHeader}>
-                        <Ionicons name="cube-outline" size={20} color={COLORS.warning} />
-                        <Text style={styles2.goldWeightLabel}>
-                          {t("estimatedGoldWeight") || "Estimated Gold Weight"}
+                     <LinearGradient 
+                        colors={['#FFF9E6', '#FFF']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles2.goldWeightCard}
+                     >
+                        <View style={styles2.goldWeightHeader}>
+                            <View style={styles2.goldIconBg}>
+                                <Ionicons name="scale" size={18} color="#B8860B" />
+                            </View>
+                            <Text style={styles2.goldWeightLabel}>
+                            {t("estimatedGoldWeight") || "Est. Gold Weight"}
+                            </Text>
+                        </View>
+                        <Text style={styles2.goldWeightValue}>
+                            {formatGoldWeight(Number(quickJoinFormData.amount) / Number(homeData?.data?.currentRates?.gold_rate || 0))}
                         </Text>
-                      </View>
-                      <Text style={styles2.goldWeightValue}>
-                        {formatGoldWeight(Number(quickJoinFormData.amount) / Number(homeData?.data?.currentRates?.gold_rate || 0))}
-                      </Text>
-                    </View>
+                     </LinearGradient>
                   )}
 
-                  {/* Quick Select Amount Buttons */}
+                  {/* Quick Select Amount Pills */}
                   {(schemeAmountLimits?.quickselectedamount?.length ?? 0) > 0 && (
                     <View style={styles2.quickSelectSection}>
                       <Text style={styles2.quickSelectLabel}>
-                        {t("quickSelect") || "Quick Select Amount"}
+                        {t("quickSelect") || "Quick Select"}
                       </Text>
                       <View style={styles2.quickSelectGrid}>
                         {schemeAmountLimits?.quickselectedamount
@@ -3395,9 +3470,12 @@ export default function Home() {
                       </View>
                     </View>
                   )}
+                  
+                  {/* Spacing for keyboard */}
+                  <View style={{ height: 100 }} />
                 </ScrollView>
 
-                {/* Submit Button */}
+                {/* Footer */}
                 <View style={styles2.footer}>
                   <TouchableOpacity
                     style={[
@@ -3412,27 +3490,20 @@ export default function Home() {
                       colors={
                         isSubmittingQuickJoin
                           ? [COLORS.mediumGrey, COLORS.mediumGrey]
-                          : [theme.colors.primary, theme.colors.bgPrimaryHeavy]
+                          : [theme.colors.secondary, theme.colors.primary] // Gold to Primary
                       }
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       style={styles2.submitGradient}
                     >
                       {isSubmittingQuickJoin ? (
-                        <View style={styles2.loadingContainer}>
                           <ActivityIndicator size="small" color={COLORS.white} />
-                          <Text style={styles2.submitButtonText}>
-                            {t("submitting") || "Processing..."}
-                          </Text>
-                        </View>
                       ) : (
-                        <View style={styles2.submitContent}>
                           <Text style={styles2.submitButtonText}>
-                            {t("submit") || "Join Scheme"}
+                            {t("joinNow") || "Join Now"}
                           </Text>
-                          <Ionicons name="arrow-forward" size={20} color={COLORS.white} />
-                        </View>
                       )}
+                       {!isSubmittingQuickJoin && <Ionicons name="arrow-forward" size={20} color={COLORS.white} />}
                     </LinearGradient>
                   </TouchableOpacity>
                 </View>
@@ -4417,51 +4488,68 @@ const styles = StyleSheet.create({
   },
   schemeInfoModalFooter: {
     flexDirection: "row",
-    paddingHorizontal: rp(20),
-    paddingVertical: rp(16),
-    paddingBottom: rp(20),
-    gap: rp(12),
+    paddingHorizontal: rp(24),
+    paddingVertical: rp(20),
+    paddingBottom: Platform.OS === 'ios' ? rp(34) : rp(24),
+    gap: rp(16),
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.border?.primary || "#e5e5e5",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 10,
   },
   quickJoinButton: {
     flex: 1,
-    borderRadius: borderRadius.medium,
+    borderRadius: 14,
     overflow: "hidden",
-    ...SHADOW_UTILS.button(),
+    shadowColor: theme.colors.secondary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   quickJoinButtonGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: rp(14),
+    paddingVertical: rp(16),
     paddingHorizontal: rp(16),
     gap: rp(8),
+    height: 56,
   },
   quickJoinButtonText: {
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+    fontSize: rf(15, { minSize: 14, maxSize: 17 }),
     fontWeight: "700",
     color: COLORS.dark,
+    letterSpacing: 0.3,
   },
   joinSchemesButton: {
-    flex: 1,
-    borderRadius: borderRadius.medium,
+    flex: 1.2, // Give slightly more weight to the primary action if needed, or keep equal. Let's try balanced.
+    borderRadius: 14,
     overflow: "hidden",
-    ...SHADOW_UTILS.button(),
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   joinSchemesButtonGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: rp(14),
+    paddingVertical: rp(16),
     paddingHorizontal: rp(16),
     gap: rp(8),
+    height: 56,
   },
   joinSchemesButtonText: {
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+    fontSize: rf(15, { minSize: 14, maxSize: 17 }),
     fontWeight: "700",
     color: COLORS.white,
+    letterSpacing: 0.3,
   },
   // Quick Join Modal Styles
   quickJoinModalOverlay: {
@@ -4560,31 +4648,42 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
   },
   quickJoinModalFooter: {
-    paddingHorizontal: rp(20),
-    paddingVertical: rp(16),
+    paddingHorizontal: rp(24),
+    paddingVertical: rp(20),
+    paddingBottom: Platform.OS === 'ios' ? rp(34) : rp(24),
     borderTopWidth: 1,
     borderTopColor: COLORS.border?.primary || "#e5e5e5",
+    backgroundColor: COLORS.white,
   },
   quickJoinSubmitButton: {
-    borderRadius: borderRadius.medium,
+    borderRadius: 14,
     overflow: "hidden",
-    ...SHADOW_UTILS.button(),
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   quickJoinSubmitButtonDisabled: {
     opacity: 0.6,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   quickJoinSubmitButtonGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: rp(14),
+    paddingVertical: rp(16),
     paddingHorizontal: rp(16),
     gap: rp(8),
+    height: 56,
   },
   quickJoinSubmitButtonText: {
     fontSize: rf(16, { minSize: 14, maxSize: 18 }),
     fontWeight: "700",
     color: COLORS.white,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   quickJoinInputHint: {
     fontSize: rf(12, { minSize: 10, maxSize: 14 }),
@@ -4626,6 +4725,7 @@ const styles = StyleSheet.create({
   quickJoinQuickAmountButtonTextActive: {
     color: COLORS.white,
   },
+
 });
 // Skeleton loading styles
 const skeletonStyles = StyleSheet.create({
@@ -4646,50 +4746,64 @@ const skeletonStyles = StyleSheet.create({
 const styles2 = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   modalContainer: {
-    flex: 1,
-    marginTop: 60,
+    height: '85%',
     backgroundColor: COLORS.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
+    shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowRadius: 10,
+    elevation: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 20,
+    alignItems: 'center',
+    paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.primary,
-    backgroundColor: theme.colors.primary,
+    borderBottomColor: '#F0F0F0',
+    backgroundColor: COLORS.white,
   },
   headerContent: {
     flex: 1,
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-    marginBottom: 4,
+    fontWeight: '800',
+    color: COLORS.text.dark,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
-    color: theme.colors.textPrimary,
+    color: COLORS.text.mediumGrey,
+    marginTop: 4,
+    fontWeight: '500',
   },
   closeButton: {
-    padding: 4,
-    marginLeft: 10,
+    marginLeft: 16,
+  },
+  closeButtonContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,
@@ -4726,13 +4840,24 @@ const styles2 = StyleSheet.create({
     color: theme.colors.primary,
     marginLeft: 4,
   },
+  amountHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  limitText: {
+    fontSize: 12,
+    color: theme.colors.primary,
+    fontWeight: '600',
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.bgWhiteLight,
+    backgroundColor: '#FAFAFA',
     borderWidth: 1,
-    borderColor: theme.colors.borderGoldMedium,
-    borderRadius: 12,
+    borderColor: '#EFEFEF',
+    borderRadius: 14,
     paddingHorizontal: 16,
     height: 56,
   },
@@ -4763,12 +4888,20 @@ const styles2 = StyleSheet.create({
     marginLeft: 4,
   },
   goldWeightCard: {
-    backgroundColor: theme.colors.bgWhiteLight,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.warning,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  goldIconBg: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
   },
   goldWeightHeader: {
     flexDirection: 'row',
@@ -4781,9 +4914,10 @@ const styles2 = StyleSheet.create({
     marginLeft: 8,
   },
   goldWeightValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.darkGrey,
+    fontSize: 24,
+    fontWeight: '800',
+    color: COLORS.text.dark,
+    letterSpacing: 0.5,
   },
   quickSelectSection: {
     marginBottom: 20,
@@ -4797,16 +4931,15 @@ const styles2 = StyleSheet.create({
   quickSelectGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
   quickAmountButton: {
     backgroundColor: theme.colors.bgWhiteLight,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 30, // Pill shape
     borderWidth: 1,
-    borderColor: COLORS.lightGrey,
-    minWidth: 100,
+    borderColor: '#E0E0E0',
   },
   quickAmountButtonActive: {
     backgroundColor: theme.colors.primary + '15',
@@ -4823,20 +4956,18 @@ const styles2 = StyleSheet.create({
     fontWeight: '600',
   },
   footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: rp(24),
+    paddingVertical: rp(20),
+    paddingBottom: Platform.OS === 'ios' ? rp(34) : rp(24),
     borderTopWidth: 1,
-    borderTopColor: COLORS.lightGrey,
+    borderTopColor: COLORS.border?.primary || "#e5e5e5",
     backgroundColor: COLORS.white,
   },
   submitButton: {
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
     shadowColor: theme.colors.primary,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
@@ -4844,10 +4975,16 @@ const styles2 = StyleSheet.create({
   submitButtonDisabled: {
     shadowOpacity: 0,
     elevation: 0,
+    opacity: 0.6,
   },
   submitGradient: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: rp(16),
+    paddingHorizontal: rp(16),
+    height: 56,
+    gap: rp(8),
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -4862,8 +4999,10 @@ const styles2 = StyleSheet.create({
     gap: 8,
   },
   submitButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+    fontWeight: '700',
     color: COLORS.white,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
 });

@@ -566,7 +566,6 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                   {formatGoldWeight(item.goldWeight + totalRewardGoldGrams)}
                 </Text>
               </View> */}
-              {item?.schemesData?.paymentFrequencyId !== 4 && (
                 <View style={styles.enhancedInfoItem}>
                   <View style={styles.enhancedInfoIconContainer}>
                     <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
@@ -578,7 +577,6 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                     {item?.maturityDate}
                   </Text>
                 </View>
-              )}
               <View style={styles.enhancedInfoItem}>
                 <View style={styles.enhancedInfoIconContainer}>
                   <Ionicons name="cash-outline" size={20} color={theme.colors.primary} />
