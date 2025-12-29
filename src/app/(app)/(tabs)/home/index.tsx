@@ -2536,90 +2536,8 @@ export default function Home() {
                   />
                 </TouchableOpacity>
               )}
-            {/* Gold and Silver Rates - Conditionally rendered based on API */}
-            {/* {(isVisible("showGoldRate") || isVisible("showSilverRate")) && (
-              <View style={styles.ratesContainer}>
-                {homeData?.data?.currentRates ? (
-                  <>
-                    {isVisible("showGoldRate") && (
-                      <View
-                        style={[
-                          styles.rateCard,
-                          !homeData.data.currentRates.silver_rate &&
-                          styles.singleRateCard,
-                        ]}
-                      >
-                        <LiveRateCard
-                          type={translations.gold}
-                          rate={
-                            homeData.data.currentRates.gold_rate ||
-                            getDummyData(t).rates.gold.price
-                          }
-                          lastupdated={formatDateToIndian(
-                            homeData.data.currentRates.updated_at
-                          )}
-                          image={require("../../../../../assets/images/gold.png")}
-                          isSingle={!homeData.data.currentRates.silver_rate}
-                        />
-                      </View>
-                    )}
-                    {isVisible("showSilverRate") &&
-                      homeData.data.currentRates.silver_rate && (
-                        <View style={styles.rateCard}>
-                          <LiveRateCard
-                            type={translations.silver}
-                            rate={homeData.data.currentRates.silver_rate}
-                            lastupdated={formatDateToIndian(
-                              homeData.data.currentRates.updated_at
-                            )}
-                            image={require("../../../../../assets/images/silver.png")}
-                          />
-                        </View>
-                      )}
-                  </>
-                ) : (
-                  <View style={styles.rateWarningContainer}>
-                    <View style={styles.rateWarningContent}>
-                      <Ionicons
-                        name="warning"
-                        size={24}
-                        color={COLORS.secondary}
-                      />
-                      <View style={styles.rateWarningTextContainer}>
-                        <Text style={styles.rateWarningTitle}>
-                          {t("liveRatesUnavailable")}
-                        </Text>
-                        <Text style={styles.rateWarningSubtitle}>
-                          {t("pleaseTryAgainLater")}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.rateWarningRates}>
-                      <View style={styles.rateWarningRateItem}>
-                        <Text style={styles.rateWarningRateLabel}>
-                          {t("goldRate")}
-                        </Text>
-                        <Text style={styles.rateWarningRateValue}>0.00</Text>
-                      </View>
-                      <View style={styles.rateWarningDivider} />
-                      <View style={styles.rateWarningRateItem}>
-                        <Text style={styles.rateWarningRateLabel}>
-                          {t("silverRate")}
-                        </Text>
-                        <Text style={styles.rateWarningRateValue}>0.00</Text>
-                      </View>
-                    </View>
-                  </View>
-                )}
-              </View>
-            )} */}
-            {/* Gold Rate Widget (inline, below FlashOffer) */}
-            {/* {homeData?.data?.currentRates?.gold_rate && (
-              <AnimatedGoldRate
-                goldRate={homeData.data.currentRates.gold_rate}
-                updatedAt={homeData.data.currentRates.updated_at}
-              />
-            )} */}
+
+
 
 
             {/* Collections Section - Conditionally rendered based on API */}
@@ -2698,29 +2616,7 @@ export default function Home() {
                 />
               )}
 
-              {/* <View style={styles.sectionHeader}>
-                <View style={styles.sectionHeaderContent}>
-                  <View style={styles.sectionHeaderLine} />
-                  <Text style={styles.sectionHeaderText}>{t('activeSchemes')}</Text>
-                  <View style={styles.sectionHeaderLine} />
-                </View>
-                <Text style={styles.sectionHeaderSubtext}>{t('exploreGoldSavingsPlans')}</Text>
-              </View>
 
-              <View style={styles.bannerContainer}>
-                <FlatList
-                  data={banners}
-                  renderItem={renderBanner}
-                  keyExtractor={(item) => item.id.toString()}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.bannerListContent}
-                  removeClippedSubviews={true}
-                  maxToRenderPerBatch={10}
-                  windowSize={5}
-                  initialNumToRender={10}
-                />
-              </View> */}
               {/* Our Schemes Section - Conditionally rendered based on API */}
               {isVisible("showSchemes") && (
                 <>
@@ -2897,109 +2793,7 @@ export default function Home() {
                     }}
                   />
 
-                  {/* <DynamicSchemeCard
-                    onJoinPress={(scheme) => {
-                      console.log(
-                        "Join button pressed, navigating to schemes page"
-                      );
-                      Alert.alert(
-                        "Navigation",
-                        "Navigating to schemes page...",
-                        [
-                          {
-                            text: "OK",
-                            onPress: () =>
-                              router.push("/(app)/(tabs)/home/schemes"),
-                          },
-                        ]
-                      );
-                    }}
-                    onInfoPress={(scheme) => {
-                      // Enhanced null/undefined handling for scheme data
-                      const safeText = (textObj: any): string => {
-                        // Handle null, undefined, empty string, or falsy values
-                        if (
-                          textObj === null ||
-                          textObj === undefined ||
-                          textObj === ""
-                        ) {
-                          return "";
-                        }
 
-                        // Handle strings
-                        if (typeof textObj === "string") {
-                          return textObj.trim() || "";
-                        }
-
-                        // Handle numbers
-                        if (typeof textObj === "number") {
-                          return isNaN(textObj) ? "" : textObj.toString();
-                        }
-
-                        // Handle boolean
-                        if (typeof textObj === "boolean") {
-                          return textObj.toString();
-                        }
-
-                        // Handle objects with en/ta keys
-                        if (typeof textObj === "object" && textObj !== null) {
-                          // Check if it's a valid object with language keys
-                          if (
-                            textObj.hasOwnProperty("en") ||
-                            textObj.hasOwnProperty("ta")
-                          ) {
-                            const enText = textObj.en || "";
-                            const taText = textObj.ta || "";
-
-                            // Use current language preference or fallback to en
-                            return enText || taText || "";
-                          }
-
-                          // Handle arrays
-                          if (Array.isArray(textObj)) {
-                            const validItems = textObj.filter(
-                              (item) =>
-                                item !== null &&
-                                item !== undefined &&
-                                item !== ""
-                            );
-                            return validItems.length > 0
-                              ? validItems.join(", ")
-                              : "";
-                          }
-
-                          // Handle other objects - convert to string safely
-                          try {
-                            const stringified = JSON.stringify(textObj);
-                            return stringified === "{}" || stringified === "[]"
-                              ? ""
-                              : stringified;
-                          } catch {
-                            return "";
-                          }
-                        }
-
-                        // Fallback for any other type
-                        try {
-                          return String(textObj);
-                        } catch {
-                          return "";
-                        }
-                      };
-
-                      // Safe logging with fallback
-                      const schemeName = safeText(scheme?.SCHEMENAME);
-                      logger.log("Info:", schemeName || "Unknown Scheme");
-                    }}
-                    showDots={false}
-                    visibilityFlags={{
-                      showFlexiScheme: isVisible("showFlexiScheme"),
-                      showFixedScheme: isVisible("showFixedScheme"),
-                      showDailyScheme: isVisible("showDailyScheme"),
-                      showWeeklyScheme: isVisible("showWeeklyScheme"),
-                      showMonthlyScheme: isVisible("showMonthlyScheme"),
-                    }}
-                  /> */}
                 </>
               )}
 
@@ -3007,16 +2801,6 @@ export default function Home() {
               {isVisible("showYoutube") && (
                 <YouTubeVideo
                   videos={homeData?.data?.videos}
-                  onQuickJoinPress={() => {
-                    if (schemes && schemes.length > 0) {
-                      initiateQuickJoin(schemes[0]);
-                    } else {
-                      Alert.alert(
-                        t("error"),
-                        t("schemes.noSchemesAvailable") || "No schemes available"
-                      );
-                    }
-                  }}
                 />
               )}
 

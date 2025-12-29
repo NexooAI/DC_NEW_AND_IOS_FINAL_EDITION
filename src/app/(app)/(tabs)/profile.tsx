@@ -612,6 +612,7 @@ const ProfileScreen = () => {
                     <View style={styles.profileInfo}>
                       <Text style={styles.profileName} numberOfLines={1}>{user?.name || t("notProvided")}</Text>
                       <Text style={styles.profileEmail} numberOfLines={1}>{user?.email || t("notProvided")}</Text>
+                      <Text style={styles.profileEmail} numberOfLines={1}>+91 - {user?.mobile || t("notProvided")}</Text>
                       
                       <View style={styles.userIdBadge}>
                         <Text style={styles.userIdText}>ID: {user?.id || "N/A"}</Text>
