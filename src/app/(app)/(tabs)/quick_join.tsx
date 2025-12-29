@@ -499,7 +499,7 @@ export default function QuickJoinScreen() {
             pathname: "/(app)/(tabs)/home/paymentNewOverView",
             params: {
               amount: formData.amount.replace(/,/g, ""),
-              schemeName: selectedScheme.SCHEMENAME || 'Scheme',
+              schemeName: selectedScheme.SCHEMENAME.en || 'Scheme',
               schemeId: String(selectedScheme.SCHEMEID),
               chitId: String(activeChit.CHITID),
               schemeType: selectedScheme.SCHEMETYPE || 'monthly',

@@ -4,7 +4,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-
+  ScrollView,
   TextInput,
   Image,
   Platform,
@@ -1195,17 +1195,19 @@ export default function Login() {
               },
             ]}
           >
-            <View
-              style={[
+            <ScrollView
+              contentContainerStyle={[
                 registerStyles.scrollViewContent,
                 {
-                  flex: 1,
+                  flexGrow: 1,
                   minHeight: screenHeight - insets.top - insets.bottom,
                   paddingTop: isSmallScreen ? 20 : isMediumScreen ? 30 : 40,
                   // Prevent any keyboard-related adjustments
                   position: "relative",
                 },
               ]}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
               <View
                 style={[
@@ -1643,7 +1645,7 @@ export default function Login() {
                   )}
                 </View>
               </View>
-            </View>
+            </ScrollView>
           </View>
           {/* <View style={registerStyles.poweredByContainer}>
             <Text style={registerStyles.poweredByText}>
