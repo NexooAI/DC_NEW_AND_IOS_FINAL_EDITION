@@ -291,12 +291,12 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
               </View>
               
               {/* Rewards Badge - Gold on Red */}
-              {(user?.rewards !== undefined) && (
+              {/* {(user?.rewards !== undefined) && (
                 <View style={styles.rewardsBadge}>
                   <Ionicons name="trophy" size={10} color={theme.colors.primary} style={{marginRight: 4}} />
                   <Text style={styles.rewardsText}>{user.rewards} Credits</Text>
                 </View>
-              )}
+              )} */}
             </View>
 
             <View style={styles.userDetails}>
