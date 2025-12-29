@@ -66,12 +66,21 @@ class ApiLogger {
       if (typeof data === 'object') {
         return data;
       } else if (typeof data === 'string') {
-        return JSON.parse(data);
+        // Optimization: heuristics to check if it looks like JSON before trying to parse
+        // This prevents SyntaxErrors for regular strings like "undefined" or plain text
+        const trimmed = data.trim();
+        if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+          (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+          return JSON.parse(data);
+        }
+        // If it doesn't look like JSON (e.g. "undefined", "null", plain text), just return it
+        return data;
       } else {
         return String(data);
       }
     } catch (parseError) {
-      logger.warn('Failed to parse request data as JSON:', parseError);
+      // If parsing fails despite looking like JSON, just return the string representation
+      // We silence the warning to prevent log noise for inevitable edge cases
       return String(data);
     }
   }
