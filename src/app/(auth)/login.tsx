@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   TextInput,
+  Pressable,
   Image,
   Platform,
   Alert,
@@ -1420,11 +1421,15 @@ export default function Login() {
                           />
                         </TouchableOpacity>
                       </View>
-                      <View
+                      <Pressable
                         style={[
                           registerStyles.otpInputsWrapper,
                           { alignItems: "center", justifyContent: "center", position: "relative" },
                         ]}
+                        onPress={() => {
+                          // Force focus on the input when the container is pressed
+                          inputRefs[0].current?.focus();
+                        }}
                       >
                         {/* Hidden TextInput for OTP Autofill */}
                         <TextInput
@@ -1450,8 +1455,9 @@ export default function Login() {
                           autoComplete="sms-otp"
                           editable={!loading}
                           autoFocus={true}
+                          pointerEvents="none" // Pass touches to parent Pressable to ensure reliable focus on iOS
                         />
-                        
+
                         <View
                           style={[
                             registerStyles.otpInputsContainer,
@@ -1512,7 +1518,7 @@ export default function Login() {
                             color={theme.colors.white}
                           />
                         </TouchableOpacity>
-                      </View>
+                      </Pressable>
                       <View
                         style={[
                           registerStyles.timerContainer,
