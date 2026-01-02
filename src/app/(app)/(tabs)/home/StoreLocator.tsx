@@ -61,7 +61,7 @@ if (Platform.OS === "web") {
 const stores = [
   {
     id: 1,
-    name: "DC Jewellers ",
+    name: "Sri murugan gold house ",
     latitude: 8.427828080550306,
     longitude: 78.02855977120382,
     address:

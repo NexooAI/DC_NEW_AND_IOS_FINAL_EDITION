@@ -384,13 +384,13 @@ const ProfileScreen = () => {
   const handleShareApp = async () => {
     try {
       const playStoreLink =
-        "https://play.google.com/store/apps/details?id=com.nexooai.dcjewellery&hl=en_IN";
-      const message = `Join me on DC Jewellers Gold and Diamonds! Download the app from: ${playStoreLink}`;
+        "https://play.google.com/store/apps/details?id=com.nexooai.srimurugangoldhouse&hl=en-US";
+      const message = `Join me on Srimurugan Gold House! Download the app from: ${playStoreLink}`;
 
       const result = await Share.share({
         message: message,
         url: playStoreLink,
-        title: "DC Jewellers",
+        title: "Srimurugan Gold House",
       });
     } catch (error) {
       logger.error("Error sharing:", error);

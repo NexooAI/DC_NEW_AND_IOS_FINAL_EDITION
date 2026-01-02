@@ -8,6 +8,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Device from 'expo-device';
 
 import { logger } from '@/utils/logger';
+import { themeConfig } from '@/constants/theme.config';
 
 // Check if running in Expo Go
 const isExpoGo = Constants.executionEnvironment === 'storeClient';
@@ -340,9 +341,9 @@ class NotificationService {
             type: "fcm",
             deviceId: generateUUID(), // Generate UUID like in the screenshot
             development: __DEV__, // true for development, false for production
-            appId: "com.nexooai.dcjewellery", // Use the exact app bundle ID
+            appId: themeConfig.bundleIdentifier, // Use the exact app bundle ID
             deviceToken: fcmToken, // This is the actual FCM token
-            projectId: "9af1745a-105c-44f9-9e53-a111bc6ed9ce" // Use the exact project ID
+            projectId: themeConfig.projectId // Use the exact project ID
           };
         } else {
           // Use the exact same payload without modifying deviceToken

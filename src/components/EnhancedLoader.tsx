@@ -302,7 +302,7 @@ const EnhancedLoader: React.FC<EnhancedLoaderProps> = ({
             },
           ]}
         >
-          {/* DC Jewellers logo */}
+          {/* Sri murugan gold house logo */}
           <Image
             source={require("../../assets/images/adaptive-icon.png")}
             style={[styles.logo, { width: logoSize, height: logoSize }]}

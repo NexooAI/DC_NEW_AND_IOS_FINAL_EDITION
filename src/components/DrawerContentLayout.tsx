@@ -36,7 +36,7 @@ const DrawerContentLayout: React.FC<DrawerContentLayoutProps> = ({
         <View style={styles.footer}>
           <Text style={styles.versionText}>v{version}</Text>
           <Text style={styles.copyrightText}>
-             DC Jewellers. All rights reserved.
+             Sri murugan gold house. All rights reserved.
           </Text>
         </View>
       </View>

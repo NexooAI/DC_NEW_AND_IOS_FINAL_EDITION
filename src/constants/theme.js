@@ -585,16 +585,19 @@ const theme = {
   },
 
   constants: {
-    customerName: "DC Jewellers",
-    address: "Road Fathima Nagar, Mission Quarters, Anchery, Thrissur, Kerala 680005",
-    mobile: "+919061803999",
-    whatsapp: "+919061803999",
-    email: "dcjewellerstcr@gmail.com",
-    website: "https://www.dcjewellers.org",
-    latitude: 8.427828080550306,
-    longitude: 78.02855977120382,
+    customerName: "Sri Murugan Gold House",
+    address: "205/64A, Main Bazar, Udangudi, Tamil Nadu 628203",
+    mobile: "04639256444",
+    whatsapp: "+91 9486979231",
+    email: "saran1310@gmail.com",
+    website: "https://srimurugangoldhouse.in",
+    latitude: 8.428081030856577,
+    longitude: 78.02855423523839,
+    ENCRYPTION_KEY: "12345678901234567890123456789012", // 32 chars
+    IV: "1234567890123456", // 16 chars
+    PAYLOAD_SECRET: "srimurugangoldhouse",
   },
-  baseUrl: "https://api.prod.dcjewellers.org",
+  baseUrl: "https://api.prod.srimurugangoldhouse.in",
   // baseUrl: "https://nexooai.ramcarmotor.com",
   youtubeUrl: "https://youtu.be/8RAhdn5b9Bw",
 };

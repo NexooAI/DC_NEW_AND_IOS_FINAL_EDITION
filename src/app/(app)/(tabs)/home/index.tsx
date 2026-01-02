@@ -3307,7 +3307,7 @@ export default function Home() {
           logger.log("📝 User rating feedback:", { rating, feedback });
           // You can send this to your API if needed
         }}
-        appName="DC Jewellers"
+        appName="Srimurugan Gold House"
       />
         <LanguageSelector
           visible={languageSelectorVisible}

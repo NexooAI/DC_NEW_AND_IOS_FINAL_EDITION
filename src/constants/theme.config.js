@@ -1,15 +1,13 @@
-const { theme } = require('./theme');
-
 const themeConfig = {
-  customerName: "DC Jewellers",
+  customerName: "Sri Murugan Gold House",
   primaryColor: "#850111",
   splashLogo: "./assets/images/splashscreen_logo.png",
   icon: "./assets/images/logo_trans.png",
   adaptiveIcon: "./assets/images/adaptive-icon.png",
-  bundleIdentifier: "com.nexooai.dcjewellers",
-  projectId: "4a014870-9859-4e8d-a8a3-09ca4b79c635",
+  projectId: "18a93bd7-51d4-4464-ba6c-a7cb4533c799",
   owner: "sudhakarg",
-  slug: "dcjewellers",
+  bundleIdentifier: "com.nexooai.srimurugangoldhouse",
+  slug: "sri-murugan-gold-house",
 };
 
 module.exports = { themeConfig };

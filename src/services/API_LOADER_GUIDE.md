@@ -163,7 +163,7 @@ The enhanced loader includes:
 - **Crown Overlay** - Royal jewelry business touch
 - **Sparkle Effects** - Premium visual effects
 - **Pulsing Glow** - Smooth breathing animation
-- **DC Jewellers Branding** - Professional company branding
+- **Sri murugan gold house Branding** - Professional company branding
 
 ## Best Practices
 

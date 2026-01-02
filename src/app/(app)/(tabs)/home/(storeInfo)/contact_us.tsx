@@ -42,8 +42,8 @@ const ContactUs = () => {
       ios: "maps:0,0?q=",
       android: "geo:0,0?q=",
     });
-    const latLng = `${10.519306421007363},${76.22348998262478}`;
-    const label = "DC Jewellers";
+    const latLng = `${8.427828080550306},${78.02855977120382}`;
+    const label = "Sri murugan gold house";
     const url = Platform.select({
       ios: `${scheme}${label}@${latLng}`,
       android: `${scheme}${latLng}(${label})`,
@@ -169,7 +169,7 @@ const ContactUs = () => {
 
           {/* Company Info */}
           <View style={styles.companyContainer}>
-            <Text style={styles.companyTitle}>DC JEWELLERS</Text>
+            <Text style={styles.companyTitle}>SRI MURUGAN GOLD HOUSE</Text>
             <Text style={styles.companySubtitle}>Since 2020</Text>
             <Text style={styles.companyAddress}>
               {theme.constants.address}

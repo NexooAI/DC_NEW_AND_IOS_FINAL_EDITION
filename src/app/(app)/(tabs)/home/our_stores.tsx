@@ -42,10 +42,11 @@ interface Store {
 const stores: Store[] = [
   {
     id: 1,
-    name: "DC Jewellers",
-    latitude: 10.519306421007363,
-    longitude: 76.22348998262478,
-    address: "Road Fathima Nagar, Mission Quarters, Anchery, Thrissur, Kerala 680005",
+    name: "Sri murugan gold house ",
+    latitude: 8.427828080550306,
+    longitude: 78.02855977120382,
+    address:
+      "205/64A, Main Bazar, Udangudi, Thoothukudi(D), Tamil Nadu - 628203",
   },
 ];
 

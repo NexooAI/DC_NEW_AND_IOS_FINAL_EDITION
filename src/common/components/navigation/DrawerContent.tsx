@@ -424,7 +424,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
         </View>
 
         <View style={styles.versionContainer}>
-          <Text style={styles.companyName}>DC JEWELLERS</Text>
+          <Text style={styles.companyName}>SRI MURUGAN GOLD HOUSE</Text>
           <Text style={styles.versionText}>v{version}</Text>
         </View>
       </View>
