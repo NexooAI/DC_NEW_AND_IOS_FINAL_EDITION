@@ -1079,5 +1079,9 @@
   "failedToInitiateJoin": "Failed to initiate join",
   "joinNow": "Join Now",
   "name": "Full Name",
-  "amount": "Investment Amount"
+  "amount": "Investment Amount",
+  "gold_22kt": "GOLD 22KT",
+  "silver_999": "SILVER 999",
+  "per_gram": "/gm",
+  "last_update_label": "Last Update"
 }

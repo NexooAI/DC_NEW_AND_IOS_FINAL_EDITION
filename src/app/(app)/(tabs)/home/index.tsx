@@ -2532,6 +2532,7 @@ export default function Home() {
                 >
                   <AnimatedGoldRate
                     goldRate={homeData.data.currentRates.gold_rate}
+                    silverRate={homeData.data.currentRates.silver_rate}
                     updatedAt={homeData.data.currentRates.updated_at || ""}
                   />
                 </TouchableOpacity>
@@ -2613,6 +2614,8 @@ export default function Home() {
                   retryCount={retryCount}
                   onImageLoad={handleProfileImageLoad}
                   onImageError={handleProfileImageError}
+                  goldRate={homeData?.data?.currentRates?.gold_rate}
+                  silverRate={homeData?.data?.currentRates?.silver_rate}
                 />
               )}
 

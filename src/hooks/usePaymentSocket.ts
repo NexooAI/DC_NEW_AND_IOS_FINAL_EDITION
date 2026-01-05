@@ -1,11 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useRouter } from "expo-router";
-import paymentService from "@/services/payment.service";
-import api from "@/services/api";
-import { Alert } from 'react-native';
-import { theme } from "@/constants/theme";
 import { AppState, AppStateStatus } from "react-native";
+import { theme } from "@/constants/theme";
 
 interface PaymentSocketProps {
   onPaymentSuccess?: (data: any) => void;
@@ -28,7 +25,34 @@ export const usePaymentSocket = ({
 }: PaymentSocketProps) => {
   const socketRef = useRef<Socket | null>(null);
   const isPaymentCompleted = useRef(false);
+  const parsedUserDetailsRef = useRef(parsedUserDetails);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
 
+  // Keep parsedUserDetailsRef updated
+  useEffect(() => {
+    parsedUserDetailsRef.current = parsedUserDetails;
+  }, [parsedUserDetails]);
+
+  const buildPaymentMetadata = (pd: any, currentOrderId?: string) => {
+    const d = pd || {};
+    const inner = d?.data?.data || {};
+    return {
+      orderId: currentOrderId || d?.orderId || "",
+      investmentId: inner?.id || d?.id || d?.investmentId || 0,
+      userId: inner?.userId || d?.userId || 0,
+      schemeId: inner?.schemeId || d?.schemeId || 0,
+      chitId: inner?.chitId || d?.chitId || 0,
+      paymentAmount: inner?.amount || d?.amount || 0,
+      amount: inner?.amount || d?.amount || 0,
+      utr_reference_number: "",
+      receipt: "receipt",
+      currency: "INR",
+      paymentStatus: "PENDING",
+      isManual: "No",
+      userEmail: inner?.email || d?.email || "",
+      userPhone: inner?.mobile || d?.mobile || "",
+    };
+  };
 
   useEffect(() => {
     // Initialize socket connection
@@ -41,53 +65,55 @@ export const usePaymentSocket = ({
 
     socketRef.current = socketInstance;
 
+    const emitMetadata = (currentOrderId: string) => {
+      if (!currentOrderId) return;
+
+      console.log("🎯 Emitting createOrder/store_payment_metadata for:", currentOrderId);
+
+      // 1. Emit createOrder
+      const metadata = buildPaymentMetadata(parsedUserDetailsRef.current, currentOrderId);
+      socketInstance.emit("createOrder", metadata);
+
+      // 2. Emit store_payment_metadata
+      // Use a consistent structure for store_payment_metadata
+      const userDetails = parsedUserDetailsRef.current || {};
+      const inner = userDetails.data?.data || {};
+
+      // This object structure seems to be what the backend expects based on previous code
+      const storeMetadata = {
+        investmentId: metadata.investmentId,
+        userId: metadata.userId,
+        schemeId: metadata.schemeId,
+        chitId: metadata.chitId,
+        paymentAmount: metadata.paymentAmount,
+        amount: metadata.amount,
+        isManual: metadata.isManual,
+        orderId: metadata.orderId,
+        utr_reference_number: metadata.utr_reference_number,
+        accountNumber: inner.accountNo || userDetails.accountNo || userDetails.accNo || "",
+        accountName: inner.accountName || userDetails.accountName || userDetails.accountname || "",
+        userMobile: inner.mobile || userDetails.mobile || userDetails.userMobile || ""
+      };
+
+      socketInstance.emit("store_payment_metadata", storeMetadata);
+    };
+
     // Handle connection events
     socketInstance.on("connect", () => {
-      const currentOrderId = orderId || parsedUserDetails?.orderId;
-      console.log("=== SOCKET CONNECTION DEBUG ===");
-      console.log("✅ Socket connected successfully!");
-      console.log("Socket ID:", socketInstance.id);
-      console.log("Socket connected status:", socketInstance.connected);
-      console.log("Current orderId:", currentOrderId);
-      console.log("parsedUserDetails?.orderId:", parsedUserDetails?.orderId);
-      console.log("parsedUserDetails", parsedUserDetails);
+      setIsSocketConnected(true);
+      console.log("✅ Socket connected. ID:", socketInstance.id);
 
+      const currentOrderId = orderId || parsedUserDetailsRef.current?.orderId;
       if (currentOrderId) {
-        console.log("🎯 Emitting joinOrderRoom for orderId:", currentOrderId);
-        socketInstance.emit("joinOrderRoom", currentOrderId);
-        console.log("✅ joinOrderRoom emission completed");
-
-        // Emit store_payment_metadata after successful connection
-        const paymentMetadata = {
-          orderId: currentOrderId,
-          userMobile: parsedUserDetails?.data?.data?.mobile || parsedUserDetails?.mobile || parsedUserDetails?.userMobile,
-          investmentId: parsedUserDetails?.data?.data?.id || parsedUserDetails?.id || parsedUserDetails?.investmentId,
-          userId: parsedUserDetails?.data?.data?.userId || parsedUserDetails?.userId,
-          schemeId: parsedUserDetails?.data?.data?.schemeId || parsedUserDetails?.schemeId,
-          chitId: parsedUserDetails?.data?.data?.chitId || parsedUserDetails?.chitId,
-          amount: parsedUserDetails?.data?.data?.amount || parsedUserDetails?.amount,
-          isManual: "no",
-          utr_reference_number: "",
-          accountNumber: parsedUserDetails?.data?.data?.accountNo || parsedUserDetails?.accountNo || parsedUserDetails?.accNo || "",
-          accountName: parsedUserDetails?.data?.data?.accountName || parsedUserDetails?.accountName || parsedUserDetails?.accountname || ""
-        };
-
-        console.log("🎯 Emitting store_payment_metadata:", paymentMetadata);
-        socketInstance.emit("store_payment_metadata", paymentMetadata);
-        console.log("✅ store_payment_metadata emission completed");
+        emitMetadata(currentOrderId);
       } else {
         console.warn("⚠️ No orderId found on connect");
-        console.log("Available orderId sources:");
-        console.log("- orderId prop:", orderId);
-        console.log("- parsedUserDetails?.orderId:", parsedUserDetails?.orderId);
       }
     });
 
     socketInstance.on("connect_error", (error) => {
-      console.error("=== SOCKET CONNECTION ERROR ===");
-      console.error("Socket connection error:", error);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
+      setIsSocketConnected(false);
+      console.error("❌ Socket connection error:", error.message);
       onPaymentError?.({
         error: "Connection Error",
         message: "Failed to connect to payment server",
@@ -95,177 +121,138 @@ export const usePaymentSocket = ({
     });
 
     socketInstance.on("disconnect", (reason) => {
-      console.log("=== SOCKET DISCONNECT ===");
-      console.log("Socket disconnected. Reason:", reason);
-      console.log("isPaymentCompleted:", isPaymentCompleted.current);
+      setIsSocketConnected(false);
+      console.log("⚠️ Socket disconnected:", reason);
+
       if (!isPaymentCompleted.current) {
-        console.log("⚠️ Payment not completed, showing error");
-        onPaymentError?.({
-          error: "Disconnected",
-          message: "Lost connection to payment server",
-        });
-      } else {
-        console.log("✅ Payment completed, disconnect is expected");
+        // Only report error if we weren't expecting a disconnect (i.e., payment not done)
+        // And also maybe check if it's io client disconnect (manual)
+        if (reason !== "io client disconnect") {
+          onPaymentError?.({
+            error: "Disconnected",
+            message: "Lost connection to payment server",
+          });
+        }
       }
     });
 
     // Listen for payment status updates
     socketInstance.on("payment_status_update", async (data: any) => {
-      console.log("Payment status update received:---------------->> ", data);
+      console.log("📩 Payment Update:", JSON.stringify(data, null, 2));
 
-      // Check both the top-level status and the payment response status
-      const isSuccess = data?.status === "success" ||
-        data?.paymentResponse?.status === "CHARGED" ||
-        data?.paymentResponse?.txn_detail?.status === "CHARGED";
+      // // Check success status
+      // // Some backends send { status: 'success' }, others nested in paymentResponse
+      // const isSuccess =
+      //   data?.status === "success" ||
+      //   data?.status === "completed" ||
+      //   data?.paymentResponse?.status === "CHARGED" ||
+      //   data?.paymentResponse?.txn_detail?.status === "CHARGED";
 
-      try {
-        if (isSuccess) {
-          console.log('Payment charged successfully');
-          isPaymentCompleted.current = true;
+      // const isFailed =
+      //   data?.status === "failed" ||
+      //   data?.paymentResponse?.status === "FAILED"; // Add more failure checks if needed
 
-          if (parsedUserDetails && router) {
-            try {
-              // await handlePaymentSuccess(data);
-              // onPaymentSuccess?.(data);
+      // try {
+      //   if (isSuccess) {
+      //     console.log("✅ Payment Success Detected");
+      //     isPaymentCompleted.current = true;
 
-              // Navigate to success page
-              router.replace({
-                pathname: '/(tabs)/home/payment-success',
-                params: {
-                  amount: data?.paymentResponse?.amount,
-                  txnId: data?.paymentResponse?.txn_id,
-                  orderId: data?.paymentResponse?.order_id,
-                  message: data?.paymentResponse?.payment_gateway_response?.resp_message || 'Payment Successful'
-                }
-              });
-            } catch (error) {
-              console.error("Error processing successful payment:", error);
-              onPaymentError?.({
-                error: "Payment Processing Error",
-                message: "Failed to process successful payment",
-              });
-            }
-          }
+      //     // Clean up socket
+      //     if (socketInstance.connected) socketInstance.disconnect();
 
-          if (socketInstance && socketInstance.connected) {
-            socketInstance.disconnect();
-          }
-        } else {
-          console.log('Payment not charged');
-          isPaymentCompleted.current = true;
+      //     // Trigger callback or default navigation
+      //     if (onPaymentSuccess) {
+      //       onPaymentSuccess(data);
+      //     } else {
+      //       // Default handling if no callback provided (though PaymentWebView provides one)
+      //       const response = data?.paymentResponse || {};
+      //       router.replace({
+      //         pathname: '/(tabs)/home/payment-success',
+      //         params: {
+      //           amount: response.amount,
+      //           txnId: response.txn_id,
+      //           orderId: response.order_id,
+      //           message: response.payment_gateway_response?.resp_message || 'Payment Successful'
+      //         }
+      //       });
+      //     }
 
-          if (parsedUserDetails && router) {
-            // const transactionPayload = {
-            //   userId: parsedUserDetails.data?.data?.userId || parsedUserDetails.userId || '',
-            //   investmentId: parsedUserDetails.data?.data?.id || parsedUserDetails.id || parsedUserDetails.investmentId ||'',
-            //   schemeId: parsedUserDetails.data?.data?.schemeId || parsedUserDetails.schemeId || '',
-            //   chitId: parsedUserDetails.data?.data?.chitId || parsedUserDetails.chitId || '',
-            //   accountNumber: parsedUserDetails.data?.data?.accountNo || parsedUserDetails.accountNo || parsedUserDetails.accNo ||'',
-            //   paymentId: 0,
-            //   orderId: data?.paymentResponse?.order_id || '',
-            //   amount: data?.paymentResponse?.amount || '',
-            //   currency: data?.paymentResponse?.currency || 'INR',
-            //   paymentMethod: data?.paymentResponse?.payment_method || '',
-            //   signature: '000',
-            //   paymentStatus: data?.paymentResponse?.payment_gateway_response?.resp_message || 'Failed',
-            //   paymentDate: data?.paymentResponse?.date_created || '',
-            //   status: data?.paymentResponse?.status || 'FAILED',
-            //   gatewayTransactionId: data?.paymentResponse?.txn_id || '',
-            //   "gatewayresponse": JSON.stringify(data?.paymentResponse),
-            //   "isManual":"no",
-            //   "utr_reference_number":""
-            // };
+      //   } else if (isFailed) {
+      //     console.log("❌ Payment Failure Detected");
+      //     isPaymentCompleted.current = true;
 
-            // try {
-            //   await paymentService.createTransaction(transactionPayload);
-            // } catch (error) {
-            //   console.error("Error posting failed transaction:", error);
-            // }
+      //     if (socketInstance.connected) socketInstance.disconnect();
 
-            router.replace({
-              pathname: '/(tabs)/home/payment-failure',
-              params: {
-                message: data?.paymentResponse?.payment_gateway_response?.resp_message ||
-                  data?.paymentResponse?.txn_detail?.error_message ||
-                  'Payment Failed',
-                orderId: data?.paymentResponse?.order_id,
-                txnId: data?.paymentResponse?.txn_id,
-                amount: data?.paymentResponse?.amount,
-                status: data?.paymentResponse?.status
-              }
-            });
-          }
-
-          onPaymentFailure?.(data);
-          if (socketInstance && socketInstance.connected) {
-            socketInstance.disconnect();
-          }
-        }
-      } catch (error) {
-        console.error('Error in payment status update API sequence:', error);
-        onPaymentError?.({
-          error: "API Error",
-          message: "Failed to process payment status",
-        });
-      }
+      //     if (onPaymentFailure) {
+      //       onPaymentFailure(data);
+      //     } else {
+      //       const response = data?.paymentResponse || {};
+      //       router.replace({
+      //         pathname: '/(tabs)/home/payment-failure',
+      //         params: {
+      //           message: response.payment_gateway_response?.resp_message || response.txn_detail?.error_message || 'Payment Failed',
+      //           orderId: response.order_id,
+      //           txnId: response.txn_id,
+      //           amount: response.amount,
+      //           status: response.status
+      //         }
+      //       });
+      //     }
+      //   } else if (data?.status === "expired") {
+      //     console.log("⚠️ Payment Expired");
+      //     if (socketInstance.connected) socketInstance.disconnect();
+      //     onPaymentExpired?.();
+      //   }
+      // } catch (error) {
+      //   console.error("Error processing socket event:", error);
+      //   onPaymentError?.({
+      //     error: "Processing Error",
+      //     message: "Failed to process payment update"
+      //   });
+      // }
     });
 
+    // App State handling for reconnection
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (nextAppState === "active") {
-        // App has come to the foreground
-        const socketInstance = socketRef.current;
-        const currentOrderId = orderId || parsedUserDetails?.orderId;
-        console.log("[AppState] App is active. Socket connected:", socketInstance?.connected, "OrderId:", currentOrderId);
-        if (socketInstance && !socketInstance.connected) {
-          console.log("[AppState] Socket not connected. Attempting to reconnect...");
-          socketInstance.connect();
-        }
-        if (socketInstance && socketInstance.connected && currentOrderId) {
-          console.log("[AppState] Emitting joinOrderRoom after reconnect for orderId:", currentOrderId);
-          socketInstance.emit("joinOrderRoom", currentOrderId);
+        const currentOrderId = orderId || parsedUserDetailsRef.current?.orderId;
+        console.log("📱 App active. Socket connected:", socketRef.current?.connected);
 
-          // Also emit store_payment_metadata when app becomes active
-          const paymentMetadata = {
-            orderId: currentOrderId,
-            investmentId: parsedUserDetails?.data?.data?.id || parsedUserDetails?.id || parsedUserDetails?.investmentId || 0,
-            userId: parsedUserDetails?.data?.data?.userId || parsedUserDetails?.userId || 0,
-            schemeId: parsedUserDetails?.data?.data?.schemeId || parsedUserDetails?.schemeId || 0,
-            chitId: parsedUserDetails?.data?.data?.chitId || parsedUserDetails?.chitId || 0,
-            amount: parsedUserDetails?.data?.data?.amount || parsedUserDetails?.amount || 0,
-            isManual: "no",
-            utr_reference_number: "",
-            accountNumber: parsedUserDetails?.data?.data?.accountNo || parsedUserDetails?.accountNo || parsedUserDetails?.accNo || "",
-            accountName: parsedUserDetails?.data?.data?.accountName || parsedUserDetails?.accountName || parsedUserDetails?.accountname || ""
-          };
-
-          console.log("[AppState] Emitting store_payment_metadata after reconnect:", paymentMetadata);
-          socketInstance.emit("store_payment_metadata", paymentMetadata);
-        } else if (socketInstance && !socketInstance.connected) {
-          console.warn("[AppState] Socket still not connected after reconnect attempt.");
+        if (socketRef.current && !socketRef.current.connected) {
+          console.log("🔄 Reconnecting socket...");
+          socketRef.current.connect();
+        } else if (socketRef.current?.connected && currentOrderId) {
+          // Re-emit metadata just in case server lost context, but be careful of duplication if server isn't idempotent
+          // For now, let's assume we should refresh the order context
+          // emitMetadata(currentOrderId); 
+          // Commented out to avoid double-emit if logic doesn't require it, 
+          // but original code had it. Let's keep it safe:
+          console.log("🔄 active state: check order status or re-emit if needed");
         }
       }
     };
 
     const appStateSubscription = AppState.addEventListener("change", handleAppStateChange);
 
-    // Cleanup on unmount
     return () => {
-      if (socketInstance && socketInstance.connected) {
-        socketInstance.disconnect();
+      // Cleanup
+      if (socketRef.current) {
+        socketRef.current.disconnect();
       }
       appStateSubscription.remove();
     };
-  }, [parsedUserDetails, router, onPaymentSuccess, onPaymentFailure, onPaymentError, onPaymentExpired, orderId]);
+  }, [router, orderId]); // Removed parsedUserDetails from dep array to avoid reconnects on minor updates, using Ref instead
 
   const handleCancel = () => {
     if (socketRef.current && socketRef.current.connected) {
       socketRef.current.disconnect();
     }
-    router.replace({ pathname: '/(tabs)/home/payment-failure', params: {} });
+    router.replace({ pathname: '/(tabs)/home/payment-failure', params: { message: "Payment Cancelled" } });
   };
 
   return {
     socket: socketRef.current,
+    isSocketConnected,
     handleCancel,
   };
-}; 
+};

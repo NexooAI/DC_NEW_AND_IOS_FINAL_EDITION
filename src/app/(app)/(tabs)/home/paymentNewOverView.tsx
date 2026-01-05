@@ -23,6 +23,7 @@ import { theme } from "@/constants/theme";
 import api from "@/services/api";
 import paymentService from "../../../../services/payment.service";
 import { PaymentInitPayload } from "@/types/payment.types";
+import CryptoJS from 'crypto-js';
 
 import { logger } from '@/utils/logger';
 export default function PaymentNewOverView() {
@@ -469,6 +470,25 @@ export default function PaymentNewOverView() {
     return weightPerGram.toFixed(3);
   }, [weightPerGram]);
 
+
+   const encryptPayload = (payload: any) => {
+    const key = CryptoJS.enc.Utf8.parse(theme.constants.ENCRYPTION_KEY.trim());
+    const iv = CryptoJS.enc.Utf8.parse(theme.constants.IV.trim());
+
+    const encrypted = CryptoJS.AES.encrypt(JSON.stringify(payload), key, {
+      iv: iv,
+      mode: CryptoJS.mode.CBC,
+      padding: CryptoJS.pad.Pkcs7,
+    });
+
+    return encrypted.toString();
+  }
+  const verifySignature = (payload: any, signature: string = theme.constants.PAYLOAD_SECRET.trim()) => {
+    const expected = CryptoJS.HmacSHA256(JSON.stringify(payload), signature)
+    console.log("Expected:", expected);
+    console.log("Received:", signature);
+    return expected;
+  }
   const handlePayment = async () => {
     // Immediate UX feedback and guards
     if (isProcessing) return;
@@ -543,31 +563,41 @@ export default function PaymentNewOverView() {
 
       const payload: PaymentInitPayload | any = {
         userId: userDetails.userId || user?.id,
-        amount: currentAmount,
+        paymentAmount: currentAmount,
         // amount:1,
-        accountNo: userDetails.accountNo,
+        accountNumber: userDetails.accountNo,
         investmentId: userDetails.investmentId,
         schemeId: params?.schemeId,
-        userEmail: userDetails?.email || user?.email,
-        userMobile: userDetails?.mobile || user?.mobile,
-        userName: userDetails?.accountname,
+        // userEmail: userDetails?.email || user?.email,
+        // userMobile: userDetails?.mobile || user?.mobile,
+        // userName: userDetails?.accountname,
         // Ensure backend-required identifiers are present
         chitId:
           userDetails?.chitId ||
           (Array.isArray(params.chitId) ? params.chitId[0] : params.chitId),
-        paymentFrequency: params.paymentFrequency,
+        // paymentFrequency: params.paymentFrequency,
+        currency: "INR",
+        paymentStatus: "PENDING",
+        isManual:"No",
+        amount:currentAmount,
+        utr_reference_number:"",
+        receipt:'receipt'
       };
 
       logger.log("initialpayment ======>", payload);
-
-      const response: any = await paymentService.initiatePayment(payload);
+      const encryptedPayload = await encryptPayload(payload);
+      const payloadSignature = await verifySignature(payload);
+      const payloadData = {
+        payloadSignature,
+        encryptedPayload
+      };
+      const response: any = await paymentService.initiatePayment(payloadData);
       logger.log("response ======>", response);
 
-       if (response?.success && response?.session?.payment_links?.web) {
+       if (response?.success) {
         // Extract order ID from the payment response
-        const orderId = response?.session?.order_id;
-        const paymentUrl = response?.session?.payment_links?.web;
-
+        const orderId =  response?.order.id;
+        const paymentUrl = `https://api.prod.srimurugangoldhouse.in/payments/payment/page?orderId=${orderId}&token=${useGlobalStore.getState().token}`;
         console.log("Payment URL:", paymentUrl);
         console.log("Order ID:", orderId);
 
@@ -585,36 +615,37 @@ export default function PaymentNewOverView() {
               // chitId:  params.chitId,
               userId: userDetails.userId || user?.id,
               paymentFrequency: params.paymentFrequency,
-              schemeType: params.schemeType,
+              // schemeType: params.schemeType,
             }),
           },
         });
       }
       // Fallback for old response structure
-      else if (response?.success && response?.data) {
-        console.log("Using fallback response structure");
-        const orderId = response?.order_id || response?.session?.order_id;
-        const paymentUrl = response?.data;
+      // else if (response?.success && response?.data) {
+      //   console.log("Using fallback response structure");
+      //   const orderId = response?.order_id || response?.session?.order_id;
+      //   const paymentUrl = response?.data;
 
-        console.log("Fallback Payment URL:", paymentUrl);
-        console.log("Fallback Order ID:", orderId);
+      //   console.log("Fallback Payment URL:", paymentUrl);
+      //   console.log("Fallback Order ID:", orderId);
 
-        router.push({
-          pathname: "/(tabs)/home/PaymentWebView",
-          params: {
-            url: paymentUrl,
-            orderId: orderId,
-            userDetails: JSON.stringify({
-              ...userDetails,
-              amount: currentAmount,
-              orderId: orderId,
-              userId: userDetails.userId || user?.id,
-              paymentFrequency: params.paymentFrequency,
-              schemeType: params.schemeType,
-            }),
-          },
-        });
-      } else {
+      //   router.push({
+      //     pathname: "/(tabs)/home/PaymentWebView",
+      //     params: {
+      //       url: paymentUrl,
+      //       orderId: orderId,
+      //       userDetails: JSON.stringify({
+      //         ...userDetails,
+      //         amount: currentAmount,
+      //         orderId: orderId,
+      //         userId: userDetails.userId || user?.id,
+      //         paymentFrequency: params.paymentFrequency,
+      //         schemeType: params.schemeType,
+      //       }),
+      //     },
+      //   });
+      // } 
+      else {
         console.log("Payment initiation failed:", {
           success: response?.success,
           hasSession: !!response?.session,
@@ -636,6 +667,8 @@ export default function PaymentNewOverView() {
         Alert.alert("Error", `Failed to initiate payment: ${(error as Error).message || "Unknown error"}`);
         setIsProcessing(false);
       }
+    } finally {
+      setIsProcessing(false);
     }
   };
 

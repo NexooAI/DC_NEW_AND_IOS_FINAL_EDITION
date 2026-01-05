@@ -12,10 +12,7 @@ import {
   Platform,
 } from "react-native";
 import { ScrollView, Swipeable, GestureHandlerRootView } from "react-native-gesture-handler";
-// Bypass type checking for Reanimated due to v4 export issues
-const Reanimated = require("react-native-reanimated");
-const Animated = Reanimated.default || Reanimated;
-const { Layout, FadeOut } = Reanimated;
+// Reanimated imports removed to fix route loading issue
 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -158,11 +155,7 @@ const NotificationItem = React.memo(
     };
 
     return (
-      <Animated.View 
-        // entering={FadeIn.delay(index * 50).springify()} // Animation disabled due to import error
-        layout={Layout.springify()}
-        exiting={FadeOut}
-      >
+      <View>
         <Swipeable renderRightActions={renderRightActions}>
             <Pressable
             onPress={() => onPress(item.id.toString())}
@@ -269,7 +262,7 @@ const NotificationItem = React.memo(
             </View>
             </Pressable>
         </Swipeable>
-      </Animated.View>
+      </View>
     );
   }
 );
@@ -344,9 +337,7 @@ const NotificationModal = ({
           padding: 24,
         }}
       >
-        <Animated.View
-            // entering={FadeIn.springify()} // Animation disabled due to import error
-            layout={Layout.springify()}
+        <View
             style={{
                 backgroundColor: "white",
                 borderRadius: 24,
@@ -405,7 +396,7 @@ const NotificationModal = ({
                      <Text style={{ fontSize: 16, fontWeight: "600", color: "#666" }}>Dismiss</Text>
                  </TouchableOpacity>
              </View>
-        </Animated.View>
+        </View>
       </View>
     </Modal>
   );

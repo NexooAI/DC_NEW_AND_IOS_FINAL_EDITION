@@ -134,7 +134,7 @@ class PaymentApiLogger {
         summary.operations[operation].errors++;
       }
       if (log.duration) {
-        summary.operations[operation].avgTime = 
+        summary.operations[operation].avgTime =
           (summary.operations[operation].avgTime * (summary.operations[operation].count - 1) + log.duration) / summary.operations[operation].count;
       }
     });
@@ -146,9 +146,9 @@ class PaymentApiLogger {
 const paymentLogger = new PaymentApiLogger();
 
 class PaymentService {
-  async initiatePayment(payload: PaymentInitPayload): Promise<PaymentResponse> {
+  async initiatePayment(payload: any): Promise<any> {
     const startTime = Date.now();
-    
+
     try {
       const formBody = new URLSearchParams();
       Object.entries(payload).forEach(([key, value]) => {
@@ -160,11 +160,11 @@ class PaymentService {
       // Log the request
       paymentLogger.logPaymentOperation('initiate', {
         method: 'POST',
-        url: '/payments/initiate',
+        url: '/payments/payment-initate',
         data: payload
       }, startTime);
 
-      const response = await apiService.post("/payments/initiate", formBody.toString(), {
+      const response = await apiService.post("/payments/payment-initate", formBody.toString(), {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
 
@@ -179,7 +179,7 @@ class PaymentService {
     } catch (error) {
       // Log the error
       paymentLogger.logPaymentError('initiate', error, startTime);
-      
+
       logger.error('Error initiating payment:', error);
       throw error;
     }
@@ -187,7 +187,7 @@ class PaymentService {
 
   async createTransaction(payload: TransactionPayload): Promise<any> {
     const startTime = Date.now();
-    
+
     try {
       // Log the request
       paymentLogger.logPaymentOperation('createTransaction', {
@@ -197,15 +197,15 @@ class PaymentService {
       }, startTime);
 
       const response = await apiService.post("/transactions", payload);
-      
+
       // Log the response
       paymentLogger.logPaymentResponse('createTransaction', response, startTime);
-      
+
       return response.data;
     } catch (error) {
       // Log the error
       paymentLogger.logPaymentError('createTransaction', error, startTime);
-      
+
       logger.error('Error creating transaction:', error);
       throw error;
     }
@@ -213,7 +213,7 @@ class PaymentService {
 
   async createPayment(payload: PaymentPayload): Promise<any> {
     const startTime = Date.now();
-    
+
     try {
       // Log the request
       paymentLogger.logPaymentOperation('createPayment', {
@@ -223,15 +223,15 @@ class PaymentService {
       }, startTime);
 
       const response = await apiService.post("/payments", payload);
-      
+
       // Log the response
       paymentLogger.logPaymentResponse('createPayment', response, startTime);
-      
+
       return response.data;
     } catch (error) {
       // Log the error
       paymentLogger.logPaymentError('createPayment', error, startTime);
-      
+
       logger.error('Error creating payment:', error);
       throw error;
     }
@@ -239,7 +239,7 @@ class PaymentService {
 
   async getLiveRates(): Promise<{ data: { data: { gold_rate: string } } }> {
     const startTime = Date.now();
-    
+
     try {
       // Log the request
       paymentLogger.logPaymentOperation('getLiveRates', {
@@ -249,15 +249,15 @@ class PaymentService {
       }, startTime);
 
       const response = await apiService.get("/rates/live");
-      
+
       // Log the response
       paymentLogger.logPaymentResponse('getLiveRates', response, startTime);
-      
+
       return response.data;
     } catch (error) {
       // Log the error
       paymentLogger.logPaymentError('getLiveRates', error, startTime);
-      
+
       logger.error('Error fetching live rates:', error);
       throw error;
     }
