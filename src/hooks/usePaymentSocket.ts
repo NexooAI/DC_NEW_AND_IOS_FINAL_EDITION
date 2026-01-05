@@ -140,76 +140,76 @@ export const usePaymentSocket = ({
     socketInstance.on("payment_status_update", async (data: any) => {
       console.log("📩 Payment Update:", JSON.stringify(data, null, 2));
 
-      // // Check success status
-      // // Some backends send { status: 'success' }, others nested in paymentResponse
-      // const isSuccess =
-      //   data?.status === "success" ||
-      //   data?.status === "completed" ||
-      //   data?.paymentResponse?.status === "CHARGED" ||
-      //   data?.paymentResponse?.txn_detail?.status === "CHARGED";
+      // Check success status
+      // Some backends send { status: 'success' }, others nested in paymentResponse
+      const isSuccess =
+        data?.status === "success" ||
+        data?.status === "completed" ||
+        data?.paymentResponse?.status === "CHARGED" ||
+        data?.paymentResponse?.txn_detail?.status === "CHARGED";
 
-      // const isFailed =
-      //   data?.status === "failed" ||
-      //   data?.paymentResponse?.status === "FAILED"; // Add more failure checks if needed
+      const isFailed =
+        data?.status === "failed" ||
+        data?.paymentResponse?.status === "FAILED"; // Add more failure checks if needed
 
-      // try {
-      //   if (isSuccess) {
-      //     console.log("✅ Payment Success Detected");
-      //     isPaymentCompleted.current = true;
+      try {
+        if (isSuccess) {
+          console.log("✅ Payment Success Detected");
+          isPaymentCompleted.current = true;
 
-      //     // Clean up socket
-      //     if (socketInstance.connected) socketInstance.disconnect();
+          // Clean up socket
+          if (socketInstance.connected) socketInstance.disconnect();
 
-      //     // Trigger callback or default navigation
-      //     if (onPaymentSuccess) {
-      //       onPaymentSuccess(data);
-      //     } else {
-      //       // Default handling if no callback provided (though PaymentWebView provides one)
-      //       const response = data?.paymentResponse || {};
-      //       router.replace({
-      //         pathname: '/(tabs)/home/payment-success',
-      //         params: {
-      //           amount: response.amount,
-      //           txnId: response.txn_id,
-      //           orderId: response.order_id,
-      //           message: response.payment_gateway_response?.resp_message || 'Payment Successful'
-      //         }
-      //       });
-      //     }
+          // Trigger callback or default navigation
+          if (onPaymentSuccess) {
+            onPaymentSuccess(data);
+          } else {
+            // Default handling if no callback provided (though PaymentWebView provides one)
+            const response = data?.paymentResponse || {};
+            router.replace({
+              pathname: '/(tabs)/home/payment-success',
+              params: {
+                amount: response.amount,
+                txnId: response.txn_id,
+                orderId: response.order_id,
+                message: response.payment_gateway_response?.resp_message || 'Payment Successful'
+              }
+            });
+          }
 
-      //   } else if (isFailed) {
-      //     console.log("❌ Payment Failure Detected");
-      //     isPaymentCompleted.current = true;
+        } else if (isFailed) {
+          console.log("❌ Payment Failure Detected");
+          isPaymentCompleted.current = true;
 
-      //     if (socketInstance.connected) socketInstance.disconnect();
+          if (socketInstance.connected) socketInstance.disconnect();
 
-      //     if (onPaymentFailure) {
-      //       onPaymentFailure(data);
-      //     } else {
-      //       const response = data?.paymentResponse || {};
-      //       router.replace({
-      //         pathname: '/(tabs)/home/payment-failure',
-      //         params: {
-      //           message: response.payment_gateway_response?.resp_message || response.txn_detail?.error_message || 'Payment Failed',
-      //           orderId: response.order_id,
-      //           txnId: response.txn_id,
-      //           amount: response.amount,
-      //           status: response.status
-      //         }
-      //       });
-      //     }
-      //   } else if (data?.status === "expired") {
-      //     console.log("⚠️ Payment Expired");
-      //     if (socketInstance.connected) socketInstance.disconnect();
-      //     onPaymentExpired?.();
-      //   }
-      // } catch (error) {
-      //   console.error("Error processing socket event:", error);
-      //   onPaymentError?.({
-      //     error: "Processing Error",
-      //     message: "Failed to process payment update"
-      //   });
-      // }
+          if (onPaymentFailure) {
+            onPaymentFailure(data);
+          } else {
+            const response = data?.paymentResponse || {};
+            router.replace({
+              pathname: '/(tabs)/home/payment-failure',
+              params: {
+                message: response.payment_gateway_response?.resp_message || response.txn_detail?.error_message || 'Payment Failed',
+                orderId: response.order_id,
+                txnId: response.txn_id,
+                amount: response.amount,
+                status: response.status
+              }
+            });
+          }
+        } else if (data?.status === "expired") {
+          console.log("⚠️ Payment Expired");
+          if (socketInstance.connected) socketInstance.disconnect();
+          onPaymentExpired?.();
+        }
+      } catch (error) {
+        console.error("Error processing socket event:", error);
+        onPaymentError?.({
+          error: "Processing Error",
+          message: "Failed to process payment update"
+        });
+      }
     });
 
     // App State handling for reconnection
