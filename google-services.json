@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "932187013222",
-    "project_id": "nexooai-a1096",
-    "storage_bucket": "nexooai-a1096.firebasestorage.app"
+    "project_number": "145422954699",
+    "project_id": "sri-murugan-gold-house-fea3e",
+    "storage_bucket": "sri-murugan-gold-house-fea3e.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:932187013222:android:156e50b2915011464ceda7",
+        "mobilesdk_app_id": "1:145422954699:android:a4fb3974078438a8c6eb4e",
         "android_client_info": {
-          "package_name": "com.nexooai.dcjewellery"
+          "package_name": "com.nexooai.srimurugangoldhouse"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44"
+          "current_key": "AIzaSyCZOSOQiljrmehtiF7QipHLp2wcnX2hRwk"
         }
       ],
       "services": {

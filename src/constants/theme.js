@@ -3,9 +3,9 @@
 const theme = {
   colors: {
     // Primary brand colors
-    primary: "#850111",
+    primary: "#720421",
     secondary: "#ffc90c", //
-    tertiary: "#F2B8C6",
+    tertiary: "#ffffff",
 
     // Background colors
     background: "#ffffff",

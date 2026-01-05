@@ -1711,7 +1711,7 @@ export default function Home() {
       Alert.alert(t("schemes.error") || "Error", t("schemes.failedToLoadSchemeData") || "Failed to load scheme data");
     }
   };
-  
+
   // Reusable function to initiate Quick Join
   const initiateQuickJoin = async (scheme: any) => {
     if (!scheme) return;
@@ -1720,7 +1720,7 @@ export default function Home() {
     if (selectedScheme?.SCHEMEID !== scheme.SCHEMEID) {
       setSelectedScheme(scheme);
     }
-    
+
     // Fetch amount limits for the selected scheme
     if (scheme?.SCHEMEID) {
       await fetchSchemeAmountLimits(Number(scheme.SCHEMEID));
@@ -1767,7 +1767,7 @@ export default function Home() {
       });
       setQuickJoinErrors({});
       setCalculatedGoldWeight(null);
-      
+
       setQuickJoinModalVisible(true);
     } else {
       // KYC status is still loading, wait a bit and check again
@@ -1791,8 +1791,8 @@ export default function Home() {
             ]
           );
         } else {
-           // Retry initiate if KYC loaded
-           initiateQuickJoin(scheme);
+          // Retry initiate if KYC loaded
+          initiateQuickJoin(scheme);
         }
       }, 1000);
     }
@@ -1812,11 +1812,11 @@ export default function Home() {
       useNativeDriver: true,
     }).start(() => {
       setSchemeInfoModalVisible(false);
-      
+
       // Wait for modal to close before opening Quick Join
       // This helps with iOS modal interaction
       setTimeout(() => {
-         initiateQuickJoin(schemeToUse);
+        initiateQuickJoin(schemeToUse);
       }, 300);
     });
   };
@@ -1850,13 +1850,13 @@ export default function Home() {
   const handleQuickJoinAmountChange = (amount: string) => {
     // Remove non-numeric characters except decimal point (though keyboard is numeric, pasting is poss)
     const cleanedAmount = amount.replace(/[^0-9.]/g, "");
-    
+
     // Check if exceeding max amount (if limits exist and amount is a valid number)
     if (schemeAmountLimits && schemeAmountLimits.max_amount) {
-         const numericVal = parseFloat(cleanedAmount);
-         if (!isNaN(numericVal) && numericVal > schemeAmountLimits.max_amount) {
-             return;
-         }
+      const numericVal = parseFloat(cleanedAmount);
+      if (!isNaN(numericVal) && numericVal > schemeAmountLimits.max_amount) {
+        return;
+      }
     }
 
     setQuickJoinFormData((prev) => ({ ...prev, amount: cleanedAmount }));
@@ -1935,7 +1935,7 @@ export default function Home() {
       const schemeType = selectedScheme.SCHEMETYPE?.toLowerCase() || "";
       const isFlexi = schemeType.includes("flexi") || schemeType.includes("flexible");
       const isWeight = schemeType === "weight";
-      
+
       let activeChit: any = null;
 
       // Filter active chits
@@ -1954,30 +1954,30 @@ export default function Home() {
         // 1. Try to find a chit explicitly named 'Flexi' or 'Flexible'
         // 2. Fallback to the first active chit
         activeChit = activeChits.find((chit: any) => {
-            const freq = (chit.PAYMENT_FREQUENCY || "").toLowerCase();
-            return freq.includes("flexi") || freq.includes("flexible");
+          const freq = (chit.PAYMENT_FREQUENCY || "").toLowerCase();
+          return freq.includes("flexi") || freq.includes("flexible");
         }) || activeChits[0];
 
         // Limits are already validated in validateQuickJoinForm via schemeAmountLimits
       } else if (isWeight) {
-         // Handling weight schemes - usually they act like Flexi but in grams/money conversion
-         // For now, selecting the first active chit is standard unless specific logic needed
-          activeChit = activeChits[0];
+        // Handling weight schemes - usually they act like Flexi but in grams/money conversion
+        // For now, selecting the first active chit is standard unless specific logic needed
+        activeChit = activeChits[0];
       } else {
         // For Fixed Schemes (Daily, Weekly, Monthly, Fixed) where amounts are defined:
         // The entered amount MUST strictly match one of the active chits' AMOUNT
         activeChit = activeChits.find((chit: any) => {
-           const chitAmount = parseFloat(chit.AMOUNT || "0");
-           return chitAmount === enteredAmount;
+          const chitAmount = parseFloat(chit.AMOUNT || "0");
+          return chitAmount === enteredAmount;
         });
 
         if (!activeChit) {
-           // Provide a helpful error message listing available amounts
-           const availableAmounts = activeChits
-             .map((c: any) => `₹${parseFloat(c.AMOUNT).toLocaleString('en-IN')}`)
-             .join(", ");
-           
-           throw new Error(`Invalid amount. For this scheme, please choose one of: ${availableAmounts}`);
+          // Provide a helpful error message listing available amounts
+          const availableAmounts = activeChits
+            .map((c: any) => `₹${parseFloat(c.AMOUNT).toLocaleString('en-IN')}`)
+            .join(", ");
+
+          throw new Error(`Invalid amount. For this scheme, please choose one of: ${availableAmounts}`);
         }
       }
 
@@ -2191,11 +2191,11 @@ export default function Home() {
               locations={[0, 0.5, 0.8, 1]}
               style={collectionStyles.gradientOverlay}
             />
-            
+
             {/* Top Right "View" Indicator */}
             <View style={collectionStyles.topBadge}>
-               <Ionicons name="sparkles" size={10} color="#5D4037" />
-               <Text style={collectionStyles.topBadgeText}>NEW</Text>
+              <Ionicons name="sparkles" size={10} color="#5D4037" />
+              <Text style={collectionStyles.topBadgeText}>NEW</Text>
             </View>
 
             {/* Bottom Content Area */}
@@ -2203,7 +2203,7 @@ export default function Home() {
               <Text style={collectionStyles.collectionName} numberOfLines={1}>
                 {item.name}
               </Text>
-              
+
               <View style={collectionStyles.statsRow}>
                 <View style={collectionStyles.countBadge}>
                   <Ionicons name="images-outline" size={10} color="#FFD700" />
@@ -2320,33 +2320,33 @@ export default function Home() {
     return (
       <>
         <View style={styles.fullHeightBackground}>
-            <View style={styles.loadingContainer}>
-              <Ionicons
-                name="person-circle-outline"
-                size={60}
-                color={COLORS.secondary}
-              />
-              <ResponsiveText
-                variant="body"
-                size="md"
-                color={COLORS.white}
-                align="center"
-                allowWrap={true}
-                maxLines={2}
-                adjustsFontSizeToFit={true}
-                minimumFontScale={0.8}
-                style={styles.loadingText}
-              >
-                {t("pleaseLoginToViewDashboard")}
-              </ResponsiveText>
-              <ResponsiveButton
-                title={t("goToLogin")}
-                variant="primary"
-                size="lg"
-                onPress={() => router.push("/(auth)/login")}
-                style={styles.loginButton}
-              />
-            </View>
+          <View style={styles.loadingContainer}>
+            <Ionicons
+              name="person-circle-outline"
+              size={60}
+              color={COLORS.secondary}
+            />
+            <ResponsiveText
+              variant="body"
+              size="md"
+              color={COLORS.white}
+              align="center"
+              allowWrap={true}
+              maxLines={2}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.8}
+              style={styles.loadingText}
+            >
+              {t("pleaseLoginToViewDashboard")}
+            </ResponsiveText>
+            <ResponsiveButton
+              title={t("goToLogin")}
+              variant="primary"
+              size="lg"
+              onPress={() => router.push("/(auth)/login")}
+              style={styles.loginButton}
+            />
+          </View>
         </View>
       </>
     );
@@ -2496,81 +2496,34 @@ export default function Home() {
               />
             }
           >
-            {/* KYC Status Banner - Show only if KYC is not completed */}
-            {kycStatus === false && !isKycLoading && (
-              <View style={styles.kycBannerContainer}>
-                <TouchableOpacity
-                  style={styles.kycBanner}
-                  onPress={() => router.push("/(app)/(tabs)/home/kyc")}
-                  activeOpacity={0.8}
-                >
-                  <LinearGradient
-                    colors={[COLORS.error, "#a0000f"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.kycBannerGradient}
-                  >
-                    <View style={styles.kycBannerContent}>
-                      <Ionicons name="alert-circle" size={24} color={COLORS.white} />
-                      <Text style={styles.kycBannerText}>
-                        KYC not Completed click here to complete
-                      </Text>
-                      <Ionicons name="chevron-forward" size={20} color={COLORS.white} />
-                    </View>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-            )}
 
-            {/* Gold Rate Card Only */}
-            {isVisible("showGoldRate") &&
-              homeData?.data?.currentRates?.gold_rate && (
-                <TouchableOpacity
-                  style={styles.goldRateCardWrapper}
-                  onPress={() => router.push("/home/ratechart")}
-                  activeOpacity={0.9}
-                >
-                  <AnimatedGoldRate
-                    goldRate={homeData.data.currentRates.gold_rate}
-                    silverRate={homeData.data.currentRates.silver_rate}
-                    updatedAt={homeData.data.currentRates.updated_at || ""}
-                  />
-                </TouchableOpacity>
-              )}
-
-
-
-
-            {/* Collections Section - Conditionally rendered based on API */}
-            {isVisible("showCollection") && (
-              <View style={styles.statusContainer}>
-                {/* Active Collections Section */}
-                <View style={styles.collectionContainer}>
-                  <View style={styles.collectionHeader}>
-                    <Text style={styles.collectionHeaderTitle}>
-                      {t("activeCollections")}
-                    </Text>
-                    {/* <TouchableOpacity>
-                      <Text style={collectionStyles.seeAllText}>{t("seeAll")}</Text>
-                    </TouchableOpacity> */}
-                  </View>
-                  <FlatList
-                    data={collectionsData}
-                    renderItem={renderStatusItem}
-                    keyExtractor={(item) => item.id.toString()}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.collectionListContent}
-                    removeClippedSubviews={true}
-                    maxToRenderPerBatch={10}
-                    windowSize={5}
-                    initialNumToRender={5}
-                  />
-                </View>
-              </View>
-            )}
 
             <View style={styles.mainContent}>
+              {/* KYC Status Banner - Show only if KYC is not completed */}
+              {kycStatus === false && !isKycLoading && (
+                <View style={styles.kycBannerContainer}>
+                  <TouchableOpacity
+                    style={styles.kycBanner}
+                    onPress={() => router.push("/(app)/(tabs)/home/kyc")}
+                    activeOpacity={0.8}
+                  >
+                    <LinearGradient
+                      colors={[COLORS.error, "#a0000f"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.kycBannerGradient}
+                    >
+                      <View style={styles.kycBannerContent}>
+                        <Ionicons name="alert-circle" size={24} color={COLORS.white} />
+                        <Text style={styles.kycBannerText}>
+                          KYC not Completed click here to complete
+                        </Text>
+                        <Ionicons name="chevron-forward" size={20} color={COLORS.white} />
+                      </View>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              )}
               {/* Image Slider (Poster) - Conditionally rendered based on API */}
               {isVisible("showPoster") && (
                 <>
@@ -2581,6 +2534,50 @@ export default function Home() {
                   )}
                 </>
               )}
+              {/* Gold Rate Card Only */}
+              {isVisible("showGoldRate") &&
+                homeData?.data?.currentRates?.gold_rate && (
+                  <TouchableOpacity
+                    style={styles.goldRateCardWrapper}
+                    onPress={() => router.push("/home/ratechart")}
+                    activeOpacity={0.9}
+                  >
+                    <AnimatedGoldRate
+                      goldRate={homeData.data.currentRates.gold_rate}
+                      silverRate={homeData.data.currentRates.silver_rate}
+                      updatedAt={homeData.data.currentRates.updated_at || ""}
+                    />
+                  </TouchableOpacity>
+                )}
+              {/* Collections Section - Conditionally rendered based on API */}
+              {isVisible("showCollection") && (
+                <View style={styles.statusContainer}>
+                  {/* Active Collections Section */}
+                  <View style={styles.collectionContainer}>
+                    <View style={styles.collectionHeader}>
+                      <Text style={styles.collectionHeaderTitle}>
+                        {t("activeCollections")}
+                      </Text>
+                      {/* <TouchableOpacity>
+                      <Text style={collectionStyles.seeAllText}>{t("seeAll")}</Text>
+                    </TouchableOpacity> */}
+                    </View>
+                    <FlatList
+                      data={collectionsData}
+                      renderItem={renderStatusItem}
+                      keyExtractor={(item) => item.id.toString()}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.collectionListContent}
+                      removeClippedSubviews={true}
+                      maxToRenderPerBatch={10}
+                      windowSize={5}
+                      initialNumToRender={5}
+                    />
+                  </View>
+                </View>
+              )}
+
 
               {/* Flash News - Conditionally rendered based on API */}
               {isVisible("showFlashnews") && (
@@ -2763,12 +2760,12 @@ export default function Home() {
                           //     },
                           //   });
                           // } else {
-                            router.push({
-                              pathname: "/home/join_savings",
-                              params: {
-                                schemeId: ((scheme?.SCHEMEID || 0)).toString(),
-                              },
-                            });
+                          router.push({
+                            pathname: "/home/join_savings",
+                            params: {
+                              schemeId: ((scheme?.SCHEMEID || 0)).toString(),
+                            },
+                          });
                           // }
                         } catch (error) {
                           logger.error("Error in onJoinPress (skip schemes):", error);
@@ -2863,30 +2860,30 @@ export default function Home() {
             })()}
             onClose={handleStatusClose}
             onEnquire={(collection, imgIndex) => {
-               Alert.alert(
-                 t("connectOnWhatsApp") || "Connect on WhatsApp",
-                 t("connectWhatsAppDesc") || "Do you want to enquire about this design via WhatsApp?",
-                 [
-                   {
-                     text: t("cancel") || "Cancel",
-                     style: "cancel"
-                   },
-                   {
-                     text: t("continue") || "Continue",
-                     onPress: () => {
-                       // Try to get support number from homeData or fallback
-                       // safely cast to any to avoid type error if interface is incomplete
-                       const supportNumber = theme.constants.whatsappNumber || "+919061803999"; 
-                       const message = `Hello, I am interested in the collection "${collection.name}" (Design #${imgIndex + 1}). Can you share more details?`;
-                       const url = `whatsapp://send?text=${encodeURIComponent(message)}&phone=${supportNumber}`;
-                       
-                       Linking.openURL(url).catch(() => {
-                         Linking.openURL(`https://wa.me/${supportNumber}?text=${encodeURIComponent(message)}`);
-                       });
-                     }
-                   }
-                 ]
-               );
+              Alert.alert(
+                t("connectOnWhatsApp") || "Connect on WhatsApp",
+                t("connectWhatsAppDesc") || "Do you want to enquire about this design via WhatsApp?",
+                [
+                  {
+                    text: t("cancel") || "Cancel",
+                    style: "cancel"
+                  },
+                  {
+                    text: t("continue") || "Continue",
+                    onPress: () => {
+                      // Try to get support number from homeData or fallback
+                      // safely cast to any to avoid type error if interface is incomplete
+                      const supportNumber = theme.constants.whatsappNumber || "+919061803999";
+                      const message = `Hello, I am interested in the collection "${collection.name}" (Design #${imgIndex + 1}). Can you share more details?`;
+                      const url = `whatsapp://send?text=${encodeURIComponent(message)}&phone=${supportNumber}`;
+
+                      Linking.openURL(url).catch(() => {
+                        Linking.openURL(`https://wa.me/${supportNumber}?text=${encodeURIComponent(message)}`);
+                      });
+                    }
+                  }
+                ]
+              );
             }}
           />
           {/* Floating Chat Button - Conditionally rendered based on API */}
@@ -3112,12 +3109,12 @@ export default function Home() {
               style={styles2.modalOverlay}
               keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
             >
-               {/* Dismiss on backdrop press */}
-               <TouchableOpacity 
-                  style={styles2.modalBackdrop} 
-                  activeOpacity={1} 
-                  onPress={() => setQuickJoinModalVisible(false)}
-               />
+              {/* Dismiss on backdrop press */}
+              <TouchableOpacity
+                style={styles2.modalBackdrop}
+                activeOpacity={1}
+                onPress={() => setQuickJoinModalVisible(false)}
+              />
 
               <View style={styles2.modalContainer}>
                 {/* Modern Header */}
@@ -3138,9 +3135,9 @@ export default function Home() {
                     }}
                     style={styles2.closeButton}
                   >
-                     <View style={styles2.closeButtonContainer}>
-                        <Ionicons name="close" size={20} color={COLORS.dark} />
-                     </View>
+                    <View style={styles2.closeButtonContainer}>
+                      <Ionicons name="close" size={20} color={COLORS.dark} />
+                    </View>
                   </TouchableOpacity>
                 </View>
 
@@ -3175,14 +3172,14 @@ export default function Home() {
 
                   {/* Amount Input */}
                   <View style={styles2.inputSection}>
-                     <View style={styles2.amountHeader}>
-                        <Text style={styles2.inputLabel}>{t("amount") || "Investment Amount"}</Text>
-                        {schemeAmountLimits && (
-                            <Text style={styles2.limitText}>
-                              {t('min') || 'Min'} ₹{schemeAmountLimits.min_amount} - {t('max') || 'Max'} ₹{schemeAmountLimits.max_amount}
-                            </Text>
-                        )}
-                     </View>
+                    <View style={styles2.amountHeader}>
+                      <Text style={styles2.inputLabel}>{t("amount") || "Investment Amount"}</Text>
+                      {schemeAmountLimits && (
+                        <Text style={styles2.limitText}>
+                          {t('min') || 'Min'} ₹{schemeAmountLimits.min_amount} - {t('max') || 'Max'} ₹{schemeAmountLimits.max_amount}
+                        </Text>
+                      )}
+                    </View>
 
                     <View style={[
                       styles2.inputContainer,
@@ -3198,31 +3195,31 @@ export default function Home() {
                         keyboardType="numeric"
                       />
                     </View>
-                     {quickJoinErrors.amount && (
+                    {quickJoinErrors.amount && (
                       <Text style={styles2.errorText}>{quickJoinErrors.amount}</Text>
-                     )}
+                    )}
                   </View>
 
                   {/* Gold Weight Display - Gradient Card */}
                   {selectedScheme?.savingType === 'weight' && (
-                     <LinearGradient 
-                        colors={['#FFF9E6', '#FFF']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles2.goldWeightCard}
-                     >
-                        <View style={styles2.goldWeightHeader}>
-                            <View style={styles2.goldIconBg}>
-                                <Ionicons name="scale" size={18} color="#B8860B" />
-                            </View>
-                            <Text style={styles2.goldWeightLabel}>
-                            {t("estimatedGoldWeight") || "Est. Gold Weight"}
-                            </Text>
+                    <LinearGradient
+                      colors={['#FFF9E6', '#FFF']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles2.goldWeightCard}
+                    >
+                      <View style={styles2.goldWeightHeader}>
+                        <View style={styles2.goldIconBg}>
+                          <Ionicons name="scale" size={18} color="#B8860B" />
                         </View>
-                        <Text style={styles2.goldWeightValue}>
-                            {formatGoldWeight(Number(quickJoinFormData.amount) / Number(homeData?.data?.currentRates?.gold_rate || 0))}
+                        <Text style={styles2.goldWeightLabel}>
+                          {t("estimatedGoldWeight") || "Est. Gold Weight"}
                         </Text>
-                     </LinearGradient>
+                      </View>
+                      <Text style={styles2.goldWeightValue}>
+                        {formatGoldWeight(Number(quickJoinFormData.amount) / Number(homeData?.data?.currentRates?.gold_rate || 0))}
+                      </Text>
+                    </LinearGradient>
                   )}
 
                   {/* Quick Select Amount Pills */}
@@ -3257,7 +3254,7 @@ export default function Home() {
                       </View>
                     </View>
                   )}
-                  
+
                   {/* Spacing for keyboard */}
                   <View style={{ height: 100 }} />
                 </ScrollView>
@@ -3284,13 +3281,13 @@ export default function Home() {
                       style={styles2.submitGradient}
                     >
                       {isSubmittingQuickJoin ? (
-                          <ActivityIndicator size="small" color={COLORS.white} />
+                        <ActivityIndicator size="small" color={COLORS.white} />
                       ) : (
-                          <Text style={styles2.submitButtonText}>
-                            {t("joinNow") || "Join Now"}
-                          </Text>
+                        <Text style={styles2.submitButtonText}>
+                          {t("joinNow") || "Join Now"}
+                        </Text>
                       )}
-                       {!isSubmittingQuickJoin && <Ionicons name="arrow-forward" size={20} color={COLORS.white} />}
+                      {!isSubmittingQuickJoin && <Ionicons name="arrow-forward" size={20} color={COLORS.white} />}
                     </LinearGradient>
                   </TouchableOpacity>
                 </View>
@@ -3312,10 +3309,10 @@ export default function Home() {
         }}
         appName="Srimurugan Gold House"
       />
-        <LanguageSelector
-          visible={languageSelectorVisible}
-          onClose={() => setLanguageSelectorVisible(false)}
-        />
+      <LanguageSelector
+        visible={languageSelectorVisible}
+        onClose={() => setLanguageSelectorVisible(false)}
+      />
     </AuthGuard>
   );
 }

@@ -75,7 +75,7 @@ export default function JoinAdvanceGold() {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header is now handled by the layout wrapper */}
-      
+
       <LinearGradient
         colors={[theme.colors.bgBlackHeavy, theme.colors.bgBlackMedium, theme.colors.bgBlackLight]}
         style={styles.gradientBackground}
@@ -83,7 +83,7 @@ export default function JoinAdvanceGold() {
         <ScrollView contentContainerStyle={styles.content}>
           {/* Royal Header */}
           <View style={styles.headerContainer}>
-            <Text style={styles.title}>DC Gold Advance</Text>
+            <Text style={styles.title}>SRI Murugan Gold Advance</Text>
             <Text style={styles.subtitle}>Exclusive Premium Investment</Text>
           </View>
 
@@ -109,7 +109,7 @@ export default function JoinAdvanceGold() {
                 maximumValue={500000}
                 step={1000}
                 onValueChange={(val: number[]) => setAmount(String(Math.round(val[0])))}
-                containerStyle={{marginTop: 12}}
+                containerStyle={{ marginTop: 12 }}
                 thumbTintColor={theme.colors.gold}
                 minimumTrackTintColor={theme.colors.gold}
                 maximumTrackTintColor={theme.colors.additional.formTextMedium}
@@ -129,7 +129,7 @@ export default function JoinAdvanceGold() {
               <TextInput
                 style={styles.royalInput}
                 keyboardType="numeric"
-                                    value={goldGrams ? formatGoldWeight(goldGrams).replace(' g', '') : ''}
+                value={goldGrams ? formatGoldWeight(goldGrams).replace(' g', '') : ''}
                 onChangeText={val => {
                   const grams = parseFloat(val);
                   if (!isNaN(grams)) setGoldGrams(grams);
@@ -144,7 +144,7 @@ export default function JoinAdvanceGold() {
                 maximumValue={500}
                 step={0.5}
                 onValueChange={(val: number[]) => setGoldGrams(Number(val[0]))}
-                containerStyle={{marginTop: 12}}
+                containerStyle={{ marginTop: 12 }}
                 thumbTintColor={theme.colors.gold}
                 minimumTrackTintColor={theme.colors.gold}
                 maximumTrackTintColor={theme.colors.additional.formTextMedium}
@@ -230,7 +230,7 @@ export default function JoinAdvanceGold() {
               end={{ x: 1, y: 1 }}
             >
               <Ionicons name="diamond" size={24} color="#fff" style={styles.buttonIcon} />
-              <Text style={styles.joinButtonText}>JOIN DC ADVANCE</Text>
+              <Text style={styles.joinButtonText}>JOIN SRI MURUGAN ADVANCE</Text>
             </LinearGradient>
           </TouchableOpacity>
         </ScrollView>
@@ -259,8 +259,8 @@ export default function JoinAdvanceGold() {
               <Text style={styles.modalSubMessage}>
                 We're working to improve our payment system for better service.
               </Text>
-              <TouchableOpacity 
-                style={styles.modalButton} 
+              <TouchableOpacity
+                style={styles.modalButton}
                 onPress={handleCloseMaintenanceModal}
               >
                 <Text style={styles.modalButtonText}>OK</Text>
@@ -274,7 +274,7 @@ export default function JoinAdvanceGold() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
+  container: {
     flex: 1,
   },
   headerWrapper: {
@@ -285,36 +285,36 @@ const styles = StyleSheet.create({
     zIndex: 10,
     backgroundColor: 'transparent',
   },
-  gradientBackground: { 
+  gradientBackground: {
     flex: 1,
   },
-  content: { 
-    padding: 20, 
-    paddingBottom: 120 
+  content: {
+    padding: 20,
+    paddingBottom: 120
   },
-  headerContainer: { 
-    alignItems: 'center', 
-    marginBottom: 30 
+  headerContainer: {
+    alignItems: 'center',
+    marginBottom: 30
   },
-  title: { 
-    fontSize: 28, 
-    fontWeight: 'bold', 
-    color: '#FFD700', 
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFD700',
     textAlign: 'center',
     textShadowColor: 'rgba(255, 215, 0, 0.3)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4
   },
-  subtitle: { 
-    fontSize: 16, 
-    color: '#E0E0E0', 
+  subtitle: {
+    fontSize: 16,
+    color: '#E0E0E0',
     textAlign: 'center',
     marginTop: 4
   },
-  cardContainer: { 
-    backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-    borderRadius: 16, 
-    padding: 20, 
+  cardContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 20,
     borderWidth: 1,
     borderColor: 'rgba(255, 215, 0, 0.2)',
@@ -324,32 +324,32 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8
   },
-  cardHeader: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: 16 
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16
   },
-  cardTitle: { 
-    fontSize: 18, 
-    fontWeight: 'bold', 
-    color: '#FFD700', 
-    marginLeft: 12 
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFD700',
+    marginLeft: 12
   },
-  inputGroup: { 
-    marginBottom: 8 
+  inputGroup: {
+    marginBottom: 8
   },
-  inputLabel: { 
-    fontSize: 14, 
-    color: '#E0E0E0', 
+  inputLabel: {
+    fontSize: 14,
+    color: '#E0E0E0',
     marginBottom: 8,
     fontWeight: '500'
   },
-  royalInput: { 
-    borderWidth: 1, 
-    borderColor: 'rgba(255, 215, 0, 0.3)', 
-    borderRadius: 12, 
-    padding: 16, 
-    fontSize: 18, 
+  royalInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 18,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     color: '#fff',
     shadowColor: '#000',
@@ -372,12 +372,12 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3
   },
-  percentGrid: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    gap: 12 
+  percentGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12
   },
-  percentButton: { 
+  percentButton: {
     flex: 1,
     minWidth: '45%',
     borderRadius: 12,
@@ -388,24 +388,24 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4
   },
-  percentGradient: { 
-    paddingVertical: 12, 
-    paddingHorizontal: 16, 
-    alignItems: 'center' 
+  percentGradient: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center'
   },
-  percentButtonText: { 
-    color: '#E0E0E0', 
-    fontWeight: 'bold', 
-    fontSize: 16 
+  percentButtonText: {
+    color: '#E0E0E0',
+    fontWeight: 'bold',
+    fontSize: 16
   },
-  percentButtonTextActive: { 
+  percentButtonTextActive: {
     color: '#000',
     fontWeight: 'bold'
   },
-  summaryCard: { 
-    backgroundColor: 'rgba(255, 215, 0, 0.1)', 
-    borderRadius: 16, 
-    padding: 20, 
+  summaryCard: {
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 20,
     borderWidth: 2,
     borderColor: 'rgba(255, 215, 0, 0.3)',
@@ -415,38 +415,38 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8
   },
-  summaryHeader: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: 16 
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16
   },
-  summaryTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#FFD700', 
-    marginLeft: 12 
+  summaryTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFD700',
+    marginLeft: 12
   },
-  summaryContent: { 
-    gap: 12 
+  summaryContent: {
+    gap: 12
   },
-  summaryRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center' 
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
   },
-  summaryLabel: { 
-    fontSize: 16, 
+  summaryLabel: {
+    fontSize: 16,
     color: '#E0E0E0',
     fontWeight: '500'
   },
-  summaryValue: { 
-    color: '#FFD700', 
+  summaryValue: {
+    color: '#FFD700',
     fontWeight: 'bold',
     fontSize: 16
   },
-  joinButton: { 
-    borderRadius: 16, 
-    overflow: 'hidden', 
+  joinButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
     marginTop: 20,
     shadowColor: '#FFD700',
     shadowOffset: { width: 0, height: 6 },
@@ -454,20 +454,20 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8
   },
-  joinButtonGradient: { 
-    paddingVertical: 18, 
+  joinButtonGradient: {
+    paddingVertical: 18,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center'
   },
-  buttonIcon: { 
-    marginRight: 8 
+  buttonIcon: {
+    marginRight: 8
   },
-  joinButtonText: { 
-    color: '#000', 
-    fontSize: 18, 
-    fontWeight: 'bold', 
-    letterSpacing: 1, 
+  joinButtonText: {
+    color: '#000',
+    fontSize: 18,
+    fontWeight: 'bold',
+    letterSpacing: 1,
     textTransform: 'uppercase'
   },
   modalOverlay: {
