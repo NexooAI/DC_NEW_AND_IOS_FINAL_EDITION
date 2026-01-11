@@ -41,6 +41,9 @@ interface RatingModalProps {
 }
 
 const RATING_STORAGE_KEY = 'app_rating_data';
+const REMIND_LATER_KEY = 'app_rating_remind_later';
+const COOLDOWN_DAYS = 3;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.nexooai.srimurugangoldhouse&hl=en_IN';
 const APP_STORE_URL = 'https://apps.apple.com/us/app/sri-murugan-gold-house/id6755081937'; // Replace with your App Store ID
 
@@ -448,6 +451,18 @@ export const useRatingPrompt = () => {
                 }
             }
 
+            // Check if user asked to be reminded later
+            const remindLater = await AsyncStorage.getItem(REMIND_LATER_KEY);
+            if (remindLater) {
+                const lastRemindTime = parseInt(remindLater, 10);
+                const timeDiff = Date.now() - lastRemindTime;
+
+                // If within cooldown period, don't show
+                if (timeDiff < (COOLDOWN_DAYS * MS_PER_DAY)) {
+                    return false;
+                }
+            }
+
             // Check app launch count
             const launchCount = await AsyncStorage.getItem('app_launch_count');
             const count = launchCount ? parseInt(launchCount, 10) : 0;
@@ -479,11 +494,22 @@ export const useRatingPrompt = () => {
 
     const forceShowRating = () => setShowRating(true);
 
+    const remindLater = async () => {
+        try {
+            await AsyncStorage.setItem(REMIND_LATER_KEY, Date.now().toString());
+            setShowRating(false);
+        } catch (error) {
+            logger.error('Error setting remind later:', error);
+            setShowRating(false);
+        }
+    };
+
     return {
         showRating,
         checkAndShowRating,
         incrementLaunchCount,
         hideRating,
+        remindLater, // Export new function
         forceShowRating,
     };
 };

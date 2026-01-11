@@ -3,6 +3,7 @@ import { io, Socket } from "socket.io-client";
 import { useRouter } from "expo-router";
 import { AppState, AppStateStatus } from "react-native";
 import { theme } from "@/constants/theme";
+import { paymentAPI } from "@/services/api";
 
 interface PaymentSocketProps {
   onPaymentSuccess?: (data: any) => void;
@@ -27,6 +28,9 @@ export const usePaymentSocket = ({
   const isPaymentCompleted = useRef(false);
   const parsedUserDetailsRef = useRef(parsedUserDetails);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const statusCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const statusCheckAttemptsRef = useRef(0);
+  const MAX_STATUS_CHECK_ATTEMPTS = 12; // 12 attempts * 5 seconds = 60 seconds max
 
   // Keep parsedUserDetailsRef updated
   useEffect(() => {
@@ -66,13 +70,50 @@ export const usePaymentSocket = ({
     socketRef.current = socketInstance;
 
     const emitMetadata = (currentOrderId: string) => {
-      if (!currentOrderId) return;
+      if (!currentOrderId) {
+        console.warn("⚠️ Cannot emit metadata: orderId is missing");
+        return;
+      }
+
+      if (!socketInstance.connected) {
+        console.warn("⚠️ Cannot emit metadata: socket not connected");
+        return;
+      }
 
       console.log("🎯 Emitting createOrder/store_payment_metadata for:", currentOrderId);
+      console.log("🎯 Socket connected:", socketInstance.connected);
+      console.log("🎯 Socket ID:", socketInstance.id);
 
       // 1. Emit createOrder
       const metadata = buildPaymentMetadata(parsedUserDetailsRef.current, currentOrderId);
-      socketInstance.emit("createOrder", metadata);
+      console.log("📤 Emitting createOrder with data:", JSON.stringify(metadata, null, 2));
+      console.log("📤 Socket ID when emitting:", socketInstance.id);
+      console.log("📤 Socket connected state:", socketInstance.connected);
+
+      try {
+        // Include socket ID in metadata (some servers need this to know where to emit back)
+        const metadataWithSocket = {
+          ...metadata,
+          socketId: socketInstance.id,
+          clientId: socketInstance.id
+        };
+
+        console.log("📤 Emitting createOrder with socket ID:", socketInstance.id);
+
+        socketInstance.emit("createOrder", metadataWithSocket, (ack: any) => {
+          if (ack) {
+            console.log("✅ createOrder acknowledged:", JSON.stringify(ack, null, 2));
+          } else {
+            console.log("⚠️ createOrder emitted (no acknowledgment)");
+          }
+        });
+      } catch (error) {
+        console.error("❌ Error emitting createOrder:", error);
+        onPaymentError?.({
+          error: "Emission Error",
+          message: "Failed to emit createOrder"
+        });
+      }
 
       // 2. Emit store_payment_metadata
       // Use a consistent structure for store_payment_metadata
@@ -95,17 +136,56 @@ export const usePaymentSocket = ({
         userMobile: inner.mobile || userDetails.mobile || userDetails.userMobile || ""
       };
 
-      socketInstance.emit("store_payment_metadata", storeMetadata);
+      console.log("📤 Emitting store_payment_metadata with data:", JSON.stringify(storeMetadata, null, 2));
+
+      try {
+        // Include socket ID in metadata (some servers need this to know where to emit back)
+        const storeMetadataWithSocket = {
+          ...storeMetadata,
+          socketId: socketInstance.id,
+          clientId: socketInstance.id
+        };
+
+        console.log("📤 Emitting store_payment_metadata with socket ID:", socketInstance.id);
+
+        socketInstance.emit("store_payment_metadata", storeMetadataWithSocket, (ack: any) => {
+          if (ack) {
+            console.log("✅ store_payment_metadata acknowledged:", JSON.stringify(ack, null, 2));
+          } else {
+            console.log("⚠️ store_payment_metadata emitted (no acknowledgment)");
+          }
+        });
+      } catch (error) {
+        console.error("❌ Error emitting store_payment_metadata:", error);
+        onPaymentError?.({
+          error: "Emission Error",
+          message: "Failed to emit store_payment_metadata"
+        });
+      }
     };
 
     // Handle connection events
     socketInstance.on("connect", () => {
       setIsSocketConnected(true);
       console.log("✅ Socket connected. ID:", socketInstance.id);
+      console.log("✅ Socket listeners count:", {
+        payment_status_update: socketInstance.listeners("payment_status_update").length,
+        connect: socketInstance.listeners("connect").length,
+        disconnect: socketInstance.listeners("disconnect").length
+      });
 
       const currentOrderId = orderId || parsedUserDetailsRef.current?.orderId;
       if (currentOrderId) {
-        emitMetadata(currentOrderId);
+        console.log("🔗 Joining order room for orderId:", currentOrderId);
+        // Try joining order room (some servers require this to receive events)
+        socketInstance.emit("join_order", { orderId: currentOrderId });
+        socketInstance.emit("join_room", { orderId: currentOrderId });
+        socketInstance.emit("subscribe", { orderId: currentOrderId });
+
+        // Small delay to ensure listener is fully set up
+        setTimeout(() => {
+          emitMetadata(currentOrderId);
+        }, 100);
       } else {
         console.warn("⚠️ No orderId found on connect");
       }
@@ -137,25 +217,62 @@ export const usePaymentSocket = ({
     });
 
     // Listen for payment status updates
-    socketInstance.on("payment_status_update", async (data: any) => {
-      console.log("📩 Payment Update:", JSON.stringify(data, null, 2));
+    const handlePaymentStatusUpdate = async (data: any) => {
+      console.log("📩 Payment Update Received:", JSON.stringify(data, null, 2));
+      console.log("📩 Payment Update Data Type:", typeof data);
+      console.log("📩 Payment Update Has Data:", !!data);
+      console.log("📩 Payment Update Keys:", data ? Object.keys(data) : "No data");
+
+      // Verify data exists
+      if (!data) {
+        console.error("❌ payment_status_update received but data is null/undefined");
+        onPaymentError?.({
+          error: "Invalid Data",
+          message: "Received payment update but data is missing"
+        });
+        return;
+      }
 
       // Check success status
-      // Some backends send { status: 'success' }, others nested in paymentResponse
+      // Handle various response formats:
+      // 1. { status: "Success" } - capital S
+      // 2. { status: "success" } - lowercase
+      // 3. { paymentResponse: { status: "captured" } } - Razorpay format
+      // 4. { paymentResponse: { status: "CHARGED" } } - other gateways
+      const statusLower = data?.status?.toLowerCase() || "";
+      const paymentStatus = data?.paymentResponse?.status?.toLowerCase() || "";
+      const messageLower = data?.message?.toLowerCase() || "";
+
       const isSuccess =
-        data?.status === "success" ||
-        data?.status === "completed" ||
+        statusLower === "success" ||
+        statusLower === "completed" ||
+        paymentStatus === "captured" ||
+        paymentStatus === "charged" ||
         data?.paymentResponse?.status === "CHARGED" ||
-        data?.paymentResponse?.txn_detail?.status === "CHARGED";
+        data?.paymentResponse?.txn_detail?.status === "CHARGED" ||
+        messageLower.includes("success") ||
+        messageLower.includes("successful");
 
       const isFailed =
-        data?.status === "failed" ||
-        data?.paymentResponse?.status === "FAILED"; // Add more failure checks if needed
+        statusLower === "failed" ||
+        statusLower === "failure" ||
+        paymentStatus === "failed" ||
+        data?.paymentResponse?.status === "FAILED" ||
+        data?.paymentResponse?.txn_detail?.status === "FAILED" ||
+        messageLower.includes("failed") ||
+        messageLower.includes("failure");
 
       try {
         if (isSuccess) {
           console.log("✅ Payment Success Detected");
           isPaymentCompleted.current = true;
+
+          // Stop status checking interval
+          if (statusCheckIntervalRef.current) {
+            clearInterval(statusCheckIntervalRef.current);
+            statusCheckIntervalRef.current = null;
+            console.log("🛑 Stopped status checking interval");
+          }
 
           // Clean up socket
           if (socketInstance.connected) socketInstance.disconnect();
@@ -166,13 +283,23 @@ export const usePaymentSocket = ({
           } else {
             // Default handling if no callback provided (though PaymentWebView provides one)
             const response = data?.paymentResponse || {};
+            // Handle different response formats:
+            // Razorpay: response.id (payment ID), response.order_id
+            // Other gateways: response.txn_id, response.order_id
+            const txnId = response.id || response.txn_id || response.gatewayTransactionId || "";
+            const orderId = response.order_id || data?.orderId || "";
+            const amount = response.amount || data?.amount || 0;
+            const message = data?.message || response.payment_gateway_response?.resp_message || 'Payment Successful';
+
+            console.log("✅ Navigating to success page with:", { txnId, orderId, amount, message });
+
             router.replace({
               pathname: '/(tabs)/home/payment-success',
               params: {
-                amount: response.amount,
-                txnId: response.txn_id,
-                orderId: response.order_id,
-                message: response.payment_gateway_response?.resp_message || 'Payment Successful'
+                amount: amount.toString(),
+                txnId: txnId,
+                orderId: orderId,
+                message: message
               }
             });
           }
@@ -181,20 +308,40 @@ export const usePaymentSocket = ({
           console.log("❌ Payment Failure Detected");
           isPaymentCompleted.current = true;
 
+          // Stop status checking interval
+          if (statusCheckIntervalRef.current) {
+            clearInterval(statusCheckIntervalRef.current);
+            statusCheckIntervalRef.current = null;
+            console.log("🛑 Stopped status checking interval");
+          }
+
           if (socketInstance.connected) socketInstance.disconnect();
 
           if (onPaymentFailure) {
             onPaymentFailure(data);
           } else {
             const response = data?.paymentResponse || {};
+            // Handle different response formats
+            const txnId = response.id || response.txn_id || response.gatewayTransactionId || "";
+            const orderId = response.order_id || data?.orderId || "";
+            const amount = response.amount || data?.amount || 0;
+            const message = data?.message ||
+              response.payment_gateway_response?.resp_message ||
+              response.txn_detail?.error_message ||
+              response.error_description ||
+              'Payment Failed';
+            const status = response.status || data?.status || "FAILED";
+
+            console.log("❌ Navigating to failure page with:", { txnId, orderId, amount, message, status });
+
             router.replace({
               pathname: '/(tabs)/home/payment-failure',
               params: {
-                message: response.payment_gateway_response?.resp_message || response.txn_detail?.error_message || 'Payment Failed',
-                orderId: response.order_id,
-                txnId: response.txn_id,
-                amount: response.amount,
-                status: response.status
+                message: message,
+                orderId: orderId,
+                txnId: txnId,
+                amount: amount.toString(),
+                status: status
               }
             });
           }
@@ -202,15 +349,39 @@ export const usePaymentSocket = ({
           console.log("⚠️ Payment Expired");
           if (socketInstance.connected) socketInstance.disconnect();
           onPaymentExpired?.();
+        } else {
+          // Unknown status - log for debugging
+          console.warn("⚠️ Unknown payment status received:", data?.status, data);
         }
       } catch (error) {
-        console.error("Error processing socket event:", error);
+        console.error("❌ Error processing socket event:", error);
         onPaymentError?.({
           error: "Processing Error",
           message: "Failed to process payment update"
         });
       }
+    };
+
+    // Set up event listener BEFORE connection to ensure it's ready
+    console.log("🔌 Setting up payment_status_update listener...");
+    socketInstance.on("payment_status_update", handlePaymentStatusUpdate);
+
+    // Listen to ALL socket events for debugging
+    socketInstance.onAny((eventName, ...args) => {
+      console.log("🔔 Socket event received:", eventName);
+      if (args.length > 0) {
+        console.log("   Data:", JSON.stringify(args[0], null, 2));
+      }
     });
+
+    // Verify listener is attached
+    const listenerCount = socketInstance.listeners("payment_status_update").length;
+    console.log("✅ payment_status_update listener attached. Active listeners:", listenerCount);
+
+    if (listenerCount === 0) {
+      console.error("❌ WARNING: payment_status_update listener was NOT attached!");
+    }
+
 
     // App State handling for reconnection
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
@@ -234,9 +405,121 @@ export const usePaymentSocket = ({
 
     const appStateSubscription = AppState.addEventListener("change", handleAppStateChange);
 
+    // Listen for status response events (in case server responds to status requests)
+    socketInstance.on("payment_status_response", (data: any) => {
+      console.log("📥 Payment status response received:", data);
+      if (data && (data.status === "success" || data.status === "Success" || data.paymentResponse?.status === "captured")) {
+        handlePaymentStatusUpdate(data);
+      }
+    });
+
+    socketInstance.on("get_payment_status_response", (data: any) => {
+      console.log("📥 get_payment_status response received:", data);
+      if (data && (data.status === "success" || data.status === "Success" || data.paymentResponse?.status === "captured")) {
+        handlePaymentStatusUpdate(data);
+      }
+    });
+
+    // Set up periodic status check as fallback (if socket doesn't emit)
+    // Check every 5 seconds if payment is completed, max 12 attempts (60 seconds)
+    const currentOrderId = orderId || parsedUserDetailsRef.current?.orderId;
+    if (currentOrderId && !isPaymentCompleted.current) {
+      statusCheckAttemptsRef.current = 0;
+
+      statusCheckIntervalRef.current = setInterval(async () => {
+        if (isPaymentCompleted.current) {
+          if (statusCheckIntervalRef.current) {
+            clearInterval(statusCheckIntervalRef.current);
+            statusCheckIntervalRef.current = null;
+          }
+          return;
+        }
+
+        statusCheckAttemptsRef.current += 1;
+        const attempts = statusCheckAttemptsRef.current;
+
+        console.log(`⏰ Periodic check (${attempts}/${MAX_STATUS_CHECK_ATTEMPTS}): Requesting payment status for orderId:`, currentOrderId);
+
+        // Try socket events first
+        if (socketInstance.connected) {
+          socketInstance.emit("get_payment_status", { orderId: currentOrderId }, (response: any) => {
+            if (response) {
+              console.log("✅ get_payment_status response:", response);
+              if (response.status === "success" || response.status === "Success" || response.paymentResponse?.status === "captured") {
+                handlePaymentStatusUpdate(response);
+              }
+            }
+          });
+
+          socketInstance.emit("check_payment_status", { orderId: currentOrderId }, (response: any) => {
+            if (response) {
+              console.log("✅ check_payment_status response:", response);
+              if (response.status === "success" || response.status === "Success" || response.paymentResponse?.status === "captured") {
+                handlePaymentStatusUpdate(response);
+              }
+            }
+          });
+        }
+
+        // HTTP API fallback - try every 3rd attempt (every 15 seconds)
+        if (attempts % 3 === 0) {
+          try {
+            console.log("🌐 Trying HTTP API to check payment status...");
+            const response = await paymentAPI.getPaymentStatus(currentOrderId);
+            console.log("🌐 HTTP API response:", response.data);
+
+            if (response?.data) {
+              const apiData = response.data;
+              // Check if payment is successful
+              if (apiData.status === "success" ||
+                apiData.status === "Success" ||
+                apiData.paymentResponse?.status === "captured" ||
+                apiData.payment?.status === "captured") {
+                console.log("✅ Payment success detected via HTTP API!");
+                // Format response to match socket event structure
+                const formattedData = {
+                  orderId: currentOrderId,
+                  status: apiData.status || "Success",
+                  message: apiData.message || "Payment Successful",
+                  paymentResponse: apiData.paymentResponse || apiData.payment || {}
+                };
+                handlePaymentStatusUpdate(formattedData);
+              }
+            }
+          } catch (error: any) {
+            console.log("⚠️ HTTP API status check failed:", error?.message || error);
+            // Don't stop on API errors, continue trying
+          }
+        }
+
+        // Stop after max attempts
+        if (attempts >= MAX_STATUS_CHECK_ATTEMPTS) {
+          console.warn(`⚠️ Stopped status checking after ${MAX_STATUS_CHECK_ATTEMPTS} attempts (60 seconds)`);
+          console.warn("   Payment status was not received. User may need to check manually.");
+          if (statusCheckIntervalRef.current) {
+            clearInterval(statusCheckIntervalRef.current);
+            statusCheckIntervalRef.current = null;
+          }
+        }
+      }, 5000); // Check every 5 seconds
+    }
+
     return () => {
       // Cleanup
+      console.log("🧹 Cleaning up socket connection...");
+
+      // Clear status check interval
+      if (statusCheckIntervalRef.current) {
+        clearInterval(statusCheckIntervalRef.current);
+        statusCheckIntervalRef.current = null;
+      }
+
       if (socketRef.current) {
+        // Remove all listeners before disconnecting
+        socketRef.current.off("payment_status_update");
+        socketRef.current.off("connect");
+        socketRef.current.off("disconnect");
+        socketRef.current.off("connect_error");
         socketRef.current.disconnect();
       }
       appStateSubscription.remove();

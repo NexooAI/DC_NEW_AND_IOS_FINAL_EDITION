@@ -34,39 +34,76 @@ export default function PaymentWebView() {
       }
 
       console.log("params.userDetails", params.userDetails);
+      console.log("✅ Payment Success Data:", JSON.stringify(data, null, 2));
       const userDetails = params.userDetails ? JSON.parse(params.userDetails as string) : {};
+
+      // Handle different response formats:
+      // Razorpay: paymentResponse.id (payment ID), paymentResponse.order_id
+      // Other gateways: paymentResponse.txn_id, paymentResponse.order_id
+      const txnId = data?.paymentResponse?.id || 
+                   data?.paymentResponse?.txn_id || 
+                   data?.paymentResponse?.gatewayTransactionId || 
+                   "";
+      const orderId = data?.paymentResponse?.order_id || 
+                     data?.orderId || 
+                     "";
+      const amount = data?.paymentResponse?.amount || 
+                    data?.amount || 
+                    0;
 
       const routerParams = {
         pathname: "/(tabs)/home/payment-success",
         params: {
-          txnId: data?.paymentResponse?.txn_id,
-          orderId: data?.paymentResponse?.order_id,
-          amount: data?.paymentResponse?.amount,
+          txnId: txnId,
+          orderId: orderId,
+          amount: amount.toString(),
           investmentId: userDetails?.investmentId,
           schemeType: userDetails?.schemeType,
           paymentFrequency: userDetails?.paymentFrequency,
         },
       } as const;
       
-      console.log("Navigating to success:", routerParams);
+      console.log("✅ Navigating to success:", routerParams);
       router.replace(routerParams);
     },
     onPaymentFailure: (data) => {
+      console.log("❌ Payment Failure Data:", JSON.stringify(data, null, 2));
       if (socket && socket.connected) {
         socket.disconnect();
       }
+      
+      // Handle different response formats
+      const txnId = data?.paymentResponse?.id || 
+                   data?.paymentResponse?.txn_id || 
+                   data?.paymentResponse?.gatewayTransactionId || 
+                   "";
+      const orderId = data?.paymentResponse?.order_id || 
+                     data?.orderId || 
+                     "";
+      const amount = data?.paymentResponse?.amount || 
+                    data?.amount || 
+                    0;
+      const message = data?.message ||
+                     data?.paymentResponse?.txn_detail?.error_message ||
+                     data?.paymentResponse?.txn_detail?.response_message ||
+                     data?.paymentResponse?.payment_gateway_response?.resp_message ||
+                     data?.paymentResponse?.error_description ||
+                     "Payment Failed";
+      const status = data?.paymentResponse?.status || 
+                    data?.paymentResponse?.txn_detail?.status || 
+                    data?.status || 
+                    "FAILED";
+      
+      console.log("❌ Navigating to failure:", { txnId, orderId, amount, message, status });
+      
       router.replace({
         pathname: "/(tabs)/home/payment-failure",
         params: {
-          message:
-            data?.paymentResponse?.txn_detail?.error_message ||
-            data?.paymentResponse?.txn_detail?.response_message ||
-            data?.paymentResponse?.payment_gateway_response?.resp_message ||
-            "Payment Failed",
-          orderId: data?.paymentResponse?.order_id,
-          txnId: data?.paymentResponse?.txn_id,
-          amount: data?.paymentResponse?.amount,
-          status: data?.paymentResponse?.txn_detail?.status,
+          message: message,
+          orderId: orderId,
+          txnId: txnId,
+          amount: amount.toString(),
+          status: status,
         },
       });
     },
@@ -260,8 +297,33 @@ export default function PaymentWebView() {
                     setSupportMultipleWindows={false}
                     cacheEnabled={true}
                     
+                    // Block navigation to payment-success URL - we only use socket events for status
+                    // The URL https://api.prod.srimurugangoldhouse.in/payment-success is for status checking only
+                    // We should NOT navigate to it - socket payment_status_update event handles everything
+                    onShouldStartLoadWithRequest={(request) => {
+                        const url = request.url.toLowerCase();
+                        console.log("🔍 WebView navigation request:", url);
+                        
+                        // Block payment-success URL - status is handled by socket only
+                        if (url.includes('/payment-success') || 
+                            url.includes('payment-success') ||
+                            url.includes('payment_success') ||
+                            url.includes('api.prod.srimurugangoldhouse.in/payment-success')) {
+                            console.log("🚫 BLOCKED: Navigation to payment-success URL");
+                            console.log("   URL:", request.url);
+                            console.log("   Reason: Status is handled by payment_status_update socket event only");
+                            console.log("   Waiting for socket event to process payment status...");
+                            // Prevent navigation - socket will handle the status
+                            return false;
+                        }
+                        
+                        // Allow all other navigation
+                        return true;
+                    }}
+                    
                     onNavigationStateChange={(navState) => {
                         console.log("Nav State:", navState);
+                        console.log("Current URL:", navState.url);
 
                         // Block 'about:blank' loops
                         if (navState.url === "about:blank" && !navState.loading) {
@@ -279,7 +341,35 @@ export default function PaymentWebView() {
                         }
 
                         const currentUrl = navState.url.toLowerCase();
-                        if (currentUrl.includes("/cancel") || currentUrl.includes("/error") || (currentUrl.includes("payment") && currentUrl.includes("status=failed"))) {
+                        
+                        // Block payment-success URL if it somehow gets through
+                        if (currentUrl.includes('/payment-success') || 
+                            currentUrl.includes('payment-success') ||
+                            currentUrl.includes('payment_success')) {
+                            console.log("🚫 Blocked payment-success URL in navigation state change");
+                            console.log("   Relying on socket payment_status_update event only");
+                            // Stop loading this URL
+                            if (webViewRef.current) {
+                                webViewRef.current.stopLoading();
+                            }
+                            return;
+                        }
+                        
+                        // Check for payment success indicators in URL (for logging only)
+                        if (currentUrl.includes("success") || 
+                            currentUrl.includes("verified") || 
+                            currentUrl.includes("status=success")) {
+                            console.log("ℹ️ Payment success URL detected (blocked):", currentUrl);
+                            console.log("   Waiting for socket payment_status_update event...");
+                            // Don't navigate - socket will handle it
+                        }
+                        
+                        // Check for payment failure indicators
+                        if (currentUrl.includes("/cancel") || 
+                            currentUrl.includes("/error") || 
+                            (currentUrl.includes("payment") && currentUrl.includes("status=failed")) ||
+                            currentUrl.includes("payment_failed")) {
+                            console.log("❌ Payment failure detected from URL:", currentUrl);
                             handleCancel();
                         }
                     }}
@@ -291,6 +381,67 @@ export default function PaymentWebView() {
                     onHttpError={(syntheticEvent) => {
                          const { nativeEvent } = syntheticEvent;
                          console.warn('WebView HTTP error: ', nativeEvent);
+                    }}
+                    
+                    // Handle JavaScript alerts from payment gateway
+                    onJsAlert={(event) => {
+                        const message = event.nativeEvent.message || '';
+                        const url = event.nativeEvent.url || '';
+                        console.log("🔔 WebView JavaScript Alert Received:");
+                        console.log("   Message:", message);
+                        console.log("   URL:", url);
+                        
+                        // Extract the actual message (remove "The page at '...' says:" prefix if present)
+                        let actualMessage = message;
+                        const saysIndex = message.toLowerCase().indexOf('says:');
+                        if (saysIndex !== -1) {
+                            actualMessage = message.substring(saysIndex + 5).trim();
+                        }
+                        
+                        console.log("   Extracted Message:", actualMessage);
+                        
+                        // Check if it's a payment success message (case-insensitive)
+                        const messageLower = actualMessage.toLowerCase();
+                        const isSuccessMessage = 
+                            messageLower.includes('payment verified successfully') || 
+                            messageLower.includes('payment successful') ||
+                            messageLower.includes('payment verified') ||
+                            messageLower.includes('verified successfully') ||
+                            (messageLower.includes('success') && messageLower.includes('payment')) ||
+                            (messageLower.includes('success') && messageLower.includes('verified'));
+                        
+                        if (isSuccessMessage) {
+                            console.log("✅ Payment success detected from alert!");
+                            console.log("   Suppressing alert and waiting for socket payment_status_update event...");
+                            console.log("   Socket connected:", socket?.connected);
+                            console.log("   Socket ID:", socket?.id);
+                            
+                            // Suppress the alert completely - don't show it to user
+                            // The socket event will handle navigation
+                            return true; // Return true to suppress the default alert
+                        }
+                        
+                        // For other alerts (non-success), still suppress to avoid blocking
+                        // But log them for debugging
+                        console.log("⚠️ Non-success alert from payment gateway:", actualMessage);
+                        console.log("   Suppressing to avoid blocking payment flow");
+                        return true; // Suppress all alerts to prevent blocking
+                    }}
+                    
+                    // Handle JavaScript confirms
+                    onJsConfirm={(event) => {
+                        const message = event.nativeEvent.message || '';
+                        console.log("🔔 WebView JavaScript Confirm:", message);
+                        // Return false to use default handling, or implement custom logic
+                        return false;
+                    }}
+                    
+                    // Handle JavaScript prompts
+                    onJsPrompt={(event) => {
+                        const message = event.nativeEvent.message || '';
+                        console.log("🔔 WebView JavaScript Prompt:", message);
+                        // Return false to use default handling
+                        return false;
                     }}
                 />
               )}

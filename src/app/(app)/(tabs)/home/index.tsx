@@ -643,6 +643,7 @@ export default function Home() {
     checkAndShowRating,
     incrementLaunchCount,
     hideRating,
+    remindLater,
   } = useRatingPrompt();
 
   // Quick Join Modal States
@@ -2365,71 +2366,28 @@ export default function Home() {
         <View style={styles.homeHeader}>
           {/* Left: Profile Image and Name */}
           <View style={styles.headerLeft}>
+            {/* Menu Icon (Moved to Left) */}
             <TouchableOpacity
-              style={styles.profileImageContainer}
-              onPress={() => router.push("/(tabs)/profile")}
+              onPress={handleDrawerToggle}
+              style={styles.headerIconButton}
               activeOpacity={0.7}
             >
-              {getProfileImageSource() && !profileImageError ? (
-                <Image
-                  source={getProfileImageSource()}
-                  style={styles.headerProfileImage}
-                  resizeMode="cover"
-                  onError={handleProfileImageError}
-                  onLoad={handleProfileImageLoad}
-                />
-              ) : (
-                <Ionicons
-                  name="person-circle"
-                  size={40}
-                  color={theme.colors.primary}
-                />
-              )}
+              <Ionicons
+                name="menu"
+                size={28}
+                color={theme.colors.primary}
+              />
             </TouchableOpacity>
-            <View style={styles.headerNameContainer}>
-              <ResponsiveText
-                variant="caption"
-                size="xs"
-                weight="normal"
-                color={theme.colors.primary}
-                allowWrap={false}
-                maxLines={1}
-                adjustsFontSizeToFit={true}
-                minimumFontScale={0.7}
-                style={styles.headerWelcomeText}
-              >
-                {t("welcomeBack")}
-              </ResponsiveText>
-              <ResponsiveText
-                variant="body"
-                size="md"
-                weight="semibold"
-                color={theme.colors.primary}
-                allowWrap={false}
-                maxLines={1}
-                adjustsFontSizeToFit={true}
-                minimumFontScale={0.8}
-                style={styles.headerUserName}
-              >
-                {user?.name?.toUpperCase() || "USER"}
-              </ResponsiveText>
-              <ResponsiveText
-                variant="caption"
-                size="xs"
-                weight="normal"
-                color={theme.colors.primary}
-                allowWrap={false}
-                maxLines={1}
-                adjustsFontSizeToFit={true}
-                minimumFontScale={0.7}
-                style={styles.headerUserId}
-              >
-                ID: {user?.id || "N/A"}
-              </ResponsiveText>
-            </View>
+
+            {/* Logo (Next to Menu) */}
+            <Image
+              source={require("../../../../../assets/images/logo_trans.png")}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
           </View>
 
-          {/* Right: Icons */}
+          {/* Right: Icons & Profile */}
           <View style={styles.headerRight}>
             {/* Translate Icon */}
             <TouchableOpacity
@@ -2443,9 +2401,6 @@ export default function Home() {
                   size={24}
                   color={theme.colors.primary}
                 />
-                {/* <Text style={styles.languageIconText}>
-                  {language === "en" ? "தமிழ்" : "EN"}
-                </Text> */}
               </View>
             </TouchableOpacity>
 
@@ -2469,17 +2424,27 @@ export default function Home() {
               )}
             </TouchableOpacity>
 
-            {/* Menu Icon */}
+            {/* Profile Image (Moved to Right) */}
             <TouchableOpacity
-              onPress={handleDrawerToggle}
-              style={styles.headerIconButton}
+              style={styles.profileImageContainer}
+              onPress={() => router.push("/(tabs)/profile")}
               activeOpacity={0.7}
             >
-              <Ionicons
-                name="menu"
-                size={24}
-                color={theme.colors.primary}
-              />
+              {getProfileImageSource() && !profileImageError ? (
+                <Image
+                  source={getProfileImageSource()}
+                  style={styles.headerProfileImage}
+                  resizeMode="cover"
+                  onError={handleProfileImageError}
+                  onLoad={handleProfileImageLoad}
+                />
+              ) : (
+                <Ionicons
+                  name="person-circle"
+                  size={40}
+                  color={theme.colors.primary}
+                />
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -3302,7 +3267,7 @@ export default function Home() {
       {/* Rating Modal */}
       <RatingModal
         visible={showRating}
-        onClose={hideRating}
+        onClose={remindLater}
         onSubmitFeedback={(rating, feedback) => {
           logger.log("📝 User rating feedback:", { rating, feedback });
           // You can send this to your API if needed
@@ -3358,35 +3323,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileImageContainer: {
-    marginRight: rp(12),
+    marginLeft: rp(4),
   },
   headerProfileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 2,
     borderColor: theme.colors.primary,
   },
-  headerNameContainer: {
-    flex: 1,
-    flexDirection: "column",
-    justifyContent: "center",
-  },
-  headerWelcomeText: {
-    fontSize: rf(11, { minSize: 9, maxSize: 13 }),
-    fontWeight: "400",
-    opacity: 0.7,
-    marginBottom: 2,
-  },
-  headerUserName: {
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
-    fontWeight: "600",
-    marginBottom: 2,
-  },
-  headerUserId: {
-    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
-    fontWeight: "400",
-    opacity: 0.8,
+  headerLogo: {
+    width: 120,
+    height: 40,
+    marginLeft: 10
   },
   headerRight: {
     flexDirection: "row",
