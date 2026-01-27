@@ -30,6 +30,7 @@ export interface PaymentReceiptData {
         totalgoldweight: number;
         current_goldrate: number;
     };
+    logoBase64?: string;
 }
 
 export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => {
@@ -44,9 +45,12 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         userName,
         rewardAmount,
         rewardGoldGrams,
-        inversement
+        inversement,
+        logoBase64
     } = data;
 
+    const logoSrc =
+        `data:image/png;base64,${logoBase64}`;
     return `
    <!DOCTYPE html>
 <html lang="en">
@@ -136,7 +140,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
             ${theme.constants.customerName}
         </div>
         <div>
-            <img src="https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp" alt="Logo" style="max-width:90px; height:auto;">
+            <img src="${logoSrc}" alt="Logo" style="max-width:90px; height:auto;">
         </div>
     </div>
 

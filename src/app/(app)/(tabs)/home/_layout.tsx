@@ -21,7 +21,6 @@ export default function HomeLayout() {
         headerShown: true,
         headerStyle: {
           backgroundColor: theme.colors.primary,
-          height: 60, // Standard header height
         },
         headerTintColor: COLORS.white,
         headerTitleAlign: 'center', // Center align the header title
@@ -112,21 +111,26 @@ export default function HomeLayout() {
       />
       <Stack.Screen
         name="PaymentWebView"
-        options={{ title: "Payment WebView" }}
+        options={{
+          title: "Payment WebView",
+          headerShown: false
+        }}
       />
       <Stack.Screen
         name="payment-success"
-        options={{ 
+        options={{
           title: "Payment Success",
+          headerShown: false,
           headerBackVisible: false,
           gestureEnabled: false,
-          headerLeft: () => null 
+          headerLeft: () => null
         }}
       />
       <Stack.Screen
         name="payment-failure"
-        options={{ 
+        options={{
           title: "Payment Failure",
+          headerShown: false,
           headerBackVisible: false,
           gestureEnabled: false,
           headerLeft: () => null

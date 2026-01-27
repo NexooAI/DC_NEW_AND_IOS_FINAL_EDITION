@@ -702,7 +702,7 @@ export default function SchemeList() {
 
   const renderTab = (title: string) => {
     const isActive = activeTab === title;
-    
+
     return (
       <TouchableOpacity
         key={title}
@@ -852,7 +852,7 @@ export default function SchemeList() {
               <Ionicons
                 name={isExpanded ? "chevron-up-circle" : "chevron-down-circle"}
                 size={22}
-                color={'#000'} 
+                color={'#000'}
               />
             </TouchableOpacity>
           </View>
@@ -1002,13 +1002,13 @@ export default function SchemeList() {
               ]}
             >
               {joiningScheme === item.SCHEMEID ? (
-                <ActivityIndicator size="small" color={'#fff'} />
+                <ActivityIndicator size="small" color={'#000000ff'} />
               ) : (
                 <>
-                  <Text style={[styles.joinButtonText, { color: '#fff' }]}>
+                  <Text style={[styles.joinButtonText, { color: '#000000ff' }]}>
                     {t("schemes.joinNow") || "Join Now"}
                   </Text>
-                  <Ionicons name="arrow-forward-circle" size={20} color={'#fff'} />
+                  <Ionicons name="arrow-forward-circle" size={20} color={'#070000ff'} />
                 </>
               )}
             </LinearGradient>

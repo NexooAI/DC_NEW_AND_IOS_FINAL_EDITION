@@ -123,7 +123,7 @@ const SavingsDetail = () => {
   );
   const [selectedPayments, setSelectedPayments] = useState<any[]>([]);
   const [showAdvancePayment, setShowAdvancePayment] = useState(false);
-  
+
   // Animation for scrolling
   const scrollY = new Animated.Value(0);
 
@@ -167,7 +167,7 @@ const SavingsDetail = () => {
   );
   const state = useNavigationState((state) => state);
   const [advancePayments, setAdvancePayments] = useState<any[]>([]);
-  
+
   const totalSelectedAmount = useMemo(() => {
     if (selectedPayments.length === 0) return 0;
     return selectedPayments.length * Number(params.emiAmount);
@@ -204,7 +204,7 @@ const SavingsDetail = () => {
     transaction: Transaction,
     inversement: any
   ) => {
-     // Extract reward amount and gold grams from rewardsList
+    // Extract reward amount and gold grams from rewardsList
     const rewardAmount = transaction.rewardsList?.amount
       ? Number(transaction.rewardsList.amount)
       : undefined;
@@ -226,12 +226,30 @@ const SavingsDetail = () => {
       rewardAmount: rewardAmount,
       rewardGoldGrams: rewardGoldGrams,
       inversement: inversement,
+      logoBase64: await (async () => {
+        try {
+          const { Asset } = require("expo-asset");
+          // Require the logo - ensure the path is correct
+          // Path: ../../../../../assets/images/logo_trans.png (from src/app/(app)/(tabs)/savings/SavingsDetail.tsx)
+          const asset = Asset.fromModule(require("../../../../../assets/images/logo_trans.png"));
+          await asset.downloadAsync();
+          if (asset.localUri) {
+            console.log("✅ Logo loaded successfully for receipt");
+            return await FileSystem.readAsStringAsync(asset.localUri, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+          }
+        } catch (error) {
+          console.log("Error loading logo for receipt:", error);
+          return undefined;
+        }
+      })(),
     };
-    
+
     try {
       const htmlContent = generatePaymentReceiptHTML(receiptData);
       const { uri } = await Print.printToFileAsync({ html: htmlContent });
-      
+
       const customerName = sanitizeFileName(user?.name || "Customer");
       const accountNo = sanitizeFileName(user?.id?.toString() || "000000");
       const paymentId = sanitizeFileName(
@@ -289,7 +307,7 @@ const SavingsDetail = () => {
 
     try {
       let responce = await api.post("investments/check-payment", payload);
-      
+
       if (responce?.data?.success === false) {
         setAlertMessage(responce?.data.message || "Something went wrong");
         setAlertType("error");
@@ -312,8 +330,8 @@ const SavingsDetail = () => {
         params: {
           amount: params.emiAmount,
           schemeName: params.schemeName,
-          schemeId: responce?.data.data.schemeId,
-          chitId: responce?.data.data?.chitId,
+          schemeId: responce?.data.data?.schemeId || schemesData?.schemeId || schemesData?.id || params.schemeId || params.schemeCode,
+          chitId: responce?.data.data?.chitId || params.chitId,
           paymentFrequency: parseSchemes.paymentFrequencyName || params.paymentFrequency,
           schemeType: parseSchemes.schemeTypeName,
           source: params.source || "savings_detail",
@@ -323,12 +341,13 @@ const SavingsDetail = () => {
             accountname: params.accountHolder,
             accNo: params.accNo,
             associated_branch: 1,
-            investmentId: responce?.data.data?.investmentId,
-            schemeId: responce?.data.data?.schemeId,
+            investmentId: responce?.data.data?.investmentId || params.id || params.investmentId,
+            schemeId: responce?.data.data?.schemeId || schemesData?.schemeId || schemesData?.id || params.schemeId || params.schemeCode,
             schemeType: parseSchemes.schemeTypeName,
             schemeName: params?.schemeName,
             paymentFrequency: parseSchemes.paymentFrequencyName || params.paymentFrequency,
-            chitId: responce?.data.data?.chitId,
+            chitId: responce?.data.data?.chitId || params.chitId,
+            userId: user.id
           }),
           paidPaymentCount: String(paymentHistrory?.length + 1 || 0),
           maturityDate: params.maturityDate,
@@ -395,7 +414,7 @@ const SavingsDetail = () => {
     return Math.min((paid / total) * 100, 100);
   };
 
-   const handleSelectPayment = (payment: any) => {
+  const handleSelectPayment = (payment: any) => {
     setSelectedPayments((prev) => {
       const isSelected = prev.some(
         (p) => p.monthNumber === payment.monthNumber
@@ -409,99 +428,100 @@ const SavingsDetail = () => {
   };
 
   const handleBulkPayment = async () => {
-      if (!user || selectedPayments.length === 0) {
-        setAlertMessage("Please select at least one installment to pay.");
+    if (!user || selectedPayments.length === 0) {
+      setAlertMessage("Please select at least one installment to pay.");
+      setAlertType("error");
+      setAlertVisible(true);
+      return;
+    }
+
+    setIsLoading(true);
+
+    let payload = {
+      userId: user.id,
+      investmentId: params.id,
+    };
+
+    try {
+      let responce = await api.post("investments/check-payment", payload);
+      logger.log(responce.data);
+      if (responce?.data?.success === false) {
+        setAlertMessage(responce?.data.message || "Something went wrong");
         setAlertType("error");
         setAlertVisible(true);
         return;
       }
-  
-      setIsLoading(true);
-  
-      let payload = {
-        userId: user.id,
-        investmentId: params.id,
-      };
-  
+
+      // Safely parse schemes data
+      let parseSchemes;
       try {
-        let responce = await api.post("investments/check-payment", payload);
-        logger.log(responce.data);
-        if (responce?.data?.success === false) {
-          setAlertMessage(responce?.data.message || "Something went wrong");
-          setAlertType("error");
-          setAlertVisible(true);
-          return;
-        }
-  
-        // Safely parse schemes data
-        let parseSchemes;
-        try {
-          parseSchemes = JSON.parse(params.schemesData);
-        } catch (parseError) {
-          logger.error("Error parsing schemes data:", parseError);
-          // Fallback to a default structure
-          parseSchemes = {
-            schemeTypeName: "Fixed",
-            paymentFrequencyName: params.paymentFrequency || "Monthly",
-          };
-        }
-  
-        router.push({
-          pathname: "/(tabs)/home/paymentNewOverView",
-          params: {
+        parseSchemes = JSON.parse(params.schemesData);
+      } catch (parseError) {
+        logger.error("Error parsing schemes data:", parseError);
+        // Fallback to a default structure
+        parseSchemes = {
+          schemeTypeName: "Fixed",
+          paymentFrequencyName: params.paymentFrequency || "Monthly",
+        };
+      }
+
+      router.push({
+        pathname: "/(tabs)/home/paymentNewOverView",
+        params: {
+          amount: totalSelectedAmount,
+          schemeName: params.schemeName,
+          schemeId: responce?.data.data?.schemeId || schemesData?.schemeId || schemesData?.id || params.schemeId || params.schemeCode,
+          chitId: responce?.data.data?.chitId || params.chitId,
+          paymentFrequency:
+            parseSchemes.paymentFrequencyName || params.paymentFrequency,
+          schemeType: parseSchemes.schemeTypeName,
+          source: params.source || "savings_detail_bulk",
+          savinsTypes: parseSchemes.schemeType,
+          userDetails: JSON.stringify({
             amount: totalSelectedAmount,
-            schemeName: params.schemeName,
-            schemeId: responce?.data.data.schemeId,
-            chitId: responce?.data.data?.chitId,
+            accountname: params.accountHolder,
+            accNo: params.accNo,
+            associated_branch: 1,
+            investmentId: responce?.data.data?.investmentId || params.id || params.investmentId,
+            schemeId: responce?.data.data?.schemeId || schemesData?.schemeId || schemesData?.id || params.schemeId || params.schemeCode,
+            schemeType: parseSchemes.schemeTypeName,
+            schemeName: params?.schemeName,
             paymentFrequency:
               parseSchemes.paymentFrequencyName || params.paymentFrequency,
-            schemeType: parseSchemes.schemeTypeName,
-            source: params.source || "savings_detail_bulk",
-            savinsTypes: parseSchemes.schemeType,
-            userDetails: JSON.stringify({
-              amount: totalSelectedAmount,
-              accountname: params.accountHolder,
-              accNo: params.accNo,
-              associated_branch: 1,
-              investmentId: responce?.data.data?.investmentId,
-              schemeId: responce?.data.data?.schemeId,
-              schemeType: parseSchemes.schemeTypeName,
-              schemeName: params?.schemeName,
-              paymentFrequency:
-                parseSchemes.paymentFrequencyName || params.paymentFrequency,
-              chitId: responce?.data.data?.chitId,
-              selectedMonths: selectedPayments.map((p) => p.monthNumber).join(","),
-            }),
-            paidPaymentCount: String(
-              (paymentHistrory?.length || 0) + selectedPayments.length
-            ),
-            maturityDate: params.maturityDate,
-            totalPaid: params.totalPaid,
-            noOfIns: params.noOfIns,
-            goldWeight: params.goldWeight,
-            accNo: params.accNo,
-          },
-        });
-      } catch (error) {
-        logger.error("Error in handleBulkPayment:", error);
-        setAlertMessage("An error occurred. Please try again.");
-        setAlertType("error");
-        setAlertVisible(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-  
-    const handleSelectAll = () => {
-      const pendingPayments = advancePayments.filter(
-        (p) => p.status === "PENDING"
-      );
-      setSelectedPayments(pendingPayments);
-    };
-  
-    const handleUnselectAll = () => {
-      setSelectedPayments([]);
-    };
+            chitId: responce?.data.data?.chitId || params.chitId,
+            selectedMonths: selectedPayments.map((p) => p.monthNumber).join(","),
+            userId: user.id
+          }),
+          paidPaymentCount: String(
+            (paymentHistrory?.length || 0) + selectedPayments.length
+          ),
+          maturityDate: params.maturityDate,
+          totalPaid: params.totalPaid,
+          noOfIns: params.noOfIns,
+          goldWeight: params.goldWeight,
+          accNo: params.accNo,
+        },
+      });
+    } catch (error) {
+      logger.error("Error in handleBulkPayment:", error);
+      setAlertMessage("An error occurred. Please try again.");
+      setAlertType("error");
+      setAlertVisible(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSelectAll = () => {
+    const pendingPayments = advancePayments.filter(
+      (p) => p.status === "PENDING"
+    );
+    setSelectedPayments(pendingPayments);
+  };
+
+  const handleUnselectAll = () => {
+    setSelectedPayments([]);
+  };
 
   // New Component Renderers
 
@@ -514,41 +534,41 @@ const SavingsDetail = () => {
         style={styles.heroCard}
       >
         <View style={styles.heroBackground}>
-           <View style={styles.heroHeaderRow}>
-             <View>
-                 <Text style={styles.heroSchemeName}>{params.schemeName}</Text>
-                 <Text style={styles.heroSchemeCode}>{params.schemeCode}</Text>
-             </View>
-             {/* <View style={styles.heroStatusBadge}>
+          <View style={styles.heroHeaderRow}>
+            <View>
+              <Text style={styles.heroSchemeName}>{params.schemeName}</Text>
+              <Text style={styles.heroSchemeCode}>{params.schemeCode}</Text>
+            </View>
+            {/* <View style={styles.heroStatusBadge}>
                <View style={styles.heroStatusDot} />
                <Text style={styles.heroStatusText}>{translations.statusActive || "Active"}</Text>
              </View> */}
-           </View>
-           
-           <View style={styles.heroStatsRow}>
-             <View style={styles.heroStatItem}>
-               <Text style={styles.heroStatLabel}>{translations.totalInvested}</Text>
-               <Text style={styles.heroStatValue}>₹{Number(totalAmountandRewards).toLocaleString()}</Text>
-             </View>
-              {schemesData?.schemeType?.toLowerCase() === "weight" && (
-                <View style={styles.heroStatItem}>
-                   <Text style={styles.heroStatLabel}>{translations.goldAccumulated}</Text>
-                   <Text style={styles.heroStatValue}>{formatGoldWeight(parseFloat(params.goldWeight) || 0)}</Text>
-                </View>
-              )}
-           </View>
+          </View>
 
-           {schemesData?.paymentFrequencyName !== "Flexi" && (
-               <View style={styles.progressContainer}>
-                 <View style={styles.progressLabels}>
-                   <Text style={styles.progressLabelText}>{translations.paymentProgress}</Text>
-                   <Text style={styles.progressValueText}>{params.monthsPaid}/{params.noOfIns} {translations.months}</Text>
-                 </View>
-                 <View style={styles.progressBarBg}>
-                   <View style={[styles.progressBarFill, { width: `${getProgressPercentage()}%` }]} />
-                 </View>
-               </View>
-           )}
+          <View style={styles.heroStatsRow}>
+            <View style={styles.heroStatItem}>
+              <Text style={styles.heroStatLabel}>{translations.totalInvested}</Text>
+              <Text style={styles.heroStatValue}>₹{Number(totalAmountandRewards).toLocaleString()}</Text>
+            </View>
+            {schemesData?.schemeType?.toLowerCase() === "weight" && (
+              <View style={styles.heroStatItem}>
+                <Text style={styles.heroStatLabel}>{translations.goldAccumulated}</Text>
+                <Text style={styles.heroStatValue}>{formatGoldWeight(parseFloat(params.goldWeight) || 0)}</Text>
+              </View>
+            )}
+          </View>
+
+          {schemesData?.paymentFrequencyName !== "Flexi" && (
+            <View style={styles.progressContainer}>
+              <View style={styles.progressLabels}>
+                <Text style={styles.progressLabelText}>{translations.paymentProgress}</Text>
+                <Text style={styles.progressValueText}>{params.monthsPaid}/{params.noOfIns} {translations.months}</Text>
+              </View>
+              <View style={styles.progressBarBg}>
+                <View style={[styles.progressBarFill, { width: `${getProgressPercentage()}%` }]} />
+              </View>
+            </View>
+          )}
         </View>
       </LinearGradient>
     </View>
@@ -558,66 +578,66 @@ const SavingsDetail = () => {
     <View style={styles.sectionContainer}>
       <Text style={styles.sectionTitle}>{translations.schemeDetails}</Text>
       <View style={styles.gridContainer}>
-        
+
         <View style={styles.gridItem}>
-           <View style={[styles.gridIcon, { backgroundColor: '#E3F2FD' }]}>
-             <Ionicons name="person" size={20} color={theme.colors.primary} />
-           </View>
-           <View>
-             <Text style={styles.gridLabel}>{translations.accountHolder}</Text>
-             <Text style={styles.gridValue} numberOfLines={1}>{params.accountHolder}</Text>
-           </View>
+          <View style={[styles.gridIcon, { backgroundColor: '#E3F2FD' }]}>
+            <Ionicons name="person" size={20} color={theme.colors.primary} />
+          </View>
+          <View>
+            <Text style={styles.gridLabel}>{translations.accountHolder}</Text>
+            <Text style={styles.gridValue} numberOfLines={1}>{params.accountHolder}</Text>
+          </View>
         </View>
 
         <View style={styles.gridItem}>
-           <View style={[styles.gridIcon, { backgroundColor: '#FFF3E0' }]}>
-             <Ionicons name="card" size={20} color="#F57C00" />
-           </View>
-           <View>
-             <Text style={styles.gridLabel}>{translations.schemeType}</Text>
-             <Text style={styles.gridValue}>{schemesData?.paymentFrequencyName || params.paymentFrequency}</Text>
-           </View>
+          <View style={[styles.gridIcon, { backgroundColor: '#FFF3E0' }]}>
+            <Ionicons name="card" size={20} color="#F57C00" />
+          </View>
+          <View>
+            <Text style={styles.gridLabel}>{translations.schemeType}</Text>
+            <Text style={styles.gridValue}>{schemesData?.paymentFrequencyName || params.paymentFrequency}</Text>
+          </View>
         </View>
 
         <View style={styles.gridItem}>
-           <View style={[styles.gridIcon, { backgroundColor: '#E8F5E9' }]}>
-             <Ionicons name="cash" size={20} color="#388E3C" />
-           </View>
-           <View>
-             <Text style={styles.gridLabel}>{translations.monthlyEMI}</Text>
-             <Text style={styles.gridValue}>₹{Number(params.emiAmount).toLocaleString()}</Text>
-           </View>
+          <View style={[styles.gridIcon, { backgroundColor: '#E8F5E9' }]}>
+            <Ionicons name="cash" size={20} color="#388E3C" />
+          </View>
+          <View>
+            <Text style={styles.gridLabel}>{translations.monthlyEMI}</Text>
+            <Text style={styles.gridValue}>₹{Number(params.emiAmount).toLocaleString()}</Text>
+          </View>
         </View>
 
         <View style={styles.gridItem}>
-           <View style={[styles.gridIcon, { backgroundColor: '#FFEBEE' }]}>
-             <Ionicons name="calendar" size={20} color="#D32F2F" />
-           </View>
-           <View>
+          <View style={[styles.gridIcon, { backgroundColor: '#FFEBEE' }]}>
+            <Ionicons name="calendar" size={20} color="#D32F2F" />
+          </View>
+          <View>
             <Text style={styles.gridLabel}>{translations.maturityDate}</Text>
             <Text style={styles.gridValue}>{params.maturityDate}</Text>
-           </View>
+          </View>
         </View>
 
         <View style={styles.gridItem}>
-           <View style={[styles.gridIcon, { backgroundColor: '#F3E5F5' }]}>
-             <Ionicons name="bookmark" size={20} color="#7B1FA2" />
-           </View>
-           <View>
+          <View style={[styles.gridIcon, { backgroundColor: '#F3E5F5' }]}>
+            <Ionicons name="bookmark" size={20} color="#7B1FA2" />
+          </View>
+          <View>
             <Text style={styles.gridLabel}>{translations.accountNo}</Text>
             <Text style={styles.gridValue}>DCJ-{params.accNo}</Text>
-           </View>
+          </View>
         </View>
 
         {onlyTotalRewards > 0 && (
           <View style={styles.gridItem}>
-             <View style={[styles.gridIcon, { backgroundColor: '#FFF8E1' }]}>
-               <Ionicons name="trophy" size={20} color="#FFD700" />
-             </View>
-             <View>
+            <View style={[styles.gridIcon, { backgroundColor: '#FFF8E1' }]}>
+              <Ionicons name="trophy" size={20} color="#FFD700" />
+            </View>
+            <View>
               <Text style={styles.gridLabel}>{translations.rewards}</Text>
               <Text style={styles.gridValue}>₹{Number(onlyTotalRewards).toLocaleString()}</Text>
-             </View>
+            </View>
           </View>
         )}
 
@@ -628,45 +648,75 @@ const SavingsDetail = () => {
   const renderTransactionHistory = () => (
     <View style={[styles.sectionContainer, { marginBottom: 100 }]}>
       <View style={styles.sectionHeaderRow}>
-         <Text style={styles.sectionTitle}>{translations.recentActivity}</Text>
-         {/* <TouchableOpacity>
-           <Text style={styles.viewAllText}>{translations.viewAll}</Text>
-         </TouchableOpacity> */}
+        <Text style={styles.sectionTitle}>{translations.recentActivity}</Text>
       </View>
-      
+
       {paymentHistrory.length === 0 ? (
         <View style={styles.emptyState}>
-           <Ionicons name="receipt-outline" size={48} color="#CCC" />
-           <Text style={styles.emptyStateText}>{translations.noTransactionsFound}</Text>
+          <View style={styles.emptyStateIconContainer}>
+            <Ionicons name="time-outline" size={32} color="#CCC" />
+          </View>
+          <Text style={styles.emptyStateText}>{translations.noTransactionsFound}</Text>
         </View>
       ) : (
         paymentHistrory.slice(0, 5).map((txn, index) => (
           <View key={txn.transactionId || index} style={styles.transactionCard}>
-             <View style={styles.transactionLeft}>
-               <View style={styles.transactionIconContainer}>
-                  <Ionicons name={txn.status === "ACTIVE" ? "checkmark" : "time"} size={16} color="#FFF" />
-               </View>
-               <View style={styles.verticalLine} />
-             </View>
-             
-             <View style={styles.transactionContent}>
-                <View style={styles.transactionHeader}>
-                   <Text style={styles.transactionDate}>
+            <LinearGradient
+              colors={['#ffffff', '#fcfcfc']}
+              style={styles.transactionGradient}
+            >
+              <View style={styles.transactionRow}>
+                {/* Icon */}
+                <View style={styles.txnIconContainer}>
+                  <LinearGradient
+                    colors={txn.status === "ACTIVE" ? theme.colors.gradientPrimary : ['#ccc', '#999']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.txnIconGradient}
+                  >
+                    <Ionicons
+                      name={txn.status === "ACTIVE" ? "checkmark-sharp" : "time-outline"}
+                      size={18}
+                      color="#FFF"
+                    />
+                  </LinearGradient>
+                </View>
+
+                {/* Info */}
+                <View style={styles.txnInfo}>
+                  <Text style={styles.txnTitle}>
+                    {txn.status === "ACTIVE" ? "Payment Successful" : "Payment Pending"}
+                  </Text>
+                  <Text style={styles.txnDate}>
                     {new Date(txn.paymentDate).toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
                     })}
-                   </Text>
-                   <Text style={styles.transactionAmount}> ₹{Number(txn.amountPaid).toLocaleString()}</Text>
+                  </Text>
                 </View>
-                <View style={styles.transactionFooter}>
-                   <Text style={styles.transactionId}>ID: {txn.transactionId}</Text>
-                   <TouchableOpacity onPress={() => setSelectedTransaction(txn)} style={styles.receiptButton}>
-                      <Ionicons name="download-outline" size={16} color={theme.colors.primary} />
-                   </TouchableOpacity>
+
+                {/* Amount */}
+                <View style={styles.txnAmountContainer}>
+                  <Text style={styles.txnAmount}>₹{Number(txn.amountPaid).toLocaleString()}</Text>
                 </View>
-             </View>
+              </View>
+
+              <View style={styles.txnFooter}>
+                <View style={styles.idContainer}>
+                  <Text style={styles.txnIdLabel}>TXN ID:</Text>
+                  <Text style={styles.txnId}>{txn.transactionId}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.receiptButtonUnique}
+                  onPress={() => setSelectedTransaction(txn)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.receiptText}>{translations.downloadReceipt || "Receipt"}</Text>
+                  <Ionicons name="download-outline" size={14} color={theme.colors.primary} />
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
           </View>
         ))
       )}
@@ -678,46 +728,46 @@ const SavingsDetail = () => {
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
       <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
         {/* Header */}
-        <View style={[styles.header, { paddingTop: Platform.OS === 'android' ? top + 10: top -60 }]}>
-           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#FFF" />
-           </TouchableOpacity>
-           <Text style={styles.headerTitle}>{translations.schemeDetails}</Text>
-           <View style={{ width: 40 }} /> 
+        <View style={[styles.header, { paddingTop: Platform.OS === 'android' ? top + 10 : top - 60 }]}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#FFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{translations.schemeDetails}</Text>
+          <View style={{ width: 40 }} />
         </View>
 
         {loading ? (
-             <SkeletonSavingsDetailPage />
+          <SkeletonSavingsDetailPage />
         ) : (
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           >
-             {renderHeroCard()}
-             {renderInfoGrid()}
-             {renderTransactionHistory()}
-             <View style={{ height: bottomPadding + 60 }} />
+            {renderHeroCard()}
+            {renderInfoGrid()}
+            {renderTransactionHistory()}
+            <View style={{ height: bottomPadding + 60 }} />
           </ScrollView>
         )}
-        
+
         {/* Floating Bottom Bar for Payment */}
-         <View style={[styles.bottomBar, { paddingBottom: bottom || 20 }]}>
-            <TouchableOpacity 
-              style={[styles.payButton, isLoading && styles.payButtonDisabled]}
-              onPress={PaymentNow}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                  <ActivityIndicator color="#FFF" />
-              ) : (
-                 <>
-                  <Text style={styles.payButtonText}>{translations.payNow}</Text>
-                  <Ionicons name="arrow-forward" size={20} color="#FFF" />
-                 </>
-              )}
-            </TouchableOpacity>
-         </View>
+        <View style={[styles.bottomBar, { paddingBottom: bottom || 20 }]}>
+          <TouchableOpacity
+            style={[styles.payButton, isLoading && styles.payButtonDisabled]}
+            onPress={PaymentNow}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <>
+                <Text style={styles.payButtonText}>{translations.payNow}</Text>
+                <Ionicons name="arrow-forward" size={20} color="#FFF" />
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
 
       </SafeAreaView>
 
@@ -728,52 +778,52 @@ const SavingsDetail = () => {
         onClose={() => setAlertVisible(false)}
       />
 
-       {/* Transaction Modal (Optional if you want to show detailed receipt view on tap) */}
-       {selectedTransaction && (
-          <Modal
-             visible={!!selectedTransaction}
-             transparent
-             animationType="slide"
-             onRequestClose={() => setSelectedTransaction(null)}
-          >
-             <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
-                   <View style={styles.modalHeader}>
-                      <Text style={styles.modalTitle}>Transaction Details</Text>
-                      <TouchableOpacity onPress={() => setSelectedTransaction(null)}>
-                         <Ionicons name="close" size={24} color="#333" />
-                      </TouchableOpacity>
-                   </View>
-                   <View style={styles.modalBody}>
-                      <View style={styles.receiptRow}>
-                         <Text style={styles.receiptLabel}>Transaction ID</Text>
-                         <Text style={styles.receiptValue}>{selectedTransaction.transactionId}</Text>
-                      </View>
-                      <View style={styles.receiptRow}>
-                         <Text style={styles.receiptLabel}>Date</Text>
-                         <Text style={styles.receiptValue}>{new Date(selectedTransaction.paymentDate).toLocaleDateString()}</Text>
-                      </View>
-                      <View style={styles.receiptRow}>
-                         <Text style={styles.receiptLabel}>Amount</Text>
-                         <Text style={styles.receiptValueHighlight}>₹{Number(selectedTransaction.amountPaid).toLocaleString()}</Text>
-                      </View>
-                      <View style={styles.receiptRow}>
-                         <Text style={styles.receiptLabel}>Status</Text>
-                         <Text style={[styles.receiptValue, { color: 'green' }]}>{selectedTransaction.status}</Text>
-                      </View>
-                      
-                      <TouchableOpacity 
-                        style={styles.downloadButton}
-                        onPress={() => createAndShareReceiptPDF(selectedTransaction, inversement)}
-                      >
-                         <Ionicons name="document-text-outline" size={20} color="#FFF" />
-                         <Text style={styles.downloadButtonText}>{translations.downloadReceipt || "Download Receipt"}</Text>
-                      </TouchableOpacity>
-                   </View>
+      {/* Transaction Modal (Optional if you want to show detailed receipt view on tap) */}
+      {selectedTransaction && (
+        <Modal
+          visible={!!selectedTransaction}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setSelectedTransaction(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Transaction Details</Text>
+                <TouchableOpacity onPress={() => setSelectedTransaction(null)}>
+                  <Ionicons name="close" size={24} color="#333" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.modalBody}>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Transaction ID</Text>
+                  <Text style={styles.receiptValue}>{selectedTransaction.transactionId}</Text>
                 </View>
-             </View>
-          </Modal>
-       )}
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Date</Text>
+                  <Text style={styles.receiptValue}>{new Date(selectedTransaction.paymentDate).toLocaleDateString()}</Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Amount</Text>
+                  <Text style={styles.receiptValueHighlight}>₹{Number(selectedTransaction.amountPaid).toLocaleString()}</Text>
+                </View>
+                <View style={styles.receiptRow}>
+                  <Text style={styles.receiptLabel}>Status</Text>
+                  <Text style={[styles.receiptValue, { color: 'green' }]}>{selectedTransaction.status}</Text>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.downloadButton}
+                  onPress={() => createAndShareReceiptPDF(selectedTransaction, inversement)}
+                >
+                  <Ionicons name="document-text-outline" size={20} color="#FFF" />
+                  <Text style={styles.downloadButtonText}>{translations.downloadReceipt || "Download Receipt"}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
 
     </View>
   );
@@ -834,10 +884,10 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
   heroSchemeName: {
-     fontSize: 22,
-     fontWeight: '800',
-     color: '#FFF',
-     marginBottom: 4,
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFF',
+    marginBottom: 4,
   },
   heroSchemeCode: {
     fontSize: 14,
@@ -852,16 +902,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   heroStatusDot: {
-     width: 8,
-     height: 8,
-     borderRadius: 4,
-     backgroundColor: '#4CAF50',
-     marginRight: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#4CAF50',
+    marginRight: 6,
   },
   heroStatusText: {
-     color: '#FFF',
-     fontSize: 12,
-     fontWeight: '600',
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
   heroStatsRow: {
     flexDirection: 'row',
@@ -911,7 +961,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     borderRadius: 3,
   },
-  
+
   // Section Styles
   sectionContainer: {
     paddingHorizontal: 20,
@@ -934,7 +984,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-  
+
   // Grid Styles
   gridContainer: {
     flexDirection: 'row',
@@ -975,69 +1025,114 @@ const styles = StyleSheet.create({
   },
 
   // Transactions
+  // Transaction Unique Styles
   transactionCard: {
+    marginBottom: 16,
+    borderRadius: 20,
+    backgroundColor: '#FFF',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+    overflow: 'hidden',
+  },
+  transactionGradient: {
+    padding: 16,
+  },
+  transactionRow: {
     flexDirection: 'row',
-    marginBottom: 0,
-    height: 70,
-  },
-  transactionLeft: {
     alignItems: 'center',
-    width: 30,
-    marginRight: 10,
+    marginBottom: 16,
   },
-  transactionIconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: theme.colors.primary,
+  txnIconContainer: {
+    marginRight: 14,
+  },
+  txnIconGradient: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  verticalLine: {
-    width: 1,
+  txnInfo: {
     flex: 1,
-    backgroundColor: '#E0E0E0',
-    marginVertical: 4,
   },
-  transactionContent: {
-    flex: 1,
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 1,
-  },
-  transactionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  txnTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1A1A',
     marginBottom: 4,
   },
-  transactionDate: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+  txnDate: {
+    fontSize: 12,
+    color: '#888',
+    fontWeight: '500',
   },
-  transactionAmount: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0e9022ff', // Red for debit concept, or use primary
+  txnAmountContainer: {
+    alignItems: 'flex-end',
+    backgroundColor: 'rgba(232, 245, 233, 0.5)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
   },
-  transactionFooter: {
+  txnAmount: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#2E7D32', // Darker green for finance
+  },
+  txnFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 4,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f5f5f5',
   },
-  transactionId: {
+  idContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  txnIdLabel: {
+    fontSize: 11,
+    color: '#AAA',
+    fontWeight: '600',
+  },
+  txnId: {
     fontSize: 12,
-    color: '#999',
+    color: '#666',
+    fontWeight: '500',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
-  receiptButton: {
-    padding: 4,
+  receiptButtonUnique: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(216, 26, 52, 0.08)', // Light primary tint
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  receiptText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.primary,
+    marginRight: 6,
+  },
+  emptyStateIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
   },
 
   // Bottom Bar

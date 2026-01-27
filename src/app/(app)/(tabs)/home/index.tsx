@@ -2542,46 +2542,6 @@ export default function Home() {
                   </View>
                 </View>
               )}
-
-
-              {/* Flash News - Conditionally rendered based on API */}
-              {isVisible("showFlashnews") && (
-                <FlashOffer
-                  // fallbackMessages={[
-                  //   "🎉 Welcome to Digital Gold Savings!",
-                  //   "🔥 Gold price drops! Invest smart.",
-                  //   "🌟 Special offer for new users!",
-                  // ]}
-                  fallbackMessages={flashNews}
-                  onPress={() => {
-                    if (__DEV__) {
-                      logger.log(t("flashNewsTapped"));
-                    }
-                  }}
-                  textColor={COLORS.white}
-                />
-              )}
-              {/* Customer Card - Conditionally rendered based on API */}
-              {isVisible("showCustomerCard") && (
-                <UserInfoCard
-                  userName={user?.name?.toUpperCase()}
-                  activeSchemesCount={activeSchemesCount}
-                  totalGoldSavings={totalGoldSavings}
-                  totalAmount={totalAmount}
-                  showTotalGold={showTotalGold}
-                  onPress={() => router.push("/(tabs)/savings")}
-                  userId={Number(user?.id) || 0}
-                  profilePhoto={getProfileImageUrl()}
-                  profileImageError={profileImageError}
-                  retryCount={retryCount}
-                  onImageLoad={handleProfileImageLoad}
-                  onImageError={handleProfileImageError}
-                  goldRate={homeData?.data?.currentRates?.gold_rate}
-                  silverRate={homeData?.data?.currentRates?.silver_rate}
-                />
-              )}
-
-
               {/* Our Schemes Section - Conditionally rendered based on API */}
               {isVisible("showSchemes") && (
                 <>
@@ -2761,6 +2721,46 @@ export default function Home() {
 
                 </>
               )}
+
+              {/* Flash News - Conditionally rendered based on API */}
+              {isVisible("showFlashnews") && (
+                <FlashOffer
+                  // fallbackMessages={[
+                  //   "🎉 Welcome to Digital Gold Savings!",
+                  //   "🔥 Gold price drops! Invest smart.",
+                  //   "🌟 Special offer for new users!",
+                  // ]}
+                  fallbackMessages={flashNews}
+                  onPress={() => {
+                    if (__DEV__) {
+                      logger.log(t("flashNewsTapped"));
+                    }
+                  }}
+                  textColor={COLORS.white}
+                />
+              )}
+              {/* Customer Card - Conditionally rendered based on API */}
+              {isVisible("showCustomerCard") && (
+                <UserInfoCard
+                  userName={user?.name?.toUpperCase()}
+                  activeSchemesCount={activeSchemesCount}
+                  totalGoldSavings={totalGoldSavings}
+                  totalAmount={totalAmount}
+                  showTotalGold={showTotalGold}
+                  onPress={() => router.push("/(tabs)/savings")}
+                  userId={Number(user?.id) || 0}
+                  profilePhoto={getProfileImageUrl()}
+                  profileImageError={profileImageError}
+                  retryCount={retryCount}
+                  onImageLoad={handleProfileImageLoad}
+                  onImageError={handleProfileImageError}
+                  goldRate={homeData?.data?.currentRates?.gold_rate}
+                  silverRate={homeData?.data?.currentRates?.silver_rate}
+                />
+              )}
+
+
+
 
               {/* YouTube Video - Conditionally rendered based on API */}
               {isVisible("showYoutube") && (

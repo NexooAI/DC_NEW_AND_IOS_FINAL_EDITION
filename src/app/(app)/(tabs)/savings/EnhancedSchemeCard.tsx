@@ -108,7 +108,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
     // Fallback for any other type
     return String(textObj);
   };
-  
+
   const progressPercentage = useMemo(() => {
     const monthsPaid = Number(item.monthsPaid) || 0;
     const totalMonths = Number(item.noOfIns) || 1;
@@ -216,10 +216,10 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
         // Handle error - show alert
         logger.error("Payment check failed:", response?.data?.message);
         setAlertConfig({
-            visible: true,
-            title: "Payment Status",
-            message: response?.data?.message || "Payment already made for this month or an error occurred.",
-            type: "warning",
+          visible: true,
+          title: "Payment Status",
+          message: response?.data?.message || "Payment already made for this month or an error occurred.",
+          type: "warning",
         });
         setIsLoading(false);
         return;
@@ -265,7 +265,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             accNo: item.accNo || "N/A",
             associated_branch: 1, // Default branch, adjust if needed
             investmentId: response?.data?.data?.investmentId || item.id || "",
-            schemeId: response?.data?.data?.schemeId || item.schemeCode || "",
+            schemeId: response?.data?.data?.schemeId || item.schemesData?.schemeId || item.schemeCode || "",
             schemeType: parseSchemes.schemeTypeName || "Fixed",
             schemeName: getLocalizedText(item.schemeName) || "",
             paymentFrequency:
@@ -273,6 +273,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
               getLocalizedText(item.schemesData?.paymentFrequencyName) ||
               "Monthly",
             chitId: response?.data?.data?.chitId || item?.chitData?.chitId || "",
+            userId: user.id
           }),
           paidPaymentCount: String(paymentHistoryLength + 1 || 0),
         },
@@ -322,156 +323,156 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
         style={styles.cardBackgroundImage}
       >
         <TouchableOpacity activeOpacity={0.9} onPress={toggleExpand}>
-        <View style={styles.cardHeader}>
-          <View style={styles.schemeInfo}>
-            <View style={styles.schemeTitleContainer}>
-              <Text style={styles.schemeTitle}>
-                {getLocalizedText(item.schemeName)}
-              </Text>
-              <View style={styles.schemeSubtitleContainer}>
-                <View
-                  style={[
-                    styles.metalTypeBadge,
-                    { backgroundColor: theme.colors.secondary },
-                  ]}
-                >
-                  <Text style={styles.metalTypeText}>
-                    {getLocalizedText(item.metalType).charAt(0).toUpperCase() +
-                      getLocalizedText(item.metalType).slice(1)}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.savingTypeBadge,
-                    { backgroundColor: theme.colors.backgroundSecondary },
-                  ]}
-                >
-                  <Text style={styles.savingTypeText}>
-                    {getLocalizedText(
-                      item.schemesData?.paymentFrequencyName
-                    ) === "Flexi"
-                      ? translations.flexi
-                      : translations.fixed}
-                  </Text>
-                </View>
-                {item.schemesData.paymentFrequencyName.toLowerCase() !== "flexi" && <View
-                  style={[
-                    styles.savingTypeBadge,
-                    { backgroundColor: theme.colors.bgGoldHeavy },
-                  ]}
-                >
-                  <Text style={styles.savingTypeText}>
-                    {getLocalizedText(item.schemesData.paymentFrequencyName)}
-                  </Text>
-                </View>}
-                <View
-                  style={[
-                    styles.savingTypeBadge,
-                    { backgroundColor: theme.colors.bgErrorMedium },
-                  ]}
-                >
-                  <Text style={styles.savingTypeText}>
-                    {item.schemesData.schemeType.toLowerCase() === "weight" ? "Weight" : "Amount"}
-                  </Text>
+          <View style={styles.cardHeader}>
+            <View style={styles.schemeInfo}>
+              <View style={styles.schemeTitleContainer}>
+                <Text style={styles.schemeTitle}>
+                  {getLocalizedText(item.schemeName)}
+                </Text>
+                <View style={styles.schemeSubtitleContainer}>
+                  <View
+                    style={[
+                      styles.metalTypeBadge,
+                      { backgroundColor: theme.colors.secondary },
+                    ]}
+                  >
+                    <Text style={styles.metalTypeText}>
+                      {getLocalizedText(item.metalType).charAt(0).toUpperCase() +
+                        getLocalizedText(item.metalType).slice(1)}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.savingTypeBadge,
+                      { backgroundColor: theme.colors.backgroundSecondary },
+                    ]}
+                  >
+                    <Text style={styles.savingTypeText}>
+                      {getLocalizedText(
+                        item.schemesData?.paymentFrequencyName
+                      ) === "Flexi"
+                        ? translations.flexi
+                        : translations.fixed}
+                    </Text>
+                  </View>
+                  {item.schemesData.paymentFrequencyName.toLowerCase() !== "flexi" && <View
+                    style={[
+                      styles.savingTypeBadge,
+                      { backgroundColor: theme.colors.bgGoldHeavy },
+                    ]}
+                  >
+                    <Text style={styles.savingTypeText}>
+                      {getLocalizedText(item.schemesData.paymentFrequencyName)}
+                    </Text>
+                  </View>}
+                  <View
+                    style={[
+                      styles.savingTypeBadge,
+                      { backgroundColor: theme.colors.bgErrorMedium },
+                    ]}
+                  >
+                    <Text style={styles.savingTypeText}>
+                      {item.schemesData.schemeType.toLowerCase() === "weight" ? "Weight" : "Amount"}
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
-          <View style={styles.headerRight}>
-            <View
-              style={[
-                styles.statusBadge,
-                {
-                  backgroundColor:
-                    item.status === "ACTIVE"
-                      ? "rgba(8, 237, 8, 0.56)"
-                      : "rgba(255, 0, 0, 0.2)",
-                },
-              ]}
-            >
-              <Text
+            <View style={styles.headerRight}>
+              <View
                 style={[
-                  styles.statusText,
+                  styles.statusBadge,
                   {
-                    color: item.status === "ACTIVE" ? "#000" : "#FF0000",
+                    backgroundColor:
+                      item.status === "ACTIVE"
+                        ? "rgba(8, 237, 8, 0.56)"
+                        : "rgba(255, 0, 0, 0.2)",
                   },
                 ]}
               >
-                {item.status || "INACTIVE"}
-              </Text>
-            </View>
-            <View style={styles.expandIcon}>
-              <Ionicons
-                name={isExpanded ? "chevron-up" : "chevron-down"}
-                size={20}
-                color={theme.colors.primary}
-              />
+                <Text
+                  style={[
+                    styles.statusText,
+                    {
+                      color: item.status === "ACTIVE" ? "#000" : "#FF0000",
+                    },
+                  ]}
+                >
+                  {item.status || "INACTIVE"}
+                </Text>
+              </View>
+              <View style={styles.expandIcon}>
+                <Ionicons
+                  name={isExpanded ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color={theme.colors.primary}
+                />
+              </View>
             </View>
           </View>
-        </View>
 
-        <View style={styles.paymentInfoRow}>
-          <View style={styles.paymentInfoItem}>
-            <View style={styles.paymentInfoIconContainer}>
-              <Ionicons name="person-outline" size={16} color={theme.colors.primary} />
+          <View style={styles.paymentInfoRow}>
+            <View style={styles.paymentInfoItem}>
+              <View style={styles.paymentInfoIconContainer}>
+                <Ionicons name="person-outline" size={16} color={theme.colors.primary} />
+              </View>
+              <View style={styles.paymentInfoContent}>
+                <Text style={styles.paymentInfoLabel}>
+                  {translations.accountHolderLabel}
+                </Text>
+                <Text style={styles.paymentInfoValue}>
+                  {item.accountHolder?.toUpperCase()}
+                </Text>
+              </View>
             </View>
-            <View style={styles.paymentInfoContent}>
-              <Text style={styles.paymentInfoLabel}>
-                {translations.accountHolderLabel}
-              </Text>
-              <Text style={styles.paymentInfoValue}>
-                {item.accountHolder?.toUpperCase()}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.paymentInfoDivider} />
-          <View style={styles.paymentInfoItem}>
-            <View style={styles.paymentInfoIconContainer}>
-              <Ionicons name="card-outline" size={16} color={theme.colors.primary} />
-            </View>
-            <View style={styles.paymentInfoContent}>
-              <Text style={styles.paymentInfoLabel}>
-                {translations.accountNumberLabel}
-              </Text>
-              <Text style={styles.paymentInfoValue}>
-                DCJ-{item.accNo}
-              </Text>
-            </View>
-          </View>
-        </View>
-        {/* Payment Info Row - Always Visible */}
-        {item.schemesData.schemeType.toLowerCase() === "weight" && <View style={styles.paymentInfoRow}>
-          <View style={styles.paymentInfoItem}>
-            <View style={styles.paymentInfoIconContainer}>
-              <Ionicons name="time-outline" size={16} color={theme.colors.primary} />
-            </View>
-            <View style={styles.paymentInfoContent}>
-              <Text style={styles.paymentInfoLabel}>
-                {translations.frequency}
-              </Text>
-              <Text style={styles.paymentInfoValue}>
-                {getLocalizedText(item.schemesData?.paymentFrequencyName) ===
-                  "Flexi"
-                  ? translations.flexi
-                  : getLocalizedText(item.paymentFrequency)}
-              </Text>
+            <View style={styles.paymentInfoDivider} />
+            <View style={styles.paymentInfoItem}>
+              <View style={styles.paymentInfoIconContainer}>
+                <Ionicons name="card-outline" size={16} color={theme.colors.primary} />
+              </View>
+              <View style={styles.paymentInfoContent}>
+                <Text style={styles.paymentInfoLabel}>
+                  {translations.accountNumberLabel}
+                </Text>
+                <Text style={styles.paymentInfoValue}>
+                  DCJ-{item.accNo}
+                </Text>
+              </View>
             </View>
           </View>
-          <View style={styles.paymentInfoDivider} />
-          {item.schemesData.schemeType.toLowerCase() === "weight" && <View style={styles.paymentInfoItem}>
-            <View style={styles.paymentInfoIconContainer}>
-              <Ionicons name="scale-outline" size={16} color={theme.colors.primary} />
+          {/* Payment Info Row - Always Visible */}
+          {item.schemesData.schemeType.toLowerCase() === "weight" && <View style={styles.paymentInfoRow}>
+            <View style={styles.paymentInfoItem}>
+              <View style={styles.paymentInfoIconContainer}>
+                <Ionicons name="time-outline" size={16} color={theme.colors.primary} />
+              </View>
+              <View style={styles.paymentInfoContent}>
+                <Text style={styles.paymentInfoLabel}>
+                  {translations.frequency}
+                </Text>
+                <Text style={styles.paymentInfoValue}>
+                  {getLocalizedText(item.schemesData?.paymentFrequencyName) ===
+                    "Flexi"
+                    ? translations.flexi
+                    : getLocalizedText(item.paymentFrequency)}
+                </Text>
+              </View>
             </View>
-            <View style={styles.paymentInfoContent}>
-              <Text style={styles.paymentInfoLabel}>
-                {translations.totalWeight}
-              </Text>
-              <Text style={styles.paymentInfoValue}>
-                {formatGoldWeight(item.goldWeight)}
-              </Text>
-            </View>
+            <View style={styles.paymentInfoDivider} />
+            {item.schemesData.schemeType.toLowerCase() === "weight" && <View style={styles.paymentInfoItem}>
+              <View style={styles.paymentInfoIconContainer}>
+                <Ionicons name="scale-outline" size={16} color={theme.colors.primary} />
+              </View>
+              <View style={styles.paymentInfoContent}>
+                <Text style={styles.paymentInfoLabel}>
+                  {translations.totalWeight}
+                </Text>
+                <Text style={styles.paymentInfoValue}>
+                  {formatGoldWeight(item.goldWeight)}
+                </Text>
+              </View>
+            </View>}
           </View>}
-        </View>}
 
         </TouchableOpacity>
 
@@ -566,17 +567,17 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                   {formatGoldWeight(item.goldWeight + totalRewardGoldGrams)}
                 </Text>
               </View> */}
-                <View style={styles.enhancedInfoItem}>
-                  <View style={styles.enhancedInfoIconContainer}>
-                    <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
-                  </View>
-                  <Text style={styles.enhancedInfoLabel}>
-                    {translations.maturityDateLabel}
-                  </Text>
-                  <Text style={styles.enhancedInfoValue}>
-                    {item?.maturityDate}
-                  </Text>
+              <View style={styles.enhancedInfoItem}>
+                <View style={styles.enhancedInfoIconContainer}>
+                  <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
                 </View>
+                <Text style={styles.enhancedInfoLabel}>
+                  {translations.maturityDateLabel}
+                </Text>
+                <Text style={styles.enhancedInfoValue}>
+                  {item?.maturityDate}
+                </Text>
+              </View>
               <View style={styles.enhancedInfoItem}>
                 <View style={styles.enhancedInfoIconContainer}>
                   <Ionicons name="cash-outline" size={20} color={theme.colors.primary} />
@@ -697,24 +698,29 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
 const styles = StyleSheet.create({
   cardWrapper: {
     marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 16,
-    overflow: "hidden",
-    elevation: 4,
+    marginVertical: 12, // Increased spacing
+    borderRadius: 20, // Increased radius
+    // overflow: "hidden", // Removed to allow shadow
+    backgroundColor: 'transparent',
+    elevation: 8, // Increased elevation
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 }, // Increased offset
+    shadowOpacity: 0.3, // Increased opacity
+    shadowRadius: 12, // Increased radius
   },
   cardWrapperActive: {
-    elevation: 8,
-    shadowOpacity: 0.35,
+    elevation: 12,
+    shadowOpacity: 0.4,
+    transform: [{ scale: 1.02 }], // Subtle scale effect on expand
   },
   cardBackgroundImage: {
     width: "100%",
     minHeight: 200,
-    borderRadius: 16,
+    borderRadius: 20, // Match wrapper radius
     backgroundColor: theme.colors.white,
+    overflow: "hidden", // Clip content here
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.08)",
   },
   cardHeader: {
     flexDirection: "row",

@@ -10,7 +10,8 @@ import {
   InteractionManager,
   Alert,
   ToastAndroid,
-  Platform
+  Platform,
+  ScrollView
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
@@ -21,6 +22,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
 import { logger } from "@/utils/logger";
 import { responsiveUtils } from "@/utils/responsiveUtils";
+import { LinearGradient } from "expo-linear-gradient";
 
 // Responsive constants
 const { wp, hp, rf, rp, rm, rb, getShadows } = responsiveUtils;
@@ -36,7 +38,7 @@ export default function PaymentFailure() {
   useFocusEffect(
     useCallback(() => {
       setTabVisibility(false);
-      
+
       const onBackPress = () => {
         router.replace("/(tabs)/home");
         return true;
@@ -70,30 +72,35 @@ export default function PaymentFailure() {
   }, []);
 
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [slideAnim] = useState(new Animated.Value(100));
   const [scaleAnim] = useState(new Animated.Value(0.8));
   const [pulseAnim] = useState(new Animated.Value(1));
   const [iconAnim] = useState(new Animated.Value(0));
 
-
   useEffect(() => {
     // Initial animation sequence
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 600,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-      ]),
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
       Animated.timing(iconAnim, {
         toValue: 1,
-        duration: 400,
+        duration: 600,
+        delay: 300,
         easing: Easing.out(Easing.back(1.5)),
         useNativeDriver: true,
       }),
@@ -104,13 +111,13 @@ export default function PaymentFailure() {
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1.1,
-          duration: 1000,
+          duration: 1500,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 1000,
+          duration: 1500,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
@@ -119,11 +126,7 @@ export default function PaymentFailure() {
   }, []);
 
   const handleHomePress = () => {
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => router.replace("/(tabs)/home"));
+    router.replace("/(tabs)/home");
   };
 
   const handleCopy = async (text: string, label: string) => {
@@ -209,299 +212,271 @@ export default function PaymentFailure() {
       }
     });
   };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const iconScale = iconAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 1],
   });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      {/* Background Gradient for Top Half */}
+      <View style={styles.topSection}>
+        <LinearGradient
+          colors={[theme.colors.errorDark || "#C62828", theme.colors.error || "#F44336"]}
+          style={styles.gradientBg}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+
+        {/* Animated Error Icon */}
+        <Animated.View style={[styles.errorIconContainer, { transform: [{ scale: scaleAnim }] }]}>
+          <Animated.View style={[styles.pulseCircle, { transform: [{ scale: pulseAnim }] }]} />
+          <Animated.View style={[styles.iconCircle, { transform: [{ scale: iconScale }] }]}>
+            <Ionicons name="close" size={rp(60)} color="#fff" />
+          </Animated.View>
+        </Animated.View>
+
+        <Text style={styles.statusText}>{t("paymentFailed")}</Text>
+        <Text style={styles.amountText}>{formatCurrency(Number(Array.isArray(params.amount) ? params.amount[0] : params.amount) || 0)}</Text>
+      </View>
+
+      {/* Bottom Content Card - Sliding Up */}
       <Animated.View
         style={[
-          styles.content,
-          { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
+          styles.bottomCard,
+          {
+            transform: [{ translateY: slideAnim }],
+            opacity: fadeAnim
+          }
         ]}
       >
-        <View style={styles.iconContainer}>
-          <Animated.View
-            style={[styles.iconWrapper, { transform: [{ scale: pulseAnim }] }]}
-          >
-            <Animated.View
-              style={[styles.iconInner, { transform: [{ scale: iconScale }] }]}
-            >
-              <Ionicons
-                name="close-circle"
-                size={rp(80)}
-                color={theme.colors.error}
-              />
-            </Animated.View>
-          </Animated.View>
-        </View>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <Text style={styles.messageText}>
+            {Array.isArray(params.message) ? params.message[0] : (params.message || t("paymentFailedMessage"))}
+          </Text>
 
-        <Text style={styles.title}>{t("paymentFailed")}</Text>
-        <Text style={styles.message}>
-          {Array.isArray(params.message) ? params.message[0] : (params.message || t("paymentFailedMessage"))}
-        </Text>
-
-        <View style={styles.detailsCard}>
-          <Text style={styles.detailsTitle}>{t("paymentDetails")}</Text>
-
-          <View style={styles.detailRow}>
-            <View style={styles.detailIcon}>
-              <Ionicons
-                name="receipt-outline"
-                size={rp(20)}
-                color={theme.colors.error}
-              />
-            </View>
-            <View style={styles.detailTextContainer}>
-              <Text style={styles.detailLabel}>{t("transactionId")}</Text>
-              <TouchableOpacity 
-                style={styles.copyRow} 
-                onPress={() => handleCopy(Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || ""), t("transactionId"))}
-              >
-                <Text style={styles.detailValue}>
+          <View style={styles.detailsContainer}>
+            {/* Transaction ID */}
+            <View style={styles.detailRow}>
+              <View style={styles.iconBox}>
+                <Ionicons name="receipt-outline" size={20} color={theme.colors.error} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>{t("transactionId")}</Text>
+                <Text style={styles.detailValue} numberOfLines={1}>
                   {Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || "N/A")}
                 </Text>
-                <Ionicons name="copy-outline" size={16} color={theme.colors.error} style={{ marginLeft: 8 }} />
+              </View>
+              <TouchableOpacity onPress={() => handleCopy(Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || ""), t("transactionId"))}>
+                <Ionicons name="copy-outline" size={20} color="#999" />
               </TouchableOpacity>
             </View>
-          </View>
 
-          <View style={styles.divider} />
+            <View style={styles.divider} />
 
-          <View style={styles.detailRow}>
-            <View style={styles.detailIcon}>
-              <Ionicons
-                name="document-text-outline"
-                size={rp(20)}
-                color={theme.colors.error}
-              />
-            </View>
-            <View style={styles.detailTextContainer}>
-              <Text style={styles.detailLabel}>{t("orderId")}</Text>
-              <TouchableOpacity 
-                style={styles.copyRow} 
-                onPress={() => handleCopy(Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || ""), t("orderId"))}
-              >
-                <Text style={styles.detailValue}>
+            {/* Order ID */}
+            <View style={styles.detailRow}>
+              <View style={styles.iconBox}>
+                <Ionicons name="cube-outline" size={20} color={theme.colors.error} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>{t("orderId")}</Text>
+                <Text style={styles.detailValue} numberOfLines={1}>
                   {Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || "N/A")}
                 </Text>
-                <Ionicons name="copy-outline" size={16} color={theme.colors.error} style={{ marginLeft: 8 }} />
+              </View>
+              <TouchableOpacity onPress={() => handleCopy(Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || ""), t("orderId"))}>
+                <Ionicons name="copy-outline" size={20} color="#999" />
               </TouchableOpacity>
             </View>
           </View>
 
-          <View style={styles.divider} />
+          {/* Action Buttons */}
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity
+              style={[styles.button, styles.primaryButton]}
+              onPress={handleRetry}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="refresh" size={18} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.primaryButtonText}>{t("retry")}</Text>
+            </TouchableOpacity>
 
-          <View style={styles.detailRow}>
-            <View style={styles.detailIcon}>
-              <Ionicons
-                name="wallet-outline"
-                size={rp(20)}
-                color={theme.colors.error}
-              />
-            </View>
-            <View style={styles.detailTextContainer}>
-              <Text style={styles.detailLabel}>{t("amount")}</Text>
-              <Text style={[styles.detailValue, styles.amountValue]}>
-                {new Intl.NumberFormat("en-IN", {
-                  style: "currency",
-                  currency: "INR",
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
-                }).format(Number(Array.isArray(params.amount) ? params.amount[0] : params.amount) || 0)}
-              </Text>
-            </View>
+            <TouchableOpacity
+              style={[styles.button, styles.secondaryButton]}
+              onPress={handleHomePress}
+            >
+              <Ionicons name="home-outline" size={20} color={theme.colors.textDark} />
+              <Text style={styles.secondaryButtonText}>{t("home")}</Text>
+            </TouchableOpacity>
           </View>
-        </View>
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[styles.button, styles.buttonHalf, styles.buttonRetry]}
-            onPress={handleRetry}
-            activeOpacity={0.9}
-          >
-            <Ionicons name="refresh" size={rp(20)} color="#fff" />
-            <Text style={styles.buttonText}>{t("retry")}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, styles.buttonHalf, styles.buttonHome]}
-            onPress={handleHomePress}
-            activeOpacity={0.9}
-          >
-            <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
-            <Text style={[styles.buttonText, styles.buttonTextHome]}>{t("home")}</Text>
-          </TouchableOpacity>
-        </View>
-        </Animated.View>
-    </SafeAreaView>
+
+        </ScrollView>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9ff",
+    backgroundColor: theme.colors.error || "#F44336",
   },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-  },
-  content: {
-    padding: rp(16),
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    paddingVertical: rp(20),
-  },
-  iconContainer: {
-    marginBottom: rp(10), // Reduced margin
+  topSection: {
+    height: "35%",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 1,
+    position: "relative",
   },
-  iconWrapper: {
-    width: rp(80), // Reduced size
+  gradientBg: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  errorIconContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  pulseCircle: {
+    position: "absolute",
+    width: rp(100),
+    height: rp(100),
+    borderRadius: rp(50),
+    backgroundColor: "rgba(255,255,255,0.2)",
+  },
+  iconCircle: {
+    width: rp(80),
     height: rp(80),
     borderRadius: rp(40),
-    backgroundColor: "#ffebee",
+    backgroundColor: "rgba(255,255,255,0.25)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: rp(12),
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.5)",
   },
-  iconInner: {
-    alignItems: "center",
-    justifyContent: "center",
+  statusText: {
+    fontSize: rf(18),
+    color: "rgba(255,255,255,0.9)",
+    fontWeight: "600",
+    marginBottom: 4,
+    letterSpacing: 0.5,
   },
-  title: {
-    fontSize: rf(22, { minSize: 20, maxSize: 26 }),
+  amountText: {
+    fontSize: rf(32),
+    color: "#ffffff",
     fontWeight: "800",
-    color: theme.colors.error,
-    marginBottom: rp(8), // Reduced
-    textAlign: "center",
-    fontFamily: "Inter_700Bold",
+    letterSpacing: 1,
   },
-  message: {
-    fontSize: rf(15, { minSize: 13, maxSize: 17 }),
-    color: "#616161",
-    textAlign: "center",
-    marginBottom: rp(20), // Reduced
-    lineHeight: rp(22),
-    maxWidth: "90%",
-    fontFamily: "Inter_400Regular",
-  },
-  detailsCard: {
-    width: "100%",
+  bottomCard: {
+    flex: 1,
     backgroundColor: "#ffffff",
-    borderRadius: rb(24),
-    padding: rp(20), // Reduced
-    marginBottom: rp(20), // Reduced
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingTop: 30,
+    paddingHorizontal: 24,
+    marginTop: -20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 12 },
+    shadowOffset: { width: 0, height: -10 },
     shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 10,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.04)",
+    shadowRadius: 20,
+    elevation: 15,
   },
-  detailsTitle: {
-    fontSize: rf(18, { minSize: 16, maxSize: 20 }),
-    fontWeight: "700",
-    color: "#2d3748",
-    marginBottom: rp(16), // Reduced
-    fontFamily: "Inter_600SemiBold",
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  messageText: {
+    fontSize: rf(15),
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 22,
+    paddingHorizontal: 20,
+  },
+  detailsContainer: {
+    backgroundColor: "#fff5f5",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 30,
+    borderWidth: 1,
+    borderColor: "#ffebee",
   },
   detailRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: rp(12),
+    paddingVertical: 4,
   },
-  copyRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  detailIcon: {
-    width: rp(36),
-    height: rp(36),
-    borderRadius: rb(12),
-    backgroundColor: "#fde8e8",
+  iconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "rgba(244, 67, 54, 0.1)",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: rp(16),
+    marginRight: 16,
   },
-  detailTextContainer: {
+  detailContent: {
     flex: 1,
   },
   detailLabel: {
-    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
-    color: "#718096",
-    marginBottom: rp(4),
-    fontFamily: "Inter_400Regular",
+    fontSize: rf(12),
+    color: "#888",
+    marginBottom: 2,
   },
   detailValue: {
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
-    color: "#1a202c",
+    fontSize: rf(14),
     fontWeight: "600",
-    fontFamily: "Inter_600SemiBold",
-  },
-  amountValue: {
-    color: theme.colors.error,
-    fontWeight: "700",
-    fontSize: rf(18, { minSize: 16, maxSize: 22 }),
+    color: "#333",
   },
   divider: {
     height: 1,
-    backgroundColor: "#edf2f7",
-    marginVertical: rp(4),
+    backgroundColor: "rgba(244, 67, 54, 0.1)",
+    marginVertical: 12,
   },
-  buttonContainer: {
-    width: "100%",
-    alignItems: "center",
-    marginBottom: rp(20),
-  },
-  buttonRow: {
-    flexDirection: "row",
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: rp(20),
-    gap: rp(16),
+  actionsContainer: {
+    gap: 16,
   },
   button: {
-    paddingVertical: rp(18),
-    paddingHorizontal: rp(24),
-    borderRadius: rb(16),
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
-    minHeight: rp(56),
-    ...shadows.small,
   },
-  buttonHalf: {
-    flex: 1,
-  },
-  buttonRetry: {
+  primaryButton: {
     backgroundColor: theme.colors.error,
-    elevation: 8,
+    paddingVertical: 18,
     shadowColor: theme.colors.error,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
-    shadowRadius: 10,
+    shadowRadius: 16,
+    elevation: 8,
+    width: "100%",
   },
-  buttonHome: {
+  primaryButtonText: {
+    color: "#fff",
+    fontSize: rf(16),
+    fontWeight: "700",
+  },
+  secondaryButton: {
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#e5e5e5",
-    elevation: 2,
+    paddingVertical: 16,
+    width: "100%",
+    flexDirection: "row",
   },
-  buttonText: {
-    color: "#ffffff",
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
-    fontWeight: "700",
-    fontFamily: "Inter_700Bold",
-    marginLeft: rp(8),
-  },
-  buttonTextHome: {
-    color: theme.colors.textDark,
-  },
+  secondaryButtonText: {
+    color: "#333",
+    fontSize: rf(14),
+    fontWeight: "600",
+    marginLeft: 8,
+  }
 });

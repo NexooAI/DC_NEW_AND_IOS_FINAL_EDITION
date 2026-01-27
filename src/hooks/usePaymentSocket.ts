@@ -201,7 +201,13 @@ export const usePaymentSocket = ({
     });
 
     socketInstance.on("disconnect", (reason) => {
-      setIsSocketConnected(false);
+      // Only update state if payment is NOT completed
+      // This prevents the UI from showing "reconnecting" or "loading" state 
+      // while we are navigating to the success screen
+      if (!isPaymentCompleted.current) {
+        setIsSocketConnected(false);
+      }
+
       console.log("⚠️ Socket disconnected:", reason);
 
       if (!isPaymentCompleted.current) {
@@ -288,7 +294,15 @@ export const usePaymentSocket = ({
             // Other gateways: response.txn_id, response.order_id
             const txnId = response.id || response.txn_id || response.gatewayTransactionId || "";
             const orderId = response.order_id || data?.orderId || "";
-            const amount = response.amount || data?.amount || 0;
+
+            // Amount handling: Gateway usually returns amount in paise (1/100 INR)
+            // If response has an ID starting with 'pay_', it's likely a Razorpay object with amount in paise
+            let amount = response.amount || data?.amount || 0;
+            if (response.id && response.id.startsWith('pay_') && response.currency === 'INR') {
+              // Convert paise to rupees
+              amount = amount / 100;
+            }
+
             const message = data?.message || response.payment_gateway_response?.resp_message || 'Payment Successful';
 
             console.log("✅ Navigating to success page with:", { txnId, orderId, amount, message });
@@ -324,7 +338,13 @@ export const usePaymentSocket = ({
             // Handle different response formats
             const txnId = response.id || response.txn_id || response.gatewayTransactionId || "";
             const orderId = response.order_id || data?.orderId || "";
-            const amount = response.amount || data?.amount || 0;
+            // Amount handling: Gateway usually returns amount in paise (1/100 INR)
+            let amount = response.amount || data?.amount || 0;
+            if (response.id && response.id.startsWith('pay_') && response.currency === 'INR') {
+              // Convert paise to rupees
+              amount = amount / 100;
+            }
+
             const message = data?.message ||
               response.payment_gateway_response?.resp_message ||
               response.txn_detail?.error_message ||
