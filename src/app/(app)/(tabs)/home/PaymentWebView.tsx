@@ -18,13 +18,34 @@ export default function PaymentWebView() {
   const webViewRef = useRef<any>(null);
   const wasDisconnectedRef = useRef(false);
 
-  // Debug logging
+  // Debug logging & Fix parameter handling
+  const [targetUrl, setTargetUrl] = useState<string>("");
+
   useEffect(() => {
-    console.log("PaymentWebView params:", {
-      url: params.url,
-      orderId: params.orderId,
-      hasUserDetails: !!params.userDetails
+    let url = (params.url || params.paymentUrl) as string;
+
+    // Fix: If expo-router split the URL params (e.g. token param extracted separately)
+    // We reconstruct the URL by appending any missing params that belong to the query
+    if (url && !url.includes('token=') && params.token) {
+      console.log("⚠️ URL truncated, appending token from params...");
+      const separator = url.includes('?') ? '&' : '?';
+      url = `${url}${separator}token=${params.token}`;
+    }
+
+    if (url && !url.includes('orderId=') && params.orderId && !url.includes(params.orderId as string)) {
+      console.log("⚠️ URL truncated, appending orderId from params...");
+      const separator = url.includes('?') ? '&' : '?';
+      url = `${url}${separator}orderId=${params.orderId}`;
+    }
+
+    console.log("PaymentWebView params debug:", {
+      originalUrl: params.url,
+      paymentUrlParam: params.paymentUrl,
+      finalUrl: url,
+      allParams: params
     });
+
+    setTargetUrl(url);
   }, [params]);
 
   const { socket, isSocketConnected, handleCancel } = usePaymentSocket({
@@ -312,22 +333,28 @@ export default function PaymentWebView() {
                 <ActivityIndicator size="large" color={theme.colors.primary} />
                 <Text style={styles.loadingText}>Initializing secure connection...</Text>
               </View>
+            ) : !targetUrl ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <Text style={styles.loadingText}>Loading payment info...</Text>
+              </View>
             ) : (
               <WebView
                 ref={webViewRef}
                 source={{
-                  uri: params.url as string,
-                  headers: Platform.OS === 'android' ? {
-                    'User-Agent': "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36",
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                    'Upgrade-Insecure-Requests': '1',
-                  } : undefined
+                  uri: targetUrl,
                 }}
-                style={{ flex: 1 }}
+                style={{ flex: 1, opacity: 0.99, minHeight: 1, backgroundColor: 'transparent' }}
+                containerStyle={{ flex: 1 }}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
                 originWhitelist={["*"]}
                 startInLoadingState={true}
+                renderLoading={() => (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                  </View>
+                )}
                 allowsInlineMediaPlayback={true}
                 thirdPartyCookiesEnabled={true}
                 sharedCookiesEnabled={true}
@@ -335,8 +362,9 @@ export default function PaymentWebView() {
                 scalesPageToFit={true}
                 overScrollMode="never"
                 mixedContentMode="always"
-                setSupportMultipleWindows={false}
-                cacheEnabled={true}
+                androidLayerType="software" // Force software rendering to fix white screen issues
+                setSupportMultipleWindows={true} // Allow popups which some gateways use
+                cacheEnabled={false} // Disable cache to prevent stale white pages
 
                 // Block navigation to payment-success URL - we only use socket events for status
                 // The URL https://api.prod.srimurugangoldhouse.in/payment-success is for status checking only
@@ -417,6 +445,11 @@ export default function PaymentWebView() {
                   }
                 }}
 
+                onReceivedSslError={(event: any) => {
+                  console.log("🔒 SSL Error detected:", event.nativeEvent);
+                  // event.nativeEvent.proceed(); // Uncomment to bypass SSL error for testing
+                }}
+
                 onError={(syntheticEvent) => {
                   const { nativeEvent } = syntheticEvent;
                   console.warn('WebView error: ', nativeEvent);
@@ -472,17 +505,15 @@ export default function PaymentWebView() {
                 // Handle JavaScript confirms
                 onJsConfirm={(event: any) => {
                   const message = event.nativeEvent.message || '';
-                  console.log("🔔 WebView JavaScript Confirm:", message);
-                  // Return false to use default handling, or implement custom logic
-                  return false;
+                  console.log("🔔 WebView JavaScript Confirm (Suppressed):", message);
+                  return true; // Suppress confirmation dialogs
                 }}
 
                 // Handle JavaScript prompts
                 onJsPrompt={(event: any) => {
                   const message = event.nativeEvent.message || '';
-                  console.log("🔔 WebView JavaScript Prompt:", message);
-                  // Return false to use default handling
-                  return false;
+                  console.log("🔔 WebView JavaScript Prompt (Suppressed):", message);
+                  return true; // Suppress prompt dialogs
                 }}
               />
             )}

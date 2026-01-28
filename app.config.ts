@@ -27,6 +27,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
     android: {
         package: themeConfig.bundleIdentifier,
+        // @ts-ignore
+        usesCleartextTraffic: true,
         googleServicesFile: "./google-services.json",
         versionCode: 7,
 
