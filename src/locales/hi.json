@@ -370,7 +370,7 @@
   "maturesOn": "परिपक्व होता है",
   "maturity": "परिपक्वता",
   "maturityDate": "परिपक्वता तिथि",
-  "maturityDateLabel":"परिपक्वता तिथि",
+  "maturityDateLabel": "परिपक्वता तिथि",
   "megaGoldSavings": "मेगा गोल्ड सेविंग्स: सीमित समय फ्लैश ऑफ़र!",
   "membership": "सदस्यता",
   "milestone_2020_desc": "कालातीत आभूषण बनाने की दृष्टि के साथ अपनी यात्रा शुरू की।",
@@ -616,7 +616,12 @@
     "failedToFetchSchemes": "योजनाएं प्राप्त करने में विफल। कृपया बाद में पुनः प्रयास करें।",
     "failedToLoadSchemeData": "योजना डेटा लोड करने में विफल। कृपया पुनः प्रयास करें।",
     "defaultDescription": "हमारी लचीली योजना के साथ सोना बचाएं।",
-    "defaultBenefits": ["प्रतिस्पर्धी दरें", "लचीला भुगतान", "शून्य बनाने का शुल्क", "मुफ्त लॉकर सुविधा"],
+    "defaultBenefits": [
+      "प्रतिस्पर्धी दरें",
+      "लचीला भुगतान",
+      "शून्य बनाने का शुल्क",
+      "मुफ्त लॉकर सुविधा"
+    ],
     "schemeNames": {
       "dailyGoldSaver": "डेली गोल्ड सेवर",
       "weeklyGoldBuilder": "वीकली गोल्ड बिल्डर",
@@ -636,7 +641,12 @@
         "कोई लॉक-इन अवधि",
         "शून्य बनाने का शुल्क"
       ],
-      "weeklyGoldBuilder": ["उच्च साप्ताहिक रिटर्न", "लचीला निकासी विकल्प", "24K शुद्धता गारंटी", "मुफ्त गोल्ड प्रमाणन"],
+      "weeklyGoldBuilder": [
+        "उच्च साप्ताहिक रिटर्न",
+        "लचीला निकासी विकल्प",
+        "24K शुद्धता गारंटी",
+        "मुफ्त गोल्ड प्रमाणन"
+      ],
       "goldPlusMonthly": [
         "प्रीमियम रिटर्न",
         "कम बनाने का शुल्क",
@@ -696,7 +706,7 @@
   "stillHaveQuestions": "अभी भी प्रश्न हैं? हमारे समर्थन टीम से संपर्क करें",
   "storeLocator": "स्टोर लोकेटर",
   "storeName": "अकिला ज्वैलर्स",
-  "store_address_1": "Road Fathima Nagar, Mission Quarters, Anchery, Thrissur, Kerala 680005",
+  "store_address_1": "205/64A, Main Bazar, Udangudi, Tamil Nadu 628203",
   "submit": "सबमिट करें",
   "submitting": "सबमिट कर रहा है...",
   "subscribeOnYouTube": "यूट्यूब पर सब्सक्राइब करें",
