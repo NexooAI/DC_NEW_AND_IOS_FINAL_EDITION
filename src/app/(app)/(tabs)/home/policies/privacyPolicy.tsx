@@ -104,7 +104,7 @@ export default function PrivacyPolicy() {
   const renderLoadingState = () => (
     <View style={styles.loadingContainer}>
       <LinearGradient
-        colors={[theme.colors.primary, theme.colors.support_container[1]]}
+        colors={[theme.colors.quaternary, theme.colors.tertiary]}
         style={styles.loadingGradient}
       >
         <ActivityIndicator size="large" color="#FFD700" />
@@ -138,7 +138,7 @@ export default function PrivacyPolicy() {
       <View style={styles.container}>
         {/* Hero Section */}
         <LinearGradient
-          colors={[theme.colors.primary, theme.colors.primary_dark || "#5a000b"]}
+          colors={[theme.colors.quaternary, theme.colors.quaternary]}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={styles.heroSection}
@@ -148,7 +148,7 @@ export default function PrivacyPolicy() {
               <Ionicons
                 name="shield-checkmark"
                 size={36}
-                color="white"
+                color={theme.colors.primary}
               />
             </View>
             <Text style={styles.heroTitle}>
@@ -223,7 +223,7 @@ export default function PrivacyPolicy() {
             <Ionicons
               name="help-circle-outline"
               size={32}
-              color="rgba(255, 255, 255, 0.9)"
+              color={theme.colors.primary}
             />
             <Text style={styles.contactTitle}>
               {translations.privacyQuestions}
@@ -239,13 +239,13 @@ export default function PrivacyPolicy() {
 
   return (
     <AppLayoutWrapper showHeader={false} showBottomBar={false}>
-        <View style={{flex: 1}}>
+      <View style={{ flex: 1 }}>
         {loading
-            ? renderLoadingState()
-            : error
+          ? renderLoadingState()
+          : error
             ? renderErrorState()
             : renderMainContent()}
-        </View>
+      </View>
     </AppLayoutWrapper>
   );
 }
@@ -276,19 +276,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
+    borderColor: "rgba(231, 23, 23, 0.3)",
   },
   heroTitle: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#fff",
+    color: theme.colors.primary,
     textAlign: "center",
     marginBottom: 4,
     letterSpacing: 0.5,
   },
   heroSubtitle: {
     fontSize: 14,
-    color: "rgba(255,255,255,0.95)",
+    color: theme.colors.primary,
     textAlign: "center",
     fontWeight: "500",
   },
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     marginTop: -24, // Overlap effect
   },
   contactCard: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.quaternary,
     borderRadius: 16,
     padding: 20,
     alignItems: "center",
@@ -343,13 +343,13 @@ const styles = StyleSheet.create({
   contactTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "white",
+    color: theme.colors.primary,
     marginTop: 10,
     marginBottom: 6,
   },
   contactText: {
     fontSize: 13,
-    color: "rgba(255, 255, 255, 0.9)",
+    color: theme.colors.primary,
     textAlign: "center",
     lineHeight: 18,
   },

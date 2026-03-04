@@ -159,7 +159,7 @@ const getTranslatedText = (
   }
 };
 
-export default function SchemeList() {
+export default function SchemeList({ isNested = false }: { isNested?: boolean }) {
   const { schemeId, schemeType, mode } = useLocalSearchParams();
   const [activeTab, setActiveTab] = useState<string>("");
   const [schemes, setSchemes] = useState<Scheme[]>([]);
@@ -702,7 +702,7 @@ export default function SchemeList() {
 
   const renderTab = (title: string) => {
     const isActive = activeTab === title;
-    
+
     return (
       <TouchableOpacity
         key={title}
@@ -852,7 +852,7 @@ export default function SchemeList() {
               <Ionicons
                 name={isExpanded ? "chevron-up-circle" : "chevron-down-circle"}
                 size={22}
-                color={'#000'} 
+                color={'#000'}
               />
             </TouchableOpacity>
           </View>
@@ -1035,15 +1035,23 @@ export default function SchemeList() {
 
   return (
     <View style={styles.container}>
-      {/* <LinearGradient
-        colors={["#667eea", "#764ba2"]}
-        style={styles.headerGradient}
-      >
-        <Text style={styles.headerTitle}>Savings Schemes</Text>
-        <Text style={styles.headerSubtitle}>
-          Choose the perfect plan for your financial goals
-        </Text>
-      </LinearGradient> */}
+      {/* Header */}
+      {!isNested && (
+        <LinearGradient
+          colors={["#667eea", "#764ba2"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerGradient}
+        >
+          <Text style={styles.headerTitle}>
+            {t("schemes.explore") || "Explore Schemes"}
+          </Text>
+          <Text style={styles.headerSubtitle}>
+            {t("schemes.subtitle") ||
+              "Find the perfect gold savings plan for you"}
+          </Text>
+        </LinearGradient>
+      )}
 
       <View style={[
         styles.tabsWrapper,
@@ -1179,8 +1187,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 50 : 30,
     paddingBottom: 20,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    // Removed borderBottomLeftRadius and borderBottomRightRadius to remain flat
     shadowColor: "#000",
     shadowOffset: {
       width: 0,

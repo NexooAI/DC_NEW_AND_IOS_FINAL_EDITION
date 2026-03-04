@@ -355,7 +355,7 @@ export default function BasicDetailsForm() {
     const isNameValid = validateName(name, false);
     const isEmailValid = validateEmail(email, false);
     const isReferralValid = validateReferralCode(referralCode, false);
-    
+
     // Check referral validation status without showing errors
     if (referralCode && referralCode.length === 6 && !referralValidated) {
       return false;
@@ -728,22 +728,22 @@ export default function BasicDetailsForm() {
   };
 
   return (
-   <View
-           style={[
-             styles.backgroundImage,
-             {
-               // Ensure background doesn't move with keyboard
-               position: "absolute",
-               top: 0,
-               left: 0,
-               right: 0,
-               bottom: 0,
-               backgroundColor: theme.colors.primary,
-             },
-           ]}
-         >
+    <View
+      style={[
+        styles.backgroundImage,
+        {
+          // Ensure background doesn't move with keyboard
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: theme.colors.primary,
+        },
+      ]}
+    >
       <LinearGradient
-       colors={[theme.colors.primary, theme.colors.primary, theme.colors.primary]}
+        colors={[theme.colors.primary, theme.colors.quaternary, theme.colors.quaternary]}
         style={styles.gradient}
       >
         {showError && (
@@ -776,7 +776,7 @@ export default function BasicDetailsForm() {
                     variant="title"
                     size="lg"
                     weight="bold"
-                    color="#ffffff"
+                    color={theme.colors.primary}
                     align="center"
                     truncateMode="double"
                     style={styles.pageTitle}
@@ -1884,7 +1884,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   pageTitle: {
-    color: "#ffffff",
+    color: theme.colors.quaternary,
     fontSize: getResponsiveSize(28, 32),
     fontWeight: "bold",
     marginBottom: getResponsiveHeight(8, 12),
@@ -1896,7 +1896,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveSize(10, 15),
   },
   subtitle: {
-    color: "#ffffff",
+    color: theme.colors.primary,
     fontSize: getResponsiveSize(16, 18),
     textAlign: "center",
     opacity: 0.8,
@@ -1951,7 +1951,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   inputLabel: {
-    color: "#ffffff",
+    color: theme.colors.primary,
     fontSize: getResponsiveSize(14, 16),
     fontWeight: "600",
     marginBottom: getResponsiveHeight(8, 10),
@@ -2170,7 +2170,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   loginLinkText: {
-    color: theme.colors.textLight,
+    color: theme.colors.primary,
     fontSize: getResponsiveSize(14, 16),
     opacity: 0.85,
     fontWeight: "400",
