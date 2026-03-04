@@ -49,7 +49,7 @@ const borderRadius = getBorderRadius();
 const SimpleLanguageSwitcher = () => {
   const { language } = useGlobalStore();
   const [showSelector, setShowSelector] = useState(false);
- 
+
   const insets = useSafeAreaInsets();
   const {
     deviceScale,
@@ -320,31 +320,31 @@ export default function MpinVerify() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Biometric Auth Hook
-  const { 
-    isSupported, 
-    isEnrolled, 
-    isEnabled, 
-    authenticate, 
-    enableBiometrics 
+  const {
+    isSupported,
+    isEnrolled,
+    isEnabled,
+    authenticate,
+    enableBiometrics
   } = useBiometrics();
 
   // Handle Biometric Authentication
   const handleBiometricAuth = async () => {
     if (loading || isLocked) return;
-    
+
     // Don't show modal if already showing one
     if (showModal) return;
 
     logger.log("🧬 Starting biometric authentication");
     const result = await authenticate();
-    
+
     if (result.success && result.mpin) {
       logger.log("🧬 Biometric auth success, verifying MPIN");
       verifyMpin(result.mpin, true); // true = via biometrics
     } else if (result.error) {
       logger.log("🧬 Biometric auth failed:", result.error);
       if (result.error !== "User canceled" && result.error !== "Canceled") {
-         // Optional: show error toast
+        // Optional: show error toast
       }
     }
   };
@@ -694,34 +694,34 @@ export default function MpinVerify() {
           );
           // Navigate to home page after successful MPIN verification
           // Navigate to home page after successful MPIN verification
-          
+
           // Check if we should ask for biometric enrollment
           if (!isBiometric && !isEnabled && isSupported && isEnrolled) {
-             Alert.alert(
-                t("setupBiometrics") || "Enable Biometrics",
-                t("setupBiometricsMsg") || "Would you like to use Face ID / Fingerprint for faster login next time?",
-                [
-                  { 
-                    text: t("no") || "No", 
-                    onPress: () => router.replace("/(app)/(tabs)/home") 
-                  },
-                  { 
-                    text: t("yes") || "Yes", 
-                    onPress: async () => {
-                      const success = await enableBiometrics(enteredMpin);
-                      if (success) {
-                        Alert.alert(t("success"), t("biometricsEnabled") || "Biometrics enabled successfully", [
-                          { text: "OK", onPress: () => router.replace("/(app)/(tabs)/home") }
-                        ]);
-                      } else {
-                        router.replace("/(app)/(tabs)/home");
-                      }
+            Alert.alert(
+              t("setupBiometrics") || "Enable Biometrics",
+              t("setupBiometricsMsg") || "Would you like to use Face ID / Fingerprint for faster login next time?",
+              [
+                {
+                  text: t("no") || "No",
+                  onPress: () => router.replace("/(app)/(tabs)/home")
+                },
+                {
+                  text: t("yes") || "Yes",
+                  onPress: async () => {
+                    const success = await enableBiometrics(enteredMpin);
+                    if (success) {
+                      Alert.alert(t("success"), t("biometricsEnabled") || "Biometrics enabled successfully", [
+                        { text: "OK", onPress: () => router.replace("/(app)/(tabs)/home") }
+                      ]);
+                    } else {
+                      router.replace("/(app)/(tabs)/home");
                     }
                   }
-                ]
-             );
+                }
+              ]
+            );
           } else {
-             router.replace("/(app)/(tabs)/home");
+            router.replace("/(app)/(tabs)/home");
           }
         } catch (storageError) {
           logger.error("Error storing authentication data:", storageError);
@@ -818,7 +818,7 @@ export default function MpinVerify() {
       }
 
 
-      
+
       setMpinPins(["", "", "", ""]); // Just clear visual state
     } finally {
       setLoading(false);
@@ -906,11 +906,11 @@ export default function MpinVerify() {
 
   return (
     <View
-      style={[styles.backgroundImage, { backgroundColor: theme.colors.primary }]}
+      style={[styles.backgroundImage, { backgroundColor: theme.colors.quaternary }]}
     >
       <LinearGradient
         colors={[
-          "rgba(32, 1, 1, 0)",
+          theme.colors.primary,
           "rgba(167, 0, 0, 0)",
           "rgba(118, 1, 1, 0.02)",
         ]}
@@ -1026,7 +1026,7 @@ export default function MpinVerify() {
                       <Icon
                         name="clear"
                         size={20}
-                        color={isLocked ? COLORS.grey : COLORS.white}
+                        color={isLocked ? COLORS.grey : COLORS.primary}
                       />
                       <Text
                         style={[
@@ -1102,10 +1102,10 @@ export default function MpinVerify() {
                       onPress={handleBiometricAuth}
                       disabled={loading || isLocked}
                     >
-                       <Icon name="fingerprint" size={40} color={COLORS.white} />
-                       <Text style={styles.biometricText}>
-                         {Platform.OS === 'ios' ? (t('faceIdTouchId') || 'Face ID / Touch ID') : (t('biometricLogin') || 'Biometric Login')}
-                       </Text>
+                      <Icon name="fingerprint" size={40} color={COLORS.primary} />
+                      <Text style={styles.biometricText}>
+                        {Platform.OS === 'ios' ? (t('faceIdTouchId') || 'Face ID / Touch ID') : (t('biometricLogin') || 'Biometric Login')}
+                      </Text>
                     </TouchableOpacity>
                   )}
 
@@ -1184,8 +1184,8 @@ export default function MpinVerify() {
               logger.error("Logout error:", error);
             }
           } else if (modalData.type === "error") {
-             // Also handle the OK button press for error modals
-             setTimeout(() => {
+            // Also handle the OK button press for error modals
+            setTimeout(() => {
               resetMpinAndFocus();
             }, 300);
           }
@@ -1242,14 +1242,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   mpinTitle: {
-    color: COLORS.white,
+    color: COLORS.primary,
     fontSize: 28,
     fontWeight: "bold",
     marginBottom: 10,
     textAlign: "center",
   },
   mpinSubtitle: {
-    color: COLORS.white,
+    color: COLORS.primary,
     fontSize: 16,
     marginBottom: 30,
     textAlign: "center",
@@ -1490,7 +1490,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(220, 53, 69, 0.5)",
   },
   clearButtonText: {
-    color: COLORS.white,
+    color: COLORS.primary,
     fontSize: 14,
     fontWeight: "600",
     marginLeft: 4,
@@ -1501,7 +1501,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   biometricText: {
-    color: COLORS.white,
+    color: COLORS.primary,
     marginTop: 5,
     fontSize: 14,
   },

@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   TextInput,
+  Pressable,
   Image,
   Platform,
   Alert,
@@ -1130,7 +1131,7 @@ export default function Login() {
     return (
       <SafeAreaView style={[registerStyles.container, { paddingTop: 0 }]}>
         <View
-          style={[registerStyles.backgroundImage, { backgroundColor: theme.colors.primary }]}
+          style={[registerStyles.backgroundImage, { backgroundColor: theme.colors.quaternary }]}
         >
           <View
             style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
@@ -1163,7 +1164,7 @@ export default function Login() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: theme.colors.primary,
+            backgroundColor: theme.colors.quaternary,
           },
         ]}
       >
@@ -1171,9 +1172,9 @@ export default function Login() {
 
         <LinearGradient
           colors={[
-            "rgba(32, 1, 1, 0.55)",
-            "rgba(167, 0, 0, 0)",
-            "rgba(118, 1, 1, 0)",
+            theme.colors.primary,
+            theme.colors.quaternary,
+            theme.colors.quaternary,
           ]}
           style={registerStyles.gradient}
         >
@@ -1262,7 +1263,7 @@ export default function Login() {
                       variant="title"
                       size="lg"
                       weight="bold"
-                      color={theme.colors.white}
+                      color={theme.colors.primary}
                       align="center"
                       truncateMode="double"
                       style={[registerStyles.pageTitle, { marginBottom: 0 }]}
@@ -1272,7 +1273,7 @@ export default function Login() {
                     <ResponsiveText
                       variant="subtitle"
                       size="md"
-                      color={theme.colors.white}
+                      color={theme.colors.primary}
                       align="center"
                       truncateMode="double"
                       style={registerStyles.subtitle}
@@ -1331,7 +1332,7 @@ export default function Login() {
                         <ResponsiveText
                           variant="body"
                           size="md"
-                          color={theme.colors.white}
+                          color={theme.colors.primary}
                           align="center"
                           allowWrap={true}
                           maxLines={2}
@@ -1353,7 +1354,7 @@ export default function Login() {
                             variant="body"
                             size="md"
                             weight="bold"
-                            color={theme.colors.secondary}
+                            color={theme.colors.primary}
                             align="center"
                             allowWrap={false}
                             maxLines={1}
@@ -1384,7 +1385,7 @@ export default function Login() {
                         variant="title"
                         size="lg"
                         weight="bold"
-                        color={theme.colors.white}
+                        color={theme.colors.primary}
                         align="center"
                         allowWrap={true}
                         maxLines={2}
@@ -1398,7 +1399,7 @@ export default function Login() {
                         <ResponsiveText
                           variant="body"
                           size="sm"
-                          color={theme.colors.white}
+                          color={theme.colors.primary}
                           align="center"
                           allowWrap={true}
                           maxLines={2}
@@ -1416,15 +1417,19 @@ export default function Login() {
                           <Feather
                             name="edit-2"
                             size={18}
-                            color={theme.colors.white}
+                            color={theme.colors.primary}
                           />
                         </TouchableOpacity>
                       </View>
-                      <View
+                      <Pressable
                         style={[
                           registerStyles.otpInputsWrapper,
                           { alignItems: "center", justifyContent: "center", position: "relative" },
                         ]}
+                        onPress={() => {
+                          // Force focus on the input when the container is pressed
+                          inputRefs[0].current?.focus();
+                        }}
                       >
                         {/* Hidden TextInput for OTP Autofill */}
                         <TextInput
@@ -1450,8 +1455,9 @@ export default function Login() {
                           autoComplete="sms-otp"
                           editable={!loading}
                           autoFocus={true}
+                          pointerEvents="none" // Pass touches to parent Pressable to ensure reliable focus on iOS
                         />
-                        
+
                         <View
                           style={[
                             registerStyles.otpInputsContainer,
@@ -1509,10 +1515,10 @@ export default function Login() {
                           <Feather
                             name={showOtp ? "eye-off" : "eye"}
                             size={isSmallScreen ? 20 : 24}
-                            color={theme.colors.white}
+                            color={theme.colors.primary}
                           />
                         </TouchableOpacity>
-                      </View>
+                      </Pressable>
                       <View
                         style={[
                           registerStyles.timerContainer,
@@ -1522,12 +1528,12 @@ export default function Login() {
                         <Ionicons
                           name="time-outline"
                           size={20}
-                          color={theme.colors.white}
+                          color={theme.colors.primary}
                         />
                         <ResponsiveText
                           variant="caption"
                           size="sm"
-                          color={theme.colors.white}
+                          color={theme.colors.primary}
                           align="center"
                           truncateMode="single"
                           inRow={true}
@@ -1548,7 +1554,7 @@ export default function Login() {
                           <ResponsiveText
                             variant="caption"
                             size="sm"
-                            color={theme.colors.white}
+                            color={theme.colors.primary}
                             align="center"
                             truncateMode="double"
                             style={registerStyles.resendText}
@@ -1627,12 +1633,12 @@ export default function Login() {
                         <Ionicons
                           name="arrow-back"
                           size={isSmallScreen ? 18 : 20}
-                          color={theme.colors.white}
+                          color={theme.colors.primary}
                         />
                         <ResponsiveText
                           variant="caption"
                           size="sm"
-                          color={theme.colors.white}
+                          color={theme.colors.primary}
                           align="center"
                           truncateMode="double"
                           inRow={true}

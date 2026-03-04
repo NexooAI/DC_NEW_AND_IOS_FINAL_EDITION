@@ -1,5 +1,4 @@
 import { Tabs } from "expo-router";
-import { Utils } from "expo-router";
 import { StyleSheet, Platform, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -88,7 +87,7 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="savings"
             options={{
-              title: t("savings") || "Savings",
+              title: t("schemes.title") || "Schemes",
               tabBarIcon: ({ color, size, focused }) => (
                 <Ionicons
                   name={focused ? "wallet" : "wallet-outline"}
@@ -96,7 +95,7 @@ export default function TabsLayout() {
                   color={color}
                 />
               ),
-              tabBarLabel: t("mySchemes") || "My Schemes",
+              tabBarLabel: t("schemes.title") || "Schemes",
               headerShown: false, // Hide header for savings tab
             }}
           />
@@ -143,27 +142,33 @@ export default function TabsLayout() {
             }}
           />
           <Tabs.Screen
-            name="schemes"
+            name="rewards"
             options={{
-              title: t("joinSchemes") || "Join Schemes",
+              title: t("rewards") || "Rewards",
               tabBarIcon: ({ color, size, focused }) => {
-                // Make schemes tab appear active when on schemes page
-                const isActive = focused || isOnSchemesPage;
                 return (
                   <Ionicons
-                    name={isActive ? "add-circle" : "add-circle-outline"}
+                    name={focused ? "gift" : "gift-outline"}
                     size={size}
-                    color={isActive ? theme.colors.primary : color}
+                    color={focused ? theme.colors.primary : color}
                   />
                 );
               },
-              tabBarLabel: t("joinSchemes") || "Join Schemes",
+              tabBarLabel: t("rewards") || "Rewards",
+              headerShown: false,
             }}
           />
           <Tabs.Screen
             name="gold_advance"
             options={{
               href: null, // Hide from tab bar - this prevents Expo Router from auto-adding it
+            }}
+          />
+          <Tabs.Screen
+            name="rewards_history"
+            options={{
+              href: null, // Hide completely from tab bar
+              headerShown: false,
             }}
           />
           <Tabs.Screen

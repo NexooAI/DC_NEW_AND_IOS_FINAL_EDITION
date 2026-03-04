@@ -21,7 +21,6 @@ export default function HomeLayout() {
         headerShown: true,
         headerStyle: {
           backgroundColor: theme.colors.primary,
-          height: 60, // Standard header height
         },
         headerTintColor: COLORS.white,
         headerTitleAlign: 'center', // Center align the header title
@@ -30,7 +29,6 @@ export default function HomeLayout() {
           fontSize: Platform.OS === 'android' ? 16 : 18, // Slightly smaller font on Android
         },
         headerShadowVisible: false,
-        headerBackTitleVisible: false, // Hide back button text on iOS
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -116,16 +114,16 @@ export default function HomeLayout() {
       />
       <Stack.Screen
         name="payment-success"
-        options={{ 
+        options={{
           title: "Payment Success",
           headerBackVisible: false,
           gestureEnabled: false,
-          headerLeft: () => null 
+          headerLeft: () => null
         }}
       />
       <Stack.Screen
         name="payment-failure"
-        options={{ 
+        options={{
           title: "Payment Failure",
           headerBackVisible: false,
           gestureEnabled: false,

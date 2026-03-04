@@ -83,7 +83,7 @@ export default function TermsAndConditions() {
         colors={[theme.colors.primary, theme.colors.support_container[1]]}
         style={styles.loadingGradient}
       >
-        <ActivityIndicator size="large" color="#FFD700" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </LinearGradient>
     </View>
   );
@@ -115,7 +115,7 @@ export default function TermsAndConditions() {
       <View style={styles.container}>
         {/* Hero Section */}
         <LinearGradient
-          colors={[theme.colors.primary, theme.colors.primary_dark || "#5a000b"]}
+          colors={[theme.colors.quaternary, theme.colors.quaternary]}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={styles.heroSection}
@@ -125,7 +125,7 @@ export default function TermsAndConditions() {
               <Ionicons
                 name="document-text-outline"
                 size={36}
-                color="white"
+                color={theme.colors.primary}
               />
             </View>
             <Text style={styles.heroTitle}>
@@ -187,7 +187,7 @@ export default function TermsAndConditions() {
             <Ionicons
               name="help-circle-outline"
               size={32}
-              color="rgba(255, 255, 255, 0.9)"
+              color={theme.colors.primary}
             />
             <Text style={styles.contactTitle}>
               {t("questionsAboutTerms")}
@@ -207,8 +207,8 @@ export default function TermsAndConditions() {
         {loading
           ? renderLoadingState()
           : error
-          ? renderErrorState()
-          : renderMainContent()}
+            ? renderErrorState()
+            : renderMainContent()}
       </View>
     </AppLayoutWrapper>
   );
@@ -240,19 +240,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
+    borderColor: theme.colors.primary,
   },
   heroTitle: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#fff",
+    color: theme.colors.primary,
     textAlign: "center",
     marginBottom: 4,
     letterSpacing: 0.5,
   },
   heroSubtitle: {
     fontSize: 14,
-    color: "rgba(255,255,255,0.95)",
+    color: theme.colors.primary,
     textAlign: "center",
     fontWeight: "500",
   },
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     marginTop: -24,
   },
   contactCard: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.quaternary,
     borderRadius: 16,
     padding: 20,
     alignItems: "center",
@@ -306,13 +306,13 @@ const styles = StyleSheet.create({
   contactTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "white",
+    color: theme.colors.primary,
     marginTop: 10,
     marginBottom: 6,
   },
   contactText: {
     fontSize: 13,
-    color: "rgba(255, 255, 255, 0.9)",
+    color: theme.colors.primary,
     textAlign: "center",
     lineHeight: 18,
   },

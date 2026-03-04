@@ -57,20 +57,20 @@ const ProfileScreen = () => {
   // Removed Rating Modal Hook
 
   // Biometric Hook
-  const { 
-    isSupported, 
-    isEnrolled, 
-    isEnabled: isBiometricEnabled, 
-    enableBiometrics, 
-    disableBiometrics 
+  const {
+    isSupported,
+    isEnrolled,
+    isEnabled: isBiometricEnabled,
+    enableBiometrics,
+    disableBiometrics
   } = useBiometrics();
-  
+
   const [localProfilePhoto, setLocalProfilePhoto] = useState<string | null>(
     null
   );
   const [showMpinModal, setShowMpinModal] = useState(false);
   const [mpinInput, setMpinInput] = useState("");
-  
+
   const [editData, setEditData] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -86,10 +86,10 @@ const ProfileScreen = () => {
   // Function to open Rate Us URL directly
   const openRateUs = () => {
     const packageName = "com.nexooai.dcjewellery"; // Correct Application ID
-    const url = Platform.OS === 'android' 
-      ? `market://details?id=${packageName}` 
+    const url = Platform.OS === 'android'
+      ? `market://details?id=${packageName}`
       : `https://apps.apple.com/us/app/dc-jewellers-gold-diamonds/id6755081937`; // Replace with actual iOS ID if available
-      
+
     Linking.canOpenURL(url).then(supported => {
       if (supported) {
         Linking.openURL(url);
@@ -413,7 +413,7 @@ const ProfileScreen = () => {
   const handleDeleteAccount = () => {
     setShowDeleteAccountModal(true);
   };
-  
+
   // Handle Biometric Toggle
   const handleBiometricToggle = async (value: boolean) => {
     if (value) {
@@ -431,33 +431,33 @@ const ProfileScreen = () => {
       Alert.alert(t("error"), t("pleaseEnterValidMpin"));
       return;
     }
-    
+
     // Here we should verify MPIN with backend to be 100% sure, 
     // but for now we'll assume if they know it, it's fine or we can assume successful login earlier
     // In a real app, verify MPIN with API before enabling
-    
+
     // Better: Verify with API
     try {
-        const response = await apiWithLoader.post("/auth/login-mpin", {
-            mobileNumber: user?.mobile,
-            mpin: mpinInput
-        });
-        
-        if (response.data.success) {
-            const success = await enableBiometrics(mpinInput);
-            if (success) {
-                Alert.alert(t("success"), t("biometricsEnabled"));
-                setShowMpinModal(false);
-                setMpinInput("");
-            } else {
-                Alert.alert(t("error"), t("failedToEnableBiometrics") || "Failed to enable biometrics");
-            }
+      const response = await apiWithLoader.post("/auth/login-mpin", {
+        mobileNumber: user?.mobile,
+        mpin: mpinInput
+      });
+
+      if (response.data.success) {
+        const success = await enableBiometrics(mpinInput);
+        if (success) {
+          Alert.alert(t("success"), t("biometricsEnabled"));
+          setShowMpinModal(false);
+          setMpinInput("");
         } else {
-             Alert.alert(t("error"), t("incorrectMpin"));
+          Alert.alert(t("error"), t("failedToEnableBiometrics") || "Failed to enable biometrics");
         }
-    } catch (error) {
-        // Fallback or error handling
+      } else {
         Alert.alert(t("error"), t("incorrectMpin"));
+      }
+    } catch (error) {
+      // Fallback or error handling
+      Alert.alert(t("error"), t("incorrectMpin"));
     }
   };
 
@@ -474,10 +474,10 @@ const ProfileScreen = () => {
       }
 
       // Show loading indicator if needed, or rely on API loader
-      
+
       const response = await userAPI.deactivateUser(user.id);
       console.log("Delete account response", response);
-      
+
       // Check for success in the response data
       if (response.data && response.data.success) {
         Alert.alert(
@@ -494,7 +494,7 @@ const ProfileScreen = () => {
                 logout();
                 router.replace("/(auth)/login");
                 */
-               setShowDeleteAccountModal(false);
+                setShowDeleteAccountModal(false);
               },
             },
           ]
@@ -512,7 +512,7 @@ const ProfileScreen = () => {
           Alert.alert(
             t("errorTitle") || "Error",
             t("deleteAccountError") ||
-            response.data?.message || 
+            response.data?.message ||
             "Failed to delete account. Please try again."
           );
         }
@@ -523,12 +523,12 @@ const ProfileScreen = () => {
 
       // Check for specific error status codes
       if (error.response?.status === 404) {
-         // Handle 404 if needed
+        // Handle 404 if needed
       }
 
       // Check error message in response if available
       const errorMessage = error.response?.data?.message || error.message;
-      
+
       if (
         errorMessage ===
         "Investment is active so user acccount cannot be deactivated"
@@ -565,8 +565,8 @@ const ProfileScreen = () => {
         <View style={styles.headerContainer}>
           <LinearGradient
             colors={[
-              theme.colors.primary,
-              theme.colors.primary,
+              theme.colors.quaternary,
+              theme.colors.quaternary,
             ]}
             style={StyleSheet.absoluteFill}
           />
@@ -582,55 +582,55 @@ const ProfileScreen = () => {
             contentContainerStyle={styles.scrollContent}
           >
             <Animated.View style={[styles.contentWrapper, slideTransform]}>
-                {/* Profile Header Card */}
-                <View style={styles.profileCard}>
-                  <View style={styles.profileHeaderTop}>
-                    <TouchableOpacity
-                      onPress={handleImageUpload}
-                      style={styles.profileImageContainer}
-                      disabled={isUploading}
-                    >
-                      {getProfileImageSource() ? (
-                        <Image
-                          source={getProfileImageSource()}
-                          style={styles.profileImage}
-                        />
-                      ) : (
-                        <View style={styles.profileImagePlaceholder}>
-                          <Icon name="person" size={40} color={theme.colors.primary} />
-                        </View>
-                      )}
-                      <View style={styles.profileImageEdit}>
-                        {isUploading ? (
-                          <ActivityIndicator size="small" color="white" />
-                        ) : (
-                          <Icon name="camera-alt" size={16} color="white" />
-                        )}
-                      </View>
-                    </TouchableOpacity>
-
-                    <View style={styles.profileInfo}>
-                      <Text style={styles.profileName} numberOfLines={1}>{user?.name || t("notProvided")}</Text>
-                      <Text style={styles.profileEmail} numberOfLines={1}>{user?.email || t("notProvided")}</Text>
-                      <Text style={styles.profileEmail} numberOfLines={1}>+91 - {user?.mobile || t("notProvided")}</Text>
-                      
-                      <View style={styles.userIdBadge}>
-                        <Text style={styles.userIdText}>ID: {user?.id || "N/A"}</Text>
-                      </View>
-                    </View>
-
-                    <TouchableOpacity
-                      style={styles.editButton}
-                      onPress={handleEditToggle}
-                    >
-                      <Icon
-                        name={editing ? "close" : "edit"}
-                        size={20}
-                        color={editing ? "#FF4444" : theme.colors.primary}
+              {/* Profile Header Card */}
+              <View style={styles.profileCard}>
+                <View style={styles.profileHeaderTop}>
+                  <TouchableOpacity
+                    onPress={handleImageUpload}
+                    style={styles.profileImageContainer}
+                    disabled={isUploading}
+                  >
+                    {getProfileImageSource() ? (
+                      <Image
+                        source={getProfileImageSource()}
+                        style={styles.profileImage}
                       />
-                    </TouchableOpacity>
+                    ) : (
+                      <View style={styles.profileImagePlaceholder}>
+                        <Icon name="person" size={40} color={theme.colors.primary} />
+                      </View>
+                    )}
+                    <View style={styles.profileImageEdit}>
+                      {isUploading ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        <Icon name="camera-alt" size={16} color="white" />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+
+                  <View style={styles.profileInfo}>
+                    <Text style={styles.profileName} numberOfLines={1}>{user?.name || t("notProvided")}</Text>
+                    <Text style={styles.profileEmail} numberOfLines={1}>{user?.email || t("notProvided")}</Text>
+                    <Text style={styles.profileEmail} numberOfLines={1}>+91 - {user?.mobile || t("notProvided")}</Text>
+
+                    <View style={styles.userIdBadge}>
+                      <Text style={styles.userIdText}>ID: {user?.id || "N/A"}</Text>
+                    </View>
                   </View>
+
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={handleEditToggle}
+                  >
+                    <Icon
+                      name={editing ? "close" : "edit"}
+                      size={20}
+                      color={editing ? "#FF4444" : theme.colors.primary}
+                    />
+                  </TouchableOpacity>
                 </View>
+              </View>
 
               {/* Edit Mode */}
               {editing ? (
@@ -689,79 +689,82 @@ const ProfileScreen = () => {
                     </TouchableOpacity>
                   </View>
                 </View>
-              ) : (
-                // Referral Card
-                <View style={styles.referralCard}>
-                  <LinearGradient
-                    colors={[
-                      theme.colors.primary + "15",
-                      theme.colors.primary + "08",
-                      "rgba(255, 255, 255, 0.95)",
-                    ]}
-                    style={StyleSheet.absoluteFill}
-                  />
+              ) :
+                // (
+                //   // Referral Card
+                //   <View style={styles.referralCard}>
+                //     <LinearGradient
+                //       colors={[
+                //         theme.colors.primary + "15",
+                //         theme.colors.primary + "08",
+                //         "rgba(255, 255, 255, 0.95)",
+                //       ]}
+                //       style={StyleSheet.absoluteFill}
+                //     />
 
-                  <View style={styles.referralHeader}>
-                    <View style={styles.referralIcon}>
-                      <Icon name="card-giftcard" size={24} color={theme.colors.primary} />
-                    </View>
-                    <Text style={styles.referralTitle}>{t("referral_rewards")}</Text>
-                  </View>
+                //     <View style={styles.referralHeader}>
+                //       <View style={styles.referralIcon}>
+                //         <Icon name="card-giftcard" size={24} color={theme.colors.primary} />
+                //       </View>
+                //       <Text style={styles.referralTitle}>{t("referral_rewards")}</Text>
+                //     </View>
 
-                  <View style={styles.referralContent}>
-                    <Text style={styles.referralDesc}>{t("your_referral_code")}</Text>
+                //     <View style={styles.referralContent}>
+                //       <Text style={styles.referralDesc}>{t("your_referral_code")}</Text>
 
-                    <TouchableOpacity
-                      style={styles.referralCodeCard}
-                      onPress={handleCopyReferralCode}
-                      activeOpacity={0.7}
-                    >
-                      <LinearGradient
-                        colors={[theme.colors.primary, theme.colors.primary + "DD"]}
-                        style={styles.referralCodeGradient}
-                      >
-                        <View style={styles.referralCodeContent}>
-                          <Text style={styles.referralCodeLabel}>{t("yourCode")}</Text>
-                          <Text style={styles.referralCodeText}>
-                            {user?.referralCode || "N/A"}
-                          </Text>
-                        </View>
-                        <View style={styles.copyButton}>
-                          <Icon name="content-copy" size={20} color="white" />
-                        </View>
-                      </LinearGradient>
-                    </TouchableOpacity>
+                //       <TouchableOpacity
+                //         style={styles.referralCodeCard}
+                //         onPress={handleCopyReferralCode}
+                //         activeOpacity={0.7}
+                //       >
+                //         <LinearGradient
+                //           colors={[theme.colors.primary, theme.colors.primary + "DD"]}
+                //           style={styles.referralCodeGradient}
+                //         >
+                //           <View style={styles.referralCodeContent}>
+                //             <Text style={styles.referralCodeLabel}>{t("yourCode")}</Text>
+                //             <Text style={styles.referralCodeText}>
+                //               {user?.referralCode || "N/A"}
+                //             </Text>
+                //           </View>
+                //           <View style={styles.copyButton}>
+                //             <Icon name="content-copy" size={20} color="white" />
+                //           </View>
+                //         </LinearGradient>
+                //       </TouchableOpacity>
 
-                    <View style={styles.rewardsSection}>
-                      <View style={styles.rewardsInfo}>
-                        <Icon name="stars" size={28} color="#FFC107" />
-                        <View style={styles.rewardsDetails}>
-                          <Text style={styles.rewardsLabel}>{t("total_rewards")}</Text>
-                          <Text style={styles.rewardsValue}>
-                            {user?.rewards || 0} {t("points")}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  </View>
+                //       <View style={styles.rewardsSection}>
+                //         <View style={styles.rewardsInfo}>
+                //           <Icon name="stars" size={28} color="#FFC107" />
+                //           <View style={styles.rewardsDetails}>
+                //             <Text style={styles.rewardsLabel}>{t("total_rewards")}</Text>
+                //             <Text style={styles.rewardsValue}>
+                //               {user?.rewards || 0} {t("points")}
+                //             </Text>
+                //           </View>
+                //         </View>
+                //       </View>
+                //     </View>
 
-                  <TouchableOpacity
-                    style={styles.inviteButton}
-                    onPress={handleShareApp}
-                    activeOpacity={0.8}
-                  >
-                    <LinearGradient
-                      colors={[theme.colors.primary, theme.colors.primary + "DD"]}
-                      style={styles.inviteButtonGradient}
-                    >
-                      <Icon name="person-add" size={20} color="white" />
-                      <Text style={styles.inviteButtonText}>
-                        {t("inviteFriendsEarn")}
-                      </Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                </View>
-              )}
+                //     <TouchableOpacity
+                //       style={styles.inviteButton}
+                //       onPress={handleShareApp}
+                //       activeOpacity={0.8}
+                //     >
+                //       <LinearGradient
+                //         colors={[theme.colors.primary, theme.colors.primary + "DD"]}
+                //         style={styles.inviteButtonGradient}
+                //       >
+                //         <Icon name="person-add" size={20} color="white" />
+                //         <Text style={styles.inviteButtonText}>
+                //           {t("inviteFriendsEarn")}
+                //         </Text>
+                //       </LinearGradient>
+                //     </TouchableOpacity>
+                //   </View>
+                // )
+                null
+              }
 
               {/* Settings Card */}
               <View style={styles.settingsCard}>
@@ -866,7 +869,7 @@ const ProfileScreen = () => {
 
                 <View style={styles.divider} />
 
-                 {/* Delete Account Button */}
+                {/* Delete Account Button */}
                 <TouchableOpacity
                   style={styles.settingItem}
                   onPress={handleDeleteAccount}
@@ -880,7 +883,7 @@ const ProfileScreen = () => {
                     <Text style={[styles.settingText, { color: "#D32F2F" }]}>
                       {t("deleteAccount")}
                     </Text>
-                     <Text style={styles.settingDesc}>Delete your account permanently</Text>
+                    <Text style={styles.settingDesc}>Delete your account permanently</Text>
                   </View>
                 </TouchableOpacity>
               </View>
@@ -958,39 +961,39 @@ const ProfileScreen = () => {
         onRequestClose={() => setShowMpinModal(false)}
       >
         <View style={styles.modalOverlay}>
-            <View style={styles.mpinModalContainer}>
-                <Text style={styles.mpinModalTitle}>{t("enterMpin") || "Enter MPIN"}</Text>
-                <Text style={styles.mpinModalDesc}>{t("verifyMpinToEnableBiometrics") || "Please enter your MPIN to enable biometric login"}</Text>
-                
-                <TextInput 
-                    style={styles.mpinInput}
-                    value={mpinInput}
-                    onChangeText={(text) => setMpinInput(text.replace(/[^0-9]/g, '').slice(0, 4))}
-                    keyboardType="numeric"
-                    maxLength={4}
-                    secureTextEntry
-                    autoFocus
-                />
-                
-                <View style={styles.mpinModalActions}>
-                    <TouchableOpacity 
-                        style={styles.mpinModalCancel}
-                        onPress={() => {
-                            setShowMpinModal(false);
-                            setMpinInput("");
-                        }}
-                    >
-                        <Text style={styles.mpinModalCancelText}>{t("cancel")}</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity 
-                        style={styles.mpinModalConfirm}
-                        onPress={handleConfirmMpinForBiometrics}
-                    >
-                        <Text style={styles.mpinModalConfirmText}>{t("enable") || "Enable"}</Text>
-                    </TouchableOpacity>
-                </View>
+          <View style={styles.mpinModalContainer}>
+            <Text style={styles.mpinModalTitle}>{t("enterMpin") || "Enter MPIN"}</Text>
+            <Text style={styles.mpinModalDesc}>{t("verifyMpinToEnableBiometrics") || "Please enter your MPIN to enable biometric login"}</Text>
+
+            <TextInput
+              style={styles.mpinInput}
+              value={mpinInput}
+              onChangeText={(text) => setMpinInput(text.replace(/[^0-9]/g, '').slice(0, 4))}
+              keyboardType="numeric"
+              maxLength={4}
+              secureTextEntry
+              autoFocus
+            />
+
+            <View style={styles.mpinModalActions}>
+              <TouchableOpacity
+                style={styles.mpinModalCancel}
+                onPress={() => {
+                  setShowMpinModal(false);
+                  setMpinInput("");
+                }}
+              >
+                <Text style={styles.mpinModalCancelText}>{t("cancel")}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.mpinModalConfirm}
+                onPress={handleConfirmMpinForBiometrics}
+              >
+                <Text style={styles.mpinModalConfirmText}>{t("enable") || "Enable"}</Text>
+              </TouchableOpacity>
             </View>
+          </View>
         </View>
       </Modal>
 
@@ -1041,8 +1044,8 @@ const ProfileScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-             <View style={{ marginBottom: 15 }}>
-                <Icon name="support-agent" size={50} color={theme.colors.primary} />
+            <View style={{ marginBottom: 15 }}>
+              <Icon name="support-agent" size={50} color={theme.colors.primary} />
             </View>
             <Text style={styles.modalTitle}>
               {t("contactUs")}
@@ -1055,10 +1058,10 @@ const ProfileScreen = () => {
               <TouchableOpacity
                 style={[styles.modalConfirmButton, { backgroundColor: theme.colors.primary }]}
                 onPress={() => {
-                   setShowCustomerSupportModal(false);
-                   // Navigate to support or open dialer
-                   // router.push("/(app)/support"); // If you have a support route
-                   // Or just close
+                  setShowCustomerSupportModal(false);
+                  // Navigate to support or open dialer
+                  // router.push("/(app)/support"); // If you have a support route
+                  // Or just close
                 }}
               >
                 <Text style={styles.modalConfirmText}>
@@ -1193,7 +1196,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
+
   // Edit Form
   editFormCard: {
     backgroundColor: 'white',
@@ -1478,7 +1481,7 @@ const styles = StyleSheet.create({
     color: '#E53E3E',
     marginLeft: 8,
   },
-  
+
   // Modals
   modalOverlay: {
     flex: 1,
@@ -1554,7 +1557,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  
+
   // MPIN Modal (Specific)
   mpinModalContainer: {
     width: '85%',

@@ -8,6 +8,7 @@ import {
   Keyboard,
 } from "react-native";
 import { useTranslation } from "@/hooks/useTranslation";
+import { theme } from "@/constants";
 
 interface PhoneInputProps {
   value: string;
@@ -110,7 +111,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: "600",
-    color: "rgba(255, 255, 255, 0.9)",
+    color: theme.colors.primary,
     marginBottom: 8,
     paddingLeft: 4,
   },

@@ -182,7 +182,7 @@ export default function MpinSetup() {
         style={styles.backgroundImage}
       >
         <LinearGradient
-          colors={[theme.colors.primary, theme.colors.primary]}
+          colors={[theme.colors.quaternary, theme.colors.quaternary]}
           style={styles.gradient}
         >
           <KeyboardAvoidingView

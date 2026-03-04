@@ -340,38 +340,38 @@ export default function FAQScreen() {
           >
             {/* Hero Section */}
             <View style={styles.heroContainer}>
-               <LinearGradient
-                  colors={[theme.colors.primary, theme.colors.support_container[1]]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.heroSection}
-                >
-                  <View style={styles.heroContent}>
-                    <View style={styles.iconContainer}>
-                      <Ionicons name="help-buoy-outline" size={48} color="rgba(255,255,255,0.9)" />
-                    </View>
-                    <Text style={styles.heroTitle}>
-                      {translations.faqQuestion}
-                    </Text>
-                     <Text style={styles.heroSubtitle}>
-                      {t("findAnswersToCommonlyAsked")}
-                    </Text>
+              <LinearGradient
+                colors={[theme.colors.quaternary, theme.colors.tertiary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.heroSection}
+              >
+                <View style={styles.heroContent}>
+                  <View style={styles.iconContainer}>
+                    <Ionicons name="help-buoy-outline" size={48} color={theme.colors.primary} />
                   </View>
-                </LinearGradient>
+                  <Text style={styles.heroTitle}>
+                    {translations.faqQuestion}
+                  </Text>
+                  <Text style={styles.heroSubtitle}>
+                    {t("findAnswersToCommonlyAsked")}
+                  </Text>
+                </View>
+              </LinearGradient>
             </View>
 
             <View style={styles.faqContentContainer}>
               <View style={styles.faqList}>
-                  {faqData.map((item, index) => (
-                    <FAQItem
-                      key={item.id}
-                      item={item}
-                      isOpen={openItemId === item.id}
-                      toggleOpen={() => toggleItem(item.id)}
-                      translations={translations}
-                      index={index}
-                    />
-                  ))}
+                {faqData.map((item, index) => (
+                  <FAQItem
+                    key={item.id}
+                    item={item}
+                    isOpen={openItemId === item.id}
+                    toggleOpen={() => toggleItem(item.id)}
+                    translations={translations}
+                    index={index}
+                  />
+                ))}
               </View>
               {/* ... Footer ... */}
             </View>
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     paddingTop: 0,
-    paddingHorizontal: 0, 
+    paddingHorizontal: 0,
     paddingBottom: 40,
   },
   heroContainer: {
@@ -447,33 +447,33 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: theme.colors.quaternary,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
+    borderColor: theme.colors.primary,
   },
   heroTitle: {
     fontSize: 28,
     fontWeight: "800",
-    color: "white",
+    color: theme.colors.primary,
     textAlign: "center",
     marginBottom: 8,
     letterSpacing: 0.5,
   },
   heroSubtitle: {
     fontSize: 16,
-    color: "rgba(255,255,255,0.9)",
+    color: theme.colors.primary,
     textAlign: "center",
     maxWidth: width * 0.8,
   },
   faqContentContainer: {
-      paddingHorizontal: 16,
-      marginTop: -40,
+    paddingHorizontal: 16,
+    marginTop: -40,
   },
   faqList: {
-      marginBottom: 20,
+    marginBottom: 20,
   },
   faqItem: {
     backgroundColor: "white",

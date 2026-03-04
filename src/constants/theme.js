@@ -6,6 +6,7 @@ const theme = {
     primary: "#850111",
     secondary: "#ffc90c", //
     tertiary: "#F2B8C6",
+    quaternary: "#F2E6D2",
 
     // Background colors
     background: "#ffffff",

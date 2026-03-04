@@ -571,7 +571,7 @@ export default function PaymentNewOverView() {
       const response: any = await paymentService.initiatePayment(payload);
       logger.log("response ======>", response);
 
-       if (response?.success && response?.session?.payment_links?.web) {
+      if (response?.success && response?.session?.payment_links?.web) {
         // Extract order ID from the payment response
         const orderId = response?.session?.order_id;
         const paymentUrl = response?.session?.payment_links?.web;

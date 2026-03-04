@@ -85,7 +85,7 @@ export const registerStyles = StyleSheet.create({
     justifyContent: "center",
   },
   pageTitle: {
-    color: theme.colors.white,
+    color: theme.colors.primary,
     fontSize: Math.min(24, screenWidth * 0.06),
     fontWeight: "bold",
     marginBottom: Math.min(4, screenWidth * 0.02),
@@ -94,7 +94,7 @@ export const registerStyles = StyleSheet.create({
     paddingHorizontal: Math.min(20, screenWidth * 0.05),
   },
   subtitle: {
-    color: theme.colors.white,
+    color: theme.colors.primary,
     fontSize: Math.min(18, screenWidth * 0.045),
     marginBottom: Math.min(10, screenWidth * 0.05),
     textAlign: "center",
@@ -153,7 +153,7 @@ export const registerStyles = StyleSheet.create({
     minHeight: 220, // Ensures enough space for small screens
   },
   otpTitle: {
-    color: theme.colors.white,
+    color: theme.colors.primary,
     fontSize: isSmallScreen ? 20 : isMediumScreen ? 22 : 24,
     fontWeight: "bold",
     marginBottom: 5,
@@ -161,7 +161,7 @@ export const registerStyles = StyleSheet.create({
     lineHeight: isSmallScreen ? 24 : isMediumScreen ? 26 : 28,
   },
   otpSentText: {
-    color: theme.colors.white,
+    color: theme.colors.primary,
     fontSize: isSmallScreen ? 14 : isMediumScreen ? 15 : 16,
     marginBottom: 10,
     opacity: 0.8,
@@ -226,7 +226,7 @@ export const registerStyles = StyleSheet.create({
     marginTop: 15,
   },
   timerText: {
-    color: theme.colors.white,
+    color: theme.colors.primary,
     marginLeft: 8,
     fontSize: isSmallScreen ? 14 : isMediumScreen ? 15 : 16,
     opacity: 0.8,
@@ -247,7 +247,7 @@ export const registerStyles = StyleSheet.create({
     alignItems: "center",
   },
   resendText: {
-    color: theme.colors.secondary,
+    color: theme.colors.primary,
     fontSize: isSmallScreen ? 14 : isMediumScreen ? 15 : 16,
     fontWeight: "bold",
     textDecorationLine: "underline",
@@ -261,14 +261,14 @@ export const registerStyles = StyleSheet.create({
     marginTop: 20,
   },
   registerText: {
-    color: theme.colors.white,
+    color: theme.colors.primary,
     fontSize: isSmallScreen ? 14 : isMediumScreen ? 15 : 16,
     opacity: 0.8,
     textAlign: "center",
     lineHeight: isSmallScreen ? 18 : isMediumScreen ? 20 : 22,
   },
   registerLink: {
-    color: theme.colors.link,
+    color: theme.colors.primary,
     fontSize: isSmallScreen ? 14 : isMediumScreen ? 15 : 16,
     fontWeight: "bold",
     textDecorationLine: "underline",
@@ -485,7 +485,7 @@ export const registerStyles = StyleSheet.create({
     flexWrap: "wrap",
   },
   backButtonText: {
-    color: theme.colors.white,
+    color: theme.colors.primary,
     fontSize: isSmallScreen ? 14 : isMediumScreen ? 15 : 16,
     marginLeft: 8,
     fontWeight: "500",
