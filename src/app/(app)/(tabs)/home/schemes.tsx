@@ -24,7 +24,7 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import useGlobalStore from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 import { theme } from "@/constants/theme";
@@ -1035,6 +1035,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
       {/* Header */}
       {!isNested && (
         <LinearGradient
@@ -1043,13 +1044,30 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
           end={{ x: 1, y: 1 }}
           style={styles.headerGradient}
         >
-          <Text style={styles.headerTitle}>
-            {t("schemes.explore") || "Explore Schemes"}
-          </Text>
-          <Text style={styles.headerSubtitle}>
-            {t("schemes.subtitle") ||
-              "Find the perfect gold savings plan for you"}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
+                  <Ionicons name="arrow-back" size={28} color="#fff" />
+                </TouchableOpacity>
+                <Text style={[styles.headerTitle, { marginBottom: 0 }]} numberOfLines={1} adjustsFontSizeToFit>
+                  {t("schemes.explore") || "Explore Schemes"}
+                </Text>
+              </View>
+              <Text style={styles.headerSubtitle} numberOfLines={1}>
+                {t("schemes.subtitle") || "Find the perfect gold savings plan for you"}
+              </Text>
+            </View>
+            
+            {/* Savings Home Button */}
+            <TouchableOpacity 
+              onPress={() => router.push('/(app)/(tabs)/home')}
+              style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}
+            >
+              <Ionicons name="home" size={16} color="#fff" style={{ marginRight: 4 }} />
+              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Home</Text>
+            </TouchableOpacity>
+          </View>
         </LinearGradient>
       )}
 

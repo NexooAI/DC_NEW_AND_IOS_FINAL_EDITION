@@ -1,12 +1,12 @@
 import { Tabs } from "expo-router";
-import { StyleSheet, Platform, View } from "react-native";
+import { StyleSheet, Platform, View, Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import NavigationErrorBoundary from "@/components/NavigationErrorBoundary";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useSegments } from "expo-router";
+import { useSegments, useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
 import useGlobalStore from "@/store/global.store";
@@ -16,6 +16,7 @@ export default function TabsLayout() {
   const { isTabVisible } = useGlobalStore();
   const insets = useSafeAreaInsets();
   const segments = useSegments();
+  const router = useRouter();
 
   // Check if we're on the schemes page
   const fullPath = segments.join("/");
@@ -65,6 +66,7 @@ export default function TabsLayout() {
             freezeOnBlur: false,
           }}
         >
+
           <Tabs.Screen
             name="home"
             options={{
@@ -83,6 +85,12 @@ export default function TabsLayout() {
               tabBarLabel: t("home") || "Home",
               headerShown: false, // Hide header on home page
             }}
+            listeners={() => ({
+              tabPress: (e) => {
+                e.preventDefault();
+                router.push("/(app)/(tabs)/home");
+              },
+            })}
           />
           <Tabs.Screen
             name="savings"
@@ -100,8 +108,31 @@ export default function TabsLayout() {
             }}
           />
           <Tabs.Screen
+            name="dashboard_tab"
+            options={{
+              title: t("dashboard") || "Dashboard",
+              // Hide header because this is a fake tab
+              headerShown: false,
+              tabBarIcon: ({ color, size, focused }) => (
+                <Ionicons
+                  name={focused ? "grid" : "grid-outline"}
+                  size={size}
+                  color={focused ? theme.colors.primary : color}
+                />
+              ),
+              tabBarLabel: t("dashboard") || "Dashboard",
+            }}
+            listeners={() => ({
+              tabPress: (e) => {
+                e.preventDefault();
+                router.push("/(app)/dashboard");
+              },
+            })}
+          />
+          <Tabs.Screen
             name="quick_join"
             options={{
+              href: null,
               title: t("quickJoin") || "Quick Join",
               tabBarLabel: () => null,
               headerShown: false,
@@ -159,12 +190,6 @@ export default function TabsLayout() {
             }}
           />
           <Tabs.Screen
-            name="gold_advance"
-            options={{
-              href: null, // Hide from tab bar - this prevents Expo Router from auto-adding it
-            }}
-          />
-          <Tabs.Screen
             name="rewards_history"
             options={{
               href: null, // Hide completely from tab bar
@@ -173,13 +198,6 @@ export default function TabsLayout() {
           />
           <Tabs.Screen
             name="notifications"
-            // options={{
-            //   title: t("notifications") || "Notifications",
-            //   tabBarIcon: ({ color, size }) => (
-            //     <Ionicons name="notifications-outline" size={size} color={color} />
-            //   ),
-            //   tabBarLabel: t("notifications") || "Notifications",
-            // }}
             options={{
               title: t("notifications") || "Notifications",
               href: null, // Hide from tab bar
@@ -202,12 +220,6 @@ export default function TabsLayout() {
 
           <Tabs.Screen
             name="app_visibility"
-            options={{
-              href: null, // Hide from tab bar
-            }}
-          />
-          <Tabs.Screen
-            name="joinadvancegold"
             options={{
               href: null, // Hide from tab bar
             }}

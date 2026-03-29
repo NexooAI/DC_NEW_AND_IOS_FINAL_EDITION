@@ -703,7 +703,7 @@ export default function MpinVerify() {
               [
                 {
                   text: t("no") || "No",
-                  onPress: () => router.replace("/(app)/(tabs)/home")
+                  onPress: () => router.replace("/(app)/dashboard")
                 },
                 {
                   text: t("yes") || "Yes",
@@ -711,17 +711,17 @@ export default function MpinVerify() {
                     const success = await enableBiometrics(enteredMpin);
                     if (success) {
                       Alert.alert(t("success"), t("biometricsEnabled") || "Biometrics enabled successfully", [
-                        { text: "OK", onPress: () => router.replace("/(app)/(tabs)/home") }
+                        { text: "OK", onPress: () => router.replace("/(app)/dashboard") }
                       ]);
                     } else {
-                      router.replace("/(app)/(tabs)/home");
+                      router.replace("/(app)/dashboard");
                     }
                   }
                 }
               ]
             );
           } else {
-            router.replace("/(app)/(tabs)/home");
+            router.replace("/(app)/dashboard");
           }
         } catch (storageError) {
           logger.error("Error storing authentication data:", storageError);

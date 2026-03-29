@@ -44,6 +44,15 @@ export default function AppLayout() {
             drawerContent={renderDrawerContent}
           >
             <Drawer.Screen
+              name="dashboard"
+              options={{
+                lazy: true,
+                freezeOnBlur: false,
+                drawerLabel: "Dashboard",
+                title: "Dashboard",
+              }}
+            />
+            <Drawer.Screen
               name="(tabs)"
               options={{
                 // Enable lazy loading for better performance
@@ -52,6 +61,16 @@ export default function AppLayout() {
                 // Note: unmountOnBlur is not available for Drawer screens
                 // Prevent concurrent rendering issues
                 freezeOnBlur: false,
+              }}
+            />
+            <Drawer.Screen
+              name="lucky_draw"
+              options={{
+                lazy: true,
+                freezeOnBlur: false,
+                drawerLabel: "Lucky Draw",
+                title: "Lucky Draw",
+                drawerItemStyle: { display: 'none' } // Hide from drawer menu but keep as valid route
               }}
             />
           </Drawer>

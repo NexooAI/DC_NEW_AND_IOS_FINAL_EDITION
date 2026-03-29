@@ -6,61 +6,73 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { rewardsAPI } from "@/services/api";
+import useGlobalStore from "@/store/global.store";
+import { useEffect, useState, useCallback } from "react";
 
 export default function RewardsHistoryScreen() {
     const router = useRouter();
     const { t } = useTranslation();
+    const { user } = useGlobalStore();
+    const [referrals, setReferrals] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
 
-    // Placeholder data
-    const transactionRecords = [
-        {
-            id: "1",
-            type: "EARN",
-            title: "Referred Friend (John Doe)",
-            points: "+250",
-            date: "12 Oct 2023",
-            time: "10:30 AM",
-        },
-        {
-            id: "2",
-            type: "REDEEM",
-            title: "Scheme Payment Offset",
-            points: "-150",
-            date: "05 Oct 2023",
-            time: "02:15 PM",
-        },
-        {
-            id: "3",
-            type: "EARN",
-            title: "Referred Friend (Jane Smith)",
-            points: "+50",
-            date: "28 Sep 2023",
-            time: "09:00 AM",
+    const fetchReferrals = useCallback(async () => {
+        if (!user?.id) return;
+
+        setLoading(true);
+        try {
+            const response = await rewardsAPI.getMyReferrals(user.id);
+            if (response.data.success && Array.isArray(response.data.data)) {
+                setReferrals(response.data.data);
+            }
+        } catch (error) {
+            console.error("Error fetching referrals:", error);
+        } finally {
+            setLoading(false);
         }
-    ];
+    }, [user?.id]);
+
+    useEffect(() => {
+        fetchReferrals();
+    }, [fetchReferrals]);
 
     const renderTransactionItem = ({ item }: { item: any }) => {
-        const isEarn = item.type === "EARN";
+        const isEarn = true; // All from this API are earned rewards
+        
+        // Manual date formatting instead of moment
+        const dateObj = new Date(item.joined_at);
+        const formattedDate = dateObj.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+        const formattedTime = dateObj.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
 
         return (
             <View style={styles.transactionCard}>
                 <View style={styles.transactionIconContainer}>
                     <Ionicons
-                        name={isEarn ? "arrow-down-circle" : "arrow-up-circle"}
+                        name={"arrow-down-circle"}
                         size={32}
-                        color={isEarn ? "#4CAF50" : "#F44336"}
+                        color={"#4CAF50"}
                     />
                 </View>
                 <View style={styles.transactionDetails}>
-                    <Text style={styles.transactionTitle}>{item.title}</Text>
-                    <Text style={styles.transactionDate}>{item.date} • {item.time}</Text>
+                    <Text style={styles.transactionTitle}>{item.name}</Text>
+                    <Text style={styles.transactionSubtitle}>{item.mobile_number}</Text>
+                    <Text style={styles.transactionDate}>{formattedDate} • {formattedTime}</Text>
                 </View>
                 <View style={styles.transactionPointsContainer}>
                     <Text style={[
                         styles.transactionPoints,
-                        { color: isEarn ? "#4CAF50" : "#F44336" }
+                        { color: "#4CAF50" }
                     ]}>
-                        {item.points}
+                        +{item.reward_earned}
                     </Text>
                     <Text style={styles.pointsLabel}>{t("points") || "Pts"}</Text>
                 </View>
@@ -86,13 +98,15 @@ export default function RewardsHistoryScreen() {
             </LinearGradient>
 
             <View style={styles.contentContainer}>
-                {transactionRecords.length > 0 ? (
+                {referrals.length > 0 ? (
                     <FlatList
-                        data={transactionRecords}
-                        keyExtractor={(item) => item.id}
+                        data={referrals}
+                        keyExtractor={(item) => item.id.toString()}
                         renderItem={renderTransactionItem}
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
+                        refreshing={loading}
+                        onRefresh={fetchReferrals}
                     />
                 ) : (
                     <View style={styles.emptyContainer}>
@@ -163,9 +177,14 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     transactionTitle: {
-        fontSize: 15,
-        fontWeight: "600",
+        fontSize: 16,
+        fontWeight: "700",
         color: "#1a1a1a",
+        marginBottom: 2,
+    },
+    transactionSubtitle: {
+        fontSize: 13,
+        color: "#444",
         marginBottom: 4,
     },
     transactionDate: {

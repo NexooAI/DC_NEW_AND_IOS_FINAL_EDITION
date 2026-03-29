@@ -41,21 +41,21 @@ export default function SchemesHub() {
     return (
         <View style={styles.container}>
             <LinearGradient
-                colors={[theme.colors.primary, darkenColor(theme.colors.primary, 0.2)]}
+                colors={["#F2E6D2", "#F5DEB3"]}
                 style={styles.headerArea}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             >
                 <SafeAreaView edges={["top"]} style={{ backgroundColor: "transparent" }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 0, paddingTop: 2 }}>
                         <TouchableOpacity
                             onPress={() => router.push("/(app)/(tabs)/home")}
                             style={{ padding: 4, marginRight: 12 }}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                            <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+                            <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
                         </TouchableOpacity>
-                        <Text style={{ fontSize: 20, fontWeight: "700", color: COLORS.white }}>
+                        <Text style={{ fontSize: 20, fontWeight: "700", color: "#1a1a1a" }}>
                             {typeof t("schemes") === 'object' ? t("schemes.title") : t("schemes") || "Schemes"}
                         </Text>
                     </View>
@@ -126,15 +126,7 @@ export default function SchemesHub() {
     );
 }
 
-// Utility for darkening header slightly
-function darkenColor(hex: string, percent: number): string {
-    if (!hex) return "#000";
-    const num = parseInt(hex.replace("#", ""), 16);
-    const r = Math.max(0, Math.floor((num >> 16) * (1 - percent)));
-    const g = Math.max(0, Math.floor(((num >> 8) & 0x00FF) * (1 - percent)));
-    const b = Math.max(0, Math.floor((num & 0x0000FF) * (1 - percent)));
-    return `rgba(${r}, ${g}, ${b}, 1)`;
-}
+
 
 const styles = StyleSheet.create({
     container: {
@@ -142,39 +134,39 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.background,
     },
     headerArea: {
-        paddingBottom: 10,
-        // Removed borderBottomLeftRadius and borderBottomRightRadius to remain flat
+        paddingBottom: 0,
+        // Elevation and shadow for the sticky header look
         ...Platform.select({
             ios: {
                 shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.2,
-                shadowRadius: 5,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 3,
             },
             android: {
-                elevation: 6,
+                elevation: 4,
             },
         }),
         zIndex: 10,
     },
     tabContainer: {
         paddingHorizontal: 20,
-        paddingTop: 10,
+        paddingTop: 0,
     },
     segmentedControl: {
         flexDirection: "row",
-        backgroundColor: "rgba(255, 255, 255, 0.2)",
+        backgroundColor: "rgba(0, 0, 0, 0.05)",
         borderRadius: 8,
         padding: 4,
     },
     tabButton: {
         flex: 1,
-        paddingVertical: 12,
+        paddingVertical: 10,
         alignItems: "center",
         borderRadius: 6,
     },
     activeTabButton: {
-        backgroundColor: COLORS.white,
+        backgroundColor: "#1a1a1a",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -182,16 +174,12 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     tabButtonText: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: "600",
-        color: COLORS.white,
-        textShadowColor: "rgba(0,0,0,0.1)",
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 2,
+        color: "#666",
     },
     activeTabButtonText: {
-        color: theme.colors.primary,
-        textShadowColor: "transparent",
+        color: COLORS.white,
     },
     slider: {
         flex: 1,

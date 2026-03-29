@@ -620,6 +620,10 @@ export const investmentAPI = {
     return apiClient.get(`/investments/user/${userId}`);
   },
 
+  getUserInvestments: async (userId: number | string) => {
+    return apiClient.get(`/investments/user_investments/${userId}`);
+  },
+
   getInvestmentDetails: async (investmentId: number | string) => {
     return apiClient.get(`/investments/${investmentId}`);
   },
@@ -657,6 +661,13 @@ export const paymentAPI = {
 export const maintenanceAPI = {
   checkMaintenanceStatus: async () => {
     return apiClient.get('/maintenance/status');
+  }
+};
+
+// Rewards APIs
+export const rewardsAPI = {
+  getMyReferrals: async (userId: string | number) => {
+    return apiClient.get(`/rewards/my-referrals?userId=${userId}`);
   }
 };
 
