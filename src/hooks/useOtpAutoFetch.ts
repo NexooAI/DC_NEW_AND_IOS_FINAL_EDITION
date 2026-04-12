@@ -50,8 +50,8 @@ export const useOtpAutoFetch = ({
 
     // Multiple patterns to match different OTP formats
     const patterns = [
-      // Pattern for "Your OTP for Sri murugan gold house DigitalApp registration is 5799"
-      /Your OTP for.*?is\s+(\d{4,6})/i,
+      // Pattern for "Dear User , Your OTP for Akila Jewellers DigitalApp registration is 1234."
+      /OTP for Akila Jewellers.*?is\s+(\d{4,6})/i,
       // Generic 4-6 digit OTP patterns
       /OTP.*?(\d{4,6})/i,
       /(\d{4,6}).*?OTP/i,

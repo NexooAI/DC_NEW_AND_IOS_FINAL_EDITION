@@ -294,7 +294,7 @@ export default function PaymentWebView() {
 
         <SafeAreaView style={styles.safeAreaContainer}>
           {/* Header - Styled to match app theme */}
-          <View style={styles.headerContainer}>
+          {/* <View style={styles.headerContainer}>
             <View style={styles.headerContent}>
               <TouchableOpacity
                 onPress={handleBackPress}
@@ -307,7 +307,7 @@ export default function PaymentWebView() {
               <Text style={styles.headerTitle}>Secure Payment</Text>
               <View style={styles.placeholder} />
             </View>
-          </View>
+          </View> */}
 
           <View style={{ flex: 1, backgroundColor: "#fff" }}>
             {/* Connection Status Banner */}

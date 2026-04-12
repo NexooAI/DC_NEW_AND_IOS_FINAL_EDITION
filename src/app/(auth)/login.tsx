@@ -1455,7 +1455,7 @@ export default function Login() {
                           autoComplete="sms-otp"
                           editable={!loading}
                           autoFocus={true}
-                          pointerEvents="none" // Pass touches to parent Pressable to ensure reliable focus on iOS
+                          importantForAutofill="yes"
                         />
 
                         <View
