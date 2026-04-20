@@ -59,10 +59,10 @@ const BackToMpinButton = () => {
         // borderColor: theme.colors.borderWhiteMedium,
       }}
     >
-      <Icon name="arrow-back" size={20} color={theme.colors.white} />
+      <Icon name="arrow-back" size={20} color={theme.colors.primary} />
       <Text
         style={{
-          color: theme.colors.white,
+          color: theme.colors.primary,
           fontSize: 14,
           fontWeight: "bold",
           marginLeft: 8,
@@ -123,7 +123,7 @@ const ConfirmationModal = ({
               <Icon
                 name="phone-android"
                 size={32}
-                color={theme.colors.secondary}
+                color={theme.colors.primary}
               />
               <Text style={styles.modalTitle}>{t("sendOtpConfirmation")}</Text>
             </View>
@@ -1173,7 +1173,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: theme.colors.quaternary || "#F2E6D2",
     borderRadius: 20,
     padding: 24,
     width: "100%",
@@ -1193,7 +1193,7 @@ const styles = StyleSheet.create({
   },
   cardSubtitle: {
     fontSize: 15,
-    color: theme.colors.secondary,
+    color: theme.colors.primary,
     marginBottom: 25,
     textAlign: "center",
   },
@@ -1307,7 +1307,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   resendText: {
-    color: theme.colors.secondary,
+    color: theme.colors.primary,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.primary,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -1329,7 +1331,7 @@ const styles = StyleSheet.create({
   successContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.colors.secondary,
+    // backgroundColor: theme.colors.secondary,
     padding: 12,
     borderRadius: 8,
     marginBottom: 15,
@@ -1363,7 +1365,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   modalContainer: {
-    backgroundColor: theme.colors.bgPrimaryHeavy,
+    backgroundColor: theme.colors.quaternary,
     borderRadius: 20,
     padding: 0,
     width: "100%",
@@ -1390,14 +1392,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitle: {
-    color: theme.colors.white,
+    color: theme.colors.primary,
     fontSize: 20,
     fontWeight: "bold",
     marginTop: 12,
     textAlign: "center",
   },
   modalMessage: {
-    color: theme.colors.white,
+    color: theme.colors.primary,
     fontSize: 16,
     textAlign: "center",
     marginBottom: 24,
@@ -1442,12 +1444,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cancelButtonText: {
-    color: theme.colors.white,
+    color: theme.colors.black,
     fontSize: 16,
     fontWeight: "600",
   },
   confirmButtonText: {
-    color: theme.colors.white,
+    color: theme.colors.primary,
     fontSize: 16,
     fontWeight: "bold",
   },
