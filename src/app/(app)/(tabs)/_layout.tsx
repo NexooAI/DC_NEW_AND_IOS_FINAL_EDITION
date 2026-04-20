@@ -215,6 +215,7 @@ export default function TabsLayout() {
                 />
               ),
               tabBarLabel: t("profile") || "Profile",
+              headerShown: false,
             }}
           />
 
@@ -222,6 +223,13 @@ export default function TabsLayout() {
             name="app_visibility"
             options={{
               href: null, // Hide from tab bar
+            }}
+          />
+          <Tabs.Screen
+            name="joinAdvGold"
+            options={{
+              href: null, // Hide from tab bar
+              headerShown: false,
             }}
           />
         </Tabs>

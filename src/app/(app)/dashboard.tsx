@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -10,6 +10,8 @@ import {
   Easing,
   StatusBar,
   Text,
+  ScrollView,
+  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -22,12 +24,28 @@ import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 import { shadowUtils } from "@/utils/shadowUtils";
 import { useTranslation } from "@/hooks/useTranslation";
+import useGlobalStore from "@/store/global.store";
+import api from "@/services/api";
 
 const { wp, hp, rf } = responsiveUtils;
-const { SHADOW_UTILS } = shadowUtils;
 const { width, height } = Dimensions.get("window");
 
-const QUATERNARY_COLOR = theme.colors.quaternary || "#F2E6D2";
+// LUXURY PALETTE
+const PREMIUM_GOLD = "#DAA520";
+const LUXURY_DARK = "#121212";
+const LUXURY_BROWN = "#211714";
+const CARD_BG = "rgba(33, 23, 20, 0.75)";
+
+// ─── Luxury Background ───────────────────────────────────────────────────────
+const LuxuryBackground = () => {
+  return (
+    <Image
+      source={require("../../../assets/images/dashboard_bg.png")}
+      style={styles.bgImage}
+      resizeMode="cover"
+    />
+  );
+};
 
 // ─── Image Fallback ──────────────────────────────────────────────────────────
 let logoImage: any = null;
@@ -37,38 +55,32 @@ try {
   console.log("Logo image not found");
 }
 
-// ─── Single Card Component ───────────────────────────────────────────────────
-const DashboardCard = ({
+// ─── Luxury Card Component ──────────────────────────────────────────────────
+const LuxuryCard = ({
   title,
   icon,
   onPress,
-  gradient,
   iconType = "ionicons",
   index = 0,
+  gradient = ["#1C1614", "#0A0A0A"]
 }: {
   title: string;
   icon: string;
   onPress: () => void;
-  gradient: string[];
   iconType?: "ionicons" | "material";
   index?: number;
+  gradient?: string[];
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(glowAnim, {
+        Animated.timing(shimmerAnim, {
           toValue: 1,
-          duration: 2500,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0,
-          duration: 2500,
-          easing: Easing.in(Easing.ease),
+          duration: 3000,
+          easing: Easing.linear,
           useNativeDriver: true,
         }),
       ])
@@ -76,19 +88,18 @@ const DashboardCard = ({
   }, []);
 
   const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.95, useNativeDriver: true, friction: 4 }).start();
+    Animated.spring(scaleAnim, { toValue: 0.96, useNativeDriver: true }).start();
   };
 
   const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, friction: 4 }).start();
+    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
   };
 
   return (
     <Animatable.View
       animation="fadeInUp"
       delay={index * 100}
-      duration={600}
-      style={styles.cardWrapper}
+      style={styles.luxuryCardWrapper}
     >
       <Animated.View style={{ flex: 1, transform: [{ scale: scaleAnim }] }}>
         <TouchableOpacity
@@ -96,110 +107,35 @@ const DashboardCard = ({
           activeOpacity={0.9}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
-          style={{ flex: 1 }}
+          style={styles.luxuryCardInner}
         >
-          <Animated.View
-            style={[
-              styles.cardGlow,
-              {
-                opacity: glowAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, 0.3],
-                }),
-              },
-            ]}
-          />
-          <LinearGradient
-            colors={[gradient[0], gradient[1]]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.cardGradient}
-          >
-            <LinearGradient
-              colors={["rgba(255,255,255,0.2)", "transparent", "rgba(0,0,0,0.1)"]}
-              style={StyleSheet.absoluteFill}
-            />
+          {/* Card Base - Pale Beige from Mockup */}
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: "#3c2117ff" }]} />
 
-            <View style={styles.cardContent}>
-              <View style={styles.iconContainer}>
-                <LinearGradient
-                  colors={["rgba(255,255,255,0.4)", "rgba(255,255,255,0.1)"]}
-                  style={styles.iconGradient}
-                >
-                  {iconType === "ionicons" ? (
-                    <Ionicons name={icon as any} size={rf(28)} color={COLORS.white} />
-                  ) : (
-                    <MaterialCommunityIcons name={icon as any} size={rf(28)} color={COLORS.white} />
-                  )}
-                </LinearGradient>
-              </View>
+          <View style={styles.cardGoldBorder} />
 
-              <ResponsiveText
-                variant="body"
-                size="sm"
-                weight="bold"
-                color={COLORS.white}
-                align="center"
-                style={styles.cardTitle}
-                numberOfLines={2}
-              >
-                {title}
-              </ResponsiveText>
-
-              <View style={styles.cardBorder} />
+          <View style={styles.luxuryCardContent}>
+            <View style={styles.luxuryIconContainer}>
+              {iconType === "ionicons" ? (
+                <Ionicons name={icon as any} size={rf(26)} color={PREMIUM_GOLD} />
+              ) : (
+                <MaterialCommunityIcons name={icon as any} size={rf(26)} color={PREMIUM_GOLD} />
+              )}
             </View>
-          </LinearGradient>
+
+            <ResponsiveText
+              variant="body"
+              size="lg"
+              weight="bold"
+              color={PREMIUM_GOLD}
+              align="center"
+              style={styles.luxuryCardTitle}>
+              {title}
+            </ResponsiveText>
+          </View>
         </TouchableOpacity>
       </Animated.View>
     </Animatable.View>
-  );
-};
-
-// ─── Floating Orbs Background ───────────────────────────────────────────────
-const AnimatedBackground = () => {
-  const moveAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.timing(moveAnim, {
-        toValue: 1,
-        duration: 20000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
-  }, []);
-
-  const translateX = moveAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0, width * 0.2, 0],
-  });
-
-  const translateY = moveAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0, height * 0.1, 0],
-  });
-
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <Animated.View
-        style={[
-          styles.backgroundOrb1,
-          { transform: [{ translateX }, { translateY }] },
-        ]}
-      />
-      <Animated.View
-        style={[
-          styles.backgroundOrb2,
-          {
-            transform: [
-              { translateX: Animated.multiply(translateX, -1.2) },
-              { translateY: Animated.multiply(translateY, -0.8) }
-            ]
-          },
-        ]}
-      />
-    </View>
   );
 };
 
@@ -207,259 +143,271 @@ const AnimatedBackground = () => {
 export default function Dashboard() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { setChatOpen, user } = useGlobalStore();
+  const [rates, setRates] = useState<any>(null);
+  const [socialLinks, setSocialLinks] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        if (!user) return;
+        const response = await api.get(`/home?userId=${user.id || (user as any).id}`, { skipLoading: true } as any);
+        if (response.data.success) {
+          setRates(response.data.data.currentRates);
+        }
+
+        // Fetch social links/videos data exactly as requested
+        const videoRes = await api.get('/videos/active', { skipLoading: true } as any);
+        if (videoRes.data?.success && videoRes.data?.data?.length > 0) {
+          setSocialLinks(videoRes.data.data[0]);
+        }
+      } catch (e) {
+        console.log("Error fetching dashboard data", e);
+      }
+    };
+    fetchDashboardData();
+  }, [user]);
 
   const cards = [
-    { title: t("ourSchemes") || "Our Schemes", icon: "diamond-outline", gradient: ["#8a031a", "#b50d29"], onPress: () => router.push("/(app)/(tabs)/savings") },
-    { title: t("advanceBooking") || "Advance Booking", icon: "calendar-star", iconType: "material", gradient: ["#b8860b", "#daa520"], onPress: () => router.push("/(app)/gold_advance") },
-    { title: t("billPayments") || "Bill Payments", icon: "receipt-outline", gradient: ["#2b1a10", "#4a2e1b"], onPress: () => router.push("/(app)/bill_payment") },
-    { title: t("newCollections") || "New Collections", icon: "sparkles-outline", gradient: ["#0f2027", "#203a43"], onPress: () => router.push("/(app)/(tabs)/home") },
+    { title: t("ourSchemes") || "Schemes", icon: "diamond-outline", gradient: ["#4a1c40", "#8e2e5e"], onPress: () => router.push("/(app)/(tabs)/savings") },
+    { title: t("advanceBooking") || "Advance Booking", icon: "calendar-outline", gradient: ["#b8860b", "#daa520"], onPress: () => router.push("/(app)/gold_advance") },
+    { title: t("billPayments") || "Bill Payment", icon: "calculator-outline", gradient: ["#2b1a10", "#4a2e1b"], onPress: () => router.push("/(app)/bill_payment") },
     { title: t("rewards") || "Rewards", icon: "gift-outline", gradient: ["#0f342b", "#1a5145"], onPress: () => router.push("/(app)/(tabs)/rewards") },
+    { title: t("newCollections") || "New Collections", icon: "sparkles-outline", gradient: ["#0f2027", "#203a43"], onPress: () => router.push({ pathname: "/(app)/(tabs)/home", params: { autoTrigger: "collection", redirectOnClose: "dashboard" } }) },
     { title: t("luckyDraw") || "Lucky Draw", icon: "ticket-confirmation-outline", iconType: "material", gradient: ["#301934", "#4a235a"], onPress: () => router.push("/(app)/lucky_draw") },
-    { title: t("newSchemes") || "New Schemes", icon: "folder-open-outline", gradient: ["#85203b", "#e05877"], onPress: () => router.push("/(app)/(tabs)/home/schemes") },
+    { title: t("newSchemes") || "New Schemes", icon: "briefcase-outline", gradient: ["#85203b", "#e05877"], onPress: () => router.push("/(app)/(tabs)/home/schemes") },
     { title: t("savingsHome") || "Savings Home", icon: "home-outline", gradient: ["#023e8a", "#00b4d8"], onPress: () => router.push("/(app)/(tabs)/home") },
   ];
 
+  const handleWhatsApp = () => {
+    Linking.openURL(`whatsapp://send?phone=${theme.constants.whatsapp}`);
+  };
+
+  const handleCall = () => {
+    Linking.openURL(`tel:${theme.constants.mobile}`);
+  };
+
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
-      <AnimatedBackground />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      {/* Background set to whole container, but image restricted to header now */}
 
-      <SafeAreaView style={styles.safeContainer} edges={["top"]}>
-        <View style={styles.mainWrapper}>
-          <View style={styles.header}>
-            <Animatable.View animation="zoomIn" duration={1000} style={styles.logoContainer}>
-              <View style={styles.logoGlow} />
-              {logoImage ? (
-                <Image source={logoImage} style={styles.logo} resizeMode="contain" />
-              ) : (
-                <View style={styles.textLogoContainer}>
-                  <ResponsiveText variant="title" weight="bold" color="#DAA520" style={{ fontSize: rf(32) }}>DC</ResponsiveText>
-                  <ResponsiveText variant="body" color={theme.colors.textDark} style={{ fontSize: rf(10), letterSpacing: 4 }}>JEWELLERS</ResponsiveText>
-                </View>
-              )}
-            </Animatable.View>
+      <SafeAreaView style={styles.safeContainer} edges={["bottom"]}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={height < 750}
+        >
+          {/* Exactly 1:1 Header Curve Section */}
+          <View style={[styles.curveArea, { height: hp(35) }]}>
+            <LuxuryBackground />
+            <View style={styles.headerContentContainer}>
+              <Image
+                source={require("../../../assets/images/logo.png")}
+                style={{ width: rf(200), height: rf(80) }}
+                resizeMode="contain"
+              />
 
-            <Animatable.View animation="fadeInUp" delay={300} style={{ alignItems: 'center' }}>
-              <ResponsiveText variant="title" weight="bold" color={theme.colors.primary} style={styles.welcomeText}>
-                Welcome to DC Jewellers
-              </ResponsiveText>
-              <View style={styles.divider} />
-              <ResponsiveText variant="body" color="rgba(0,0,0,0.5)" align="center" style={styles.tagline}>
-                Where Luxury Meets Excellence
-              </ResponsiveText>
-            </Animatable.View>
+              <View style={styles.ratesRow}>
+                <ResponsiveText variant="body" size="lg" color={PREMIUM_GOLD}>Gold </ResponsiveText>
+                <ResponsiveText variant="body" size="lg" color={COLORS.white} weight="bold">₹ {rates?.gold_rate || "9,250"}/g</ResponsiveText>
+                <View style={styles.rateDivider} />
+                <ResponsiveText variant="body" size="lg" color={PREMIUM_GOLD}>Silver </ResponsiveText>
+                <ResponsiveText variant="body" size="lg" color={COLORS.white} weight="bold">₹ {rates?.silver_rate || "108"}/g</ResponsiveText>
+              </View>
+
+              <View style={styles.greetingBox}>
+                <ResponsiveText variant="title" size="sm" color={COLORS.white} align="center" style={styles.greetingText}>
+                  Welcome, {user?.name || user?.username || "Guest"}
+                </ResponsiveText>
+                <ResponsiveText variant="body" size="lg" color="#CCCCCC" align="center" style={styles.taglineText}>
+                  Luxury Meets Excellence
+                </ResponsiveText>
+              </View>
+            </View>
+
+            {/* Visual Curve defined by background image mostly, but keeping subtle overlay if requested */}
           </View>
 
-          <View style={styles.grid}>
+          {/* The compact 8-card grid follows right under the curve glow */}
+
+          {/* Compact 8-Card Grid */}
+          <View style={styles.compactGrid}>
             {cards.map((card, index) => (
-              <DashboardCard
+              <LuxuryCard
                 key={index}
                 index={index}
                 title={card.title}
                 icon={card.icon}
-                iconType={card.iconType as any}
-                gradient={card.gradient}
+                iconType={(card as any).iconType}
+                gradient={(card as any).gradient}
                 onPress={card.onPress}
               />
             ))}
           </View>
 
-          {/* Social & Support Footer */}
-          <View style={styles.footerContainer}>
-            <TouchableOpacity style={styles.footerIcon} activeOpacity={0.7}>
-              <Ionicons name="logo-facebook" size={rf(20)} color={theme.colors.primary} />
+          {/* Social Footer & Chat Support As Demanded */}
+          <View style={styles.compactFooter}>
+            <TouchableOpacity
+              style={styles.chatSupportBtn}
+              onPress={() => setChatOpen(true)}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={["#D8B07F", "#B8860B"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.chatBtnGradient}
+              >
+                <MaterialCommunityIcons name="chat-processing-outline" size={18} color="#251A18" />
+                <ResponsiveText variant="body" size="lg" weight="bold" color="#251A18" style={{ marginLeft: 8 }}>
+                  Chat Support
+                </ResponsiveText>
+              </LinearGradient>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.footerIcon} activeOpacity={0.7}>
-              <Ionicons name="logo-instagram" size={rf(20)} color={theme.colors.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.footerIcon} activeOpacity={0.7}>
-              <Ionicons name="logo-youtube" size={rf(20)} color={theme.colors.primary} />
-            </TouchableOpacity>
-            <View style={styles.footerDivider} />
-            <TouchableOpacity style={styles.supportButton} activeOpacity={0.7}>
-              <Ionicons name="headset-outline" size={rf(18)} color={COLORS.white} />
-              <Text style={styles.supportText}>Support</Text>
-            </TouchableOpacity>
+
+            <View style={styles.showroomSocials}>
+              {/* Updated social badges for higher contrast and proper show */}
+              <TouchableOpacity onPress={() => Linking.openURL(socialLinks?.intsa_url || "https://instagram.com")} style={styles.socialIconBadge}>
+                <Ionicons name="logo-instagram" size={rf(22)} color="#DAA520" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => Linking.openURL(socialLinks?.facebook_url || "https://facebook.com")} style={styles.socialIconBadge}>
+                <Ionicons name="logo-facebook" size={rf(22)} color="#DAA520" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => Linking.openURL(socialLinks?.twitter_url || "https://youtube.com")} style={styles.socialIconBadge}>
+                <Ionicons name="logo-youtube" size={rf(22)} color="#DAA520" />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F2E6D2" },
+  container: { flex: 1, backgroundColor: theme.colors.quaternary },
   safeContainer: { flex: 1 },
-  mainWrapper: {
-    flex: 1,
-    justifyContent: "center",
-    paddingBottom: hp(2)
-  },
-  backgroundOrb1: {
-    position: "absolute",
-    width: width * 0.9,
-    height: width * 0.9,
-    borderRadius: width * 0.45,
-    backgroundColor: "rgba(133,1,17,0.06)",
-    top: -hp(10),
-    left: -wp(20)
-  },
-  backgroundOrb2: {
-    position: "absolute",
-    width: width * 0.7,
-    height: width * 0.7,
-    borderRadius: width * 0.35,
-    backgroundColor: "rgba(218,165,32,0.04)",
-    bottom: hp(10),
-    right: -wp(10)
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: hp(3),
-    paddingHorizontal: wp(5)
-  },
-  logoContainer: {
-    width: wp(40),
-    height: wp(30),
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: hp(1)
-  },
-  logoGlow: {
-    position: "absolute",
-    width: wp(30),
-    height: wp(30),
-    backgroundColor: "#DAA520",
-    opacity: 0.15,
-    borderRadius: wp(15),
-    transform: [{ scale: 1.4 }]
-  },
-  logo: {
+  scrollContent: { paddingBottom: hp(5) },
+  bgImage: { ...StyleSheet.absoluteFillObject, width, height },
+
+  // Exact Structure Curve
+  curveArea: {
+    height: hp(34),
     width: "100%",
-    height: "100%",
-    // tintColor: theme.colors.primary, // Make logo match brand primary on light background
+    position: "relative",
+    overflow: "hidden",
   },
-  textLogoContainer: { alignItems: "center" },
-  welcomeText: {
-    textTransform: "uppercase",
+  headerContentContainer: {
+    zIndex: 10,
+    alignItems: "center",
+    paddingTop: hp(2),
+  },
+  headerCrown: {
+    marginBottom: hp(0.5),
+  },
+  showroomBrand: {
+    letterSpacing: 4,
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+  },
+  showroomSubtitle: {
     letterSpacing: 2,
-    textAlign: "center",
-    fontSize: rf(16)
+    marginTop: 2,
+    marginBottom: hp(2),
   },
-  divider: {
-    width: wp(12),
-    height: 2,
-    backgroundColor: theme.colors.secondary,
-    alignSelf: "center",
+  ratesRow: {
+    flexDirection: "row",
+    alignItems: "center",
     marginVertical: hp(1),
-    borderRadius: 1
   },
-  tagline: {
-    fontSize: rf(9),
+  rateDivider: {
+    width: 1,
+    height: 12,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    marginHorizontal: 10,
+  },
+  greetingBox: {
+    marginTop: hp(2.5),
+  },
+  greetingText: {
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    letterSpacing: 0.5,
+  },
+  taglineText: {
+    marginTop: 4,
     letterSpacing: 1.5,
-    textTransform: 'uppercase'
   },
-  grid: {
+
+  // Grid
+  compactGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "center",
-    columnGap: wp(2),
-    rowGap: hp(1.5),
-    paddingHorizontal: wp(5)
+    justifyContent: "space-between",
+    paddingHorizontal: wp(6),
   },
-  cardWrapper: {
-    width: wp(28),
-    height: hp(14.5), // Reduce height since width is reduced
+  luxuryCardWrapper: {
+    width: wp(42),
+    height: hp(8.5),
+    marginBottom: hp(2),
+    ...shadowUtils.SHADOW_PRESETS.small,
   },
-  cardGlow: {
-    position: "absolute",
-    top: -2,
-    left: -2,
-    right: -2,
-    bottom: -2,
-    borderRadius: 22,
-    backgroundColor: "#DAA520",
-    zIndex: -1
-  },
-  cardGradient: {
+  luxuryCardInner: {
     flex: 1,
-    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 14,
     overflow: "hidden",
+  },
+  cardGoldBorder: {
+    ...StyleSheet.absoluteFillObject,
     borderWidth: 1,
-    borderColor: "rgba(255,215,0,0.3)",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5
+    borderColor: "rgba(218, 165, 32, 0.3)", // Subtle gold border
+    borderRadius: 14,
   },
-  cardContent: {
-    flex: 1,
-    justifyContent: "center",
+  luxuryCardContent: {
     alignItems: "center",
-    padding: wp(1.5)
   },
-  iconContainer: {
-    width: rf(38),
-    height: rf(38),
-    borderRadius: rf(19),
-    marginBottom: hp(0.5),
-    justifyContent: "center",
-    alignItems: "center"
+  luxuryIconContainer: {
+    marginBottom: 4,
   },
-  iconGradient: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: rf(19)
-  },
-  cardTitle: {
-    textTransform: "uppercase",
+  luxuryCardTitle: {
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+    letterSpacing: 0.5,
     fontSize: rf(8.5),
-    letterSpacing: 0.3,
-    marginTop: hp(0.5),
-    lineHeight: rf(11),
-    textAlign: "center"
   },
-  cardBorder: {
-    marginTop: hp(0.5),
-    width: wp(5),
-    height: 1.5,
-    backgroundColor: "rgba(255,215,0,0.4)",
-    borderRadius: 1
+
+  // Socials & Chat
+  compactFooter: {
+    alignItems: "center",
+    marginTop: hp(4),
+    marginBottom: hp(2),
   },
-  footerContainer: {
+  chatSupportBtn: {
+    width: wp(45),
+    height: hp(4.5),
+    borderRadius: 25,
+    overflow: "hidden",
+    marginBottom: hp(1.5),
+    ...shadowUtils.SHADOW_PRESETS.small,
+  },
+  chatBtnGradient: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: hp(4),
   },
-  footerIcon: {
-    backgroundColor: "rgba(218,165,32,0.1)",
-    padding: wp(2.5),
-    borderRadius: 20,
-    marginHorizontal: wp(2),
-  },
-  footerDivider: {
-    width: 1,
-    height: hp(3),
-    backgroundColor: "rgba(218,165,32,0.3)",
-    marginHorizontal: wp(3),
-  },
-  supportButton: {
+  showroomSocials: {
     flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: wp(4),
-    paddingVertical: hp(1.2),
-    borderRadius: 20,
+    justifyContent: "center",
+    marginTop: hp(1.5),
   },
-  supportText: {
-    color: COLORS.white,
-    fontSize: rf(12),
-    fontWeight: "bold",
-    marginLeft: wp(2),
+  socialIconBadge: {
+    marginHorizontal: 12,
+    backgroundColor: "#251A18",
+    padding: 10,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(218,165,32,0.4)",
+    ...shadowUtils.SHADOW_PRESETS.small,
   },
 });

@@ -73,7 +73,7 @@ export default function GoldAdvanceScreen() {
 
   const handleEnquire = (option: (typeof advanceOptions)[0]) => {
     router.push({
-      pathname: "/(app)/(tabs)/joinadvancegold",
+      pathname: "/(app)/(tabs)/joinAdvGold",
       params: { advancePercent: option.percentage.replace("%", "") },
     });
   };

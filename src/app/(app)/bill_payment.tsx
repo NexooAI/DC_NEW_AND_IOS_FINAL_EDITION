@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, FlatList, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -12,70 +12,96 @@ import { responsiveUtils } from '@/utils/responsiveUtils';
 const { wp, hp, rf } = responsiveUtils;
 const QUATERNARY_COLOR = theme.colors.quaternary || "#F2E6D2";
 
-// Mock Data Type
-interface BillDetails {
-  name: string;
-  mobile: string;
+// Mock Data Types
+interface BillItem {
+  id: string;
+  type: string;
   billNumber: string;
   amount: number;
+  date: string;
+  status: 'pending' | 'paid';
 }
+
+const PENDING_BILLS: BillItem[] = [
+  { id: '1', type: 'Jewelry Purchase', billNumber: 'INV-2024-089', amount: 15400, date: '20 Oct 2024', status: 'pending' },
+  { id: '2', type: 'Custom Order', billNumber: 'INV-2024-102', amount: 45000, date: '15 Oct 2024', status: 'pending' },
+];
+
+const COMPLETED_BILLS: BillItem[] = [
+  { id: '3', type: 'Gold Scheme Pay', billNumber: 'SCH-9921', amount: 5000, date: '01 Oct 2024', status: 'paid' },
+  { id: '4', type: 'Repair Charges', billNumber: 'REP-0012', amount: 1200, date: '25 Sep 2024', status: 'paid' },
+  { id: '5', type: 'Old Gold Exchange', billNumber: 'EXC-4410', amount: 22000, date: '10 Sep 2024', status: 'paid' },
+];
 
 export default function BillPayment() {
   const router = useRouter();
-
-  // State
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [billData, setBillData] = useState<BillDetails | null>(null);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
   const [maintenanceModalVisible, setMaintenanceModalVisible] = useState(false);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedBill, setSelectedBill] = useState<BillItem | null>(null);
 
-  const handleSearch = () => {
-    if (!searchQuery.trim()) {
-      setErrorMsg('Please enter a valid Bill Number.');
-      setBillData(null);
-      return;
-    }
-
-    setIsSearching(true);
-    setErrorMsg('');
-    setBillData(null);
-
-    // Simulate API fetch delay
-    setTimeout(() => {
-      setIsSearching(false);
-      // Mock result (in reality, API handles this)
-      if (searchQuery.trim().length > 3) {
-        setBillData({
-          name: "Ramesh Kumar",
-          mobile: "+91 9876543210",
-          billNumber: searchQuery.trim().toUpperCase(),
-          amount: 12500,
-        });
-      } else {
-        setErrorMsg('Bill not found. Please check the number.');
-      }
-    }, 1200);
-  };
-
-  const handlePay = () => {
+  const handlePay = (bill: BillItem) => {
+    setSelectedBill(bill);
     setMaintenanceModalVisible(true);
   };
 
-  const handleCloseMaintenanceModal = () => {
-    setMaintenanceModalVisible(false);
+  const handleCardPress = (bill: BillItem) => {
+    setSelectedBill(bill);
+    setDetailModalVisible(true);
   };
+
+  const renderBillItem = ({ item }: { item: BillItem }) => (
+    <TouchableOpacity 
+      style={styles.billCard} 
+      activeOpacity={0.7}
+      onPress={() => handleCardPress(item)}
+    >
+      <View style={styles.billIconContainer}>
+        <View style={[styles.iconCircle, { backgroundColor: item.status === 'pending' ? 'rgba(133,1,17,0.1)' : 'rgba(56,142,60,0.1)' }]}>
+          <Ionicons 
+            name={item.status === 'pending' ? "receipt-outline" : "checkmark-done-circle-outline"} 
+            size={rf(18)} 
+            color={item.status === 'pending' ? theme.colors.primary : "#388E3C"} 
+          />
+        </View>
+      </View>
+      
+      <View style={styles.billInfo}>
+        <Text style={styles.billType}>{item.type}</Text>
+        <Text style={styles.billId}>{item.billNumber}</Text>
+        <Text style={styles.billDate}>{item.date}</Text>
+      </View>
+
+      <View style={styles.billAction}>
+        <Text style={[styles.billAmount, { color: item.status === 'pending' ? theme.colors.primary : "#388E3C" }]}>
+          ₹{item.amount.toLocaleString('en-IN')}
+        </Text>
+        {item.status === 'pending' ? (
+          <TouchableOpacity 
+            style={styles.paySmallButton} 
+            onPress={(e) => {
+              e.stopPropagation();
+              handlePay(item);
+            }}
+          >
+            <Text style={styles.paySmallButtonText}>Pay Now</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.paidBadge}>
+            <Text style={styles.paidBadgeText}>PAID</Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Background */}
       <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
-      <LinearGradient
-        colors={["rgba(133,1,17,0.05)", "transparent"]}
-        style={StyleSheet.absoluteFill}
-      />
+      <LinearGradient colors={["rgba(133,1,17,0.05)", "transparent"]} style={StyleSheet.absoluteFill} />
 
-      {/* Custom Header */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
@@ -86,132 +112,119 @@ export default function BillPayment() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Title Section */}
-        <View style={styles.titleContainer}>
-          <ResponsiveText variant="title" weight="bold" color={theme.colors.primary} align="center" style={styles.mainTitle}>
-            Fast & Secure Payments
-          </ResponsiveText>
-          <ResponsiveText variant="body" color="rgba(0,0,0,0.6)" align="center" style={styles.subtitle}>
-            Enter your bill number to fetch details
-          </ResponsiveText>
-          <View style={styles.decorativeLine} />
+      {/* Tab Switcher */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'pending' && styles.activeTab]} 
+          onPress={() => setActiveTab('pending')}
+        >
+          <Text style={[styles.tabText, activeTab === 'pending' && styles.activeTabText]}>New Bills</Text>
+          {activeTab === 'pending' && <View style={styles.activeIndicator} />}
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'history' && styles.activeTab]} 
+          onPress={() => setActiveTab('history')}
+        >
+          <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>Completed</Text>
+          {activeTab === 'history' && <View style={styles.activeIndicator} />}
+        </TouchableOpacity>
+      </View>
+
+      <FlatList
+        data={activeTab === 'pending' ? PENDING_BILLS : COMPLETED_BILLS}
+        renderItem={renderBillItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name={activeTab === 'pending' ? "happy-outline" : "receipt-outline"} size={rf(50)} color="rgba(0,0,0,0.1)" />
+            <Text style={styles.emptyText}>
+              {activeTab === 'pending' ? "All caught up! No pending bills." : "No payment history found."}
+            </Text>
+          </View>
+        }
+      />
+
+      {/* Bill Detail Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={detailModalVisible}
+        onRequestClose={() => setDetailModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={StyleSheet.absoluteFill} 
+            activeOpacity={1} 
+            onPress={() => setDetailModalVisible(false)} 
+          />
+          <View style={styles.detailModalContent}>
+            <View style={styles.modalHandle} />
+            
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Bill Details</Text>
+              <TouchableOpacity onPress={() => setDetailModalVisible(false)} style={styles.closeButton}>
+                <Ionicons name="close-circle" size={32} color={theme.colors.primary} />
+              </TouchableOpacity>
+            </View>
+
+            {selectedBill && (
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: hp(4) }}>
+                <View style={styles.detailCard}>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Transaction Type</Text>
+                    <Text style={styles.detailValue}>{selectedBill.type}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Bill Number</Text>
+                    <Text style={styles.detailValue}>{selectedBill.billNumber}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Billing Date</Text>
+                    <Text style={styles.detailValue}>{selectedBill.date}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Payment Status</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: selectedBill.status === 'pending' ? 'rgba(133,1,17,0.1)' : 'rgba(56,142,60,0.1)' }]}>
+                      <Text style={[styles.statusText, { color: selectedBill.status === 'pending' ? theme.colors.primary : "#388E3C" }]}>
+                        {selectedBill.status.toUpperCase()}
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.detailDivider} />
+                  
+                  <View style={styles.detailRow}>
+                    <Text style={styles.totalLabel}>Total Payable</Text>
+                    <Text style={styles.totalValue}>₹{selectedBill.amount.toLocaleString('en-IN')}</Text>
+                  </View>
+                </View>
+
+                {selectedBill.status === 'pending' && (
+                  <TouchableOpacity 
+                    style={styles.modalPayButton}
+                    onPress={() => {
+                      setDetailModalVisible(false);
+                      setMaintenanceModalVisible(true);
+                    }}
+                  >
+                    <LinearGradient
+                      colors={[theme.colors.primary, "#b50d29"]}
+                      style={styles.modalPayGradient}
+                    >
+                      <Text style={styles.modalPayText}>CONTINUE TO PAYMENT</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
+              </ScrollView>
+            )}
+          </View>
         </View>
-
-        {/* Search Input Card */}
-        <View style={styles.cardContainer}>
-          <View style={styles.cardHeader}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="search-outline" size={rf(18)} color={theme.colors.primary} />
-            </View>
-            <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.primary}>
-              Find Your Bill
-            </ResponsiveText>
-          </View>
-          
-          <View style={styles.searchRow}>
-            <View style={styles.searchInputWrapper}>
-              <Ionicons name="receipt-outline" size={rf(18)} color="rgba(0,0,0,0.4)" style={styles.inputIcon} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Ex: INV-00123"
-                placeholderTextColor="rgba(0,0,0,0.4)"
-                value={searchQuery}
-                onChangeText={(val) => {
-                  setSearchQuery(val);
-                  if (errorMsg) setErrorMsg('');
-                }}
-                autoCapitalize="characters"
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
-                  <Ionicons name="close-circle" size={rf(18)} color="rgba(0,0,0,0.4)" />
-                </TouchableOpacity>
-              )}
-            </View>
-            <TouchableOpacity 
-              style={[styles.searchButton, !searchQuery.trim() && styles.searchButtonDisabled]} 
-              onPress={handleSearch}
-              disabled={!searchQuery.trim() || isSearching}
-            >
-              <Text style={styles.searchButtonText}>Retrieve</Text>
-            </TouchableOpacity>
-          </View>
-
-          {errorMsg ? (
-            <ResponsiveText variant="body" size="xs" color="#D32F2F" style={{ marginTop: hp(1) }}>
-              {errorMsg}
-            </ResponsiveText>
-          ) : null}
-
-          {isSearching && (
-            <View style={styles.loaderContainer}>
-              <ActivityIndicator size="small" color={theme.colors.primary} />
-              <ResponsiveText variant="body" size="sm" color="rgba(0,0,0,0.6)" style={{ marginLeft: wp(2) }}>
-                Fetching Details...
-              </ResponsiveText>
-            </View>
-          )}
-        </View>
-
-        {/* Fetched Bill Data Card */}
-        {billData && !isSearching && (
-          <View style={styles.resultsCard}>
-            <LinearGradient
-              colors={["rgba(255,255,255,0.8)", "rgba(255,255,255,1)"]}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={styles.resultsHeader}>
-              <Ionicons name="checkmark-circle" size={rf(20)} color="#388E3C" />
-              <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.textDark} style={{ marginLeft: wp(2) }}>
-                Bill Details Found
-              </ResponsiveText>
-            </View>
-
-            <View style={styles.dataGrid}>
-              <View style={styles.dataRow}>
-                <Text style={styles.dataLabel}>Customer Name</Text>
-                <Text style={styles.dataValue}>{billData.name}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.dataRow}>
-                <Text style={styles.dataLabel}>Mobile Number</Text>
-                <Text style={styles.dataValue}>{billData.mobile}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.dataRow}>
-                <Text style={styles.dataLabel}>Bill Number</Text>
-                <Text style={styles.dataValue}>{billData.billNumber}</Text>
-              </View>
-              
-              {/* Highlighted Amount Box */}
-              <View style={styles.amountBox}>
-                <Text style={styles.amountLabel}>Total Payable Amount</Text>
-                <Text style={styles.amountValue}>
-                  ₹ {billData.amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                </Text>
-              </View>
-            </View>
-
-            {/* Pay Button */}
-            <TouchableOpacity style={styles.payButton} onPress={handlePay} activeOpacity={0.9}>
-              <LinearGradient
-                colors={["#DAA520", "#b8860b"]}
-                style={styles.payButtonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Ionicons name="card" size={rf(18)} color={COLORS.white} style={styles.buttonIcon} />
-                <Text style={styles.payButtonText}>PAY AMOUNT</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        )}
-
-      </ScrollView>
+      </Modal>
 
       {/* Maintenance Modal */}
-      <Modal visible={maintenanceModalVisible} animationType="fade" transparent onRequestClose={handleCloseMaintenanceModal}>
+      <Modal visible={maintenanceModalVisible} animationType="fade" transparent onRequestClose={() => setMaintenanceModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <LinearGradient colors={['#FF6B6B', '#D32F2F']} style={styles.modalHeader}>
@@ -219,12 +232,12 @@ export default function BillPayment() {
             </LinearGradient>
             <View style={styles.modalBody}>
               <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.textDark} align="center" style={{ marginBottom: hp(1) }}>
-                Server Processing
+                Processing Bill
               </ResponsiveText>
               <Text style={styles.modalMessage}>
-                Payment processing endpoint is under development. Soon, this will debit ₹{billData?.amount?.toLocaleString('en-IN')} and reflect on the server.
+                Payment processing for {selectedBill?.billNumber} (₹{selectedBill?.amount?.toLocaleString('en-IN')}) is under development.
               </Text>
-              <TouchableOpacity style={styles.modalButton} onPress={handleCloseMaintenanceModal}>
+              <TouchableOpacity style={styles.modalButton} onPress={() => setMaintenanceModalVisible(false)}>
                 <Text style={styles.modalButtonText}>GOT IT</Text>
               </TouchableOpacity>
             </View>
@@ -236,219 +249,261 @@ export default function BillPayment() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: wp(5),
-    paddingTop: hp(1),
-    paddingBottom: hp(1),
+    paddingVertical: hp(1.5),
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  content: { 
-    padding: wp(4), 
-    paddingTop: 0,
-    paddingBottom: hp(8) 
-  },
-  titleContainer: {
-    alignItems: "center",
+  backButton: { width: 40, height: 40, justifyContent: "center", alignItems: "center" },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.03)',
+    marginHorizontal: wp(5),
+    borderRadius: 12,
+    marginTop: hp(1),
     marginBottom: hp(2),
+    overflow: 'hidden',
   },
-  mainTitle: {
-    fontSize: rf(24),
-    marginBottom: hp(0.5),
+  tab: {
+    flex: 1,
+    paddingVertical: hp(1.5),
+    alignItems: 'center',
+    position: 'relative'
   },
-  subtitle: {
-    fontSize: rf(12),
-    marginBottom: hp(2),
-  },
-  decorativeLine: {
-    width: wp(15),
-    height: 3,
-    backgroundColor: "#DAA520",
-    borderRadius: 2,
-  },
-  cardContainer: { 
-    backgroundColor: COLORS.white, 
-    borderRadius: 20, 
-    padding: wp(4), 
-    marginBottom: hp(2),
-    borderWidth: 1,
-    borderColor: "rgba(133,1,17,0.1)", 
-    elevation: 4,
+  activeTab: {
+    backgroundColor: COLORS.white,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  cardHeader: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: hp(2) 
-  },
-  iconCircle: {
-    width: wp(8),
-    height: wp(8),
-    borderRadius: wp(4),
-    backgroundColor: "rgba(133,1,17,0.1)", 
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: wp(2),
-  },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  searchInputWrapper: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: "#f9f9f9",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.1)",
-    borderRadius: 12,
-    paddingHorizontal: wp(3),
-    height: hp(6),
-    marginRight: wp(2),
-  },
-  inputIcon: {
-    marginRight: wp(2),
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: rf(14),
-    color: theme.colors.textDark,
-    fontWeight: '600',
-  },
-  clearButton: {
-    padding: wp(1),
-  },
-  searchButton: {
-    backgroundColor: theme.colors.primary,
-    height: hp(6),
-    paddingHorizontal: wp(5),
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 12,
-  },
-  searchButtonDisabled: {
-    backgroundColor: "rgba(133,1,17,0.5)",
-  },
-  searchButtonText: {
-    color: COLORS.white,
-    fontWeight: 'bold',
-    fontSize: rf(12),
-  },
-  loaderContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: hp(2),
-  },
-  resultsCard: {
-    borderRadius: 20,
-    marginTop: hp(1),
-    padding: wp(4),
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: "rgba(218,165,32,0.3)", // Gold subtle border
-    elevation: 8,
-    shadowColor: "#DAA520",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-  },
-  resultsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: hp(2),
-    paddingHorizontal: wp(2),
-  },
-  dataGrid: {
-    backgroundColor: "rgba(0,0,0,0.02)",
-    borderRadius: 12,
-    padding: wp(4),
-    marginBottom: hp(2),
-  },
-  dataRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: hp(0.8),
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "rgba(0,0,0,0.05)",
-    marginVertical: hp(0.5),
-  },
-  dataLabel: {
-    fontSize: rf(13),
-    color: "rgba(0,0,0,0.6)",
-    fontWeight: '500',
-  },
-  dataValue: {
-    fontSize: rf(14),
-    color: theme.colors.textDark,
-    fontWeight: 'bold',
-  },
-  amountBox: {
-    marginTop: hp(2),
-    backgroundColor: "rgba(133,1,17,0.05)",
-    borderRadius: 8,
-    padding: wp(3),
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: "rgba(133,1,17,0.1)",
-  },
-  amountLabel: {
-    fontSize: rf(12),
-    color: theme.colors.primary,
-    marginBottom: hp(0.5),
-    fontWeight: '600',
-  },
-  amountValue: {
-    fontSize: rf(22),
-    color: theme.colors.primary,
-    fontWeight: 'bold',
-  },
-  payButton: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
     shadowRadius: 4,
+    elevation: 3,
   },
-  payButtonGradient: {
-    paddingVertical: hp(2),
-    alignItems: 'center',
+  tabText: {
+    fontSize: rf(13),
+    color: 'rgba(0,0,0,0.5)',
+    fontWeight: '600'
+  },
+  activeTabText: {
+    color: theme.colors.primary,
+  },
+  activeIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    width: '30%',
+    height: 3,
+    backgroundColor: theme.colors.primary,
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3
+  },
+  listContent: {
+    paddingHorizontal: wp(5),
+    paddingBottom: hp(5),
+  },
+  loadingItem: {
+    padding: wp(4),
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    marginBottom: hp(1.5),
+  },
+  billCard: {
     flexDirection: 'row',
-    justifyContent: 'center'
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: wp(4),
+    marginBottom: hp(1.5),
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+      },
+      android: { elevation: 2 }
+    })
   },
-  buttonIcon: {
-    marginRight: wp(2),
+  billIconContainer: { marginRight: wp(3) },
+  iconCircle: {
+    width: wp(10),
+    height: wp(10),
+    borderRadius: wp(5),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  payButtonText: {
-    color: COLORS.white,
+  billInfo: { flex: 1 },
+  billType: {
     fontSize: rf(14),
-    fontWeight: 'bold',
-    letterSpacing: 2,
+    fontWeight: '700',
+    color: theme.colors.textDark,
+  },
+  billId: {
+    fontSize: rf(12),
+    color: 'rgba(0,0,0,0.6)',
+    marginTop: 2
+  },
+  billDate: {
+    fontSize: rf(10),
+    color: 'rgba(0,0,0,0.4)',
+    marginTop: 2
+  },
+  billAction: { alignItems: 'flex-end' },
+  billAmount: {
+    fontSize: rf(15),
+    fontWeight: '800',
+    marginBottom: hp(1)
+  },
+  paySmallButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: wp(3),
+    paddingVertical: hp(0.6),
+    borderRadius: 8,
+  },
+  paySmallButtonText: {
+    color: COLORS.white,
+    fontSize: rf(10),
+    fontWeight: 'bold'
+  },
+  paidBadge: {
+    backgroundColor: 'rgba(56,142,60,0.1)',
+    paddingHorizontal: wp(2.5),
+    paddingVertical: hp(0.4),
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(56,142,60,0.2)'
+  },
+  paidBadgeText: {
+    color: '#388E3C',
+    fontSize: rf(9),
+    fontWeight: '900'
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: hp(10)
+  },
+  emptyText: {
+    fontSize: rf(13),
+    color: 'rgba(0,0,0,0.3)',
+    marginTop: hp(2),
+    textAlign: 'center'
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'flex-end',
+  },
+  detailModalContent: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingHorizontal: wp(6),
+    paddingTop: hp(1.5),
+    paddingBottom: hp(2),
+    maxHeight: '85%',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 20,
+  },
+  modalHandle: {
+    width: wp(12),
+    height: 5,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginBottom: hp(2),
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: hp(2),
+  },
+  modalTitle: {
+    fontSize: rf(22),
+    fontWeight: '800',
+    color: theme.colors.primary,
+    letterSpacing: 0.5,
+  },
+  closeButton: {
+    padding: 2,
+  },
+  detailCard: {
+    backgroundColor: '#FBFBFB',
+    borderRadius: 20,
+    padding: wp(5),
+    marginBottom: hp(2),
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: hp(2),
+  },
+  detailLabel: {
+    fontSize: rf(14),
+    color: '#757575',
+    fontWeight: '500',
+  },
+  detailValue: {
+    fontSize: rf(15),
+    fontWeight: '700',
+    color: '#212121',
+  },
+  statusBadge: {
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(0.6),
+    borderRadius: 15,
+  },
+  statusText: {
+    fontSize: rf(11),
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  detailDivider: {
+    height: 1,
+    backgroundColor: '#EEEEEE',
+    marginVertical: hp(1.5),
+  },
+  totalLabel: {
+    fontSize: rf(16),
+    fontWeight: '800',
+    color: '#424242',
+  },
+  totalValue: {
+    fontSize: rf(22),
+    fontWeight: '900',
+    color: theme.colors.primary,
+  },
+  modalPayButton: {
+    borderRadius: 15,
+    overflow: 'hidden',
+    marginTop: hp(1),
+    ...Platform.select({
+      ios: {
+        shadowColor: theme.colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+      },
+      android: { elevation: 5 }
+    })
+  },
+  modalPayGradient: {
+    paddingVertical: hp(2.2),
+    alignItems: 'center',
+  },
+  modalPayText: {
+    color: COLORS.white,
+    fontSize: rf(16),
+    fontWeight: '800',
+    letterSpacing: 1.5,
   },
   modalContent: {
     backgroundColor: COLORS.white,
@@ -456,11 +511,9 @@ const styles = StyleSheet.create({
     width: '80%',
     overflow: 'hidden',
     elevation: 15,
-  },
-  modalHeader: {
-    padding: wp(6),
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: 'auto',
+    marginTop: 'auto',
   },
   modalBody: {
     padding: wp(6),

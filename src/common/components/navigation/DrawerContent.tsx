@@ -79,7 +79,7 @@ const DrawerMenuItem = ({
         activeOpacity={0.7}
       >
         <View style={[
-          styles.iconContainer, 
+          styles.iconContainer,
           isLogout && styles.logoutIconContainer,
           isActive && styles.activeIconContainer,
           // Add subtle background tint based on icon color for non-active items
@@ -101,12 +101,12 @@ const DrawerMenuItem = ({
         </Text>
         {!isLogout && (
           isActive ? (
-             <View style={styles.activeIndicator} />
+            <View style={styles.activeIndicator} />
           ) : (
-            <Ionicons 
-              name="chevron-forward" 
-              size={14} 
-              color={theme.colors.textLightGrey} 
+            <Ionicons
+              name="chevron-forward"
+              size={14}
+              color={theme.colors.textLightGrey}
               style={styles.chevron}
             />
           )
@@ -124,8 +124,8 @@ const SectionHeader = ({ title }: { title: string }) => (
 );
 
 const SocialIcon = ({ name, url, color }: { name: any, url: string, color: string }) => (
-  <TouchableOpacity 
-    style={styles.socialIconBtn} 
+  <TouchableOpacity
+    style={styles.socialIconBtn}
     onPress={() => Linking.openURL(url).catch(err => console.error("Couldn't load page", err))}
   >
     <View style={[styles.socialIconContainer, { backgroundColor: color + '15' }]}>
@@ -237,25 +237,25 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
   }, [logout, router, isNavigating, t]);
 
   const socialLinks = [
-    { 
-      name: "whatsapp", 
-      url: `https://wa.me/${theme.constants.whatsapp?.replace(/\s/g, "") || theme.constants.mobile?.replace(/\s/g, "")}`, 
-      color: "#25D366" 
+    {
+      name: "whatsapp",
+      url: `https://wa.me/${theme.constants.whatsapp?.replace(/\s/g, "") || theme.constants.mobile?.replace(/\s/g, "")}`,
+      color: "#25D366"
     },
-    { 
-      name: "youtube", 
-      url: theme.youtubeUrl || "https://youtube.com", 
-      color: "#FF0000" 
+    {
+      name: "youtube",
+      url: theme.youtubeUrl || "https://youtube.com",
+      color: "#FF0000"
     },
-    { 
-      name: "globe", 
-      url: theme.constants.website, 
-      color: "#4285F4" 
+    {
+      name: "globe",
+      url: theme.constants.website,
+      color: "#4285F4"
     },
-    { 
-      name: "phone-alt", 
-      url: `tel:${theme.constants.mobile}`, 
-      color: theme.colors.primary 
+    {
+      name: "phone-alt",
+      url: `tel:${theme.constants.mobile}`,
+      color: theme.colors.primary
     },
   ];
 
@@ -263,12 +263,12 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
     <View style={styles.container}>
       {/* Premium Header */}
       <View style={styles.headerContainer}>
-         <LinearGradient
-            colors={[theme.colors.primary, '#5a000b']}
-            style={styles.headerGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
+        <LinearGradient
+          colors={[theme.colors.quaternary, theme.colors.primary]}
+          style={styles.headerGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
           <View style={styles.userInfoContainer}>
             <View style={styles.avatarRow}>
               <View style={styles.avatarContainer}>
@@ -277,8 +277,8 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                     source={{ uri: getFullImageUrl(user.profileImage) }}
                     style={styles.avatar}
                     onError={(e) => {
-                        console.log("Profile image load error:", e.nativeEvent.error);
-                        setImageError(true);
+                      console.log("Profile image load error:", e.nativeEvent.error);
+                      setImageError(true);
                     }}
                   />
                 ) : (
@@ -289,32 +289,32 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                   </View>
                 )}
               </View>
-              
+              <View style={styles.userDetails}>
+                <Text style={styles.greetingText}>{getGreeting()},</Text>
+                <Text style={styles.userName} numberOfLines={1}>
+                  {user?.name || "Guest User"}
+                </Text>
+                {user?.email && (
+                  <View style={styles.emailContainer}>
+                    <Ionicons name="mail-outline" size={10} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
+                    <Text style={styles.userEmail} numberOfLines={1}>
+                      {user.email}
+                    </Text>
+                  </View>
+                )}
+              </View>
               {/* Rewards Badge - Gold on Red */}
-              {/* {(user?.rewards !== undefined) && (
-                <View style={styles.rewardsBadge}>
-                  <Ionicons name="trophy" size={10} color={theme.colors.primary} style={{marginRight: 4}} />
-                  <Text style={styles.rewardsText}>{user.rewards} Credits</Text>
-                </View>
-              )} */}
+
             </View>
 
-            <View style={styles.userDetails}>
-              <Text style={styles.greetingText}>{getGreeting()},</Text>
-              <Text style={styles.userName} numberOfLines={1}>
-                {user?.name || "Guest User"}
-              </Text>
-              {user?.email && (
-                <View style={styles.emailContainer}>
-                  <Ionicons name="mail-outline" size={10} color="rgba(255,255,255,0.7)" style={{marginRight: 4}}/>
-                  <Text style={styles.userEmail} numberOfLines={1}>
-                    {user.email}
-                  </Text>
-                </View>
-              )}
-            </View>
+            {/* {(user?.rewards !== undefined) && (
+              <View style={styles.rewardsBadge}>
+                <Ionicons name="trophy" size={10} color={theme.colors.primary} style={{ marginRight: 4 }} />
+                <Text style={styles.rewardsText}>{user.rewards} Credits</Text>
+              </View>
+            )} */}
           </View>
-          
+
           {/* Decorative Elements */}
           <View style={styles.decorativeCircle} />
           <View style={styles.decorativeCircleSmall} />
@@ -416,7 +416,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
           />
         </View>
 
-         {/* Social Links */}
+        {/* Social Links */}
         <View style={styles.socialRow}>
           {socialLinks.map((link, index) => (
             <SocialIcon key={index} name={link.name} url={link.url} color={link.color} />

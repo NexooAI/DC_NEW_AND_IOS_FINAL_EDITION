@@ -32,7 +32,7 @@ export default function RewardsScreen() {
 
     const fetchRewards = useCallback(async () => {
         if (!user?.id) return;
-        
+
         setLoading(true);
         try {
             const response = await rewardsAPI.getMyReferrals(user.id);
@@ -49,19 +49,19 @@ export default function RewardsScreen() {
 
     const checkInvestments = async () => {
         if (!user?.id) return false;
-        
+
         try {
             // Using user_investments endpoint to match MySchemesContent.tsx logic
             const response = await investmentAPI.getUserInvestments(user.id);
-            
+
             // Accept both 'data' and 'investments' as possible array fields, similar to MySchemesContent.tsx
-            const investments = Array.isArray(response?.data?.data) 
-                ? response.data.data 
+            const investments = Array.isArray(response?.data?.data)
+                ? response.data.data
                 : (Array.isArray(response?.data?.investments) ? response.data.investments : []);
-            
+
             // Check for at least one active investment
             const active = investments.length > 0;
-            
+
             setHasInvestments(active);
             return active;
         } catch (error) {
@@ -76,7 +76,7 @@ export default function RewardsScreen() {
         setLoading(true);
         const active = await checkInvestments();
         setLoading(false);
-        
+
         if (active) {
             setRedemptionModalVisible(true);
         } else {
@@ -134,8 +134,12 @@ export default function RewardsScreen() {
                         <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t("rewardPoints") || "Reward Points"}</Text>
-                    <TouchableOpacity style={styles.historyButton} onPress={() => router.push("/(app)/(tabs)/rewards_history")}>
-                        <Ionicons name="receipt-outline" size={24} color="#1a1a1a" />
+                    <TouchableOpacity
+                        style={styles.historyPillButton}
+                        onPress={() => router.push("/(app)/(tabs)/rewards_history")}
+                    >
+                        <Text style={styles.historyPillText}>History</Text>
+                        <Ionicons name="receipt-outline" size={16} color="white" />
                     </TouchableOpacity>
                 </View>
             </Animated.View>
@@ -156,8 +160,12 @@ export default function RewardsScreen() {
                         <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t("rewardPoints") || "Reward Points"}</Text>
-                    <TouchableOpacity style={styles.historyButton} onPress={() => router.push("/(app)/(tabs)/rewards_history")}>
-                        <Ionicons name="receipt-outline" size={24} color="#1a1a1a" />
+                    <TouchableOpacity
+                        style={styles.historyPillButton}
+                        onPress={() => router.push("/(app)/(tabs)/rewards_history")}
+                    >
+                        <Text style={styles.historyPillText}>History</Text>
+                        <Ionicons name="receipt-outline" size={16} color="white" />
                     </TouchableOpacity>
                 </View>
 
@@ -256,8 +264,8 @@ export default function RewardsScreen() {
 
             {/* Floating Action Button */}
             <View style={styles.bottomBar}>
-                <TouchableOpacity 
-                    style={styles.redeemButton} 
+                <TouchableOpacity
+                    style={styles.redeemButton}
                     activeOpacity={0.9}
                     onPress={handleRedeemPress}
                     disabled={loading}
@@ -295,7 +303,7 @@ export default function RewardsScreen() {
                         <Text style={styles.modalDescription}>
                             {t("noInvestmentDesc") || "You need at least one active scheme or investment to redeem your reward points."}
                         </Text>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.modalActionButton}
                             onPress={() => {
                                 setNoInvestmentModalVisible(false);
@@ -309,7 +317,7 @@ export default function RewardsScreen() {
                                 <Text style={styles.modalButtonText}>{t("clickToJoinScheme") || "Click to Join Scheme"}</Text>
                             </LinearGradient>
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.modalCloseButton}
                             onPress={() => setNoInvestmentModalVisible(false)}
                         >
@@ -339,7 +347,7 @@ export default function RewardsScreen() {
                         <Text style={styles.modalDescription}>
                             {t("redemptionDesc") || "Visit our physical store to redeem these points against your purchase. Our staff will assist you with the redemption process."}
                         </Text>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.modalActionButton}
                             onPress={() => setRedemptionModalVisible(false)}
                         >
@@ -487,8 +495,21 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         color: "#1a1a1a",
     },
-    historyButton: {
-        padding: 8,
+    historyPillButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: theme.colors.primary,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        gap: 6,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.2)",
+    },
+    historyPillText: {
+        color: "white",
+        fontSize: 12,
+        fontWeight: "700",
     },
     pointsContainer: {
         flexDirection: "row",

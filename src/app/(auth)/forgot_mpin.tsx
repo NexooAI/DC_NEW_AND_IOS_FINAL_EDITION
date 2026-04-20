@@ -18,7 +18,9 @@ import {
   Keyboard,
   ScrollView,
   Modal,
+  KeyboardAvoidingView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
@@ -190,7 +192,7 @@ const OtpInput = ({
     // Only numeric
     const numericValue = text.replace(/[^0-9]/g, "");
     onChange(numericValue);
-    
+
     if (numericValue.length === length) {
       onComplete(numericValue);
     }
@@ -198,7 +200,7 @@ const OtpInput = ({
 
   return (
     <View style={styles.otpInputsWrapper}>
-       <TextInput
+      <TextInput
         ref={inputRef}
         value={value}
         onChangeText={handleChange}
@@ -529,7 +531,7 @@ export default function ForgotMpin() {
       const response = await apiClient.post("/auth/check-mobile", {
         mobile_number: numberToUse,
       });
-      console.log("🚀 ~ handleSendOtp ~ response:", response ,response.data.message);
+      console.log("🚀 ~ handleSendOtp ~ response:", response, response.data.message);
       if (response.data.message === 'OTP sent successfully') {
         const countdownDuration = getCountdownDuration(resendAttempts);
         logger.log(
@@ -543,7 +545,7 @@ export default function ForgotMpin() {
         setSuccess(t("otpSentSuccessfully"));
         setError("");
       } else {
-        console.log("🚀 ~ handleSendOtp ~ response:", response ,response.data.message);
+        console.log("🚀 ~ handleSendOtp ~ response:", response, response.data.message);
         setError(response.data.message || t("failedToSendOtp"));
         shakeError();
         setInitializing(false);
@@ -862,9 +864,9 @@ export default function ForgotMpin() {
   }
 
   const renderVerifyOtpStep = () => (
-    <View style={styles.stepContainer}>
-      <Text style={styles.stepTitle}>{t("verifyOtpTitle")}</Text>
-      <Text style={styles.stepSubtitle}>
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>{t("verifyOtpTitle")}</Text>
+      <Text style={styles.cardSubtitle}>
         {t("otpSentTo")} {mobileNumber}
       </Text>
 
@@ -880,10 +882,10 @@ export default function ForgotMpin() {
           value={otp}
           onChange={setOtp}
           onComplete={(value) => {
-             setOtp(value);
-             setTimeout(() => {
-                handleVerifyOtp(value);
-             }, 100);
+            setOtp(value);
+            setTimeout(() => {
+              handleVerifyOtp(value);
+            }, 100);
           }}
           secureTextEntry={true}
         />
@@ -944,9 +946,9 @@ export default function ForgotMpin() {
   );
 
   const renderCreateMpinStep = () => (
-    <View style={styles.stepContainer}>
-      <Text style={styles.stepTitle}>{t("createNewMpinTitle")}</Text>
-      <Text style={styles.stepSubtitle}>{t("createNewMpinSubtitle")}</Text>
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>{t("createMpinTitle") || "Create MPIN"}</Text>
+      <Text style={styles.cardSubtitle}>{t("createNewMpinSubtitle") || "Create a new MPIN"}</Text>
 
       <Animated.View
         style={[
@@ -1033,30 +1035,37 @@ export default function ForgotMpin() {
   );
 
   return (
-    <ImageBackground
-      source={require("../../../assets/images/bg_login.jpg")}
-      style={styles.backgroundImage}
-    >
-      <LinearGradient
-        colors={[
-          theme.colors.primary,
-          theme.colors.primary,
-          theme.colors.primary,
-        ]}
-        style={styles.gradient}
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoid}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.container}>
-            <View style={styles.formContainer}>
-              {step === "verifyOtp" && renderVerifyOtpStep()}
-              {step === "createMpin" && renderCreateMpinStep()}
+        <View style={styles.headerSpacer}>
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => router.push("/(auth)/mpin_verify")}
+              >
+                <Icon name="arrow-back" size={24} color={theme.colors.primary} />
+              </TouchableOpacity>
+              <View style={styles.headerInfo}>
+                <Text style={styles.headerTitle}>{t("forgotMpinTitle") || "Forgot MPIN"}</Text>
+                <Text style={styles.headerSubtitle}>{t("forgotMpinSubtitle") || "Reset your MPIN"}</Text>
+              </View>
+              <View style={styles.headerRightPlaceholder} />
             </View>
           </View>
-        </TouchableWithoutFeedback>
-      </LinearGradient>
-      {/* <SimpleLanguageSwitcher /> */}
+        </View>
 
-      {/* Confirmation Modal */}
+        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          <View style={styles.formContainer}>
+            {step === "verifyOtp" && renderVerifyOtpStep()}
+            {step === "createMpin" && renderCreateMpinStep()}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
       <ConfirmationModal
         visible={showConfirmationModal}
         mobileNumber={pendingMobileNumber}
@@ -1064,7 +1073,7 @@ export default function ForgotMpin() {
         onCancel={handleCancelSendOtp}
         loading={loading}
       />
-    </ImageBackground>
+    </SafeAreaView>
   );
 }
 
@@ -1113,8 +1122,26 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingBottom: Platform.OS === "ios" ? 40 : 20,
+    backgroundColor: theme.colors.quaternary || "#F2E6D2",
   },
+  keyboardAvoid: { flex: 1 },
+  headerSpacer: {},
+  header: {
+    paddingTop: Platform.OS === "ios" ? 10 : 20,
+    paddingBottom: 10,
+    paddingHorizontal: 20,
+    backgroundColor: theme.colors.quaternary || "#F2E6D2",
+  },
+  headerContent: { flexDirection: "row", alignItems: "center" },
+  backButton: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center", alignItems: "center", marginRight: 15,
+  },
+  headerInfo: { flex: 1, alignItems: "center" },
+  headerRightPlaceholder: { width: 40, marginRight: 15 },
+  headerTitle: { fontSize: 24, fontWeight: "bold", color: theme.colors.primary, textAlign: "center" },
+  headerSubtitle: { fontSize: 14, color: theme.colors.primary, marginTop: 2, textAlign: "center" },
   logoContainer: {
     width: "100%",
     alignItems: "center",
@@ -1130,56 +1157,64 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loadingText: {
-    color: theme.colors.white,
+    color: theme.colors.primary,
     fontSize: 18,
     fontWeight: "600",
     textAlign: "center",
   },
   scrollContainer: {
-    flex: 1,
-    justifyContent: "center",
+    flexGrow: 1,
+    paddingTop: 10,
   },
   formContainer: {
     flex: 1,
-    justifyContent: "space-evenly",
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    justifyContent: "flex-start",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
   },
-  stepContainer: {
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    padding: 24,
     width: "100%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
+    marginBottom: 20,
   },
-  stepTitle: {
-    color: theme.colors.white,
-    fontSize: 28,
+  cardTitle: {
+    fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 10,
+    color: theme.colors.primary,
+    marginBottom: 8,
     textAlign: "center",
   },
-  stepSubtitle: {
-    color: theme.colors.white,
-    fontSize: 16,
-    marginBottom: 30,
+  cardSubtitle: {
+    fontSize: 15,
+    color: theme.colors.secondary,
+    marginBottom: 25,
     textAlign: "center",
-    opacity: 0.8,
   },
   inputContainer: {
     marginBottom: 20,
   },
   inputLabel: {
-    color: theme.colors.white,
+    color: theme.colors.primary,
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 10,
   },
   textInput: {
-    backgroundColor: theme.colors.bgWhiteLight,
+    backgroundColor: theme.colors.white,
     borderWidth: 1,
-    borderColor: theme.colors.borderWhiteMedium,
+    borderColor: theme.colors.secondary,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: theme.colors.white,
+    color: theme.colors.black,
   },
   mpinContainer: {
     flexDirection: "row",

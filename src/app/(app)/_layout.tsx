@@ -5,6 +5,7 @@ import React, { useCallback } from "react";
 import NavigationErrorBoundary from "@/components/NavigationErrorBoundary";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { theme } from "@/constants/theme";
+import FloatingChatButton from "@/components/FloatingChatButton";
 
 // Disable global font scaling for Text components
 (Text as any).defaultProps = {
@@ -20,7 +21,7 @@ export default function AppLayout() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.primary }} edges={["top", "left", "right"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.textDark }} edges={["top", "left", "right"]}>
         <NavigationErrorBoundary>
           <Drawer
             screenOptions={{
@@ -76,6 +77,7 @@ export default function AppLayout() {
           </Drawer>
         </NavigationErrorBoundary>
       </SafeAreaView>
+      <FloatingChatButton />
     </SafeAreaProvider>
   );
 }

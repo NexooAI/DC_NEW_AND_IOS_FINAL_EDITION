@@ -137,7 +137,7 @@ export default function PrivacyPolicy() {
     >
       <View style={styles.container}>
         {/* Hero Section */}
-        <LinearGradient
+        {/* <LinearGradient
           colors={[theme.colors.quaternary, theme.colors.quaternary]}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
@@ -156,7 +156,7 @@ export default function PrivacyPolicy() {
             </Text>
             <Text style={styles.heroSubtitle}>{translations.yourPrivacyMatters}</Text>
           </View>
-        </LinearGradient>
+        </LinearGradient> */}
 
         {/* Content Section */}
         <ScrollView
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 36,
     paddingBottom: 40,
   },
   // New Card Styles

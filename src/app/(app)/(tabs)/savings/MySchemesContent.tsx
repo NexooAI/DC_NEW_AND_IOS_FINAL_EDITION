@@ -679,85 +679,73 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
   // Filter Toggle UI (4 Status Tabs + Flexi/Fixed SubToggle)
   const FilterToggle = () => (
     <View style={{ marginBottom: 20 }}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{
-          flexDirection: "row",
-          backgroundColor: theme.colors.cardBackground,
-          borderRadius: 8,
-          padding: 6,
-          marginTop: 16,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 3 },
-          shadowOpacity: 0.2,
-          shadowRadius: 4,
-          elevation: 4,
-        }}
-        contentContainerStyle={{ alignItems: 'center', paddingRight: 20 }}
-      >
-        {["Active", "Matured", "Claimed", "Drop"].map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={{
-              backgroundColor:
-                selectedType === tab ? theme.colors.primary : "transparent",
-              borderRadius: 6,
-              justifyContent: "center",
-              alignItems: "center",
-              paddingVertical: 10,
-              paddingHorizontal: 20,
-              marginHorizontal: 4,
-            }}
-            onPress={() => setSelectedType(tab as any)}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={{
-                color:
-                  selectedType === tab ? theme.colors.white : theme.colors.textSecondary,
-                fontWeight: "700",
-                fontSize: 15,
-                letterSpacing: 0.5,
-              }}
+      {/* Main Status Pill Tabs */}
+      <View style={styles.pillSwitcherContainer}>
+        <View style={styles.pillSwitcherBg}>
+          {["Active", "Matured", "Claimed", "Drop"].map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              style={[
+                styles.pillTabItem,
+                selectedType === tab && styles.pillTabActive
+              ]}
+              onPress={() => setSelectedType(tab as any)}
+              activeOpacity={0.9}
             >
-              {tab}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+              {selectedType === tab && (
+                <LinearGradient
+                  colors={['#FFD700', '#DAA520']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+              )}
+              <Text
+                style={[
+                  styles.pillTabText,
+                  selectedType === tab && styles.pillTabActiveText,
+                ]}
+              >
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
 
-      {/* Sub Filter: Flexi vs Fixed */}
-      <View style={{
-        flexDirection: "row",
-        marginTop: 16,
-        paddingHorizontal: 4,
-        justifyContent: "flex-end",
-        alignItems: "center"
-      }}>
-        {["Flexi", "Fixed"].map((filterOpt) => (
-          <TouchableOpacity
-            key={filterOpt}
-            style={{
-              paddingVertical: 6,
-              paddingHorizontal: 16,
-              borderRadius: 6,
-              backgroundColor: subFilter === filterOpt ? "rgba(133, 1, 17, 0.1)" : "transparent",
-              borderWidth: 1,
-              borderColor: subFilter === filterOpt ? theme.colors.primary : "#e0e0e0",
-              marginLeft: 10
-            }}
-            onPress={() => setSubFilter(filterOpt as "Flexi" | "Fixed")}
-          >
-            <Text style={{
-              color: subFilter === filterOpt ? theme.colors.primary : "#666",
-              fontWeight: subFilter === filterOpt ? "700" : "500",
-              fontSize: 13
-            }}>
-              {filterOpt === "Flexi" ? (translations.flexi || "Flexi") : (translations.fixed || "Fixed")}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      {/* Sub Filter: Flexi vs Fixed Pill Tabs */}
+      <View style={styles.subPillContainer}>
+        <View style={styles.subPillBg}>
+          {["Flexi", "Fixed"].map((filterOpt) => (
+            <TouchableOpacity
+              key={filterOpt}
+              style={[
+                styles.subPillItem,
+                subFilter === filterOpt && styles.pillTabActive
+              ]}
+              onPress={() => setSubFilter(filterOpt as "Flexi" | "Fixed")}
+              activeOpacity={0.9}
+            >
+              {subFilter === filterOpt && (
+                <LinearGradient
+                  colors={['#FFD700', '#DAA520']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+              )}
+              <Text
+                style={[
+                  styles.pillTabText,
+                  { fontSize: 12 },
+                  subFilter === filterOpt && styles.pillTabActiveText,
+                ]}
+              >
+                {filterOpt === "Flexi" ? (translations.flexi || "Flexi") : (translations.fixed || "Fixed")}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -1717,5 +1705,61 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: "rgba(208, 32, 32, 0.3)",
     marginHorizontal: 8,
+  },
+  pillSwitcherContainer: {
+    paddingHorizontal: 0,
+    marginVertical: 10,
+  },
+  pillSwitcherBg: {
+    flexDirection: "row",
+    backgroundColor: "rgba(0,0,0,0.06)",
+    borderRadius: 25,
+    padding: 4,
+    overflow: 'hidden',
+  },
+  pillTabItem: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: 'center',
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  pillTabActive: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  pillTabText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#666",
+    zIndex: 1,
+  },
+  pillTabActiveText: {
+    color: "#000",
+    fontWeight: "900",
+  },
+  subPillContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+    paddingHorizontal: 10,
+  },
+  subPillBg: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderRadius: 20,
+    padding: 3,
+    width: 180,
+  },
+  subPillItem: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 18,
+    overflow: 'hidden',
   },
 });

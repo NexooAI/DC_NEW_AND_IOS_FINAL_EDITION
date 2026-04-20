@@ -33,6 +33,7 @@ module.exports = function (api) {
           root: ["./src"],
           alias: {
             "@": "./src",
+            "@assets": "./assets",
           },
         },
       ],

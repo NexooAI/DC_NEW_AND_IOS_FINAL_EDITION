@@ -20,9 +20,9 @@ export default function HomeLayout() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: theme.colors.primary,
+          backgroundColor: theme.colors.quaternary,
         },
-        headerTintColor: COLORS.white,
+        headerTintColor: theme.colors.primary,
         headerTitleAlign: 'center', // Center align the header title
         headerTitleStyle: {
           fontWeight: "bold",
@@ -50,7 +50,7 @@ export default function HomeLayout() {
       />
       <Stack.Screen
         name="kyc"
-        options={{ title: "Know your customer" }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="policies/termsAndConditionsPolicies"

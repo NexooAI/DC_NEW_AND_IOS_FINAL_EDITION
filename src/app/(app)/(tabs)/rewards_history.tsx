@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,6 +9,10 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { rewardsAPI } from "@/services/api";
 import useGlobalStore from "@/store/global.store";
 import { useEffect, useState, useCallback } from "react";
+import ResponsiveText from "@/components/ResponsiveText";
+import { responsiveUtils } from "@/utils/responsiveUtils";
+
+const { wp, hp, rf } = responsiveUtils;
 
 export default function RewardsHistoryScreen() {
     const router = useRouter();
@@ -16,6 +20,8 @@ export default function RewardsHistoryScreen() {
     const { user } = useGlobalStore();
     const [referrals, setReferrals] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [selectedItem, setSelectedItem] = useState<any>(null);
+    const [detailsModalVisible, setDetailsModalVisible] = useState(false);
 
     const fetchReferrals = useCallback(async () => {
         if (!user?.id) return;
@@ -37,9 +43,14 @@ export default function RewardsHistoryScreen() {
         fetchReferrals();
     }, [fetchReferrals]);
 
+    const handleItemPress = (item: any) => {
+        setSelectedItem(item);
+        setDetailsModalVisible(true);
+    };
+
     const renderTransactionItem = ({ item }: { item: any }) => {
         const isEarn = true; // All from this API are earned rewards
-        
+
         // Manual date formatting instead of moment
         const dateObj = new Date(item.joined_at);
         const formattedDate = dateObj.toLocaleDateString('en-GB', {
@@ -54,7 +65,11 @@ export default function RewardsHistoryScreen() {
         });
 
         return (
-            <View style={styles.transactionCard}>
+            <TouchableOpacity
+                style={styles.transactionCard}
+                onPress={() => handleItemPress(item)}
+                activeOpacity={0.7}
+            >
                 <View style={styles.transactionIconContainer}>
                     <Ionicons
                         name={"arrow-down-circle"}
@@ -76,26 +91,27 @@ export default function RewardsHistoryScreen() {
                     </Text>
                     <Text style={styles.pointsLabel}>{t("points") || "Pts"}</Text>
                 </View>
-            </View>
+            </TouchableOpacity>
         );
     };
 
     return (
         <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-            <LinearGradient
-                colors={["#F2E6D2", "#F5DEB3"]}
-                style={styles.headerGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-            >
+            <View style={styles.headerContainer}>
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                        <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+                        <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{t("rewardHistory") || "Reward History"}</Text>
-                    <View style={{ width: 40 }} />
+
+                    <View style={styles.titleContainer}>
+                        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
+                            {t("rewardHistory") || "Reward History"}
+                        </ResponsiveText>
+                    </View>
+
+                    <View style={styles.headerRightPlaceholder} />
                 </View>
-            </LinearGradient>
+            </View>
 
             <View style={styles.contentContainer}>
                 {referrals.length > 0 ? (
@@ -115,6 +131,69 @@ export default function RewardsHistoryScreen() {
                     </View>
                 )}
             </View>
+
+            {/* Reward Detail Modal */}
+            <Modal
+                visible={detailsModalVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setDetailsModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.primary}>
+                                Reward Details
+                            </ResponsiveText>
+                            <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
+                                <Ionicons name="close-circle" size={28} color="#ccc" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {selectedItem && (
+                            <View style={styles.modalBody}>
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Customer Name</Text>
+                                    <Text style={styles.detailValue}>{selectedItem.name}</Text>
+                                </View>
+                                <View style={styles.detailDivider} />
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Mobile Number</Text>
+                                    <Text style={styles.detailValue}>{selectedItem.mobile_number}</Text>
+                                </View>
+                                <View style={styles.detailDivider} />
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Joined Date</Text>
+                                    <Text style={styles.detailValue}>
+                                        {new Date(selectedItem.joined_at).toLocaleDateString('en-IN', {
+                                            day: '2-digit', month: 'long', year: 'numeric'
+                                        })}
+                                    </Text>
+                                </View>
+                                <View style={styles.detailDivider} />
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Points Earned</Text>
+                                    <View style={styles.pointsBadge}>
+                                        <Text style={styles.pointsBadgeText}>+{selectedItem.reward_earned} Pts</Text>
+                                    </View>
+                                </View>
+                                <View style={styles.detailDivider} />
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Reference ID</Text>
+                                    <Text style={styles.detailValue}>#REF-{selectedItem.id.toString().padStart(4, '0')}</Text>
+                                </View>
+
+                                <TouchableOpacity
+                                    style={styles.closeBtn}
+                                    onPress={() => setDetailsModalVisible(false)}
+                                >
+                                    <Text style={styles.closeBtnText}>CLOSE</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -122,27 +201,32 @@ export default function RewardsHistoryScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#f5f7fa",
+        backgroundColor: "#F2E6D2",
     },
-    headerGradient: {
-        paddingBottom: 15,
-        borderBottomLeftRadius: 20,
-        borderBottomRightRadius: 20,
-        elevation: 4,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+    headerContainer: {
+        backgroundColor: "#F2E6D2",
+        borderBottomWidth: 1,
+        borderBottomColor: "rgba(0,0,0,0.05)",
     },
     header: {
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 20,
-        paddingTop: Platform.OS === 'ios' ? 10 : 20,
+        paddingHorizontal: wp(5),
+        paddingVertical: hp(1.5),
     },
     backButton: {
-        padding: 8,
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        zIndex: 10,
+    },
+    titleContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerRightPlaceholder: {
+        width: 40, // Match backButton width for centering
     },
     headerTitle: {
         fontSize: 20,
@@ -212,5 +296,69 @@ const styles = StyleSheet.create({
         marginTop: 16,
         fontSize: 16,
         color: "#888",
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        justifyContent: "flex-end",
+    },
+    modalContent: {
+        backgroundColor: "#fff",
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        minHeight: 400,
+    },
+    modalHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 24,
+    },
+    modalBody: {
+    },
+    detailRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingVertical: 12,
+    },
+    detailLabel: {
+        fontSize: 14,
+        color: "#666",
+        fontWeight: "500",
+    },
+    detailValue: {
+        fontSize: 15,
+        color: "#1a1a1a",
+        fontWeight: "700",
+    },
+    detailDivider: {
+        height: 1,
+        backgroundColor: "#f0f0f0",
+    },
+    pointsBadge: {
+        backgroundColor: "rgba(76,175,80,0.1)",
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+    },
+    pointsBadgeText: {
+        color: "#4CAF50",
+        fontWeight: "bold",
+        fontSize: 14,
+    },
+    closeBtn: {
+        backgroundColor: theme.colors.primary,
+        borderRadius: 12,
+        paddingVertical: 16,
+        alignItems: "center",
+        marginTop: 32,
+    },
+    closeBtnText: {
+        color: "#fff",
+        fontSize: 14,
+        fontWeight: "bold",
+        letterSpacing: 1,
     }
 });

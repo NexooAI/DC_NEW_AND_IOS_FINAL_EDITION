@@ -13,8 +13,14 @@ import { responsiveUtils } from '@/utils/responsiveUtils';
 const { wp, hp, rf } = responsiveUtils;
 const QUATERNARY_COLOR = theme.colors.quaternary || "#F2E6D2";
 const ADVANCE_PERCENTS = [5, 10, 20, 30];
+const PERCENT_TO_DAYS: Record<number, number> = {
+  5: 30,
+  10: 60,
+  20: 90,
+  30: 120
+};
 
-export default function JoinAdvanceGold() {
+export default function JoinAdvGold() {
   const router = useRouter();
   const { user } = useGlobalStore();
   const params = useLocalSearchParams();
@@ -241,6 +247,12 @@ export default function JoinAdvanceGold() {
             <ResponsiveText variant="title" size="sm" weight="bold" color={COLORS.white} style={{ marginLeft: wp(2) }}>
               Advance Summary
             </ResponsiveText>
+            {advancePercent && (
+              <View style={styles.daysBadge}>
+                <Ionicons name="time" size={rf(10)} color="#1a1a1a" style={{ marginRight: wp(1) }} />
+                <Text style={styles.daysBadgeText}>{PERCENT_TO_DAYS[advancePercent]} Days</Text>
+              </View>
+            )}
           </View>
           <View style={styles.summaryContent}>
             <View style={styles.summaryRow}>
@@ -251,6 +263,11 @@ export default function JoinAdvanceGold() {
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Advance ({advancePercent}%):</Text>
               <Text style={styles.summaryValueHighlight}>₹{advancePay ? advancePay.toLocaleString('en-IN', { maximumFractionDigits: 0 }) : '--'}</Text>
+            </View>
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Booking Period:</Text>
+              <Text style={styles.summaryValue}>{PERCENT_TO_DAYS[advancePercent] || 0} Days</Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryRow}>
@@ -477,7 +494,22 @@ const styles = StyleSheet.create({
   summaryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between', // Changed to between to allow badge on right
     marginBottom: hp(2)
+  },
+  daysBadge: {
+    backgroundColor: '#DAA520',
+    paddingHorizontal: wp(2.5),
+    paddingVertical: hp(0.5),
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: wp(3),
+  },
+  daysBadgeText: {
+    color: '#1a1a1a',
+    fontSize: rf(10),
+    fontWeight: 'bold',
   },
   summaryContent: {
   },

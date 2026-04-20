@@ -29,7 +29,7 @@ import {
 } from "react-native";
 import { Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LanguageSwitcher from "@/contexts/LanguageSwitcher";
@@ -53,7 +53,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import FlashBanner from "@/components/FlashBanner";
 import { Ionicons } from "@expo/vector-icons";
 import StatusView from "@/components/StatusView";
-import NotificationService from "@/services/NotificationService";
+import Constants from "expo-constants";
 import { AppLocale } from "@/i18n";
 import AuthGuard from "@/components/AuthGuard";
 import { getFullImageUrl, formatGoldWeight } from "@/utils/imageUtils";
@@ -552,8 +552,7 @@ const BannerCard: React.FC<BannerCardProps> = ({ item, router }) => {
   );
 };
 
-// Floating Chat Button Component
-import FloatingChatButton from "@/components/FloatingChatButton";
+// Floating Chat Button moved to global layout
 
 import { logger } from "@/utils/logger";
 import DynamicSchemeCard from "@/components/DynamicSchemeCard";
@@ -602,6 +601,7 @@ export default function Home() {
     debugState();
   }, [debugState]);
   const router = useRouter();
+  const params = useLocalSearchParams();
   const navigation = useNavigation();
   const { unreadCount } = useUnreadNotifications();
   const [homeData, setHomeData] = useState<HomeApiResponse | null>(null);
@@ -1300,9 +1300,29 @@ export default function Home() {
   useEffect(() => {
     if (user) {
       logger.log("Setting up notifications...");
-      NotificationService.sendFcmTokenToApi();
+      if (Constants.executionEnvironment !== "storeClient") {
+        import("@/services/NotificationService")
+          .then(({ default: NotificationService }) => {
+            NotificationService.sendFcmTokenToApi();
+          })
+          .catch((error) => {
+            logger.error("Failed to load NotificationService:", error);
+          });
+      }
     }
   }, [user]);
+
+  // Auto-trigger first collection if requested via params
+  useEffect(() => {
+    if (params.autoTrigger === "collection" && collectionsData.length > 0 && !showStatus) {
+      logger.log("🎯 Home: Auto-triggering first collection status...");
+      setSelectedCollection(collectionsData[0]);
+      setShowStatus(true);
+      
+      // Clear the param after triggering once to prevent repeated triggers on re-render
+      router.setParams({ autoTrigger: undefined });
+    }
+  }, [params.autoTrigger, collectionsData, showStatus]);
 
   // Rating prompt - show after app launches and user engagement
   useEffect(() => {
@@ -1390,16 +1410,21 @@ export default function Home() {
 
   const handleStatusClose = useCallback(() => {
     if (selectedCollection) {
-      // Check if all statuses in the selected collection have been viewed
-      // We'll use localStorage or a callback from StatusView if you want to persist, but for now, local state only
       setViewedCollections((prev) => ({
         ...prev,
-        [selectedCollection.id]: true, // Mark as viewed when closed (for demo, always true)
+        [selectedCollection.id]: true,
       }));
     }
     setShowStatus(false);
     setSelectedCollection(null);
-  }, [selectedCollection]);
+
+    // Handle redirection if specified in params (e.g. from Dashboard)
+    if (params.redirectOnClose === "schemes") {
+      router.push("/(app)/(tabs)/home/schemes");
+    } else if (params.redirectOnClose === "dashboard") {
+      router.push("/(app)/dashboard");
+    }
+  }, [selectedCollection, params.redirectOnClose]);
 
 
   // API Logging demonstration function
@@ -2976,8 +3001,7 @@ export default function Home() {
               );
             }}
           />
-          {/* Floating Chat Button - Conditionally rendered based on API */}
-          {isVisible("showLiveChatBox") && <FloatingChatButton />}
+
 
           {/* Scheme Info Modal */}
           <Modal
