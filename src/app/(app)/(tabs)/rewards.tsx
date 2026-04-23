@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import {
     View,
     Text,
@@ -6,6 +6,8 @@ import {
     TouchableOpacity,
     Animated,
     Platform,
+    Modal,
+    ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -13,11 +15,78 @@ import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useRouter } from "expo-router";
+import { rewardsAPI, investmentAPI } from "@/services/api";
+import useGlobalStore from "@/store/global.store";
+
 
 export default function RewardsScreen() {
     const { t } = useTranslation();
     const router = useRouter();
+    const { user } = useGlobalStore();
+    const [totalPoints, setTotalPoints] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [hasInvestments, setHasInvestments] = useState<boolean | null>(null);
+    const [redemptionModalVisible, setRedemptionModalVisible] = useState(false);
+    const [noInvestmentModalVisible, setNoInvestmentModalVisible] = useState(false);
     const scrollY = useRef(new Animated.Value(0)).current;
+
+    const fetchRewards = useCallback(async () => {
+        if (!user?.id) return;
+
+        setLoading(true);
+        try {
+            const response = await rewardsAPI.getMyReferrals(user.id);
+            if (response.data.success && Array.isArray(response.data.data)) {
+                const total = response.data.data.reduce((sum: number, item: any) => sum + (item.reward_earned || 0), 0);
+                setTotalPoints(total);
+            }
+        } catch (error) {
+            console.error("Error fetching rewards:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, [user?.id]);
+
+    const checkInvestments = async () => {
+        if (!user?.id) return false;
+
+        try {
+            // Using user_investments endpoint to match MySchemesContent.tsx logic
+            const response = await investmentAPI.getUserInvestments(user.id);
+
+            // Accept both 'data' and 'investments' as possible array fields, similar to MySchemesContent.tsx
+            const investments = Array.isArray(response?.data?.data)
+                ? response.data.data
+                : (Array.isArray(response?.data?.investments) ? response.data.investments : []);
+
+            // Check for at least one active investment
+            const active = investments.length > 0;
+
+            setHasInvestments(active);
+            return active;
+        } catch (error) {
+            console.error("Error checking investments:", error);
+            // Default to false on error to be safe
+            setHasInvestments(false);
+            return false;
+        }
+    };
+
+    const handleRedeemPress = async () => {
+        setLoading(true);
+        const active = await checkInvestments();
+        setLoading(false);
+
+        if (active) {
+            setRedemptionModalVisible(true);
+        } else {
+            setNoInvestmentModalVisible(true);
+        }
+    };
+
+    useEffect(() => {
+        fetchRewards();
+    }, [fetchRewards]);
 
     const headerOpacity = scrollY.interpolate({
         inputRange: [0, 80],
@@ -65,8 +134,12 @@ export default function RewardsScreen() {
                         <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t("rewardPoints") || "Reward Points"}</Text>
-                    <TouchableOpacity style={styles.historyButton} onPress={() => router.push("/(app)/(tabs)/rewards_history")}>
-                        <Ionicons name="receipt-outline" size={24} color="#1a1a1a" />
+                    <TouchableOpacity
+                        style={styles.historyPillButton}
+                        onPress={() => router.push("/(app)/(tabs)/rewards_history")}
+                    >
+                        <Text style={styles.historyPillText}>History</Text>
+                        <Ionicons name="receipt-outline" size={16} color="white" />
                     </TouchableOpacity>
                 </View>
             </Animated.View>
@@ -87,8 +160,12 @@ export default function RewardsScreen() {
                         <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t("rewardPoints") || "Reward Points"}</Text>
-                    <TouchableOpacity style={styles.historyButton} onPress={() => router.push("/(app)/(tabs)/rewards_history")}>
-                        <Ionicons name="receipt-outline" size={24} color="#1a1a1a" />
+                    <TouchableOpacity
+                        style={styles.historyPillButton}
+                        onPress={() => router.push("/(app)/(tabs)/rewards_history")}
+                    >
+                        <Text style={styles.historyPillText}>History</Text>
+                        <Ionicons name="receipt-outline" size={16} color="white" />
                     </TouchableOpacity>
                 </View>
 
@@ -96,7 +173,7 @@ export default function RewardsScreen() {
                 {/* Points Display */}
                 <View style={styles.pointsContainer}>
                     <FontAwesome5 name="coins" size={32} color="#FF8C00" style={styles.coinIcon} />
-                    <Text style={styles.pointsText}>0</Text>
+                    <Text style={styles.pointsText}>{totalPoints}</Text>
                 </View>
                 <View style={styles.conversionBadge}>
                     <FontAwesome5 name="coins" size={12} color="#FF8C00" />
@@ -187,19 +264,103 @@ export default function RewardsScreen() {
 
             {/* Floating Action Button */}
             <View style={styles.bottomBar}>
-                <TouchableOpacity style={styles.redeemButton} activeOpacity={0.9}>
+                <TouchableOpacity
+                    style={styles.redeemButton}
+                    activeOpacity={0.9}
+                    onPress={handleRedeemPress}
+                    disabled={loading}
+                >
                     <LinearGradient
                         colors={[theme.colors.primary, "#002b24"]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                         style={styles.redeemGradient}
                     >
-                        <Text style={styles.redeemButtonText}>{t("redeemPoints") || "Redeem Points"}</Text>
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.redeemButtonText}>{t("redeemPoints") || "Redeem Points"}</Text>
+                        )}
                         <Ionicons name="sparkles" size={16} color="#FFD700" style={{ position: "absolute", top: 10, left: 20 }} />
                         <Ionicons name="sparkles" size={24} color="#FFD700" style={{ position: "absolute", bottom: 10, right: 20 }} />
                     </LinearGradient>
                 </TouchableOpacity>
             </View>
+
+            {/* No Investment Modal */}
+            <Modal
+                visible={noInvestmentModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setNoInvestmentModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Ionicons name="alert-circle" size={48} color="#FF8C00" />
+                            <Text style={styles.modalTitle}>{t("investFirst") || "Invest First!"}</Text>
+                        </View>
+                        <Text style={styles.modalDescription}>
+                            {t("noInvestmentDesc") || "You need at least one active scheme or investment to redeem your reward points."}
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.modalActionButton}
+                            onPress={() => {
+                                setNoInvestmentModalVisible(false);
+                                router.push("/(app)/(tabs)/gold_advance");
+                            }}
+                        >
+                            <LinearGradient
+                                colors={[theme.colors.primary, "#002b24"]}
+                                style={styles.modalButtonGradient}
+                            >
+                                <Text style={styles.modalButtonText}>{t("clickToJoinScheme") || "Click to Join Scheme"}</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.modalCloseButton}
+                            onPress={() => setNoInvestmentModalVisible(false)}
+                        >
+                            <Text style={styles.modalCloseText}>{t("close") || "Close"}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Redemption Modal */}
+            <Modal
+                visible={redemptionModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setRedemptionModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Ionicons name="gift" size={48} color={theme.colors.primary} />
+                            <Text style={styles.modalTitle}>{t("redeemAtShop") || "Redeem at Shop"}</Text>
+                        </View>
+                        <View style={styles.modalPointsContainer}>
+                            <Text style={styles.modalPointsValue}>{totalPoints}</Text>
+                            <Text style={styles.modalPointsLabel}>{t("pointsAvailable") || "Points Available"}</Text>
+                        </View>
+                        <Text style={styles.modalDescription}>
+                            {t("redemptionDesc") || "Visit our physical store to redeem these points against your purchase. Our staff will assist you with the redemption process."}
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.modalActionButton}
+                            onPress={() => setRedemptionModalVisible(false)}
+                        >
+                            <LinearGradient
+                                colors={[theme.colors.primary, "#002b24"]}
+                                style={styles.modalButtonGradient}
+                            >
+                                <Text style={styles.modalButtonText}>{t("gotIt") || "Got It"}</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView >
     );
 }
@@ -210,6 +371,83 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingBottom: 150,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.6)",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 20,
+    },
+    modalContent: {
+        backgroundColor: "#fff",
+        borderRadius: 24,
+        padding: 24,
+        width: "100%",
+        maxWidth: 340,
+        alignItems: "center",
+    },
+    modalHeader: {
+        alignItems: "center",
+        marginBottom: 16,
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: "800",
+        color: "#1a1a1a",
+        marginTop: 12,
+        textAlign: "center",
+    },
+    modalDescription: {
+        fontSize: 15,
+        color: "#666",
+        textAlign: "center",
+        lineHeight: 22,
+        marginBottom: 24,
+    },
+    modalPointsContainer: {
+        backgroundColor: "#f9fcff",
+        borderRadius: 16,
+        padding: 16,
+        width: "100%",
+        alignItems: "center",
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: "#eef2f5",
+    },
+    modalPointsValue: {
+        fontSize: 40,
+        fontWeight: "800",
+        color: "#FF8C00",
+    },
+    modalPointsLabel: {
+        fontSize: 14,
+        color: "#666",
+        fontWeight: "600",
+        marginTop: 4,
+    },
+    modalActionButton: {
+        width: "100%",
+        borderRadius: 12,
+        overflow: "hidden",
+        marginBottom: 12,
+    },
+    modalButtonGradient: {
+        paddingVertical: 14,
+        alignItems: "center",
+    },
+    modalButtonText: {
+        color: "#fff",
+        fontSize: 16,
+        fontWeight: "700",
+    },
+    modalCloseButton: {
+        padding: 8,
+    },
+    modalCloseText: {
+        color: "#666",
+        fontSize: 14,
+        fontWeight: "600",
     },
     sunburstContainer: {
         ...StyleSheet.absoluteFillObject,
@@ -257,8 +495,21 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         color: "#1a1a1a",
     },
-    historyButton: {
-        padding: 8,
+    historyPillButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: theme.colors.primary,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        gap: 6,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.2)",
+    },
+    historyPillText: {
+        color: "white",
+        fontSize: 12,
+        fontWeight: "700",
     },
     pointsContainer: {
         flexDirection: "row",

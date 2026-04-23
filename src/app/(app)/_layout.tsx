@@ -5,6 +5,7 @@ import React, { useCallback } from "react";
 import NavigationErrorBoundary from "@/components/NavigationErrorBoundary";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { theme } from "@/constants/theme";
+import FloatingChatButton from "@/components/FloatingChatButton";
 
 // Disable global font scaling for Text components
 (Text as any).defaultProps = {
@@ -20,7 +21,7 @@ export default function AppLayout() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.primary }} edges={["top", "left", "right"]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.textDark }} edges={["top", "left", "right"]}>
         <NavigationErrorBoundary>
           <Drawer
             screenOptions={{
@@ -44,6 +45,15 @@ export default function AppLayout() {
             drawerContent={renderDrawerContent}
           >
             <Drawer.Screen
+              name="dashboard"
+              options={{
+                lazy: true,
+                freezeOnBlur: false,
+                drawerLabel: "Dashboard",
+                title: "Dashboard",
+              }}
+            />
+            <Drawer.Screen
               name="(tabs)"
               options={{
                 // Enable lazy loading for better performance
@@ -54,9 +64,20 @@ export default function AppLayout() {
                 freezeOnBlur: false,
               }}
             />
+            <Drawer.Screen
+              name="lucky_draw"
+              options={{
+                lazy: true,
+                freezeOnBlur: false,
+                drawerLabel: "Lucky Draw",
+                title: "Lucky Draw",
+                drawerItemStyle: { display: 'none' } // Hide from drawer menu but keep as valid route
+              }}
+            />
           </Drawer>
         </NavigationErrorBoundary>
       </SafeAreaView>
+      <FloatingChatButton />
     </SafeAreaProvider>
   );
 }

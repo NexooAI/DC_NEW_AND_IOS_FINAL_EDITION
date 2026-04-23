@@ -79,10 +79,10 @@ const StoreLocator = () => {
   const [selectedStore, setSelectedStore] = useState<any>(
     stores.length > 0
       ? {
-          label: stores[0].address,
-          value: stores[0].id.toString(),
-          ...stores[0],
-        }
+        label: stores[0].address,
+        value: stores[0].id.toString(),
+        ...stores[0],
+      }
       : null
   );
   const [isFocus, setIsFocus] = useState(false);
@@ -147,18 +147,18 @@ const StoreLocator = () => {
               style={styles.imageBackground}
             >
               <View style={styles.headerContainer}>
-                 <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.8)']}
-                    style={styles.headerGradient}
-                  >
+                <LinearGradient
+                  colors={['transparent', 'rgba(0,0,0,0.8)']}
+                  style={styles.headerGradient}
+                >
                   <Text style={styles.headerText}>{t("ourStoresTitle")}</Text>
                 </LinearGradient>
               </View>
             </ImageBackground>
 
             <View style={styles.dropdownContainer}>
-                <Text style={styles.sectionLabel}>{t("selectStore") || "Select a Store"}</Text>
-                <Dropdown
+              <Text style={styles.sectionLabel}>{t("selectStore") || "Select a Store"}</Text>
+              <Dropdown
                 style={[styles.dropdown, isFocus && { borderColor: theme.colors.primary }]}
                 placeholderStyle={styles.placeholderStyle}
                 selectedTextStyle={styles.selectedTextStyle}
@@ -175,44 +175,44 @@ const StoreLocator = () => {
                 onFocus={() => setIsFocus(true)}
                 onBlur={() => setIsFocus(false)}
                 onChange={(item) => {
-                    setSelectedStore(item);
-                    setIsFocus(false);
-                    focusOnStore(item);
+                  setSelectedStore(item);
+                  setIsFocus(false);
+                  focusOnStore(item);
                 }}
                 renderLeftIcon={() => (
-                    <AntDesign
+                  <AntDesign
                     name="environment"
                     size={20}
                     color={isFocus ? theme.colors.primary : "#666"}
                     style={styles.icon}
-                    />
+                  />
                 )}
-                />
+              />
             </View>
 
             <View style={styles.mapContainer}>
-                <MapView
+              <MapView
                 ref={mapRef}
                 style={styles.map}
                 initialRegion={{
-                    latitude: stores[0].latitude,
-                    longitude: stores[0].longitude,
-                    latitudeDelta: 0.0922,
-                    longitudeDelta: 0.0421,
+                  latitude: stores[0].latitude,
+                  longitude: stores[0].longitude,
+                  latitudeDelta: 0.0922,
+                  longitudeDelta: 0.0421,
                 }}
-                >
+              >
                 {stores.map((store) => (
-                    <Marker
+                  <Marker
                     key={store.id}
                     coordinate={{
-                        latitude: store.latitude,
-                        longitude: store.longitude,
+                      latitude: store.latitude,
+                      longitude: store.longitude,
                     }}
                     title={store.name}
                     description={store.address}
-                    />
+                  />
                 ))}
-                </MapView>
+              </MapView>
             </View>
 
             <View style={styles.storeList}>
@@ -221,14 +221,14 @@ const StoreLocator = () => {
                   <View style={styles.storeInfo}>
                     <Text style={styles.storeName}>{store.name}</Text>
                     <Text style={styles.storeAddress}>
-                        {store.address}
+                      {store.address}
                     </Text>
                   </View>
-                  <TouchableOpacity 
-                    style={styles.directionButton} 
+                  <TouchableOpacity
+                    style={styles.directionButton}
                     onPress={() => getDirections(store)}
                   >
-                     <Ionicons name="navigate-circle" size={40} color={theme.colors.primary} />
+                    <Ionicons name="navigate-circle" size={40} color={theme.colors.primary} />
                   </TouchableOpacity>
                 </View>
               ))}
@@ -243,7 +243,7 @@ const StoreLocator = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: theme.colors.quaternary,
   },
   imageBackground: {
     height: 220,
@@ -270,15 +270,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   dropdownContainer: {
-      marginBottom: 20,
+    marginBottom: 20,
   },
   sectionLabel: {
-      fontSize: 14, 
-      fontWeight: '600',
-      color: theme.colors.textMediumGrey,
-      marginBottom: 8,
-      marginLeft: 4,
-      textTransform: "uppercase",
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.textMediumGrey,
+    marginBottom: 8,
+    marginLeft: 4,
+    textTransform: "uppercase",
   },
   dropdown: {
     height: 56,
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     marginBottom: 24,
     backgroundColor: 'white',
-    padding: 4, 
+    padding: 4,
   },
   map: {
     height: 320,
@@ -352,8 +352,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,0,0,0.03)'
   },
   storeInfo: {
-      flex: 1,
-      marginRight: 12,
+    flex: 1,
+    marginRight: 12,
   },
   storeName: {
     fontSize: 18,
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   directionButton: {
-      padding: 4,
+    padding: 4,
   }
 });
 

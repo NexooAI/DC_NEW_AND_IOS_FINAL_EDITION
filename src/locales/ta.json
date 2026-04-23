@@ -1,4 +1,6 @@
 {
+  "newSchemes": "புதிய திட்டங்கள்",
+  "savingsHome": "சேமிப்பு முகப்பு",
   "DC_Jewellers_Featured_Video": "அகிலா ஜுவெல்லர்ஸ் - சிறப்பு வீடியோ",
   "Fixed": "நிலையான",
   "Flexi": "நெகிழ்வான",
@@ -1126,5 +1128,17 @@
   "premium_reward_tiers_desc": "Your rewards scale with your friend's first payment amount",
   "tier_1_amount": "₹100 to ₹1,000",
   "tier_2_amount": "₹1,000 to ₹10,000",
-  "tier_3_amount": "Above ₹10,000"
+  "tier_3_amount": "Above ₹10,000",
+  "investFirst": "முதலில் முதலீடு செய்யுங்கள்",
+  "noInvestmentDesc": "புள்ளிகளை மீட்க உங்களுக்குச் செயலில் உள்ள முதலீடு தேவை.",
+  "clickToJoinScheme": "திட்டத்தில் சேர இங்கே கிளிக் செய்யவும்",
+  "noTransactions": "பரிவர்த்தனைகள் எதுவும் இல்லை",
+  "redeemAtShop": "கடையில் மீட்கவும்",
+  "pointsAvailable": "கிடைக்கக்கூடிய புள்ளிகள்",
+  "redemptionDesc": "உங்கள் அடுத்த கொள்முதலின் போது இந்த புள்ளிகளை எங்கள் கடையில் மீட்டுக்கொள்ளலாம்.",
+  "gotIt": "சரி",
+  "noReferralsYet": "இன்னும் பரிந்துரைகள் இல்லை",
+  "referFriendsToEarn": "புள்ளிகளைப் பெற நண்பர்களைப் பரிந்துரைக்கவும்!",
+  "referNow": "இப்போதே பரிந்துரைக்கவும்",
+  "joinedAt": "சேர்ந்த தேதி"
 }

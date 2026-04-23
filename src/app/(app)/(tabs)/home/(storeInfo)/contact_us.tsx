@@ -49,7 +49,7 @@ const ContactUs = () => {
       android: `${scheme}${latLng}(${label})`,
     });
     if (url) {
-        Linking.openURL(url);
+      Linking.openURL(url);
     }
   };
 
@@ -184,7 +184,7 @@ const ContactUs = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: theme.colors.quaternary,
   },
   scrollView: {
     flex: 1,

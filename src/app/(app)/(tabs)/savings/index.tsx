@@ -41,58 +41,73 @@ export default function SchemesHub() {
     return (
         <View style={styles.container}>
             <LinearGradient
-                colors={[theme.colors.primary, darkenColor(theme.colors.primary, 0.2)]}
+                colors={["#F2E6D2", "#F5DEB3"]}
                 style={styles.headerArea}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             >
                 <SafeAreaView edges={["top"]} style={{ backgroundColor: "transparent" }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 0, paddingTop: 2 }}>
                         <TouchableOpacity
                             onPress={() => router.push("/(app)/(tabs)/home")}
                             style={{ padding: 4, marginRight: 12 }}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                            <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+                            <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
                         </TouchableOpacity>
-                        <Text style={{ fontSize: 20, fontWeight: "700", color: COLORS.white }}>
+                        <Text style={{ fontSize: 20, fontWeight: "700", color: "#1a1a1a" }}>
                             {typeof t("schemes") === 'object' ? t("schemes.title") : t("schemes") || "Schemes"}
                         </Text>
                     </View>
 
-                    {/* Top Tab Switcher */}
-                    <View style={styles.tabContainer}>
-                        <View style={styles.segmentedControl}>
+                    <View style={styles.pillSwitcherContainer}>
+                        <View style={styles.pillSwitcherBg}>
                             <TouchableOpacity
                                 style={[
-                                    styles.tabButton,
-                                    activeTab === "My Schemes" && styles.activeTabButton,
+                                    styles.pillTabItem,
+                                    activeTab === "My Schemes" && styles.pillTabActive
                                 ]}
                                 onPress={() => navigateTab("My Schemes")}
-                                activeOpacity={0.8}
+                                activeOpacity={0.9}
                             >
+                                {activeTab === "My Schemes" && (
+                                    <LinearGradient
+                                        colors={['#FFD700', '#DAA520']}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        style={StyleSheet.absoluteFill}
+                                    />
+                                )}
                                 <Text
                                     style={[
-                                        styles.tabButtonText,
-                                        activeTab === "My Schemes" && styles.activeTabButtonText,
+                                        styles.pillTabText,
+                                        activeTab === "My Schemes" && styles.pillTabActiveText,
                                     ]}
                                 >
                                     {t("mySchemes") || "My Schemes"}
                                 </Text>
                             </TouchableOpacity>
-
+ 
                             <TouchableOpacity
                                 style={[
-                                    styles.tabButton,
-                                    activeTab === "Join Schemes" && styles.activeTabButton,
+                                    styles.pillTabItem,
+                                    activeTab === "Join Schemes" && styles.pillTabActive
                                 ]}
                                 onPress={() => navigateTab("Join Schemes")}
-                                activeOpacity={0.8}
+                                activeOpacity={0.9}
                             >
+                                {activeTab === "Join Schemes" && (
+                                    <LinearGradient
+                                        colors={['#FFD700', '#DAA520']}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        style={StyleSheet.absoluteFill}
+                                    />
+                                )}
                                 <Text
                                     style={[
-                                        styles.tabButtonText,
-                                        activeTab === "Join Schemes" && styles.activeTabButtonText,
+                                        styles.pillTabText,
+                                        activeTab === "Join Schemes" && styles.pillTabActiveText,
                                     ]}
                                 >
                                     {t("joinSchemes") || "Join Schemes"}
@@ -126,15 +141,7 @@ export default function SchemesHub() {
     );
 }
 
-// Utility for darkening header slightly
-function darkenColor(hex: string, percent: number): string {
-    if (!hex) return "#000";
-    const num = parseInt(hex.replace("#", ""), 16);
-    const r = Math.max(0, Math.floor((num >> 16) * (1 - percent)));
-    const g = Math.max(0, Math.floor(((num >> 8) & 0x00FF) * (1 - percent)));
-    const b = Math.max(0, Math.floor((num & 0x0000FF) * (1 - percent)));
-    return `rgba(${r}, ${g}, ${b}, 1)`;
-}
+
 
 const styles = StyleSheet.create({
     container: {
@@ -142,56 +149,56 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.background,
     },
     headerArea: {
-        paddingBottom: 10,
-        // Removed borderBottomLeftRadius and borderBottomRightRadius to remain flat
+        paddingBottom: 0,
+        // Elevation and shadow for the sticky header look
         ...Platform.select({
             ios: {
                 shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.2,
-                shadowRadius: 5,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 3,
             },
             android: {
-                elevation: 6,
+                elevation: 4,
             },
         }),
         zIndex: 10,
     },
-    tabContainer: {
+    pillSwitcherContainer: {
         paddingHorizontal: 20,
-        paddingTop: 10,
+        marginVertical: 15,
     },
-    segmentedControl: {
+    pillSwitcherBg: {
         flexDirection: "row",
-        backgroundColor: "rgba(255, 255, 255, 0.2)",
-        borderRadius: 8,
+        backgroundColor: "rgba(0,0,0,0.06)",
+        borderRadius: 25,
         padding: 4,
+        overflow: 'hidden',
     },
-    tabButton: {
+    pillTabItem: {
         flex: 1,
         paddingVertical: 12,
         alignItems: "center",
-        borderRadius: 6,
+        justifyContent: 'center',
+        borderRadius: 22,
+        overflow: 'hidden',
     },
-    activeTabButton: {
-        backgroundColor: COLORS.white,
+    pillTabActive: {
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.2,
         shadowRadius: 4,
-        elevation: 3,
+        elevation: 4,
     },
-    tabButtonText: {
-        fontSize: 15,
-        fontWeight: "600",
-        color: COLORS.white,
-        textShadowColor: "rgba(0,0,0,0.1)",
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 2,
+    pillTabText: {
+        fontSize: 14,
+        fontWeight: "700",
+        color: "#666",
+        zIndex: 1,
     },
-    activeTabButtonText: {
-        color: theme.colors.primary,
-        textShadowColor: "transparent",
+    pillTabActiveText: {
+        color: "#000",
+        fontWeight: "900",
     },
     slider: {
         flex: 1,

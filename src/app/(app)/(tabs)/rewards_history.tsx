@@ -1,98 +1,128 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { rewardsAPI } from "@/services/api";
+import useGlobalStore from "@/store/global.store";
+import { useEffect, useState, useCallback } from "react";
+import ResponsiveText from "@/components/ResponsiveText";
+import { responsiveUtils } from "@/utils/responsiveUtils";
+
+const { wp, hp, rf } = responsiveUtils;
 
 export default function RewardsHistoryScreen() {
     const router = useRouter();
     const { t } = useTranslation();
+    const { user } = useGlobalStore();
+    const [referrals, setReferrals] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [selectedItem, setSelectedItem] = useState<any>(null);
+    const [detailsModalVisible, setDetailsModalVisible] = useState(false);
 
-    // Placeholder data
-    const transactionRecords = [
-        {
-            id: "1",
-            type: "EARN",
-            title: "Referred Friend (John Doe)",
-            points: "+250",
-            date: "12 Oct 2023",
-            time: "10:30 AM",
-        },
-        {
-            id: "2",
-            type: "REDEEM",
-            title: "Scheme Payment Offset",
-            points: "-150",
-            date: "05 Oct 2023",
-            time: "02:15 PM",
-        },
-        {
-            id: "3",
-            type: "EARN",
-            title: "Referred Friend (Jane Smith)",
-            points: "+50",
-            date: "28 Sep 2023",
-            time: "09:00 AM",
+    const fetchReferrals = useCallback(async () => {
+        if (!user?.id) return;
+
+        setLoading(true);
+        try {
+            const response = await rewardsAPI.getMyReferrals(user.id);
+            if (response.data.success && Array.isArray(response.data.data)) {
+                setReferrals(response.data.data);
+            }
+        } catch (error) {
+            console.error("Error fetching referrals:", error);
+        } finally {
+            setLoading(false);
         }
-    ];
+    }, [user?.id]);
+
+    useEffect(() => {
+        fetchReferrals();
+    }, [fetchReferrals]);
+
+    const handleItemPress = (item: any) => {
+        setSelectedItem(item);
+        setDetailsModalVisible(true);
+    };
 
     const renderTransactionItem = ({ item }: { item: any }) => {
-        const isEarn = item.type === "EARN";
+        const isEarn = true; // All from this API are earned rewards
+
+        // Manual date formatting instead of moment
+        const dateObj = new Date(item.joined_at);
+        const formattedDate = dateObj.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+        const formattedTime = dateObj.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
 
         return (
-            <View style={styles.transactionCard}>
+            <TouchableOpacity
+                style={styles.transactionCard}
+                onPress={() => handleItemPress(item)}
+                activeOpacity={0.7}
+            >
                 <View style={styles.transactionIconContainer}>
                     <Ionicons
-                        name={isEarn ? "arrow-down-circle" : "arrow-up-circle"}
+                        name={"arrow-down-circle"}
                         size={32}
-                        color={isEarn ? "#4CAF50" : "#F44336"}
+                        color={"#4CAF50"}
                     />
                 </View>
                 <View style={styles.transactionDetails}>
-                    <Text style={styles.transactionTitle}>{item.title}</Text>
-                    <Text style={styles.transactionDate}>{item.date} • {item.time}</Text>
+                    <Text style={styles.transactionTitle}>{item.name}</Text>
+                    <Text style={styles.transactionSubtitle}>{item.mobile_number}</Text>
+                    <Text style={styles.transactionDate}>{formattedDate} • {formattedTime}</Text>
                 </View>
                 <View style={styles.transactionPointsContainer}>
                     <Text style={[
                         styles.transactionPoints,
-                        { color: isEarn ? "#4CAF50" : "#F44336" }
+                        { color: "#4CAF50" }
                     ]}>
-                        {item.points}
+                        +{item.reward_earned}
                     </Text>
                     <Text style={styles.pointsLabel}>{t("points") || "Pts"}</Text>
                 </View>
-            </View>
+            </TouchableOpacity>
         );
     };
 
     return (
         <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-            <LinearGradient
-                colors={["#F2E6D2", "#F5DEB3"]}
-                style={styles.headerGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-            >
+            <View style={styles.headerContainer}>
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                        <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+                        <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{t("rewardHistory") || "Reward History"}</Text>
-                    <View style={{ width: 40 }} />
+
+                    <View style={styles.titleContainer}>
+                        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
+                            {t("rewardHistory") || "Reward History"}
+                        </ResponsiveText>
+                    </View>
+
+                    <View style={styles.headerRightPlaceholder} />
                 </View>
-            </LinearGradient>
+            </View>
 
             <View style={styles.contentContainer}>
-                {transactionRecords.length > 0 ? (
+                {referrals.length > 0 ? (
                     <FlatList
-                        data={transactionRecords}
-                        keyExtractor={(item) => item.id}
+                        data={referrals}
+                        keyExtractor={(item) => item.id.toString()}
                         renderItem={renderTransactionItem}
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
+                        refreshing={loading}
+                        onRefresh={fetchReferrals}
                     />
                 ) : (
                     <View style={styles.emptyContainer}>
@@ -101,6 +131,69 @@ export default function RewardsHistoryScreen() {
                     </View>
                 )}
             </View>
+
+            {/* Reward Detail Modal */}
+            <Modal
+                visible={detailsModalVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setDetailsModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.primary}>
+                                Reward Details
+                            </ResponsiveText>
+                            <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
+                                <Ionicons name="close-circle" size={28} color="#ccc" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {selectedItem && (
+                            <View style={styles.modalBody}>
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Customer Name</Text>
+                                    <Text style={styles.detailValue}>{selectedItem.name}</Text>
+                                </View>
+                                <View style={styles.detailDivider} />
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Mobile Number</Text>
+                                    <Text style={styles.detailValue}>{selectedItem.mobile_number}</Text>
+                                </View>
+                                <View style={styles.detailDivider} />
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Joined Date</Text>
+                                    <Text style={styles.detailValue}>
+                                        {new Date(selectedItem.joined_at).toLocaleDateString('en-IN', {
+                                            day: '2-digit', month: 'long', year: 'numeric'
+                                        })}
+                                    </Text>
+                                </View>
+                                <View style={styles.detailDivider} />
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Points Earned</Text>
+                                    <View style={styles.pointsBadge}>
+                                        <Text style={styles.pointsBadgeText}>+{selectedItem.reward_earned} Pts</Text>
+                                    </View>
+                                </View>
+                                <View style={styles.detailDivider} />
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Reference ID</Text>
+                                    <Text style={styles.detailValue}>#REF-{selectedItem.id.toString().padStart(4, '0')}</Text>
+                                </View>
+
+                                <TouchableOpacity
+                                    style={styles.closeBtn}
+                                    onPress={() => setDetailsModalVisible(false)}
+                                >
+                                    <Text style={styles.closeBtnText}>CLOSE</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -108,27 +201,32 @@ export default function RewardsHistoryScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#f5f7fa",
+        backgroundColor: "#F2E6D2",
     },
-    headerGradient: {
-        paddingBottom: 15,
-        borderBottomLeftRadius: 20,
-        borderBottomRightRadius: 20,
-        elevation: 4,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+    headerContainer: {
+        backgroundColor: "#F2E6D2",
+        borderBottomWidth: 1,
+        borderBottomColor: "rgba(0,0,0,0.05)",
     },
     header: {
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 20,
-        paddingTop: Platform.OS === 'ios' ? 10 : 20,
+        paddingHorizontal: wp(5),
+        paddingVertical: hp(1.5),
     },
     backButton: {
-        padding: 8,
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        zIndex: 10,
+    },
+    titleContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerRightPlaceholder: {
+        width: 40, // Match backButton width for centering
     },
     headerTitle: {
         fontSize: 20,
@@ -163,9 +261,14 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     transactionTitle: {
-        fontSize: 15,
-        fontWeight: "600",
+        fontSize: 16,
+        fontWeight: "700",
         color: "#1a1a1a",
+        marginBottom: 2,
+    },
+    transactionSubtitle: {
+        fontSize: 13,
+        color: "#444",
         marginBottom: 4,
     },
     transactionDate: {
@@ -193,5 +296,69 @@ const styles = StyleSheet.create({
         marginTop: 16,
         fontSize: 16,
         color: "#888",
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        justifyContent: "flex-end",
+    },
+    modalContent: {
+        backgroundColor: "#fff",
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        minHeight: 400,
+    },
+    modalHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 24,
+    },
+    modalBody: {
+    },
+    detailRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingVertical: 12,
+    },
+    detailLabel: {
+        fontSize: 14,
+        color: "#666",
+        fontWeight: "500",
+    },
+    detailValue: {
+        fontSize: 15,
+        color: "#1a1a1a",
+        fontWeight: "700",
+    },
+    detailDivider: {
+        height: 1,
+        backgroundColor: "#f0f0f0",
+    },
+    pointsBadge: {
+        backgroundColor: "rgba(76,175,80,0.1)",
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+    },
+    pointsBadgeText: {
+        color: "#4CAF50",
+        fontWeight: "bold",
+        fontSize: 14,
+    },
+    closeBtn: {
+        backgroundColor: theme.colors.primary,
+        borderRadius: 12,
+        paddingVertical: 16,
+        alignItems: "center",
+        marginTop: 32,
+    },
+    closeBtnText: {
+        color: "#fff",
+        fontSize: 14,
+        fontWeight: "bold",
+        letterSpacing: 1,
     }
 });

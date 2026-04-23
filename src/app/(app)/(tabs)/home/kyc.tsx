@@ -25,6 +25,7 @@ import api from "@/services/api";
 import { theme } from "@/constants/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "@react-navigation/native";
+import { t } from "@/i18n";
 
 import { logger } from "@/utils/logger";
 const indianStates = [
@@ -637,431 +638,470 @@ export default function KycForm() {
   };
 
   return (
-    <View style={styles.container}>
-      <ImageBackground
-        source={theme.image.bg_image as any}
-        style={styles.backgroundImage}
-        resizeMode="cover"
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoid}
       >
-        <LinearGradient
-          colors={[theme.colors.primary, theme.colors.primary]}
-          style={StyleSheet.absoluteFillObject}
-        />
-        <SafeAreaView style={styles.safeArea}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.keyboardAvoid}
-            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-          >
-            <ScrollView
-              style={styles.scrollView}
-              contentContainerStyle={[
-                styles.scrollViewContent,
-                { paddingBottom: keyboardVisible ? 50 : 20 },
-              ]}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
+        {/* Fixed Header */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backButton}
             >
-              {/* Main KYC Form Card */}
-              <View style={styles.mainCard}>
-                {/* Address Section */}
-                <View style={styles.sectionContainer}>
-                  <View style={styles.sectionHeader}>
-                    <Ionicons name="home-outline" size={24} color="#1976d2" />
-                    <Text style={[styles.sectionTitle, { color: "#1976d2" }]}>
-                      Address Details
-                    </Text>
-                  </View>
-                  <View style={styles.formContent}>
-                    {/* Pincode */}
-                    <View style={styles.formGroup}>
-                      <Text style={styles.label}>Pincode</Text>
-                      <View style={styles.pincodeContainer}>
-                        <TextInput
-                          style={styles.input}
-                          placeholder="Enter your 6-digit pincode"
-                          placeholderTextColor="gray"
-                          keyboardType="number-pad"
-                          value={formData.pincode}
-                          onChangeText={handlePincodeChange}
-                          maxLength={6}
-                        />
-                        {isLoadingPincode && (
-                          <View style={styles.loadingIndicator}>
-                            <Text style={styles.loadingText}>Loading...</Text>
-                          </View>
-                        )}
+              <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+            </TouchableOpacity>
+            <View style={styles.headerInfo}>
+              <Text style={styles.headerTitle}>{t("kycDetails")}</Text>
+              <Text style={styles.headerSubtitle}>
+                Update your personal details
+              </Text>
+            </View>
+            <View style={styles.headerRightPlaceholder} />
+          </View>
+        </View>
+
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.scrollViewContent,
+            { paddingBottom: keyboardVisible ? 50 : 20 },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Main KYC Form Card */}
+          <View style={styles.mainCard}>
+            {/* Address Section */}
+            <View style={styles.sectionContainer}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="home-outline" size={24} color="#1976d2" />
+                <Text style={[styles.sectionTitle, { color: "#1976d2" }]}>
+                  Address Details
+                </Text>
+              </View>
+              <View style={styles.formContent}>
+                {/* Pincode */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Pincode</Text>
+                  <View style={styles.pincodeContainer}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter your 6-digit pincode"
+                      placeholderTextColor="gray"
+                      keyboardType="number-pad"
+                      value={formData.pincode}
+                      onChangeText={handlePincodeChange}
+                      maxLength={6}
+                    />
+                    {isLoadingPincode && (
+                      <View style={styles.loadingIndicator}>
+                        <Text style={styles.loadingText}>Loading...</Text>
                       </View>
-                      {errors.pincode && (
-                        <Text style={styles.errorText}>{errors.pincode}</Text>
-                      )}
-                      {formData.pincode.length === 6 &&
-                        pincodeData.length === 0 &&
-                        !isLoadingPincode && (
-                          <Text style={styles.helpText}>
-                            No cities found for this pincode. Please verify the
-                            pincode.
-                          </Text>
-                        )}
-                      {formData.pincode.length === 6 &&
-                        pincodeData.length > 0 && (
-                          <Text style={styles.helpText}>
-                            {pincodeData.length} cities found. Select one to
-                            auto-fill address details.
-                          </Text>
-                        )}
-                    </View>
-                    {/* City */}
-                    <View style={styles.formGroup}>
-                      <Text style={styles.label}>City</Text>
-                      {pincodeData.length > 0 ? (
-                        <Dropdown
-                          style={[
-                            styles.dropdown,
-                            focusedField === "city" && styles.dropdownFocused,
-                          ]}
-                          placeholderStyle={styles.placeholderStyle}
-                          selectedTextStyle={styles.selectedTextStyle}
-                          data={pincodeData.map((city) => ({
-                            label: city.Name,
-                            value: city.Name,
-                          }))}
-                          maxHeight={300}
-                          labelField="label"
-                          valueField="value"
-                          placeholder="Select your city"
-                          value={formData.city}
-                          onFocus={() => setFocusedField("city")}
-                          onBlur={() => setFocusedField(null)}
-                          onChange={(item) => {
-                            handleCitySelection(item.value);
-                            setFocusedField(null);
-                          }}
-                        />
-                      ) : (
-                        <TextInput
-                          style={[styles.input, styles.disabledInput]}
-                          placeholder="Enter pincode first to select city"
-                          value={formData.city}
-                          editable={false}
-                        />
-                      )}
-                      {errors.city && (
-                        <Text style={styles.errorText}>{errors.city}</Text>
-                      )}
-                    </View>
-                    {/* District */}
-                    <View style={styles.formGroup}>
-                      <Text style={styles.label}>District</Text>
-                      <TextInput
-                        style={[styles.input, styles.disabledInput]}
-                        placeholder={
-                          formData.pincode.length === 6
-                            ? "Will be auto-filled when city is selected"
-                            : "Enter pincode first"
-                        }
-                        value={formData.district}
-                        editable={false}
-                      />
-                      {errors.district && (
-                        <Text style={styles.errorText}>{errors.district}</Text>
-                      )}
-                    </View>
-                    {/* State (Auto-filled) */}
-                    <View style={styles.formGroup}>
-                      <Text style={styles.label}>State</Text>
-                      <TextInput
-                        style={[styles.input, styles.disabledInput]}
-                        placeholder={
-                          formData.pincode.length === 6
-                            ? "Will be auto-filled when city is selected"
-                            : "Enter pincode first"
-                        }
-                        value={formData.state}
-                        editable={false}
-                      />
-                      {errors.state && (
-                        <Text style={styles.errorText}>{errors.state}</Text>
-                      )}
-                    </View>
-                    {/* Country (Default to India) */}
-                    <View style={styles.formGroup}>
-                      <Text style={styles.label}>Country</Text>
-                      <TextInput
-                        style={[styles.input, styles.disabledInput]}
-                        placeholder="Country"
-                        value={formData.country}
-                        editable={false}
-                      />
-                      {errors.country && (
-                        <Text style={styles.errorText}>{errors.country}</Text>
-                      )}
-                    </View>
-                    {/* Manual Address Fields */}
-                    <View style={styles.formGroup}>
-                      <Text style={styles.sectionSubtitle}>
-                        Enter these details manually:
+                    )}
+                  </View>
+                  {errors.pincode && (
+                    <Text style={styles.errorText}>{errors.pincode}</Text>
+                  )}
+                  {formData.pincode.length === 6 &&
+                    pincodeData.length === 0 &&
+                    !isLoadingPincode && (
+                      <Text style={styles.helpText}>
+                        No cities found for this pincode. Please verify the
+                        pincode.
                       </Text>
-                    </View>
-
-                    {/* Door Number */}
-                    <View style={styles.formGroup}>
-                      <Text style={styles.label}>Door No.</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Enter your door number"
-                        value={formData.doorno}
-                        placeholderTextColor="gray"
-                        onChangeText={(text) => handleChange("doorno", text)}
-                      />
-                      {errors.doorno && (
-                        <Text style={styles.errorText}>{errors.doorno}</Text>
-                      )}
-                    </View>
-                    {/* Street */}
-                    <View style={styles.formGroup}>
-                      <Text style={styles.label}>Street</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Enter your street name"
-                        placeholderTextColor="gray"
-                        value={formData.street}
-                        onChangeText={(text) => handleChange("street", text)}
-                      />
-                      {errors.street && (
-                        <Text style={styles.errorText}>{errors.street}</Text>
-                      )}
-                    </View>
-                    {/* Area */}
-                    <View style={styles.formGroup}>
-                      <Text style={styles.label}>Area</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Enter your area/locality"
-                        placeholderTextColor="gray"
-                        value={formData.area}
-                        onChangeText={(text) => handleChange("area", text)}
-                      />
-                      {errors.area && (
-                        <Text style={styles.errorText}>{errors.area}</Text>
-                      )}
-                    </View>
-                  </View>
+                    )}
+                  {formData.pincode.length === 6 &&
+                    pincodeData.length > 0 && (
+                      <Text style={styles.helpText}>
+                        {pincodeData.length} cities found. Select one to
+                        auto-fill address details.
+                      </Text>
+                    )}
                 </View>
-
-                {/* ID Proof Section */}
-                <View style={styles.sectionContainer}>
-                  <View style={styles.sectionHeader}>
-                    <Ionicons name="card-outline" size={24} color="#bfa14a" />
-                    <Text style={[styles.sectionTitle, { color: "#bfa14a" }]}>
-                      ID Proof
-                    </Text>
-                  </View>
-                  <View style={styles.formContent}>
-                    <View style={styles.formGroup}>
-                      <FormDatePicker
-                        label="Date of Birth"
-                        value={formData.dob}
-                        onDateChange={(date) => handleChange("dob", date)}
-                        error={errors.dob}
-                      />
-                    </View>
-                    <View style={styles.formGroup}>
-                      <Text style={styles.label}>Address Proof Type</Text>
-                      <Dropdown
-                        style={[
-                          styles.dropdown,
-                          focusedField === "addressprooftype" &&
-                            styles.dropdownFocused,
-                        ]}
-                        placeholderStyle={styles.placeholderStyle}
-                        selectedTextStyle={styles.selectedTextStyle}
-                        data={idTypes.map((id) => ({
-                          label: id.name,
-                          value: id.value,
-                        }))}
-                        maxHeight={300}
-                        labelField="label"
-                        valueField="value"
-                        placeholder="Select your ID proof"
-                        value={formData.addressprooftype}
-                        onFocus={() => setFocusedField("addressprooftype")}
-                        onBlur={() => setFocusedField(null)}
-                        onChange={(item) => {
-                          handleChange("addressprooftype", item.value);
-                          setFocusedField(null);
-                        }}
-                      />
-                      {errors.addressprooftype && (
-                        <Text style={styles.errorText}>
-                          {errors.addressprooftype}
-                        </Text>
-                      )}
-                    </View>
-                    <View style={styles.formGroup}>
-                      <Text style={styles.label}>ID Number</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholderTextColor="gray"
-                        placeholder={getPlaceholderText(
-                          formData.addressprooftype
-                        )}
-                        value={formData.idNumber}
-                        onChangeText={(text) =>
-                          handleChange(
-                            "idNumber",
-                            formatIdNumber(text, formData.addressprooftype)
-                          )
-                        }
-                        autoCapitalize={
-                          formData.addressprooftype === "pan"
-                            ? "characters"
-                            : "none"
-                        }
-                        keyboardType={
-                          formData.addressprooftype === "pan"
-                            ? "default"
-                            : "number-pad"
-                        }
-                        maxLength={getMaxLength(formData.addressprooftype)}
-                      />
-                      {errors.idNumber && (
-                        <Text style={styles.errorText}>{errors.idNumber}</Text>
-                      )}
-                    </View>
-                  </View>
-                </View>
-
-                {/* Nominee Section */}
-                <View style={styles.sectionContainer}>
-                  <View style={styles.sectionHeader}>
-                    <Ionicons name="people-outline" size={24} color="#388e3c" />
-                    <Text style={[styles.sectionTitle, { color: "#388e3c" }]}>
-                      Nominee Details
-                    </Text>
-                  </View>
-                  <View style={styles.formGroup}>
-                    <Text style={styles.label}>Nominee Relationship</Text>
+                {/* City */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>City</Text>
+                  {pincodeData.length > 0 ? (
                     <Dropdown
                       style={[
                         styles.dropdown,
-                        focusedField === "nominee_relationship" &&
-                          styles.dropdownFocused,
+                        focusedField === "city" && styles.dropdownFocused,
                       ]}
                       placeholderStyle={styles.placeholderStyle}
                       selectedTextStyle={styles.selectedTextStyle}
-                      data={nomineeRelationship.map((id) => ({
-                        label: id.name,
-                        value: id.value,
+                      data={pincodeData.map((city) => ({
+                        label: city.Name,
+                        value: city.Name,
                       }))}
                       maxHeight={300}
                       labelField="label"
                       valueField="value"
-                      placeholder="Select relationship"
-                      value={formData.nominee_relationship}
-                      onFocus={() => setFocusedField("nominee_relationship")}
+                      placeholder="Select your city"
+                      value={formData.city}
+                      onFocus={() => setFocusedField("city")}
                       onBlur={() => setFocusedField(null)}
                       onChange={(item) => {
-                        handleChange("nominee_relationship", item.value);
+                        handleCitySelection(item.value);
                         setFocusedField(null);
                       }}
                     />
-                    {errors.nominee_relationship && (
-                      <Text style={styles.errorText}>
-                        {errors.nominee_relationship}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={styles.formContent}>
-                    <View style={styles.formGroup}>
-                      <Text style={styles.label}>Nominee Name</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Enter your nominee's full name"
-                        placeholderTextColor="gray"
-                        value={formData.nominee_name}
-                        onChangeText={(text) =>
-                          handleChange("nominee_name", text)
-                        }
-                      />
-                      {errors.nominee_name && (
-                        <Text style={styles.errorText}>
-                          {errors.nominee_name}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
+                  ) : (
+                    <TextInput
+                      style={[styles.input, styles.disabledInput]}
+                      placeholder="Enter pincode first to select city"
+                      value={formData.city}
+                      editable={false}
+                    />
+                  )}
+                  {errors.city && (
+                    <Text style={styles.errorText}>{errors.city}</Text>
+                  )}
+                </View>
+                {/* District */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>District</Text>
+                  <TextInput
+                    style={[styles.input, styles.disabledInput]}
+                    placeholder={
+                      formData.pincode.length === 6
+                        ? "Will be auto-filled when city is selected"
+                        : "Enter pincode first"
+                    }
+                    value={formData.district}
+                    editable={false}
+                  />
+                  {errors.district && (
+                    <Text style={styles.errorText}>{errors.district}</Text>
+                  )}
+                </View>
+                {/* State (Auto-filled) */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>State</Text>
+                  <TextInput
+                    style={[styles.input, styles.disabledInput]}
+                    placeholder={
+                      formData.pincode.length === 6
+                        ? "Will be auto-filled when city is selected"
+                        : "Enter pincode first"
+                    }
+                    value={formData.state}
+                    editable={false}
+                  />
+                  {errors.state && (
+                    <Text style={styles.errorText}>{errors.state}</Text>
+                  )}
+                </View>
+                {/* Country (Default to India) */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Country</Text>
+                  <TextInput
+                    style={[styles.input, styles.disabledInput]}
+                    placeholder="Country"
+                    value={formData.country}
+                    editable={false}
+                  />
+                  {errors.country && (
+                    <Text style={styles.errorText}>{errors.country}</Text>
+                  )}
+                </View>
+                {/* Manual Address Fields */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.sectionSubtitle}>
+                    Enter these details manually:
+                  </Text>
                 </View>
 
-                {/* Submit Button */}
-                <View style={styles.buttonContainer}>
-                  <TouchableOpacity
-                    onPress={handleSubmit}
-                    style={styles.submitButton}
-                    activeOpacity={0.9}
-                  >
-                    <LinearGradient
-                      colors={[theme.colors.primary, theme.colors.primary]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.gradientButton}
-                    >
-                      <Text style={styles.submitButtonText}>
-                        {kycId ? "Update KYC" : "Submit KYC"}
-                      </Text>
-                      <Ionicons
-                        name="arrow-forward"
-                        size={20}
-                        color="#FFC857"
-                        style={styles.buttonIcon}
-                      />
-                    </LinearGradient>
-                  </TouchableOpacity>
+                {/* Door Number */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Door No.</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your door number"
+                    value={formData.doorno}
+                    placeholderTextColor="gray"
+                    onChangeText={(text) => handleChange("doorno", text)}
+                  />
+                  {errors.doorno && (
+                    <Text style={styles.errorText}>{errors.doorno}</Text>
+                  )}
+                </View>
+                {/* Street */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Street</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your street name"
+                    placeholderTextColor="gray"
+                    value={formData.street}
+                    onChangeText={(text) => handleChange("street", text)}
+                  />
+                  {errors.street && (
+                    <Text style={styles.errorText}>{errors.street}</Text>
+                  )}
+                </View>
+                {/* Area */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Area</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your area/locality"
+                    placeholderTextColor="gray"
+                    value={formData.area}
+                    onChangeText={(text) => handleChange("area", text)}
+                  />
+                  {errors.area && (
+                    <Text style={styles.errorText}>{errors.area}</Text>
+                  )}
                 </View>
               </View>
+            </View>
 
-              {/* Extra space at the bottom */}
-              <View style={styles.bottomSpace} />
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
-      </ImageBackground>
-    </View>
+            {/* ID Proof Section */}
+            <View style={styles.sectionContainer}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="card-outline" size={24} color="#bfa14a" />
+                <Text style={[styles.sectionTitle, { color: "#bfa14a" }]}>
+                  ID Proof
+                </Text>
+              </View>
+              <View style={styles.formContent}>
+                <View style={styles.formGroup}>
+                  <FormDatePicker
+                    label="Date of Birth"
+                    value={formData.dob}
+                    onDateChange={(date) => handleChange("dob", date)}
+                    error={errors.dob}
+                  />
+                </View>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Address Proof Type</Text>
+                  <Dropdown
+                    style={[
+                      styles.dropdown,
+                      focusedField === "addressprooftype" &&
+                      styles.dropdownFocused,
+                    ]}
+                    placeholderStyle={styles.placeholderStyle}
+                    selectedTextStyle={styles.selectedTextStyle}
+                    data={idTypes.map((id) => ({
+                      label: id.name,
+                      value: id.value,
+                    }))}
+                    maxHeight={300}
+                    labelField="label"
+                    valueField="value"
+                    placeholder="Select your ID proof"
+                    value={formData.addressprooftype}
+                    onFocus={() => setFocusedField("addressprooftype")}
+                    onBlur={() => setFocusedField(null)}
+                    onChange={(item) => {
+                      handleChange("addressprooftype", item.value);
+                      setFocusedField(null);
+                    }}
+                  />
+                  {errors.addressprooftype && (
+                    <Text style={styles.errorText}>
+                      {errors.addressprooftype}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>ID Number</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholderTextColor="gray"
+                    placeholder={getPlaceholderText(
+                      formData.addressprooftype
+                    )}
+                    value={formData.idNumber}
+                    onChangeText={(text) =>
+                      handleChange(
+                        "idNumber",
+                        formatIdNumber(text, formData.addressprooftype)
+                      )
+                    }
+                    autoCapitalize={
+                      formData.addressprooftype === "pan"
+                        ? "characters"
+                        : "none"
+                    }
+                    keyboardType={
+                      formData.addressprooftype === "pan"
+                        ? "default"
+                        : "number-pad"
+                    }
+                    maxLength={getMaxLength(formData.addressprooftype)}
+                  />
+                  {errors.idNumber && (
+                    <Text style={styles.errorText}>{errors.idNumber}</Text>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Nominee Section */}
+            <View style={styles.sectionContainer}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="people-outline" size={24} color="#388e3c" />
+                <Text style={[styles.sectionTitle, { color: "#388e3c" }]}>
+                  Nominee Details
+                </Text>
+              </View>
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Nominee Relationship</Text>
+                <Dropdown
+                  style={[
+                    styles.dropdown,
+                    focusedField === "nominee_relationship" &&
+                    styles.dropdownFocused,
+                  ]}
+                  placeholderStyle={styles.placeholderStyle}
+                  selectedTextStyle={styles.selectedTextStyle}
+                  data={nomineeRelationship.map((id) => ({
+                    label: id.name,
+                    value: id.value,
+                  }))}
+                  maxHeight={300}
+                  labelField="label"
+                  valueField="value"
+                  placeholder="Select relationship"
+                  value={formData.nominee_relationship}
+                  onFocus={() => setFocusedField("nominee_relationship")}
+                  onBlur={() => setFocusedField(null)}
+                  onChange={(item) => {
+                    handleChange("nominee_relationship", item.value);
+                    setFocusedField(null);
+                  }}
+                />
+                {errors.nominee_relationship && (
+                  <Text style={styles.errorText}>
+                    {errors.nominee_relationship}
+                  </Text>
+                )}
+              </View>
+              <View style={styles.formContent}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Nominee Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your nominee's full name"
+                    placeholderTextColor="gray"
+                    value={formData.nominee_name}
+                    onChangeText={(text) =>
+                      handleChange("nominee_name", text)
+                    }
+                  />
+                  {errors.nominee_name && (
+                    <Text style={styles.errorText}>
+                      {errors.nominee_name}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Submit Button */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                onPress={handleSubmit}
+                style={styles.submitButton}
+                activeOpacity={0.9}
+              >
+                <LinearGradient
+                  colors={[theme.colors.primary, theme.colors.primary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.gradientButton}
+                >
+                  <Text style={styles.submitButtonText}>
+                    {kycId ? "Update KYC" : "Submit KYC"}
+                  </Text>
+                  <Ionicons
+                    name="arrow-forward"
+                    size={20}
+                    color="#FFC857"
+                    style={styles.buttonIcon}
+                  />
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Extra space at the bottom */}
+          <View style={styles.bottomSpace} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
-}
+};
 
 
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  backgroundImage: {
-    flex: 1,
+    backgroundColor: theme.colors.quaternary || "#F2E6D2",
   },
   keyboardAvoid: {
     flex: 1,
   },
-  safeArea: {
+  header: {
+    paddingTop: Platform.OS === "ios" ? 10 : 20,
+    paddingBottom: 10,
+    paddingHorizontal: 20,
+    backgroundColor: theme.colors.quaternary || "#F2E6D2",
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 15,
+  },
+  headerInfo: {
     flex: 1,
+    alignItems: "center",
+  },
+  headerRightPlaceholder: {
+    width: 40,
+    marginRight: 15,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: theme.colors.primary,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: theme.colors.primary,
+    marginTop: 2,
   },
   scrollView: {
     flex: 1,
   },
   scrollViewContent: {
-    padding: 24,
-    paddingTop: 0,
+    flexGrow: 1,
+    paddingBottom: 40,
+    paddingTop: 10,
   },
   mainCard: {
+    backgroundColor: "white",
     borderRadius: 20,
-    padding: 24,
-    marginBottom: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    padding: 20,
+    marginHorizontal: 15,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
   },
   sectionContainer: {
     marginBottom: 24,

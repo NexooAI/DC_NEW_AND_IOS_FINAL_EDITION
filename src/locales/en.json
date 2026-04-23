@@ -1,4 +1,6 @@
 {
+  "newSchemes": "New Schemes",
+  "savingsHome": "Chit Home",
   "DC_Jewellers_Featured_Video": "DC Jewellers - Featured Video",
   "Fixed": "Fixed",
   "Flexi": "Flexi",
@@ -15,6 +17,10 @@
   "aboutus_achievements": "Our Achievements",
   "aboutus_hero_subtitle": "Your trusted partner in jewellery since 1995",
   "aboutus_hero_title": "About DC Jewellers",
+  "advanceBooking": "Advance Booking",
+  "chooseDestination": "Choose Destination",
+  "dashboard": "Dashboard",
+  "whereWouldYouLikeToGo": "Where would you like to go?",
   "aboutus_legacy_years": "25+ Years of Excellence",
   "aboutus_our_journey": "Our Journey",
   "aboutus_our_legacy": "Our Legacy",
@@ -108,6 +114,7 @@
   "callNow": "Call Now",
   "call": "Call",
   "whatsapp": "WhatsApp",
+  "billPayments": "Bill Payments",
   "mySchemes": "My Schemes",
   "quickJoin": "Quick Join",
   "joinThisSchemes": "Join Now",
@@ -371,6 +378,7 @@
   "logoutError": "Logout Error",
   "logout_confirmation_message": "Are you sure you want to logout?",
   "logout_confirmation_title": "Confirm Logout",
+  "luckyDraw": "Lucky Draw",
   "malayalam": "Malayalam",
   "maps": "Maps",
   "maturesOn": "Matures On",
@@ -425,6 +433,7 @@
   "navigationError": "Navigation Error",
   "networkError": "Network Error",
   "newArrivals": "New Arrivals",
+  "newCollections": "New Collections",
   "newFlexibleSchemes": "We're excited to announce new flexible investment schemes with better returns and lower entry amounts.",
   "newMpin": "New MPIN",
   "newMpinSameAsCurrent": "New MPIN cannot be the same as current MPIN",
@@ -666,7 +675,10 @@
         "Free locker facility"
       ]
     },
-    "amountRange": "₹100 to ₹10,000"
+    "amountRange": "₹100 to ₹10,000",
+    "explore": "Explore Schemes",
+    "subtitle": "Find the perfect gold savings plan for you",
+    "minimumAmount": "Minimum Amount"
   },
   "searchAddresses": "Search addresses...",
   "secureInvestment": "Secure Investment",
@@ -1127,5 +1139,17 @@
   "premium_reward_tiers_desc": "Your rewards scale with your friend's first payment amount",
   "tier_1_amount": "₹100 to ₹1,000",
   "tier_2_amount": "₹1,000 to ₹10,000",
-  "tier_3_amount": "Above ₹10,000"
+  "tier_3_amount": "Above ₹10,000",
+  "investFirst": "Invest First",
+  "noInvestmentDesc": "You need an active investment to redeem points.",
+  "clickToJoinScheme": "Click to join a scheme",
+  "redeemAtShop": "Redeem at Shop",
+  "pointsAvailable": "Points Available",
+  "redemptionDesc": "You can redeem these points at our shop during your next purchase.",
+  "gotIt": "Got It",
+  "noReferralsYet": "No referrals yet",
+  "referFriendsToEarn": "Refer friends to start earning points!",
+  "referNow": "Refer Now",
+  "joinedAt": "Joined at",
+  "noTransactions": "No recent transactions found"
 }

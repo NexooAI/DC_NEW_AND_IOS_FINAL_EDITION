@@ -143,6 +143,9 @@ interface GlobalStore {
   isRatesCacheValid: (maxAge?: number) => boolean;
   isSchemesCacheValid: (maxAge?: number) => boolean;
 
+  // Chat Support visibility
+  isChatOpen: boolean;
+  setChatOpen: (open: boolean) => void;
 
   // Debug function
   debugState: () => GlobalStore;
@@ -350,6 +353,9 @@ const useGlobalStore = create<GlobalStore>()(
         return age < maxAge;
       },
 
+      // Chat Support visibility
+      isChatOpen: false,
+      setChatOpen: (open: boolean) => set({ isChatOpen: open }),
 
       // Debug function to check current state
       debugState: () => {

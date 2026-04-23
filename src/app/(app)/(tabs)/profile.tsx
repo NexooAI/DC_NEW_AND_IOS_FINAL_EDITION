@@ -41,6 +41,10 @@ import LanguageSelector from "@/components/LanguageSelector";
 import { getLanguageName } from "@/utils/languageUtils";
 import { useBiometrics } from "@/hooks/useBiometrics";
 import { Switch } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import ResponsiveText from "@/components/ResponsiveText";
+import { wp, hp, rf } from "@/utils/responsiveUtils";
+
 
 const ProfileScreen = () => {
   const { t } = useTranslation();
@@ -560,27 +564,43 @@ const ProfileScreen = () => {
 
   return (
     <AuthGuard>
-      <View style={styles.container}>
-        {/* Header Background */}
-        <View style={styles.headerContainer}>
-          <LinearGradient
-            colors={[
-              theme.colors.quaternary,
-              theme.colors.quaternary,
-            ]}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={styles.headerOverlay} />
-        </View>
-
+      <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
         <KeyboardAvoidingView
           style={styles.keyboardAvoid}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <TouchableOpacity
+                onPress={() => router.push("/home")}
+                style={styles.backButton}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name="arrow-back"
+                  size={22}
+                  color={theme.colors.primary}
+                />
+              </TouchableOpacity>
+              <View style={styles.headerTextWrap}>
+                <ResponsiveText
+                  variant="title"
+                  size="xl"
+                  weight="bold"
+                  color={theme.colors.primary}
+                >
+                  {t("profile") || "Profile"}
+                </ResponsiveText>
+              </View>
+              <View style={styles.headerSpacer} />
+            </View>
+          </View>
+
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
+
             <Animated.View style={[styles.contentWrapper, slideTransform]}>
               {/* Profile Header Card */}
               <View style={styles.profileCard}>
@@ -896,184 +916,185 @@ const ProfileScreen = () => {
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
-      </View>
 
-      {/* Rating Modal */}
-      <RatingModal
-        visible={showRatingModal}
-        onClose={() => setShowRatingModal(false)}
-      />
 
-      {/* Logout Modal */}
-      <Modal
-        visible={showLogoutModal}
-        transparent
-        animationType="fade"
-        onRequestClose={cancelLogout}
-      >
-        <BlurView intensity={80} style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalIcon}>
-              <Icon name="logout" size={40} color="#FF4444" />
+        {/* Rating Modal */}
+        <RatingModal
+          visible={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+        />
+
+        {/* Logout Modal */}
+        <Modal
+          visible={showLogoutModal}
+          transparent
+          animationType="fade"
+          onRequestClose={cancelLogout}
+        >
+          <BlurView intensity={80} style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalIcon}>
+                <Icon name="logout" size={40} color="#FF4444" />
+              </View>
+              <Text style={styles.modalTitle}>
+                {t("logout_confirmation_title") || "Logout"}
+              </Text>
+              <Text style={styles.modalMessage}>
+                {t("logout_confirmation_message") || "Are you sure you want to logout?"}
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.modalCancelButton}
+                  onPress={cancelLogout}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.modalCancelText}>{t("cancel")}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalConfirmButton}
+                  onPress={confirmLogout}
+                  activeOpacity={0.7}
+                >
+                  <LinearGradient
+                    colors={["#FF4444", "#CC0000"]}
+                    style={StyleSheet.absoluteFill}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                  />
+                  <Text style={styles.modalConfirmText}>{t("logout")}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <Text style={styles.modalTitle}>
-              {t("logout_confirmation_title") || "Logout"}
-            </Text>
-            <Text style={styles.modalMessage}>
-              {t("logout_confirmation_message") || "Are you sure you want to logout?"}
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalCancelButton}
-                onPress={cancelLogout}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.modalCancelText}>{t("cancel")}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalConfirmButton}
-                onPress={confirmLogout}
-                activeOpacity={0.7}
-              >
-                <LinearGradient
-                  colors={["#FF4444", "#CC0000"]}
-                  style={StyleSheet.absoluteFill}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                />
-                <Text style={styles.modalConfirmText}>{t("logout")}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </BlurView>
-      </Modal>
+          </BlurView>
+        </Modal>
 
-      <LanguageSelector
-        visible={languageSelectorVisible}
-        onClose={() => setLanguageSelectorVisible(false)}
-      />
+        <LanguageSelector
+          visible={languageSelectorVisible}
+          onClose={() => setLanguageSelectorVisible(false)}
+        />
 
-      {/* MPIN Input Modal for Biometrics */}
-      <Modal
-        visible={showMpinModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowMpinModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.mpinModalContainer}>
-            <Text style={styles.mpinModalTitle}>{t("enterMpin") || "Enter MPIN"}</Text>
-            <Text style={styles.mpinModalDesc}>{t("verifyMpinToEnableBiometrics") || "Please enter your MPIN to enable biometric login"}</Text>
+        {/* MPIN Input Modal for Biometrics */}
+        <Modal
+          visible={showMpinModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowMpinModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.mpinModalContainer}>
+              <Text style={styles.mpinModalTitle}>{t("enterMpin") || "Enter MPIN"}</Text>
+              <Text style={styles.mpinModalDesc}>{t("verifyMpinToEnableBiometrics") || "Please enter your MPIN to enable biometric login"}</Text>
 
-            <TextInput
-              style={styles.mpinInput}
-              value={mpinInput}
-              onChangeText={(text) => setMpinInput(text.replace(/[^0-9]/g, '').slice(0, 4))}
-              keyboardType="numeric"
-              maxLength={4}
-              secureTextEntry
-              autoFocus
-            />
+              <TextInput
+                style={styles.mpinInput}
+                value={mpinInput}
+                onChangeText={(text) => setMpinInput(text.replace(/[^0-9]/g, '').slice(0, 4))}
+                keyboardType="numeric"
+                maxLength={4}
+                secureTextEntry
+                autoFocus
+              />
 
-            <View style={styles.mpinModalActions}>
-              <TouchableOpacity
-                style={styles.mpinModalCancel}
-                onPress={() => {
-                  setShowMpinModal(false);
-                  setMpinInput("");
-                }}
-              >
-                <Text style={styles.mpinModalCancelText}>{t("cancel")}</Text>
-              </TouchableOpacity>
+              <View style={styles.mpinModalActions}>
+                <TouchableOpacity
+                  style={styles.mpinModalCancel}
+                  onPress={() => {
+                    setShowMpinModal(false);
+                    setMpinInput("");
+                  }}
+                >
+                  <Text style={styles.mpinModalCancelText}>{t("cancel")}</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.mpinModalConfirm}
-                onPress={handleConfirmMpinForBiometrics}
-              >
-                <Text style={styles.mpinModalConfirmText}>{t("enable") || "Enable"}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Delete Account Confirmation Modal */}
-      <Modal
-        visible={showDeleteAccountModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={cancelDeleteAccount}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>
-              {t("deleteAccount_confirmation_title")}
-            </Text>
-            <Text style={styles.modalMessage}>
-              {t("deleteAccount_confirmation_message")}
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalCancelButton}
-                onPress={cancelDeleteAccount}
-              >
-                <Text style={styles.modalCancelText}>{t("cancel")}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.modalConfirmButton,
-                  { backgroundColor: "#D32F2F" },
-                ]}
-                onPress={confirmDeleteAccount}
-              >
-                <Text style={styles.modalConfirmText}>
-                  {t("deleteAccount")}
-                </Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.mpinModalConfirm}
+                  onPress={handleConfirmMpinForBiometrics}
+                >
+                  <Text style={styles.mpinModalConfirmText}>{t("enable") || "Enable"}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* Customer Support Modal (for Active Investment case) */}
-      <Modal
-        visible={showCustomerSupportModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowCustomerSupportModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={{ marginBottom: 15 }}>
-              <Icon name="support-agent" size={50} color={theme.colors.primary} />
-            </View>
-            <Text style={styles.modalTitle}>
-              {t("contactUs")}
-            </Text>
-            <Text style={styles.modalMessage}>
-              {t("investmentActiveError") ||
-                "Investment is active so user acccount cannot be deactivated. Please contact support."}
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalConfirmButton, { backgroundColor: theme.colors.primary }]}
-                onPress={() => {
-                  setShowCustomerSupportModal(false);
-                  // Navigate to support or open dialer
-                  // router.push("/(app)/support"); // If you have a support route
-                  // Or just close
-                }}
-              >
-                <Text style={styles.modalConfirmText}>
-                  {t("ok")}
-                </Text>
-              </TouchableOpacity>
+        {/* Delete Account Confirmation Modal */}
+        <Modal
+          visible={showDeleteAccountModal}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={cancelDeleteAccount}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>
+                {t("deleteAccount_confirmation_title")}
+              </Text>
+              <Text style={styles.modalMessage}>
+                {t("deleteAccount_confirmation_message")}
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.modalCancelButton}
+                  onPress={cancelDeleteAccount}
+                >
+                  <Text style={styles.modalCancelText}>{t("cancel")}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.modalConfirmButton,
+                    { backgroundColor: "#D32F2F" },
+                  ]}
+                  onPress={confirmDeleteAccount}
+                >
+                  <Text style={styles.modalConfirmText}>
+                    {t("deleteAccount")}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+
+        {/* Customer Support Modal (for Active Investment case) */}
+        <Modal
+          visible={showCustomerSupportModal}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setShowCustomerSupportModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <View style={{ marginBottom: 15 }}>
+                <Icon name="support-agent" size={50} color={theme.colors.primary} />
+              </View>
+              <Text style={styles.modalTitle}>
+                {t("contactUs")}
+              </Text>
+              <Text style={styles.modalMessage}>
+                {t("investmentActiveError") ||
+                  "Investment is active so user acccount cannot be deactivated. Please contact support."}
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalConfirmButton, { backgroundColor: theme.colors.primary }]}
+                  onPress={() => {
+                    setShowCustomerSupportModal(false);
+                    // Navigate to support or open dialer
+                    // router.push("/(app)/support"); // If you have a support route
+                    // Or just close
+                  }}
+                >
+                  <Text style={styles.modalConfirmText}>
+                    {t("ok")}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
 
+      </SafeAreaView>
     </AuthGuard>
   );
 };
@@ -1081,25 +1102,49 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: theme.colors.quaternary,
   },
-  headerContainer: {
-    height: 220,
-    width: '100%',
-    position: 'absolute',
-    top: 0,
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 10, // Adjusted padding
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
+    backgroundColor: theme.colors.quaternary || "#F2E6D2",
+    // elevation: 8,
   },
-  headerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.1)',
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: "center",
+    alignItems: "center",
+    // backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  headerTextWrap: {
+    flex: 1,
+    marginHorizontal: 14,
+    alignItems: "center",
+  },
+  headerSubtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "rgba(255,255,255,0.78)",
+  },
+  headerSpacer: {
+    width: 42,
+    height: 42,
   },
   keyboardAvoid: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 100,
-    paddingTop: 50, // Push content down to overlap header
+    paddingBottom: 10,
+    paddingTop: 10,
   },
   contentWrapper: {
     paddingHorizontal: 20,

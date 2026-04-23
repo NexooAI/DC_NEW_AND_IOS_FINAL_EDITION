@@ -1127,5 +1127,17 @@
   "premium_reward_tiers_desc": "Your rewards scale with your friend's first payment amount",
   "tier_1_amount": "₹100 to ₹1,000",
   "tier_2_amount": "₹1,000 to ₹10,000",
-  "tier_3_amount": "Above ₹10,000"
+  "tier_3_amount": "Above ₹10,000",
+  "investFirst": "Invest First",
+  "noInvestmentDesc": "You need an active investment to redeem points.",
+  "clickToJoinScheme": "Click to join a scheme",
+  "redeemAtShop": "Redeem at Shop",
+  "pointsAvailable": "Points Available",
+  "redemptionDesc": "You can redeem these points at our shop during your next purchase.",
+  "gotIt": "Got It",
+  "noReferralsYet": "No referrals yet",
+  "referFriendsToEarn": "Refer friends to start earning points!",
+  "referNow": "Refer Now",
+  "joinedAt": "Joined at",
+  "noTransactions": "No recent transactions found"
 }

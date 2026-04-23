@@ -120,9 +120,9 @@ export default function AuthGuard() {
 
       // Check if user is already logged in from global state
       if (isLoggedIn && user) {
-        logger.log("✅ User already logged in, redirecting to home");
+        logger.log("✅ User already logged in, redirecting to dashboard");
         setAuthStatus("navigating");
-        router.replace("/(app)/(tabs)/home");
+        router.replace("/(app)/dashboard");
         return;
       }
 

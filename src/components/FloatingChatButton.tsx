@@ -47,31 +47,37 @@ const FloatingChatButton = () => {
   // Support Number (from FAQ)
   const SUPPORT_NUMBER = "919061803999"; 
 
-  // FAQ Data
+  // FAQ Data (Updated for Jewelry & Schemes)
   const FAQ_QUESTIONS = [
     {
       id: "1",
-      question: "How to reset my password?",
+      question: "How do I join a gold scheme?",
       answer:
-        "To reset your password, go to the Profile tab, tap on 'Change Password', enter your current password, then set your new password.",
+        "Go to the 'Our Schemes' section from the home page, select a scheme you like, and tap on 'Join Now'. You can choose your branch and initial payment amount.",
     },
     {
       id: "2",
-      question: "How to update my profile?",
+      question: "What is Advance Booking?",
       answer:
-        "You can update your profile by going to the Profile tab and tapping on 'Edit Profile'. You can change your name, email, phone number, and profile picture.",
+        "Advance Booking allows you to fix the gold rate for a future purchase. You pay a small percentage (5%, 10%, etc.) as an advance, and we secure the current rate for up to 120 days.",
     },
     {
       id: "3",
-      question: "How to check my savings balance?",
+      question: "How can I pay my bill online?",
       answer:
-        "Your savings balance is displayed on the home screen. You can also go to the Savings tab to see detailed information about your schemes.",
+        "Go to 'Bill Payments' from the dashboard. You will see your 'New Bills' list. Tap 'Pay Now' on any bill to proceed with payment.",
     },
     {
       id: "4",
-      question: "How to make a payment?",
+      question: "How are reward points calculated?",
       answer:
-        "To make a payment, go to the home screen and tap on 'Make Payment'. Select your payment method and follow the on-screen instructions.",
+        "You earn reward points for every successful referral who joins a scheme through your link or code. Check 'Reward History' for a detailed breakdown.",
+    },
+    {
+        id: "5",
+        question: "Is my payment secure?",
+        answer:
+          "Yes, we use industry-standard encryption and verified payment gateways (like Razorpay) to ensure all your transactions are safe and secure.",
     },
   ];
 
@@ -95,8 +101,11 @@ const FloatingChatButton = () => {
     return () => pulseAnimation.stop();
   }, []);
 
+  const { isChatOpen, setChatOpen } = useGlobalStore();
+
   useEffect(() => {
-    if (isChatVisible) {
+    if (isChatOpen) {
+      setIsChatVisible(true);
       Animated.spring(modalSlide, {
         toValue: 0,
         useNativeDriver: true,
@@ -104,9 +113,15 @@ const FloatingChatButton = () => {
         friction: 8,
       }).start();
     } else {
+      setIsChatVisible(false);
       modalSlide.setValue(height);
     }
-  }, [isChatVisible]);
+  }, [isChatOpen]);
+
+  const closeChat = () => {
+    setChatOpen(false);
+    setIsChatVisible(false);
+  };
 
   const handlePressIn = () => {
     Animated.spring(scaleValue, {
@@ -197,42 +212,14 @@ const FloatingChatButton = () => {
 
   return (
     <>
-      {/* Floating Button */}
-      {/* Container for the pulsing effect */}
-      <View style={styles.fabContainer}>
-          <Animated.View style={[
-              styles.fabPulseRing, 
-              { transform: [{ scale: pulseValue }] }
-          ]} />
-          
-          <TouchableOpacity
-            onPress={() => setIsChatVisible(true)}
-            onPressIn={handlePressIn}
-            onPressOut={handlePressOut}
-            activeOpacity={1}
-          >
-            <Animated.View style={[
-                styles.floatingChatButton,
-                { transform: [{ scale: scaleValue }] }
-            ]}>
-                <LinearGradient
-                colors={[theme.colors.primary, '#E6B800']} // Gold-ish gradient
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.floatingButtonGradient}
-                >
-                <Ionicons name="chatbubbles-outline" size={28} color="white" />
-                </LinearGradient>
-            </Animated.View>
-          </TouchableOpacity>
-      </View>
-
+      {/* Floating Button Hidden as requested */}
+      
       {/* Chat Modal */}
       <Modal
         visible={isChatVisible}
         transparent={true}
         animationType="none"
-        onRequestClose={() => setIsChatVisible(false)}
+        onRequestClose={closeChat}
       >
         <KeyboardAvoidingView 
             behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -267,7 +254,7 @@ const FloatingChatButton = () => {
                             
                             <TouchableOpacity
                                 style={styles.closeButton}
-                                onPress={() => setIsChatVisible(false)}
+                                onPress={closeChat}
                             >
                                 <Ionicons name="close-circle" size={32} color="white" />
                             </TouchableOpacity>

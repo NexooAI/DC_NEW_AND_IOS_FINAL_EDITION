@@ -14,6 +14,7 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { theme } from "@/constants/theme";
 import MpinInput from "@/components/MpinInput";
 import api from "@/services/api";
@@ -99,88 +100,99 @@ export default function ResetMpin() {
   };
 
   return (
-    <ImageBackground
-      source={require("../../../assets/images/bg_new.jpg")}
-      style={styles.backgroundImage}
-    >
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView style={styles.keyboardView}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Header */}
-            <View style={styles.header}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={handleBackPress}
-              >
-                <Ionicons name="arrow-back" size={24} color="#ffffff" />
-              </TouchableOpacity>
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardView}
+      >
+        {/* Fixed Header */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={handleBackPress}
+            >
+              <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+            </TouchableOpacity>
+            <View style={styles.headerInfo}>
               <Text style={styles.headerTitle}>{t("resetMpinTitle")}</Text>
-              <View style={styles.headerSpacer} />
+              <Text style={styles.headerSubtitle}>{t("resetMpinSubtitle")}</Text>
+            </View>
+            <View style={styles.headerRightPlaceholder} />
+          </View>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+        >
+
+          {/* Main Content Card */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>{t("newMpin") || "Enter New MPIN"}</Text>
+
+            {/* New MPIN Section */}
+            <View style={styles.inputSection}>
+              <Text style={styles.inputLabel}>{t("newMpin")}</Text>
+              <MpinInput
+                length={4}
+                onComplete={handleNewMpinComplete}
+                secureTextEntry={!showMpin}
+                inputStyle={styles.mpinInput}
+                containerStyle={styles.mpinContainer}
+              />
             </View>
 
-            {/* Main Content Card */}
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>{t("resetMpinTitle")}</Text>
-              <Text style={styles.cardSubtitle}>{t("resetMpinSubtitle")}</Text>
-
-              {/* New MPIN Section */}
-              <View style={styles.inputSection}>
-                <Text style={styles.inputLabel}>{t("newMpin")}</Text>
-                <MpinInput
-                  length={4}
-                  onComplete={handleNewMpinComplete}
-                  secureTextEntry={!showMpin}
-                  inputStyle={styles.mpinInput}
-                  containerStyle={styles.mpinContainer}
-                />
-              </View>
-
-              {/* Confirm MPIN Section */}
-              <View style={styles.inputSection}>
-                <Text style={styles.inputLabel}>{t("confirmMpin")}</Text>
-                <MpinInput
-                  length={4}
-                  onComplete={handleConfirmMpinComplete}
-                  secureTextEntry={!showMpin}
-                  inputStyle={styles.mpinInput}
-                  containerStyle={styles.mpinContainer}
-                />
-              </View>
-
-              {/* Show MPIN Button */}
-              <TouchableOpacity
-                style={styles.showMpinButton}
-                onPress={toggleShowMpin}
-              >
-                <Ionicons
-                  name={showMpin ? "eye-off" : "eye"}
-                  size={20}
-                  color="#ffc90c"
-                />
-                <Text style={styles.showMpinText}>{t("showMpin")}</Text>
-              </TouchableOpacity>
-
-              {/* Reset MPIN Button */}
-              <TouchableOpacity
-                style={[
-                  styles.resetButton,
-                  isLoading && styles.resetButtonDisabled,
-                ]}
-                onPress={handleResetMpin}
-                disabled={isLoading}
-              >
-                <Text style={styles.resetButtonText}>
-                  {isLoading ? t("resettingMpin") : t("resetMpin")}
-                </Text>
-              </TouchableOpacity>
+            {/* Confirm MPIN Section */}
+            <View style={styles.inputSection}>
+              <Text style={styles.inputLabel}>{t("confirmMpin")}</Text>
+              <MpinInput
+                length={4}
+                onComplete={handleConfirmMpinComplete}
+                secureTextEntry={!showMpin}
+                inputStyle={styles.mpinInput}
+                containerStyle={styles.mpinContainer}
+              />
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </ImageBackground>
+
+            {/* Show MPIN Button */}
+            <TouchableOpacity
+              style={styles.showMpinButton}
+              onPress={toggleShowMpin}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={showMpin ? "eye-off" : "eye"}
+                size={20}
+                color={theme.colors.primary}
+              />
+              <Text style={styles.showMpinText}>{t("showMpin")}</Text>
+            </TouchableOpacity>
+
+            {/* Reset MPIN Button */}
+            <TouchableOpacity
+              style={[
+                styles.resetButton,
+                isLoading && styles.resetButtonDisabled,
+              ]}
+              onPress={handleResetMpin}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={isLoading ? ["#ccc", "#999"] : ["#DAA520", "#B8860B"]}
+                style={StyleSheet.absoluteFill}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              />
+              <Text style={styles.resetButtonText}>
+                {isLoading ? t("resettingMpin") : t("resetMpin")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -191,122 +203,124 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.quaternary || "#F2E6D2",
   },
   keyboardView: {
     flex: 1,
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingHorizontal: 20,
+    paddingTop: 10,
   },
   header: {
+    paddingTop: Platform.OS === "ios" ? 10 : 20,
+    paddingBottom: 10,
+    paddingHorizontal: 20,
+    backgroundColor: theme.colors.quaternary || "#F2E6D2",
+  },
+  headerContent: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 15,
-    backgroundColor: theme.colors.primary, // Dark red header
-    marginHorizontal: -20,
-    paddingHorizontal: 20,
   },
   backButton: {
-    padding: 5,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 15,
+  },
+  headerInfo: {
+    flex: 1,
+    alignItems: "center",
+  },
+  headerRightPlaceholder: {
+    width: 40,
+    marginRight: 15,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#ffffff",
-    fontFamily: "sans-serif",
-  },
-  headerSpacer: {
-    width: 34, // Same width as back button for centering
-  },
-  card: {
-    backgroundColor: theme.colors.primary, // Dark gray with transparency
-    borderRadius: 12,
-    padding: 24,
-    marginTop: 20,
-  },
-  cardTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#ffffff",
-    textAlign: "center",
-    marginBottom: 8,
-    fontFamily: "sans-serif",
+    color: theme.colors.primary,
   },
-  cardSubtitle: {
+  headerSubtitle: {
     fontSize: 14,
-    color: "#cccccc",
+    color: theme.colors.primary,
+    marginTop: 2,
+  },
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    padding: 24,
+    marginHorizontal: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: theme.colors.primary,
     textAlign: "center",
-    marginBottom: 32,
-    fontFamily: "sans-serif",
+    marginBottom: 25,
   },
   inputSection: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   inputLabel: {
     fontSize: 16,
-    fontWeight: "500",
-    color: "#ffffff",
-    marginBottom: 12,
-    fontFamily: "sans-serif",
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 10,
   },
   mpinContainer: {
     justifyContent: "space-between",
-    paddingHorizontal: 0,
   },
   mpinInput: {
-    width: 60,
+    width: (width - 100) / 4,
     height: 60,
-    borderWidth: 1,
-    borderColor: "#cccccc",
-    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
     fontSize: 24,
-    color: "#000000",
-    backgroundColor: "#ffffff",
+    color: "#1a1a1a",
+    backgroundColor: "#F8FAFC",
     textAlign: "center",
   },
   showMpinButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginBottom: 32,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    paddingVertical: 12,
+    marginBottom: 25,
   },
   showMpinText: {
     marginLeft: 10,
-    fontSize: 16,
-    color: "#ffc90c",
+    fontSize: 15,
+    color: theme.colors.primary,
     fontWeight: "600",
-    fontFamily: "sans-serif",
   },
   resetButton: {
-    backgroundColor: "#ffc90c", // Mustard yellow
-    paddingVertical: 16,
-    borderRadius: 25,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    overflow: "hidden",
+    shadowColor: "#DAA520",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   resetButtonDisabled: {
-    backgroundColor: "#cccccc",
+    opacity: 0.7,
   },
   resetButtonText: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#2e0406", // Dark brown text
-    fontFamily: "sans-serif",
+    fontWeight: "bold",
+    color: "#ffffff",
   },
 });

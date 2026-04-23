@@ -16,15 +16,16 @@ import {
   Animated,
   Platform,
   PanResponder,
-  ScrollView,
+  Image,
+  RefreshControl,
   ImageBackground,
+  ScrollView,
   Alert,
   Modal,
-  RefreshControl,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import useGlobalStore from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 import { theme } from "@/constants/theme";
@@ -182,11 +183,10 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     typeof PanResponder.create
   > | null>(null);
   const flatListRef = useRef<FlatList>(null);
-  const [descModalVisible, setDescModalVisible] = useState(false);
-  const [descModalText, setDescModalText] = useState("");
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
+  const [selectedScheme, setSelectedScheme] = useState<Scheme | null>(null);
   const [selectedSchemeId, setSelectedSchemeId] = useState<number | null>(null);
   const [userSelectedTab, setUserSelectedTab] = useState<boolean>(false);
-  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<number>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
   const [showShimmer, setShowShimmer] = useState(false);
 
@@ -606,18 +606,16 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     }
   };
 
-  const toggleDescription = (schemeId: number | null | undefined) => {
-    if (!schemeId) return;
-    setExpandedDescriptions((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(schemeId)) {
-        newSet.delete(schemeId);
-      } else {
-        newSet.add(schemeId);
-      }
-      return newSet;
-    });
-  };
+  const showDetailModal = useCallback((scheme: Scheme) => {
+    setSelectedScheme(scheme);
+    setIsDetailModalVisible(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  }, []);
+
+  const closeDetailModal = useCallback(() => {
+    setIsDetailModalVisible(false);
+    setSelectedScheme(null);
+  }, []);
 
   const getTabColor = (title: string) => {
     const colors: Record<string, string[]> = {
@@ -711,38 +709,32 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
           setTabLayouts((prev) => ({ ...prev, [title]: { x, width } }));
         }}
         onPress={() => handleTabPress(title)}
-        style={styles.tabWrapper}
+        style={styles.pillTabWrapper}
         activeOpacity={0.7}
       >
         <Animated.View
           style={[
-            styles.tabContainer,
-
+            styles.pillTabContainer,
+            isActive && styles.pillTabActiveContainer,
             isActive && {
               transform: [{ scale: tabScaleAnim }]
-            },
-            // Always use the "iOS" style container (which is just transparent/clean)
-            styles.iosTabContainer,
-            isActive && styles.iosActiveTabContainer
+            }
           ]}
         >
-          {isActive ? (
-            <View style={styles.iosActiveTabContent}>
-              <Text style={styles.iosActiveTabText}>{title}</Text>
-            </View>
-          ) : (
-            <View style={[
-              styles.inactiveTabContainer,
-              styles.iosInactiveTabContainer
-            ]}>
-              <Text style={[
-                styles.tabText,
-                styles.iosTabText
-              ]}>
-                {title}
-              </Text>
-            </View>
+          {isActive && (
+             <LinearGradient
+                colors={['#FFD700', '#DAA520']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+             />
           )}
+          <Text style={[
+            styles.pillTabText,
+            isActive && styles.pillTabActiveText
+          ]}>
+            {title}
+          </Text>
         </Animated.View>
       </TouchableOpacity>
     );
@@ -769,6 +761,15 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     return null;
   };
 
+  const formatAmount = (amount: number): string => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const renderTableMeta = (item: Scheme) => {
     const table: TableMeta | null = extractTableMetaFromItem(item);
     if (!table || !table.headers || !table.rows) return null;
@@ -776,19 +777,21 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     const headers = (table.headers as any)[language] || table.headers.en || [];
 
     return (
-      <View style={styles.tableContainer}>
-        <View style={styles.tableHeader}>
+      <View style={styles.tableRefinedContainer}>
+        {/* Table Header */}
+        <View style={styles.tableRefinedHeader}>
           {headers.map((h: string, idx: number) => (
-            <Text key={idx} style={styles.tableHeaderText}>
+            <Text key={idx} style={styles.tableRefinedHeaderText}>
               {getTranslatedText(h, language)}
             </Text>
           ))}
         </View>
 
+        {/* Table Rows */}
         {table.rows.map((row, rIndex) => (
-          <View key={rIndex} style={styles.tableRow}>
+          <View key={rIndex} style={[styles.tableRefinedRow, rIndex % 2 !== 0 && styles.tableRowAlt]}>
             {Object.values(row).map((cell, cIndex) => (
-              <Text key={cIndex} style={styles.tableCell}>
+              <Text key={cIndex} style={styles.tableRefinedCell}>
                 {getTranslatedText(cell, language)}
               </Text>
             ))}
@@ -798,11 +801,46 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     );
   };
 
+  const getPremiumGradient = (index: number): [string, string] => {
+    const gradients: [string, string][] = [
+      ['#000000', '#1A1A1A'], // Onyx Black
+      ['#020818', '#0A1A44'], // Midnight Sapphire
+      ['#240505', '#550A0A'], // Royal Ruby
+      ['#041408', '#0D3315'], // Forest Emerald
+      ['#120418', '#330D44'], // Imperial Plum
+      ['#0F172A', '#1E293B'], // Charcoal Slate
+    ];
+    return gradients[index % gradients.length];
+  };
+
+  const getMinMaxAmount = (item: Scheme) => {
+    if (!item.chits || item.chits.length === 0) return { min: 0, max: 0 };
+    
+    const amounts = item.chits
+      .map(c => parseFloat(c.AMOUNT || "0"))
+      .filter(a => a > 0);
+    
+    if (amounts.length === 0) return { min: 0, max: 0 };
+    
+    return {
+      min: Math.min(...amounts),
+      max: Math.max(...amounts)
+    };
+  };
+
   const renderSchemeItem = ({ item, index }: { item: Scheme; index: number }) => {
     if (!item) return null;
 
-    const isSelected = selectedSchemeId === item.SCHEMEID;
-    const isExpanded = expandedDescriptions.has(item.SCHEMEID || 0);
+    const type = (item.SCHEMETYPE || activeTab || "").toLowerCase();
+    const isFlexi = type.includes('flexi') || type.includes('flexible');
+    const gradientColors = getPremiumGradient(index);
+    const { min, max } = getMinMaxAmount(item);
+
+    // Determine coin type
+    const coinSource = (getTranslatedText(item.SCHEMENAME, 'en') || "").toLowerCase().includes('silver')
+      ? require("../../../../../assets/images/silver_coin_badge.png")
+      : require("../../../../../assets/images/gold_coin_badge.png");
+
     const cardAnimation = {
       opacity: cardAnimations,
       transform: [
@@ -812,211 +850,77 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
             outputRange: [50, 0],
           }),
         },
-        {
-          scale: cardAnimations.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0.9, 1],
-          }),
-        },
       ],
     };
-
-    // Common header content, styled uniformly now
-    const renderHeaderContent = () => (
-      <View style={styles.cardHeaderContent}>
-        <View style={styles.cardHeaderTop}>
-          <View style={[
-            styles.schemeBadge,
-            styles.iosSchemeBadge
-          ]}>
-            <Text style={[
-              styles.schemeBadgeText,
-              styles.iosSchemeBadgeText
-            ]}>
-              {getTranslatedText(item.SCHEMETYPE, language) || activeTab}
-            </Text>
-          </View>
-          <View style={styles.headerActions}>
-            {isSelected && (
-              <View style={styles.selectedBadge}>
-                <Ionicons name="checkmark-circle" size={16} color="#fff" />
-                <Text style={styles.selectedBadgeText}>Selected</Text>
-              </View>
-            )}
-            <TouchableOpacity
-              accessibilityLabel={isExpanded ? "Collapse description" : "Expand description"}
-              onPress={() => toggleDescription(item.SCHEMEID)}
-              style={styles.expandIconButton}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={isExpanded ? "chevron-up-circle" : "chevron-down-circle"}
-                size={22}
-                color={'#000'}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.schemeInfo}>
-          <Text style={[
-            styles.schemeName,
-            { color: '#000' }
-          ]}>
-            {getTranslatedText(item.SCHEMENAME, language) || "Unnamed Scheme"}
-          </Text>
-          {item.SLOGAN && getTranslatedText(item.SLOGAN, language) && (
-            <Text style={[
-              styles.slogan,
-              { color: '#666' }
-            ]}>
-              "{getTranslatedText(item.SLOGAN, language)}"
-            </Text>
-          )}
-        </View>
-
-        <View style={styles.metaChipsContainer}>
-          {(item.savingType || item.SCHEMETYPE) && (
-            <View style={[styles.metaChip, {
-              backgroundColor: '#f2f2f7',
-              borderColor: 'transparent'
-            }]}>
-              <Ionicons
-                name={item.savingType?.toLowerCase() === "weight" || item.SCHEMETYPE?.toLowerCase() === "weight" ? "scale-outline" : "cash-outline"}
-                size={12}
-                color={'#666'}
-              />
-              <Text style={[styles.metaChipText, { color: '#666' }]}>
-                {item.savingType?.toLowerCase() === "weight" || item.SCHEMETYPE?.toLowerCase() === "weight"
-                  ? ("Weight Based")
-                  : ("Amount Based")}
-              </Text>
-            </View>
-          )}
-          {item.INS_TYPE && getTranslatedText(item.INS_TYPE, language) && (
-            <View style={[styles.metaChip, {
-              backgroundColor: '#f2f2f7',
-              borderColor: 'transparent'
-            }]}>
-              <Ionicons name="cube-outline" size={12} color={'#666'} />
-              <Text style={[styles.metaChipText, { color: '#666' }]}>
-                {getTranslatedText(item.INS_TYPE, language)}
-              </Text>
-            </View>
-          )}
-          {item.DURATION_MONTHS && !isNaN(item.DURATION_MONTHS) ? (
-            <View style={[styles.metaChip, {
-              backgroundColor: '#f2f2f7',
-              borderColor: 'transparent'
-            }]}>
-              <Ionicons name="calendar-outline" size={12} color={'#666'} />
-              <Text style={[styles.metaChipText, { color: '#666' }]}>
-                {item.DURATION_MONTHS} {t("schemes.months") || "months"}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-      </View>
-    );
 
     return (
       <Animated.View
         style={[
-          styles.schemeCard,
-          isSelected && styles.selectedSchemeCard,
+          styles.schemeCardContainer,
           cardAnimation,
           { marginTop: index === 0 ? 10 : 0 },
         ]}
       >
-        <View style={styles.iosCardHeader}>
-          {renderHeaderContent()}
-        </View>
+        <LinearGradient
+          colors={gradientColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.schemeCardGradient}
+        >
+          <Image
+            source={require("../../../../../assets/images/jewelry_pattern.png")}
+            style={styles.cardWatermark}
+            resizeMode="contain"
+          />
 
-        <View style={styles.cardContent}>
-          <View style={styles.descriptionContainer}>
-            <Text
-              style={[styles.descriptionText, { color: '#2c2c2c' }]}
-              numberOfLines={isExpanded ? undefined : 2}
-            >
-              {getTranslatedText(item.DESCRIPTION as any, language) || "No description available"}
-            </Text>
-            {getTranslatedText(item.DESCRIPTION as any, language)?.length > 100 && (
-              <TouchableOpacity
-                onPress={() => toggleDescription(item.SCHEMEID)}
-                style={styles.readMoreButton}
-                activeOpacity={0.7}
-              >
-                <LinearGradient
-                  colors={[hexToRgba(theme.colors.primary, 0.1), hexToRgba(theme.colors.primary, 0.1)]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[styles.readMoreContainer, { borderColor: hexToRgba(theme.colors.primary, 0.3) }]}
-                >
-                  <Text style={[styles.readMoreText, { color: theme.colors.primary }]}>
-                    {isExpanded ? "Show Less" : "Read More"}
+          <View style={styles.cardHeader}>
+            <View style={styles.cardMainInfo}>
+              <Text style={styles.newSchemeName} numberOfLines={2}>
+                {getTranslatedText(item.SCHEMENAME, language) || "Unnamed Scheme"}
+              </Text>
+              
+              <View style={styles.amountRangeContainer}>
+                 <Text style={styles.minAmountLabel}>
+                  {t("schemes.minimumAmount") || "Min"} : {formatAmount(min)}
+                </Text>
+                {max > min && (
+                  <Text style={styles.minAmountLabel}>
+                    {" | "}{t("maximum") || "Max"} : {formatAmount(max)}
                   </Text>
-                  <Ionicons
-                    name={isExpanded ? "chevron-up" : "chevron-down"}
-                    size={14}
-                    color={theme.colors.primary}
-                  />
-                </LinearGradient>
-              </TouchableOpacity>
-            )}
-          </View>
+                )}
+              </View>
 
-          {item.BENEFITS && item.BENEFITS.length > 0 && (
-            <View style={[styles.benefitsContainer, {
-              backgroundColor: 'rgba(248, 249, 255, 0.8)',
-              borderColor: theme.colors.primary + '40'
-            }]}>
-              <Text style={[styles.benefitsTitle, { color: '#1a1a1a' }]}>Benefits</Text>
-              {item.BENEFITS.slice(0, 3).map((benefit, idx) => (
-                <View key={idx} style={styles.benefitItem}>
-                  <Ionicons name="checkmark-circle" size={16} color={theme.colors.primary} />
-                  <Text style={[styles.benefitText, { color: '#2c2c2c' }]}>
-                    {getTranslatedText(benefit, language)}
+              <View style={styles.inlineInfoRow}>
+                <View style={styles.infoPill}>
+                  <Ionicons name="calendar-outline" size={14} color="#FFD700" />
+                  <Text style={styles.infoPillText}>
+                    {item.DURATION_MONTHS || "11"} {t("schemes.months") || "Months"}
                   </Text>
                 </View>
-              ))}
+                <View style={[styles.infoPill, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+                  <Ionicons name={isFlexi ? "options-outline" : "timer-outline"} size={14} color="#FFF" />
+                  <Text style={[styles.infoPillText, { color: '#FFF' }]}>{activeTab}</Text>
+                </View>
+              </View>
             </View>
-          )}
 
-          {/* Table Meta (if present) */}
-          {item.table_meta && item.table_meta.headers && item.table_meta.rows && item.table_meta.rows !== null && item.table_meta.rows !== undefined && item.table_meta.rows.length > 0 && renderTableMeta(item)}
+            <View style={styles.cardSideInfo}>
+              <Image source={coinSource} style={styles.coinIcon} />
+            </View>
+          </View>
 
-          <TouchableOpacity
-            onPress={() => handleJoinScheme(item)}
-            disabled={joiningScheme === item.SCHEMEID}
-            style={styles.joinButtonContainer}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={['#FFD700', '#FFD700'] as [string, string]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[
-                styles.joinButton,
-                styles.iosJoinButton,
-                joiningScheme === item.SCHEMEID && styles.joinButtonDisabled,
-              ]}
+          <View style={styles.cardActionRow}>
+             <TouchableOpacity
+              onPress={() => showDetailModal(item)}
+              style={styles.knowMoreButtonClean}
             >
-              {joiningScheme === item.SCHEMEID ? (
-                <ActivityIndicator size="small" color={'#fff'} />
-              ) : (
-                <>
-                  <Text style={[styles.joinButtonText, { color: '#fff' }]}>
-                    {t("schemes.joinNow") || "Join Now"}
-                  </Text>
-                  <Ionicons name="arrow-forward-circle" size={20} color={'#fff'} />
-                </>
-              )}
-            </LinearGradient>
-            <Text style={[styles.joinButtonSubtext, { color: '#666' }]}>
-              Start your savings journey today
-            </Text>
-          </TouchableOpacity>
-        </View>
+              <Text style={styles.knowMoreButtonTextClean}>
+                {t("knowMore") || "Know More"}
+              </Text>
+              <Ionicons name="arrow-forward-circle" size={24} color="#FFD700" />
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
       </Animated.View>
     );
   };
@@ -1035,6 +939,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
       {/* Header */}
       {!isNested && (
         <LinearGradient
@@ -1043,13 +948,30 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
           end={{ x: 1, y: 1 }}
           style={styles.headerGradient}
         >
-          <Text style={styles.headerTitle}>
-            {t("schemes.explore") || "Explore Schemes"}
-          </Text>
-          <Text style={styles.headerSubtitle}>
-            {t("schemes.subtitle") ||
-              "Find the perfect gold savings plan for you"}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
+                  <Ionicons name="arrow-back" size={28} color="#fff" />
+                </TouchableOpacity>
+                <Text style={[styles.headerTitle, { marginBottom: 0 }]} numberOfLines={1} adjustsFontSizeToFit>
+                  {t("schemes.explore") || "Explore Schemes"}
+                </Text>
+              </View>
+              <Text style={styles.headerSubtitle} numberOfLines={1}>
+                {t("schemes.subtitle") || "Find the perfect gold savings plan for you"}
+              </Text>
+            </View>
+
+            {/* Savings Home Button */}
+            <TouchableOpacity
+              onPress={() => router.push('/(app)/(tabs)/home')}
+              style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}
+            >
+              <Ionicons name="home" size={16} color="#fff" style={{ marginRight: 4 }} />
+              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Home</Text>
+            </TouchableOpacity>
+          </View>
         </LinearGradient>
       )}
 
@@ -1140,37 +1062,111 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         </TouchableOpacity>
       )}
 
-      {/* {availableTabs.length > 1 && (
-        <View style={styles.swipeHint}>
-          <Ionicons name="swap-horizontal" size={16} color="#fff" />
-          <Text style={styles.swipeHintText}>
-            Swipe to explore more categories
-          </Text>
-        </View>
-      )} */}
-
       <Modal
-        visible={descModalVisible}
+        visible={isDetailModalVisible}
         transparent
-        animationType="fade"
-        onRequestClose={() => setDescModalVisible(false)}
+        animationType="slide"
+        onRequestClose={closeDetailModal}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {t("schemes.description") || "Description"}
-              </Text>
+          <View style={styles.modalContentModern}>
+             <TouchableOpacity style={styles.floatingCloseButton} onPress={closeDetailModal}>
+                <View style={styles.closeButtonBlur}>
+                   <Ionicons name="close" size={20} color="#000" />
+                </View>
+            </TouchableOpacity>
+
+            <ScrollView 
+                style={styles.modalScroll}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.modalScrollContent}
+            >
+              {selectedScheme && (
+                <>
+                  <View style={styles.modernHeader}>
+                    <Text style={styles.modernTitle}>
+                      {getTranslatedText(selectedScheme.SCHEMENAME, language) || "Unnamed Scheme"}
+                    </Text>
+                    {selectedScheme.SLOGAN && (
+                      <Text style={styles.modernSlogan}>
+                        {getTranslatedText(selectedScheme.SLOGAN as any, language)}
+                      </Text>
+                    )}
+                    <View style={styles.titleUnderlineGradient} />
+                  </View>
+
+                  <View style={styles.pillBadgesContainer}>
+                    <View style={styles.pillBadge}>
+                      <Text style={styles.pillBadgeText}>{activeTab}</Text>
+                    </View>
+                    {selectedScheme.DURATION_MONTHS && (
+                      <View style={styles.pillBadge}>
+                        <Text style={styles.pillBadgeText}>{selectedScheme.DURATION_MONTHS} {t("schemes.months") || "Months"}</Text>
+                      </View>
+                    )}
+                    <View style={[styles.pillBadge, { backgroundColor: '#F0F0FF' }]}>
+                      <Text style={[styles.pillBadgeText, { color: '#5D5DFF' }]}>
+                        {selectedScheme.savingType === 'weight' ? (t('goldWeight') || 'Gold Weight') : (t('amount') || 'Amount')}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.gridSection}>
+                    <Text style={styles.gridSectionTitle}>{t("benefits") || "Benefits"}</Text>
+                    <View style={styles.benefitsGrid}>
+                      {(selectedScheme.BENEFITS || ["Secure Gold Savings", "Bonus on Maturity", "Instant Access"]).map((benefit, idx) => (
+                        <View key={idx} style={styles.gridBenefitItem}>
+                          <View style={styles.gridIconContainer}>
+                            <Ionicons name="checkmark-circle" size={18} color="#2ECC71" />
+                          </View>
+                          <Text style={styles.gridBenefitText}>{getTranslatedText(benefit, language)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+
+                  {selectedScheme.DESCRIPTION && (
+                    <View style={styles.modernSection}>
+                      <Text style={styles.modernSectionTitle}>{t("description") || "Description"}</Text>
+                      <Text style={styles.modernDescription}>
+                        {getTranslatedText(selectedScheme.DESCRIPTION as any, language)}
+                      </Text>
+                    </View>
+                  )}
+
+                  {selectedScheme.table_meta && (
+                    <View style={styles.modernSection}>
+                      <Text style={styles.modernSectionTitle}>{t("schemeDetails") || "Scheme Details"}</Text>
+                      {renderTableMeta(selectedScheme)}
+                    </View>
+                  )}
+                  
+                  <View style={{ height: 100 }} />
+                </>
+              )}
+            </ScrollView>
+
+            <View style={styles.stickyModalFooter}>
               <TouchableOpacity
-                onPress={() => setDescModalVisible(false)}
-                style={styles.closeButton}
+                onPress={() => {
+                  if (selectedScheme) {
+                    closeDetailModal();
+                    handleJoinScheme(selectedScheme);
+                  }
+                }}
+                style={styles.modalJoinNowButton}
               >
-                <Ionicons name="close" size={24} color="#667eea" />
+                <LinearGradient
+                  colors={['#FFD700', '#DAA520']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.modalJoinButtonGradient}
+                >
+                  <Ionicons name="add-circle" size={22} color="#000" />
+                  <Text style={styles.modalJoinButtonText}>{t("joinThisScheme") || "JOIN THIS SCHEME"}</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalBody}>
-              <Text style={styles.fullDescriptionText}>{descModalText}</Text>
-            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1336,231 +1332,183 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
-  schemeCard: {
-    backgroundColor: '#fff',
-    borderColor: COLORS.border.primary,
-    borderWidth: 1,
+  pillTabWrapper: {
+    marginRight: 10,
+  },
+  pillTabContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(0,0,0,0.05)',
     borderRadius: 25,
-    marginBottom: 10,
-    overflow: 'hidden',
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  selectedSchemeCard: {
-    borderWidth: 2,
-    borderColor: '#4CAF50',
-    shadowColor: "#4CAF50",
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 12,
-  },
-
-  cardHeaderContent: {
-    flexDirection: 'column',
-    gap: 12,
-  },
-  cardHeaderTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  schemeBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
     borderWidth: 1,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    borderColor: 'rgba(0,0,0,0.12)',
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  schemeBadgeText: {
-    fontSize: 12,
+  pillTabActiveContainer: {
+    borderColor: '#FFD700',
+    backgroundColor: 'transparent',
+  },
+  pillTabText: {
+    fontSize: 14,
     fontWeight: '700',
-    textTransform: 'uppercase',
+    color: '#666',
   },
-  selectedBadge: {
-    backgroundColor: '#4CAF50',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    gap: 4,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  selectedBadgeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  expandIconButton: {
-    padding: 4,
-  },
-  schemeInfo: {
-    gap: 4,
-  },
-  schemeName: {
-    fontSize: 16,
+  pillTabActiveText: {
+    color: '#000',
     fontWeight: '900',
-    lineHeight: 20,
-    // textShadowColor is set dynamically based on text color
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
-  slogan: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    // textShadowColor is set dynamically based on text color
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  metaChipsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  metaChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    gap: 4,
-    borderWidth: 1,
-  },
-  metaChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  cardContent: {
-    padding: 10,
-    gap: 10,
-
-  },
-  descriptionContainer: {
-    gap: 8,
-  },
-  descriptionText: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: '#555',
-  },
-  readMoreButton: {
-    alignSelf: 'flex-start',
-    marginTop: 8,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  readMoreContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  readMoreText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  benefitsContainer: {
-    backgroundColor: '#f8f9ff',
-    padding: 16,
-    borderRadius: 12,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: '#e6e9ff',
-  },
-  benefitsTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 4,
-  },
-  benefitItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  benefitText: {
-    flex: 1,
-    fontSize: 13,
-    color: '#555',
-    lineHeight: 18,
-  },
-  joinButtonContainer: {
-    gap: 8,
-  },
-  joinButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
+  schemeCardContainer: {
+    width: width - 40,
+    borderRadius: 24,
+    marginBottom: 20,
+    overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 10,
   },
-  iosJoinButton: {
-    borderRadius: 28, // Pill shape for iOS
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 0,
+  schemeCardGradient: {
+    padding: 24,
+    minHeight: 200,
   },
-  joinButtonDisabled: {
-    opacity: 0.7,
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
-  joinButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '800',
+  cardMainInfo: {
+    flex: 1,
+    gap: 8,
+  },
+  newSchemeName: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: "#fff",
     letterSpacing: 0.5,
   },
-  joinButtonSubtext: {
+  minAmountLabel: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.9)",
+    fontWeight: "600",
+  },
+  amountRangeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  inlineInfoRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+  },
+  infoPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.3)',
+    gap: 6,
+  },
+  infoPillText: {
+    color: '#FFD700',
     fontSize: 12,
-    color: '#888',
-    textAlign: 'center',
-    fontStyle: 'italic',
+    fontWeight: '800',
+  },
+  cardSideInfo: {
+    marginLeft: 15,
+    alignItems: 'center',
+    gap: 12,
+  },
+  coinIcon: {
+    width: 70,
+    height: 70,
+    resizeMode: 'contain',
+    opacity: 0.9,
+  },
+  cardActionRow: {
+    marginTop: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  knowMoreButtonClean: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    gap: 8,
+  },
+  knowMoreButtonTextClean: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFD700',
+    textTransform: 'uppercase',
+  },
+  durationTagText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#8B4513', // Saddle Brown
+  },
+  cardWatermark: {
+    position: 'absolute',
+    top: -10,
+    right: 40,
+    width: 250,
+    height: 250,
+    opacity: 0.1,
+    transform: [{ rotate: '-15deg' }],
+  },
+  durationTag: {
+    backgroundColor: '#FFE5B4', // Light golden
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  newTableWrapper: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 15,
+  },
+  actionButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    marginTop: 5,
+  },
+  newCancelButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)',
+  },
+  newCancelButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
+  },
+  newJoinNowButton: {
+    backgroundColor: '#FFE5B4',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  newJoinNowButtonText: {
+    color: '#8B4513',
+    fontWeight: '800',
   },
   tableContainer: {
     borderRadius: 12,
@@ -1580,7 +1528,7 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#667eea',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
@@ -1596,12 +1544,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f5',
+    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   tableCell: {
     flex: 1,
     fontSize: 13,
-    color: '#555',
+    color: '#E0E0E0',
     textAlign: 'center',
   },
   emptyState: {
@@ -1718,49 +1666,236 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalContentModern: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    overflow: "hidden",
+    height: '90%',
+  },
+  floatingCloseButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 100,
+  },
+  closeButtonBlur: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.9)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    width: '100%',
-    maxHeight: '80%',
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
-  modalHeader: {
+  modalScroll: {
+    flex: 1,
+  },
+  modalScrollContent: {
+    paddingBottom: 150,
+  },
+  modernHeader: {
+    paddingHorizontal: 24,
+    paddingTop: 40,
+    paddingBottom: 10,
+  },
+  modernTitle: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#000',
+    letterSpacing: -0.5,
+  },
+  modernSlogan: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  titleUnderlineGradient: {
+    height: 4,
+    width: 50,
+    backgroundColor: '#FFD700',
+    borderRadius: 2,
+    marginTop: 15,
+  },
+  pillBadgesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 24,
+    marginTop: 15,
+  },
+  pillBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FFF9E6',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  pillBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#B8860B',
+  },
+  gridSection: {
+    paddingHorizontal: 24,
+    marginTop: 30,
+  },
+  gridSectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#000',
+    marginBottom: 15,
+  },
+  benefitsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  gridBenefitItem: {
+    width: '48%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#F8F9FA',
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#F1F3F5',
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#667eea',
+  gridIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(46, 204, 113, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
-  closeButton: {
-    padding: 4,
+  gridBenefitText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#495057',
+    flex: 1,
   },
-  modalBody: {
-    padding: 20,
-    maxHeight: '70%',
-    backgroundColor: '#fafafa',
+  modernSection: {
+    paddingHorizontal: 24,
+    marginTop: 30,
   },
-  fullDescriptionText: {
+  modernSectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#000',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 10,
+    opacity: 0.6,
+  },
+  modernDescription: {
     fontSize: 15,
-    color: '#555',
     lineHeight: 24,
+    color: '#444',
   },
-});
+  tableRefinedContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#F1F3F5',
+    backgroundColor: '#FFF',
+  },
+  tableRefinedHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#F8F9FA',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F3F5',
+  },
+  tableRefinedHeaderText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#868E96',
+    textAlign: 'left',
+  },
+  tableRefinedRow: {
+    flexDirection: 'row',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F3F5',
+  },
+  tableRowAlt: {
+    backgroundColor: '#FAFAFA',
+  },
+  tableRefinedCell: {
+    flex: 1,
+    fontSize: 13,
+    color: '#495057',
+    fontWeight: '600',
+  },
+  stickyModalFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 25,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F3F5',
+    flexDirection: 'row',
+    gap: 12,
+    elevation: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 16,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ADB5BD',
+  },
+  modalJoinNowButton: {
+    flex: 2.5,
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#DAA520',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  modalJoinButtonGradient: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 10,
+  },
+  modalJoinButtonText: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#000',
+    letterSpacing: 0.5,
+  },
+});
