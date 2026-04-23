@@ -1,413 +1,580 @@
-import React, { useRef, useEffect, useState } from "react";
+// Dashboard.tsx
+
+import React, { useEffect, useState } from "react";
 import {
   View,
   StyleSheet,
   TouchableOpacity,
   Image,
+  StatusBar,
+  Linking,
+  ScrollView,
   Dimensions,
   Platform,
-  Animated,
-  Easing,
-  StatusBar,
-  Text,
-  ScrollView,
-  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
-import * as Animatable from "react-native-animatable";
-import { COLORS } from "@/constants/colors";
-import { theme } from "@/constants/theme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 import { shadowUtils } from "@/utils/shadowUtils";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
-import api from "@/services/api";
+import api, { userAPI } from "@/services/api";
+import { theme } from "@/constants/theme";
 
 const { wp, hp, rf } = responsiveUtils;
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
-// LUXURY PALETTE
-const PREMIUM_GOLD = "#DAA520";
-const LUXURY_DARK = "#121212";
-const LUXURY_BROWN = "#211714";
-const CARD_BG = "rgba(33, 23, 20, 0.75)";
+const PRIMARY = "#7A0019";
+const DARK = "#4A0010";
+const GOLD = "#D4AF37";
+const CARD = "#3B1F14";
 
-// ─── Luxury Background ───────────────────────────────────────────────────────
-const LuxuryBackground = () => {
-  return (
-    <Image
-      source={require("../../../assets/images/dashboard_bg.png")}
-      style={styles.bgImage}
-      resizeMode="cover"
-    />
-  );
-};
-
-// ─── Image Fallback ──────────────────────────────────────────────────────────
-let logoImage: any = null;
-try {
-  logoImage = require("../../../assets/images/logo_trans.png");
-} catch (error) {
-  console.log("Logo image not found");
-}
-
-// ─── Luxury Card Component ──────────────────────────────────────────────────
-const LuxuryCard = ({
-  title,
-  icon,
-  onPress,
-  iconType = "ionicons",
-  index = 0,
-  gradient = ["#1C1614", "#0A0A0A"]
-}: {
-  title: string;
-  icon: string;
-  onPress: () => void;
-  iconType?: "ionicons" | "material";
-  index?: number;
-  gradient?: string[];
-}) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const shimmerAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmerAnim, {
-          toValue: 1,
-          duration: 3000,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.96, useNativeDriver: true }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
-  };
-
-  return (
-    <Animatable.View
-      animation="fadeInUp"
-      delay={index * 100}
-      style={styles.luxuryCardWrapper}
-    >
-      <Animated.View style={{ flex: 1, transform: [{ scale: scaleAnim }] }}>
-        <TouchableOpacity
-          onPress={onPress}
-          activeOpacity={0.9}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          style={styles.luxuryCardInner}
-        >
-          {/* Card Base - Pale Beige from Mockup */}
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: "#3c2117ff" }]} />
-
-          <View style={styles.cardGoldBorder} />
-
-          <View style={styles.luxuryCardContent}>
-            <View style={styles.luxuryIconContainer}>
-              {iconType === "ionicons" ? (
-                <Ionicons name={icon as any} size={rf(26)} color={PREMIUM_GOLD} />
-              ) : (
-                <MaterialCommunityIcons name={icon as any} size={rf(26)} color={PREMIUM_GOLD} />
-              )}
-            </View>
-
-            <ResponsiveText
-              variant="body"
-              size="lg"
-              weight="bold"
-              color={PREMIUM_GOLD}
-              align="center"
-              style={styles.luxuryCardTitle}>
-              {title}
-            </ResponsiveText>
-          </View>
-        </TouchableOpacity>
-      </Animated.View>
-    </Animatable.View>
-  );
-};
-
-// ─── Main Dashboard ─────────────────────────────────────────────────────────
 export default function Dashboard() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { setChatOpen, user } = useGlobalStore();
+  const { user, setChatOpen } = useGlobalStore();
+  const insets = useSafeAreaInsets();
+  const headerPaddingTop = Platform.OS === "ios" ? Math.max(insets.top, 10) : 10;
+
   const [rates, setRates] = useState<any>(null);
   const [socialLinks, setSocialLinks] = useState<any>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        if (!user) return;
-        const response = await api.get(`/home?userId=${user.id || (user as any).id}`, { skipLoading: true } as any);
-        if (response.data.success) {
-          setRates(response.data.data.currentRates);
-        }
+    loadData();
+  }, []);
 
-        // Fetch social links/videos data exactly as requested
-        const videoRes = await api.get('/videos/active', { skipLoading: true } as any);
-        if (videoRes.data?.success && videoRes.data?.data?.length > 0) {
-          setSocialLinks(videoRes.data.data[0]);
-        }
-      } catch (e) {
-        console.log("Error fetching dashboard data", e);
+  const loadData = async () => {
+    try {
+      if (!user) return;
+
+      const res = await api.get(
+        `/home?userId=${user.id || (user as any).id}`,
+        { skipLoading: true } as any
+      );
+
+      if (res.data.success) {
+        setRates(res.data.data.currentRates);
       }
-    };
-    fetchDashboardData();
-  }, [user]);
+
+      const social = await api.get(
+        "/videos/active",
+        { skipLoading: true } as any
+      );
+
+      if (social.data.success && social.data.data.length > 0) {
+        setSocialLinks(social.data.data[0]);
+      }
+
+      // Fetch user profile to get latest profile image
+      try {
+        const profileRes = await userAPI.getProfile();
+        if (profileRes.data.success && profileRes.data.data) {
+          const userData = profileRes.data.data;
+          const photo =
+            userData.profile_photo ||
+            userData.profileImage ||
+            userData.profile_image ||
+            userData.image ||
+            userData.avatar ||
+            null;
+
+          if (photo) {
+            // Construct full URL if it's a relative path
+            const fullUrl = photo.startsWith("http")
+              ? photo
+              : `${theme.baseUrl}${photo.startsWith("/") ? "" : "/"}${photo}`;
+            setProfileImage(fullUrl);
+          }
+        }
+      } catch (profileError) {
+        console.log("Profile fetch error:", profileError);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getProfileImage = () => {
+    // Prefer API-fetched profile image, then fallback to store fields
+    if (profileImage) return profileImage;
+
+    const photo =
+      (user as any)?.profile_photo ||
+      user?.profileImage ||
+      (user as any)?.profile_image ||
+      (user as any)?.image ||
+      (user as any)?.avatar ||
+      null;
+
+    if (photo && !photo.startsWith("http")) {
+      return `${theme.baseUrl}${photo.startsWith("/") ? "" : "/"}${photo}`;
+    }
+    return photo;
+  };
+
+  const openLink = (url: string) => Linking.openURL(url);
+
+  const callNow = () =>
+    Linking.openURL(`tel:${theme.constants.mobile}`);
+
+  const openWhatsapp = async () => {
+    const phone = `${theme.constants.whatsapp}`.replace(/\+/g, "");
+
+    const appUrl = `whatsapp://send?phone=${phone}`;
+    const webUrl = `https://wa.me/${phone}`;
+
+    const supported = await Linking.canOpenURL(appUrl);
+
+    if (supported) {
+      await Linking.openURL(appUrl);
+    } else {
+      await Linking.openURL(webUrl);
+    }
+  };
 
   const cards = [
-    { title: t("ourSchemes") || "Schemes", icon: "diamond-outline", gradient: ["#4a1c40", "#8e2e5e"], onPress: () => router.push("/(app)/(tabs)/savings") },
-    { title: t("advanceBooking") || "Advance Booking", icon: "calendar-outline", gradient: ["#b8860b", "#daa520"], onPress: () => router.push("/(app)/gold_advance") },
-    { title: t("billPayments") || "Bill Payment", icon: "calculator-outline", gradient: ["#2b1a10", "#4a2e1b"], onPress: () => router.push("/(app)/bill_payment") },
-    { title: t("rewards") || "Rewards", icon: "gift-outline", gradient: ["#0f342b", "#1a5145"], onPress: () => router.push("/(app)/(tabs)/rewards") },
-    { title: t("newCollections") || "New Collections", icon: "sparkles-outline", gradient: ["#0f2027", "#203a43"], onPress: () => router.push({ pathname: "/(app)/(tabs)/home", params: { autoTrigger: "collection", redirectOnClose: "dashboard" } }) },
-    { title: t("luckyDraw") || "Lucky Draw", icon: "ticket-confirmation-outline", iconType: "material", gradient: ["#301934", "#4a235a"], onPress: () => router.push("/(app)/lucky_draw") },
-    { title: t("newSchemes") || "New Schemes", icon: "briefcase-outline", gradient: ["#85203b", "#e05877"], onPress: () => router.push("/(app)/(tabs)/home/schemes") },
-    { title: t("savingsHome") || "Savings Home", icon: "home-outline", gradient: ["#023e8a", "#00b4d8"], onPress: () => router.push("/(app)/(tabs)/home") },
+    {
+      title: t("ourSchemes") || "Our Schemes",
+      icon: "diamond-outline",
+      onPress: () => router.push("/(app)/(tabs)/savings"),
+    },
+    {
+      title: t("advanceBooking") || "Advance Booking",
+      icon: "calendar-outline",
+      onPress: () => router.push("/(app)/gold_advance"),
+    },
+    {
+      title: t("billPayments") || "Bill Payments",
+      icon: "calculator-outline",
+      onPress: () => router.push("/(app)/bill_payment"),
+    },
+    {
+      title: t("rewards") || "Rewards",
+      icon: "gift-outline",
+      onPress: () => router.push("/(app)/(tabs)/rewards"),
+    },
+    {
+      title: t("newCollections") || "Collections",
+      icon: "sparkles-outline",
+      onPress: () =>
+        router.push({
+          pathname: "/(app)/(tabs)/home",
+          params: {
+            autoTrigger: "collection",
+            redirectOnClose: "dashboard",
+          },
+        }),
+    },
+    {
+      title: t("luckyDraw") || "Lucky Draw",
+      icon: "ticket-outline",
+      onPress: () => router.push("/(app)/lucky_draw"),
+    },
+    {
+      title: t("newSchemes") || "New Schemes",
+      icon: "briefcase-outline",
+      onPress: () => router.push("/(app)/(tabs)/home/schemes"),
+    },
+    {
+      title: t("savingsHome") || "Chit Home",
+      icon: "home-outline",
+      onPress: () => router.push("/(app)/(tabs)/home"),
+    },
   ];
 
-  const handleWhatsApp = () => {
-    Linking.openURL(`whatsapp://send?phone=${theme.constants.whatsapp}`);
-  };
-
-  const handleCall = () => {
-    Linking.openURL(`tel:${theme.constants.mobile}`);
-  };
-
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      {/* Background set to whole container, but image restricted to header now */}
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.colors.quaternary },
+      ]}
+    >
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={DARK}
+      />
 
-      <SafeAreaView style={styles.safeContainer} edges={["bottom"]}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          scrollEnabled={height < 750}
-        >
-          {/* Exactly 1:1 Header Curve Section */}
-          <View style={[styles.curveArea, { height: hp(35) }]}>
-            <LuxuryBackground />
-            <View style={styles.headerContentContainer}>
-              <Image
-                source={require("../../../assets/images/logo.png")}
-                style={{ width: rf(200), height: rf(80) }}
-                resizeMode="contain"
-              />
+      <View style={{ flex: 1, backgroundColor: theme.colors.quaternary }}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <LinearGradient
+            colors={[DARK, PRIMARY]}
+            style={[styles.header, { paddingTop: headerPaddingTop }]}
+          >
+            <View style={styles.headerTop}>
+              <TouchableOpacity
+                style={styles.profileRow}
+                onPress={() => router.push("/(app)/(tabs)/profile")}
+                activeOpacity={0.7}
+              >
+                {getProfileImage() ? (
+                  <Image
+                    source={{
+                      uri: getProfileImage(),
+                    }}
+                    style={styles.profileImage}
+                  />
+                ) : (
+                  <View
+                    style={styles.profilePlaceholder}
+                  >
+                    <Ionicons
+                      name="person"
+                      size={20}
+                      color="#fff"
+                    />
+                  </View>
+                )}
 
-              <View style={styles.ratesRow}>
-                <ResponsiveText variant="body" size="lg" color={PREMIUM_GOLD}>Gold </ResponsiveText>
-                <ResponsiveText variant="body" size="lg" color={COLORS.white} weight="bold">₹ {rates?.gold_rate || "9,250"}/g</ResponsiveText>
-                <View style={styles.rateDivider} />
-                <ResponsiveText variant="body" size="lg" color={PREMIUM_GOLD}>Silver </ResponsiveText>
-                <ResponsiveText variant="body" size="lg" color={COLORS.white} weight="bold">₹ {rates?.silver_rate || "108"}/g</ResponsiveText>
-              </View>
+                <View style={{ marginLeft: 10 }}>
+                  <ResponsiveText
+                    color="#ddd"
+                    size="xs"
+                  >
+                    Hi,
+                  </ResponsiveText>
 
-              <View style={styles.greetingBox}>
-                <ResponsiveText variant="title" size="sm" color={COLORS.white} align="center" style={styles.greetingText}>
-                  Welcome, {user?.name || user?.username || "Guest"}
-                </ResponsiveText>
-                <ResponsiveText variant="body" size="lg" color="#CCCCCC" align="center" style={styles.taglineText}>
-                  Luxury Meets Excellence
-                </ResponsiveText>
+                  <ResponsiveText
+                    color="#fff"
+                    size="md"
+                    weight="bold"
+                  >
+                    {user?.name ||
+                      user?.username ||
+                      "Guest"}
+                  </ResponsiveText>
+                </View>
+              </TouchableOpacity>
+
+              <View style={styles.rightIcons}>
+                <TouchableOpacity
+                  style={styles.iconBtn}
+                  onPress={callNow}
+                >
+                  <Ionicons
+                    name="call-outline"
+                    size={20}
+                    color="#fff"
+                  />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.iconBtn}
+                  onPress={openWhatsapp}
+                >
+                  <Ionicons
+                    name="logo-whatsapp"
+                    size={20}
+                    color="#25D366"
+                  />
+                </TouchableOpacity>
               </View>
             </View>
 
-            {/* Visual Curve defined by background image mostly, but keeping subtle overlay if requested */}
-          </View>
+            <Image
+              source={require("../../../assets/images/logo.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
 
-          {/* The compact 8-card grid follows right under the curve glow */}
+            <View style={styles.rateRow}>
+              <ResponsiveText
+                color={GOLD}
+                size="sm"
+              >
+                Gold
+              </ResponsiveText>
 
-          {/* Compact 8-Card Grid */}
-          <View style={styles.compactGrid}>
-            {cards.map((card, index) => (
-              <LuxuryCard
+              <ResponsiveText
+                color="#fff"
+                size="sm"
+                weight="bold"
+                style={{ marginLeft: 5 }}
+              >
+                ₹ {rates?.gold_rate || "14900"}
+              </ResponsiveText>
+
+              <View style={styles.divider} />
+
+              <ResponsiveText
+                color={GOLD}
+                size="sm"
+              >
+                Silver
+              </ResponsiveText>
+
+              <ResponsiveText
+                color="#fff"
+                size="sm"
+                weight="bold"
+                style={{ marginLeft: 5 }}
+              >
+                ₹ {rates?.silver_rate || "290"}
+              </ResponsiveText>
+            </View>
+
+            <ResponsiveText
+              color="#ddd"
+              size="sm"
+              style={{ marginTop: 8 }}
+            >
+              Luxury Meets Excellence
+            </ResponsiveText>
+          </LinearGradient>
+
+          {/* Cards */}
+          <View style={styles.grid}>
+            {cards.map((item, index) => (
+              <TouchableOpacity
                 key={index}
-                index={index}
-                title={card.title}
-                icon={card.icon}
-                iconType={(card as any).iconType}
-                gradient={(card as any).gradient}
-                onPress={card.onPress}
-              />
+                style={styles.card}
+                onPress={item.onPress}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={item.icon as any}
+                  size={rf(28)}
+                  color={GOLD}
+                />
+
+                <ResponsiveText
+                  style={styles.cardText}
+                  color="#fff"
+                  size="sm"
+                  weight="bold"
+                >
+                  {item.title}
+                </ResponsiveText>
+              </TouchableOpacity>
             ))}
           </View>
 
-          {/* Social Footer & Chat Support As Demanded */}
-          <View style={styles.compactFooter}>
+          {/* Bottom Row */}
+          <View style={styles.bottomRow}>
             <TouchableOpacity
-              style={styles.chatSupportBtn}
+              style={styles.chatBtn}
               onPress={() => setChatOpen(true)}
-              activeOpacity={0.8}
             >
               <LinearGradient
-                colors={["#D8B07F", "#B8860B"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.chatBtnGradient}
+                colors={["#F4D06F", GOLD]}
+                style={styles.chatGradient}
               >
-                <MaterialCommunityIcons name="chat-processing-outline" size={18} color="#251A18" />
-                <ResponsiveText variant="body" size="lg" weight="bold" color="#251A18" style={{ marginLeft: 8 }}>
-                  Chat Support
+                <MaterialCommunityIcons
+                  name="chat-processing-outline"
+                  size={18}
+                  color={DARK}
+                />
+
+                <ResponsiveText
+                  color={DARK}
+                  weight="bold"
+                  style={{ marginLeft: 6 }}
+                >
+                  Chat
                 </ResponsiveText>
               </LinearGradient>
             </TouchableOpacity>
 
-            <View style={styles.showroomSocials}>
-              {/* Updated social badges for higher contrast and proper show */}
-              <TouchableOpacity onPress={() => Linking.openURL(socialLinks?.intsa_url || "https://instagram.com")} style={styles.socialIconBadge}>
-                <Ionicons name="logo-instagram" size={rf(22)} color="#DAA520" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => Linking.openURL(socialLinks?.facebook_url || "https://facebook.com")} style={styles.socialIconBadge}>
-                <Ionicons name="logo-facebook" size={rf(22)} color="#DAA520" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => Linking.openURL(socialLinks?.twitter_url || "https://youtube.com")} style={styles.socialIconBadge}>
-                <Ionicons name="logo-youtube" size={rf(22)} color="#DAA520" />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.social}
+              onPress={() =>
+                openLink(
+                  socialLinks?.intsa_url ||
+                  "https://instagram.com"
+                )
+              }
+            >
+              <Ionicons
+                name="logo-instagram"
+                size={20}
+                color={GOLD}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.social}
+              onPress={() =>
+                openLink(
+                  socialLinks?.facebook_url ||
+                  "https://facebook.com"
+                )
+              }
+            >
+              <Ionicons
+                name="logo-facebook"
+                size={20}
+                color={GOLD}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.social}
+              onPress={() =>
+                openLink(
+                  socialLinks?.twitter_url ||
+                  "https://youtube.com"
+                )
+              }
+            >
+              <Ionicons
+                name="logo-youtube"
+                size={20}
+                color={GOLD}
+              />
+            </TouchableOpacity>
           </View>
+
+          <View style={{ height: hp(4) }} />
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.quaternary },
-  safeContainer: { flex: 1 },
-  scrollContent: { paddingBottom: hp(5) },
-  bgImage: { ...StyleSheet.absoluteFillObject, width, height },
+  container: {
+    flex: 1,
+  },
 
-  // Exact Structure Curve
-  curveArea: {
-    height: hp(34),
-    width: "100%",
-    position: "relative",
-    overflow: "hidden",
-  },
-  headerContentContainer: {
-    zIndex: 10,
+  header: {
+    paddingHorizontal: wp(5),
+    paddingTop: 10,
+    paddingBottom: hp(4),
+    borderBottomLeftRadius: 35,
+    borderBottomRightRadius: 35,
     alignItems: "center",
-    paddingTop: hp(2),
   },
-  headerCrown: {
-    marginBottom: hp(0.5),
+
+  headerTop: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  showroomBrand: {
-    letterSpacing: 4,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
-  },
-  showroomSubtitle: {
-    letterSpacing: 2,
-    marginTop: 2,
-    marginBottom: hp(2),
-  },
-  ratesRow: {
+
+  profileRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: hp(1),
-  },
-  rateDivider: {
-    width: 1,
-    height: 12,
-    backgroundColor: "rgba(255,255,255,0.3)",
-    marginHorizontal: 10,
-  },
-  greetingBox: {
-    marginTop: hp(2.5),
-  },
-  greetingText: {
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
-    letterSpacing: 0.5,
-  },
-  taglineText: {
-    marginTop: 4,
-    letterSpacing: 1.5,
+    width: "62%",
   },
 
-  // Grid
-  compactGrid: {
+  profileImage: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 2,
+    borderColor: GOLD,
+  },
+
+  profilePlaceholder: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor:
+      "rgba(255,255,255,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: GOLD,
+  },
+
+  rightIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  iconBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor:
+      "rgba(255,255,255,0.08)",
+    marginLeft: 10,
+  },
+
+  logo: {
+    width: wp(55),
+    height: hp(10),
+    marginTop: hp(1),
+  },
+
+  rateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: hp(1),
+  },
+
+  divider: {
+    width: 1,
+    height: 12,
+    backgroundColor: "#fff",
+    marginHorizontal: 12,
+  },
+
+  grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    paddingHorizontal: wp(6),
-  },
-  luxuryCardWrapper: {
-    width: wp(42),
-    height: hp(8.5),
-    marginBottom: hp(2),
-    ...shadowUtils.SHADOW_PRESETS.small,
-  },
-  luxuryCardInner: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 14,
-    overflow: "hidden",
-  },
-  cardGoldBorder: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
-    borderColor: "rgba(218, 165, 32, 0.3)", // Subtle gold border
-    borderRadius: 14,
-  },
-  luxuryCardContent: {
-    alignItems: "center",
-  },
-  luxuryIconContainer: {
-    marginBottom: 4,
-  },
-  luxuryCardTitle: {
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
-    letterSpacing: 0.5,
-    fontSize: rf(8.5),
+    paddingHorizontal: wp(5),
+    marginTop: hp(3),
   },
 
-  // Socials & Chat
-  compactFooter: {
+  card: {
+    width: width / 2 - wp(7),
+    backgroundColor: CARD,
+    borderRadius: 18,
+    paddingVertical: hp(2.5),
     alignItems: "center",
-    marginTop: hp(4),
-    marginBottom: hp(2),
-  },
-  chatSupportBtn: {
-    width: wp(45),
-    height: hp(4.5),
-    borderRadius: 25,
-    overflow: "hidden",
-    marginBottom: hp(1.5),
-    ...shadowUtils.SHADOW_PRESETS.small,
-  },
-  chatBtnGradient: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  showroomSocials: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: hp(1.5),
-  },
-  socialIconBadge: {
-    marginHorizontal: 12,
-    backgroundColor: "#251A18",
-    padding: 10,
-    borderRadius: 24,
+    marginBottom: hp(1.8),
     borderWidth: 1,
-    borderColor: "rgba(218,165,32,0.4)",
+    borderColor: GOLD,
     ...shadowUtils.SHADOW_PRESETS.small,
+  },
+
+  cardText: {
+    marginTop: 10,
+    textAlign: "center",
+  },
+
+  bottomRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: hp(2.5),
+    paddingHorizontal: wp(4),
+  },
+
+  chatBtn: {
+    width: wp(36),
+    borderRadius: 30,
+    overflow: "hidden",
+    marginRight: 10,
+  },
+
+  chatGradient: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+
+  social: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: CARD,
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor:
+      "rgba(212,175,55,0.4)",
   },
 });
