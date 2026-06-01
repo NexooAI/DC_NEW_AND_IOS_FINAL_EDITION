@@ -664,6 +664,42 @@ export const maintenanceAPI = {
   }
 };
 
+export interface CreateAdvanceBookingPayload {
+  userId: number | string;
+  goldWeight: number;
+  totalAmount: number;
+  userName: string;
+  userEmail: string;
+  userMobile: string;
+  ratePerGram: number;
+  bookingAmount: number;
+  paymentMode: string;
+  accountNumber: number | string;
+  source: string;
+  expiryDate: string;
+}
+
+// Advance Booking APIs
+export const advanceBookingAPI = {
+  createBooking: async (payload: CreateAdvanceBookingPayload) => {
+    return apiClient.post('/advancebookings', payload);
+  },
+  getBookingsByUser: async (userId: string | number) => {
+    return apiClient.get(`/advancebookings?userId=${userId}`);
+  }
+};
+
+// Bills APIs
+export const billsAPI = {
+  getUserBills: async (userId: string | number) => {
+    return apiClient.get(`/bills/my-bills?userId=${userId}`);
+  },
+
+  payBill: async (payload: { billId: string | number; userId: string | number }) => {
+    return apiClient.post('/bills/pay', payload);
+  }
+};
+
 // Rewards APIs
 export const rewardsAPI = {
   getMyReferrals: async (userId: string | number) => {

@@ -28,37 +28,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import { t } from "@/i18n";
 
 import { logger } from "@/utils/logger";
-const indianStates = [
-  "Andhra Pradesh",
-  "Arunachal Pradesh",
-  "Assam",
-  "Bihar",
-  "Chhattisgarh",
-  "Goa",
-  "Gujarat",
-  "Haryana",
-  "Himachal Pradesh",
-  "Jharkhand",
-  "Karnataka",
-  "Kerala",
-  "Madhya Pradesh",
-  "Maharashtra",
-  "Manipur",
-  "Meghalaya",
-  "Mizoram",
-  "Nagaland",
-  "Odisha",
-  "Punjab",
-  "Rajasthan",
-  "Sikkim",
-  "Tamil Nadu",
-  "Telangana",
-  "Tripura",
-  "Uttar Pradesh",
-  "Uttarakhand",
-  "West Bengal",
-];
-
 const idTypes = [
   { name: "Aadhar", value: "aadhar" },
   { name: "PAN", value: "pan" },
@@ -138,11 +107,14 @@ export default function KycForm() {
     nominee_relationship: "",
   });
 
+  const [activeSection, setActiveSection] = useState<'identity' | 'address' | 'nominee' | null>('identity');
+
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [kycId, setKycId] = useState<string | null>(null);
   const [pincodeData, setPincodeData] = useState<PincodeData[]>([]);
   const [isLoadingPincode, setIsLoadingPincode] = useState(false);
+  const [pincodeLookupFailed, setPincodeLookupFailed] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const isMountedRef = React.useRef(true); // Track component mount state for async operations
 
@@ -226,41 +198,47 @@ export default function KycForm() {
 
     if (isMountedRef.current) {
       setIsLoadingPincode(true);
+      setPincodeData([]);
+      setPincodeLookupFailed(false);
     }
-    try {
-      const response = await fetch(
-        `https://api.postalpincode.in/pincode/${pincode}`
-      );
-      const data = await response.json();
 
-      // Check if component is still mounted before updating state
-      if (isMountedRef.current) {
-        if (
-          data &&
-          data[0] &&
-          data[0].Status === "Success" &&
-          data[0].PostOffice
-        ) {
-          setPincodeData(data[0].PostOffice);
-          // Auto-fill district and state from first result
-          if (data[0].PostOffice.length > 0) {
-            const firstResult = data[0].PostOffice[0];
-            setFormData((prev) => ({
-              ...prev,
-              district: firstResult.District,
-              state: firstResult.State,
-              country: firstResult.Country,
-            }));
-          }
-        } else {
-          setPincodeData([]);
-          Alert.alert("Invalid Pincode", "Please enter a valid 6-digit pincode");
-        }
+    try {
+      const response = await api.get(`/pincode/${pincode}`);
+      const responseData = response.data?.data ?? response.data;
+      const pincodeResult = Array.isArray(responseData)
+        ? responseData[0]
+        : responseData;
+      const postOffices = Array.isArray(pincodeResult?.PostOffice)
+        ? pincodeResult.PostOffice
+        : Array.isArray(responseData)
+          ? responseData
+          : [];
+
+      if (!isMountedRef.current) return;
+
+      if (
+        pincodeResult &&
+        (!pincodeResult.Status || pincodeResult.Status === "Success") &&
+        postOffices.length > 0
+      ) {
+        setPincodeData(postOffices);
+
+        const firstResult = postOffices[0];
+        setFormData((prev) => ({
+          ...prev,
+          district: firstResult.District,
+          state: firstResult.State,
+          country: firstResult.Country || "India",
+        }));
+      } else {
+        setPincodeData([]);
+        setPincodeLookupFailed(false);
+        Alert.alert("Invalid Pincode", "Please enter a valid 6-digit pincode");
       }
-    } catch (error) {
-      logger.error("Error fetching pincode data:", error);
+    } catch {
       if (isMountedRef.current) {
-        Alert.alert("Error", "Failed to fetch pincode data. Please try again.");
+        setPincodeData([]);
+        setPincodeLookupFailed(true);
       }
     } finally {
       if (isMountedRef.current) {
@@ -272,6 +250,7 @@ export default function KycForm() {
   // Handle pincode change
   const handlePincodeChange = (text: string) => {
     handleChange("pincode", text);
+    setPincodeLookupFailed(false);
 
     // Clear city when pincode changes
     if (text.length === 6) {
@@ -427,16 +406,60 @@ export default function KycForm() {
   };
 
   // Update the validateForm function to handle type safety
+  const getIdentitySummary = () => {
+    if (!formData.dob && !formData.addressprooftype && !formData.idNumber) {
+      return "Click edit to fill identity details";
+    }
+    const dobText = formData.dob || "—";
+    const typeText = formData.addressprooftype ? formData.addressprooftype.toUpperCase() : "—";
+    const numText = formData.idNumber || "—";
+    return `DOB: ${dobText} | ${typeText}: ${numText}`;
+  };
+
+  const getAddressSummary = () => {
+    if (!formData.pincode && !formData.city && !formData.doorno && !formData.street) {
+      return "Click edit to fill address details";
+    }
+    const door = formData.doorno ? `${formData.doorno}, ` : "";
+    const street = formData.street ? `${formData.street}, ` : "";
+    const area = formData.area ? `${formData.area}, ` : "";
+    const city = formData.city ? `${formData.city}` : "";
+    const pin = formData.pincode ? ` - ${formData.pincode}` : "";
+    return `${door}${street}${area}${city}${pin}`;
+  };
+
+  const getNomineeSummary = () => {
+    if (!formData.nominee_name && !formData.nominee_relationship) {
+      return "Optional - Not added yet";
+    }
+    const name = formData.nominee_name || "—";
+    const rel = formData.nominee_relationship ? formData.nominee_relationship.charAt(0).toUpperCase() + formData.nominee_relationship.slice(1) : "—";
+    return `${name} (${rel})`;
+  };
+
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
-    // Check for empty fields first
+    // Check for empty fields first, excluding nominee details
     Object.keys(formData).forEach((field) => {
+      if (field === "nominee_name" || field === "nominee_relationship") {
+        return; // Optional
+      }
+      // If pincode lookup succeeded, district, state, and country are filled in state,
+      // so they shouldn't trigger an error. If lookup failed, they're typed manually.
       const value = formData[field as keyof FormData];
       if (typeof value === "string" && !value.trim()) {
         newErrors[field] = "This field is required";
       }
     });
+
+    // Validate nominee consistency: if one is filled, both must be filled
+    if (formData.nominee_name.trim() && !formData.nominee_relationship.trim()) {
+      newErrors.nominee_relationship = "Please select a relationship";
+    }
+    if (!formData.nominee_name.trim() && formData.nominee_relationship.trim()) {
+      newErrors.nominee_name = "Please enter nominee name";
+    }
 
     // Validate Date of Birth (DD/MM/YYYY)
     if (
@@ -671,201 +694,34 @@ export default function KycForm() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Main KYC Form Card */}
-          <View style={styles.mainCard}>
-            {/* Address Section */}
-            <View style={styles.sectionContainer}>
-              <View style={styles.sectionHeader}>
-                <Ionicons name="home-outline" size={24} color="#1976d2" />
-                <Text style={[styles.sectionTitle, { color: "#1976d2" }]}>
-                  Address Details
-                </Text>
-              </View>
-              <View style={styles.formContent}>
-                {/* Pincode */}
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Pincode</Text>
-                  <View style={styles.pincodeContainer}>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Enter your 6-digit pincode"
-                      placeholderTextColor="gray"
-                      keyboardType="number-pad"
-                      value={formData.pincode}
-                      onChangeText={handlePincodeChange}
-                      maxLength={6}
-                    />
-                    {isLoadingPincode && (
-                      <View style={styles.loadingIndicator}>
-                        <Text style={styles.loadingText}>Loading...</Text>
-                      </View>
-                    )}
-                  </View>
-                  {errors.pincode && (
-                    <Text style={styles.errorText}>{errors.pincode}</Text>
-                  )}
-                  {formData.pincode.length === 6 &&
-                    pincodeData.length === 0 &&
-                    !isLoadingPincode && (
-                      <Text style={styles.helpText}>
-                        No cities found for this pincode. Please verify the
-                        pincode.
-                      </Text>
-                    )}
-                  {formData.pincode.length === 6 &&
-                    pincodeData.length > 0 && (
-                      <Text style={styles.helpText}>
-                        {pincodeData.length} cities found. Select one to
-                        auto-fill address details.
-                      </Text>
-                    )}
-                </View>
-                {/* City */}
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>City</Text>
-                  {pincodeData.length > 0 ? (
-                    <Dropdown
-                      style={[
-                        styles.dropdown,
-                        focusedField === "city" && styles.dropdownFocused,
-                      ]}
-                      placeholderStyle={styles.placeholderStyle}
-                      selectedTextStyle={styles.selectedTextStyle}
-                      data={pincodeData.map((city) => ({
-                        label: city.Name,
-                        value: city.Name,
-                      }))}
-                      maxHeight={300}
-                      labelField="label"
-                      valueField="value"
-                      placeholder="Select your city"
-                      value={formData.city}
-                      onFocus={() => setFocusedField("city")}
-                      onBlur={() => setFocusedField(null)}
-                      onChange={(item) => {
-                        handleCitySelection(item.value);
-                        setFocusedField(null);
-                      }}
-                    />
-                  ) : (
-                    <TextInput
-                      style={[styles.input, styles.disabledInput]}
-                      placeholder="Enter pincode first to select city"
-                      value={formData.city}
-                      editable={false}
-                    />
-                  )}
-                  {errors.city && (
-                    <Text style={styles.errorText}>{errors.city}</Text>
-                  )}
-                </View>
-                {/* District */}
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>District</Text>
-                  <TextInput
-                    style={[styles.input, styles.disabledInput]}
-                    placeholder={
-                      formData.pincode.length === 6
-                        ? "Will be auto-filled when city is selected"
-                        : "Enter pincode first"
-                    }
-                    value={formData.district}
-                    editable={false}
-                  />
-                  {errors.district && (
-                    <Text style={styles.errorText}>{errors.district}</Text>
-                  )}
-                </View>
-                {/* State (Auto-filled) */}
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>State</Text>
-                  <TextInput
-                    style={[styles.input, styles.disabledInput]}
-                    placeholder={
-                      formData.pincode.length === 6
-                        ? "Will be auto-filled when city is selected"
-                        : "Enter pincode first"
-                    }
-                    value={formData.state}
-                    editable={false}
-                  />
-                  {errors.state && (
-                    <Text style={styles.errorText}>{errors.state}</Text>
-                  )}
-                </View>
-                {/* Country (Default to India) */}
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Country</Text>
-                  <TextInput
-                    style={[styles.input, styles.disabledInput]}
-                    placeholder="Country"
-                    value={formData.country}
-                    editable={false}
-                  />
-                  {errors.country && (
-                    <Text style={styles.errorText}>{errors.country}</Text>
-                  )}
-                </View>
-                {/* Manual Address Fields */}
-                <View style={styles.formGroup}>
-                  <Text style={styles.sectionSubtitle}>
-                    Enter these details manually:
-                  </Text>
-                </View>
-
-                {/* Door Number */}
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Door No.</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter your door number"
-                    value={formData.doorno}
-                    placeholderTextColor="gray"
-                    onChangeText={(text) => handleChange("doorno", text)}
-                  />
-                  {errors.doorno && (
-                    <Text style={styles.errorText}>{errors.doorno}</Text>
-                  )}
-                </View>
-                {/* Street */}
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Street</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter your street name"
-                    placeholderTextColor="gray"
-                    value={formData.street}
-                    onChangeText={(text) => handleChange("street", text)}
-                  />
-                  {errors.street && (
-                    <Text style={styles.errorText}>{errors.street}</Text>
-                  )}
-                </View>
-                {/* Area */}
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Area</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter your area/locality"
-                    placeholderTextColor="gray"
-                    value={formData.area}
-                    onChangeText={(text) => handleChange("area", text)}
-                  />
-                  {errors.area && (
-                    <Text style={styles.errorText}>{errors.area}</Text>
-                  )}
-                </View>
-              </View>
-            </View>
-
-            {/* ID Proof Section */}
-            <View style={styles.sectionContainer}>
-              <View style={styles.sectionHeader}>
+          {/* 1. Identity Details Section */}
+          <View style={[styles.sectionCard, activeSection === 'identity' && styles.activeSectionCard]}>
+            <TouchableOpacity
+              style={styles.sectionHeaderClickable}
+              onPress={() => setActiveSection(activeSection === 'identity' ? null : 'identity')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.sectionHeaderLeft}>
                 <Ionicons name="card-outline" size={24} color="#bfa14a" />
-                <Text style={[styles.sectionTitle, { color: "#bfa14a" }]}>
-                  ID Proof
-                </Text>
+                <View style={styles.sectionHeaderTitleContainer}>
+                  <Text style={[styles.sectionTitle, { color: "#bfa14a" }]}>
+                    Identity Details
+                  </Text>
+                  {activeSection !== 'identity' && (
+                    <Text style={styles.sectionSummaryText} numberOfLines={1}>
+                      {getIdentitySummary()}
+                    </Text>
+                  )}
+                </View>
               </View>
+              <Ionicons
+                name={activeSection === 'identity' ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="#bfa14a"
+              />
+            </TouchableOpacity>
+
+            {activeSection === 'identity' && (
               <View style={styles.formContent}>
                 <View style={styles.formGroup}>
                   <FormDatePicker
@@ -938,50 +794,291 @@ export default function KycForm() {
                     <Text style={styles.errorText}>{errors.idNumber}</Text>
                   )}
                 </View>
-              </View>
-            </View>
 
-            {/* Nominee Section */}
-            <View style={styles.sectionContainer}>
-              <View style={styles.sectionHeader}>
-                <Ionicons name="people-outline" size={24} color="#388e3c" />
-                <Text style={[styles.sectionTitle, { color: "#388e3c" }]}>
-                  Nominee Details
-                </Text>
+                <TouchableOpacity
+                  style={styles.sectionContinueButton}
+                  onPress={() => setActiveSection('address')}
+                >
+                  <Text style={styles.sectionContinueButtonText}>Continue to Address</Text>
+                  <Ionicons name="arrow-forward" size={18} color="#fff" />
+                </TouchableOpacity>
               </View>
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Nominee Relationship</Text>
-                <Dropdown
-                  style={[
-                    styles.dropdown,
-                    focusedField === "nominee_relationship" &&
-                    styles.dropdownFocused,
-                  ]}
-                  placeholderStyle={styles.placeholderStyle}
-                  selectedTextStyle={styles.selectedTextStyle}
-                  data={nomineeRelationship.map((id) => ({
-                    label: id.name,
-                    value: id.value,
-                  }))}
-                  maxHeight={300}
-                  labelField="label"
-                  valueField="value"
-                  placeholder="Select relationship"
-                  value={formData.nominee_relationship}
-                  onFocus={() => setFocusedField("nominee_relationship")}
-                  onBlur={() => setFocusedField(null)}
-                  onChange={(item) => {
-                    handleChange("nominee_relationship", item.value);
-                    setFocusedField(null);
-                  }}
-                />
-                {errors.nominee_relationship && (
-                  <Text style={styles.errorText}>
-                    {errors.nominee_relationship}
+            )}
+          </View>
+
+          {/* 2. Address Details Section */}
+          <View style={[styles.sectionCard, activeSection === 'address' && styles.activeSectionCard]}>
+            <TouchableOpacity
+              style={styles.sectionHeaderClickable}
+              onPress={() => setActiveSection(activeSection === 'address' ? null : 'address')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.sectionHeaderLeft}>
+                <Ionicons name="home-outline" size={24} color="#1976d2" />
+                <View style={styles.sectionHeaderTitleContainer}>
+                  <Text style={[styles.sectionTitle, { color: "#1976d2" }]}>
+                    Address Details
                   </Text>
-                )}
+                  {activeSection !== 'address' && (
+                    <Text style={styles.sectionSummaryText} numberOfLines={1}>
+                      {getAddressSummary()}
+                    </Text>
+                  )}
+                </View>
               </View>
+              <Ionicons
+                name={activeSection === 'address' ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="#1976d2"
+              />
+            </TouchableOpacity>
+
+            {activeSection === 'address' && (
               <View style={styles.formContent}>
+                {/* Pincode */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Pincode</Text>
+                  <View style={styles.pincodeContainer}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter your 6-digit pincode"
+                      placeholderTextColor="gray"
+                      keyboardType="number-pad"
+                      value={formData.pincode}
+                      onChangeText={handlePincodeChange}
+                      maxLength={6}
+                    />
+                    {isLoadingPincode && (
+                      <View style={styles.loadingIndicator}>
+                        <Text style={styles.loadingText}>Loading...</Text>
+                      </View>
+                    )}
+                  </View>
+                  {errors.pincode && (
+                    <Text style={styles.errorText}>{errors.pincode}</Text>
+                  )}
+                  {formData.pincode.length === 6 &&
+                    pincodeData.length === 0 &&
+                    !isLoadingPincode &&
+                    !pincodeLookupFailed && (
+                      <Text style={styles.helpText}>
+                        No cities found for this pincode. Please verify the
+                        pincode.
+                      </Text>
+                    )}
+                  {formData.pincode.length === 6 &&
+                    pincodeLookupFailed &&
+                    !isLoadingPincode && (
+                      <Text style={styles.helpText}>
+                        Pincode lookup failed. Enter address details manually.
+                      </Text>
+                    )}
+                  {formData.pincode.length === 6 &&
+                    pincodeData.length > 0 && (
+                      <Text style={styles.helpText}>
+                        {pincodeData.length} cities found. Select one to
+                        auto-fill address details.
+                      </Text>
+                    )}
+                </View>
+
+                {/* City */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>City</Text>
+                  {pincodeData.length > 0 ? (
+                    <Dropdown
+                      style={[
+                        styles.dropdown,
+                        focusedField === "city" && styles.dropdownFocused,
+                      ]}
+                      placeholderStyle={styles.placeholderStyle}
+                      selectedTextStyle={styles.selectedTextStyle}
+                      data={pincodeData.map((city) => ({
+                        label: city.Name,
+                        value: city.Name,
+                      }))}
+                      maxHeight={300}
+                      labelField="label"
+                      valueField="value"
+                      placeholder="Select your city"
+                      value={formData.city}
+                      onFocus={() => setFocusedField("city")}
+                      onBlur={() => setFocusedField(null)}
+                      onChange={(item) => {
+                        handleCitySelection(item.value);
+                        setFocusedField(null);
+                      }}
+                    />
+                  ) : (
+                    <TextInput
+                      style={[
+                        styles.input,
+                        !pincodeLookupFailed && styles.disabledInput,
+                      ]}
+                      placeholder={
+                        pincodeLookupFailed
+                          ? "Enter your city"
+                          : "Enter pincode first to select city"
+                      }
+                      value={formData.city}
+                      editable={pincodeLookupFailed}
+                      onChangeText={(text) => handleChange("city", text)}
+                    />
+                  )}
+                  {errors.city && (
+                    <Text style={styles.errorText}>{errors.city}</Text>
+                  )}
+                </View>
+
+                {/* District (Only show if pincode lookup failed or explicitly entered) */}
+                {pincodeLookupFailed && (
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>District</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter your district"
+                      value={formData.district}
+                      onChangeText={(text) => handleChange("district", text)}
+                    />
+                    {errors.district && (
+                      <Text style={styles.errorText}>{errors.district}</Text>
+                    )}
+                  </View>
+                )}
+
+                {/* State (Only show if pincode lookup failed or explicitly entered) */}
+                {pincodeLookupFailed && (
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>State</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter your state"
+                      value={formData.state}
+                      onChangeText={(text) => handleChange("state", text)}
+                    />
+                    {errors.state && (
+                      <Text style={styles.errorText}>{errors.state}</Text>
+                    )}
+                  </View>
+                )}
+
+                {/* Door Number */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Door No.</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your door number"
+                    value={formData.doorno}
+                    placeholderTextColor="gray"
+                    onChangeText={(text) => handleChange("doorno", text)}
+                  />
+                  {errors.doorno && (
+                    <Text style={styles.errorText}>{errors.doorno}</Text>
+                  )}
+                </View>
+
+                {/* Street */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Street</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your street name"
+                    placeholderTextColor="gray"
+                    value={formData.street}
+                    onChangeText={(text) => handleChange("street", text)}
+                  />
+                  {errors.street && (
+                    <Text style={styles.errorText}>{errors.street}</Text>
+                  )}
+                </View>
+
+                {/* Area */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Area</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your area/locality"
+                    placeholderTextColor="gray"
+                    value={formData.area}
+                    onChangeText={(text) => handleChange("area", text)}
+                  />
+                  {errors.area && (
+                    <Text style={styles.errorText}>{errors.area}</Text>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  style={styles.sectionContinueButton}
+                  onPress={() => setActiveSection('nominee')}
+                >
+                  <Text style={styles.sectionContinueButtonText}>Continue to Nominee</Text>
+                  <Ionicons name="arrow-forward" size={18} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {/* 3. Nominee Details Section */}
+          <View style={[styles.sectionCard, activeSection === 'nominee' && styles.activeSectionCard]}>
+            <TouchableOpacity
+              style={styles.sectionHeaderClickable}
+              onPress={() => setActiveSection(activeSection === 'nominee' ? null : 'nominee')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.sectionHeaderLeft}>
+                <Ionicons name="people-outline" size={24} color="#388e3c" />
+                <View style={styles.sectionHeaderTitleContainer}>
+                  <Text style={[styles.sectionTitle, { color: "#388e3c" }]}>
+                    Nominee Details (Optional)
+                  </Text>
+                  {activeSection !== 'nominee' && (
+                    <Text style={styles.sectionSummaryText} numberOfLines={1}>
+                      {getNomineeSummary()}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              <Ionicons
+                name={activeSection === 'nominee' ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="#388e3c"
+              />
+            </TouchableOpacity>
+
+            {activeSection === 'nominee' && (
+              <View style={styles.formContent}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Nominee Relationship</Text>
+                  <Dropdown
+                    style={[
+                      styles.dropdown,
+                      focusedField === "nominee_relationship" &&
+                      styles.dropdownFocused,
+                    ]}
+                    placeholderStyle={styles.placeholderStyle}
+                    selectedTextStyle={styles.selectedTextStyle}
+                    data={nomineeRelationship.map((id) => ({
+                      label: id.name,
+                      value: id.value,
+                    }))}
+                    maxHeight={300}
+                    labelField="label"
+                    valueField="value"
+                    placeholder="Select relationship"
+                    value={formData.nominee_relationship}
+                    onFocus={() => setFocusedField("nominee_relationship")}
+                    onBlur={() => setFocusedField(null)}
+                    onChange={(item) => {
+                      handleChange("nominee_relationship", item.value);
+                      setFocusedField(null);
+                    }}
+                  />
+                  {errors.nominee_relationship && (
+                    <Text style={styles.errorText}>
+                      {errors.nominee_relationship}
+                    </Text>
+                  )}
+                </View>
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Nominee Name</Text>
                   <TextInput
@@ -1000,33 +1097,33 @@ export default function KycForm() {
                   )}
                 </View>
               </View>
-            </View>
+            )}
+          </View>
 
-            {/* Submit Button */}
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                onPress={handleSubmit}
-                style={styles.submitButton}
-                activeOpacity={0.9}
+          {/* Submit Button */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              onPress={handleSubmit}
+              style={styles.submitButton}
+              activeOpacity={0.9}
+            >
+              <LinearGradient
+                colors={[theme.colors.primary, theme.colors.primary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientButton}
               >
-                <LinearGradient
-                  colors={[theme.colors.primary, theme.colors.primary]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.gradientButton}
-                >
-                  <Text style={styles.submitButtonText}>
-                    {kycId ? "Update KYC" : "Submit KYC"}
-                  </Text>
-                  <Ionicons
-                    name="arrow-forward"
-                    size={20}
-                    color="#FFC857"
-                    style={styles.buttonIcon}
-                  />
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
+                <Text style={styles.submitButtonText}>
+                  {kycId ? "Update KYC" : "Submit KYC"}
+                </Text>
+                <Ionicons
+                  name="arrow-forward"
+                  size={20}
+                  color="#FFC857"
+                  style={styles.buttonIcon}
+                />
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
 
           {/* Extra space at the bottom */}
@@ -1305,5 +1402,64 @@ const styles = StyleSheet.create({
   selectedTextStyle: {
     fontSize: 16,
     color: "#333",
+  },
+  sectionHeaderClickable: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+  },
+  sectionHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  sectionHeaderTitleContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  sectionSummaryText: {
+    fontSize: 13,
+    color: "#666",
+    marginTop: 4,
+  },
+  sectionContinueButton: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sectionContinueButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+    marginRight: 8,
+  },
+  sectionCard: {
+    backgroundColor: "white",
+    borderRadius: 18,
+    padding: 16,
+    marginHorizontal: 15,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  activeSectionCard: {
+    borderColor: "#bfa14a",
+    borderWidth: 1.5,
   },
 });

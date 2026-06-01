@@ -163,7 +163,7 @@ export default function MpinSetup() {
           usertype: data.user.userType,
         });
 
-        router.replace("/(app)/(tabs)/home");
+        router.replace("/(app)/dashboard");
       }
     } catch (error: any) {
       Alert.alert(
@@ -192,7 +192,7 @@ export default function MpinSetup() {
             {/* Header with Back Button */}
             {/* <View style={styles.header}>
               <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+                <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
               </TouchableOpacity>
               <Text style={styles.headerTitle}>{t("setMpinTitle")}</Text>
               <View style={styles.headerSpacer} />
@@ -222,7 +222,7 @@ export default function MpinSetup() {
                   <Ionicons
                     name={showMpin ? "eye-off" : "eye"}
                     size={20}
-                    color={COLORS.white}
+                    color={COLORS.primary}
                   />
                 </TouchableOpacity>
               </View>
@@ -241,7 +241,7 @@ export default function MpinSetup() {
                   <Ionicons
                     name={showConfirmMpin ? "eye-off" : "eye"}
                     size={20}
-                    color={COLORS.white}
+                    color={COLORS.primary}
                   />
                 </TouchableOpacity>
               </View>
@@ -249,7 +249,7 @@ export default function MpinSetup() {
               <View style={styles.buttonContainer}>
                 <ResponsiveButton
                   title={loading ? t("processing") : t("setMpinButton")}
-                  variant="secondary"
+                  variant="primary"
                   size="lg"
                   fullWidth={true}
                   loading={loading}
@@ -267,7 +267,7 @@ export default function MpinSetup() {
                     onPress={handleReset}
                     style={styles.actionButton}
                   >
-                    <Ionicons name="refresh" size={20} color={COLORS.white} />
+                    <Ionicons name="refresh" size={20} color={COLORS.primary} />
                     <Text style={styles.actionButtonText}>{t("reset")}</Text>
                   </TouchableOpacity>
 
@@ -278,7 +278,7 @@ export default function MpinSetup() {
                     <Ionicons
                       name="arrow-back"
                       size={20}
-                      color={COLORS.white}
+                      color={COLORS.primary}
                     />
                     <Text style={styles.actionButtonText}>{t("back")}</Text>
                   </TouchableOpacity>
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: COLORS.white,
+    color: COLORS.primary,
     flex: 1,
     textAlign: "center",
   },
@@ -329,13 +329,13 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 22,
     fontWeight: "bold",
-    color: COLORS.white,
+    color: COLORS.primary,
     marginBottom: 6,
     textAlign: "center",
   },
   pageSubtitle: {
     fontSize: 14,
-    color: COLORS.white,
+    color: COLORS.primary,
     marginBottom: 20,
     textAlign: "center",
     opacity: 0.8,
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: COLORS.white,
+    color: COLORS.primary,
     marginTop: 10,
     marginBottom: 8,
     textAlign: "center",
@@ -364,8 +364,8 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: COLORS.white,
-    color: COLORS.white,
+    borderColor: COLORS.primary,
+    color: COLORS.primary,
     fontSize: 20,
     textAlign: "center",
     backgroundColor: "rgba(255,255,255,0.1)",
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     minWidth: 100,
   },
   actionButtonText: {
-    color: COLORS.white,
+    color: COLORS.primary,
     fontSize: 14,
     fontWeight: "600",
     marginLeft: 6,

@@ -38,7 +38,7 @@ export default function Dashboard() {
   const { t } = useTranslation();
   const { user, setChatOpen } = useGlobalStore();
   const insets = useSafeAreaInsets();
-  const headerPaddingTop = Platform.OS === "ios" ? Math.max(insets.top, 10) : 10;
+  const headerPaddingTop = Platform.OS === "ios" ? 10 : 10;
 
   const [rates, setRates] = useState<any>(null);
   const [socialLinks, setSocialLinks] = useState<any>(null);
@@ -170,11 +170,11 @@ export default function Dashboard() {
           },
         }),
     },
-    {
-      title: t("luckyDraw") || "Lucky Draw",
-      icon: "ticket-outline",
-      onPress: () => router.push("/(app)/lucky_draw"),
-    },
+    // {
+    //   title: t("luckyDraw") || "Lucky Draw",
+    //   icon: "ticket-outline",
+    //   onPress: () => router.push("/(app)/lucky_draw"),
+    // },
     {
       title: t("newSchemes") || "New Schemes",
       icon: "briefcase-outline",
@@ -332,7 +332,10 @@ export default function Dashboard() {
             {cards.map((item, index) => (
               <TouchableOpacity
                 key={index}
-                style={styles.card}
+                style={[
+                  styles.card,
+                  index === cards.length - 1 && { width: "100%" }
+                ]}
                 onPress={item.onPress}
                 activeOpacity={0.8}
               >

@@ -19,8 +19,7 @@ import {
 } from "react-native";
 import { useKeyboardVisibility } from "@/hooks/useKeyboardVisibility";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
@@ -974,7 +973,7 @@ export default function JoinSavings() {
         <Animated.View
           style={[styles.goldRateIcon, { opacity: goldIconOpacity }]}
         >
-          <MaterialCommunityIcons name="gold" size={20} color="#FFC857" />
+          <FontAwesome5 name="coins" size={16} color="#FFC857" />
         </Animated.View>
         <View style={styles.goldRateContent}>
           <Text style={styles.goldRateLabel}>

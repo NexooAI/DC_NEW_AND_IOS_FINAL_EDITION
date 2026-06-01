@@ -1,48 +1,303 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, FlatList, Platform } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '@/constants/theme';
 import { COLORS } from '@/constants/colors';
 import ResponsiveText from '@/components/ResponsiveText';
 import { responsiveUtils } from '@/utils/responsiveUtils';
+import { billsAPI } from '@/services/api';
+import useGlobalStore from '@/store/global.store';
+import { logAppEvent } from '@/services/appEventService';
 
 const { wp, hp, rf } = responsiveUtils;
-const QUATERNARY_COLOR = theme.colors.quaternary || "#F2E6D2";
+const QUATERNARY_COLOR = theme.colors.quaternary || '#F2E6D2';
 
-// Mock Data Types
-interface BillItem {
-  id: string;
-  type: string;
-  billNumber: string;
-  amount: number;
-  date: string;
-  status: 'pending' | 'paid';
+type BillStatus = 'PARTIAL' | 'PAID' | 'EXPIRED' | string;
+
+interface BillApiItem {
+  id?: number | string;
+  billId?: number | string;
+  bill_id?: number | string;
+  bill_number?: string;
+  description?: string;
+  bill_date?: string;
+  totalAmount?: number | string;
+  paidAmount?: number | string;
+  pendingAmount?: number | string;
+  status?: BillStatus;
 }
 
-const PENDING_BILLS: BillItem[] = [
-  { id: '1', type: 'Jewelry Purchase', billNumber: 'INV-2024-089', amount: 15400, date: '20 Oct 2024', status: 'pending' },
-  { id: '2', type: 'Custom Order', billNumber: 'INV-2024-102', amount: 45000, date: '15 Oct 2024', status: 'pending' },
-];
+interface BillItem {
+  id: string;
+  billNumber: string;
+  description: string;
+  billDate: string;
+  totalAmount: number;
+  paidAmount: number;
+  pendingAmount: number;
+  status: BillStatus;
+  raw: BillApiItem;
+}
 
-const COMPLETED_BILLS: BillItem[] = [
-  { id: '3', type: 'Gold Scheme Pay', billNumber: 'SCH-9921', amount: 5000, date: '01 Oct 2024', status: 'paid' },
-  { id: '4', type: 'Repair Charges', billNumber: 'REP-0012', amount: 1200, date: '25 Sep 2024', status: 'paid' },
-  { id: '5', type: 'Old Gold Exchange', billNumber: 'EXC-4410', amount: 22000, date: '10 Sep 2024', status: 'paid' },
-];
+const toAmount = (value: unknown) => {
+  const amount = Number(value ?? 0);
+  return Number.isFinite(amount) ? amount : 0;
+};
+
+const formatCurrency = (value: number) => `₹${value.toLocaleString('en-IN')}`;
+
+const formatDate = (value?: string) => {
+  if (!value) return 'N/A';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const getBillId = (bill: BillApiItem) => bill.id ?? bill.billId ?? bill.bill_id;
+
+const normalizeBill = (bill: BillApiItem): BillItem => {
+  const id = getBillId(bill);
+  return {
+    id: String(id ?? bill.bill_number ?? Math.random()),
+    billNumber: bill.bill_number || 'N/A',
+    description: bill.description || 'Bill Payment',
+    billDate: formatDate(bill.bill_date),
+    totalAmount: toAmount(bill.totalAmount),
+    paidAmount: toAmount(bill.paidAmount),
+    pendingAmount: toAmount(bill.pendingAmount),
+    status: String(bill.status || '').toUpperCase(),
+    raw: bill,
+  };
+};
+
+const canPayBill = (bill: BillItem) => bill.status === 'PARTIAL' && bill.pendingAmount > 0;
+
+const getStatusMeta = (status: BillStatus) => {
+  switch (String(status).toUpperCase()) {
+    case 'PAID':
+      return {
+        label: 'Paid',
+        icon: 'checkmark-done-circle-outline' as const,
+        color: '#2E7D32',
+        backgroundColor: 'rgba(46,125,50,0.1)',
+      };
+    case 'EXPIRED':
+      return {
+        label: 'Expired',
+        icon: 'time-outline' as const,
+        color: '#9E5A00',
+        backgroundColor: 'rgba(158,90,0,0.12)',
+      };
+    case 'PARTIAL':
+      return {
+        label: 'Partial',
+        icon: 'receipt-outline' as const,
+        color: theme.colors.primary,
+        backgroundColor: 'rgba(133,1,17,0.1)',
+      };
+    default:
+      return {
+        label: String(status || 'Pending'),
+        icon: 'receipt-outline' as const,
+        color: '#555',
+        backgroundColor: 'rgba(0,0,0,0.08)',
+      };
+  }
+};
+
+const extractPaymentUrl = (paymentSession: any) => {
+  if (!paymentSession) return '';
+  if (typeof paymentSession === 'string') return paymentSession;
+  return (
+    paymentSession?.payment_links?.web ||
+    paymentSession?.paymentLinks?.web ||
+    paymentSession?.links?.web ||
+    paymentSession?.web ||
+    paymentSession?.url ||
+    paymentSession?.paymentUrl ||
+    paymentSession?.payment_url ||
+    ''
+  );
+};
+
+const getApiErrorMessage = (error: any) => {
+  const message =
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    'Unable to process bill payment. Please try again.';
+
+  const normalized = String(message).toLowerCase();
+  if (normalized.includes('not found')) return 'Bill not found';
+  if (normalized.includes('already paid')) return 'Bill already paid';
+  if (normalized.includes('pending amount')) return 'No pending amount to pay';
+  if (normalized.includes('required')) return 'Bill ID and User ID are required';
+  return String(message);
+};
 
 export default function BillPayment() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
-  const [maintenanceModalVisible, setMaintenanceModalVisible] = useState(false);
+  const { user } = useGlobalStore();
+  const [activeTab, setActiveTab] = useState<'all' | 'closed'>('all');
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedBill, setSelectedBill] = useState<BillItem | null>(null);
+  const [bills, setBills] = useState<BillItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [payingBillId, setPayingBillId] = useState<string | null>(null);
+  const [processingMessage, setProcessingMessage] = useState('');
 
-  const handlePay = (bill: BillItem) => {
-    setSelectedBill(bill);
-    setMaintenanceModalVisible(true);
+  const userId = (user as any)?.userId || user?.id;
+
+  const fetchBills = useCallback(async (showLoader = true) => {
+    if (!userId) {
+      setBills([]);
+      setLoading(false);
+      Alert.alert('Bill Payment', 'Bill ID and User ID are required');
+      return;
+    }
+
+    try {
+      if (showLoader) setLoading(true);
+      const response = await billsAPI.getUserBills(userId);
+      const list = response?.data?.data || [];
+      setBills(Array.isArray(list) ? list.map(normalizeBill) : []);
+    } catch (error) {
+      Alert.alert('Error', getApiErrorMessage(error));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [userId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchBills(true);
+      logAppEvent('VIEW_BILLS');
+    }, [fetchBills])
+  );
+
+  const displayedBills = useMemo(() => {
+    if (activeTab === 'closed') {
+      return bills.filter((bill) => bill.status === 'PAID' || bill.status === 'EXPIRED');
+    }
+    return bills;
+  }, [activeTab, bills]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchBills(false);
+  };
+
+  const validatePayable = (bill: BillItem) => {
+    const billId = getBillId(bill.raw);
+    if (!billId || !userId) {
+      Alert.alert('Bill Payment', 'Bill ID and User ID are required');
+      return null;
+    }
+    if (bill.status === 'PAID') {
+      Alert.alert('Bill Payment', 'Bill already paid');
+      return null;
+    }
+    if (bill.pendingAmount <= 0) {
+      Alert.alert('Bill Payment', 'No pending amount to pay');
+      return null;
+    }
+    if (bill.status !== 'PARTIAL') {
+      Alert.alert('Bill Payment', bill.status === 'EXPIRED' ? 'This bill has expired' : 'Payment is not available for this bill');
+      return null;
+    }
+    return billId;
+  };
+
+  const handlePay = async (bill: BillItem) => {
+    const billId = validatePayable(bill);
+    if (!billId) return;
+
+    logAppEvent('BILL_PAYMENT_INITIATED', {
+      billId: String(billId),
+      billNumber: bill.billNumber,
+      amount: bill.pendingAmount,
+    });
+
+    console.log("[DEBUG Payment Flow] handlePay called for bill:", bill.id);
+    console.log("[DEBUG Payment Flow] User ID:", userId);
+
+    try {
+      setSelectedBill(bill);
+      setProcessingMessage('Initiating payment...');
+      setPayingBillId(bill.id);
+
+      console.log("[DEBUG Payment Flow] Calling billsAPI.payBill with:", { billId, userId });
+      const response = await billsAPI.payBill({ billId, userId });
+      
+      console.log("[DEBUG Payment Flow] billsAPI.payBill response success:", response?.data?.success);
+      console.log("[DEBUG Payment Flow] API returned data:", JSON.stringify(response?.data));
+      
+      const data = response?.data?.data;
+      const paymentSession = data?.paymentSession;
+      const paymentUrl = extractPaymentUrl(paymentSession);
+
+      console.log("[DEBUG Payment Flow] Extracted paymentUrl:", paymentUrl);
+      console.log("[DEBUG Payment Flow] Extracted orderId:", data?.orderId);
+
+      if (!response?.data?.success || !data?.orderId || !paymentUrl) {
+        throw new Error(response?.data?.message || 'Payment session not available');
+      }
+
+      setProcessingMessage('Opening payment gateway...');
+      setDetailModalVisible(false);
+
+      console.log("[DEBUG Payment Flow] Routing to PaymentWebView with params:", {
+        url: paymentUrl,
+        orderId: String(data.orderId),
+        bookingId: String(billId),
+        amount: String(bill.pendingAmount),
+        userId: String(userId),
+        type: 'bill',
+      });
+
+      router.push({
+        pathname: '/(tabs)/home/PaymentWebView',
+        params: {
+          url: paymentUrl,
+          orderId: String(data.orderId),
+          bookingId: String(billId),
+          amount: String(bill.pendingAmount),
+          userId: String(userId),
+          type: 'bill',
+          paymentIntentId: String(data.paymentIntentId || ''),
+          accountNumber: String((user as any)?.accountNumber || (user as any)?.accountNo || (user as any)?.accNo || ''),
+          accountName: String(user?.name || ''),
+        },
+      });
+    } catch (error) {
+      console.error("[DEBUG Payment Flow] Error in handlePay:", error);
+      Alert.alert('Payment Failed', getApiErrorMessage(error));
+    } finally {
+      setPayingBillId(null);
+      setProcessingMessage('');
+      fetchBills(false);
+    }
   };
 
   const handleCardPress = (bill: BillItem) => {
@@ -50,118 +305,119 @@ export default function BillPayment() {
     setDetailModalVisible(true);
   };
 
-  const renderBillItem = ({ item }: { item: BillItem }) => (
-    <TouchableOpacity 
-      style={styles.billCard} 
-      activeOpacity={0.7}
-      onPress={() => handleCardPress(item)}
-    >
-      <View style={styles.billIconContainer}>
-        <View style={[styles.iconCircle, { backgroundColor: item.status === 'pending' ? 'rgba(133,1,17,0.1)' : 'rgba(56,142,60,0.1)' }]}>
-          <Ionicons 
-            name={item.status === 'pending' ? "receipt-outline" : "checkmark-done-circle-outline"} 
-            size={rf(18)} 
-            color={item.status === 'pending' ? theme.colors.primary : "#388E3C"} 
-          />
-        </View>
-      </View>
-      
-      <View style={styles.billInfo}>
-        <Text style={styles.billType}>{item.type}</Text>
-        <Text style={styles.billId}>{item.billNumber}</Text>
-        <Text style={styles.billDate}>{item.date}</Text>
-      </View>
-
-      <View style={styles.billAction}>
-        <Text style={[styles.billAmount, { color: item.status === 'pending' ? theme.colors.primary : "#388E3C" }]}>
-          ₹{item.amount.toLocaleString('en-IN')}
-        </Text>
-        {item.status === 'pending' ? (
-          <TouchableOpacity 
-            style={styles.paySmallButton} 
-            onPress={(e) => {
-              e.stopPropagation();
-              handlePay(item);
-            }}
-          >
-            <Text style={styles.paySmallButtonText}>Pay Now</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.paidBadge}>
-            <Text style={styles.paidBadgeText}>PAID</Text>
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
+  const renderAmountLine = (label: string, value: number, accent = false) => (
+    <View style={styles.amountLine}>
+      <Text style={styles.amountLabel}>{label}</Text>
+      <Text style={[styles.amountValue, accent && styles.pendingAmount]}>{formatCurrency(value)}</Text>
+    </View>
   );
+
+  const renderBillItem = ({ item }: { item: BillItem }) => {
+    const statusMeta = getStatusMeta(item.status);
+    const isPaying = payingBillId === item.id;
+
+    return (
+      <TouchableOpacity style={styles.billCard} activeOpacity={0.78} onPress={() => handleCardPress(item)}>
+        <View style={[styles.iconCircle, { backgroundColor: statusMeta.backgroundColor }]}>
+          <Ionicons name={statusMeta.icon} size={rf(19)} color={statusMeta.color} />
+        </View>
+
+        <View style={styles.billInfo}>
+          <Text style={styles.billType} numberOfLines={1}>{item.description}</Text>
+          <Text style={styles.billId}>{item.billNumber}</Text>
+          <Text style={styles.billDate}>{item.billDate}</Text>
+
+          <View style={styles.inlineAmounts}>
+            <Text style={styles.inlineAmountText}>Paid {formatCurrency(item.paidAmount)}</Text>
+            <Text style={styles.inlineDot}>•</Text>
+            <Text style={styles.inlineAmountText}>Pending {formatCurrency(item.pendingAmount)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.billAction}>
+          <Text style={[styles.billAmount, { color: canPayBill(item) ? theme.colors.primary : statusMeta.color }]}>
+            {formatCurrency(item.pendingAmount)}
+          </Text>
+          {canPayBill(item) ? (
+            <TouchableOpacity
+              style={[styles.paySmallButton, isPaying && styles.disabledButton]}
+              disabled={isPaying}
+              onPress={(event) => {
+                event.stopPropagation();
+                handlePay(item);
+              }}
+            >
+              {isPaying ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <Text style={styles.paySmallButtonText}>Pay Now</Text>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <View style={[styles.statusBadge, { backgroundColor: statusMeta.backgroundColor, borderColor: statusMeta.color }]}>
+              <Text style={[styles.statusText, { color: statusMeta.color }]}>{statusMeta.label}</Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      {/* Background */}
       <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
-      <LinearGradient colors={["rgba(133,1,17,0.05)", "transparent"]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
         <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
-          Bill Payment
+          My Bills
         </ResponsiveText>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity onPress={handleRefresh} style={styles.backButton}>
+          <Ionicons name="refresh" size={22} color={theme.colors.primary} />
+        </TouchableOpacity>
       </View>
 
-      {/* Tab Switcher */}
       <View style={styles.tabContainer}>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'pending' && styles.activeTab]} 
-          onPress={() => setActiveTab('pending')}
-        >
-          <Text style={[styles.tabText, activeTab === 'pending' && styles.activeTabText]}>New Bills</Text>
-          {activeTab === 'pending' && <View style={styles.activeIndicator} />}
+        <TouchableOpacity style={[styles.tab, activeTab === 'all' && styles.activeTab]} onPress={() => setActiveTab('all')}>
+          <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>All Bills</Text>
+          {activeTab === 'all' && <View style={styles.activeIndicator} />}
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'history' && styles.activeTab]} 
-          onPress={() => setActiveTab('history')}
-        >
-          <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>Completed</Text>
-          {activeTab === 'history' && <View style={styles.activeIndicator} />}
+        <TouchableOpacity style={[styles.tab, activeTab === 'closed' && styles.activeTab]} onPress={() => setActiveTab('closed')}>
+          <Text style={[styles.tabText, activeTab === 'closed' && styles.activeTabText]}>Paid / Expired</Text>
+          {activeTab === 'closed' && <View style={styles.activeIndicator} />}
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={activeTab === 'pending' ? PENDING_BILLS : COMPLETED_BILLS}
-        renderItem={renderBillItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name={activeTab === 'pending' ? "happy-outline" : "receipt-outline"} size={rf(50)} color="rgba(0,0,0,0.1)" />
-            <Text style={styles.emptyText}>
-              {activeTab === 'pending' ? "All caught up! No pending bills." : "No payment history found."}
-            </Text>
-          </View>
-        }
-      />
+      {loading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loaderText}>Loading bills...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={displayedBills}
+          renderItem={renderBillItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.colors.primary} />}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="receipt-outline" size={rf(50)} color="rgba(0,0,0,0.14)" />
+              <Text style={styles.emptyText}>No bills found.</Text>
+            </View>
+          }
+        />
+      )}
 
-      {/* Bill Detail Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={detailModalVisible}
-        onRequestClose={() => setDetailModalVisible(false)}
-      >
+      <Modal animationType="slide" transparent visible={detailModalVisible} onRequestClose={() => setDetailModalVisible(false)}>
         <View style={styles.modalOverlay}>
-          <TouchableOpacity 
-            style={StyleSheet.absoluteFill} 
-            activeOpacity={1} 
-            onPress={() => setDetailModalVisible(false)} 
-          />
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setDetailModalVisible(false)} />
           <View style={styles.detailModalContent}>
             <View style={styles.modalHandle} />
-            
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Bill Details</Text>
               <TouchableOpacity onPress={() => setDetailModalVisible(false)} style={styles.closeButton}>
@@ -170,52 +426,59 @@ export default function BillPayment() {
             </View>
 
             {selectedBill && (
-              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: hp(4) }}>
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.detailScroll}>
                 <View style={styles.detailCard}>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Transaction Type</Text>
-                    <Text style={styles.detailValue}>{selectedBill.type}</Text>
-                  </View>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Bill Number</Text>
                     <Text style={styles.detailValue}>{selectedBill.billNumber}</Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Billing Date</Text>
-                    <Text style={styles.detailValue}>{selectedBill.date}</Text>
+                    <Text style={styles.detailLabel}>Description</Text>
+                    <Text style={styles.detailValue}>{selectedBill.description}</Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Payment Status</Text>
-                    <View style={[styles.statusBadge, { backgroundColor: selectedBill.status === 'pending' ? 'rgba(133,1,17,0.1)' : 'rgba(56,142,60,0.1)' }]}>
-                      <Text style={[styles.statusText, { color: selectedBill.status === 'pending' ? theme.colors.primary : "#388E3C" }]}>
-                        {selectedBill.status.toUpperCase()}
+                    <Text style={styles.detailLabel}>Bill Date</Text>
+                    <Text style={styles.detailValue}>{selectedBill.billDate}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Status</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusMeta(selectedBill.status).backgroundColor, borderColor: getStatusMeta(selectedBill.status).color }]}>
+                      <Text style={[styles.statusText, { color: getStatusMeta(selectedBill.status).color }]}>
+                        {getStatusMeta(selectedBill.status).label}
                       </Text>
                     </View>
                   </View>
-                  
+
                   <View style={styles.detailDivider} />
-                  
-                  <View style={styles.detailRow}>
-                    <Text style={styles.totalLabel}>Total Payable</Text>
-                    <Text style={styles.totalValue}>₹{selectedBill.amount.toLocaleString('en-IN')}</Text>
-                  </View>
+                  {renderAmountLine('Total Amount', selectedBill.totalAmount)}
+                  {renderAmountLine('Paid Amount', selectedBill.paidAmount)}
+                  {renderAmountLine('Pending Amount', selectedBill.pendingAmount, true)}
                 </View>
 
-                {selectedBill.status === 'pending' && (
-                  <TouchableOpacity 
-                    style={styles.modalPayButton}
-                    onPress={() => {
-                      setDetailModalVisible(false);
-                      setMaintenanceModalVisible(true);
-                    }}
+                {canPayBill(selectedBill) ? (
+                  <TouchableOpacity
+                    style={[styles.modalPayButton, payingBillId === selectedBill.id && styles.disabledButton]}
+                    disabled={payingBillId === selectedBill.id}
+                    onPress={() => handlePay(selectedBill)}
                   >
-                    <LinearGradient
-                      colors={[theme.colors.primary, "#b50d29"]}
-                      style={styles.modalPayGradient}
-                    >
-                      <Text style={styles.modalPayText}>CONTINUE TO PAYMENT</Text>
+                    <LinearGradient colors={[theme.colors.primary, '#b50d29']} style={styles.modalPayGradient}>
+                      {payingBillId === selectedBill.id ? (
+                        <ActivityIndicator size="small" color={COLORS.white} />
+                      ) : (
+                        <Text style={styles.modalPayText}>PAY NOW</Text>
+                      )}
                     </LinearGradient>
                   </TouchableOpacity>
+                ) : (
+                  <View style={styles.unavailableBox}>
+                    <Text style={styles.unavailableText}>
+                      {selectedBill.status === 'PAID'
+                        ? 'This bill is already paid.'
+                        : selectedBill.status === 'EXPIRED'
+                          ? 'This bill has expired.'
+                          : 'No pending amount to pay.'}
+                    </Text>
+                  </View>
                 )}
               </ScrollView>
             )}
@@ -223,24 +486,12 @@ export default function BillPayment() {
         </View>
       </Modal>
 
-      {/* Maintenance Modal */}
-      <Modal visible={maintenanceModalVisible} animationType="fade" transparent onRequestClose={() => setMaintenanceModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <LinearGradient colors={['#FF6B6B', '#D32F2F']} style={styles.modalHeader}>
-              <Ionicons name="construct" size={40} color={COLORS.white} />
-            </LinearGradient>
-            <View style={styles.modalBody}>
-              <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.textDark} align="center" style={{ marginBottom: hp(1) }}>
-                Processing Bill
-              </ResponsiveText>
-              <Text style={styles.modalMessage}>
-                Payment processing for {selectedBill?.billNumber} (₹{selectedBill?.amount?.toLocaleString('en-IN')}) is under development.
-              </Text>
-              <TouchableOpacity style={styles.modalButton} onPress={() => setMaintenanceModalVisible(false)}>
-                <Text style={styles.modalButtonText}>GOT IT</Text>
-              </TouchableOpacity>
-            </View>
+      <Modal visible={!!payingBillId} animationType="fade" transparent>
+        <View style={styles.processingOverlay}>
+          <View style={styles.processingCard}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={styles.processingTitle}>Payment Processing</Text>
+            <Text style={styles.processingMessage}>{processingMessage || 'Please wait...'}</Text>
           </View>
         </View>
       </Modal>
@@ -251,13 +502,13 @@ export default function BillPayment() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: wp(5),
     paddingVertical: hp(1.5),
   },
-  backButton: { width: 40, height: 40, justifyContent: "center", alignItems: "center" },
+  backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: 'rgba(0,0,0,0.03)',
@@ -267,28 +518,17 @@ const styles = StyleSheet.create({
     marginBottom: hp(2),
     overflow: 'hidden',
   },
-  tab: {
-    flex: 1,
-    paddingVertical: hp(1.5),
-    alignItems: 'center',
-    position: 'relative'
-  },
+  tab: { flex: 1, paddingVertical: hp(1.5), alignItems: 'center', position: 'relative' },
   activeTab: {
     backgroundColor: COLORS.white,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  tabText: {
-    fontSize: rf(13),
-    color: 'rgba(0,0,0,0.5)',
-    fontWeight: '600'
-  },
-  activeTabText: {
-    color: theme.colors.primary,
-  },
+  tabText: { fontSize: rf(13), color: 'rgba(0,0,0,0.5)', fontWeight: '600' },
+  activeTabText: { color: theme.colors.primary },
   activeIndicator: {
     position: 'absolute',
     bottom: 0,
@@ -296,117 +536,68 @@ const styles = StyleSheet.create({
     height: 3,
     backgroundColor: theme.colors.primary,
     borderTopLeftRadius: 3,
-    borderTopRightRadius: 3
+    borderTopRightRadius: 3,
   },
-  listContent: {
-    paddingHorizontal: wp(5),
-    paddingBottom: hp(5),
-  },
-  loadingItem: {
-    padding: wp(4),
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    marginBottom: hp(1.5),
-  },
+  listContent: { paddingHorizontal: wp(5), paddingBottom: hp(5) },
+  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loaderText: { marginTop: hp(1.5), color: 'rgba(0,0,0,0.55)', fontSize: rf(12) },
   billCard: {
     flexDirection: 'row',
     backgroundColor: COLORS.white,
-    borderRadius: 16,
+    borderRadius: 14,
     padding: wp(4),
     marginBottom: hp(1.5),
     alignItems: 'center',
     ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-      },
-      android: { elevation: 2 }
-    })
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5 },
+      android: { elevation: 2 },
+    }),
   },
-  billIconContainer: { marginRight: wp(3) },
   iconCircle: {
     width: wp(10),
     height: wp(10),
     borderRadius: wp(5),
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: wp(3),
   },
-  billInfo: { flex: 1 },
-  billType: {
-    fontSize: rf(14),
-    fontWeight: '700',
-    color: theme.colors.textDark,
-  },
-  billId: {
-    fontSize: rf(12),
-    color: 'rgba(0,0,0,0.6)',
-    marginTop: 2
-  },
-  billDate: {
-    fontSize: rf(10),
-    color: 'rgba(0,0,0,0.4)',
-    marginTop: 2
-  },
-  billAction: { alignItems: 'flex-end' },
-  billAmount: {
-    fontSize: rf(15),
-    fontWeight: '800',
-    marginBottom: hp(1)
-  },
+  billInfo: { flex: 1, paddingRight: wp(2) },
+  billType: { fontSize: rf(14), fontWeight: '700', color: theme.colors.textDark },
+  billId: { fontSize: rf(12), color: 'rgba(0,0,0,0.6)', marginTop: 2 },
+  billDate: { fontSize: rf(10), color: 'rgba(0,0,0,0.45)', marginTop: 2 },
+  inlineAmounts: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginTop: hp(0.6) },
+  inlineAmountText: { fontSize: rf(10), color: 'rgba(0,0,0,0.55)' },
+  inlineDot: { fontSize: rf(10), color: 'rgba(0,0,0,0.35)', marginHorizontal: wp(1) },
+  billAction: { alignItems: 'flex-end', minWidth: wp(22) },
+  billAmount: { fontSize: rf(15), fontWeight: '800', marginBottom: hp(1) },
   paySmallButton: {
+    minWidth: wp(18),
     backgroundColor: theme.colors.primary,
     paddingHorizontal: wp(3),
-    paddingVertical: hp(0.6),
+    paddingVertical: hp(0.7),
     borderRadius: 8,
-  },
-  paySmallButtonText: {
-    color: COLORS.white,
-    fontSize: rf(10),
-    fontWeight: 'bold'
-  },
-  paidBadge: {
-    backgroundColor: 'rgba(56,142,60,0.1)',
-    paddingHorizontal: wp(2.5),
-    paddingVertical: hp(0.4),
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(56,142,60,0.2)'
-  },
-  paidBadgeText: {
-    color: '#388E3C',
-    fontSize: rf(9),
-    fontWeight: '900'
-  },
-  emptyContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: hp(10)
   },
-  emptyText: {
-    fontSize: rf(13),
-    color: 'rgba(0,0,0,0.3)',
-    marginTop: hp(2),
-    textAlign: 'center'
+  paySmallButtonText: { color: COLORS.white, fontSize: rf(10), fontWeight: 'bold' },
+  disabledButton: { opacity: 0.65 },
+  statusBadge: {
+    paddingHorizontal: wp(2.6),
+    paddingVertical: hp(0.45),
+    borderRadius: 7,
+    borderWidth: 1,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'flex-end',
-  },
+  statusText: { fontSize: rf(9), fontWeight: '900', textTransform: 'uppercase' },
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: hp(10) },
+  emptyText: { fontSize: rf(13), color: 'rgba(0,0,0,0.35)', marginTop: hp(2), textAlign: 'center' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
   detailModalContent: {
     backgroundColor: COLORS.white,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     paddingHorizontal: wp(6),
     paddingTop: hp(1.5),
     paddingBottom: hp(2),
-    maxHeight: '85%',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    maxHeight: '86%',
     elevation: 20,
   },
   modalHandle: {
@@ -417,124 +608,60 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: hp(2),
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: hp(2),
-  },
-  modalTitle: {
-    fontSize: rf(22),
-    fontWeight: '800',
-    color: theme.colors.primary,
-    letterSpacing: 0.5,
-  },
-  closeButton: {
-    padding: 2,
-  },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: hp(2) },
+  modalTitle: { fontSize: rf(21), fontWeight: '800', color: theme.colors.primary },
+  closeButton: { padding: 2 },
+  detailScroll: { paddingBottom: hp(4) },
   detailCard: {
     backgroundColor: '#FBFBFB',
-    borderRadius: 20,
+    borderRadius: 14,
     padding: wp(5),
     marginBottom: hp(2),
     borderWidth: 1,
     borderColor: '#F0F0F0',
   },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: hp(2),
-  },
-  detailLabel: {
-    fontSize: rf(14),
-    color: '#757575',
-    fontWeight: '500',
-  },
-  detailValue: {
-    fontSize: rf(15),
-    fontWeight: '700',
-    color: '#212121',
-  },
-  statusBadge: {
-    paddingHorizontal: wp(4),
-    paddingVertical: hp(0.6),
-    borderRadius: 15,
-  },
-  statusText: {
-    fontSize: rf(11),
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  detailDivider: {
-    height: 1,
-    backgroundColor: '#EEEEEE',
-    marginVertical: hp(1.5),
-  },
-  totalLabel: {
-    fontSize: rf(16),
-    fontWeight: '800',
-    color: '#424242',
-  },
-  totalValue: {
-    fontSize: rf(22),
-    fontWeight: '900',
-    color: theme.colors.primary,
-  },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: hp(2), gap: wp(3) },
+  detailLabel: { fontSize: rf(13), color: '#757575', fontWeight: '500' },
+  detailValue: { flex: 1, fontSize: rf(14), fontWeight: '700', color: '#212121', textAlign: 'right' },
+  detailDivider: { height: 1, backgroundColor: '#EEEEEE', marginVertical: hp(1) },
+  amountLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: hp(0.9) },
+  amountLabel: { fontSize: rf(14), color: '#555', fontWeight: '600' },
+  amountValue: { fontSize: rf(16), color: '#222', fontWeight: '800' },
+  pendingAmount: { color: theme.colors.primary, fontSize: rf(18) },
   modalPayButton: {
-    borderRadius: 15,
+    borderRadius: 12,
     overflow: 'hidden',
     marginTop: hp(1),
     ...Platform.select({
-      ios: {
-        shadowColor: theme.colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-      },
-      android: { elevation: 5 }
-    })
+      ios: { shadowColor: theme.colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
+      android: { elevation: 5 },
+    }),
   },
-  modalPayGradient: {
-    paddingVertical: hp(2.2),
+  modalPayGradient: { minHeight: hp(6.5), paddingVertical: hp(2), alignItems: 'center', justifyContent: 'center' },
+  modalPayText: { color: COLORS.white, fontSize: rf(15), fontWeight: '800', letterSpacing: 1 },
+  unavailableBox: {
+    borderRadius: 12,
+    paddingVertical: hp(1.6),
+    paddingHorizontal: wp(4),
+    backgroundColor: 'rgba(0,0,0,0.05)',
     alignItems: 'center',
   },
-  modalPayText: {
-    color: COLORS.white,
-    fontSize: rf(16),
-    fontWeight: '800',
-    letterSpacing: 1.5,
+  unavailableText: { fontSize: rf(12), color: 'rgba(0,0,0,0.62)', fontWeight: '600', textAlign: 'center' },
+  processingOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: wp(8),
   },
-  modalContent: {
+  processingCard: {
+    width: '100%',
+    maxWidth: 320,
     backgroundColor: COLORS.white,
-    borderRadius: 20,
-    width: '80%',
-    overflow: 'hidden',
-    elevation: 15,
-    alignSelf: 'center',
-    marginBottom: 'auto',
-    marginTop: 'auto',
-  },
-  modalBody: {
+    borderRadius: 14,
     padding: wp(6),
     alignItems: 'center',
   },
-  modalMessage: {
-    fontSize: rf(12),
-    color: "rgba(0,0,0,0.6)",
-    textAlign: 'center',
-    marginBottom: hp(3),
-    lineHeight: rf(18),
-  },
-  modalButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: 12,
-    paddingVertical: hp(1.5),
-    paddingHorizontal: wp(10),
-  },
-  modalButtonText: {
-    color: COLORS.white,
-    fontSize: rf(12),
-    fontWeight: 'bold',
-  },
+  processingTitle: { marginTop: hp(2), fontSize: rf(17), fontWeight: '800', color: theme.colors.textDark },
+  processingMessage: { marginTop: hp(0.8), fontSize: rf(12), color: 'rgba(0,0,0,0.55)', textAlign: 'center' },
 });

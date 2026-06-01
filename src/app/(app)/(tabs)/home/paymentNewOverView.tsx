@@ -17,7 +17,7 @@ import { BackHandler, InteractionManager } from "react-native";
 import Slider from "@react-native-community/slider";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { theme } from "@/constants/theme";
 import api from "@/services/api";
@@ -737,9 +737,9 @@ export default function PaymentNewOverView() {
         {isFlexi ? (
           <View style={styles.amountCard}>
             <View style={styles.amountHeader}>
-              <MaterialCommunityIcons
-                name="gold"
-                size={24}
+              <FontAwesome5
+                name="coins"
+                size={20}
                 color={theme.colors.secondary}
               />
               <Text style={styles.amountTitle}>{t("totalAmount")}</Text>
@@ -876,9 +876,9 @@ export default function PaymentNewOverView() {
         ) : (
           <View style={styles.amountCard}>
             <View style={styles.amountHeader}>
-              <MaterialCommunityIcons
-                name="gold"
-                size={24}
+              <FontAwesome5
+                name="coins"
+                size={20}
                 color={theme.colors.secondary}
               />
               <Text style={styles.amountTitle}>{t("totalAmount")}</Text>

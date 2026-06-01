@@ -5,7 +5,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ...config,
     name: themeConfig.customerName,
     slug: themeConfig.slug,
-    version: "3.0.3",
+    version: "3.0.4",
     orientation: "portrait",
     userInterfaceStyle: "automatic",
     scheme: "acme",
@@ -28,7 +28,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     android: {
         package: themeConfig.bundleIdentifier,
         googleServicesFile: "./google-services.json",
-        versionCode: 8,
+        versionCode: 9,
 
         splash: {
             image: "./assets/images/playstore-icon.png",

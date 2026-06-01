@@ -1141,5 +1141,16 @@
   "referFriendsToEarn": "Refer friends to start earning points!",
   "referNow": "Refer Now",
   "joinedAt": "Joined at",
-  "noTransactions": "No recent transactions found"
+  "noTransactions": "No recent transactions found",
+  "pleaseAllowAccessToCamera": "ഫോട്ടോ എടുക്കാൻ ക്യാമറ ആക്സസ്സ് അനുവദിക്കുക.",
+  "uploadProfileImage": "പ്രൊഫൈൽ ഫോട്ടോ",
+  "chooseAnOption": "നിങ്ങളുടെ ഫോട്ടോ അപ്‌ലോഡ് ചെയ്യാൻ ഒരു ഓപ്ഷൻ തിരഞ്ഞെടുക്കുക",
+  "camera": "ഫോട്ടോ എടുക്കുക (ക്യാമറ)",
+  "gallery": "ഗ്യാലറിയിൽ നിന്ന് തിരഞ്ഞെടുക്കുക",
+  "failedToLaunchCamera": "ക്യാമറ തുറക്കുന്നതിൽ പരാജയപ്പെട്ടു.",
+  "failedToLaunchGallery": "ഗ്യാലറി തുറക്കുന്നതിൽ പരാജയപ്പെട്ടു.",
+  "failedToShareApp": "ആപ്പ് ലിങ്ക് പങ്കിടുന്നതിൽ പരാജയപ്പെട്ടു",
+  "updateKycDesc": "നിങ്ങളുടെ KYC വിവരങ്ങൾ പുതുക്കുക",
+  "changeMpinDesc": "സുരക്ഷയ്ക്കായി നിങ്ങളുടെ MPIN മാറ്റുക",
+  "deleteAccountDesc": "നിങ്ങളുടെ അക്കൗണ്ട് ശാശ്വതമായി ഇല്ലാതാക്കുക"
 }

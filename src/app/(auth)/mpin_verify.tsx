@@ -696,14 +696,22 @@ export default function MpinVerify() {
           // Navigate to home page after successful MPIN verification
 
           // Check if we should ask for biometric enrollment
-          if (!isBiometric && !isEnabled && isSupported && isEnrolled) {
+          const hasDeclinedBiometrics = await AsyncStorage.getItem('hasDeclinedBiometrics');
+          if (!isBiometric && !isEnabled && isSupported && isEnrolled && hasDeclinedBiometrics !== 'true') {
             Alert.alert(
               t("setupBiometrics") || "Enable Biometrics",
               t("setupBiometricsMsg") || "Would you like to use Face ID / Fingerprint for faster login next time?",
               [
                 {
                   text: t("no") || "No",
-                  onPress: () => router.replace("/(app)/dashboard")
+                  onPress: async () => {
+                    try {
+                      await AsyncStorage.setItem('hasDeclinedBiometrics', 'true');
+                    } catch (err) {
+                      logger.error("Error setting hasDeclinedBiometrics:", err);
+                    }
+                    router.replace("/(app)/dashboard");
+                  }
                 },
                 {
                   text: t("yes") || "Yes",

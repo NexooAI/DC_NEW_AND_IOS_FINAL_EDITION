@@ -3,6 +3,7 @@
 export interface ThemeColors {
     primary: string;
     secondary: string;
+    quaternary: string;
     background: string;
     backgroundSecondary: string;
     textPrimary: string;

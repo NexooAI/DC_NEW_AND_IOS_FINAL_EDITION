@@ -1139,5 +1139,16 @@
   "referFriendsToEarn": "Refer friends to start earning points!",
   "referNow": "Refer Now",
   "joinedAt": "Joined at",
-  "noTransactions": "No recent transactions found"
+  "noTransactions": "No recent transactions found",
+  "pleaseAllowAccessToCamera": "ఫోటో తీయడానికి దయచేసి కెమెరాకు ప్రాప్యతను అనుమతించండి.",
+  "uploadProfileImage": "ప్రొఫైల్ ఫోటో",
+  "chooseAnOption": "మీ ఫోటోను అప్‌లోడ్ చేయడానికి ఒక ఎంపికను ఎంచుకోండి",
+  "camera": "ఫోటో తీయండి (కెమెరా)",
+  "gallery": "గ్యాలరీ నుండి ఎంచుకోండి",
+  "failedToLaunchCamera": "కెమెరాను ప్రారంభించడంలో విఫలమైంది.",
+  "failedToLaunchGallery": "గ్యాలరీని ప్రారంభించడంలో విఫలమైంది.",
+  "failedToShareApp": "యాప్ లింక్‌ను భాగస్వామ్యం చేయడంలో విఫలమైంది",
+  "updateKycDesc": "మీ KYC వివరాలను నవీకరించండి",
+  "changeMpinDesc": "భద్రత కోసం మీ MPINని మార్చండి",
+  "deleteAccountDesc": "మీ ఖాతాను శాశ్వతంగా తొలగించండి"
 }

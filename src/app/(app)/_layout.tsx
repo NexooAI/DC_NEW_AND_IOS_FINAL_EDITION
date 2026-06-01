@@ -1,11 +1,12 @@
 import { Text } from "react-native";
 import CustomDrawerContent from "@/common/components/navigation/DrawerContent";
 import { Drawer } from "expo-router/drawer";
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import NavigationErrorBoundary from "@/components/NavigationErrorBoundary";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { theme } from "@/constants/theme";
 import FloatingChatButton from "@/components/FloatingChatButton";
+import { logDeviceInfo } from "@/services/appEventService";
 
 // Disable global font scaling for Text components
 (Text as any).defaultProps = {
@@ -14,6 +15,10 @@ import FloatingChatButton from "@/components/FloatingChatButton";
 };
 
 export default function AppLayout() {
+  useEffect(() => {
+    logDeviceInfo();
+  }, []);
+
   // Memoize drawer content to prevent unnecessary re-renders
   const renderDrawerContent = useCallback((props: any) => {
     return <CustomDrawerContent {...props} />;

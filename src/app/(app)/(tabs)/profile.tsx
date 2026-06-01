@@ -169,21 +169,105 @@ const ProfileScreen = () => {
     setShowLogoutModal(false);
   };
 
-  const handleImageUpload = async () => {
-    // Your existing image upload logic
-    try {
-      // On Android 13+ (API 33+), the system Photo Picker is used automatically
-      // and doesn't require READ_MEDIA_* permissions. Only request permissions on iOS
-      // or older Android versions if needed.
-      if (Platform.OS === 'ios') {
-        const permissionResult =
-          await ImagePicker.requestMediaLibraryPermissionsAsync();
+  const processSelectedImage = async (selectedAsset: any) => {
+    const fileSizeInMB = selectedAsset.fileSize
+      ? selectedAsset.fileSize / (1024 * 1024)
+      : 0;
+    if (fileSizeInMB > 5) {
+      Alert.alert(
+        t("fileTooLarge") || "File Too Large",
+        t("imageSizeShouldBeLessThan5MB") ||
+        "Image size should be less than 5MB."
+      );
+      return;
+    }
 
+    if (!user?.id) {
+      Alert.alert(
+        t("errorTitle") || "Error",
+        t("userIDNotFoundPleaseLoginAgain") ||
+        "User ID not found. Please login again."
+      );
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const uploadResponse = await userAPI.uploadProfileImage(
+        user.id,
+        selectedAsset.uri
+      );
+      const responseData = uploadResponse.data;
+
+      if (responseData.success && responseData.url) {
+        const fullImageUrl = `${theme.baseUrl}${responseData.url}`;
+        const userData = await AsyncStorage.getItem("userData");
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          parsedUser.profile_photo = responseData.url;
+          await AsyncStorage.setItem(
+            "userData",
+            JSON.stringify(parsedUser)
+          );
+        }
+        updateUser({ ...user, profile_photo: responseData.url });
+        Alert.alert(
+          t("successTitle") || "Success",
+          t("profileImageUpdatedSuccessfully") ||
+          "Profile image updated successfully!"
+        );
+      } else {
+        Alert.alert(
+          t("uploadFailed") || "Upload Failed",
+          responseData.message ||
+          t("failedToUploadProfileImagePleaseTryAgain") ||
+          "Failed to upload profile image."
+        );
+      }
+    } catch (error: any) {
+      let errorMessage =
+        t("failedToUploadProfileImagePleaseCheckInternet") ||
+        "Failed to upload profile image.";
+      Alert.alert(t("uploadError") || "Upload Error", errorMessage);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const launchCamera = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert(
+          t("permissionRequired") || "Permission Required",
+          t("pleaseAllowAccessToCamera") || "Please allow access to the camera to take a photo."
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await processSelectedImage(result.assets[0]);
+      }
+    } catch (error) {
+      logger.error("Error launching camera:", error);
+      Alert.alert(t("errorTitle") || "Error", t("failedToLaunchCamera") || "Failed to launch camera.");
+    }
+  };
+
+  const launchGallery = async () => {
+    try {
+      if (Platform.OS === 'ios') {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permissionResult.granted) {
           Alert.alert(
             t("permissionRequired") || "Permission Required",
-            t("pleaseAllowAccessToPhotoLibrary") ||
-            "Please allow access to photo library to upload profile image."
+            t("pleaseAllowAccessToPhotoLibrary") || "Please allow access to the photo library to choose a photo."
           );
           return;
         }
@@ -198,78 +282,33 @@ const ProfileScreen = () => {
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const selectedAsset = result.assets[0];
-        const fileSizeInMB = selectedAsset.fileSize
-          ? selectedAsset.fileSize / (1024 * 1024)
-          : 0;
-        if (fileSizeInMB > 5) {
-          Alert.alert(
-            t("fileTooLarge") || "File Too Large",
-            t("imageSizeShouldBeLessThan5MB") ||
-            "Image size should be less than 5MB."
-          );
-          return;
-        }
-
-        if (!user?.id) {
-          Alert.alert(
-            t("errorTitle") || "Error",
-            t("userIDNotFoundPleaseLoginAgain") ||
-            "User ID not found. Please login again."
-          );
-          return;
-        }
-
-        setIsUploading(true);
-        try {
-          const uploadResponse = await userAPI.uploadProfileImage(
-            user.id,
-            selectedAsset.uri
-          );
-          const responseData = uploadResponse.data;
-
-          if (responseData.success && responseData.url) {
-            const fullImageUrl = `${theme.baseUrl}${responseData.url}`;
-            const userData = await AsyncStorage.getItem("userData");
-            if (userData) {
-              const parsedUser = JSON.parse(userData);
-              parsedUser.profile_photo = responseData.url;
-              await AsyncStorage.setItem(
-                "userData",
-                JSON.stringify(parsedUser)
-              );
-            }
-            updateUser({ ...user, profile_photo: responseData.url });
-            Alert.alert(
-              t("successTitle") || "Success",
-              t("profileImageUpdatedSuccessfully") ||
-              "Profile image updated successfully!"
-            );
-          } else {
-            Alert.alert(
-              t("uploadFailed") || "Upload Failed",
-              responseData.message ||
-              t("failedToUploadProfileImagePleaseTryAgain") ||
-              "Failed to upload profile image."
-            );
-          }
-        } catch (error: any) {
-          let errorMessage =
-            t("failedToUploadProfileImagePleaseCheckInternet") ||
-            "Failed to upload profile image.";
-          Alert.alert(t("uploadError") || "Upload Error", errorMessage);
-        } finally {
-          setIsUploading(false);
-        }
+        await processSelectedImage(result.assets[0]);
       }
     } catch (error) {
-      setIsUploading(false);
-      Alert.alert(
-        t("errorTitle") || "Error",
-        t("anUnexpectedError") ||
-        "An unexpected error occurred."
-      );
+      logger.error("Error launching image library:", error);
+      Alert.alert(t("errorTitle") || "Error", t("failedToLaunchGallery") || "Failed to launch gallery.");
     }
+  };
+
+  const handleImageUpload = () => {
+    Alert.alert(
+      t("uploadProfileImage") || "Profile Photo",
+      t("chooseAnOption") || "Choose an option to upload your photo",
+      [
+        {
+          text: t("camera") || "Take Photo (Camera)",
+          onPress: () => launchCamera(),
+        },
+        {
+          text: t("gallery") || "Choose from Gallery",
+          onPress: () => launchGallery(),
+        },
+        {
+          text: t("cancel") || "Cancel",
+          style: "cancel",
+        },
+      ]
+    );
   };
 
   const handleSave = async () => {
@@ -277,7 +316,7 @@ const ProfileScreen = () => {
       if (!user?.id) {
         Alert.alert(
           t("errorTitle") || "Error",
-          "User ID not found. Please login again."
+          t("userIDNotFoundPleaseLoginAgain") || "User ID not found. Please login again."
         );
         return;
       }
@@ -398,7 +437,7 @@ const ProfileScreen = () => {
       });
     } catch (error) {
       logger.error("Error sharing:", error);
-      Alert.alert("Error", "Failed to share the app link");
+      Alert.alert(t("errorTitle") || "Error", t("failedToShareApp") || "Failed to share the app link");
     }
   };
 
@@ -796,7 +835,7 @@ const ProfileScreen = () => {
                   </View>
                   <View style={styles.settingContent}>
                     <Text style={styles.settingText}>{t("changeKYC")}</Text>
-                    <Text style={styles.settingDesc}>Update your KYC details</Text>
+                    <Text style={styles.settingDesc}>{t("updateKycDesc") || "Update your KYC details"}</Text>
                   </View>
                   <Icon name="chevron-right" size={24} color="#9E9E9E" />
                 </TouchableOpacity>
@@ -809,7 +848,7 @@ const ProfileScreen = () => {
                   </View>
                   <View style={styles.settingContent}>
                     <Text style={styles.settingText}>{t("changeMPIN")}</Text>
-                    <Text style={styles.settingDesc}>Change your MPIN for security</Text>
+                    <Text style={styles.settingDesc}>{t("changeMpinDesc") || "Change your MPIN for security"}</Text>
                   </View>
                   <Icon name="chevron-right" size={24} color="#9E9E9E" />
                 </TouchableOpacity>
@@ -903,7 +942,7 @@ const ProfileScreen = () => {
                     <Text style={[styles.settingText, { color: "#D32F2F" }]}>
                       {t("deleteAccount")}
                     </Text>
-                    <Text style={styles.settingDesc}>Delete your account permanently</Text>
+                    <Text style={styles.settingDesc}>{t("deleteAccountDesc") || "Delete your account permanently"}</Text>
                   </View>
                 </TouchableOpacity>
               </View>

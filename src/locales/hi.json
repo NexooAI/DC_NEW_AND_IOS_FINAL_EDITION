@@ -1139,5 +1139,16 @@
   "referFriendsToEarn": "Refer friends to start earning points!",
   "referNow": "Refer Now",
   "joinedAt": "Joined at",
-  "noTransactions": "No recent transactions found"
+  "noTransactions": "No recent transactions found",
+  "pleaseAllowAccessToCamera": "फोटो लेने के लिए कृपया कैमरा एक्सेस की अनुमति दें।",
+  "uploadProfileImage": "प्रोफ़ाइल फोटो",
+  "chooseAnOption": "अपनी फोटो अपलोड करने के लिए एक विकल्प चुनें",
+  "camera": "फोटो लें (कैमरा)",
+  "gallery": "गेलरी से चुनें",
+  "failedToLaunchCamera": "कैमरा लॉन्च करने में विफल।",
+  "failedToLaunchGallery": "गेलरी लॉन्च करने में विफल।",
+  "failedToShareApp": "ऐप लिंक साझा करने में विफल",
+  "updateKycDesc": "अपने केवाईसी विवरण अपडेट करें",
+  "changeMpinDesc": "सुरक्षा के लिए अपना एमपिन बदलें",
+  "deleteAccountDesc": "अपना खाता स्थायी रूप से हटाएं"
 }

@@ -1,7 +1,8 @@
 import Constants from "expo-constants";
-import { Stack, useNavigation, useRouter } from "expo-router";
+import { Stack, useNavigation, useRouter, usePathname } from "expo-router";
 import { useFirstLaunch } from "@/common/hooks/useFirstLaunch";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { logAppEvent, logDeviceInfo } from "@/services/appEventService";
 import {
   ActivityIndicator,
   Alert,
@@ -37,8 +38,29 @@ export default function RootLayout() {
   const { isFirstLaunch } = useFirstLaunch();
   const router = useRouter();
   const navigation = useNavigation();
+  const pathname = usePathname();
   const [overallLoading, setOverallLoading] = useState<boolean>(false);
   const { updateUser, setLanguage, isLoggedIn } = useGlobalStore();
+
+  // Log screen view events when path changes
+  useEffect(() => {
+    if (pathname && isLoggedIn) {
+      logAppEvent('view_screen', {
+        screen_name: pathname,
+        screen_source: 'navigation'
+      });
+    }
+  }, [pathname, isLoggedIn]);
+
+  // Log login success when isLoggedIn transitions to true
+  const prevIsLoggedInRef = useRef(isLoggedIn);
+  useEffect(() => {
+    if (isLoggedIn && !prevIsLoggedInRef.current) {
+      logAppEvent('login_success');
+      logDeviceInfo(true); // Force device info log on login
+    }
+    prevIsLoggedInRef.current = isLoggedIn;
+  }, [isLoggedIn]);
 
   const notificationResponseRef = useRef<any>(null);
   const isNavigationReady = useRef(false);

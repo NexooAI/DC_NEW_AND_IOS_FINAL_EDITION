@@ -142,6 +142,18 @@ export default function HomeLayout() {
         name="ratechart"
         options={{ title: "Rate Chart" }}
       />
+      <Stack.Screen
+        name="BookingHistory"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="BookingPaymentSuccess"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="BookingPaymentFailure"
+        options={{ headerShown: false }}
+      />
       {/* <Stack.Screen name="live-rates" options={{ title: "Live Rate", headerShown: false }} /> */}
     </Stack>
   );

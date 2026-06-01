@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal } from 'react-native';
+import { Alert, View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -9,6 +9,8 @@ import { theme } from '@/constants/theme';
 import { COLORS } from '@/constants/colors';
 import ResponsiveText from '@/components/ResponsiveText';
 import { responsiveUtils } from '@/utils/responsiveUtils';
+import apiClient, { advanceBookingAPI } from '@/services/api';
+import type { CreateAdvanceBookingPayload } from '@/services/api';
 
 const { wp, hp, rf } = responsiveUtils;
 const QUATERNARY_COLOR = theme.colors.quaternary || "#F2E6D2";
@@ -20,17 +22,101 @@ const PERCENT_TO_DAYS: Record<number, number> = {
   30: 120
 };
 
+const getFirstValue = (...values: any[]) => values.find((value) => value !== undefined && value !== null && value !== '');
+
+const extractPaymentLink = (responseData: any) => {
+  const data = responseData?.data || responseData;
+  const session = data?.session || data?.paymentSession || data?.payment_session;
+  const bookingSession = data?.bookingId?.url || data?.booking?.url;
+  return (
+    data?.paymentLink ||
+    data?.payment_link ||
+    data?.paymentUrl ||
+    data?.payment_url ||
+    data?.payment_links?.web ||
+    data?.paymentLinks?.web ||
+    bookingSession?.payment_links?.web ||
+    bookingSession?.paymentLinks?.web ||
+    bookingSession?.links?.web ||
+    bookingSession?.web ||
+    bookingSession?.url ||
+    session?.payment_links?.web ||
+    session?.paymentLinks?.web ||
+    session?.links?.web ||
+    session?.web ||
+    session?.url ||
+    ''
+  );
+};
+
+const extractOrderId = (responseData: any) => {
+  const data = responseData?.data || responseData;
+  const session = data?.session || data?.paymentSession || data?.payment_session;
+  const bookingSession = data?.bookingId?.url || data?.booking?.url;
+  return getFirstValue(
+    data?.orderId,
+    data?.order_id,
+    data?.bookingId?.orderId,
+    data?.bookingId?.order_id,
+    bookingSession?.order_id,
+    bookingSession?.orderId,
+    session?.order_id,
+    session?.orderId
+  );
+};
+
+const extractBookingId = (responseData: any) => {
+  const data = responseData?.data || responseData;
+  return getFirstValue(
+    data?.bookingId?.bookingId,
+    data?.bookingId?.id,
+    data?.booking_id,
+    data?.bookingId,
+    data?.id,
+    data?.booking?.id
+  );
+};
+
 export default function JoinAdvGold() {
   const router = useRouter();
   const { user } = useGlobalStore();
   const params = useLocalSearchParams();
 
   // State
-  const [goldRate] = useState(6000); // TODO: fetch real rate
+  const [goldRate, setGoldRate] = useState(6000);
   const [advancePercent, setAdvancePercent] = useState(ADVANCE_PERCENTS[0]);
   const [goldGrams, setGoldGrams] = useState('1');
   const [amount, setAmount] = useState('6000');
   const [maintenanceModalVisible, setMaintenanceModalVisible] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Fetch Gold Rate from server
+  useEffect(() => {
+    const fetchGoldRate = async () => {
+      try {
+        const response = await apiClient.get('/rates');
+        if (response.data && response.data.data && response.data.data.length > 0) {
+          const rates = response.data.data;
+          // Sort by created_at descending (newest first)
+          const sorted = [...rates].sort((a: any, b: any) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+          const latestRate = sorted[0];
+          if (latestRate && latestRate.gold_rate) {
+            const rate = Math.round(parseFloat(latestRate.gold_rate));
+            setGoldRate(rate);
+            
+            // Also dynamically update the default amount based on 1 gram
+            const gramsNum = parseFloat(goldGrams) || 1;
+            setAmount(Math.round(gramsNum * rate).toString());
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching gold rate:', error);
+      }
+    };
+    fetchGoldRate();
+  }, []);
 
   // Derived
   const amountNum = parseFloat(amount) || 0;
@@ -93,10 +179,88 @@ export default function JoinAdvGold() {
 
   // Autofill user details
   const userName = user?.name || '';
-  const userMobile = user?.mobile || '';
+  const userMobile = user?.mobile ? String(user.mobile) : '';
 
-  const handleJoinButton = () => {
-    setMaintenanceModalVisible(true);
+  const handleJoinButton = async () => {
+    if (!amountNum || amountNum <= 0) {
+      Alert.alert('Error', 'Please enter a valid amount.');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + (PERCENT_TO_DAYS[advancePercent] || 30));
+
+      const userId = getFirstValue((user as any)?.userId, user?.id);
+      if (!userId) {
+        Alert.alert('Error', 'User details not found. Please login again.');
+        return;
+      }
+
+      const accountNumber = getFirstValue((user as any)?.accountNumber, (user as any)?.accountNo, (user as any)?.accNo) ?? '';
+      const payload: CreateAdvanceBookingPayload = {
+        userId,
+        goldWeight: parseFloat(goldGrams) || 0,
+        totalAmount: amountNum,
+        userName: userName,
+        userEmail: user?.email || '',
+        userMobile: userMobile,
+        ratePerGram: goldRate,
+        bookingAmount: advancePay,
+        paymentMode: "UPI",
+        accountNumber,
+        source: "APP",
+        expiryDate: expiryDate.toISOString().split('T')[0]
+      };
+      
+      console.log("[DEBUG Payment Flow] handleJoinButton payload:", JSON.stringify(payload));
+
+      const response = await advanceBookingAPI.createBooking(payload);
+      
+      console.log("[DEBUG Payment Flow] createBooking response success:", response?.data?.success);
+      console.log("[DEBUG Payment Flow] API returned data:", JSON.stringify(response?.data));
+
+      const paymentLink = extractPaymentLink(response?.data);
+      const orderId = extractOrderId(response?.data);
+      const bookingId = extractBookingId(response?.data);
+
+      console.log("[DEBUG Payment Flow] Extracted paymentLink:", paymentLink);
+      console.log("[DEBUG Payment Flow] Extracted orderId:", orderId);
+      console.log("[DEBUG Payment Flow] Extracted bookingId:", bookingId);
+
+      if (paymentLink) {
+        console.log("[DEBUG Payment Flow] Routing to PaymentWebView with params:", {
+          url: String(paymentLink),
+          orderId: orderId ? String(orderId) : '',
+          bookingId: bookingId ? String(bookingId) : '',
+          amount: advancePay.toString(),
+          type: 'advance_booking',
+          userId: String(userId)
+        });
+
+        router.push({
+          pathname: '/(tabs)/home/PaymentWebView',
+          params: {
+            url: String(paymentLink),
+            orderId: orderId ? String(orderId) : '',
+            bookingId: bookingId ? String(bookingId) : '',
+            amount: advancePay.toString(),
+            type: 'advance_booking',
+            userId: String(userId),
+            accountNumber: String(accountNumber),
+            accountName: String(userName),
+          }
+        });
+      } else {
+        Alert.alert('Error', response?.data?.message || 'Failed to initialize booking.');
+      }
+    } catch (error: any) {
+      console.error('[DEBUG Payment Flow] Booking Error:', error);
+      Alert.alert('Error', error?.response?.data?.message || 'Something went wrong. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleCloseMaintenanceModal = () => {
@@ -114,7 +278,10 @@ export default function JoinAdvGold() {
 
       {/* Custom Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => {
+          router.replace('/(tabs)/home');
+          router.replace('/(app)/gold_advance');
+        }} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
         <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
@@ -280,15 +447,26 @@ export default function JoinAdvGold() {
         <View style={{ height: hp(2) }} />
 
         {/* Royal Join Button */}
-        <TouchableOpacity style={styles.joinButton} onPress={handleJoinButton} activeOpacity={0.9}>
+        <TouchableOpacity 
+          style={[styles.joinButton, isProcessing && { opacity: 0.7 }]} 
+          onPress={handleJoinButton} 
+          disabled={isProcessing} 
+          activeOpacity={0.9}
+        >
           <LinearGradient
             colors={["#DAA520", "#b8860b"]}
             style={styles.joinButtonGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Ionicons name="diamond" size={rf(18)} color={COLORS.white} style={styles.buttonIcon} />
-            <Text style={styles.joinButtonText}>PROCEED TO PAY</Text>
+            {isProcessing ? (
+              <ActivityIndicator color={COLORS.white} size="small" />
+            ) : (
+              <>
+                <Ionicons name="diamond" size={rf(18)} color={COLORS.white} style={styles.buttonIcon} />
+                <Text style={styles.joinButtonText}>PROCEED TO PAY</Text>
+              </>
+            )}
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
@@ -327,7 +505,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: wp(5),
-    paddingBottom: hp(1),
+    paddingVertical: hp(0.5),
   },
   backButton: {
     width: 40,

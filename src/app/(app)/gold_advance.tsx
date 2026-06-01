@@ -94,13 +94,22 @@ export default function GoldAdvanceScreen() {
 
       {/* Custom Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace('/(app)/dashboard');
+          }
+        }} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
         <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
           Gold Advance
         </ResponsiveText>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity onPress={() => router.push('/(tabs)/home/BookingHistory')} style={styles.historyButton}>
+          <Ionicons name="time-outline" size={18} color={theme.colors.primary} />
+          <Text style={styles.historyText}>History</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
@@ -259,6 +268,22 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: "center",
     alignItems: "center",
+  },
+  historyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(133, 1, 17, 0.08)",
+    paddingHorizontal: wp(2.5),
+    paddingVertical: hp(0.6),
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(133, 1, 17, 0.15)",
+  },
+  historyText: {
+    fontSize: rf(11),
+    fontWeight: "600",
+    color: theme.colors.primary,
+    marginLeft: 4,
   },
   scrollView: {
     flex: 1,

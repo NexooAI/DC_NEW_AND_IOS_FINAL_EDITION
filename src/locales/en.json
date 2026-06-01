@@ -1151,5 +1151,16 @@
   "referFriendsToEarn": "Refer friends to start earning points!",
   "referNow": "Refer Now",
   "joinedAt": "Joined at",
-  "noTransactions": "No recent transactions found"
+  "noTransactions": "No recent transactions found",
+  "pleaseAllowAccessToCamera": "Please allow access to the camera to take a photo.",
+  "uploadProfileImage": "Profile Photo",
+  "chooseAnOption": "Choose an option to upload your photo",
+  "camera": "Take Photo (Camera)",
+  "gallery": "Choose from Gallery",
+  "failedToLaunchCamera": "Failed to launch camera.",
+  "failedToLaunchGallery": "Failed to launch gallery.",
+  "failedToShareApp": "Failed to share the app link",
+  "updateKycDesc": "Update your KYC details",
+  "changeMpinDesc": "Change your MPIN for security",
+  "deleteAccountDesc": "Delete your account permanently"
 }

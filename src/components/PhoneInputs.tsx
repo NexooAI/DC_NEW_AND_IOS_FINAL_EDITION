@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   counterText: {
     textAlign: "right",
     paddingRight: 4,
-    color: "rgba(255, 255, 255, 0.7)",
+    color: theme.colors.primary,
     fontSize: 12,
     marginTop: 4,
     fontWeight: "500",
