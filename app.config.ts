@@ -101,7 +101,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
                         "NSIncludesSubdomains": true
                     }
                 }
-            }
+            },
+            LSApplicationQueriesSchemes: [
+                "upi",
+                "phonepe",
+                "paytm",
+                "gpay",
+                "tez",
+                "bhim",
+                "credpay",
+                "whatsapp"
+            ]
         }
     },
 
@@ -156,6 +166,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         "expo-web-browser",
         "./plugins/withSmsRetriever",
         "./plugins/with-proguard.js",
+        "./plugins/withAndroidQueries",
     ],
 
     extra: {

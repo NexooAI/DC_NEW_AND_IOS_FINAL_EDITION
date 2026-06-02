@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, Modal, StyleSheet, Alert, Text, TouchableOpacity, ActivityIndicator, Platform, StatusBar } from "react-native";
+import { View, Modal, StyleSheet, Alert, Text, TouchableOpacity, ActivityIndicator, Platform, StatusBar, Linking } from "react-native";
 import { WebView } from "react-native-webview";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { usePaymentSocket } from "@/hooks/usePaymentSocket";
@@ -17,6 +17,10 @@ export default function PaymentWebView() {
   const urlBlockedAlertShown = useRef(false);
   const webViewRef = useRef<any>(null);
   const wasDisconnectedRef = useRef(false);
+
+  const customUserAgent = Platform.OS === 'android'
+    ? 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+    : 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1';
 
   // Debug logging & Fix parameter handling
   const [targetUrl, setTargetUrl] = useState<string>("");
@@ -179,6 +183,7 @@ export default function PaymentWebView() {
     })(),
     router,
     orderId: params.orderId as string,
+    amount: params.amount as string,
   });
 
   console.log("PaymentWebView rendered. Socket connected:", isSocketConnected);
@@ -294,7 +299,7 @@ export default function PaymentWebView() {
 
         <SafeAreaView style={styles.safeAreaContainer}>
           {/* Header - Styled to match app theme */}
-          {/* <View style={styles.headerContainer}>
+          <View style={styles.headerContainer}>
             <View style={styles.headerContent}>
               <TouchableOpacity
                 onPress={handleBackPress}
@@ -307,7 +312,7 @@ export default function PaymentWebView() {
               <Text style={styles.headerTitle}>Secure Payment</Text>
               <View style={styles.placeholder} />
             </View>
-          </View> */}
+          </View>
 
           <View style={{ flex: 1, backgroundColor: "#fff" }}>
             {/* Connection Status Banner */}
@@ -344,7 +349,8 @@ export default function PaymentWebView() {
                 source={{
                   uri: targetUrl,
                 }}
-                style={{ flex: 1, opacity: 0.99, minHeight: 1, backgroundColor: 'transparent' }}
+                userAgent={customUserAgent}
+                style={{ flex: 1, backgroundColor: 'transparent' }}
                 containerStyle={{ flex: 1 }}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
@@ -359,10 +365,9 @@ export default function PaymentWebView() {
                 thirdPartyCookiesEnabled={true}
                 sharedCookiesEnabled={true}
                 textZoom={100}
-                scalesPageToFit={true}
+                scalesPageToFit={false}
                 overScrollMode="never"
                 mixedContentMode="always"
-                androidLayerType="software" // Force software rendering to fix white screen issues
                 setSupportMultipleWindows={true} // Allow popups which some gateways use
                 cacheEnabled={false} // Disable cache to prevent stale white pages
 
@@ -370,19 +375,58 @@ export default function PaymentWebView() {
                 // The URL https://api.prod.srimurugangoldhouse.in/payment-success is for status checking only
                 // We should NOT navigate to it - socket payment_status_update event handles everything
                 onShouldStartLoadWithRequest={(request) => {
-                  const url = request.url.toLowerCase();
+                  const url = request.url;
+                  const urlLower = url.toLowerCase();
                   console.log("🔍 WebView navigation request:", url);
 
+                  // Handle deep linking for UPI and other custom schemes
+                  let targetUrlToOpen = url;
+                  if (urlLower.startsWith('intent://')) {
+                    console.log("📦 Parsing Android intent URL:", url);
+                    const match = url.match(/scheme=([^;]+)/);
+                    if (match && match[1]) {
+                      const scheme = match[1];
+                      const rest = url.substring(9).split('#')[0];
+                      targetUrlToOpen = `${scheme}://${rest}`;
+                      console.log("🔄 Converted intent URL to:", targetUrlToOpen);
+                    }
+                  }
+
+                  if (!targetUrlToOpen.toLowerCase().startsWith('http://') && 
+                      !targetUrlToOpen.toLowerCase().startsWith('https://') && 
+                      !targetUrlToOpen.toLowerCase().startsWith('about:')) {
+                    console.log("🚀 Redirecting to native app (custom scheme):", targetUrlToOpen);
+                    Linking.openURL(targetUrlToOpen).catch((err) => {
+                      console.warn("❌ Error opening deep link directly:", err);
+                      Alert.alert(
+                        "App Not Found",
+                        "The app required to complete this payment is not installed or could not be opened.",
+                        [{ text: "OK" }]
+                      );
+                    });
+                    return false;
+                  }
+
                   // Block payment-success URL - status is handled by socket only
-                  if (url.includes('/payment-success') ||
-                    url.includes('payment-success') ||
-                    url.includes('payment_success') ||
-                    url.includes('api.prod.srimurugangoldhouse.in/payment-success')) {
+                  if (urlLower.includes('/payment-success') ||
+                    urlLower.includes('payment-success') ||
+                    urlLower.includes('payment_success') ||
+                    urlLower.includes('api.prod.srimurugangoldhouse.in/payment-success')) {
                     console.log("🚫 BLOCKED: Navigation to payment-success URL");
                     console.log("   URL:", request.url);
                     console.log("   Reason: Status is handled by payment_status_update socket event only");
                     console.log("   Waiting for socket event to process payment status...");
                     // Prevent navigation - socket will handle the status
+                    return false;
+                  }
+
+                  // Block and handle cancel / failure routes immediately to exit WebView
+                  if (urlLower.includes('/cancel') ||
+                      urlLower.includes('/error') ||
+                      urlLower.includes('status=failed') ||
+                      urlLower.includes('payment_failed')) {
+                    console.log("❌ Cancel/Failure URL intercepted in onShouldStartLoadWithRequest:", url);
+                    handleCancel();
                     return false;
                   }
 

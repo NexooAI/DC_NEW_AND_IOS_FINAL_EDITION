@@ -22,8 +22,13 @@ export default function TabsLayout() {
   const fullPath = segments.join("/");
   const isOnSchemesPage = fullPath.includes("home/schemes") || (segments.includes("schemes") && segments.includes("home"));
 
+  // Check if we're on payment WebView or status pages to hide tab bar
+  const shouldHideTabBar = segments.includes("PaymentWebView") || 
+                           segments.includes("payment-success") || 
+                           segments.includes("payment-failure");
+
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
+    <SafeAreaView style={{ flex: 1 }} edges={shouldHideTabBar ? [] : ["bottom"]}>
       <NavigationErrorBoundary>
         <Tabs
           screenOptions={{
@@ -37,7 +42,7 @@ export default function TabsLayout() {
               backgroundColor: COLORS.white,
               borderTopWidth: 1,
               borderTopColor: COLORS.border?.primary || '#e5e5e5',
-              display: isTabVisible ? 'flex' : 'none',
+              display: shouldHideTabBar ? 'none' : (isTabVisible ? 'flex' : 'none'),
             },
             headerStyle: {
               backgroundColor: theme.colors.primary,

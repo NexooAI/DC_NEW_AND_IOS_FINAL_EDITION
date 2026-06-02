@@ -13,6 +13,7 @@ interface PaymentSocketProps {
   parsedUserDetails: any;
   router: ReturnType<typeof useRouter>;
   orderId?: string;
+  amount?: string;
 }
 
 export const usePaymentSocket = ({
@@ -23,6 +24,7 @@ export const usePaymentSocket = ({
   parsedUserDetails,
   router,
   orderId,
+  amount,
 }: PaymentSocketProps) => {
   const socketRef = useRef<Socket | null>(null);
   const isPaymentCompleted = useRef(false);
@@ -544,13 +546,27 @@ export const usePaymentSocket = ({
       }
       appStateSubscription.remove();
     };
-  }, [router, orderId]); // Removed parsedUserDetails from dep array to avoid reconnects on minor updates, using Ref instead
+  }, [router, orderId, amount]); // Removed parsedUserDetails from dep array to avoid reconnects on minor updates, using Ref instead
 
   const handleCancel = () => {
     if (socketRef.current && socketRef.current.connected) {
       socketRef.current.disconnect();
     }
-    router.replace({ pathname: '/(tabs)/home/payment-failure', params: { message: "Payment Cancelled" } });
+
+    const currentOrderId = orderId || parsedUserDetailsRef.current?.orderId || "";
+    const userDetails = parsedUserDetailsRef.current || {};
+    const inner = userDetails.data?.data || {};
+    const amountVal = amount || userDetails.amount || userDetails.paymentAmount || inner.amount || "";
+
+    router.replace({
+      pathname: '/(tabs)/home/payment-failure',
+      params: {
+        message: "Payment Cancelled",
+        orderId: currentOrderId,
+        amount: String(amountVal),
+        status: "CANCELLED"
+      }
+    });
   };
 
   return {
