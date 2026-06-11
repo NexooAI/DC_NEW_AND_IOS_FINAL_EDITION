@@ -722,11 +722,17 @@ export default function MpinVerify() {
                         { text: "OK", onPress: () => router.replace("/(app)/dashboard") }
                       ]);
                     } else {
+                      try {
+                        await AsyncStorage.setItem('hasDeclinedBiometrics', 'true');
+                      } catch (err) {
+                        logger.error("Error setting hasDeclinedBiometrics after failure:", err);
+                      }
                       router.replace("/(app)/dashboard");
                     }
                   }
                 }
-              ]
+              ],
+              { cancelable: false }
             );
           } else {
             router.replace("/(app)/dashboard");

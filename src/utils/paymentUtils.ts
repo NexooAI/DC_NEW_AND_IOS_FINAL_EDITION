@@ -7,7 +7,9 @@ import { theme } from "@/constants/theme";
 import { logger } from '@/utils/logger';
 // Socket initialization function
 export const initializeSocket = () => {
-  return io(theme.baseUrl);
+  return io(theme.baseUrl, {
+    transports: ["websocket"],
+  });
 };
 
 // Payment function that can be used anywhere

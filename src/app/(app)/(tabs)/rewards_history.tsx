@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, Modal } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, Modal, BackHandler } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -42,6 +42,20 @@ export default function RewardsHistoryScreen() {
     useEffect(() => {
         fetchReferrals();
     }, [fetchReferrals]);
+
+    useEffect(() => {
+        const handleBackPress = () => {
+            router.replace("/(app)/(tabs)/rewards");
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            "hardwareBackPress",
+            handleBackPress
+        );
+
+        return () => backHandler.remove();
+    }, [router]);
 
     const handleItemPress = (item: any) => {
         setSelectedItem(item);
@@ -99,7 +113,7 @@ export default function RewardsHistoryScreen() {
         <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
             <View style={styles.headerContainer}>
                 <View style={styles.header}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                    <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/(app)/(tabs)/rewards")}>
                         <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
                     </TouchableOpacity>
 

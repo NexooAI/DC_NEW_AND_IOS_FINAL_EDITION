@@ -241,6 +241,8 @@ interface HomeApiResponse {
   data: {
     currentRates: {
       gold_rate: string;
+      gold_rate_18?: string;
+      gold_rate_14?: string;
       silver_rate: string;
       updated_at: string;
     };
@@ -613,6 +615,7 @@ export default function Home() {
     useState<Collection | null>(null);
   const [showStatus, setShowStatus] = useState(false);
   const [collectionsData, setCollectionsData] = useState<Collection[]>([]);
+  const [isCollectionCompact, setIsCollectionCompact] = useState(true); // Added toggle state for layout format
   const [totalGoldSavings, setTotalGoldSavings] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [flashNews, setFlashNews] = useState<any[]>([]);
@@ -1059,6 +1062,13 @@ export default function Home() {
 
           setHomeData(response.data);
 
+          // Store entire home response data in AsyncStorage for offline cache loading
+          try {
+            await AsyncStorage.setItem("cached_home_data", JSON.stringify(response.data));
+          } catch (storageErr) {
+            logger.error("Error saving cached_home_data:", storageErr);
+          }
+
           // Set collections data
           if (data.collections && data.collections.length > 0) {
             logger.log(
@@ -1125,14 +1135,10 @@ export default function Home() {
             setFlashNews(flashArray);
           } else {
             logger.log(
-              "🔍 FlashNews Debug: No flashNews data found, using fallback"
+              "🔍 FlashNews Debug: No flashNews data found, setting empty array"
             );
-            // Set fallback flash news messages
-            setFlashNews([
-              "🎉 Welcome to Digital Gold Savings!",
-              "🔥 Gold price updates available!",
-              "🌟 Special offers for new users!",
-            ]);
+            // Set empty array to hide FlashNews if no data from API
+            setFlashNews([]);
           }
 
           // Log videos data
@@ -1282,6 +1288,68 @@ export default function Home() {
     }, [t])
   );
 
+  // Load cached home data on initial mount
+  useEffect(() => {
+    const loadCachedData = async () => {
+      try {
+        const cachedDataStr = await AsyncStorage.getItem("cached_home_data");
+        if (cachedDataStr) {
+          const cachedData = JSON.parse(cachedDataStr);
+          // Only apply cached data if homeData has not been populated by a fresh API response yet
+          setHomeData((current) => {
+            if (current) return current;
+            
+            // Populate nested collections and slider images if they aren't loaded yet
+            if (cachedData?.data?.collections && cachedData.data.collections.length > 0) {
+              setCollectionsData((currentCols) => currentCols.length > 0 ? currentCols : cachedData.data.collections);
+            }
+            if (cachedData?.data?.posters && cachedData.data.posters.length > 0) {
+              setSliderImages((currentImages) => currentImages.length > 0 ? currentImages : cachedData.data.posters.map((poster: any) => ({
+                id: poster.id,
+                image: poster.image && poster.image.startsWith("http")
+                  ? poster.image
+                  : poster.image
+                    ? `${theme.baseUrl}${poster.image}`
+                    : "",
+                title: poster.title || "",
+              })));
+            }
+            return cachedData;
+          });
+        } else {
+          // Fallback to the single "gold_rate" key if cached_home_data is not present
+          const storedRate = await AsyncStorage.getItem("gold_rate");
+          if (storedRate) {
+            setHomeData((current) => {
+              if (current) return current;
+              return {
+                success: true,
+                data: {
+                  currentRates: {
+                    gold_rate: storedRate,
+                    silver_rate: "",
+                    updated_at: new Date().toISOString(),
+                  },
+                  collections: [],
+                  posters: [],
+                  flashNews: [],
+                  introScreen: { title: null, image: null, startDate: null, endDate: null },
+                  initialPopups: [],
+                  investments: { data: [] },
+                  videos: [],
+                  socialmedia: [],
+                }
+              };
+            });
+          }
+        }
+      } catch (e) {
+        logger.error("Error loading cached home data:", e);
+      }
+    };
+    loadCachedData();
+  }, []);
+
   // Effects
   useEffect(() => {
     logger.log("🔍 Home: Initial useEffect triggered");
@@ -1318,23 +1386,37 @@ export default function Home() {
       logger.log("🎯 Home: Auto-triggering first collection status...");
       setSelectedCollection(collectionsData[0]);
       setShowStatus(true);
-      
+
       // Clear the param after triggering once to prevent repeated triggers on re-render
       router.setParams({ autoTrigger: undefined });
     }
   }, [params.autoTrigger, collectionsData, showStatus]);
 
-  // Rating prompt - show after app launches and user engagement
+  // Rating prompt - increment launch count on mount
   useEffect(() => {
     incrementLaunchCount();
-
-    // Show rating prompt after 15 seconds of being on home screen
-    const ratingTimer = setTimeout(() => {
-      checkAndShowRating();
-    }, 15000);
-
-    return () => clearTimeout(ratingTimer);
   }, []);
+
+  // Intercept back button to prompt for rating before leaving the app
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        checkAndShowRating().then((showed) => {
+          if (!showed) {
+            // If the rating modal wasn't triggered (already rated, prompted today, or count < 5), exit the app
+            BackHandler.exitApp();
+          }
+        });
+        return true; // Block default exit behavior
+      };
+
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress
+      );
+      return () => subscription.remove();
+    }, [checkAndShowRating])
+  );
 
   // Monitor flash-news endpoint for continuous calls
   useEffect(() => {
@@ -1551,7 +1633,7 @@ export default function Home() {
 
   // Helper function to get translated text
   const getTranslatedText = (
-    textObj: { en: string; ta?: string } | string | undefined | null,
+    textObj: any,
     lang: string
   ): string => {
     if (textObj === null || textObj === undefined || textObj === "") {
@@ -1567,21 +1649,34 @@ export default function Home() {
       return String(textObj);
     }
     if (typeof textObj === "object" && textObj !== null) {
-      if (textObj.hasOwnProperty("en") || textObj.hasOwnProperty("ta")) {
-        const enText = textObj.en || "";
-        const taText = textObj.ta || "";
-        if (lang === "ta") {
-          return taText || enText || "";
-        } else {
-          return enText || taText || "";
-        }
-      }
       if (Array.isArray(textObj)) {
         const validItems = textObj.filter(
           (item) => item !== null && item !== undefined && item !== ""
         );
         return validItems.length > 0 ? validItems.join(", ") : "";
       }
+
+      // Check if this object contains any translation keys
+      const hasEn = textObj.hasOwnProperty("en") || textObj.hasOwnProperty("EN");
+      const hasTa = textObj.hasOwnProperty("ta") || textObj.hasOwnProperty("TA");
+      const hasTe = textObj.hasOwnProperty("te") || textObj.hasOwnProperty("TE");
+      const hasHi = textObj.hasOwnProperty("hi") || textObj.hasOwnProperty("HI");
+      const hasMal = textObj.hasOwnProperty("mal") || textObj.hasOwnProperty("MAL") || (textObj as any).hasOwnProperty("_ta") || (textObj as any).hasOwnProperty("_TA");
+
+      if (hasEn || hasTa || hasTe || hasHi || hasMal) {
+        const targetText = textObj[lang] || textObj[lang.toUpperCase()] || textObj[lang.toLowerCase()];
+        const enText = textObj.en || textObj.EN || "";
+        const taText = textObj.ta || textObj.TA || "";
+
+        // Malayalam fallback logic if "mal" translation is missing
+        if ((lang === "mal" || lang === "MAL") && !targetText) {
+          const malTextLegacy = (textObj as any)._ta || (textObj as any)._TA || "";
+          return malTextLegacy || taText || enText || Object.values(textObj)[0] || "";
+        }
+
+        return targetText || enText || taText || Object.values(textObj)[0] || "";
+      }
+
       try {
         const stringified = JSON.stringify(textObj);
         return stringified === "{}" || stringified === "[]" ? "" : stringified;
@@ -2189,61 +2284,94 @@ export default function Home() {
   );
 
   const renderStatusItem = useCallback(
-    ({ item }: { item: Collection }) => (
-      <TouchableOpacity
-        style={styles.collectionCardContainer}
-        activeOpacity={0.85}
-        onPress={() => {
-          setSelectedCollection(item);
-          setShowStatus(true);
-        }}
-      >
-        <LinearGradient
-          colors={['#BF953F', '#FCF6BA', '#B38728', '#FBF5B7', '#AA771C']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={collectionStyles.cardBorder}
-        >
-          <View style={collectionStyles.cardInner}>
-            <Image
-              source={getImageSource(item.thumbnail) ?? undefined}
-              style={collectionStyles.image}
-              resizeMode="cover"
-            />
-            {/* Dark Gradient Overlay for text readability */}
+    ({ item }: { item: Collection }) => {
+      if (isCollectionCompact) {
+        return (
+          <TouchableOpacity
+            style={styles.collectionCompactContainer}
+            activeOpacity={0.85}
+            onPress={() => {
+              setSelectedCollection(item);
+              setShowStatus(true);
+            }}
+          >
             <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.95)']}
-              locations={[0, 0.5, 0.8, 1]}
-              style={collectionStyles.gradientOverlay}
-            />
+              colors={['#BF953F', '#FCF6BA', '#B38728', '#FBF5B7', '#AA771C']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.compactCircleBorder}
+            >
+              <View style={styles.compactCircleInner}>
+                <Image
+                  source={getImageSource(item.thumbnail) ?? undefined}
+                  style={styles.compactImage}
+                  resizeMode="cover"
+                />
+              </View>
+            </LinearGradient>
+            <Text style={styles.collectionCompactName} numberOfLines={1}>
+              {item.name}
+            </Text>
+          </TouchableOpacity>
+        );
+      }
 
-            {/* Top Right "View" Indicator */}
-            <View style={collectionStyles.topBadge}>
-              <Ionicons name="sparkles" size={10} color="#5D4037" />
-              <Text style={collectionStyles.topBadgeText}>NEW</Text>
-            </View>
+      return (
+        <TouchableOpacity
+          style={styles.collectionCardContainer}
+          activeOpacity={0.85}
+          onPress={() => {
+            setSelectedCollection(item);
+            setShowStatus(true);
+          }}
+        >
+          <LinearGradient
+            colors={['#BF953F', '#FCF6BA', '#B38728', '#FBF5B7', '#AA771C']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={collectionStyles.cardBorder}
+          >
+            <View style={collectionStyles.cardInner}>
+              <Image
+                source={getImageSource(item.thumbnail) ?? undefined}
+                style={collectionStyles.image}
+                resizeMode="cover"
+              />
+              {/* Dark Gradient Overlay for text readability */}
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.95)']}
+                locations={[0, 0.5, 0.8, 1]}
+                style={collectionStyles.gradientOverlay}
+              />
 
-            {/* Bottom Content Area */}
-            <View style={collectionStyles.bottomContent}>
-              <Text style={collectionStyles.collectionName} numberOfLines={1}>
-                {item.name}
-              </Text>
+              {/* Top Right "View" Indicator */}
+              <View style={collectionStyles.topBadge}>
+                <Ionicons name="sparkles" size={10} color="#5D4037" />
+                <Text style={collectionStyles.topBadgeText}>NEW</Text>
+              </View>
 
-              <View style={collectionStyles.statsRow}>
-                <View style={collectionStyles.countBadge}>
-                  <Ionicons name="images-outline" size={10} color="#FFD700" />
-                  <Text style={collectionStyles.countText}>{item.status_images?.length || 0} Designs</Text>
+              {/* Bottom Content Area */}
+              <View style={collectionStyles.bottomContent}>
+                <Text style={collectionStyles.collectionName} numberOfLines={1}>
+                  {item.name}
+                </Text>
+
+                <View style={collectionStyles.statsRow}>
+                  <View style={collectionStyles.countBadge}>
+                    <Ionicons name="images-outline" size={10} color="#FFD700" />
+                    <Text style={collectionStyles.countText}>{item.status_images?.length || 0} Designs</Text>
+                  </View>
+                  <TouchableOpacity style={collectionStyles.arrowBtn}>
+                    <Ionicons name="arrow-forward" size={12} color="#fff" />
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={collectionStyles.arrowBtn}>
-                  <Ionicons name="arrow-forward" size={12} color="#fff" />
-                </TouchableOpacity>
               </View>
             </View>
-          </View>
-        </LinearGradient>
-      </TouchableOpacity>
-    ),
-    [getImageSource]
+          </LinearGradient>
+        </TouchableOpacity>
+      );
+    },
+    [isCollectionCompact, getImageSource]
   );
 
   // Show skeleton loading screen while data is being fetched
@@ -2286,9 +2414,7 @@ export default function Home() {
           {/* Collections Skeleton */}
           <View style={styles.statusContainer}>
             <View style={styles.statusHeader}>
-              <View style={styles.statusHeaderLine} />
               <SkeletonLoader width={140} height={18} variant="text" />
-              <View style={styles.statusHeaderLine} />
             </View>
             <SkeletonCollection count={5} />
           </View>
@@ -2304,11 +2430,9 @@ export default function Home() {
             <SkeletonUserInfoCard style={{ marginTop: rp(16) }} />
 
             {/* Scheme Section Skeleton */}
-            <View style={{ marginTop: rp(24), alignItems: "center" }}>
+            <View style={{ marginTop: rp(24), width: "100%" }}>
               <View style={styles.statusHeader}>
-                <View style={styles.statusHeaderLine} />
                 <SkeletonLoader width={100} height={18} variant="text" />
-                <View style={styles.statusHeaderLine} />
               </View>
               <SkeletonSchemeCard style={{ marginTop: rp(16) }} />
             </View>
@@ -2510,6 +2634,17 @@ export default function Home() {
         </View>
 
         <View style={styles.mainContainer}>
+          {isVisible("showFlashnews") && flashNews && flashNews.length > 0 && (
+            <FlashOffer
+              fallbackMessages={flashNews}
+              onPress={() => {
+                if (__DEV__) {
+                  logger.log(t("flashNewsTapped"));
+                }
+              }}
+              textColor={COLORS.white}
+            />
+          )}
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             refreshControl={
@@ -2557,6 +2692,8 @@ export default function Home() {
                 >
                   <AnimatedGoldRate
                     goldRate={homeData.data.currentRates.gold_rate}
+                    goldRate18={homeData?.data?.currentRates?.gold_rate_18}
+                    goldRate14={homeData?.data?.currentRates?.gold_rate_14}
                     updatedAt={homeData.data.currentRates.updated_at || ""}
                   />
                 </TouchableOpacity>
@@ -2572,9 +2709,17 @@ export default function Home() {
                     <Text style={styles.collectionHeaderTitle}>
                       {t("activeCollections")}
                     </Text>
-                    {/* <TouchableOpacity>
-                      <Text style={collectionStyles.seeAllText}>{t("seeAll")}</Text>
-                    </TouchableOpacity> */}
+                    <TouchableOpacity
+                      onPress={() => setIsCollectionCompact(!isCollectionCompact)}
+                      style={styles.collectionCompactToggle}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name={isCollectionCompact ? "apps-outline" : "ellipse-outline"}
+                        size={20}
+                        color={theme.colors.primary}
+                      />
+                    </TouchableOpacity>
                   </View>
                   <FlatList
                     data={collectionsData}
@@ -2603,26 +2748,8 @@ export default function Home() {
                   )}
                 </>
               )}
-
-              {/* Flash News - Conditionally rendered based on API */}
-              {isVisible("showFlashnews") && (
-                <FlashOffer
-                  // fallbackMessages={[
-                  //   "🎉 Welcome to Digital Gold Savings!",
-                  //   "🔥 Gold price drops! Invest smart.",
-                  //   "🌟 Special offer for new users!",
-                  // ]}
-                  fallbackMessages={flashNews}
-                  onPress={() => {
-                    if (__DEV__) {
-                      logger.log(t("flashNewsTapped"));
-                    }
-                  }}
-                  textColor={COLORS.white}
-                />
-              )}
               {/* Customer Card - Conditionally rendered based on API */}
-              {isVisible("showCustomerCard") && (
+              {isVisible("showCustomerCard") && activeSchemesCount > 0 && (
                 <UserInfoCard
                   userName={user?.name?.toUpperCase()}
                   activeSchemesCount={activeSchemesCount}
@@ -2644,11 +2771,10 @@ export default function Home() {
               {isVisible("showSchemes") && (
                 <>
                   <View style={styles.statusHeader}>
-                    <View style={styles.statusHeaderLine} />
+                    <Ionicons name="ribbon-outline" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
                     <Text style={styles.statusHeaderText}>
                       {t("ourSchemes")}
                     </Text>
-                    <View style={styles.statusHeaderLine} />
                   </View>
                   <DynamicSchemeCard
                     onJoinPress={async (scheme) => {
@@ -2660,7 +2786,7 @@ export default function Home() {
                         try {
                           // Helper function to get translated text
                           const getTranslatedText = (
-                            textObj: { en: string; ta?: string } | string | undefined | null,
+                            textObj: any,
                             lang: string
                           ): string => {
                             if (textObj === null || textObj === undefined || textObj === "") {
@@ -2672,25 +2798,35 @@ export default function Home() {
                             if (typeof textObj === "number") {
                               return isNaN(textObj) ? "" : String(textObj);
                             }
-                            if (typeof textObj === "boolean") {
-                              return String(textObj);
-                            }
                             if (typeof textObj === "object" && textObj !== null) {
-                              if (textObj.hasOwnProperty("en") || textObj.hasOwnProperty("ta")) {
-                                const enText = textObj.en || "";
-                                const taText = textObj.ta || "";
-                                if (lang === "ta") {
-                                  return taText || enText || "";
-                                } else {
-                                  return enText || taText || "";
-                                }
-                              }
                               if (Array.isArray(textObj)) {
                                 const validItems = textObj.filter(
                                   (item) => item !== null && item !== undefined && item !== ""
                                 );
                                 return validItems.length > 0 ? validItems.join(", ") : "";
                               }
+
+                              // Check if this object contains any translation keys
+                              const hasEn = textObj.hasOwnProperty("en") || textObj.hasOwnProperty("EN");
+                              const hasTa = textObj.hasOwnProperty("ta") || textObj.hasOwnProperty("TA");
+                              const hasTe = textObj.hasOwnProperty("te") || textObj.hasOwnProperty("TE");
+                              const hasHi = textObj.hasOwnProperty("hi") || textObj.hasOwnProperty("HI");
+                              const hasMal = textObj.hasOwnProperty("mal") || textObj.hasOwnProperty("MAL") || (textObj as any).hasOwnProperty("_ta") || (textObj as any).hasOwnProperty("_TA");
+
+                              if (hasEn || hasTa || hasTe || hasHi || hasMal) {
+                                const targetText = textObj[lang] || textObj[lang.toUpperCase()] || textObj[lang.toLowerCase()];
+                                const enText = textObj.en || textObj.EN || "";
+                                const taText = textObj.ta || textObj.TA || "";
+
+                                // Malayalam fallback logic if "mal" translation is missing
+                                if ((lang === "mal" || lang === "MAL") && !targetText) {
+                                  const malTextLegacy = (textObj as any)._ta || (textObj as any)._TA || "";
+                                  return malTextLegacy || taText || enText || Object.values(textObj)[0] || "";
+                                }
+
+                                return targetText || enText || taText || Object.values(textObj)[0] || "";
+                              }
+
                               try {
                                 const stringified = JSON.stringify(textObj);
                                 return stringified === "{}" || stringified === "[]" ? "" : stringified;
@@ -2926,6 +3062,7 @@ export default function Home() {
               {isVisible("showSocialMedia") && (
                 <SocialMediaCard
                   socialMediaUrls={homeData?.data?.socialmedia}
+                  videos={homeData?.data?.videos}
                 />
               )}
               {/* Hallmark Images Section - Conditionally rendered based on API */}
@@ -2974,32 +3111,6 @@ export default function Home() {
               return 0;
             })()}
             onClose={handleStatusClose}
-            onEnquire={(collection, imgIndex) => {
-              Alert.alert(
-                t("connectOnWhatsApp") || "Connect on WhatsApp",
-                t("connectWhatsAppDesc") || "Do you want to enquire about this design via WhatsApp?",
-                [
-                  {
-                    text: t("cancel") || "Cancel",
-                    style: "cancel"
-                  },
-                  {
-                    text: t("continue") || "Continue",
-                    onPress: () => {
-                      // Try to get support number from homeData or fallback
-                      // safely cast to any to avoid type error if interface is incomplete
-                      const supportNumber = theme.constants.whatsappNumber || "+919061803999";
-                      const message = `Hello, I am interested in the collection "${collection.name}" (Design #${imgIndex + 1}). Can you share more details?`;
-                      const url = `whatsapp://send?text=${encodeURIComponent(message)}&phone=${supportNumber}`;
-
-                      Linking.openURL(url).catch(() => {
-                        Linking.openURL(`https://wa.me/${supportNumber}?text=${encodeURIComponent(message)}`);
-                      });
-                    }
-                  }
-                ]
-              );
-            }}
           />
 
 
@@ -3543,7 +3654,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     alignItems: "stretch",
     paddingVertical: rp(20), // Increased padding
     paddingTop: rp(10),
@@ -3682,16 +3793,17 @@ const styles = StyleSheet.create({
   },
   statusContainer: {
     width: "100%",
-    marginVertical: spacing.sm,
-    marginTop: spacing.md,
+    marginVertical: 0,
+    marginTop: spacing.xs,
   },
   statusHeader: {
-    ...commonStyles.row,
+    flexDirection: 'row',
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.lg,
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.sm,
+    justifyContent: "flex-start",
+    width: "100%",
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.xs,
   },
   statusHeaderLine: {
     display: 'none', // Hide lines for cleaner look
@@ -3702,14 +3814,14 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     textTransform: "uppercase",
     letterSpacing: 1.5,
-    textAlign: "center",
+    textAlign: "left",
   },
 
   sectionHeader: {
     width: "100%",
     paddingHorizontal: 20,
-    marginTop: 30,
-    marginBottom: 20,
+    marginTop: 20,
+    marginBottom: 10,
     alignItems: "center",
   },
   sectionHeaderContent: {
@@ -3742,12 +3854,12 @@ const styles = StyleSheet.create({
   },
   // Collection Styles Added via Implementation Plan
   collectionContainer: {
-    marginBottom: spacing.lg,
-    paddingVertical: spacing.sm,
+    marginBottom: spacing.xs,
+    paddingVertical: 0,
   },
   collectionHeader: {
     paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+    marginBottom: spacing.xs,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -3757,6 +3869,43 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.primary,
     letterSpacing: 0.5,
+  },
+  collectionCompactToggle: {
+    padding: spacing.xs,
+    borderRadius: borderRadius.small,
+    backgroundColor: 'rgba(133, 1, 17, 0.05)',
+  },
+  collectionCompactContainer: {
+    alignItems: 'center',
+    marginRight: spacing.md,
+    width: 76,
+  },
+  compactCircleBorder: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    padding: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  compactCircleInner: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    overflow: 'hidden',
+    backgroundColor: '#111',
+  },
+  compactImage: {
+    width: '100%',
+    height: '100%',
+  },
+  collectionCompactName: {
+    fontSize: rf(11),
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
+    marginTop: 6,
+    width: '100%',
+    textAlign: 'center',
   },
   collectionListContent: {
     paddingHorizontal: spacing.md,

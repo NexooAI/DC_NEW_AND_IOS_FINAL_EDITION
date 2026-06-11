@@ -329,7 +329,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
         <View style={styles.menuContainer}>
           {/* General Section */}
           <SectionHeader title={t("general") || "General"} />
-          <DrawerMenuItem
+          {/* <DrawerMenuItem
             label={t("profile")}
             iconName="person-outline"
             onPress={() => handleNavigation("/(tabs)/profile")}
@@ -337,7 +337,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
             isActive={isRouteActive("/(tabs)/profile")}
             delay={100}
             iconColor="#4285F4" // Google Blue
-          />
+          /> */}
           <DrawerMenuItem
             label={t("referAndEarn")}
             iconName="gift-outline"
@@ -346,6 +346,15 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
             isActive={isRouteActive("/(tabs)/home/refer_earn")}
             delay={150}
             iconColor="#F4B400" // Google Yellow/Gold
+          />
+          <DrawerMenuItem
+            label={t("ticketsAndEnquiries") || "Tickets & Enquiries"}
+            iconName="receipt-outline"
+            onPress={() => handleNavigation("/tickets")}
+            disabled={isNavigating}
+            isActive={isRouteActive("/tickets")}
+            delay={175}
+            iconColor="#850111" // Primary Brand Red
           />
 
           {/* Support Section */}
@@ -398,14 +407,9 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
             delay={400}
             iconColor="#607D8B" // Blue Grey
           />
-        </View>
 
-        <View style={styles.footerSpacer} />
-      </DrawerContentScrollView>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <View style={styles.logoutContainer}>
+          {/* Account Section */}
+          <SectionHeader title={t("account") || "Account"} />
           <DrawerMenuItem
             label={t("logout")}
             iconName="log-out-outline"
@@ -416,6 +420,11 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
           />
         </View>
 
+        <View style={styles.footerSpacer} />
+      </DrawerContentScrollView>
+
+      {/* Footer */}
+      <View style={styles.footer}>
         {/* Social Links */}
         <View style={styles.socialRow}>
           {socialLinks.map((link, index) => (
@@ -438,7 +447,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   headerContainer: {
-    minHeight: 190,
+    minHeight: 120,
     width: '100%',
     overflow: 'hidden',
     borderBottomRightRadius: 24,
@@ -447,8 +456,8 @@ const styles = StyleSheet.create({
   headerGradient: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 50 : 40,
-    paddingBottom: 20,
+    paddingTop: Platform.OS === 'ios' ? 45 : 30,
+    paddingBottom: 10,
     justifyContent: 'center',
   },
   userInfoContainer: {
@@ -457,13 +466,13 @@ const styles = StyleSheet.create({
   avatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 15,
+    justifyContent: 'flex-start',
+    marginBottom: 8,
   },
   avatarContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.3)',
     overflow: 'hidden',
@@ -484,7 +493,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.backgroundSecondary,
   },
   avatarInitials: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: 'bold',
     color: theme.colors.primary,
   },
@@ -505,19 +514,21 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   userDetails: {
+    marginLeft: 12,
     marginTop: 0,
+    flex: 1,
   },
   greetingText: {
-    fontSize: 13,
+    fontSize: 11,
     color: 'rgba(255,255,255,0.9)',
-    marginBottom: 4,
+    marginBottom: 2,
     fontWeight: '500',
   },
   userName: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '800', // Extra bold for premium feel
     color: '#fff',
-    marginBottom: 6,
+    marginBottom: 4,
     letterSpacing: 0.5,
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
     textShadowOffset: { width: 1, height: 1 },
@@ -528,7 +539,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   userEmail: {
-    fontSize: 12,
+    fontSize: 11,
     color: 'rgba(255,255,255,0.8)',
   },
   decorativeCircle: {
@@ -550,22 +561,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.05)',
   },
   scrollContent: {
-    paddingTop: 16,
+    paddingTop: 8,
   },
   menuContainer: {
     paddingHorizontal: 16,
   },
   sectionHeaderContainer: {
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 8,
+    marginBottom: 4,
   },
   sectionHeaderText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     color: theme.colors.textLightGrey,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-    marginBottom: 5,
+    marginBottom: 4,
     marginLeft: 12,
   },
   sectionDivider: {
@@ -577,19 +588,19 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 12,
-    marginBottom: 4,
+    marginBottom: 2,
     backgroundColor: 'transparent', // Default
   },
   activeMenuItem: {
     backgroundColor: theme.colors.secondary + '20', // Pale Gold/Yellow (20% opacity)
   },
   iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
     backgroundColor: theme.colors.backgroundSecondary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -602,10 +613,10 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     color: theme.colors.textDarkGrey,
     fontWeight: '500',
-    marginLeft: 14,
+    marginLeft: 12,
   },
   activeMenuItemText: {
     color: theme.colors.primary,
@@ -637,36 +648,36 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: theme.colors.borderLight,
     backgroundColor: '#fff',
-    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+    paddingBottom: Platform.OS === 'ios' ? 10 : 5,
   },
   logoutContainer: {
     paddingHorizontal: 16,
     paddingTop: 10,
   },
   footerSpacer: {
-    height: 20,
+    height: 10,
   },
   socialRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 15,
-    marginBottom: 10,
+    marginTop: 8,
+    marginBottom: 4,
     gap: 15,
   },
   socialIconBtn: {
     padding: 5,
   },
   socialIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   versionContainer: {
     alignItems: 'center',
-    paddingBottom: 10,
+    paddingBottom: 4,
     opacity: 0.6,
   },
   companyName: {

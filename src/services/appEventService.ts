@@ -12,7 +12,14 @@ export const getDeviceId = async (): Promise<string> => {
     let deviceId = await AsyncStorage.getItem('deviceId');
     if (!deviceId) {
       if (Platform.OS === 'android') {
-        deviceId = Application.androidId || '';
+        deviceId = (Application as any).androidId || '';
+        if (!deviceId && typeof (Application as any).getAndroidId === 'function') {
+          try {
+            deviceId = await (Application as any).getAndroidId();
+          } catch (e) {
+            // Ignore error
+          }
+        }
       }
       if (!deviceId) {
         // Fallback: Generate UUID

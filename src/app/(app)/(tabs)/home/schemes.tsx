@@ -107,7 +107,7 @@ const isValidArray = (value: any): value is any[] => {
 };
 
 const getTranslatedText = (
-  textObj: { en: string; ta?: string } | string | undefined | null,
+  textObj: any,
   language: string
 ): string => {
   if (textObj === null || textObj === undefined || textObj === "") {
@@ -127,22 +127,32 @@ const getTranslatedText = (
   }
 
   if (typeof textObj === "object" && textObj !== null) {
-    if (textObj.hasOwnProperty("en") || textObj.hasOwnProperty("ta")) {
-      const enText = textObj.en || "";
-      const taText = textObj.ta || "";
-
-      if (language === "ta") {
-        return taText || enText || "";
-      } else {
-        return enText || taText || "";
-      }
-    }
-
     if (Array.isArray(textObj)) {
       const validItems = textObj.filter(
         (item) => item !== null && item !== undefined && item !== ""
       );
       return validItems.length > 0 ? validItems.join(", ") : "";
+    }
+
+    // Check if this object contains any translation keys
+    const hasEn = textObj.hasOwnProperty("en") || textObj.hasOwnProperty("EN");
+    const hasTa = textObj.hasOwnProperty("ta") || textObj.hasOwnProperty("TA");
+    const hasTe = textObj.hasOwnProperty("te") || textObj.hasOwnProperty("TE");
+    const hasHi = textObj.hasOwnProperty("hi") || textObj.hasOwnProperty("HI");
+    const hasMal = textObj.hasOwnProperty("mal") || textObj.hasOwnProperty("MAL") || (textObj as any).hasOwnProperty("_ta") || (textObj as any).hasOwnProperty("_TA");
+
+    if (hasEn || hasTa || hasTe || hasHi || hasMal) {
+      const targetText = textObj[language] || textObj[language.toUpperCase()] || textObj[language.toLowerCase()];
+      const enText = textObj.en || textObj.EN || "";
+      const taText = textObj.ta || textObj.TA || "";
+
+      // Malayalam fallback logic if "mal" translation is missing
+      if ((language === "mal" || language === "MAL") && !targetText) {
+        const malTextLegacy = (textObj as any)._ta || (textObj as any)._TA || "";
+        return malTextLegacy || taText || enText || Object.values(textObj)[0] || "";
+      }
+
+      return targetText || enText || taText || Object.values(textObj)[0] || "";
     }
 
     try {

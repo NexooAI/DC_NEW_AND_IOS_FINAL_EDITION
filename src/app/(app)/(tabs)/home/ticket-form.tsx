@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { theme } from "@/constants/theme";
 import { moderateScale } from "react-native-size-matters";
 import { LinearGradient } from "expo-linear-gradient";
@@ -31,7 +31,15 @@ interface TicketResponse {
 
 export default function TicketFormScreen() {
   const { t } = useTranslation();
-  const [question, setQuestion] = useState("");
+  const params = useLocalSearchParams();
+  const collectionName = params.collectionName as string | undefined;
+  const designNumber = params.designNumber as string | undefined;
+
+  const [question, setQuestion] = useState(
+    collectionName && designNumber
+      ? `Hello, I am interested in the collection "${collectionName}" (Design #${designNumber}). Can you please share more details?`
+      : ""
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedTicketId, setSubmittedTicketId] = useState<string | null>(
     null
@@ -241,15 +249,15 @@ export default function TicketFormScreen() {
                   {t("tipsForBetterSupport")}
                 </Text>
                 <Text style={styles.tipText}>
-                  • {t("beSpecificAboutProblem")}
+                  {t("beSpecificAboutProblem")}
                 </Text>
                 <Text style={styles.tipText}>
-                  • {t("includeErrorMessages")}
+                  {t("includeErrorMessages")}
                 </Text>
                 <Text style={styles.tipText}>
-                  • {t("mentionWhatYouWereTrying")}
+                  {t("mentionWhatTryingToDo")}
                 </Text>
-                <Text style={styles.tipText}>• {t("includeDeviceType")}</Text>
+                <Text style={styles.tipText}>{t("includeDeviceType")}</Text>
               </View>
 
               <TouchableOpacity

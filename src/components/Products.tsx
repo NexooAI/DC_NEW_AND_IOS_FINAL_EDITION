@@ -39,7 +39,7 @@ interface CardProps {
 const BANNER_HEIGHT = 40;
 
 const CardComponent = ({ item, index }: CardProps) => {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const {
     screenWidth,
     screenHeight,
@@ -56,35 +56,65 @@ const CardComponent = ({ item, index }: CardProps) => {
 
   // Helper to extract text from multilingual objects
   const getLocalizedText = (textObj: any) => {
-    if (!textObj) return "";
+    if (textObj === null || textObj === undefined || textObj === "") {
+      return "";
+    }
 
-    // Handle strings
-    if (typeof textObj === "string") return textObj;
+    if (typeof textObj === "string") {
+      return textObj.trim() || "";
+    }
 
-    // Handle numbers
-    if (typeof textObj === "number") return textObj.toString();
+    if (typeof textObj === "number") {
+      return isNaN(textObj) ? "" : String(textObj);
+    }
 
-    // Handle objects with en/ta keys
+    if (typeof textObj === "boolean") {
+      return String(textObj);
+    }
+
     if (typeof textObj === "object" && textObj !== null) {
-      if ("en" in textObj || "ta" in textObj) {
-        return textObj.en || textObj.ta || "";
-      }
-
-      // Handle arrays
       if (Array.isArray(textObj)) {
-        return textObj.join(", ");
+        const validItems = textObj.filter(
+          (item) => item !== null && item !== undefined && item !== ""
+        );
+        return validItems.length > 0 ? validItems.join(", ") : "";
       }
 
-      // Handle other objects - convert to string safely
+      // Check if this object contains any translation keys
+      const hasEn = textObj.hasOwnProperty("en") || textObj.hasOwnProperty("EN");
+      const hasTa = textObj.hasOwnProperty("ta") || textObj.hasOwnProperty("TA");
+      const hasTe = textObj.hasOwnProperty("te") || textObj.hasOwnProperty("TE");
+      const hasHi = textObj.hasOwnProperty("hi") || textObj.hasOwnProperty("HI");
+      const hasMal = textObj.hasOwnProperty("mal") || textObj.hasOwnProperty("MAL") || (textObj as any).hasOwnProperty("_ta") || (textObj as any).hasOwnProperty("_TA");
+
+      if (hasEn || hasTa || hasTe || hasHi || hasMal) {
+        const lang = (locale as string) || "en";
+        const targetText = textObj[lang] || textObj[lang.toUpperCase()] || textObj[lang.toLowerCase()];
+        const enText = textObj.en || textObj.EN || "";
+        const taText = textObj.ta || textObj.TA || "";
+
+        // Malayalam fallback logic if "mal" translation is missing
+        if ((lang === "mal" || lang === "MAL") && !targetText) {
+          const malTextLegacy = (textObj as any)._ta || (textObj as any)._TA || "";
+          return malTextLegacy || taText || enText || Object.values(textObj)[0] || "";
+        }
+
+        return targetText || enText || taText || Object.values(textObj)[0] || "";
+      }
+
       try {
-        return JSON.stringify(textObj);
+        const stringified = JSON.stringify(textObj);
+        return stringified === "{}" || stringified === "[]" ? "" : stringified;
       } catch {
-        return "[Object]";
+        return "";
       }
     }
 
-    // Fallback for any other type
-    return String(textObj);
+    try {
+      return String(textObj);
+    } catch {
+      return "";
+    }
   };
   const router = useRouter();
   const [fallback, setFallback] = useState(false);

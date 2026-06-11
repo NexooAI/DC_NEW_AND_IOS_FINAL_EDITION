@@ -15,13 +15,16 @@ import {
   Dimensions,
   Image,
   Alert,
+  ScrollView,
+  ActivityIndicator,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { theme } from "@/constants/theme";
 import { moderateScale } from "react-native-size-matters";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
+import { ticketsAPI } from "@/services/api";
 
 const { width, height } = Dimensions.get("window");
 
@@ -32,6 +35,16 @@ interface Message {
   timestamp: Date;
 }
 
+const TICKET_SUBJECTS = [
+  "Scheme Inquiry",
+  "Payment Issue",
+  "KYC & Account Support",
+  "Branch Inquiry",
+  "Bill Payment",
+  "Advance Gold Inquiry",
+  "Others"
+];
+
 const FloatingChatButton = () => {
   const { t } = useTranslation();
   const [isChatVisible, setIsChatVisible] = useState(false);
@@ -39,6 +52,13 @@ const FloatingChatButton = () => {
   const [inputText, setInputText] = useState("");
   const flatListRef = useRef<FlatList>(null);
   
+  // Custom Modals State
+  const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
+  const [isSubjectPickerVisible, setIsSubjectPickerVisible] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState("Scheme Inquiry");
+  const [ticketDescription, setTicketDescription] = useState("");
+  const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
+
   // Animations
   const scaleValue = useRef(new Animated.Value(1)).current;
   const pulseValue = useRef(new Animated.Value(1)).current;
@@ -74,12 +94,17 @@ const FloatingChatButton = () => {
         "You earn reward points for every successful referral who joins a scheme through your link or code. Check 'Reward History' for a detailed breakdown.",
     },
     {
-        id: "5",
-        question: "Is my payment secure?",
-        answer:
-          "Yes, we use industry-standard encryption and verified payment gateways (like Razorpay) to ensure all your transactions are safe and secure.",
+      id: "5",
+      question: "Is my payment secure?",
+      answer:
+        "Yes, we use industry-standard encryption and verified payment gateways (like Razorpay) to ensure all your transactions are safe and secure.",
     },
   ];
+
+  // Dynamic filter for FAQs
+  const filteredFaqs = FAQ_QUESTIONS.filter((faq) =>
+    faq.question.toLowerCase().includes(inputText.toLowerCase())
+  );
 
   useEffect(() => {
     // Pulse animation for the floating button
@@ -101,7 +126,7 @@ const FloatingChatButton = () => {
     return () => pulseAnimation.stop();
   }, []);
 
-  const { isChatOpen, setChatOpen } = useGlobalStore();
+  const { isChatOpen, setChatOpen, user } = useGlobalStore();
 
   useEffect(() => {
     if (isChatOpen) {
@@ -151,12 +176,62 @@ const FloatingChatButton = () => {
     }
   };
 
+  const handleCreateTicket = async () => {
+    if (ticketDescription.trim() === "") {
+      Alert.alert(t("error") || "Error", "Please enter a description/message.");
+      return;
+    }
+
+    try {
+      setIsSubmittingTicket(true);
+      const payload = {
+        name: user?.name || user?.firstName || "Customer",
+        phone: user?.mobile?.toString() || "",
+        email: user?.email || "",
+        subject: selectedSubject,
+        message: ticketDescription,
+      };
+
+      const response = await ticketsAPI.createTicket(payload);
+      setIsSubmittingTicket(false);
+
+      if (response.data?.success) {
+        Alert.alert(
+          "Success",
+          `Ticket created successfully! Reference: ${response.data.data?.ticket_no || response.data.data?.id || ''}`
+        );
+        setIsTicketModalVisible(false);
+        setInputText(""); // Clear parent input
+        setTicketDescription(""); // Clear modal input
+        
+        // Add ticket confirmation message in chat list
+        const botMsg: Message = {
+          id: Date.now().toString(),
+          text: `🎫 Support Ticket Created!\nSubject: ${selectedSubject}\nReference No: ${response.data.data?.ticket_no || response.data.data?.id || ''}\nOur support representative will respond shortly.`,
+          isUser: false,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, botMsg]);
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      } else {
+        Alert.alert("Error", response.data?.message || "Failed to create ticket");
+      }
+    } catch (err: any) {
+      setIsSubmittingTicket(false);
+      console.error("Error creating ticket:", err);
+      Alert.alert("Error", err.response?.data?.message || err.message || "Network error. Please try again.");
+    }
+  };
+
   const sendMessage = () => {
     if (inputText.trim() === "") return;
     
-    // Redirect to WhatsApp with the message
-    openWhatsApp(inputText.trim());
-    setInputText("");
+    // Instead of WhatsApp, we trigger ticket generation modal pre-filled
+    setTicketDescription(inputText.trim());
+    setSelectedSubject("Scheme Inquiry"); // default subject
+    setIsTicketModalVisible(true);
   };
 
   const sendFAQResponse = (question: string, answer: string) => {
@@ -259,18 +334,16 @@ const FloatingChatButton = () => {
                                 <Ionicons name="close-circle" size={32} color="white" />
                             </TouchableOpacity>
                         </View>
-                    </View>
-
-                    {/* Messages Area */}
+                    </View>                    {/* Messages Area */}
                     <View style={styles.chatBody}>
                          {/* Default Welcome Message if empty */}
-                         {messages.length === 0 && (
+                          {messages.length === 0 && (
                             <View style={styles.welcomeContainer}>
                                 <Text style={styles.welcomeText}>
                                     👋 Hi there! How can we help you today?
                                 </Text>
                                 <Text style={styles.welcomeSubtext}>
-                                    Select a topic below or type your question to chat with us on WhatsApp.
+                                    Select a topic below or type your question to create a support ticket.
                                 </Text>
                             </View>
                         )}
@@ -285,27 +358,43 @@ const FloatingChatButton = () => {
                             showsVerticalScrollIndicator={false}
                         />
                         
-                        {/* FAQ Chips */}
+                        {/* FAQ Chips (Compact, Horizontal Scroll) */}
                         <View style={styles.faqContainer}>
                             <Text style={styles.sectionHeader}>Common Questions</Text>
-                            <View>
-                                {FAQ_QUESTIONS.map((faq) => (
+                            <ScrollView 
+                                horizontal 
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.faqHorizontalScroll}
+                            >
+                                {filteredFaqs.map((faq) => (
                                     <TouchableOpacity
                                         key={faq.id}
-                                        style={styles.faqChip}
+                                        style={styles.faqChipHorizontal}
                                         onPress={() => sendFAQResponse(faq.question, faq.answer)}
                                     >
-                                        <Text style={styles.faqText}>{faq.question}</Text>
-                                        <Ionicons name="chevron-forward" size={16} color={theme.colors.primary} />
+                                        <Text style={styles.faqTextHorizontal} numberOfLines={2}>{faq.question}</Text>
                                     </TouchableOpacity>
                                 ))}
-                            </View>
+                            </ScrollView>
                         </View>
                     </View>
 
                     {/* Input Area */}
                     <View style={styles.inputWrapper}>
                         <View style={styles.inputContainer}>
+                            <TouchableOpacity
+                                style={styles.leftMenuButton}
+                                onPress={() => {
+                                    setTicketDescription(inputText);
+                                    setIsSubjectPickerVisible(true);
+                                }}
+                            >
+                                <Ionicons
+                                    name="list-outline"
+                                    size={24}
+                                    color={theme.colors.primary}
+                                />
+                            </TouchableOpacity>
                             <TextInput
                                 style={styles.textInput}
                                 value={inputText}
@@ -318,23 +407,151 @@ const FloatingChatButton = () => {
                             <TouchableOpacity
                                 style={[
                                     styles.sendButton,
-                                    { backgroundColor: inputText.trim() ? '#25D366' : '#e0e0e0' } // WhatsApp Green if active
+                                    { backgroundColor: inputText.trim() ? theme.colors.primary : '#e0e0e0' }
                                 ]}
                                 onPress={sendMessage}
                                 disabled={inputText.trim() === ""}
                             >
                                 <Ionicons
-                                    name="logo-whatsapp"
+                                    name="create-outline"
                                     size={20}
                                     color={inputText.trim() ? "white" : "#999"}
                                 />
                             </TouchableOpacity>
                         </View>
                         <Text style={styles.whatsappHint}>
-                            Redirects to WhatsApp for live support
+                            Select topics or type a message to generate a support ticket
                         </Text>
                     </View>
             </Animated.View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Subject Picker Modal */}
+      <Modal
+        visible={isSubjectPickerVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsSubjectPickerVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.pickerOverlay}
+          activeOpacity={1}
+          onPress={() => setIsSubjectPickerVisible(false)}
+        >
+          <View style={styles.pickerContainer}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerTitle}>Select Inquiry Subject</Text>
+              <TouchableOpacity onPress={() => setIsSubjectPickerVisible(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.pickerList}>
+              {TICKET_SUBJECTS.map((sub) => (
+                <TouchableOpacity
+                  key={sub}
+                  style={styles.pickerItem}
+                  onPress={() => {
+                    setSelectedSubject(sub);
+                    setIsSubjectPickerVisible(false);
+                    setIsTicketModalVisible(true);
+                  }}
+                >
+                  <Text style={styles.pickerItemText}>{sub}</Text>
+                  <Ionicons name="chevron-forward" size={18} color="#999" />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Create Ticket Modal */}
+      <Modal
+        visible={isTicketModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsTicketModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.ticketOverlay}
+        >
+          <View style={styles.ticketContainer}>
+            <View style={styles.ticketHeader}>
+              <Text style={styles.ticketTitle}>Create Support Ticket</Text>
+              <TouchableOpacity onPress={() => setIsTicketModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.ticketContent} keyboardShouldPersistTaps="handled">
+              {/* Name Field (Read-only) */}
+              <Text style={styles.label}>Name</Text>
+              <View style={styles.readOnlyInput}>
+                <Text style={styles.readOnlyText}>
+                  {user?.name || user?.firstName || "Customer"}
+                </Text>
+              </View>
+
+              {/* Phone Field (Read-only) */}
+              <Text style={styles.label}>Phone Number</Text>
+              <View style={styles.readOnlyInput}>
+                <Text style={styles.readOnlyText}>
+                  {user?.mobile || "N/A"}
+                </Text>
+              </View>
+
+              {/* Subject Field (Clickable to change) */}
+              <Text style={styles.label}>Inquiry Subject</Text>
+              <TouchableOpacity
+                style={styles.subjectSelector}
+                onPress={() => {
+                  setIsTicketModalVisible(false);
+                  setIsSubjectPickerVisible(true);
+                }}
+              >
+                <Text style={styles.subjectText}>{selectedSubject}</Text>
+                <Ionicons name="arrow-down-circle" size={20} color={theme.colors.primary} />
+              </TouchableOpacity>
+
+              {/* Description Field */}
+              <Text style={styles.label}>Description / Message</Text>
+              <TextInput
+                style={styles.ticketDescriptionInput}
+                value={ticketDescription}
+                onChangeText={setTicketDescription}
+                placeholder="Describe your issue or inquiry..."
+                placeholderTextColor="#999"
+                multiline
+                numberOfLines={4}
+                maxLength={1000}
+              />
+
+              {/* Action Buttons */}
+              {isSubmittingTicket ? (
+                <View style={styles.ticketLoading}>
+                  <ActivityIndicator size="large" color={theme.colors.primary} />
+                </View>
+              ) : (
+                <View style={styles.ticketActions}>
+                  <TouchableOpacity
+                    style={[styles.btnCancel, { borderWidth: 1, borderColor: '#ccc' }]}
+                    onPress={() => setIsTicketModalVisible(false)}
+                  >
+                    <Text style={[styles.btnCancelText, { color: '#666' }]}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.btnSubmit, { backgroundColor: theme.colors.primary }]}
+                    onPress={handleCreateTicket}
+                    disabled={ticketDescription.trim() === ""}
+                  >
+                    <Text style={styles.btnSubmitText}>Generate Ticket</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </ScrollView>
+          </View>
         </KeyboardAvoidingView>
       </Modal>
     </>
@@ -600,6 +817,193 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     marginTop: 6,
+  },
+  leftMenuButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  faqHorizontalScroll: {
+    paddingRight: 16,
+  },
+  faqChipHorizontal: {
+    width: 160,
+    height: 70,
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#eee',
+    justifyContent: 'center',
+  },
+  faqTextHorizontal: {
+    fontSize: moderateScale(12),
+    color: '#444',
+    fontWeight: '500',
+    lineHeight: 16,
+  },
+  // Custom Subject Picker Styles
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  pickerContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '50%',
+    padding: 20,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    paddingBottom: 10,
+  },
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  pickerList: {
+    marginBottom: 20,
+  },
+  pickerItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f5f5',
+  },
+  pickerItemText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  // Ticket Modal Styles
+  ticketOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  ticketContainer: {
+    width: '90%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    maxHeight: '80%',
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  ticketHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    paddingBottom: 10,
+  },
+  ticketTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  ticketContent: {
+    paddingBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  readOnlyInput: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 8,
+    padding: 12,
+  },
+  readOnlyText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  subjectSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: '#fff',
+  },
+  subjectText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '600',
+  },
+  ticketDescriptionInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 100,
+    maxHeight: 180,
+    fontSize: 14,
+    color: '#333',
+    textAlignVertical: 'top',
+    backgroundColor: '#fff',
+  },
+  ticketLoading: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  ticketActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    gap: 12,
+  },
+  btnCancel: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnCancelText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  btnSubmit: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnSubmitText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
   },
 });
 

@@ -20,7 +20,7 @@ import { theme } from '@/constants/theme';
 import { COLORS } from '@/constants/colors';
 import ResponsiveText from '@/components/ResponsiveText';
 import { responsiveUtils } from '@/utils/responsiveUtils';
-import { billsAPI } from '@/services/api';
+import apiClient, { billsAPI } from '@/services/api';
 import useGlobalStore from '@/store/global.store';
 import { logAppEvent } from '@/services/appEventService';
 
@@ -244,9 +244,32 @@ export default function BillPayment() {
 
     try {
       setSelectedBill(bill);
-      setProcessingMessage('Initiating payment...');
+      setProcessingMessage('Checking KYC status...');
       setPayingBillId(bill.id);
 
+      // Verify KYC status before proceeding to pay
+      const kycResponse = await apiClient.get(`/kyc/status/${userId}`);
+      const isKycCompleted = kycResponse.data && (kycResponse.data.kyc_status === "Completed" || kycResponse.data.data);
+      if (!isKycCompleted) {
+        setPayingBillId(null);
+        setProcessingMessage('');
+        Alert.alert(
+          'KYC Required',
+          'Please complete your KYC details to continue with this payment.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Complete KYC',
+              onPress: () => {
+                router.push('/home/kyc');
+              }
+            }
+          ]
+        );
+        return;
+      }
+
+      setProcessingMessage('Initiating payment...');
       console.log("[DEBUG Payment Flow] Calling billsAPI.payBill with:", { billId, userId });
       const response = await billsAPI.payBill({ billId, userId });
       

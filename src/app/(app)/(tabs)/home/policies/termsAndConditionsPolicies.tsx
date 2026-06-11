@@ -141,46 +141,62 @@ export default function TermsAndConditions() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Main Commitment Card - Overlaps Hero */}
-          <View style={[styles.card, styles.introCard]}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="shield-checkmark" size={24} color={theme.colors.primary} />
-              <Text style={styles.cardTitle}>
-                {t("ourCommitmentToYou")}
+          {policy?.description ? (
+            <View style={[styles.card, { marginTop: 10 }]}>
+              <View style={styles.cardHeader}>
+                <Ionicons name="document-text-outline" size={24} color={theme.colors.primary} />
+                <Text style={styles.cardTitle}>
+                  {policy?.title || translations.defaultTitle}
+                </Text>
+              </View>
+              <Text style={styles.cardText}>
+                {policy.description}
               </Text>
             </View>
-            <Text style={styles.cardText}>
-              {translations.defaultDiscription}
-            </Text>
-          </View>
+          ) : (
+            <>
+              {/* Main Commitment Card - Overlaps Hero */}
+              <View style={[styles.card, styles.introCard]}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="shield-checkmark" size={24} color={theme.colors.primary} />
+                  <Text style={styles.cardTitle}>
+                    {t("ourCommitmentToYou")}
+                  </Text>
+                </View>
+                <Text style={styles.cardText}>
+                  {translations.defaultDiscription}
+                </Text>
+              </View>
 
-          {/* Service Terms Section */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Ionicons
-                name="business-outline"
-                size={22}
-                color={theme.colors.primary}
-              />
-              <Text style={styles.cardTitle}>{t("serviceTerms")}</Text>
-            </View>
-            <Text style={styles.cardText}>
-              {t("serviceTermsDescription")}
-            </Text>
-          </View>
+              {/* Service Terms Section */}
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Ionicons
+                    name="business-outline"
+                    size={22}
+                    color={theme.colors.primary}
+                  />
+                  <Text style={styles.cardTitle}>{t("serviceTerms")}</Text>
+                </View>
+                <Text style={styles.cardText}>
+                  {t("serviceTermsDescription")}
+                </Text>
+              </View>
 
-          {/* User Responsibilities Section */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="person-outline" size={22} color={theme.colors.primary} />
-              <Text style={styles.cardTitle}>
-                {t("userResponsibilities")}
-              </Text>
-            </View>
-            <Text style={styles.cardText}>
-              {t("userResponsibilitiesDescription")}
-            </Text>
-          </View>
+              {/* User Responsibilities Section */}
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="person-outline" size={22} color={theme.colors.primary} />
+                  <Text style={styles.cardTitle}>
+                    {t("userResponsibilities")}
+                  </Text>
+                </View>
+                <Text style={styles.cardText}>
+                  {t("userResponsibilitiesDescription")}
+                </Text>
+              </View>
+            </>
+          )}
 
           {/* Contact Section */}
           <View style={styles.contactCard}>

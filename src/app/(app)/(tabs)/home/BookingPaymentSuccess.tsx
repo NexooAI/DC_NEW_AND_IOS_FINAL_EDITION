@@ -1,19 +1,36 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from '@/hooks/useTranslation';
 import { theme } from '@/constants/theme';
 import ResponsiveText from '@/components/ResponsiveText';
 import { responsiveUtils } from '@/utils/responsiveUtils';
 import { billsAPI } from '@/services/api';
+import RatingModal, { useRatingPrompt } from '@/components/RatingModal';
 
 const { wp, hp, rf } = responsiveUtils;
 
 export default function BookingPaymentSuccess() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
+
+  const {
+    showRating,
+    checkAndShowRating,
+    hideRating,
+  } = useRatingPrompt();
+
+  useEffect(() => {
+    // Show rating prompt after completing a payment (1 second delay)
+    const ratingTimer = setTimeout(() => {
+      checkAndShowRating();
+    }, 1000);
+    return () => clearTimeout(ratingTimer);
+  }, []);
 
   const amount = params.amount as string;
   const txnId = params.txnId as string;
@@ -51,25 +68,25 @@ export default function BookingPaymentSuccess() {
         </View>
 
         <ResponsiveText variant="title" weight="bold" color="#2E7D32" align="center" style={styles.title}>
-          Payment Successful!
+          {t("paymentSuccess")}
         </ResponsiveText>
         <ResponsiveText variant="body" color="rgba(0,0,0,0.6)" align="center" style={styles.subtitle}>
-          Your transaction was completed successfully.
+          {t("paymentSuccessMessage")}
         </ResponsiveText>
 
         <View style={styles.detailsCard}>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Amount Paid</Text>
+            <Text style={styles.detailLabel}>{t("amountPaid")}</Text>
             <Text style={styles.detailValue}>₹{amount}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Transaction ID</Text>
+            <Text style={styles.detailLabel}>{t("transactionId")}</Text>
             <Text style={styles.detailValue}>{txnId || 'N/A'}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Order ID</Text>
+            <Text style={styles.detailLabel}>{t("orderId")}</Text>
             <Text style={styles.detailValue}>{orderId || 'N/A'}</Text>
           </View>
         </View>
@@ -79,7 +96,7 @@ export default function BookingPaymentSuccess() {
             style={styles.doneButton}
             onPress={goBack}
           >
-            <Text style={styles.doneButtonText}>BACK TO BILLS</Text>
+            <Text style={styles.doneButtonText}>{t("backToBills").toUpperCase()}</Text>
           </TouchableOpacity>
         ) : (
           <>
@@ -87,18 +104,23 @@ export default function BookingPaymentSuccess() {
               style={styles.historyButton}
               onPress={() => router.replace('/(tabs)/home/BookingHistory')}
             >
-              <Text style={styles.historyButtonText}>SHOW ADVANCE HISTORY</Text>
+              <Text style={styles.historyButtonText}>{t("showAdvanceHistory").toUpperCase()}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={styles.homeButton}
               onPress={goBack}
             >
-              <Text style={styles.homeButtonText}>BACK TO HOME</Text>
+              <Text style={styles.homeButtonText}>{t("backToHome").toUpperCase()}</Text>
             </TouchableOpacity>
           </>
         )}
       </View>
+      <RatingModal
+        visible={showRating}
+        onClose={hideRating}
+        appName="DC Jewellers"
+      />
     </SafeAreaView>
   );
 }

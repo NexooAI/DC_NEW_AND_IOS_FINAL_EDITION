@@ -114,7 +114,7 @@ const SocialMediaOption: React.FC<SocialMediaOptionProps> = ({
   };
 
   const renderIcon = () => {
-    const iconSize = 28;
+    const iconSize = 20; // Reduced from 28
     return (
       <Ionicons name={icon as any} size={iconSize} color={colors.textColor} />
     );
@@ -157,7 +157,13 @@ const SocialMediaOption: React.FC<SocialMediaOptionProps> = ({
   );
 };
 
-const SocialMediaCard = ({ socialMediaUrls }: { socialMediaUrls: any }) => {
+const SocialMediaCard = ({
+  socialMediaUrls,
+  videos,
+}: {
+  socialMediaUrls?: any;
+  videos?: any[];
+}) => {
   const cardScaleAnim = useRef(new Animated.Value(0.8)).current;
   const headerGlowAnim = useRef(new Animated.Value(0)).current;
 
@@ -193,6 +199,8 @@ const SocialMediaCard = ({ socialMediaUrls }: { socialMediaUrls: any }) => {
     let facebookUrl = "https://www.facebook.com/dcjewellers.official/";
     if (socialMediaUrls?.[0]?.facebook_url) {
       facebookUrl = socialMediaUrls[0].facebook_url;
+    } else if (videos?.[0]?.facebook_url) {
+      facebookUrl = videos[0].facebook_url;
     }
     Linking.openURL(facebookUrl).catch((err) =>
       Alert.alert(t("error"), t("couldNotOpenFacebook"))
@@ -203,6 +211,10 @@ const SocialMediaCard = ({ socialMediaUrls }: { socialMediaUrls: any }) => {
     let instagramUrl = "https://www.instagram.com/dcjewellers.official/?hl=en";
     if (socialMediaUrls?.[0]?.intsa_url) {
       instagramUrl = socialMediaUrls[0].intsa_url;
+    } else if (videos?.[0]?.insta_url) {
+      instagramUrl = videos[0].insta_url;
+    } else if (videos?.[0]?.intsa_url) {
+      instagramUrl = videos[0].intsa_url;
     }
     Linking.openURL(instagramUrl).catch((err) =>
       Alert.alert(t("error"), t("couldNotOpenInstagram"))
@@ -210,8 +222,14 @@ const SocialMediaCard = ({ socialMediaUrls }: { socialMediaUrls: any }) => {
   };
 
   const handleYouTube = () => {
-    const youtubeUrl =
-      "https://www.youtube.com/@DCJewellersGoldandDiamonds?themeRefresh=1";
+    let youtubeUrl = "https://www.youtube.com/@DCJewellersGoldandDiamonds?themeRefresh=1";
+    if (socialMediaUrls?.[0]?.youtube_url) {
+      youtubeUrl = socialMediaUrls[0].youtube_url;
+    } else if (videos?.[0]?.video_url) {
+      youtubeUrl = videos[0].video_url;
+    } else if (videos?.[0]?.url) {
+      youtubeUrl = videos[0].url;
+    }
     Linking.openURL(youtubeUrl).catch((err) =>
       Alert.alert(t("error"), t("couldNotOpenYouTube"))
     );
@@ -253,7 +271,7 @@ const SocialMediaCard = ({ socialMediaUrls }: { socialMediaUrls: any }) => {
               colors={["#F59E0B", "#F97316", "#EA580C"]}
               style={styles.mainIconContainer}
             >
-              <Ionicons name="share-social" size={28} color="#fff" />
+              <Ionicons name="share-social" size={22} color="#fff" />
             </LinearGradient>
 
             <View style={styles.headerTextContainer}>
@@ -261,16 +279,6 @@ const SocialMediaCard = ({ socialMediaUrls }: { socialMediaUrls: any }) => {
               <Text style={styles.mainSubtitle}>{t("stayConnected")}</Text>
             </View>
           </View>
-        </View>
-
-        {/* Separator */}
-        <View style={styles.separator}>
-          <LinearGradient
-            colors={["transparent", "#F59E0B", "transparent"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.separatorLine}
-          />
         </View>
 
         {/* Social Media Options - Horizontal Layout */}
@@ -313,17 +321,17 @@ const SocialMediaCard = ({ socialMediaUrls }: { socialMediaUrls: any }) => {
 const styles = StyleSheet.create({
   cardWrapper: {
     paddingHorizontal: moderateScale(16),
-    paddingVertical: moderateScale(10),
+    paddingVertical: moderateScale(8), // Reduced from 10 to match Support card
     width: "100%",
   },
   mainGradient: {
-    borderRadius: moderateScale(24),
-    padding: moderateScale(20),
+    borderRadius: moderateScale(16), // Match Support card (reduced from 24)
+    padding: moderateScale(14), // Match Support card (reduced from 20)
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 20,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
     borderWidth: 1,
     borderColor: "rgba(245,158,11,0.3)",
     overflow: "hidden",
@@ -334,12 +342,12 @@ const styles = StyleSheet.create({
   },
   headerGlow: {
     position: "absolute",
-    top: -moderateScale(15),
-    left: -moderateScale(15),
-    right: -moderateScale(15),
-    bottom: -moderateScale(15),
-    backgroundColor: "rgba(245,158,11,0.1)",
-    borderRadius: moderateScale(30),
+    top: -moderateScale(10),
+    left: -moderateScale(10),
+    right: -moderateScale(10),
+    bottom: -moderateScale(10),
+    backgroundColor: "rgba(245,158,11,0.05)",
+    borderRadius: moderateScale(20),
     zIndex: -1,
   },
   headerContent: {
@@ -347,71 +355,63 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   mainIconContainer: {
-    width: moderateScale(56),
-    height: moderateScale(56),
-    borderRadius: moderateScale(28),
+    width: moderateScale(40), // Reduced from 56 to match Support card
+    height: moderateScale(40), // Reduced from 56 to match Support card
+    borderRadius: moderateScale(20),
     justifyContent: "center",
     alignItems: "center",
-    marginRight: moderateScale(16),
+    marginRight: moderateScale(10),
     shadowColor: "#F59E0B",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   headerTextContainer: {
     flex: 1,
   },
   mainTitle: {
     color: "#fff",
-    fontSize: moderateScale(20),
+    fontSize: moderateScale(16), // Reduced from 20 to match Support card
     fontWeight: "800",
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   mainSubtitle: {
     color: "rgba(255,255,255,0.8)",
-    fontSize: moderateScale(13),
-    marginTop: moderateScale(4),
-  },
-  separator: {
-    alignItems: "center",
-    marginVertical: moderateScale(16),
-  },
-  separatorLine: {
-    height: 3,
-    width: "70%",
-    borderRadius: 2,
+    fontSize: moderateScale(12), // Reduced from 13
+    marginTop: moderateScale(2),
   },
   socialOptionsContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
+    marginTop: moderateScale(12), // Spacing after removing separator
   },
   socialOptionWrapper: {
-    // Wrapper for touch handling
+    flex: 1,
+    alignItems: "center",
   },
   socialOption: {
-    borderRadius: moderateScale(20),
+    borderRadius: moderateScale(12), // Matches Support card buttons
     overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+    width: "80%", // Expand slightly to look like buttons
   },
   socialOptionGradient: {
     justifyContent: "center",
     alignItems: "center",
-    padding: moderateScale(16),
-    minWidth: moderateScale(50),
-    minHeight: moderateScale(50),
-    width: moderateScale(50),
-    height: moderateScale(50),
+    paddingVertical: moderateScale(10),
+    paddingHorizontal: moderateScale(8),
+    borderRadius: moderateScale(12),
   },
   socialIconContainer: {
-    width: moderateScale(48),
-    height: moderateScale(48),
-    borderRadius: moderateScale(24),
+    width: moderateScale(36),
+    height: moderateScale(36),
+    borderRadius: moderateScale(18),
     justifyContent: "center",
     alignItems: "center",
     zIndex: 2,
@@ -420,8 +420,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: moderateScale(20),
-    paddingTop: moderateScale(16),
+    marginTop: moderateScale(12),
+    paddingTop: moderateScale(8),
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.1)",
   },

@@ -50,7 +50,7 @@ export default function ReferCodeScreen() {
     Alert.alert(t("copied") || "Copied", t("referral_code_copied") || "Referral Code Copied");
   };
 
-  const shareMessage = `Use my referral code ${code} to sign up and earn rewards! Download ${t("store_name") || "Elite KP Jewellers"} app.`;
+  const shareMessage = (t("refer_earn_share_message") || "Use my referral code {code} to sign up and earn rewards! Click here to download the app: https://dcjewellers.org/refer?code={code}").replace(/{code}/g, code);
 
   const onShare = async () => {
     try {

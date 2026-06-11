@@ -501,11 +501,11 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
       if (!statusMatch) return false;
 
       // 2. SubFilter (Flexi vs Fixed)
-      const typeStr = item.savingType?.toLowerCase() || "";
       const nameStr = item.schemeName?.toLowerCase() || "";
+      const freqStr = item.paymentFrequency?.toLowerCase() || "";
 
-      // Usually "weight" correlates to flexi/variable, "amount" to fixed, or check the names
-      const isFlexi = typeStr.includes("flexi") || nameStr.includes("flexi") || typeStr.includes("weight");
+      // Flexi schemes have 'flexi' in name or payment frequency
+      const isFlexi = freqStr.includes("flexi") || nameStr.includes("flexi");
 
       if (subFilter === "Flexi" && isFlexi) return true;
       if (subFilter === "Fixed" && !isFlexi) return true;

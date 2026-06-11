@@ -11,8 +11,16 @@ export interface FAQQuestion {
 }
 
 export interface TicketPayload {
-    userId: string;
-    question: string;
+    userId?: string | number;
+    name?: string;
+    email?: string;
+    phone?: string;
+    subject?: string;
+    message?: string;
+    referenceType?: string;
+    referenceId?: string | number;
+    // Compatibility fields:
+    question?: string;
     category?: string;
     priority?: 'low' | 'medium' | 'high';
     userInfo?: {
@@ -49,10 +57,62 @@ class FAQService {
     // Create support ticket
     async createTicket(payload: TicketPayload): Promise<TicketResponse> {
         try {
-            const response = await api.post('/tickets', payload);
+            const allowedSubjects = [
+                "Scheme Inquiry",
+                "Payment Issue",
+                "KYC & Account Support",
+                "Branch Inquiry",
+                "Bill Payment",
+                "Advance Gold Inquiry",
+                "New Collections",
+                "Others"
+            ];
+            let finalSubject = payload.subject || payload.category || 'Others';
+            if (!allowedSubjects.includes(finalSubject)) {
+                const lowerSubject = finalSubject.toLowerCase();
+                if (lowerSubject.includes('payment')) {
+                    finalSubject = 'Payment Issue';
+                } else if (lowerSubject.includes('kyc') || lowerSubject.includes('account')) {
+                    finalSubject = 'KYC & Account Support';
+                } else if (lowerSubject.includes('scheme') || lowerSubject.includes('inquiry')) {
+                    finalSubject = 'Scheme Inquiry';
+                } else if (lowerSubject.includes('bill')) {
+                    finalSubject = 'Bill Payment';
+                } else if (lowerSubject.includes('advance') || lowerSubject.includes('gold')) {
+                    finalSubject = 'Advance Gold Inquiry';
+                } else if (lowerSubject.includes('collection') || lowerSubject.includes('status')) {
+                    finalSubject = 'New Collections';
+                } else {
+                    finalSubject = 'Others';
+                }
+            }
+
+            const mappedPayload = {
+                userId: payload.userId,
+                name: payload.name || payload.userInfo?.name || '',
+                phone: payload.phone || payload.userInfo?.phone || '',
+                email: payload.email || payload.userInfo?.email || '',
+                subject: finalSubject,
+                message: payload.message || payload.question || '',
+                referenceType: payload.referenceType,
+                referenceId: payload.referenceId
+            };
+
+            const response = await api.post('/tickets', mappedPayload);
             return response.data;
         } catch (error) {
             logger.error('Error creating ticket:', error);
+            throw error;
+        }
+    }
+
+    // Get all tickets for a user
+    async getUserTickets(userId: string | number): Promise<any> {
+        try {
+            const response = await api.get(`/tickets?userId=${userId}`);
+            return response.data;
+        } catch (error) {
+            logger.error('Error fetching user tickets:', error);
             throw error;
         }
     }

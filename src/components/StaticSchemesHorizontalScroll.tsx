@@ -25,7 +25,7 @@ import api from "@/services/api";
 import { logger } from "@/utils/logger";
 const { width: screenWidth } = Dimensions.get("window");
 const CARD_WIDTH = screenWidth * 0.8;
-const CARD_HEIGHT = 320; // Increased height for better spacing
+const CARD_HEIGHT = 260; // Reduced height for more compact layout
 const CARD_MARGIN = 16;
 
 interface ApiScheme {
@@ -93,37 +93,65 @@ export default function StaticSchemesHorizontalScroll({
 
   // Helper function to safely extract text from multilingual objects
   const getLocalizedText = (textObj: any): string => {
-    if (!textObj) return "";
+    if (textObj === null || textObj === undefined || textObj === "") {
+      return "";
+    }
 
-    // Handle strings
-    if (typeof textObj === "string") return textObj;
+    if (typeof textObj === "string") {
+      return textObj.trim() || "";
+    }
 
-    // Handle numbers
-    if (typeof textObj === "number") return textObj.toString();
+    if (typeof textObj === "number") {
+      return isNaN(textObj) ? "" : String(textObj);
+    }
 
-    // Handle objects with en/ta keys
+    if (typeof textObj === "boolean") {
+      return String(textObj);
+    }
+
     if (typeof textObj === "object" && textObj !== null) {
-      if ("en" in textObj || "ta" in textObj) {
-        return locale === "ta"
-          ? textObj.ta || textObj.en || ""
-          : textObj.en || textObj.ta || "";
-      }
-
-      // Handle arrays
       if (Array.isArray(textObj)) {
-        return textObj.join(", ");
+        const validItems = textObj.filter(
+          (item) => item !== null && item !== undefined && item !== ""
+        );
+        return validItems.length > 0 ? validItems.join(", ") : "";
       }
 
-      // Handle other objects - convert to string safely
+      // Check if this object contains any translation keys
+      const hasEn = textObj.hasOwnProperty("en") || textObj.hasOwnProperty("EN");
+      const hasTa = textObj.hasOwnProperty("ta") || textObj.hasOwnProperty("TA");
+      const hasTe = textObj.hasOwnProperty("te") || textObj.hasOwnProperty("TE");
+      const hasHi = textObj.hasOwnProperty("hi") || textObj.hasOwnProperty("HI");
+      const hasMal = textObj.hasOwnProperty("mal") || textObj.hasOwnProperty("MAL") || (textObj as any).hasOwnProperty("_ta") || (textObj as any).hasOwnProperty("_TA");
+
+      if (hasEn || hasTa || hasTe || hasHi || hasMal) {
+        const lang = (locale as string) || "en";
+        const targetText = textObj[lang] || textObj[lang.toUpperCase()] || textObj[lang.toLowerCase()];
+        const enText = textObj.en || textObj.EN || "";
+        const taText = textObj.ta || textObj.TA || "";
+
+        // Malayalam fallback logic if "mal" translation is missing
+        if ((lang === "mal" || lang === "MAL") && !targetText) {
+          const malTextLegacy = (textObj as any)._ta || (textObj as any)._TA || "";
+          return malTextLegacy || taText || enText || Object.values(textObj)[0] || "";
+        }
+
+        return targetText || enText || taText || Object.values(textObj)[0] || "";
+      }
+
       try {
-        return JSON.stringify(textObj);
+        const stringified = JSON.stringify(textObj);
+        return stringified === "{}" || stringified === "[]" ? "" : stringified;
       } catch {
-        return "[Object]";
+        return "";
       }
     }
 
-    // Fallback for any other type
-    return String(textObj);
+    try {
+      return String(textObj);
+    } catch {
+      return "";
+    }
   };
 
   // Handle status bar visibility when modal opens/closes
@@ -655,7 +683,7 @@ export default function StaticSchemesHorizontalScroll({
               const fetchSchemes = async () => {
                 try {
                   setLoading(true);
-                  const response = await api.get("/schemes");
+                  const response = await api.get("/schemes/active");
                   if (response.data?.data) {
                     setSchemes(response.data.data);
                   } else {
@@ -775,7 +803,7 @@ const styles = StyleSheet.create({
   },
   cardGradient: {
     flex: 1,
-    padding: 20,
+    padding: 16, // Reduced from 20
     justifyContent: "space-between",
   },
   cardHeader: {
@@ -788,65 +816,65 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28, // Reduced from 32
+    height: 28, // Reduced from 32
+    borderRadius: 14,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 8,
+    marginRight: 6, // Reduced from 8
   },
   schemeType: {
-    fontSize: 14,
+    fontSize: 12, // Reduced from 14
     fontWeight: "600",
     color: "#fff",
     textTransform: "uppercase",
   },
   badgeContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: 10, // Reduced from 12
+    paddingVertical: 2, // Reduced from 4
     borderRadius: 12,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
   badgeText: {
-    fontSize: 12,
+    fontSize: 10, // Reduced from 12
     fontWeight: "600",
     color: "#fff",
   },
   cardContent: {
     flex: 1,
     justifyContent: "center",
-    paddingVertical: 16,
+    paddingVertical: 8, // Reduced from 16
   },
   schemeName: {
-    fontSize: 20,
+    fontSize: 16, // Reduced from 20
     fontWeight: "700",
     color: "#fff",
-    marginBottom: 6,
+    marginBottom: 4, // Reduced from 6
     textShadowColor: "rgba(0, 0, 0, 0.5)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
-    lineHeight: 24,
+    lineHeight: 20, // Reduced from 24
   },
   slogan: {
-    fontSize: 12,
+    fontSize: 11, // Reduced from 12
     color: "rgba(255, 255, 255, 0.8)",
     fontStyle: "italic",
-    marginBottom: 10,
-    lineHeight: 16,
+    marginBottom: 6, // Reduced from 10
+    lineHeight: 14, // Reduced from 16
   },
   description: {
-    fontSize: 13,
+    fontSize: 12, // Reduced from 13
     color: "rgba(255, 255, 255, 0.9)",
-    lineHeight: 18,
+    lineHeight: 16, // Reduced from 18
   },
   schemeDetails: {
-    marginVertical: 12,
+    marginVertical: 6, // Reduced from 12
   },
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginBottom: 4, // Reduced from 8
   },
   detailItem: {
     flex: 1,
@@ -855,13 +883,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "rgba(255, 255, 255, 0.7)",
     fontWeight: "500",
-    marginBottom: 3,
+    marginBottom: 1, // Reduced from 3
   },
   detailValue: {
-    fontSize: 12,
+    fontSize: 11, // Reduced from 12
     color: "#fff",
     fontWeight: "600",
-    lineHeight: 16,
+    lineHeight: 14, // Reduced from 16
   },
   cardFooter: {
     flexDirection: "row",
@@ -875,14 +903,14 @@ const styles = StyleSheet.create({
   benefitItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: 3, // Reduced from 6
   },
   benefitText: {
-    fontSize: 11,
+    fontSize: 10, // Reduced from 11
     color: "rgba(255, 255, 255, 0.9)",
     marginLeft: 6,
     flex: 1,
-    lineHeight: 14,
+    lineHeight: 12, // Reduced from 14
   },
   actionButtons: {
     flexDirection: "row",
@@ -892,22 +920,22 @@ const styles = StyleSheet.create({
   infoButtonFooter: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10, // Reduced from 12
+    paddingVertical: 6, // Reduced from 8
     borderRadius: 16,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     gap: 4,
   },
   infoButtonText: {
-    fontSize: 12,
+    fontSize: 11, // Reduced from 12
     fontWeight: "600",
     color: "#fff",
   },
   joinButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 12, // Reduced from 16
+    paddingVertical: 6, // Reduced from 8
     borderRadius: 20,
     backgroundColor: theme.colors.success,
     shadowColor: theme.colors.success,
@@ -917,7 +945,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   joinButtonText: {
-    fontSize: 14,
+    fontSize: 12, // Reduced from 14
     fontWeight: "600",
     color: "#fff",
     marginRight: 4,

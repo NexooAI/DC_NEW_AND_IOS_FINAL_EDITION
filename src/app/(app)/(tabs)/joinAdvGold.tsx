@@ -14,13 +14,6 @@ import type { CreateAdvanceBookingPayload } from '@/services/api';
 
 const { wp, hp, rf } = responsiveUtils;
 const QUATERNARY_COLOR = theme.colors.quaternary || "#F2E6D2";
-const ADVANCE_PERCENTS = [5, 10, 20, 30];
-const PERCENT_TO_DAYS: Record<number, number> = {
-  5: 30,
-  10: 60,
-  20: 90,
-  30: 120
-};
 
 const getFirstValue = (...values: any[]) => values.find((value) => value !== undefined && value !== null && value !== '');
 
@@ -81,16 +74,64 @@ export default function JoinAdvGold() {
   const router = useRouter();
   const { user } = useGlobalStore();
   const params = useLocalSearchParams();
+  const metalType = String(params.metalType || 'GOLD').toUpperCase();
 
   // State
   const [goldRate, setGoldRate] = useState(6000);
-  const [advancePercent, setAdvancePercent] = useState(ADVANCE_PERCENTS[0]);
+  const [advancePercent, setAdvancePercent] = useState(5);
   const [goldGrams, setGoldGrams] = useState('1');
   const [amount, setAmount] = useState('6000');
   const [maintenanceModalVisible, setMaintenanceModalVisible] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Fetch Gold Rate from server
+  // Dynamic config states
+  const [advancePercents, setAdvancePercents] = useState<number[]>([5, 10, 20, 30]);
+  const [percentToDays, setPercentToDays] = useState<Record<number, number>>({
+    5: 30,
+    10: 60,
+    20: 90,
+    30: 120
+  });
+  const [loadingConfig, setLoadingConfig] = useState(true);
+
+  // Fetch configs from /advance-booking-config
+  useEffect(() => {
+    const fetchConfigs = async () => {
+      try {
+        setLoadingConfig(true);
+        const response = await apiClient.get(`/advance-booking-config?metal_type=${metalType}&status=ACTIVE`);
+        if (response.data && response.data.success && Array.isArray(response.data.data) && response.data.data.length > 0) {
+          const configs = response.data.data;
+          const percents: number[] = [];
+          const daysMap: Record<number, number> = {};
+          
+          // Sort by percentage ascending
+          const sortedConfigs = [...configs].sort((a: any, b: any) => a.percentage - b.percentage);
+          
+          sortedConfigs.forEach((c: any) => {
+            const pct = Math.round(parseFloat(c.percentage));
+            percents.push(pct);
+            daysMap[pct] = parseInt(c.booking_days);
+          });
+          
+          setAdvancePercents(percents);
+          setPercentToDays(daysMap);
+          
+          // Set initial default selection to the first percent if not already set by params
+          if (percents.length > 0 && !params.advancePercent) {
+            setAdvancePercent(percents[0]);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching advance booking config:', error);
+      } finally {
+        setLoadingConfig(false);
+      }
+    };
+    fetchConfigs();
+  }, [params.advancePercent, metalType]);
+
+  // Fetch Gold/Silver Rate from server
   useEffect(() => {
     const fetchGoldRate = async () => {
       try {
@@ -102,21 +143,24 @@ export default function JoinAdvGold() {
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           );
           const latestRate = sorted[0];
-          if (latestRate && latestRate.gold_rate) {
-            const rate = Math.round(parseFloat(latestRate.gold_rate));
-            setGoldRate(rate);
-            
-            // Also dynamically update the default amount based on 1 gram
-            const gramsNum = parseFloat(goldGrams) || 1;
-            setAmount(Math.round(gramsNum * rate).toString());
+          if (latestRate) {
+            const rateVal = metalType === 'SILVER' ? latestRate.silver_rate : latestRate.gold_rate;
+            if (rateVal) {
+              const rate = Math.round(parseFloat(rateVal));
+              setGoldRate(rate);
+              
+              // Also dynamically update the default amount based on 1 gram
+              const gramsNum = parseFloat(goldGrams) || 1;
+              setAmount(Math.round(gramsNum * rate).toString());
+            }
           }
         }
       } catch (error) {
-        console.error('Error fetching gold rate:', error);
+        console.error('Error fetching rate:', error);
       }
     };
     fetchGoldRate();
-  }, []);
+  }, [metalType]);
 
   // Derived
   const amountNum = parseFloat(amount) || 0;
@@ -169,13 +213,13 @@ export default function JoinAdvGold() {
 
   // Set advance percent from params if available
   useEffect(() => {
-    if (params.advancePercent) {
+    if (params.advancePercent && !loadingConfig) {
       const percent = parseInt(params.advancePercent as string);
-      if (ADVANCE_PERCENTS.includes(percent)) {
+      if (advancePercents.includes(percent)) {
         setAdvancePercent(percent);
       }
     }
-  }, [params.advancePercent]);
+  }, [params.advancePercent, loadingConfig, advancePercents]);
 
   // Autofill user details
   const userName = user?.name || '';
@@ -190,11 +234,34 @@ export default function JoinAdvGold() {
     setIsProcessing(true);
     try {
       const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + (PERCENT_TO_DAYS[advancePercent] || 30));
+      expiryDate.setDate(expiryDate.getDate() + (percentToDays[advancePercent] || 30));
 
       const userId = getFirstValue((user as any)?.userId, user?.id);
       if (!userId) {
         Alert.alert('Error', 'User details not found. Please login again.');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Verify KYC status before transaction
+      const kycResponse = await apiClient.get(`/kyc/status/${userId}`);
+      const isKycCompleted = kycResponse.data && (kycResponse.data.kyc_status === "Completed" || kycResponse.data.data);
+      if (!isKycCompleted) {
+        Alert.alert(
+          'KYC Required',
+          'Please complete your KYC details to continue with this transaction.',
+          [
+            { text: 'Cancel', style: 'cancel', onPress: () => setIsProcessing(false) },
+            {
+              text: 'Complete KYC',
+              onPress: () => {
+                setIsProcessing(false);
+                router.replace('/home/kyc');
+              }
+            }
+          ]
+        );
+        setIsProcessing(false);
         return;
       }
 
@@ -285,7 +352,7 @@ export default function JoinAdvGold() {
           <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
         <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
-          Join Advance Gold
+          Join Advance {metalType === 'SILVER' ? 'Silver' : 'Gold'}
         </ResponsiveText>
         <View style={{ width: 40 }} />
       </View>
@@ -297,7 +364,7 @@ export default function JoinAdvGold() {
             Secure Your Future
           </ResponsiveText>
           <ResponsiveText variant="body" color="rgba(0,0,0,0.6)" align="center" style={styles.subtitle}>
-            Premium gold advance tailored for you
+            Premium {metalType === 'SILVER' ? 'silver' : 'gold'} advance tailored for you
           </ResponsiveText>
           <View style={styles.decorativeLine} />
         </View>
@@ -309,13 +376,13 @@ export default function JoinAdvGold() {
               <Ionicons name="scale-outline" size={rf(18)} color={theme.colors.primary} />
             </View>
             <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.primary}>
-              Gold Advance
+              {metalType === 'SILVER' ? 'Silver' : 'Gold'} Advance
             </ResponsiveText>
           </View>
           <View style={styles.inputGroup}>
-            {/* Gold Weight Control */}
+            {/* Metal Weight Control */}
             <ResponsiveText variant="body" size="sm" color="rgba(0,0,0,0.6)" style={{ marginBottom: hp(1) }}>
-              Gold Weight
+              {metalType === 'SILVER' ? 'Silver' : 'Gold'} Weight
             </ResponsiveText>
             <View style={styles.weightControlRow}>
               <TouchableOpacity onPress={handleWeightDecrement} style={styles.controlButton}>
@@ -381,7 +448,7 @@ export default function JoinAdvGold() {
             </ResponsiveText>
           </View>
           <View style={styles.percentGrid}>
-            {ADVANCE_PERCENTS.map((p) => {
+            {advancePercents.map((p) => {
               const isActive = advancePercent === p;
               return (
                 <TouchableOpacity
@@ -417,13 +484,13 @@ export default function JoinAdvGold() {
             {advancePercent && (
               <View style={styles.daysBadge}>
                 <Ionicons name="time" size={rf(10)} color="#1a1a1a" style={{ marginRight: wp(1) }} />
-                <Text style={styles.daysBadgeText}>{PERCENT_TO_DAYS[advancePercent]} Days</Text>
+                <Text style={styles.daysBadgeText}>{percentToDays[advancePercent] || 30} Days</Text>
               </View>
             )}
           </View>
           <View style={styles.summaryContent}>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Total Gold Amount:</Text>
+              <Text style={styles.summaryLabel}>Total {metalType === 'SILVER' ? 'Silver' : 'Gold'} Amount:</Text>
               <Text style={styles.summaryValue}>₹{amountNum ? amountNum.toLocaleString('en-IN') : '--'}</Text>
             </View>
             <View style={styles.summaryDivider} />
@@ -434,7 +501,7 @@ export default function JoinAdvGold() {
             <View style={styles.summaryDivider} />
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Booking Period:</Text>
-              <Text style={styles.summaryValue}>{PERCENT_TO_DAYS[advancePercent] || 0} Days</Text>
+              <Text style={styles.summaryValue}>{percentToDays[advancePercent] || 0} Days</Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryRow}>

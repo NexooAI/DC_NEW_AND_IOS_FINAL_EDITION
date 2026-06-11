@@ -789,7 +789,7 @@ export default function ForgotMpin() {
         mobile_number: mobileNumber,
       });
 
-      if (response.data.success) {
+      if (response.data.success || response.data.message === "OTP sent successfully") {
         const countdownDuration = getCountdownDuration(newAttempts);
         logger.log(
           "Resend: Setting countdown to:",

@@ -20,6 +20,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
 import { logger } from "@/utils/logger";
 import { responsiveUtils } from "@/utils/responsiveUtils";
+import RatingModal, { useRatingPrompt } from "@/components/RatingModal";
 
 // Responsive constants
 const { wp, hp, rf, rp, rm, rb, getShadows } = responsiveUtils;
@@ -29,6 +30,20 @@ export default function PaymentSuccess() {
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const router = useRouter();
+
+  const {
+    showRating,
+    checkAndShowRating,
+    hideRating,
+  } = useRatingPrompt();
+
+  useEffect(() => {
+    // Show rating prompt after completing a payment (1 second delay)
+    const ratingTimer = setTimeout(() => {
+      checkAndShowRating();
+    }, 1000);
+    return () => clearTimeout(ratingTimer);
+  }, []);
   
   useEffect(() => {
     logger.log("Payment Success Params:", params);
@@ -292,6 +307,11 @@ export default function PaymentSuccess() {
           </TouchableOpacity>
         </View>
       </Animated.View>
+      <RatingModal
+        visible={showRating}
+        onClose={hideRating}
+        appName="DC Jewellers"
+      />
     </SafeAreaView>
   );
 }

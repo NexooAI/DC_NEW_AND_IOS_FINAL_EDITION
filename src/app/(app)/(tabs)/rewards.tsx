@@ -94,6 +94,12 @@ export default function RewardsScreen() {
         extrapolate: "clamp",
     });
 
+    const headerTranslateY = scrollY.interpolate({
+        inputRange: [0, 80],
+        outputRange: [-150, 0],
+        extrapolate: "clamp",
+    });
+
     return (
         <SafeAreaView style={styles.container} edges={["top"]}>
             <LinearGradient
@@ -120,7 +126,10 @@ export default function RewardsScreen() {
             <Animated.View
                 style={[
                     styles.stickyHeader,
-                    { opacity: headerOpacity },
+                    {
+                        opacity: headerOpacity,
+                        transform: [{ translateY: headerTranslateY }],
+                    },
                 ]}
             >
                 <LinearGradient
@@ -307,7 +316,7 @@ export default function RewardsScreen() {
                             style={styles.modalActionButton}
                             onPress={() => {
                                 setNoInvestmentModalVisible(false);
-                                router.push("/(app)/(tabs)/gold_advance");
+                                router.push("/(app)/(tabs)/home/schemes");
                             }}
                         >
                             <LinearGradient

@@ -24,6 +24,8 @@ import Icon from "@expo/vector-icons/MaterialIcons";
 import * as ImagePicker from "expo-image-picker";
 import useGlobalStore from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { theme } from "@/constants/theme";
@@ -442,7 +444,10 @@ const ProfileScreen = () => {
   };
 
   const handleChangeKYC = () => {
-    router.push("/home/kyc");
+    router.push({
+      pathname: "/home/kyc",
+      params: { from: "profile" },
+    });
   };
 
   const handleChangeMPIN = () => {
@@ -450,6 +455,31 @@ const ProfileScreen = () => {
       pathname: "/reset_mpin",
       params: { mode: "reset", from: "profile" },
     });
+  };
+
+  const handleShareLogs = async () => {
+    try {
+      const logUri = FileSystem.documentDirectory + 'api_logs.txt';
+      const fileInfo = await FileSystem.getInfoAsync(logUri);
+      if (!fileInfo.exists) {
+        Alert.alert(t("noLogs") || "No Logs Available", t("noLogsDesc") || "No API logs have been recorded yet.");
+        return;
+      }
+
+      const isSharingAvailable = await Sharing.isAvailableAsync();
+      if (!isSharingAvailable) {
+        Alert.alert(t("sharingUnavailable") || "Sharing Unavailable", t("sharingUnavailableMsg") || "Sharing is not available on this device.");
+        return;
+      }
+
+      await Sharing.shareAsync(logUri, {
+        mimeType: 'text/plain',
+        dialogTitle: 'Share API Logs',
+      });
+    } catch (error) {
+      logger.error("Error sharing logs:", error);
+      Alert.alert(t("error") || "Error", t("failedToShareLogs") || "Failed to share API logs.");
+    }
   };
 
   // Handler to show delete account modal
@@ -897,7 +927,7 @@ const ProfileScreen = () => {
 
                 <View style={styles.divider} />
 
-                <TouchableOpacity style={styles.settingItem} onPress={() => router.push("/home/ratechart")}>
+                <TouchableOpacity style={styles.settingItem} onPress={() => router.push({ pathname: "/home/ratechart", params: { from: "profile" } })}>
                   <View style={[styles.settingIcon, { backgroundColor: '#FFF9C4' }]}>
                     <Icon name="show-chart" size={24} color={theme.colors.secondary} />
                   </View>
@@ -927,6 +957,33 @@ const ProfileScreen = () => {
                 </TouchableOpacity>
 
                 <View style={styles.divider} />
+
+                {/* Share API Logs Button */}
+                {__DEV__ && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.settingItem}
+                      onPress={handleShareLogs}
+                    >
+                      <View
+                        style={[styles.settingIcon, { backgroundColor: "#E0F7FA" }]}
+                      >
+                        <Icon name="bug-report" size={24} color={theme.colors.primary} />
+                      </View>
+                      <View style={styles.settingContent}>
+                        <Text style={styles.settingText}>
+                          {t("share_api_logs") || "Share API Logs"}
+                        </Text>
+                        <Text style={styles.settingDesc}>
+                          {t("share_api_logs_desc") || "Share debugging logs for API calls"}
+                        </Text>
+                      </View>
+                      <Icon name="chevron-right" size={24} color="#9E9E9E" />
+                    </TouchableOpacity>
+
+                    <View style={styles.divider} />
+                  </>
+                )}
 
                 {/* Delete Account Button */}
                 <TouchableOpacity

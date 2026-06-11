@@ -56,11 +56,12 @@ export default function PaymentWebView() {
   }, []);
 
   const { socket, handleCancel } = usePaymentSocket({
-  onPaymentSuccess: (data) => {
+    onPaymentSuccess: (data) => {
       // Disconnect socket before navigation
       if (socket && socket.connected) {
         socket.disconnect();
       }
+      stopStatusPolling();
 
       logAppEvent('PAYMENT_WEBVIEW_SUCCESS', {
         orderId: data?.paymentResponse?.order_id || params.orderId || "",
@@ -107,6 +108,7 @@ export default function PaymentWebView() {
       if (socket && socket.connected) {
         socket.disconnect();
       }
+      stopStatusPolling();
 
       logAppEvent('PAYMENT_WEBVIEW_FAILURE', {
         orderId: data?.paymentResponse?.order_id || params.orderId || "",
@@ -152,17 +154,65 @@ export default function PaymentWebView() {
       }
     },
     onPaymentError: (error) => {
-      // Don't show error for network disconnection - we handle it automatically
+      // Don't show error for network disconnection - we handle it automatically by starting polling
       if (error?.error === "Disconnected" || error?.error === "Connection Error") {
-        console.log("⚠️ Payment error due to disconnection - handled automatically, not showing alert");
-        // Network monitoring and reconnection logic will handle this
-        // Don't show alert or navigate back
+        console.log("⚠️ Payment error due to disconnection - handled automatically, starting fallback polling");
+        
+        // Start polling fallback if not already started
+        const userDetails = params.userDetails ? JSON.parse(params.userDetails as string) : {};
+        const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
+        const successTarget = isBillOrBooking
+          ? {
+              pathname: "/(tabs)/home/BookingPaymentSuccess" as any,
+              params: {
+                amount: params.amount as string || "",
+                txnId: "",
+                orderId: params.orderId as string || "",
+                message: 'Payment Successful',
+                type: type === 'booking' ? 'advance_booking' : type,
+                userId: params.userId as string || user?.id || "",
+              }
+            }
+          : {
+              pathname: "/(tabs)/home/payment-success" as any,
+              params: {
+                txnId: "",
+                orderId: params.orderId as string,
+                amount: params.amount as string,
+                investmentId: userDetails?.investmentId,
+                schemeType: userDetails?.schemeType,
+                paymentFrequency: userDetails?.paymentFrequency,
+              },
+            };
+        const failureTarget = isBillOrBooking
+          ? {
+              pathname: "/(tabs)/home/BookingPaymentFailure" as any,
+              params: {
+                message: "Payment Verification Pending/Failed",
+                orderId: params.orderId as string || "",
+                txnId: "",
+                amount: params.amount as string || "",
+                status: "FAILED",
+                type: type === 'booking' ? 'advance_booking' : type,
+                userId: params.userId as string || user?.id || "",
+              }
+            }
+          : {
+              pathname: "/(tabs)/home/payment-failure" as any,
+              params: {
+                message: "Payment Verification Pending/Failed",
+                orderId: params.orderId as string,
+                amount: params.amount as string,
+              },
+            };
+        startStatusPolling(params.orderId as string, successTarget, failureTarget);
         return;
       }
 
       // Only show alert for non-network related errors
       // These are actual payment processing errors, not connection issues
       console.log("⚠️ Payment error (non-network):", error);
+      stopStatusPolling();
       Alert.alert(
         "Payment Error",
         error?.message ||
@@ -182,6 +232,7 @@ export default function PaymentWebView() {
       if (socket && socket.connected) {
         socket.disconnect();
       }
+      stopStatusPolling();
       Alert.alert(
         "Payment Expired",
         "Your payment session has expired. Please try again to complete the transaction.",
@@ -200,6 +251,7 @@ export default function PaymentWebView() {
       : {
           ...user,
           id: params.userId || user?.id,
+          orderId: params.orderId as string || "",
           accountNumber: accountNumber || (user as any)?.accountNumber || (user as any)?.accountNo || (user as any)?.accNo || "",
           accountName: accountName || user?.name || (user as any)?.accountName || "",
           userId: params.userId || user?.id,

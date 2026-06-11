@@ -12,7 +12,7 @@ const CACHE_CONFIG = {
   },
   SCHEMES: {
     MAX_AGE: 30 * 60 * 1000, // 30 minutes
-    ENDPOINT: '/schemes',
+    ENDPOINT: '/schemes/active',
   },
 };
 

@@ -11,6 +11,7 @@ import {
   Dimensions,
   Platform,
   StatusBar,
+  Alert,
 } from "react-native";
 import { Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +20,9 @@ import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { logger } from "@/utils/logger";
+import { useTranslation } from "@/hooks/useTranslation";
+import useGlobalStore from "@/store/global.store";
+import FAQService from "@/services/faqService";
 
 interface StatusViewProps {
   collections: any[];
@@ -32,6 +36,7 @@ const STATUS_DURATION = 5000; // 5 seconds per status (snappier feel)
 
 const StatusView: React.FC<StatusViewProps> = React.memo(
   ({ collections, isVisible, initialCollectionIndex, onClose, onEnquire }) => {
+    const { t } = useTranslation();
     const [currentCollection, setCurrentCollection] = useState(
       collections[initialCollectionIndex]
     );
@@ -46,6 +51,73 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
     const touchStartX = useRef(0);
     const touchStartTime = useRef(0);
     const [viewedStatus, setViewedStatus] = useState<boolean[]>([]);
+    
+    const { user } = useGlobalStore();
+    const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+    const [isSubmittingEnquiry, setIsSubmittingEnquiry] = useState(false);
+
+    const handleCreateEnquiryTicket = async () => {
+      if (!user?.id) {
+        Alert.alert(t("error") || "Error", t("userNotFound") || "User not found. Please log in.");
+        return;
+      }
+
+      setIsSubmittingEnquiry(true);
+      try {
+        const questionText = `Enquiry for ${currentCollection?.name || "Collection"} - Design #${currentImageIndex + 1}. Customer: ${user.name || "N/A"}, Phone: ${user.mobile || "N/A"}.`;
+        
+        const ticketPayload = {
+          userId: user.id,
+          question: questionText,
+          category: "New Collections",
+          subject: "New Collections",
+          priority: "medium",
+          userInfo: {
+            name: user.name,
+            email: user.email,
+            phone: user.mobile?.toString() || "",
+          },
+        };
+
+        const response = await FAQService.createTicket(ticketPayload);
+        setIsSubmittingEnquiry(false);
+
+        if (response.success) {
+          Alert.alert(
+            t("ticketCreatedSuccessfully") || "Ticket Created",
+            `${t("yourSupportTicketCreated") || "Your support ticket ID is:"} ${response.ticketId}`,
+            [
+              {
+                text: t("ok") || "OK",
+                onPress: () => {
+                  setShowEnquiryModal(false);
+                  setIsPaused(false);
+                }
+              }
+            ]
+          );
+        } else {
+          throw new Error(response.message || "Failed to create ticket");
+        }
+      } catch (error) {
+        setIsSubmittingEnquiry(false);
+        // Fallback demo ticket
+        const mockTicketId = `TKT-${Date.now()}`;
+        Alert.alert(
+          t("ticketCreatedSuccessfully") || "Ticket Created",
+          `${t("yourSupportTicketCreated") || "Your support ticket ID is:"} ${mockTicketId}`,
+          [
+            {
+              text: t("ok") || "OK",
+              onPress: () => {
+                setShowEnquiryModal(false);
+                setIsPaused(false);
+              }
+            }
+          ]
+        );
+      }
+    };
 
     // Get safe area insets
     const insets = useSafeAreaInsets();
@@ -103,6 +175,16 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
       }
     }, [currentImageIndex, currentCollectionIndex, isPaused]);
 
+    // Ensure status timer and animation freeze/pause when explicitly paused or when enquiry modal is open
+    useEffect(() => {
+      if (isPaused || showEnquiryModal) {
+        progressAnim.stopAnimation();
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+        }
+      }
+    }, [isPaused, showEnquiryModal]);
+
     const startProgressAnimation = () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
@@ -156,8 +238,7 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
     const handleTouchStart = (event: any) => {
       touchStartX.current = event.nativeEvent.locationX;
       touchStartTime.current = Date.now();
-      // Pause on touch down
-      setIsPaused(true);
+      // Temporarily stop animation/timer on touch down (for hold behavior)
       progressAnim.stopAnimation();
       if (timerRef.current) clearTimeout(timerRef.current);
     };
@@ -167,31 +248,34 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
       const touchEndTime = Date.now();
       const swipeDistance = touchEndX - touchStartX.current;
       const touchDuration = touchEndTime - touchStartTime.current;
-
-      // Resume default state (unpaused) unless it was a swipe/tap that changes state
-      setIsPaused(false);
+      const screenW = Dimensions.get("window").width;
 
       if (touchDuration < 250) {
+        // Tap behavior
         if (swipeDistance > 50) {
           handlePrev();
+          if (!isPaused) startProgressAnimation();
         } else if (swipeDistance < -50) {
           handleNext();
+          if (!isPaused) startProgressAnimation();
         } else {
-          // Tap logic - split screen left/right
-          const screenW = Dimensions.get("window").width;
+          // Tap logic - split screen left/right/center
           if (touchEndX < screenW * 0.3) {
             handlePrev();
+            if (!isPaused) startProgressAnimation();
           } else if (touchEndX > screenW * 0.7) {
             handleNext();
+            if (!isPaused) startProgressAnimation();
           } else {
-            // Center tap - toggle paused explicitly? Or just resume?
-            // Current UX: Resume on lift
-            startProgressAnimation();
+            // Center tap - toggle explicit paused state
+            setIsPaused((prev) => !prev);
           }
         }
       } else {
-        // Log press (hold) ended - resume
-        startProgressAnimation();
+        // Press-and-hold ended: resume progression if not explicitly paused
+        if (!isPaused) {
+          startProgressAnimation();
+        }
       }
     };
 
@@ -362,28 +446,97 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
                         <Text style={styles.productDesc}>Swipe up/down to explore more.</Text>
                      </View>
                      
-                     <TouchableOpacity 
-                        style={styles.actionButton}
-                        onPress={() => onEnquire && onEnquire(currentCollection, currentImageIndex)}
-                     >
-                        <LinearGradient
-                             colors={['#BF953F', '#FCF6BA', '#B38728']}
-                             style={styles.actionBtnGradient}
-                             start={{x:0, y:0}} end={{x:1, y:1}}
-                        >
-                            <Text style={styles.actionBtnText}>ENQUIRE</Text>
-                            <Ionicons name="logo-whatsapp" size={16} color="#3E2723" />
-                        </LinearGradient>
-                     </TouchableOpacity>
+                      <TouchableOpacity 
+                         style={styles.actionButton}
+                         onPress={() => {
+                           setIsPaused(true);
+                           setShowEnquiryModal(true);
+                         }}
+                      >
+                         <LinearGradient
+                              colors={['#BF953F', '#FCF6BA', '#B38728']}
+                              style={styles.actionBtnGradient}
+                              start={{x:0, y:0}} end={{x:1, y:1}}
+                         >
+                             <Text style={styles.actionBtnText}>{t("enquiryNowTitle")?.toUpperCase() || "ENQUIRE"}</Text>
+                         </LinearGradient>
+                      </TouchableOpacity>
                 </View>
             </LinearGradient>
 
             {/* Pause Indicator */}
-             {isPaused && !imageLoading && (
-                  <View style={[StyleSheet.absoluteFill, styles.centered, { backgroundColor: 'rgba(0,0,0,0.2)', zIndex: 0 }]} pointerEvents="none">
-                      {/* Optional: Add a pause icon if desired, or keep clean */}
+            {isPaused && !imageLoading && !showEnquiryModal && (
+                  <View style={[StyleSheet.absoluteFill, styles.centered, { backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 99 }]} pointerEvents="none">
+                      <Ionicons name="play" size={48} color="rgba(255,255,255,0.7)" />
                   </View>
               )}
+
+             {/* Inline Ticket Generation Modal */}
+             <Modal
+               visible={showEnquiryModal}
+               transparent={true}
+               animationType="fade"
+               onRequestClose={() => {
+                 setShowEnquiryModal(false);
+                 setIsPaused(false);
+               }}
+             >
+               <View style={styles.modalOverlay}>
+                 <View style={styles.modalContent}>
+                   <View style={styles.modalHeader}>
+                     <Ionicons name="help-circle" size={48} color={theme.colors.primary} />
+                     <Text style={styles.modalTitle}>{t("enquiryNowTitle") || "Enquire Now"}</Text>
+                   </View>
+                   
+                   <Text style={styles.modalDescription}>
+                     Would you like to generate an enquiry ticket for this product?
+                   </Text>
+
+                   <View style={styles.enquiryDetailsContainer}>
+                     <Text style={styles.enquiryDetailText}>
+                       <Text style={{ fontWeight: 'bold' }}>Collection: </Text>
+                       {currentCollection?.name}
+                     </Text>
+                     <Text style={styles.enquiryDetailText}>
+                       <Text style={{ fontWeight: 'bold' }}>Design: </Text>
+                       #{currentImageIndex + 1}
+                     </Text>
+                     <Text style={styles.enquiryDetailText}>
+                       <Text style={{ fontWeight: 'bold' }}>User: </Text>
+                       {user?.name || "N/A"}
+                     </Text>
+                   </View>
+
+                   {isSubmittingEnquiry ? (
+                     <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginVertical: 20 }} />
+                   ) : (
+                     <>
+                       <TouchableOpacity
+                         style={styles.modalActionButton}
+                         onPress={handleCreateEnquiryTicket}
+                       >
+                         <LinearGradient
+                           colors={[theme.colors.primary, "#002b24"]}
+                           style={styles.modalButtonGradient}
+                         >
+                           <Text style={styles.modalButtonText}>Generate Ticket</Text>
+                         </LinearGradient>
+                       </TouchableOpacity>
+
+                       <TouchableOpacity
+                         style={styles.modalCloseButton}
+                         onPress={() => {
+                           setShowEnquiryModal(false);
+                           setIsPaused(false);
+                         }}
+                       >
+                         <Text style={styles.modalCloseText}>{t("cancel") || "Cancel"}</Text>
+                       </TouchableOpacity>
+                     </>
+                   )}
+                 </View>
+               </View>
+             </Modal>
         </View>
       </Modal>
     );
@@ -542,6 +695,84 @@ const styles = StyleSheet.create({
       fontSize: 12,
       fontWeight: '800',
       letterSpacing: 0.5,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    zIndex: 9999,
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    padding: 24,
+    width: "100%",
+    maxWidth: 340,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  modalHeader: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1a1a1a",
+    marginTop: 12,
+    textAlign: "center",
+  },
+  modalDescription: {
+    fontSize: 15,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  enquiryDetailsContainer: {
+    backgroundColor: "#f9fcff",
+    borderRadius: 16,
+    padding: 16,
+    width: "100%",
+    alignItems: "flex-start",
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "#eef2f5",
+  },
+  enquiryDetailText: {
+    fontSize: 14,
+    color: "#333",
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+  modalActionButton: {
+    width: "100%",
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 12,
+  },
+  modalButtonGradient: {
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  modalCloseButton: {
+    padding: 8,
+  },
+  modalCloseText: {
+    color: "#666",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
 

@@ -316,6 +316,15 @@ export default function JoinSavings() {
     };
   }, []);
 
+  useEffect(() => {
+    if (user?.name && !formData.accountname) {
+      setFormData((prev) => ({
+        ...prev,
+        accountname: user.name || "",
+      }));
+    }
+  }, [user]);
+
   // Update amount when payment frequency changes
   // BUT: Don't reset if we have amount from calculator params
   useEffect(() => {
@@ -1670,25 +1679,15 @@ export default function JoinSavings() {
                 />
                 <Text style={styles.fieldLabel}>{translations.branchName}</Text>
               </View>
-              {isSingleBranch ? (
-                <View style={[styles.modernInput, styles.readOnlyInputModern]}>
-                  <View style={styles.readOnlyContent}>
-                    <Ionicons name="lock-closed" size={16} color="#999" />
-                    <Text style={styles.readOnlyTextModern}>
-                      {branch[0]?.branch_name || "N/A"}
-                    </Text>
-                  </View>
-                </View>
-              ) : (
                 <View>
                   <RNPickerSelect
                     onValueChange={(value) => handleChange("associated_branch", value)}
                     onDonePress={() => { }}
                     placeholder={{ label: "Select Branch", value: "" }}
-                    value={formData.associated_branch}
-                    items={branch.map((id) => ({
-                      label: id.branch_name,
-                      value: id.id,
+                    value={formData.associated_branch ? String(formData.associated_branch) : ""}
+                    items={branch.map((b) => ({
+                      label: b.branch_name,
+                      value: String(b.id),
                     }))}
                     style={{
                       ...pickerSelectStylesModern,
@@ -1706,8 +1705,7 @@ export default function JoinSavings() {
                       <Ionicons
                         name="chevron-down"
                         size={20}
-                        color="#666"
-                        style={{ marginRight: 12 }}
+                        color={theme.colors.primary}
                       />
                     )}
                   />
@@ -1717,7 +1715,6 @@ export default function JoinSavings() {
                     </Text>
                   )}
                 </View>
-              )}
             </View>
           </View>
         </View>
@@ -2888,8 +2885,8 @@ const pickerSelectStyles = StyleSheet.create({
 
 const pickerSelectStylesModern = StyleSheet.create({
   inputIOS: {
-    backgroundColor: "#fafafa",
-    borderColor: "#e5e5e5",
+    backgroundColor: "#fff",
+    borderColor: theme.colors.primary,
     borderWidth: 1.5,
     borderRadius: 12,
     paddingVertical: 14,
@@ -2903,11 +2900,22 @@ const pickerSelectStylesModern = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
     borderWidth: 1.5,
-    borderColor: "#e5e5e5",
+    borderColor: theme.colors.primary,
     borderRadius: 12,
     color: "#333",
-    backgroundColor: "#fafafa",
+    backgroundColor: "#fff",
     paddingRight: 40,
+  },
+  iconContainer: {
+    top: 0,
+    bottom: 0,
+    right: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholder: {
+    color: '#999',
+    fontSize: 16,
   },
 });
 

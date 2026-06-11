@@ -63,7 +63,18 @@ export function useAppVisibility() {
 
     // Helper function to check if a component should be visible
     const isVisible = useCallback((componentName: keyof Omit<AppVisibilityData, 'id' | 'updated_at'>) => {
-        if (!visibleData) return false;
+        if (!visibleData) {
+            // Default core components to true if visibleData is not loaded yet
+            const defaultVisible: Array<keyof Omit<AppVisibilityData, 'id' | 'updated_at'>> = [
+                'showGoldRate', 'showPoster', 'showFlashnews', 'showCustomerCard',
+                'showSchemes', 'showSocialMedia', 'showSupportCard', 'showHallmark'
+            ];
+            return defaultVisible.includes(componentName);
+        }
+        // Ensure gold rate component defaults to true unless explicitly disabled (0)
+        if (componentName === 'showGoldRate') {
+            return visibleData[componentName] !== 0;
+        }
         return visibleData[componentName] === 1;
     }, [visibleData]);
 

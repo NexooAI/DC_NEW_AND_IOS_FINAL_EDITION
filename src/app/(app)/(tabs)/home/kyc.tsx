@@ -11,13 +11,14 @@ import {
   StyleSheet,
   Keyboard,
   ImageBackground,
+  BackHandler,
 } from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Dropdown } from "react-native-element-dropdown";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import useGlobalStore from "@/store/global.store";
@@ -88,6 +89,7 @@ interface FormDatePickerProps {
 
 export default function KycForm() {
   const router = useRouter();
+  const { from } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const { language, user } = useGlobalStore();
 
@@ -119,6 +121,32 @@ export default function KycForm() {
   const isMountedRef = React.useRef(true); // Track component mount state for async operations
 
   const navBarHeight = 56; // Typical bottom nav bar height
+
+  // Hardware back press override when navigated from profile
+  useEffect(() => {
+    const handleBackPress = () => {
+      if (from === "profile") {
+        router.replace("/(app)/(tabs)/profile");
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      handleBackPress
+    );
+
+    return () => backHandler.remove();
+  }, [from, router]);
+
+  const handleBack = () => {
+    if (from === "profile") {
+      router.replace("/(app)/(tabs)/profile");
+    } else {
+      router.back();
+    }
+  };
 
   // Cleanup on component unmount
   React.useEffect(() => {
@@ -604,11 +632,15 @@ export default function KycForm() {
 
           // Safe navigation with error handling
           try {
-            if (!router || typeof router.back !== 'function') {
+            if (!router) {
               logger.error("Router not available for navigation");
               return;
             }
-            router.back();
+            if (from === "profile") {
+              router.replace("/(app)/(tabs)/profile");
+            } else {
+              router.back();
+            }
           } catch (navError) {
             logger.error("Error navigating back after KYC submission:", navError);
             // Fallback: try to navigate to profile
@@ -670,7 +702,7 @@ export default function KycForm() {
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <TouchableOpacity
-              onPress={() => router.back()}
+              onPress={handleBack}
               style={styles.backButton}
             >
               <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />

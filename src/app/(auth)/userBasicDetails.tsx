@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
+import * as Clipboard from "expo-clipboard";
 import { theme } from "@/constants/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -84,6 +85,7 @@ export default function BasicDetailsForm() {
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [referralError, setReferralError] = useState("");
+  const [hasCheckedClipboard, setHasCheckedClipboard] = useState(false);
   const [mobileError, setMobileError] = useState("");
   const [otpModalVisible, setOtpModalVisible] = useState(false);
   const [otp, setOtp] = useState("");
@@ -123,7 +125,7 @@ export default function BasicDetailsForm() {
   const router = useRouter();
   const referralInputRef = useRef<TextInput>(null);
   const emailInputRef = useRef<TextInput>(null);
-  const { mobile } = useLocalSearchParams();
+  const { mobile, emp_code, employee_code, referral_code } = useLocalSearchParams();
   const mobileStr = Array.isArray(mobile) ? mobile[0] : mobile || "";
 
   // Debug logging
@@ -217,7 +219,6 @@ export default function BasicDetailsForm() {
 
       setName("");
       setEmail("");
-      setReferralCode("");
       setNameError("");
       setEmailError("");
       setReferralError("");
@@ -226,7 +227,20 @@ export default function BasicDetailsForm() {
       setReferralValidationMessage("");
       setReferralValidating(false);
       setOtpPromptShown(false); // Reset OTP prompt state
-    }, [])
+      setHasCheckedClipboard(false);
+
+      const urlCode = emp_code || employee_code || referral_code;
+      if (urlCode) {
+        const codeStr = Array.isArray(urlCode) ? urlCode[0] : urlCode;
+        logger.log("🔍 Pre-filling referral code from URL params:", codeStr);
+        const upperCode = codeStr.toUpperCase().trim();
+        setReferralCode(upperCode);
+        setReferralValidated(false);
+        setReferralValidationMessage("");
+        setReferralValidating(true);
+        validateReferralCodeWithAPI(upperCode);
+      }
+    }, [emp_code, employee_code, referral_code])
   );
 
   const showErrorAlert = (message: string) => {
@@ -493,6 +507,46 @@ export default function BasicDetailsForm() {
       referralInputRef.current?.focus();
     }, 100);
   };
+
+  // Check clipboard for referral code
+  useEffect(() => {
+    const checkClipboard = async () => {
+      if (hasCheckedClipboard || otpVerified) return;
+
+      try {
+        const hasString = await Clipboard.hasStringAsync();
+        if (hasString) {
+          const content = await Clipboard.getStringAsync();
+          const cleanCode = content.trim().toUpperCase();
+          
+          // Verify code format (6-digit alphanumeric)
+          if (/^[A-Z0-9]{6}$/.test(cleanCode)) {
+            logger.log("🔍 Auto-detected referral code from clipboard:", cleanCode);
+            setReferralCode(cleanCode);
+            setHasCheckedClipboard(true);
+            
+            // Validate the code immediately
+            validateReferralCodeWithAPI(cleanCode);
+            
+            Alert.alert(
+              t("success") || "Success",
+              (t("referralCodeAppliedFromClipboard") || "Referral code {code} applied from clipboard!").replace("{code}", cleanCode)
+            );
+          }
+        }
+      } catch (err) {
+        logger.error("Error checking clipboard for referral code:", err);
+      }
+      setHasCheckedClipboard(true);
+    };
+
+    // Delay slightly to ensure component is fully rendered and focus effect has cleared states
+    const timer = setTimeout(() => {
+      checkClipboard();
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [hasCheckedClipboard, otpVerified]);
 
   // Timer effect for resend with progressive timing
   useEffect(() => {

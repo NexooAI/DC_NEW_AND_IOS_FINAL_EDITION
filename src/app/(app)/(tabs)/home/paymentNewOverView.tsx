@@ -431,23 +431,44 @@ export default function PaymentNewOverView() {
 
       const response = await api.get(`/schemes/${params.schemeId}`);
       if (isMountedRef.current) {
-        // Select terms based on current language
+        // Select terms based on current language with robust progressive fallback
         let selectedTerms = "";
-        if (language === "ta") {
-          // For Tamil or Malayalam, prefer Tamil terms
-          selectedTerms = response.data.data.terms_conditions_ta || "";
-        } else if (language === "en") {
-          // For English, prefer English terms
-          selectedTerms = response.data.data.terms_conditions_en || "";
-        } else {
-          selectedTerms = response.data.data.terms_conditions_en || response.data.data.terms_conditions_ta || "";
+        const termsObj = response.data.data || {};
+        
+        // 1. Try specific language key (e.g. terms_conditions_te, terms_conditions_hi, terms_conditions_ta)
+        const targetKey = `terms_conditions_${language}`;
+        selectedTerms = termsObj[targetKey] || "";
+        
+        // 2. If language is Malayalam ('mal'), check terms_conditions_ml as well
+        if (language === "mal" && !selectedTerms) {
+          selectedTerms = termsObj.terms_conditions_ml || "";
+        }
+        
+        // 3. Fallback to English
+        if (!selectedTerms) {
+          selectedTerms = termsObj.terms_conditions_en || "";
+        }
+        
+        // 4. Fallback to Tamil
+        if (!selectedTerms) {
+          selectedTerms = termsObj.terms_conditions_ta || "";
+        }
+        
+        // 5. Fallback to generic terms_description
+        if (!selectedTerms) {
+          selectedTerms = termsObj.terms_description || "";
+        }
+        
+        // 6. Fallback to generic description
+        if (!selectedTerms) {
+          selectedTerms = termsObj.description || "";
         }
 
         if (selectedTerms) {
           setTermsContent(selectedTerms);
         } else {
           logger.warn("Terms and conditions response missing description");
-          setTermsContent("Terms and conditions not available.");
+          setTermsContent("Terms and conditions not available for this scheme. Please contact support.");
         }
       }
     } catch (error) {

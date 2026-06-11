@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -15,29 +15,117 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { LinearGradient } from "expo-linear-gradient";
 import AppLayoutWrapper from "@/components/AppLayoutWrapper";
 import { theme } from "@/constants/theme";
+import api from "@/services/api";
+import { getFullImageUrl } from "@/utils/imageUtils";
 
 const ContactUs = () => {
   const { t } = useTranslation();
   const router = useRouter();
+  const [aboutData, setAboutData] = useState<any>(null);
+  const [is24Hour, setIs24Hour] = useState(false);
+
+  const parseAndFormatTime = (timePart: string, to24: boolean): string => {
+    if (!timePart) return "";
+    timePart = timePart.trim();
+    if (timePart.toLowerCase() === "closed") return t("closed") || timePart;
+    
+    // Regex to match 12-hour format: e.g., "9:30 AM", "09:30 PM", "9 AM", "12:00 PM"
+    const twelveHourRegex = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i;
+    // Regex to match 24-hour format: e.g., "09:30", "19:00", "9:30"
+    const twentyFourHourRegex = /^(\d{1,2}):(\d{2})$/;
+
+    if (to24) {
+      // Convert to 24-hour format (e.g. "19:00")
+      const match12 = timePart.match(twelveHourRegex);
+      if (match12) {
+        let hours = parseInt(match12[1], 10);
+        const minutes = match12[2] || "00";
+        const ampm = match12[3].toLowerCase();
+
+        if (ampm === "pm" && hours < 12) {
+          hours += 12;
+        } else if (ampm === "am" && hours === 12) {
+          hours = 0;
+        }
+        return `${String(hours).padStart(2, "0")}:${minutes}`;
+      }
+      const match24 = timePart.match(twentyFourHourRegex);
+      if (match24) {
+        return `${String(parseInt(match24[1], 10)).padStart(2, "0")}:${match24[2]}`;
+      }
+    } else {
+      // Convert to 12-hour format (e.g. "7:00 PM")
+      const match24 = timePart.match(twentyFourHourRegex);
+      if (match24) {
+        let hours = parseInt(match24[1], 10);
+        const minutes = match24[2];
+        const ampm = hours >= 12 ? "PM" : "AM";
+        hours = hours % 12;
+        if (hours === 0) hours = 12;
+        return `${hours}:${minutes} ${ampm}`;
+      }
+      const match12 = timePart.match(twelveHourRegex);
+      if (match12) {
+        const hours = parseInt(match12[1], 10);
+        const minutes = match12[2] || "00";
+        const ampm = match12[3].toUpperCase();
+        return `${hours}:${minutes} ${ampm}`;
+      }
+    }
+    return timePart;
+  };
+
+  const formatTimeRange = (rangeStr: string, to24: boolean): string => {
+    if (!rangeStr) return "";
+    if (rangeStr.toLowerCase().includes("closed")) return t("closed") || rangeStr;
+
+    // Split by dash or hyphen
+    const parts = rangeStr.split(/\s*-\s*/);
+    if (parts.length === 2) {
+      const start = parseAndFormatTime(parts[0], to24);
+      const end = parseAndFormatTime(parts[1], to24);
+      return `${start} - ${end}`;
+    }
+    return parseAndFormatTime(rangeStr, to24);
+  };
+
+  useEffect(() => {
+    const fetchAboutData = async () => {
+      try {
+        const response = await api.get("/about-page/latest");
+        if (response?.data?.success) {
+          setAboutData(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching contact page data:", error);
+      }
+    };
+    fetchAboutData();
+  }, []);
 
   const handleCall = () => {
-    Linking.openURL(`tel:${theme.constants.mobile}`);
+    Linking.openURL(`tel:${aboutData?.helpline || theme.constants.mobile}`);
   };
 
   const handleWhatsApp = () => {
     const message = t("contactUsMessage") || "Hello, I would like to know more about your services.";
-    const url = `whatsapp://send?text=${encodeURIComponent(message)}&phone=${theme.constants.whatsapp || theme.constants.mobile}`;
+    const mobileNum = aboutData?.helpline || theme.constants.whatsapp || theme.constants.mobile;
+    const url = `whatsapp://send?text=${encodeURIComponent(message)}&phone=${mobileNum}`;
     Linking.openURL(url).catch(() => {
       // Fallback for when WhatsApp is not installed
-      Linking.openURL(`https://wa.me/${theme.constants.whatsapp || theme.constants.mobile}?text=${encodeURIComponent(message)}`);
+      Linking.openURL(`https://wa.me/${mobileNum}?text=${encodeURIComponent(message)}`);
     });
   };
 
   const handleEmail = () => {
-    Linking.openURL(`mailto:${theme.constants.email}`);
+    Linking.openURL(`mailto:${aboutData?.support_email || theme.constants.email}`);
   };
 
   const openGoogleMaps = () => {
+    if (aboutData?.map_url && aboutData.map_url.startsWith("http")) {
+      Linking.openURL(aboutData.map_url).catch((err) => console.error("Error opening map url:", err));
+      return;
+    }
     const scheme = Platform.select({
       ios: "maps:0,0?q=",
       android: "geo:0,0?q=",
@@ -54,7 +142,7 @@ const ContactUs = () => {
   };
 
   const openWebsite = () => {
-    Linking.openURL(theme.constants.website);
+    Linking.openURL(aboutData?.website_url || theme.constants.website);
   };
 
   return (
@@ -68,7 +156,7 @@ const ContactUs = () => {
           {/* Hero Section */}
           <View style={styles.heroContainer}>
             <ImageBackground
-              source={require("../../../../../../assets/images/shop.jpg")}
+              source={aboutData?.image_url ? { uri: getFullImageUrl(aboutData.image_url) } : require("../../../../../../assets/images/shop.jpg")}
               style={styles.heroImage}
             >
               <LinearGradient
@@ -143,7 +231,7 @@ const ContactUs = () => {
               >
                 <FontAwesome5 name="globe" size={24} color="white" />
                 <Text style={styles.websiteText}>
-                  {theme.constants.website.replace(/^https?:\/\//, "")}
+                  {(aboutData?.website_url || theme.constants.website).replace(/^https?:\/\//, "")}
                 </Text>
                 <Feather name="external-link" size={20} color="white" />
               </LinearGradient>
@@ -152,19 +240,68 @@ const ContactUs = () => {
 
           {/* Business Hours */}
           <View style={styles.hoursContainer}>
-            <Text style={styles.hoursTitle}>{t("businessHours")}</Text>
-            <View style={styles.hourRow}>
-              <Text style={styles.dayText}>{t("monSat")}</Text>
-              <Text style={styles.timeText}>9:30 AM - 7:00 PM</Text>
+            <View style={styles.hoursHeaderRow}>
+              <Text style={styles.hoursTitle}>{t("businessHours")}</Text>
+              <TouchableOpacity
+                style={styles.toggleButton}
+                onPress={() => setIs24Hour(!is24Hour)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.toggleButtonText}>
+                  {is24Hour ? "12H" : "24H"}
+                </Text>
+              </TouchableOpacity>
             </View>
-            <View style={[styles.hourRow, { borderBottomWidth: 0 }]}>
-              <Text style={[styles.dayText, { color: theme.colors.primary }]}>
-                {t("sunday")}
-              </Text>
-              <Text style={[styles.timeText, { color: theme.colors.primary }]}>
-                {t("closed")}
-              </Text>
-            </View>
+            {!aboutData?.business_hours ? (
+              <>
+                <View style={styles.hourRow}>
+                  <Text style={styles.dayText}>{t("monSat")}</Text>
+                  <Text style={styles.timeText}>
+                    {formatTimeRange("9:30 AM - 7:00 PM", is24Hour)}
+                  </Text>
+                </View>
+                <View style={[styles.hourRow, { borderBottomWidth: 0 }]}>
+                  <Text style={[styles.dayText, { color: theme.colors.primary }]}>
+                    {t("sunday")}
+                  </Text>
+                  <Text style={[styles.timeText, { color: theme.colors.primary }]}>
+                    {t("closed")}
+                  </Text>
+                </View>
+              </>
+            ) : typeof aboutData.business_hours === "string" ? (
+              <View style={[styles.hourRow, { borderBottomWidth: 0 }]}>
+                <Text style={styles.dayText}>{t("businessHours")}</Text>
+                <Text style={styles.timeText}>
+                  {formatTimeRange(aboutData.business_hours, is24Hour)}
+                </Text>
+              </View>
+            ) : (
+              Object.keys(aboutData.business_hours).map((key, index, arr) => {
+                const item = aboutData.business_hours[key];
+                const timeString = typeof item === "object" && item !== null
+                  ? `${item.open || ""} - ${item.close || ""}`
+                  : String(item);
+                const formattedDay = key
+                  .split("_")
+                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(" ");
+                return (
+                  <View
+                    key={key}
+                    style={[
+                      styles.hourRow,
+                      index === arr.length - 1 && { borderBottomWidth: 0 },
+                    ]}
+                  >
+                    <Text style={styles.dayText}>{formattedDay}</Text>
+                    <Text style={styles.timeText}>
+                      {formatTimeRange(timeString, is24Hour)}
+                    </Text>
+                  </View>
+                );
+              })
+            )}
           </View>
 
           {/* Company Info */}
@@ -172,7 +309,7 @@ const ContactUs = () => {
             <Text style={styles.companyTitle}>DC JEWELLERS</Text>
             <Text style={styles.companySubtitle}>Since 2020</Text>
             <Text style={styles.companyAddress}>
-              {theme.constants.address}
+              {aboutData?.shop_addr || aboutData?.shop_address || theme.constants.address}
             </Text>
           </View>
         </ScrollView>

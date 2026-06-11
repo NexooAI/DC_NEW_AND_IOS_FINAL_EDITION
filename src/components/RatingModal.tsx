@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '@/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from '@/hooks/useTranslation';
 import { logger } from '@/utils/logger';
 import Constants from 'expo-constants';
 
@@ -50,6 +51,7 @@ export default function RatingModal({
     onSubmitFeedback,
     appName = 'DC Jewellers',
 }: RatingModalProps) {
+    const { t } = useTranslation();
     const [rating, setRating] = useState(0);
     const [feedback, setFeedback] = useState('');
     const [step, setStep] = useState<'rating' | 'feedback' | 'thanks'>('rating');
@@ -193,20 +195,34 @@ export default function RatingModal({
         });
     };
 
+    const handleDismiss = async () => {
+        try {
+            const data = await AsyncStorage.getItem(RATING_STORAGE_KEY);
+            let ratingData = data ? JSON.parse(data) : {};
+            if (!ratingData.hasRated) {
+                ratingData.lastPrompted = new Date().toISOString();
+                await AsyncStorage.setItem(RATING_STORAGE_KEY, JSON.stringify(ratingData));
+            }
+        } catch (error) {
+            logger.error('Error saving dismissal:', error);
+        }
+        handleClose();
+    };
+
     const getRatingText = () => {
         switch (rating) {
             case 1:
-                return 'We are sorry 😔';
+                return t('rateUsLevel1');
             case 2:
-                return 'We can do better 🤔';
+                return t('rateUsLevel2');
             case 3:
-                return 'Good, but can improve 👍';
+                return t('rateUsLevel3');
             case 4:
-                return 'Great experience! 😊';
+                return t('rateUsLevel4');
             case 5:
-                return 'Excellent! Thank you! 🌟';
+                return t('rateUsLevel5');
             default:
-                return 'Tap a star to rate';
+                return t('tapStarToRate');
         }
     };
 
@@ -252,9 +268,9 @@ export default function RatingModal({
             </View>
 
             {/* Title */}
-            <Text style={styles.title}>Enjoying {appName}?</Text>
+            <Text style={styles.title}>{t('rateUsTitle')}</Text>
             <Text style={styles.subtitle}>
-                Your feedback helps us improve and serve you better!
+                {t('rateUsSubtitle')}
             </Text>
 
             {/* Stars */}
@@ -281,13 +297,13 @@ export default function RatingModal({
                     }
                     style={styles.submitButtonGradient}
                 >
-                    <Text style={styles.submitButtonText}>Submit Rating</Text>
+                    <Text style={styles.submitButtonText}>{t('submitRating')}</Text>
                 </LinearGradient>
             </TouchableOpacity>
 
             {/* Maybe Later */}
-            <TouchableOpacity onPress={handleClose} style={styles.laterButton}>
-                <Text style={styles.laterButtonText}>Maybe Later</Text>
+            <TouchableOpacity onPress={handleDismiss} style={styles.laterButton}>
+                <Text style={styles.laterButtonText}>{t('maybeLater')}</Text>
             </TouchableOpacity>
         </>
     );
@@ -303,15 +319,15 @@ export default function RatingModal({
                 </LinearGradient>
             </View>
 
-            <Text style={styles.title}>Help Us Improve</Text>
+            <Text style={styles.title}>{t('helpUsImprove')}</Text>
             <Text style={styles.subtitle}>
-                We'd love to hear what we can do better. Your feedback is valuable to us.
+                {t('rateUsFeedbackPrompt')}
             </Text>
 
             {/* Feedback Input */}
             <TextInput
                 style={styles.feedbackInput}
-                placeholder="Tell us what we can improve..."
+                placeholder={t('feedbackPlaceholder')}
                 placeholderTextColor="#9CA3AF"
                 multiline
                 numberOfLines={4}
@@ -330,13 +346,13 @@ export default function RatingModal({
                     colors={[theme.colors.primary, theme.colors.primary + 'DD']}
                     style={styles.submitButtonGradient}
                 >
-                    <Text style={styles.submitButtonText}>Submit Feedback</Text>
+                    <Text style={styles.submitButtonText}>{t('submitFeedback')}</Text>
                 </LinearGradient>
             </TouchableOpacity>
 
             {/* Skip */}
-            <TouchableOpacity onPress={handleClose} style={styles.laterButton}>
-                <Text style={styles.laterButtonText}>Skip</Text>
+            <TouchableOpacity onPress={handleDismiss} style={styles.laterButton}>
+                <Text style={styles.laterButtonText}>{t('skip')}</Text>
             </TouchableOpacity>
         </>
     );
@@ -352,11 +368,11 @@ export default function RatingModal({
                 </LinearGradient>
             </View>
 
-            <Text style={styles.title}>Thank You! 🎉</Text>
+            <Text style={styles.title}>{t('thankYou')}</Text>
             <Text style={styles.subtitle}>
                 {rating >= 4
-                    ? 'Your support means the world to us! Thank you for rating our app.'
-                    : 'Thank you for your valuable feedback. We will work hard to improve!'}
+                    ? t('rateUsThanksGood')
+                    : t('rateUsThanksBad')}
             </Text>
 
             {/* Close Button */}
@@ -369,7 +385,7 @@ export default function RatingModal({
                     colors={[theme.colors.primary, theme.colors.primary + 'DD']}
                     style={styles.submitButtonGradient}
                 >
-                    <Text style={styles.submitButtonText}>Done</Text>
+                    <Text style={styles.submitButtonText}>{t('close')}</Text>
                 </LinearGradient>
             </TouchableOpacity>
         </>
@@ -380,7 +396,7 @@ export default function RatingModal({
             visible={visible}
             transparent
             animationType="none"
-            onRequestClose={handleClose}
+            onRequestClose={handleDismiss}
         >
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -397,7 +413,7 @@ export default function RatingModal({
                     <TouchableOpacity
                         style={styles.backdrop}
                         activeOpacity={1}
-                        onPress={handleClose}
+                        onPress={handleDismiss}
                     />
                     <Animated.View
                         style={[
@@ -415,7 +431,7 @@ export default function RatingModal({
                             {/* Close Button */}
                             <TouchableOpacity
                                 style={styles.closeButton}
-                                onPress={handleClose}
+                                onPress={handleDismiss}
                             >
                                 <Ionicons name="close" size={24} color="#9CA3AF" />
                             </TouchableOpacity>
@@ -445,6 +461,16 @@ export const useRatingPrompt = () => {
                 // Don't show if user has already rated
                 if (ratingData.hasRated) {
                     return false;
+                }
+
+                // Check if prompted in the last 24 hours
+                if (ratingData.lastPrompted) {
+                    const lastPromptedTime = new Date(ratingData.lastPrompted).getTime();
+                    const now = new Date().getTime();
+                    const oneDay = 24 * 60 * 60 * 1000;
+                    if (now - lastPromptedTime < oneDay) {
+                        return false;
+                    }
                 }
             }
 

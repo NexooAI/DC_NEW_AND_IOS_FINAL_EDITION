@@ -9,6 +9,7 @@ import { showToast } from './notification';
 import { Alert } from 'react-native';
 import LoadingService from './loadingServices';
 import useGlobalStore from '@/store/global.store';
+import * as FileSystem from 'expo-file-system/legacy';
 
 import { logger } from '@/utils/logger';
 // ============================================================================
@@ -36,6 +37,25 @@ class ApiLogger {
     return ApiLogger.instance;
   }
 
+  private async appendToLogFile(text: string) {
+    if (!FileSystem.documentDirectory) return;
+    try {
+      const fileUri = FileSystem.documentDirectory + 'api_logs.txt';
+      let existingContent = '';
+      const info = await FileSystem.getInfoAsync(fileUri);
+      if (info.exists) {
+        existingContent = await FileSystem.readAsStringAsync(fileUri);
+      }
+      const newContent = existingContent ? existingContent + '\n' + text : text;
+      // Truncate to keep only last 500 lines to save space and memory
+      const lines = newContent.split('\n');
+      const truncatedContent = lines.slice(-500).join('\n');
+      await FileSystem.writeAsStringAsync(fileUri, truncatedContent);
+    } catch (e) {
+      console.log('Error writing log to file:', e);
+    }
+  }
+
   logRequest(config: InternalAxiosRequestConfig, startTime: number) {
     const requestData = this.safeParseRequestData(config.data);
 
@@ -56,6 +76,11 @@ class ApiLogger {
     });
 
     this.logs.push(logEntry);
+
+    // Write to file
+    const logString = `[${logEntry.timestamp}] REQ: ${logEntry.method} ${logEntry.url}`;
+    this.appendToLogFile(logString);
+
     return logEntry;
   }
 
@@ -71,7 +96,7 @@ class ApiLogger {
         const trimmed = data.trim();
         if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
           (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-          return JSON.parse(data);
+            return JSON.parse(data);
         }
         // If it doesn't look like JSON (e.g. "undefined", "null", plain text), just return it
         return data;
@@ -111,6 +136,10 @@ class ApiLogger {
       Object.assign(lastLog, logEntry);
     }
 
+    // Write to file
+    const logString = `[${logEntry.timestamp}] RES: ${logEntry.method} ${logEntry.url} -> ${logEntry.status} (${duration}ms)`;
+    this.appendToLogFile(logString);
+
     return logEntry;
   }
 
@@ -143,6 +172,11 @@ class ApiLogger {
     if (lastLog && lastLog.url === logEntry.url) {
       Object.assign(lastLog, logEntry);
     }
+
+    // Write to file
+    const errorMessage = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+    const logString = `[${logEntry.timestamp}] ERR: ${logEntry.method} ${logEntry.url} -> ${logEntry.status || 'NET_ERROR'} (${duration}ms) - ${errorMessage}`;
+    this.appendToLogFile(logString);
 
     return logEntry;
   }
@@ -704,6 +738,21 @@ export const billsAPI = {
 export const rewardsAPI = {
   getMyReferrals: async (userId: string | number) => {
     return apiClient.get(`/rewards/my-referrals?userId=${userId}`);
+  }
+};
+
+// Tickets APIs
+export const ticketsAPI = {
+  createTicket: async (payload: {
+    name?: string;
+    phone?: string;
+    email?: string;
+    subject: string;
+    message: string;
+    referenceType?: string;
+    referenceId?: string | number;
+  }) => {
+    return apiClient.post('/tickets', payload);
   }
 };
 

@@ -23,6 +23,7 @@ const { width } = Dimensions.get("window");
 
 interface Policy {
   title?: string;
+  description?: string;
 }
 
 export default function PrivacyPolicy() {
@@ -164,59 +165,75 @@ export default function PrivacyPolicy() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Main Privacy Statment Card - Overlaps Hero */}
-          <View style={[styles.card, styles.introCard]}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="lock-closed-outline" size={24} color={theme.colors.primary} />
-              <Text style={styles.cardTitle}>
-                {translations.yourPrivacyMatters}
+          {policy?.description ? (
+            <View style={[styles.card, { marginTop: 10 }]}>
+              <View style={styles.cardHeader}>
+                <Ionicons name="shield-checkmark" size={24} color={theme.colors.primary} />
+                <Text style={styles.cardTitle}>
+                  {policy?.title || translations.defaultTitle}
+                </Text>
+              </View>
+              <Text style={styles.cardText}>
+                {policy.description}
               </Text>
             </View>
-            <Text style={styles.cardText}>
-              {translations.defaultPrivacyPolicyDiscription}
-            </Text>
-          </View>
+          ) : (
+            <>
+              {/* Main Privacy Statment Card - Overlaps Hero */}
+              <View style={[styles.card, styles.introCard]}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="lock-closed-outline" size={24} color={theme.colors.primary} />
+                  <Text style={styles.cardTitle}>
+                    {translations.yourPrivacyMatters}
+                  </Text>
+                </View>
+                <Text style={styles.cardText}>
+                  {translations.defaultPrivacyPolicyDiscription}
+                </Text>
+              </View>
 
-          {/* Data Collection Card */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Ionicons
-                name="cloud-download-outline"
-                size={22}
-                color={theme.colors.primary}
-              />
-              <Text style={styles.cardTitle}>
-                {translations.dataCollection}
-              </Text>
-            </View>
-            <Text style={styles.cardText}>
-              {translations.dataCollectionDescription}
-            </Text>
-          </View>
+              {/* Data Collection Card */}
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Ionicons
+                    name="cloud-download-outline"
+                    size={22}
+                    color={theme.colors.primary}
+                  />
+                  <Text style={styles.cardTitle}>
+                    {translations.dataCollection}
+                  </Text>
+                </View>
+                <Text style={styles.cardText}>
+                  {translations.dataCollectionDescription}
+                </Text>
+              </View>
 
-          {/* Data Usage Card */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="analytics-outline" size={22} color={theme.colors.primary} />
-              <Text style={styles.cardTitle}>{translations.dataUsage}</Text>
-            </View>
-            <Text style={styles.cardText}>
-              {translations.dataUsageDescription}
-            </Text>
-          </View>
+              {/* Data Usage Card */}
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="analytics-outline" size={22} color={theme.colors.primary} />
+                  <Text style={styles.cardTitle}>{translations.dataUsage}</Text>
+                </View>
+                <Text style={styles.cardText}>
+                  {translations.dataUsageDescription}
+                </Text>
+              </View>
 
-          {/* Data Protection Card */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="shield-outline" size={22} color={theme.colors.primary} />
-              <Text style={styles.cardTitle}>
-                {translations.dataProtection}
-              </Text>
-            </View>
-            <Text style={styles.cardText}>
-              {translations.dataProtectionDescription}
-            </Text>
-          </View>
+              {/* Data Protection Card */}
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="shield-outline" size={22} color={theme.colors.primary} />
+                  <Text style={styles.cardTitle}>
+                    {translations.dataProtection}
+                  </Text>
+                </View>
+                <Text style={styles.cardText}>
+                  {translations.dataProtectionDescription}
+                </Text>
+              </View>
+            </>
+          )}
 
           {/* Contact Section */}
           <View style={styles.contactCard}>

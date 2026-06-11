@@ -12,16 +12,19 @@ import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 
-const { rf, wp, rp } = responsiveUtils;
-const spacing = 16; // Approx spacing.lg
+const { rf, wp, rp, hp } = responsiveUtils;
 
 interface AnimatedGoldRateProps {
   goldRate: string;
+  goldRate18?: string;
+  goldRate14?: string;
   updatedAt?: string;
 }
 
 const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
   goldRate,
+  goldRate18,
+  goldRate14,
   updatedAt,
 }) => {
   const { t } = useTranslation();
@@ -74,41 +77,86 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
     });
   };
 
+  const getRate = (rateVal: string | undefined, carat: number) => {
+    if (rateVal) {
+      const sanitized = rateVal.replace(/,/g, "");
+      const parsed = parseFloat(sanitized);
+      if (!isNaN(parsed) && parsed > 0) {
+        return Math.round(parsed).toString();
+      }
+    }
+    const parsedGold = parseFloat(goldRate.replace(/,/g, ""));
+    if (isNaN(parsedGold) || parsedGold <= 0) return "-";
+    const derived = Math.round(parsedGold * (carat / 22));
+    return derived.toString();
+  };
+
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={["#2e0406", "#4a0007"]} // Darker, sleeker background
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
+        colors={["#2e0406", "#4a0007"]} // Royal dark gold-red gradient
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={styles.bar}
       >
-        {/* Left Side: Label */}
-        <View style={styles.labelSection}>
-            {/* <View style={styles.liveIndicator}>
-                <Animated.View style={[styles.liveDot, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]} />
-                <Text style={styles.liveText}>LIVE</Text>
-            </View> */}
-            <View style={styles.goldLabelContainer}>
-                <Ionicons name="diamond-outline" size={14} color="#FFD700" style={{marginRight: 4}}/>
-                <Text style={styles.goldLabel}>GOLD 22KT</Text>
+        {/* Header Row */}
+        <View style={styles.headerRow}>
+          <View style={styles.goldLabelContainer}>
+            <Ionicons name="flame" size={16} color="#FFD700" style={{ marginRight: 6 }} />
+            <Text style={styles.goldLabel}>{t("liveGoldRates") || "LIVE GOLD RATES"}</Text>
+            <View style={styles.liveIndicator}>
+              <Animated.View style={[styles.liveDot, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]} />
+              <Text style={styles.liveText}>LIVE</Text>
             </View>
+          </View>
+          {updatedAt && (
+            <Text style={styles.updatedText}>
+              {formatDateToIndian(updatedAt)}
+            </Text>
+          )}
         </View>
 
-        {/* Right Side: Price */}
-        <View style={styles.priceSection}>
-            <View style={styles.priceRow}>
-                <Text style={styles.currency}>₹</Text>
-                <Text style={styles.priceValue}>{goldRate}</Text>
-                <Text style={styles.unit}>/gm</Text>
+        {/* Separator */}
+        <View style={styles.separator} />
+
+        {/* Rates Grid */}
+        <View style={styles.ratesGrid}>
+          {/* 22KT Column */}
+          <View style={styles.rateCol}>
+            <Text style={styles.caratLabel}>22KT</Text>
+            <View style={styles.priceContainer}>
+              <Text style={styles.currency}>₹</Text>
+              <Text style={styles.priceValue}>{getRate(goldRate, 22)}</Text>
+              <Text style={styles.unit}>/g</Text>
             </View>
-            {updatedAt && (
-                <Text style={styles.updatedText}>
-                  {formatDateToIndian(updatedAt)}
-                </Text>
-            )}
+          </View>
+
+          <View style={styles.colDivider} />
+
+          {/* 18KT Column */}
+          <View style={styles.rateCol}>
+            <Text style={styles.caratLabel}>18KT</Text>
+            <View style={styles.priceContainer}>
+              <Text style={styles.currency}>₹</Text>
+              <Text style={styles.priceValue}>{getRate(goldRate18, 18)}</Text>
+              <Text style={styles.unit}>/g</Text>
+            </View>
+          </View>
+
+          <View style={styles.colDivider} />
+
+          {/* 14KT Column */}
+          <View style={styles.rateCol}>
+            <Text style={styles.caratLabel}>14KT</Text>
+            <View style={styles.priceContainer}>
+              <Text style={styles.currency}>₹</Text>
+              <Text style={styles.priceValue}>{getRate(goldRate14, 14)}</Text>
+              <Text style={styles.unit}>/g</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Decorative Gold Line */}
+        {/* Decorative Gold Bottom Highlight Line */}
         <View style={styles.accentLine} />
       </LinearGradient>
     </View>
@@ -117,104 +165,128 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    width: "auto", // Changed from 100% to auto to respect margins
+    width: "auto",
     marginVertical: 10,
-    marginHorizontal: rp(16), // Added horizontal margin
+    marginHorizontal: rp(16),
     ...Platform.select({
       ios: {
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 4,
+        elevation: 6,
       },
     }),
   },
   bar: {
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(1.8),
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 215, 0, 0.25)",
+    overflow: "hidden",
+    position: "relative",
+  },
+  headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 215, 0, 0.15)",
-    overflow: "hidden",
-    position: 'relative'
-  },
-  labelSection: {
-      flex: 1,
-      justifyContent: 'center'
-  },
-  liveIndicator: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 4
-  },
-  liveDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: '#FF4444',
-      marginRight: 6
-  },
-  liveText: {
-      color: '#FF4444',
-      fontSize: 9,
-      fontWeight: '900',
-      letterSpacing: 0.5
+    marginBottom: hp(1.2),
   },
   goldLabelContainer: {
-      flexDirection: 'row',
-      alignItems: 'center'
+    flexDirection: "row",
+    alignItems: "center",
   },
   goldLabel: {
-      color: "#FFFFFF",
-      fontSize: 14,
-      fontWeight: "700",
-      letterSpacing: 1
+    color: "#FFFFFF",
+    fontSize: rf(12),
+    fontWeight: "800",
+    letterSpacing: 0.8,
   },
-  priceSection: {
-      alignItems: 'flex-end',
-      justifyContent: 'center'
+  liveIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 8,
+    backgroundColor: "rgba(255, 68, 68, 0.15)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
-  priceRow: {
-      flexDirection: 'row',
-      alignItems: 'baseline',
-      marginBottom: 2
+  liveDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: "#FF4444",
+    marginRight: 4,
   },
-  currency: {
-      color: theme.colors.secondary,
-      fontSize: 14,
-      fontWeight: '600',
-      marginRight: 2
-  },
-  priceValue: {
-      color: "#FFFFFF",
-      fontSize: 22,
-      fontWeight: "800",
-      letterSpacing: 0.5
-  },
-  unit: {
-      color: "rgba(255,255,255,0.6)",
-      fontSize: 12,
-      marginLeft: 2
+  liveText: {
+    color: "#FF4444",
+    fontSize: rf(8),
+    fontWeight: "900",
+    letterSpacing: 0.5,
   },
   updatedText: {
-      color: "rgba(255,255,255,0.4)",
-      fontSize: 10,
-      fontStyle: 'italic'
+    color: "rgba(255,255,255,0.45)",
+    fontSize: rf(8.5),
+    fontStyle: "italic",
+  },
+  separator: {
+    height: 1,
+    backgroundColor: "rgba(255, 215, 0, 0.15)",
+    marginVertical: hp(0.5),
+    marginBottom: hp(1.2),
+  },
+  ratesGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  rateCol: {
+    flex: 1,
+    alignItems: "center",
+  },
+  caratLabel: {
+    color: "#DAA520",
+    fontSize: rf(11),
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  priceContainer: {
+    flexDirection: "row",
+    alignItems: "baseline",
+  },
+  currency: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: rf(11),
+    fontWeight: "600",
+    marginRight: 1,
+  },
+  priceValue: {
+    color: "#FFFFFF",
+    fontSize: rf(16),
+    fontWeight: "800",
+    letterSpacing: 0.3,
+  },
+  unit: {
+    color: "rgba(255,255,255,0.5)",
+    fontSize: rf(9),
+    marginLeft: 1,
+  },
+  colDivider: {
+    width: 1.5,
+    height: hp(3.5),
+    backgroundColor: "rgba(255, 215, 0, 0.15)",
   },
   accentLine: {
-      position: 'absolute',
-      bottom: 0,
-      left: 20,
-      right: 20,
-      height: 1,
-      backgroundColor: 'rgba(255,215,0,0.1)'
-  }
+    position: "absolute",
+    bottom: 0,
+    left: 20,
+    right: 20,
+    height: 1,
+    backgroundColor: "rgba(255,215,0,0.1)",
+  },
 });
 
 export default AnimatedGoldRate;

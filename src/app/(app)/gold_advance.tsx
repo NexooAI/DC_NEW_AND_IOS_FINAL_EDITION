@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,25 +6,35 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
+  ActivityIndicator,
+  TextInput,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import useGlobalStore from "@/store/global.store";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "src/constants/colors";
 import { theme } from "@/constants/theme";
 import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";
+import api from "@/services/api";
 
 const { wp, hp, rf } = responsiveUtils;
 const QUATERNARY_COLOR = theme.colors.quaternary || "#F2E6D2";
 
 export default function GoldAdvanceScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const { user } = useGlobalStore();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedOption, setSelectedOption] = useState<any>(null);
   const [pressedButton, setPressedButton] = useState<number | null>(null);
+  const [options, setOptions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const advanceOptions = [
     {
@@ -61,6 +71,62 @@ export default function GoldAdvanceScreen() {
     },
   ];
 
+  useEffect(() => {
+    const fetchConfigs = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get("/advance-booking-config?status=ACTIVE");
+        if (response.data && response.data.success && Array.isArray(response.data.data) && response.data.data.length > 0) {
+          const mapped = response.data.data.map((config: any, index: number) => {
+            const pct = config.percentage;
+            const days = config.booking_days;
+            const isSilver = config.metal_type?.toUpperCase() === 'SILVER';
+
+            const goldGradients = [
+              ["#850111", "#a30115"], // Primary Red
+              ["#1c1008", "#3a2210"], // Dark Brown
+              ["#9a6f00", "#c99a00"], // Golden
+              ["#6b0010", "#900015"], // Deep Burgundy
+            ];
+            const silverGradients = [
+              ["#708090", "#c0c0c0"], // Slate & Silver
+              ["#bdc3c7", "#2c3e50"], // Silver & Slate
+              ["#e2e8f0", "#64748b"], // White & Cool Gray
+              ["#475569", "#cbd5e1"], // Slate Gray & Light Silver
+            ];
+            const gradients = isSilver ? silverGradients : goldGradients;
+
+            const goldIcons = ["flash", "trending-up", "star", "diamond"];
+            const silverIcons = ["cube", "shield", "ribbon", "trophy"];
+            const icons = isSilver ? silverIcons : goldIcons;
+            
+            return {
+              percentage: `${pct}%`,
+              days: days,
+              minPayment: `${pct}%`,
+              details: config.description || `Pay ${pct}% of the total amount as advance and get ${days} days to complete your purchase at the best rate.`,
+              gradient: gradients[index % gradients.length],
+              icon: icons[index % icons.length],
+              metalType: config.metal_type?.toUpperCase() || 'GOLD',
+              minBookingAmount: Number(config.min_booking_amount || 0),
+              maxBookingAmount: Number(config.max_booking_amount || 0),
+            };
+          });
+          setOptions(mapped);
+        } else {
+          setOptions(advanceOptions);
+        }
+      } catch (error) {
+        console.error("Error fetching advance booking configs:", error);
+        setOptions(advanceOptions);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchConfigs();
+  }, []);
+
   const handleInfo = (option: any) => {
     setSelectedOption(option);
     setModalVisible(true);
@@ -71,10 +137,68 @@ export default function GoldAdvanceScreen() {
     setSelectedOption(null);
   };
 
-  const handleEnquire = (option: (typeof advanceOptions)[0]) => {
+  const [enquiryModalVisible, setEnquiryModalVisible] = useState(false);
+  const [enquiryName, setEnquiryName] = useState("");
+  const [enquiryPhone, setEnquiryPhone] = useState("");
+  const [enquiryEmail, setEnquiryEmail] = useState("");
+  const [enquiryMessage, setEnquiryMessage] = useState("");
+  const [submittingEnquiry, setSubmittingEnquiry] = useState(false);
+  const [enquirySuccess, setEnquirySuccess] = useState(false);
+  const [ticketNumber, setTicketNumber] = useState("");
+
+  const handleOpenEnquiryModal = (option: any) => {
+    setSelectedOption(option);
+    setEnquiryName(user?.name || user?.username || "");
+    setEnquiryPhone(user?.mobile ? String(user.mobile) : "");
+    setEnquiryEmail(user?.email || "");
+    setEnquiryMessage(`Inquiry about ${option.metalType} Advance Booking (${option.percentage} advance, ${option.days} days duration).`);
+    setEnquirySuccess(false);
+    setTicketNumber("");
+    setEnquiryModalVisible(true);
+  };
+
+  const submitEnquiry = async () => {
+    if (!enquiryName.trim() || !enquiryPhone.trim() || !enquiryMessage.trim()) {
+      Alert.alert(t("requiredFields"), t("pleaseFillRequiredFields"));
+      return;
+    }
+
+    try {
+      setSubmittingEnquiry(true);
+      const payload: any = {
+        name: enquiryName.trim(),
+        phone: enquiryPhone.trim(),
+        subject: "Advance Gold Inquiry",
+        message: enquiryMessage.trim(),
+        referenceType: "ADVANCE_BOOKING",
+      };
+
+      if (enquiryEmail.trim()) {
+        payload.email = enquiryEmail.trim();
+      }
+
+      const response = await api.post("/tickets", payload);
+      if (response.data && response.data.success) {
+        setEnquirySuccess(true);
+        setTicketNumber(response.data.data?.ticketNumber || "");
+      } else {
+        Alert.alert(t("enquiryFailed"), response.data?.message || t("enquiryFailed"));
+      }
+    } catch (error: any) {
+      console.error("Error submitting enquiry:", error);
+      Alert.alert(t("enquiryError"), error.response?.data?.error || t("anUnexpectedError"));
+    } finally {
+      setSubmittingEnquiry(false);
+    }
+  };
+
+  const handleEnquire = (option: any) => {
     router.push({
       pathname: "/(app)/(tabs)/joinAdvGold",
-      params: { advancePercent: option.percentage.replace("%", "") },
+      params: { 
+        advancePercent: option.percentage.replace("%", ""),
+        metalType: option.metalType
+      },
     });
   };
 
@@ -82,6 +206,32 @@ export default function GoldAdvanceScreen() {
     setPressedButton(index);
     setTimeout(() => setPressedButton(null), 200);
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(app)/dashboard');
+            }
+          }} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+          </TouchableOpacity>
+          <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
+            {t("goldAdvance")}
+          </ResponsiveText>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -104,38 +254,38 @@ export default function GoldAdvanceScreen() {
           <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
         <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
-          Gold Advance
+          {t("goldAdvance")}
         </ResponsiveText>
         <TouchableOpacity onPress={() => router.push('/(tabs)/home/BookingHistory')} style={styles.historyButton}>
           <Ionicons name="time-outline" size={18} color={theme.colors.primary} />
-          <Text style={styles.historyText}>History</Text>
+          <Text style={styles.historyText}>{t("history")}</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <View style={styles.titleContainer}>
           <ResponsiveText variant="title" weight="bold" color={theme.colors.primary} align="center" style={styles.mainTitle}>
-            Secure Today's Rate
+            {t("secureTodaysRate")}
           </ResponsiveText>
           <ResponsiveText variant="body" color="rgba(0,0,0,0.6)" align="center" style={styles.subtitle}>
-            Book your gold in advance with our flexible options
+            {t("bookGoldInAdvanceSubtitle")}
           </ResponsiveText>
           <View style={styles.decorativeLine} />
         </View>
 
         <View style={styles.cardsContainer}>
-          {advanceOptions.map((option, index) => (
+          {options.map((option, index) => (
             <TouchableOpacity
               key={index}
               style={[styles.cardWrapper, pressedButton === index && styles.cardPressed]}
               onPress={() => {
                 handleButtonPress(index);
-                handleEnquire(option);
+                handleInfo(option);
               }}
               activeOpacity={0.9}
             >
               {/* Glow Effect */}
-              <View style={styles.cardGlow} />
+              <View style={[styles.cardGlow, { backgroundColor: option.metalType === 'SILVER' ? '#cbd5e1' : '#DAA520' }]} />
 
               <LinearGradient
                 colors={option.gradient}
@@ -145,64 +295,85 @@ export default function GoldAdvanceScreen() {
               >
                 {/* Glossy Overlay */}
                 <LinearGradient
-                  colors={["rgba(255,255,255,0.15)", "transparent", "rgba(0,0,0,0.2)"]}
+                  colors={["rgba(255,255,255,0.12)", "transparent", "rgba(0,0,0,0.3)"]}
                   style={StyleSheet.absoluteFill}
                 />
 
-                <View style={styles.cardHeader}>
-                  <View style={styles.cornerTag}>
-                    <Ionicons name="calendar" size={12} color={COLORS.white} />
-                    <Text style={styles.cornerText}>{option.days} DAYS</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.infoButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleInfo(option);
-                    }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Ionicons name="information-circle-outline" size={24} color={COLORS.white} />
-                  </TouchableOpacity>
-                  <View style={styles.iconRow}>
-                    <Ionicons name={option.icon as any} size={36} color="#DAA520" style={{ marginRight: 12 }} />
-                    <Text style={styles.percentageText}>{option.percentage}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.cardBody}>
-                  <View style={styles.featureRow}>
-                    <Ionicons name="wallet-outline" size={wp(5)} color={theme.colors.primary} />
-                    <ResponsiveText variant="body" size="sm" color={theme.colors.textDark} style={styles.featureText}>
-                      Pay Minimum {option.minPayment}
-                    </ResponsiveText>
-                  </View>
-                  <View style={styles.featureRow}>
-                    <Ionicons name="time-outline" size={wp(5)} color={theme.colors.primary} />
-                    <ResponsiveText variant="body" size="sm" color={theme.colors.textDark} style={styles.featureText}>
-                      Get {option.days} days advance period
-                    </ResponsiveText>
+                {/* Card Top Section */}
+                <View style={styles.cardHeaderNew}>
+                  <View style={styles.headerLeft}>
+                    {/* Metal Badge */}
+                    <View style={option.metalType === 'SILVER' ? styles.metalBadgeSilver : styles.metalBadge}>
+                      <Ionicons 
+                        name={option.metalType === 'SILVER' ? "shield" : "ribbon"} 
+                        size={12} 
+                        color={option.metalType === 'SILVER' ? "#cbd5e1" : "#FFD700"} 
+                      />
+                      <Text style={option.metalType === 'SILVER' ? styles.metalBadgeTextSilver : styles.metalBadgeText}>
+                        {option.metalType}
+                      </Text>
+                    </View>
+                    <Text style={styles.percentageTextNew}>{option.percentage}</Text>
                   </View>
 
-                  <Text style={styles.rateText}>
-                    Avail the rate of Gold at the time of booking or at the purchase, whichever is less.
-                  </Text>
-
-                  {/* Action Buttons */}
-                  <View style={styles.actionRow}>
+                  <View style={styles.headerRight}>
+                    <View style={styles.daysBadge}>
+                      <Ionicons name="calendar-outline" size={12} color={COLORS.white} />
+                      <Text style={styles.daysBadgeText}>{option.days} {t("schemes.days").toUpperCase()}</Text>
+                    </View>
                     <TouchableOpacity
-                      style={styles.moreButton}
+                      style={styles.infoButtonNew}
                       onPress={(e) => {
                         e.stopPropagation();
                         handleInfo(option);
                       }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons name="information-circle-outline" size={20} color={COLORS.white} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Card Divider Line */}
+                <View style={styles.cardDivider} />
+
+                {/* Card Body Section */}
+                <View style={styles.cardBodyNew}>
+                  {/* Dynamic Limits & Payments Grid */}
+                  <View style={styles.detailsGrid}>
+                    <View style={styles.detailsCol}>
+                      <Text style={styles.detailsLabel}>{t("minAdvance")}</Text>
+                      <Text style={styles.detailsValue}>{option.minPayment}</Text>
+                    </View>
+                    <View style={styles.gridSeparator} />
+                    <View style={styles.detailsCol}>
+                      <Text style={styles.detailsLabel}>{t("limits")}</Text>
+                      <Text style={styles.detailsValue}>
+                        ₹{option.minBookingAmount ? option.minBookingAmount.toLocaleString('en-IN') : '0'} - ₹{option.maxBookingAmount ? option.maxBookingAmount.toLocaleString('en-IN') : '0'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* 2-line Description */}
+                  <Text style={styles.descriptionText} numberOfLines={2}>
+                    {option.details}
+                  </Text>
+
+                  {/* Actions Row */}
+                  <View style={styles.actionRowNew}>
+                    <TouchableOpacity
+                      style={styles.moreButtonNew}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleOpenEnquiryModal(option);
+                      }}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.moreButtonText}>MORE INFO</Text>
+                      <Text style={styles.moreButtonTextNew}>{t("enquireNow")}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={styles.enquireButton}
+                      style={styles.enquireButtonNew}
                       onPress={(e) => {
                         e.stopPropagation();
                         handleEnquire(option);
@@ -210,12 +381,14 @@ export default function GoldAdvanceScreen() {
                       activeOpacity={0.8}
                     >
                       <LinearGradient
-                        colors={["#DAA520", "#b8860b"]}
-                        style={styles.buttonGradient}
+                        colors={option.metalType === 'SILVER' ? ["#e2e8f0", "#94a3b8"] : ["#FFD700", "#DAA520"]}
+                        style={styles.buttonGradientNew}
                         start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
+                        end={{ x: 1, y: 0 }}
                       >
-                        <Text style={styles.buttonText}>ENQUIRE NOW</Text>
+                        <Text style={option.metalType === 'SILVER' ? styles.buttonTextNewSilver : styles.buttonTextNew}>
+                          {t("bookNow")}
+                        </Text>
                       </LinearGradient>
                     </TouchableOpacity>
                   </View>
@@ -231,7 +404,7 @@ export default function GoldAdvanceScreen() {
             <View style={styles.modalContent}>
               <LinearGradient colors={["#850111", "#6b0010"]} style={styles.modalHeader}>
                 <ResponsiveText variant="title" size="sm" weight="bold" color={COLORS.white} style={{ flex: 1 }}>
-                  Advance Option Details
+                  {t("advanceOptionDetails")}
                 </ResponsiveText>
                 <TouchableOpacity onPress={handleCloseModal} style={styles.closeButton}>
                   <Ionicons name="close" size={24} color={COLORS.white} />
@@ -239,12 +412,102 @@ export default function GoldAdvanceScreen() {
               </LinearGradient>
               {selectedOption && (
                 <View style={styles.modalBody}>
-                  <Text style={styles.modalDetail}><Text style={styles.boldDetail}>Advance %:</Text> {selectedOption.percentage}</Text>
-                  <Text style={styles.modalDetail}><Text style={styles.boldDetail}>Days:</Text> {selectedOption.days}</Text>
-                  <Text style={styles.modalDetail}><Text style={styles.boldDetail}>Min Payment:</Text> {selectedOption.minPayment}</Text>
-                  <Text style={styles.modalDetail}><Text style={styles.boldDetail}>Details:</Text> {selectedOption.details}</Text>
+                  <Text style={styles.modalDetail}><Text style={styles.boldDetail}>{t("advancePercentLabel")}</Text> {selectedOption.percentage}</Text>
+                  <Text style={styles.modalDetail}><Text style={styles.boldDetail}>{t("daysWithColon")}</Text> {selectedOption.days}</Text>
+                  <Text style={styles.modalDetail}><Text style={styles.boldDetail}>{t("minPaymentLabel")}</Text> {selectedOption.minPayment}</Text>
+                  <Text style={styles.modalDetail}><Text style={styles.boldDetail}>{t("detailsWithColon")}</Text> {selectedOption.details}</Text>
                 </View>
               )}
+            </View>
+          </View>
+        </Modal>
+
+        {/* Enquiry Modal */}
+        <Modal visible={enquiryModalVisible} animationType="slide" transparent onRequestClose={() => setEnquiryModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <LinearGradient colors={["#850111", "#6b0010"]} style={styles.modalHeader}>
+                <ResponsiveText variant="title" size="sm" weight="bold" color={COLORS.white} style={{ flex: 1 }}>
+                  {t("enquiryNowTitle")}
+                </ResponsiveText>
+                <TouchableOpacity onPress={() => setEnquiryModalVisible(false)} style={styles.closeButton}>
+                  <Ionicons name="close" size={24} color={COLORS.white} />
+                </TouchableOpacity>
+              </LinearGradient>
+              
+              <ScrollView contentContainerStyle={styles.enquiryModalBody} keyboardShouldPersistTaps="handled">
+                {enquirySuccess ? (
+                  <View style={styles.successContainer}>
+                    <Ionicons name="checkmark-circle-outline" size={64} color="green" />
+                    <ResponsiveText variant="title" size="sm" weight="bold" color="green" align="center" style={{ marginTop: 10 }}>
+                      {t("enquirySubmitted")}
+                    </ResponsiveText>
+                    <Text style={styles.successText}>
+                      {t("enquirySuccessMessage")}
+                    </Text>
+                    <Text style={styles.ticketNumberText}>
+                      {t("ticketNumberLabel")} {ticketNumber}
+                    </Text>
+                    <TouchableOpacity style={styles.successCloseBtn} onPress={() => setEnquiryModalVisible(false)}>
+                      <Text style={styles.successCloseBtnText}>{t("close")}</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View>
+                    <Text style={styles.inputLabel}>{t("nameLabel")} <Text style={{ color: "red" }}>*</Text></Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={enquiryName}
+                      onChangeText={setEnquiryName}
+                      placeholder={t("enterFullName")}
+                      placeholderTextColor="gray"
+                    />
+
+                    <Text style={styles.inputLabel}>{t("phoneLabel")} <Text style={{ color: "red" }}>*</Text></Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={enquiryPhone}
+                      onChangeText={setEnquiryPhone}
+                      placeholder={t("enterMobileNumber")}
+                      keyboardType="phone-pad"
+                      placeholderTextColor="gray"
+                    />
+
+                    <Text style={styles.inputLabel}>{t("emailLabel")}</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={enquiryEmail}
+                      onChangeText={setEnquiryEmail}
+                      placeholder={t("enterEmailOptional")}
+                      keyboardType="email-address"
+                      placeholderTextColor="gray"
+                    />
+
+                    <Text style={styles.inputLabel}>{t("messageLabel")} <Text style={{ color: "red" }}>*</Text></Text>
+                    <TextInput
+                      style={[styles.textInput, styles.textArea]}
+                      value={enquiryMessage}
+                      onChangeText={setEnquiryMessage}
+                      placeholder={t("enterEnquiryDetails")}
+                      multiline
+                      numberOfLines={4}
+                      placeholderTextColor="gray"
+                    />
+
+                    <TouchableOpacity 
+                      style={styles.submitButton} 
+                      onPress={submitEnquiry} 
+                      disabled={submittingEnquiry}
+                    >
+                      {submittingEnquiry ? (
+                        <ActivityIndicator color={COLORS.white} size="small" />
+                      ) : (
+                        <Text style={styles.submitButtonText}>{t("submitEnquiry")}</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </ScrollView>
             </View>
           </View>
         </Modal>
@@ -333,117 +596,178 @@ const styles = StyleSheet.create({
   cardGradient: {
     borderRadius: 20,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255,215,0,0.3)",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.15)",
     elevation: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
   },
-  cardHeader: {
-    padding: wp(5),
-    minHeight: hp(14),
-    position: "relative",
-    justifyContent: "center",
+  cardHeaderNew: {
+    paddingHorizontal: wp(5),
+    paddingTop: hp(2),
+    paddingBottom: hp(1.5),
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  cornerTag: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    backgroundColor: "#DAA520",
-    paddingHorizontal: wp(3),
-    paddingVertical: hp(0.8),
-    borderBottomLeftRadius: 16,
+  headerLeft: {
     flexDirection: "row",
     alignItems: "center",
-    zIndex: 1,
+    gap: wp(3),
   },
-  cornerText: {
+  percentageTextNew: {
+    fontSize: rf(26),
+    fontWeight: "800",
     color: COLORS.white,
-    fontSize: rf(10),
-    fontWeight: "bold",
-    marginLeft: 4,
   },
-  infoButton: {
-    position: "absolute",
-    top: hp(1.5),
-    left: wp(4),
-    zIndex: 2,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 20,
+  metalBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 215, 0, 0.15)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 215, 0, 0.3)",
+    gap: 4,
+  },
+  metalBadgeSilver: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(186, 195, 201, 0.15)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(186, 195, 201, 0.3)",
+    gap: 4,
+  },
+  metalBadgeText: {
+    color: "#FFD700",
+    fontSize: rf(9),
+    fontWeight: "bold",
+  },
+  metalBadgeTextSilver: {
+    color: "#cbd5e1",
+    fontSize: rf(9),
+    fontWeight: "bold",
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: wp(2),
+  },
+  daysBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  daysBadgeText: {
+    color: COLORS.white,
+    fontSize: rf(9),
+    fontWeight: "800",
+  },
+  infoButtonNew: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 16,
     padding: 4,
   },
-  iconRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: hp(2),
+  cardDivider: {
+    height: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    marginHorizontal: wp(5),
   },
-  percentageText: {
-    fontSize: rf(42),
-    fontWeight: "bold",
+  cardBodyNew: {
+    paddingHorizontal: wp(5),
+    paddingTop: hp(1.5),
+    paddingBottom: hp(2),
+  },
+  detailsGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    borderRadius: 12,
+    paddingVertical: hp(1),
+    paddingHorizontal: wp(3),
+    marginBottom: hp(1.2),
+  },
+  detailsCol: {
+    flex: 1,
+    alignItems: "center",
+  },
+  gridSeparator: {
+    width: 1,
+    height: hp(2.5),
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+  },
+  detailsLabel: {
+    fontSize: rf(8.5),
+    color: "rgba(255, 255, 255, 0.5)",
+    fontWeight: "600",
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  detailsValue: {
+    fontSize: rf(11.5),
     color: COLORS.white,
-    textShadowColor: "rgba(0,0,0,0.3)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    fontWeight: "700",
   },
-  cardBody: {
-    padding: wp(4),
-    backgroundColor: COLORS.white,
+  descriptionText: {
+    fontSize: rf(11),
+    color: "rgba(255, 255, 255, 0.75)",
+    lineHeight: rf(16),
+    marginBottom: hp(1.8),
   },
-  featureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: hp(1),
-  },
-  featureText: {
-    marginLeft: wp(3),
-  },
-  rateText: {
-    fontSize: rf(10),
-    color: "rgba(0,0,0,0.5)",
-    textAlign: "center",
-    marginTop: hp(1),
-    marginBottom: hp(2),
-    fontStyle: "italic",
-    paddingHorizontal: wp(2),
-  },
-  actionRow: {
+  actionRowNew: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: wp(3),
   },
-  moreButton: {
-    flex: 0.4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
-    paddingVertical: hp(1.5),
+  moreButtonNew: {
+    flex: 0.35,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.3)",
+    paddingVertical: hp(1.2),
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
   },
-  moreButtonText: {
-    color: theme.colors.primary,
-    fontSize: rf(11),
-    fontWeight: "bold",
+  moreButtonTextNew: {
+    color: COLORS.white,
+    fontSize: rf(10.5),
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
-  enquireButton: {
-    flex: 0.6,
-    borderRadius: 12,
+  enquireButtonNew: {
+    flex: 0.65,
+    borderRadius: 10,
     overflow: "hidden",
   },
-  buttonGradient: {
-    paddingVertical: hp(1.5),
+  buttonGradientNew: {
+    paddingVertical: hp(1.2),
     alignItems: "center",
     justifyContent: "center",
   },
-  buttonText: {
-    color: COLORS.white,
+  buttonTextNew: {
+    color: "#5D4037",
     fontSize: rf(11),
-    fontWeight: "bold",
-    letterSpacing: 1,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  buttonTextNewSilver: {
+    color: "#1e293b",
+    fontSize: rf(11),
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
   modalOverlay: {
     flex: 1,
@@ -479,6 +803,83 @@ const styles = StyleSheet.create({
   boldDetail: {
     fontWeight: "bold",
     color: theme.colors.primary,
+  },
+  enquiryModalBody: {
+    padding: wp(5),
+  },
+  inputLabel: {
+    fontSize: rf(11),
+    fontWeight: "bold",
+    color: theme.colors.textDark,
+    marginBottom: 6,
+    marginTop: 10,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.15)",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: rf(11.5),
+    color: theme.colors.textDark,
+    backgroundColor: "#fff",
+  },
+  textArea: {
+    height: hp(10),
+    textAlignVertical: "top",
+  },
+  submitButton: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: 10,
+    paddingVertical: hp(1.4),
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  submitButtonText: {
+    color: COLORS.white,
+    fontSize: rf(11.5),
+    fontWeight: "bold",
+    letterSpacing: 0.5,
+  },
+  successContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 20,
+  },
+  successText: {
+    fontSize: rf(11),
+    color: "gray",
+    textAlign: "center",
+    marginTop: 10,
+    lineHeight: 18,
+  },
+  ticketNumberText: {
+    fontSize: rf(12),
+    fontWeight: "bold",
+    color: theme.colors.textDark,
+    marginTop: 15,
+    backgroundColor: "#f0f0f0",
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  successCloseBtn: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: 8,
+    paddingHorizontal: 30,
+    paddingVertical: 10,
+    marginTop: 25,
+  },
+  successCloseBtnText: {
+    color: COLORS.white,
+    fontSize: rf(11),
+    fontWeight: "bold",
   },
 });
 

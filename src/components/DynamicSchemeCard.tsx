@@ -337,68 +337,12 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
   };
 
   const getLocalizedText = (textObj: any): string => {
-    // Handle null, undefined, empty string, or falsy values
-    if (textObj === null || textObj === undefined || textObj === "") {
-      return "";
-    }
-
-    // Handle strings
-    if (typeof textObj === "string") {
-      return textObj.trim() || "";
-    }
-
-    // Handle numbers
-    if (typeof textObj === "number") {
-      return isNaN(textObj) ? "" : textObj.toString();
-    }
-
-    // Handle boolean
-    if (typeof textObj === "boolean") {
-      return textObj.toString();
-    }
-
-    // Handle objects with en/ta keys
-    if (typeof textObj === "object" && textObj !== null) {
-      // Check if it's a valid object with language keys
-      if (textObj.hasOwnProperty("en") || textObj.hasOwnProperty("ta")) {
-        const enText = textObj.en || "";
-        const taText = textObj.ta || "";
-
-        if (currentLanguage === "ta") {
-          return taText || enText || "";
-        } else {
-          return enText || taText || "";
-        }
-      }
-
-      // Handle arrays
-      if (Array.isArray(textObj)) {
-        const validItems = textObj.filter(
-          (item) => item !== null && item !== undefined && item !== ""
-        );
-        return validItems.length > 0 ? validItems.join(", ") : "";
-      }
-
-      // Handle other objects - convert to string safely
-      try {
-        const stringified = JSON.stringify(textObj);
-        return stringified === "{}" || stringified === "[]" ? "" : stringified;
-      } catch {
-        return "";
-      }
-    }
-
-    // Fallback for any other type
-    try {
-      return String(textObj);
-    } catch {
-      return "";
-    }
+    return getTranslatedText(textObj, currentLanguage);
   };
 
   // Helper function to get translated text using global store language
   const getTranslatedText = (
-    textObj: { en: string; ta?: string } | string | undefined | null,
+    textObj: any,
     lang: string
   ): string => {
     if (textObj === null || textObj === undefined || textObj === "") {
@@ -418,22 +362,32 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
     }
 
     if (typeof textObj === "object" && textObj !== null) {
-      if (textObj.hasOwnProperty("en") || textObj.hasOwnProperty("ta")) {
-        const enText = textObj.en || "";
-        const taText = textObj.ta || "";
-
-        if (lang === "ta") {
-          return taText || enText || "";
-        } else {
-          return enText || taText || "";
-        }
-      }
-
       if (Array.isArray(textObj)) {
         const validItems = textObj.filter(
           (item) => item !== null && item !== undefined && item !== ""
         );
         return validItems.length > 0 ? validItems.join(", ") : "";
+      }
+
+      // Check if this object contains any translation keys
+      const hasEn = textObj.hasOwnProperty("en") || textObj.hasOwnProperty("EN");
+      const hasTa = textObj.hasOwnProperty("ta") || textObj.hasOwnProperty("TA");
+      const hasTe = textObj.hasOwnProperty("te") || textObj.hasOwnProperty("TE");
+      const hasHi = textObj.hasOwnProperty("hi") || textObj.hasOwnProperty("HI");
+      const hasMal = textObj.hasOwnProperty("mal") || textObj.hasOwnProperty("MAL") || (textObj as any).hasOwnProperty("_ta") || (textObj as any).hasOwnProperty("_TA");
+
+      if (hasEn || hasTa || hasTe || hasHi || hasMal) {
+        const targetText = textObj[lang] || textObj[lang.toUpperCase()] || textObj[lang.toLowerCase()];
+        const enText = textObj.en || textObj.EN || "";
+        const taText = textObj.ta || textObj.TA || "";
+
+        // Malayalam fallback logic if "mal" translation is missing
+        if ((lang === "mal" || lang === "MAL") && !targetText) {
+          const malTextLegacy = (textObj as any)._ta || (textObj as any)._TA || "";
+          return malTextLegacy || taText || enText || Object.values(textObj)[0] || "";
+        }
+
+        return targetText || enText || taText || Object.values(textObj)[0] || "";
       }
 
       try {
@@ -453,17 +407,18 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
 
   const getCardGradient = (schemeId: number | null | undefined) => {
     if (schemeId === null || schemeId === undefined || isNaN(schemeId)) {
-      return ["#1a1a1a", "#000000"];
+      return ["#000000", "#1A1A1A"];
     }
 
     const gradients = [
-      ["#2C3E50", "#000000"], // Dark Blue - Black
-      ["#434343", "#000000"], // Grey - Black
-      ["#141E30", "#243B55"], // Deep Blue
-      ["#232526", "#414345"], // Midnight City
-      ["#0f0c29", "#302b63", "#24243e"], // Deep Purple
+      ['#000000', '#1A1A1A'], // Onyx Black
+      ['#020818', '#0A1A44'], // Midnight Sapphire
+      ['#240505', '#550A0A'], // Royal Ruby
+      ['#041408', '#0D3315'], // Forest Emerald
+      ['#120418', '#330D44'], // Imperial Plum
+      ['#0F172A', '#1E293B'], // Charcoal Slate
     ];
-    
+
     return gradients[Math.abs(schemeId) % gradients.length];
   };
 
@@ -840,6 +795,11 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
     const gradientColors = getCardGradient(item.SCHEMEID);
     const accentColor = getCardAccentColor(item.SCHEMEID);
 
+    // Determine coin type
+    const coinSource = (getTranslatedText(item.SCHEMENAME as any, "en") || "").toLowerCase().includes("silver")
+      ? require("../../assets/images/silver_coin_badge.png")
+      : require("../../assets/images/gold_coin_badge.png");
+
     return (
       <View style={[styles.card, { borderColor: accentColor }]}>
         <LinearGradient
@@ -848,147 +808,149 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
           end={{ x: 1, y: 1 }}
           style={styles.cardGradient}
         >
-          <ImageBackground
-            source={getSchemeBackgroundImage(item)}
-            style={styles.cardBackground}
-            imageStyle={styles.cardBackgroundImage}
-          >
-            <View style={styles.cardBackgroundOverlay} />
+          {/* Watermark pattern */}
+          <Image
+            source={require("../../assets/images/jewelry_pattern.png")}
+            style={styles.cardWatermark}
+            resizeMode="contain"
+          />
 
-            {/* Card Header */}
-            <View style={styles.cardHeader}>
-              <View style={styles.cardHeaderContent}>
-                <View style={[styles.schemeIdBadge, { borderColor: accentColor }]}>
-                  <Text style={[styles.schemeIdText, { color: accentColor }]}>
-                    #{item.SCHEMEID || "N/A"}
-                  </Text>
-                </View>
-                {/* Scheme Type and Duration */}
-                <View style={styles.schemeInfoContainer}>
-                  {item.SCHEMETYPE && getLocalizedText(item.SCHEMETYPE) && (
-                    <View style={[styles.schemeInfoBadge, { borderColor: accentColor }]}>
-                      <Ionicons
-                        name="time-outline"
-                        size={12}
-                        color={accentColor}
-                      />
-                      <Text style={[styles.schemeInfoText, { color: accentColor }]}>
-                        {getLocalizedText(item.SCHEMETYPE)}
-                      </Text>
-                    </View>
-                  )}
-                  {/* Saving Type Badge */}
-                   {item.savingType && typeof item.savingType === "string" && (
+          {/* Card Header */}
+          <View style={styles.cardHeader}>
+            <View style={styles.cardHeaderContent}>
+              <View style={[styles.schemeIdBadge, { borderColor: accentColor }]}>
+                <Text style={[styles.schemeIdText, { color: accentColor }]}>
+                  #{item.SCHEMEID || "N/A"}
+                </Text>
+              </View>
+              {/* Scheme Type and Duration */}
+              <View style={styles.schemeInfoContainer}>
+                {item.SCHEMETYPE && getLocalizedText(item.SCHEMETYPE) && (
                   <View style={[styles.schemeInfoBadge, { borderColor: accentColor }]}>
                     <Ionicons
-                      name={item.savingType.toLowerCase() === "amount" ? "cash-outline" : "scale-outline"}
+                      name="time-outline"
                       size={12}
                       color={accentColor}
                     />
                     <Text style={[styles.schemeInfoText, { color: accentColor }]}>
-                      {item.savingType.charAt(0).toUpperCase() + item.savingType.slice(1).toLowerCase()}
+                      {getLocalizedText(item.SCHEMETYPE)}
                     </Text>
                   </View>
                 )}
-                 {/* Amount/Weight Type Badge (fallback from SCHEMETYPE) */}
-                {!item.savingType && (() => {
-                  const schemeType = getLocalizedText(item.SCHEMETYPE).toLowerCase();
-                  if (schemeType.includes("amount") || schemeType.includes("weight")) {
-                    const typeLabel = schemeType.includes("amount") ? "Amount" : "Weight";
-                    return (
-                      <View style={[styles.schemeInfoBadge, { borderColor: accentColor }]}>
-                        <Ionicons
-                          name={schemeType.includes("amount") ? "cash-outline" : "scale-outline"}
-                          size={12}
-                          color={accentColor}
-                        />
-                        <Text style={[styles.schemeInfoText, { color: accentColor }]}>
-                          {typeLabel}
-                        </Text>
-                      </View>
-                    );
-                  }
-                  return null;
-                })()}
-
-                  {item.DURATION_MONTHS && !isNaN(item.DURATION_MONTHS) && (
+                {/* Saving Type Badge */}
+                 {item.savingType && typeof item.savingType === "string" && (
+                <View style={[styles.schemeInfoBadge, { borderColor: accentColor }]}>
+                  <Ionicons
+                    name={item.savingType.toLowerCase() === "amount" ? "cash-outline" : "scale-outline"}
+                    size={12}
+                    color={accentColor}
+                  />
+                  <Text style={[styles.schemeInfoText, { color: accentColor }]}>
+                    {item.savingType.charAt(0).toUpperCase() + item.savingType.slice(1).toLowerCase()}
+                  </Text>
+                </View>
+              )}
+               {/* Amount/Weight Type Badge (fallback from SCHEMETYPE) */}
+              {!item.savingType && (() => {
+                const schemeType = getLocalizedText(item.SCHEMETYPE).toLowerCase();
+                if (schemeType.includes("amount") || schemeType.includes("weight")) {
+                  const typeLabel = schemeType.includes("amount") ? "Amount" : "Weight";
+                  return (
                     <View style={[styles.schemeInfoBadge, { borderColor: accentColor }]}>
                       <Ionicons
-                        name="calendar-outline"
+                        name={schemeType.includes("amount") ? "cash-outline" : "scale-outline"}
                         size={12}
                         color={accentColor}
                       />
                       <Text style={[styles.schemeInfoText, { color: accentColor }]}>
-                        {item.DURATION_MONTHS}M
+                        {typeLabel}
                       </Text>
                     </View>
-                  )}
-                </View>
+                  );
+                }
+                return null;
+              })()}
+
+                {item.DURATION_MONTHS && !isNaN(item.DURATION_MONTHS) && (
+                  <View style={[styles.schemeInfoBadge, { borderColor: accentColor }]}>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={12}
+                      color={accentColor}
+                    />
+                    <Text style={[styles.schemeInfoText, { color: accentColor }]}>
+                      {item.DURATION_MONTHS}M
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Middle Row with Name/Slogan on Left, Coin on Right */}
+            <View style={styles.cardBodyContainer}>
+              <View style={styles.cardBodyLeft}>
+                <Text style={[styles.cardSloganText, { color: COLORS.white }]}>
+                  {getLocalizedText(item.SCHEMENAME) || "Unnamed Scheme"}
+                </Text>
+
+                {/* Slogan */}
+                {item.SLOGAN && getLocalizedText(item.SLOGAN) && (
+                  <Text style={[styles.cardSloganSub, { color: accentColor }]}>
+                    {getLocalizedText(item.SLOGAN)}
+                  </Text>
+                )}
+                <View style={[styles.titleUnderline, { backgroundColor: accentColor }]} />
               </View>
 
-              <Text style={[styles.cardSlogan, { color: COLORS.white }]}>
-                {getLocalizedText(item.SCHEMENAME) || "Unnamed Scheme"}
+              <View style={styles.cardBodyRight}>
+                <Image source={coinSource} style={styles.coinIcon} />
+              </View>
+            </View>
+          </View>
+
+          {/* Card Footer */}
+          <View style={styles.cardFooter}>
+            <TouchableOpacity
+              style={[
+                styles.infoButton,
+                { borderColor: accentColor },
+                isLoading && styles.disabledButton,
+              ]}
+              onPress={() => handleInfoPress(item)}
+              disabled={isLoading}
+            >
+              <Ionicons name="information-circle-outline" size={18} color={accentColor} />
+              <Text style={[styles.infoButtonText, { color: accentColor }]}>
+                {t("info")}
               </Text>
+            </TouchableOpacity>
 
-              {/* Slogan */}
-              {item.SLOGAN && getLocalizedText(item.SLOGAN) && (
-                <Text style={[styles.cardTitle, { color: accentColor }]}>
-                  {getLocalizedText(item.SLOGAN)}
+            <TouchableOpacity
+               style={[
+                styles.joinButton,
+                isLoading && styles.disabledButton,
+              ]}
+              onPress={() => handleJoinPress(item)}
+              disabled={isLoading}
+            >
+               <LinearGradient
+                  colors={[accentColor, "#FDB931", accentColor]} // Gold gradient
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.joinButtonGradient}
+                >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#000" />
+                ) : (
+                  <Ionicons name="add-circle" size={20} color="#000" />
+                )}
+                <Text style={styles.joinButtonText}>
+                  {isLoading ? t("loading") || "Loading..." : t("joinNow")}
                 </Text>
-              )}
-
-              <View style={[styles.titleUnderline, { backgroundColor: accentColor }]} />
-            </View>
-
-            {/* Card Footer */}
-            <View style={styles.cardFooter}>
-              <TouchableOpacity
-                style={[
-                  styles.infoButton,
-                  { borderColor: accentColor },
-                  isLoading && styles.disabledButton,
-                ]}
-                onPress={() => handleInfoPress(item)}
-                disabled={isLoading}
-              >
-                <Ionicons name="information-circle-outline" size={18} color={accentColor} />
-                <Text style={[styles.infoButtonText, { color: accentColor }]}>
-                  {t("info")}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                 style={[
-                  styles.joinButton,
-                  isLoading && styles.disabledButton,
-                ]}
-                onPress={() => handleJoinPress(item)}
-                disabled={isLoading}
-              >
-                 <LinearGradient
-                    colors={[accentColor, "#FDB931", accentColor]} // Gold gradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.joinButtonGradient}
-                  >
-                  {isLoading ? (
-                    <ActivityIndicator size="small" color="#000" />
-                  ) : (
-                    <Ionicons name="add-circle" size={20} color="#000" />
-                  )}
-                  <Text style={styles.joinButtonText}>
-                    {isLoading ? t("loading") || "Loading..." : t("joinNow")}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </ImageBackground>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </LinearGradient>
-
-        {/* Decorative Elements - Simplified for premium look */}
-        {/* <View style={styles.cardDecoration}>
-           ... elements removed for cleaner look
-        </View> */}
       </View>
     );
   };
@@ -1373,6 +1335,49 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif-condensed", // Or a custom premium font if available
   },
+  cardSloganText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: COLORS.white,
+    textAlign: "left",
+    letterSpacing: 0.5,
+  },
+  cardSloganSub: {
+    fontSize: 12,
+    fontStyle: "italic",
+    textAlign: "left",
+    marginTop: 2,
+    opacity: 0.8,
+  },
+  cardBodyContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    width: '100%',
+  },
+  cardBodyLeft: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  cardBodyRight: {
+    marginLeft: 12,
+  },
+  coinIcon: {
+    width: 60,
+    height: 60,
+    resizeMode: 'contain',
+    opacity: 0.9,
+  },
+  cardWatermark: {
+    position: 'absolute',
+    top: -10,
+    right: 20,
+    width: 200,
+    height: 200,
+    opacity: 0.08,
+    transform: [{ rotate: '-15deg' }],
+  },
   cardSlogan: {
     fontSize: 12,
     textAlign: "center",
@@ -1403,8 +1408,8 @@ const styles = StyleSheet.create({
   titleUnderline: {
     width: 40,
     height: 2,
-    alignSelf: "center",
-    marginTop: 8,
+    alignSelf: "flex-start",
+    marginTop: 6,
     borderRadius: 2,
   },
   cardFooter: {

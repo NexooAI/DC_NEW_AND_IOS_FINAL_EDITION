@@ -4,6 +4,9 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start --dev-client",
+    "dev": "npx expo start --clear",
+    "tunnel": "npx expo start --clear --tunnel",
+    "doctor": "npx expo-doctor",
     "test": "jest",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -139,6 +142,11 @@
         ],
         "listUnknownPackages": false
       }
+    },
+    "autolinking": {
+      "exclude": [
+        "expo-keep-awake"
+      ]
     }
   }
 }

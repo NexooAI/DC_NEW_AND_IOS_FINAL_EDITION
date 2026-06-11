@@ -31,6 +31,9 @@ import { theme } from "@/constants/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
+import api from "@/services/api";
+import { getFullImageUrl } from "@/utils/imageUtils";
+import { ActivityIndicator } from "react-native";
 
 const { width, height } = Dimensions.get("window");
 
@@ -98,8 +101,25 @@ export default function AboutUs() {
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const { width: screenWidth } = useWindowDimensions();
   const [activeMilestone, setActiveMilestone] = useState(0);
+  const [aboutData, setAboutData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchAboutData = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get("/about-page/latest");
+        if (response?.data?.success) {
+          setAboutData(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching about page:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAboutData();
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -446,7 +466,7 @@ export default function AboutUs() {
           <View style={styles.heroIconContainer}>
             <FontAwesome5 name="star" size={40} color="white" />
           </View>
-          <Text style={styles.heroTitle}>{t("aboutus_hero_title")}</Text>
+          <Text style={styles.heroTitle}>{aboutData?.title || t("aboutus_hero_title")}</Text>
           <Text style={styles.heroSubtitle}>{t("aboutus_hero_subtitle")}</Text>
           <View style={styles.heroDivider} />
         </Animated.View>
@@ -482,7 +502,7 @@ export default function AboutUs() {
             </View>
             <Text style={styles.sectionTitle}>{t("aboutus_who_we_are")}</Text>
           </View>
-          <Text style={styles.sectionText}>{t("aboutus_who_we_are_desc")}</Text>
+          <Text style={styles.sectionText}>{aboutData?.description || t("aboutus_who_we_are_desc")}</Text>
         </Animated.View>
         {/* Image Section */}
         <Animated.View
@@ -495,7 +515,7 @@ export default function AboutUs() {
           ]}
         >
           <ImageBackground
-            source={{ uri: theme.images.store.storeIcon }}
+            source={aboutData?.image_url ? { uri: getFullImageUrl(aboutData.image_url) } : require("../../../../../../assets/images/shop.jpg")}
             style={styles.backgroundImage}
             imageStyle={styles.backgroundImageStyle}
           >

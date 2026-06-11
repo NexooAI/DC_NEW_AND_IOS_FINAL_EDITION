@@ -1,6 +1,6 @@
 // Dashboard.tsx
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -11,11 +11,15 @@ import {
   ScrollView,
   Dimensions,
   Platform,
+  RefreshControl,
+  BackHandler,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 
 import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";
@@ -24,6 +28,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
 import api, { userAPI } from "@/services/api";
 import { theme } from "@/constants/theme";
+import LanguageSelector from "@/components/LanguageSelector";
 
 const { wp, hp, rf } = responsiveUtils;
 const { width } = Dimensions.get("window");
@@ -43,10 +48,35 @@ export default function Dashboard() {
   const [rates, setRates] = useState<any>(null);
   const [socialLinks, setSocialLinks] = useState<any>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [languageSelectorVisible, setLanguageSelectorVisible] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        Alert.alert(
+          t("exitApp") || "Exit App",
+          t("exitAppMsg") || "Are you sure you want to exit?",
+          [
+            { text: t("cancel") || "Cancel", onPress: () => null, style: "cancel" },
+            { text: t("exit") || "Exit", onPress: () => BackHandler.exitApp() },
+          ],
+          { cancelable: false }
+        );
+        return true; // Block default exit behavior
+      };
+
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress
+      );
+      return () => subscription.remove();
+    }, [t])
+  );
 
   const loadData = async () => {
     try {
@@ -70,33 +100,16 @@ export default function Dashboard() {
         setSocialLinks(social.data.data[0]);
       }
 
-      // Fetch user profile to get latest profile image
-      try {
-        const profileRes = await userAPI.getProfile();
-        if (profileRes.data.success && profileRes.data.data) {
-          const userData = profileRes.data.data;
-          const photo =
-            userData.profile_photo ||
-            userData.profileImage ||
-            userData.profile_image ||
-            userData.image ||
-            userData.avatar ||
-            null;
 
-          if (photo) {
-            // Construct full URL if it's a relative path
-            const fullUrl = photo.startsWith("http")
-              ? photo
-              : `${theme.baseUrl}${photo.startsWith("/") ? "" : "/"}${photo}`;
-            setProfileImage(fullUrl);
-          }
-        }
-      } catch (profileError) {
-        console.log("Profile fetch error:", profileError);
-      }
     } catch (error) {
       console.log(error);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
   };
 
   const getProfileImage = () => {
@@ -119,6 +132,20 @@ export default function Dashboard() {
 
   const openLink = (url: string) => Linking.openURL(url);
 
+  const getDerivedRate = (rateVal: string | undefined, carat: number) => {
+    if (rateVal) {
+      const sanitized = rateVal.replace(/,/g, "");
+      const parsed = parseFloat(sanitized);
+      if (!isNaN(parsed) && parsed > 0) {
+        return Math.round(parsed).toString();
+      }
+    }
+    const baseGold = rates?.gold_rate ? parseFloat(rates.gold_rate.replace(/,/g, "")) : 0;
+    if (isNaN(baseGold) || baseGold <= 0) return "-";
+    const derived = Math.round(baseGold * (carat / 22));
+    return derived.toString();
+  };
+
   const callNow = () =>
     Linking.openURL(`tel:${theme.constants.mobile}`);
 
@@ -139,28 +166,39 @@ export default function Dashboard() {
 
   const cards = [
     {
-      title: t("ourSchemes") || "Our Schemes",
-      icon: "diamond-outline",
+      title: t("newSchemes") || "New Schemes",
+      icon: "briefcase-outline",
+      iconType: "ionicons",
+      onPress: () => router.push("/(app)/(tabs)/home/schemes"),
+    },
+    {
+      title: t("ourSchemes") || "My Schemes",
+      icon: "piggy-bank-outline",
+      iconType: "material",
       onPress: () => router.push("/(app)/(tabs)/savings"),
     },
     {
       title: t("advanceBooking") || "Advance Booking",
       icon: "calendar-outline",
+      iconType: "ionicons",
       onPress: () => router.push("/(app)/gold_advance"),
     },
     {
       title: t("billPayments") || "Bill Payments",
       icon: "calculator-outline",
+      iconType: "ionicons",
       onPress: () => router.push("/(app)/bill_payment"),
     },
     {
       title: t("rewards") || "Rewards",
       icon: "gift-outline",
+      iconType: "ionicons",
       onPress: () => router.push("/(app)/(tabs)/rewards"),
     },
     {
       title: t("newCollections") || "Collections",
       icon: "sparkles-outline",
+      iconType: "ionicons",
       onPress: () =>
         router.push({
           pathname: "/(app)/(tabs)/home",
@@ -170,19 +208,10 @@ export default function Dashboard() {
           },
         }),
     },
-    // {
-    //   title: t("luckyDraw") || "Lucky Draw",
-    //   icon: "ticket-outline",
-    //   onPress: () => router.push("/(app)/lucky_draw"),
-    // },
     {
-      title: t("newSchemes") || "New Schemes",
-      icon: "briefcase-outline",
-      onPress: () => router.push("/(app)/(tabs)/home/schemes"),
-    },
-    {
-      title: t("savingsHome") || "Chit Home",
+      title: t("savingsHome") || "Home",
       icon: "home-outline",
+      iconType: "ionicons",
       onPress: () => router.push("/(app)/(tabs)/home"),
     },
   ];
@@ -200,7 +229,17 @@ export default function Dashboard() {
       />
 
       <View style={{ flex: 1, backgroundColor: theme.colors.quaternary }}>
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[GOLD]}
+              tintColor={GOLD}
+            />
+          }
+        >
           {/* Header */}
           <LinearGradient
             colors={[DARK, PRIMARY]}
@@ -273,6 +312,17 @@ export default function Dashboard() {
                     color="#25D366"
                   />
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.iconBtn}
+                  onPress={() => setLanguageSelectorVisible(true)}
+                >
+                  <Ionicons
+                    name="language"
+                    size={20}
+                    color="#fff"
+                  />
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -283,39 +333,30 @@ export default function Dashboard() {
             />
 
             <View style={styles.rateRow}>
-              <ResponsiveText
-                color={GOLD}
-                size="sm"
-              >
-                Gold
-              </ResponsiveText>
-
-              <ResponsiveText
-                color="#fff"
-                size="sm"
-                weight="bold"
-                style={{ marginLeft: 5 }}
-              >
-                ₹ {rates?.gold_rate || "14900"}
-              </ResponsiveText>
+              <View style={styles.rateChip}>
+                <ResponsiveText color={GOLD} size="xs" weight="bold">22KT</ResponsiveText>
+                <ResponsiveText color="#fff" size="sm" weight="bold" style={{ marginLeft: 4 }}>
+                  ₹{getDerivedRate(rates?.gold_rate, 22)}
+                </ResponsiveText>
+              </View>
 
               <View style={styles.divider} />
 
-              <ResponsiveText
-                color={GOLD}
-                size="sm"
-              >
-                Silver
-              </ResponsiveText>
+              <View style={styles.rateChip}>
+                <ResponsiveText color={GOLD} size="xs" weight="bold">18KT</ResponsiveText>
+                <ResponsiveText color="#fff" size="sm" weight="bold" style={{ marginLeft: 4 }}>
+                  ₹{getDerivedRate(rates?.gold_rate_18, 18)}
+                </ResponsiveText>
+              </View>
 
-              <ResponsiveText
-                color="#fff"
-                size="sm"
-                weight="bold"
-                style={{ marginLeft: 5 }}
-              >
-                ₹ {rates?.silver_rate || "290"}
-              </ResponsiveText>
+              <View style={styles.divider} />
+
+              <View style={styles.rateChip}>
+                <ResponsiveText color={GOLD} size="xs" weight="bold">14KT</ResponsiveText>
+                <ResponsiveText color="#fff" size="sm" weight="bold" style={{ marginLeft: 4 }}>
+                  ₹{getDerivedRate(rates?.gold_rate_14, 14)}
+                </ResponsiveText>
+              </View>
             </View>
 
             <ResponsiveText
@@ -339,11 +380,19 @@ export default function Dashboard() {
                 onPress={item.onPress}
                 activeOpacity={0.8}
               >
-                <Ionicons
-                  name={item.icon as any}
-                  size={rf(28)}
-                  color={GOLD}
-                />
+                {item.iconType === "material" ? (
+                  <MaterialCommunityIcons
+                    name={item.icon as any}
+                    size={rf(28)}
+                    color={GOLD}
+                  />
+                ) : (
+                  <Ionicons
+                    name={item.icon as any}
+                    size={rf(28)}
+                    color={GOLD}
+                  />
+                )}
 
                 <ResponsiveText
                   style={styles.cardText}
@@ -388,7 +437,8 @@ export default function Dashboard() {
               onPress={() =>
                 openLink(
                   socialLinks?.intsa_url ||
-                  "https://instagram.com"
+                  socialLinks?.insta_url ||
+                  "https://www.instagram.com/dcjewellers.official/?hl=en"
                 )
               }
             >
@@ -404,7 +454,7 @@ export default function Dashboard() {
               onPress={() =>
                 openLink(
                   socialLinks?.facebook_url ||
-                  "https://facebook.com"
+                  "https://www.facebook.com/dcjewellers.official/"
                 )
               }
             >
@@ -419,8 +469,10 @@ export default function Dashboard() {
               style={styles.social}
               onPress={() =>
                 openLink(
-                  socialLinks?.twitter_url ||
-                  "https://youtube.com"
+                  socialLinks?.youtube_url ||
+                  socialLinks?.video_url ||
+                  socialLinks?.url ||
+                  "https://www.youtube.com/@DCJewellersGoldandDiamonds?themeRefresh=1"
                 )
               }
             >
@@ -435,6 +487,11 @@ export default function Dashboard() {
           <View style={{ height: hp(4) }} />
         </ScrollView>
       </View>
+
+      <LanguageSelector
+        visible={languageSelectorVisible}
+        onClose={() => setLanguageSelectorVisible(false)}
+      />
     </View>
   );
 }
@@ -512,6 +569,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginTop: hp(1),
+  },
+  rateChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(212, 175, 55, 0.3)",
   },
 
   divider: {

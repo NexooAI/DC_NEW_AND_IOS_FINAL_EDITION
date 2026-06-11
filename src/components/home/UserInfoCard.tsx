@@ -13,6 +13,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatGoldWeight } from "@/utils/imageUtils";
+import { moderateScale } from "react-native-size-matters";
 import {
   responsiveUtils,
   getSpacingValues,
@@ -56,10 +57,10 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
     onImageLoad,
   }) => {
     const { t } = useTranslation();
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(true);
     const arrowOpacity = useRef(new Animated.Value(1)).current;
-    const expandAnimation = useRef(new Animated.Value(0)).current;
-    const rotateAnimation = useRef(new Animated.Value(0)).current;
+    const expandAnimation = useRef(new Animated.Value(1)).current;
+    const rotateAnimation = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
       const blink = Animated.loop(
@@ -109,7 +110,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
 
     const statsHeight = expandAnimation.interpolate({
       inputRange: [0, 1],
-      outputRange: [0, 140], // Increased slightly for breathing room
+      outputRange: [0, 100], // Reduced from 140 for a more compact card
     });
 
     const statsOpacity = expandAnimation.interpolate({
@@ -129,7 +130,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
           <View style={styles.patternOverlay}>
             <MaterialCommunityIcons
               name="crown"
-              size={180}
+              size={120} // Reduced size
               color="rgba(255, 215, 0, 0.03)"
               style={styles.bgIcon}
             />
@@ -142,39 +143,18 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
           >
             <View style={styles.headerRow}>
               <View style={styles.avatarContainer}>
-                {profilePhoto && !profileImageError ? (
-                  <Image
-                    key={`${profilePhoto}-${retryCount}`}
-                    source={{ uri: profilePhoto }}
-                    style={styles.avatar}
-                    resizeMode="cover"
-                    onLoad={onImageLoad}
-                    onError={onImageError}
-                  />
-                ) : (
-                  <LinearGradient
-                    colors={["#FFD700", "#B8860B"]}
-                    style={styles.avatarPlaceholder}
-                  >
-                    <Text style={styles.avatarInitials}>
-                      {userName ? userName.substring(0, 1).toUpperCase() : "U"}
-                    </Text>
-                  </LinearGradient>
-                )}
-                <View style={styles.verifiedBadge}>
-                  <Ionicons name="checkmark-circle" size={14} color="#4CAF50" />
-                </View>
+                <LinearGradient
+                  colors={["#FFD700", "#B8860B"]}
+                  style={styles.avatarPlaceholder}
+                >
+                  <MaterialCommunityIcons name="wallet-membership" size={20} color="#3E2723" />
+                </LinearGradient>
               </View>
 
               <View style={styles.userInfo}>
-                <Text style={styles.welcomeLabel}>{t("welcomeBack")}</Text>
-                <Text style={styles.userName} numberOfLines={1}>
-                  {userName?.toUpperCase() || "USER"}
+                <Text style={styles.userName}>
+                  {t("savingsPortfolio") || "SAVINGS PORTFOLIO"}
                 </Text>
-                <View style={styles.idContainer}>
-                  <Text style={styles.idLabel}>ID:</Text>
-                  <Text style={styles.idValue}>{userId}</Text>
-                </View>
               </View>
 
               <View style={styles.expandButtonContainer}>
@@ -190,7 +170,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
               style={[
                 styles.statsWrapper,
                 {
-                  height: statsHeight,
+                  height: isExpanded ? undefined : statsHeight,
                   opacity: statsOpacity,
                   display: isExpanded ? "flex" : "none",
                 },
@@ -255,21 +235,21 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: spacing.md,
-    marginHorizontal: spacing.lg, // Added for consistent side spacing
-    borderRadius: borderRadius.large,
-    ...SHADOW_UTILS.card(),
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
+    paddingHorizontal: moderateScale(16),
+    paddingVertical: moderateScale(8),
+    width: "100%",
   },
   cardGradient: {
     borderRadius: borderRadius.large,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(255, 215, 0, 0.2)", // Subtle gold border
+    ...SHADOW_UTILS.card(),
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
   },
   patternOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -282,7 +262,7 @@ const styles = StyleSheet.create({
     transform: [{ rotate: "-15deg" }],
   },
   mainContent: {
-    padding: spacing.lg,
+    padding: moderateScale(12),
   },
   headerRow: {
     flexDirection: "row",
@@ -293,23 +273,23 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: moderateScale(40),
+    height: moderateScale(40),
+    borderRadius: moderateScale(20),
     borderWidth: 2,
     borderColor: theme.colors.secondary,
   },
   avatarPlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: moderateScale(40),
+    height: moderateScale(40),
+    borderRadius: moderateScale(20),
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
     borderColor: "#FFF",
   },
   avatarInitials: {
-    fontSize: 24,
+    fontSize: moderateScale(16),
     fontWeight: "bold",
     color: "#3E2723",
   },
@@ -326,20 +306,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   welcomeLabel: {
-    fontSize: 12,
+    fontSize: moderateScale(10),
     color: "rgba(255, 255, 255, 0.6)",
     marginBottom: 2,
     letterSpacing: 0.5,
     textTransform: 'uppercase'
   },
   userName: {
-    fontSize: 20,
+    fontSize: moderateScale(13),
     fontWeight: "800",
     color: "#FFFFFF",
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
     textShadowColor: "rgba(0,0,0,0.5)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   idContainer: {
     flexDirection: "row",
@@ -352,13 +333,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   idLabel: {
-    fontSize: 10,
+    fontSize: 8,
     color: theme.colors.secondary,
     fontWeight: "600",
     marginRight: 4,
   },
   idValue: {
-    fontSize: 12, // Increased readability
+    fontSize: 10,
     color: "#FFFFFF",
     fontWeight: "700",
     letterSpacing: 1,
@@ -369,9 +350,9 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.sm,
   },
   expandIcon: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+      width: 28,
+      height: 28,
+      borderRadius: 14,
       backgroundColor: 'rgba(255,255,255,0.05)',
       justifyContent: 'center',
       alignItems: 'center',
@@ -384,27 +365,27 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: "rgba(255, 255, 255, 0.15)",
-    marginVertical: spacing.md,
+    marginVertical: moderateScale(8),
     width: '100%'
   },
   statsGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: spacing.md,
+    marginBottom: moderateScale(8),
   },
   statItem: {
     flex: 1, 
     alignItems: "center",
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: moderateScale(10),
     color: "rgba(255, 255, 255, 0.6)",
     marginBottom: 4,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   statValue: {
-    fontSize: 18,
+    fontSize: moderateScale(14),
     fontWeight: "700",
     color: "#FFFFFF",
   },
@@ -413,7 +394,7 @@ const styles = StyleSheet.create({
       alignItems: 'baseline'
   },
   statUnit: {
-      fontSize: 12,
+      fontSize: moderateScale(10),
       color: theme.colors.secondary,
       marginLeft: 2,
       fontWeight: '600'
@@ -423,13 +404,13 @@ const styles = StyleSheet.create({
       alignItems: 'baseline'
   },
   currencySymbol: {
-      fontSize: 14,
+      fontSize: moderateScale(11),
       color: theme.colors.secondary,
       marginRight: 2,
       fontWeight: '600'
   },
   actionButton: {
-    borderRadius: 12,
+    borderRadius: 10,
     overflow: 'hidden',
     marginTop: 4
   },
@@ -437,13 +418,13 @@ const styles = StyleSheet.create({
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: 10,
+      paddingVertical: moderateScale(8),
       gap: 6
   },
   actionButtonText: {
       color: "#3E2723",
       fontWeight: "700",
-      fontSize: 14,
+      fontSize: moderateScale(12),
       textTransform: "uppercase",
       letterSpacing: 0.5
   }

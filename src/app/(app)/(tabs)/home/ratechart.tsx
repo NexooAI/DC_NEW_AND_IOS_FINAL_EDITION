@@ -7,6 +7,8 @@ import {
     TouchableOpacity,
     Dimensions,
     ActivityIndicator,
+    BackHandler,
+    Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LineChart, } from "react-native-chart-kit";
@@ -15,6 +17,7 @@ import api from "@/services/api";
 import { theme } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useNavigation, useRouter, useLocalSearchParams } from "expo-router";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -38,12 +41,49 @@ type DateFilter = "all" | "thisWeek" | "thisMonth" | "lastMonth" | "last3Months"
 
 export default function RateChart() {
     const { t } = useTranslation();
+    const navigation = useNavigation();
+    const router = useRouter();
+    const { from } = useLocalSearchParams();
+
     const [ratesData, setRatesData] = useState<RateData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedRateType, setSelectedRateType] = useState<RateType>("gold");
-    const [selectedDateFilter, setSelectedDateFilter] = useState<DateFilter>("all");
+    const [selectedDateFilter, setSelectedDateFilter] = useState<DateFilter>("thisWeek");
     const [isFocus, setIsFocus] = useState(false);
+
+    useEffect(() => {
+        if (from === "profile") {
+            navigation.setOptions({
+                headerLeft: () => (
+                    <TouchableOpacity
+                        onPress={() => router.replace("/(app)/(tabs)/profile")}
+                        style={{ marginLeft: Platform.OS === 'ios' ? 10 : 0, paddingRight: 15 }}
+                    >
+                        <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+                    </TouchableOpacity>
+                ),
+            });
+        }
+    }, [from, navigation, router]);
+
+    // Override hardware back press when navigated from profile
+    useEffect(() => {
+        const handleBackPress = () => {
+            if (from === "profile") {
+                router.replace("/(app)/(tabs)/profile");
+                return true;
+            }
+            return false;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            "hardwareBackPress",
+            handleBackPress
+        );
+
+        return () => backHandler.remove();
+    }, [from, router]);
 
     const dateFilterOptions = useMemo(() => [
         { label: t("rateChart_all"), value: "all" },
@@ -238,52 +278,6 @@ export default function RateChart() {
             >
                 {/* Header Section */}
                 <View style={styles.headerSection}>
-
-                    {/* Rate Type Toggle */}
-                    <View style={styles.toggleContainer}>
-                        <TouchableOpacity
-                            style={[
-                                styles.toggleButton,
-                                selectedRateType === "gold" && styles.toggleButtonActive,
-                            ]}
-                            onPress={() => setSelectedRateType("gold")}
-                        >
-                            <Ionicons
-                                name="diamond"
-                                size={20}
-                                color={selectedRateType === "gold" ? "#fff" : theme.colors.textGrey}
-                            />
-                            <Text
-                                style={[
-                                    styles.toggleButtonText,
-                                    selectedRateType === "gold" && styles.toggleButtonTextActive,
-                                ]}
-                            >
-                                {t("rateChart_gold")}
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[
-                                styles.toggleButton,
-                                selectedRateType === "silver" && styles.toggleButtonActive,
-                            ]}
-                            onPress={() => setSelectedRateType("silver")}
-                        >
-                            <Ionicons
-                                name="diamond-outline"
-                                size={20}
-                                color={selectedRateType === "silver" ? "#fff" : theme.colors.textGrey}
-                            />
-                            <Text
-                                style={[
-                                    styles.toggleButtonText,
-                                    selectedRateType === "silver" && styles.toggleButtonTextActive,
-                                ]}
-                            >
-                                {t("rateChart_silver")}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
 
                     {/* Current Rate Display */}
                     {currentRate !== null && (

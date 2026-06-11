@@ -18,8 +18,9 @@ import useGlobalStore from "@/store/global.store";
 import { theme } from "@/constants/theme";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import api from "@/services/api";
+import { getImageSource } from "@/utils/imageUtils";
+import { logger } from "@/utils/logger";
 
-import { logger } from '@/utils/logger';
 // Import images directly - correct path: src/app/intro.tsx -> assets/images/ (2 levels up)
 const intro1 = require("../../assets/images/intro_1.png");
 const intro2 = require("../../assets/images/intro_2.png");
@@ -41,31 +42,13 @@ const staticSlides = [
   },
 ];
 
-// Helper function to get image source
-const getImageSource = (imagePath: string) => {
-  if (!imagePath) return null;
-
-  // If image path starts with http, use it directly
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return { uri: imagePath };
-  }
-
-  // If image path starts with /uploads/, prepend base URL
-  if (imagePath.startsWith('/uploads/')) {
-    return { uri: `${theme.baseUrl}${imagePath}` };
-  }
-
-  // Otherwise, assume it's a local require
-  return imagePath;
-};
-
 export default function Intro() {
   const { t } = useTranslation();
   const { markAsLaunched } = useFirstLaunch();
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
-  const [slides, setSlides] = useState(staticSlides);
+  const [slides, setSlides] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { language } = useGlobalStore(); // To re-render on language change
   const { screenWidth, screenHeight } = useResponsiveLayout();
@@ -76,25 +59,32 @@ export default function Intro() {
       try {
         setIsLoading(true);
         const response = await api.get('/intro-screens/active');
+        console.log("Intro slides response", response.data);
+        if (response.data && response.data.success === true && Array.isArray(response.data.data) && response.data.data.length > 0) {
 
-        if (response.data?.success && Array.isArray(response.data.data) && response.data.data.length > 0) {
           // Transform API response to slides format
-          const apiSlides = response.data.data.map((item: any, index: number) => ({
-            id: String(item.id || index),
-            image: getImageSource(item.image),
-            title: item.title || '',
-          }));
+          const apiSlides = response.data.data.map((item: any, index: number) => {
+            let imagePath = item.image || '';
+            if (imagePath && !imagePath.startsWith('http') && !imagePath.includes('/uploads/')) {
+              imagePath = `/uploads/Intro/${imagePath.replace(/^\//, '')}`;
+            }
+            return {
+              id: String(item.id || index),
+              image: getImageSource(imagePath),
+              title: item.title || '',
+            };
+          });
 
           logger.log('Fetched intro slides from API:', apiSlides);
           setSlides(apiSlides);
         } else {
-          // API returned empty array or no data, use default images
-          logger.log('API returned empty data, using default static slides');
+          // API returned success = false or empty/invalid response format, fallback to default images
+          logger.log('Intro screen config is not active or empty, using default static slides');
           setSlides(staticSlides);
         }
       } catch (error) {
-        logger.error('Error fetching intro slides:', error);
-        // On error, fallback to default images
+        logger.error('Error fetching intro slides, falling back to static slides:', error);
+        // On error (e.g. endpoint does not exist or connection fails), fallback to default images
         setSlides(staticSlides);
       } finally {
         setIsLoading(false);
@@ -178,7 +168,7 @@ export default function Intro() {
         </View>
 
         <View style={styles.buttonContainer}>
-          {currentSlideIndex !== slides.length - 1 ? (
+          {slides.length > 0 && currentSlideIndex !== slides.length - 1 ? (
             <TouchableOpacity
               style={styles.button}
               onPress={() => {

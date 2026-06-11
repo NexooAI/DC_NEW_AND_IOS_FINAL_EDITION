@@ -7,6 +7,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { theme } from "@/constants/theme";
 import FloatingChatButton from "@/components/FloatingChatButton";
 import { logDeviceInfo } from "@/services/appEventService";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 // Disable global font scaling for Text components
 (Text as any).defaultProps = {
@@ -15,6 +16,8 @@ import { logDeviceInfo } from "@/services/appEventService";
 };
 
 export default function AppLayout() {
+  const { isVisible } = useAppVisibility();
+
   useEffect(() => {
     logDeviceInfo();
   }, []);
@@ -82,7 +85,7 @@ export default function AppLayout() {
           </Drawer>
         </NavigationErrorBoundary>
       </SafeAreaView>
-      <FloatingChatButton />
+      {isVisible("showLiveChatBox") && <FloatingChatButton />}
     </SafeAreaProvider>
   );
 }
