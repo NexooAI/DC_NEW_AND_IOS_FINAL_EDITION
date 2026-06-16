@@ -26,6 +26,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import api from "@/services/api";
 import { useTranslation } from "@/hooks/useTranslation";
+import RNPickerSelect from "react-native-picker-select";
 import ResponsiveText from "@/components/ResponsiveText";
 import ResponsiveButton from "@/components/ResponsiveButton";
 
@@ -115,6 +116,12 @@ export default function BasicDetailsForm() {
   const [autoOtpSending, setAutoOtpSending] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
+  // Branch Selection states
+  const [branches, setBranches] = useState<any[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+  const [branchError, setBranchError] = useState("");
+  const [isBranchDisabled, setIsBranchDisabled] = useState(false);
+
   // Helper function to get next timer duration
   const getNextTimerDuration = (currentCount: number) => {
     if (currentCount === 0) return 30; // 1st resend: 30 seconds
@@ -125,7 +132,7 @@ export default function BasicDetailsForm() {
   const router = useRouter();
   const referralInputRef = useRef<TextInput>(null);
   const emailInputRef = useRef<TextInput>(null);
-  const { mobile, emp_code, employee_code, referral_code } = useLocalSearchParams();
+  const { mobile, emp_code, employee_code, referral_code, empCode, code } = useLocalSearchParams();
   const mobileStr = Array.isArray(mobile) ? mobile[0] : mobile || "";
 
   // Debug logging
@@ -205,12 +212,25 @@ export default function BasicDetailsForm() {
   //   }
   // }, [mobileStr, otpPromptShown]);
 
-  // Immediate effect to set mobile input if available
+  // Immediate effect to set mobile input if available and fetch branches
   useEffect(() => {
     if (mobileStr && mobileStr.length === 10) {
       logger.log("🔍 Immediate effect - Setting mobileInput to:", mobileStr);
       setMobileInput(mobileStr);
     }
+
+    const fetchBranches = async () => {
+      try {
+        const response = await api.get("/branches");
+        if (response.data && response.data.success !== false) {
+          const branchList = Array.isArray(response.data) ? response.data : response.data.data || [];
+          setBranches(branchList);
+        }
+      } catch (error) {
+        logger.error("Error fetching branches for registration:", error);
+      }
+    };
+    fetchBranches();
   }, []);
 
   useFocusEffect(
@@ -229,7 +249,7 @@ export default function BasicDetailsForm() {
       setOtpPromptShown(false); // Reset OTP prompt state
       setHasCheckedClipboard(false);
 
-      const urlCode = emp_code || employee_code || referral_code;
+      const urlCode = emp_code || employee_code || referral_code || empCode || code;
       if (urlCode) {
         const codeStr = Array.isArray(urlCode) ? urlCode[0] : urlCode;
         logger.log("🔍 Pre-filling referral code from URL params:", codeStr);
@@ -240,7 +260,7 @@ export default function BasicDetailsForm() {
         setReferralValidating(true);
         validateReferralCodeWithAPI(upperCode);
       }
-    }, [emp_code, employee_code, referral_code])
+    }, [emp_code, employee_code, referral_code, empCode, code])
   );
 
   const showErrorAlert = (message: string) => {
@@ -318,11 +338,21 @@ export default function BasicDetailsForm() {
     return true;
   };
 
+  const validateBranch = (value: number | null, shouldSetError = true) => {
+    if (!value) {
+      if (shouldSetError) setBranchError("Please select a branch");
+      return false;
+    }
+    if (shouldSetError) setBranchError("");
+    return true;
+  };
+
   const validateForm = () => {
     const isMobileValid = validateMobile(mobileInput);
     const isNameValid = validateName(name);
     const isEmailValid = validateEmail(email);
     const isReferralValid = validateReferralCode(referralCode);
+    const isBranchValid = validateBranch(selectedBranchId);
 
     // If referral code is provided, it must be validated via API
     if (referralCode && referralCode.length === 6 && !referralValidated) {
@@ -359,7 +389,7 @@ export default function BasicDetailsForm() {
     }
 
     const formValid =
-      isMobileValid && isNameValid && isEmailValid && isReferralValid;
+      isMobileValid && isNameValid && isEmailValid && isReferralValid && isBranchValid;
     setIsFormValid(formValid);
     return formValid;
   };
@@ -369,13 +399,14 @@ export default function BasicDetailsForm() {
     const isNameValid = validateName(name, false);
     const isEmailValid = validateEmail(email, false);
     const isReferralValid = validateReferralCode(referralCode, false);
+    const isBranchValid = validateBranch(selectedBranchId, false);
 
     // Check referral validation status without showing errors
     if (referralCode && referralCode.length === 6 && !referralValidated) {
       return false;
     }
 
-    const formValid = isMobileValid && isNameValid && isEmailValid && isReferralValid;
+    const formValid = isMobileValid && isNameValid && isEmailValid && isReferralValid && isBranchValid;
     setIsFormValid(formValid);
     return formValid;
   };
@@ -401,6 +432,7 @@ export default function BasicDetailsForm() {
           email,
           mobile: mobileInput,
           referral_code: referralCode.trim(),
+          branch_id: selectedBranchId ? String(selectedBranchId) : "",
         },
       });
     }
@@ -433,6 +465,13 @@ export default function BasicDetailsForm() {
         setReferralValidationMessage(t("validReferralCode"));
         setReferralError(""); // Clear any existing error
         logger.log("🔍 Referral code validated successfully");
+        if (data.referrer && data.referrer.branch_id) {
+          setSelectedBranchId(Number(data.referrer.branch_id));
+          setIsBranchDisabled(true);
+          setBranchError("");
+        } else {
+          setIsBranchDisabled(false);
+        }
       } else {
         setReferralValidated(false);
         setReferralValidationMessage(data.message || t("invalidReferralCodeFormat"));
@@ -470,6 +509,7 @@ export default function BasicDetailsForm() {
     setReferralValidated(false);
     setReferralValidationMessage("");
     setReferralError(""); // Clear any existing error
+    setIsBranchDisabled(false);
 
     // Clear existing timeout
     if (referralValidationTimeout) {
@@ -494,6 +534,8 @@ export default function BasicDetailsForm() {
     setReferralValidating(false);
     setReferralErrorModalVisible(false); // Close modal if open
     setReferralErrorMessage(""); // Clear modal message
+    setIsBranchDisabled(false);
+    setSelectedBranchId(null);
     if (referralValidationTimeout) {
       clearTimeout(referralValidationTimeout);
       setReferralValidationTimeout(null);
@@ -518,16 +560,16 @@ export default function BasicDetailsForm() {
         if (hasString) {
           const content = await Clipboard.getStringAsync();
           const cleanCode = content.trim().toUpperCase();
-          
+
           // Verify code format (6-digit alphanumeric)
           if (/^[A-Z0-9]{6}$/.test(cleanCode)) {
             logger.log("🔍 Auto-detected referral code from clipboard:", cleanCode);
             setReferralCode(cleanCode);
             setHasCheckedClipboard(true);
-            
+
             // Validate the code immediately
             validateReferralCodeWithAPI(cleanCode);
-            
+
             Alert.alert(
               t("success") || "Success",
               (t("referralCodeAppliedFromClipboard") || "Referral code {code} applied from clipboard!").replace("{code}", cleanCode)
@@ -594,8 +636,9 @@ export default function BasicDetailsForm() {
       (mobileInput ? 1 : 0) +
       (name ? 1 : 0) +
       (email ? 1 : 0) +
-      (otpVerified ? 1 : 0);
-    const percentage = Math.min(completedFields * 25, 100);
+      (otpVerified ? 1 : 0) +
+      (selectedBranchId ? 1 : 0);
+    const percentage = Math.min(completedFields * 20, 100);
     setProgressPercentage(percentage);
   }, [
     mobileInput,
@@ -606,6 +649,7 @@ export default function BasicDetailsForm() {
     referralError,
     referralValidationMessage,
     otpVerified,
+    selectedBranchId,
   ]);
 
   // Open OTP modal and reset timer/count with specific mobile number
@@ -816,13 +860,7 @@ export default function BasicDetailsForm() {
           >
             <View style={styles.mainContent}>
               <View style={styles.formContainer}>
-                {/* App Logo above the form */}
-                <View style={styles.logoContainerNew}>
-                  <Image
-                    source={require("../../../assets/images/logo_trans.png")}
-                    style={styles.logoNew}
-                  />
-                </View>
+                <View style={{ height: Platform.OS === 'ios' ? 80 : 60 }} />
 
                 {/* Page Title and Subtitle */}
                 <View style={styles.titleContainer}>
@@ -1138,6 +1176,134 @@ export default function BasicDetailsForm() {
                       {emailError}
                     </ResponsiveText>
                   ) : null}
+                </View>
+
+                {/* Branch Selection */}
+                <View style={styles.inputContainer}>
+                  <ResponsiveText
+                    variant="label"
+                    size="sm"
+                    weight="semibold"
+                    color="#ffffff"
+                    align="left"
+                    truncateMode="single"
+                    style={styles.inputLabel}
+                  >
+                    Select Branch *
+                  </ResponsiveText>
+                  <View style={[styles.inputWithIcon, isBranchDisabled && { backgroundColor: "rgba(240, 240, 240, 0.2)", borderColor: "rgba(180, 180, 180, 0.3)" }]}>
+                    <Ionicons
+                      name="business-outline"
+                      size={20}
+                      color={theme.colors.secondary}
+                      style={styles.inputIconLeft}
+                    />
+                    <View style={{ flex: 1, justifyContent: 'center' }}>
+                      <RNPickerSelect
+                        onValueChange={(value) => {
+                          if (branches.length > 0) {
+                            setSelectedBranchId(value ? Number(value) : null);
+                            validateBranch(value ? Number(value) : null);
+                          }
+                        }}
+                        placeholder={
+                          branches.length === 0
+                            ? { label: "No branches available", value: null, color: '#d32f2f' }
+                            : { label: "Select your home branch", value: null }
+                        }
+                        value={selectedBranchId}
+                        disabled={isBranchDisabled || branches.length === 0}
+                        items={
+                          branches.length === 0
+                            ? []
+                            : branches.map((b) => ({
+                                label: b.branch_name,
+                                value: b.id,
+                              }))
+                        }
+                        style={{
+                          viewContainer: {
+                            flex: 1,
+                            justifyContent: 'center',
+                            width: '100%',
+                          },
+                          inputIOS: {
+                            color: isBranchDisabled 
+                              ? "rgba(0, 0, 0, 0.4)" 
+                              : branches.length === 0 
+                                ? "#d32f2f" 
+                                : theme.colors.black,
+                            fontSize: getResponsiveSize(14, 16),
+                            paddingVertical: 10,
+                            paddingHorizontal: 0,
+                            minHeight: getResponsiveHeight(38, 42),
+                            width: "100%",
+                            paddingRight: 30,
+                          },
+                          inputAndroid: {
+                            color: isBranchDisabled 
+                              ? "rgba(0, 0, 0, 0.4)" 
+                              : branches.length === 0 
+                                ? "#d32f2f" 
+                                : theme.colors.black,
+                            fontSize: getResponsiveSize(14, 16),
+                            paddingVertical: 10,
+                            paddingHorizontal: 0,
+                            minHeight: getResponsiveHeight(38, 42),
+                            width: "100%",
+                            paddingRight: 30,
+                          },
+                          iconContainer: {
+                            top: Platform.OS === 'ios' ? 8 : 10,
+                            right: 0,
+                          },
+                          placeholder: { 
+                            color: branches.length === 0 ? "#d32f2f" : "rgba(10, 1, 1, 0.6)", 
+                            fontSize: 16 
+                          }
+                        }}
+                        useNativeAndroidPickerStyle={false}
+                        Icon={() => (
+                          <Ionicons
+                            name="chevron-down"
+                            size={20}
+                            color={branches.length === 0 ? "#d32f2f" : theme.colors.secondary}
+                          />
+                        )}
+                      />
+                    </View>
+                  </View>
+                  {branchError ? (
+                    <ResponsiveText
+                      variant="caption"
+                      size="xs"
+                      color="#d32f2f"
+                      align="left"
+                      truncateMode="double"
+                      style={styles.newErrorText}
+                    >
+                      {branchError}
+                    </ResponsiveText>
+                  ) : null}
+                  {isBranchDisabled && referralValidated && (
+                    <View style={styles.successContainer}>
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={16}
+                        color="#4CAF50"
+                      />
+                      <ResponsiveText
+                        variant="caption"
+                        size="xs"
+                        color="#4CAF50"
+                        align="left"
+                        truncateMode="single"
+                        style={styles.successText}
+                      >
+                        Auto-selected based on referral agent branch
+                      </ResponsiveText>
+                    </View>
+                  )}
                 </View>
 
                 {/* Referral Code */}

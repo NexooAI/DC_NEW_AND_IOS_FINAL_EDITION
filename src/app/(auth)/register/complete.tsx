@@ -45,7 +45,7 @@ const PinInput = ({ value, isActive, onPress, index }: PinInputProps) => {
 };
 
 export default function CompleteRegistration() {
-  const { mobile, name, email, referral_code } = useLocalSearchParams();
+  const { mobile, name, email, referral_code, branch_id } = useLocalSearchParams();
   const router = useRouter();
   const [mpin, setMpin] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
@@ -99,10 +99,12 @@ export default function CompleteRegistration() {
       // Call registration completion API
       const response = await api.post("/register/complete", {
         mobile,
+        mobile_number: mobile,
         name,
         email,
         referral_code,
         mpin: mpinValue,
+        branch_id: branch_id ? Number(branch_id) : null,
       });
 
       const data = response.data;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/utils/logger';
 import api from '@/services/api';
+import useGlobalStore from '@/store/global.store';
 
 // Type definition for the API response
 export interface AppVisibilityData {
@@ -28,29 +29,41 @@ export interface AppVisibilityData {
 }
 
 export function useAppVisibility() {
-    const [visibleData, setVisibleData] = useState<AppVisibilityData | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const visibleData = useGlobalStore((state) => state.cachedVisibility?.data);
+    const [isLoading, setIsLoading] = useState(!visibleData);
     const [error, setError] = useState<string | null>(null);
 
     // Fetch visibility data from API
-    const fetchVisibilityData = useCallback(async () => {
+    const fetchVisibilityData = useCallback(async (forceRefresh: boolean = false) => {
+        const storeState = useGlobalStore.getState();
+
+        // Check if cache is valid first
+        if (!forceRefresh && storeState.isVisibilityCacheValid()) {
+            const cached = storeState.getCachedVisibility();
+            logger.log("📦 [Cache] Using cached visibility data", {
+                age: Date.now() - (cached?.timestamp || 0),
+            });
+            setIsLoading(false);
+            return;
+        }
+
         try {
-            logger.log("🔍 Fetching app visibility data...");
+            logger.log("📡 [API] Fetching app visibility data from API...");
             setIsLoading(true);
             setError(null);
 
             const response = await api.get('/app-visible');
 
             if (response.data) {
-                setVisibleData(response.data);
-                logger.log("✅ App visibility data fetched successfully:", response);
+                storeState.setCachedVisibility(response.data);
+                logger.log("✅ [API] App visibility data fetched successfully and cached");
             } else {
                 throw new Error('No data received from API');
             }
         } catch (err: any) {
             const errorMessage = err?.response?.data?.message || err?.message || 'Failed to fetch visibility data';
             setError(errorMessage);
-            logger.error("❌ Error fetching app visibility data:", errorMessage);
+            logger.error("❌ [API] Error fetching app visibility data:", errorMessage);
         } finally {
             setIsLoading(false);
         }

@@ -236,7 +236,8 @@ const isPublicEndpoint = (url: string | undefined): boolean => {
     '/auth/verify-otp',
     '/auth/refresh-token',
     '/register/complete',
-    '/version/verify-version'
+    '/version/verify-version',
+    '/branches'
   ];
   return publicEndpoints.some(endpoint => url.includes(endpoint));
 };

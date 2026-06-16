@@ -1269,5 +1269,7 @@
   "mentionWhatYouWereTrying": "Mention what you were trying to do",
   "referralCodeAppliedFromClipboard": "Referral code {code} applied from clipboard!",
   "sendingOtp": "otp Sending...",
-  "account": "Account"
+  "account": "Account",
+  "ourBranches": "Our Branches",
+  "getDirections": "Get Directions"
 }

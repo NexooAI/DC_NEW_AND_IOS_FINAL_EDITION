@@ -443,7 +443,25 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: theme.colors.textDarkGrey,
-    marginBottom: 20,
+  },
+  hoursHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  toggleButton: {
+    backgroundColor: "rgba(133, 1, 17, 0.08)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(133, 1, 17, 0.2)",
+  },
+  toggleButtonText: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: "700",
   },
   hourRow: {
     flexDirection: "row",

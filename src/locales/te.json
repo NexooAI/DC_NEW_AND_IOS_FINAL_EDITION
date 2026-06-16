@@ -1262,5 +1262,7 @@
   "mentionWhatYouWereTrying": "మీరు ఏమి చేయడానికి ప్రయత్నిస్తున్నారో పేర్కొనండి",
   "referralCodeAppliedFromClipboard": "రెఫరల్ కోడ్ {code} క్లిప్‌బోర్డ్ నుండి వర్తింపజేయబడింది!",
   "sendingOtp": "OTP పంపుతోంది...",
-  "account": "ఖాతా"
+  "account": "ఖాతా",
+  "ourBranches": "మా శాఖలు",
+  "getDirections": "దిశలు"
 }

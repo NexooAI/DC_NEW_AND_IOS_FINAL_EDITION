@@ -346,6 +346,12 @@ export default function MpinVerify() {
       if (result.error !== "User canceled" && result.error !== "Canceled") {
         // Optional: show error toast
       }
+      // // On failure or cancel, immediately focus the first manual MPIN text input
+      // setTimeout(() => {
+      //   if (mpinInputRefs[0] && mpinInputRefs[0].current) {
+      //     mpinInputRefs[0].current.focus();
+      //   }
+      // }, 300);
     }
   };
 
@@ -960,6 +966,18 @@ export default function MpinVerify() {
                     </View>
                   )}
 
+                  {(isLocked || attempts >= 2) && (
+                    <TouchableOpacity
+                      style={styles.lockoutResetButton}
+                      onPress={() => router.push("/(auth)/forgot_mpin")}
+                    >
+                      <Icon name="vpn-key" size={18} color={theme.colors.secondary} />
+                      <Text style={styles.lockoutResetButtonText}>
+                        Forgot MPIN? Reset via OTP
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
                   <Animated.View
                     style={[
                       styles.otpInputsContainer,
@@ -1229,7 +1247,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   logo: {
-    aspectRatio: 0.6,
+    height: 90,
   },
   loadingContainer: {
     flex: 1,
@@ -1395,6 +1413,25 @@ const styles = StyleSheet.create({
     color: COLORS.errorLight,
     fontSize: 14,
     fontWeight: "600",
+    marginLeft: 8,
+  },
+  lockoutResetButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: theme.colors.secondary,
+    backgroundColor: "rgba(255, 201, 12, 0.15)",
+    marginTop: 5,
+    marginBottom: 20,
+  },
+  lockoutResetButtonText: {
+    color: theme.colors.secondary,
+    fontSize: 16,
+    fontWeight: "bold",
     marginLeft: 8,
   },
 

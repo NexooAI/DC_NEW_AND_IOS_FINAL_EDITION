@@ -1262,5 +1262,7 @@
   "mentionWhatYouWereTrying": "നിങ്ങൾ എന്ത് ചെയ്യാൻ ശ്രമിക്കുകയായിരുന്നുവെന്ന് പരാമർശിക്കുക",
   "referralCodeAppliedFromClipboard": "റഫറൽ കോഡ് {code} ക്ലിപ്പ്ബോർഡിൽ നിന്ന് ബാധകമാക്കി!",
   "sendingOtp": "OTP അയയ്ക്കുന്നു...",
-  "account": "അക്കൗണ്ട്"
+  "account": "അക്കൗണ്ട്",
+  "ourBranches": "ഞങ്ങളുടെ ശാഖകൾ",
+  "getDirections": "വഴി കാണിക്കുക"
 }

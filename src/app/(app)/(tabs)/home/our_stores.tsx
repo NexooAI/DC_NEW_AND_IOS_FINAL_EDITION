@@ -1,7 +1,6 @@
 import React, {
   useRef,
   useState,
-  RefObject,
   useCallback,
   useEffect,
 } from "react";
@@ -15,21 +14,21 @@ import {
   Platform,
   TouchableOpacity,
   Linking,
+  ActivityIndicator,
 } from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { Dropdown } from "react-native-element-dropdown";
-import AntDesign from "@expo/vector-icons/AntDesign";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, Stack } from "expo-router";
 import AppLayoutWrapper from "@/components/AppLayoutWrapper";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useFocusEffect } from "@react-navigation/native";
 import useGlobalStore from "@/store/global.store";
 import { LinearGradient } from "expo-linear-gradient";
+import api from "@/services/api";
 
 interface Store {
   id: number;
@@ -37,33 +36,27 @@ interface Store {
   latitude: number;
   longitude: number;
   address: string;
+  location_url?: string;
+  phone?: string;
+  city?: string;
+  state?: string;
 }
-
-const stores: Store[] = [
-  {
-    id: 1,
-    name: "DC Jewellers",
-    latitude: 10.519306421007363,
-    longitude: 76.22348998262478,
-    address: "Road Fathima Nagar, Mission Quarters, Anchery, Thrissur, Kerala 680005",
-  },
-];
 
 let MapView: React.ComponentType<any>, Marker: React.ComponentType<any>;
 if (Platform.OS === "web") {
   MapView = (props: any) => (
-    <div
+    <View
       style={{
         width: "100%",
         height: 300,
-        background: "#eee",
+        backgroundColor: "#eee",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <span>Map not supported on web</span>
-    </div>
+      <Text>Map not supported on web</Text>
+    </View>
   );
   Marker = () => null;
 } else {
@@ -76,21 +69,96 @@ const StoreLocator = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const mapRef = useRef<any>(null);
-  const [selectedStore, setSelectedStore] = useState<any>(
-    stores.length > 0
-      ? {
-        label: stores[0].address,
-        value: stores[0].id.toString(),
-        ...stores[0],
-      }
-      : null
-  );
+  const [storesList, setStoresList] = useState<Store[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedStore, setSelectedStore] = useState<any>(null);
   const [isFocus, setIsFocus] = useState(false);
   const insets = useSafeAreaInsets();
   const { language } = useGlobalStore();
 
+  const parseCoordinates = (url: string) => {
+    if (!url) return null;
+
+    // 1. Try parsing marker coordinates from standard Google Maps URLs (e.g. !3d10.519758!4d76.22341)
+    const exactMatch = url.match(/3d(-?\d+\.\d+)[^!]*!4d(-?\d+\.\d+)/);
+    if (exactMatch) {
+      return {
+        latitude: parseFloat(exactMatch[1]),
+        longitude: parseFloat(exactMatch[2]),
+      };
+    }
+
+    // 2. Try parsing query param format like q=latitude,longitude or query=latitude,longitude or @latitude,longitude
+    const queryMatch = url.match(/(?:q|query|@|place\/)(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/i);
+    if (queryMatch) {
+      return {
+        latitude: parseFloat(queryMatch[1]),
+        longitude: parseFloat(queryMatch[2]),
+      };
+    }
+
+    // 3. Fallback to any latitude,longitude pair in the string
+    const genericMatch = url.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+    if (genericMatch) {
+      return {
+        latitude: parseFloat(genericMatch[1]),
+        longitude: parseFloat(genericMatch[2]),
+      };
+    }
+
+    return null;
+  };
+
+  const fetchBranches = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/branches");
+      const branchData = response.data.data || [];
+
+      const mappedStores: Store[] = branchData.map((branch: any) => {
+        const locationUrl = branch.location || branch.location_url || "";
+        const parsedCoords = parseCoordinates(locationUrl);
+        const lat = parseFloat(branch.latitude) || parsedCoords?.latitude || 10.519306421007363;
+        const lng = parseFloat(branch.longitude) || parsedCoords?.longitude || 76.22348998262478;
+
+        return {
+          id: branch.id,
+          name: branch.branch_name || "DC Jewellers",
+          latitude: lat,
+          longitude: lng,
+          address: branch.address || "",
+          location_url: locationUrl,
+          phone: branch.phone || "",
+          city: branch.city || "",
+          state: branch.state || "",
+        };
+      });
+
+      setStoresList(mappedStores);
+
+      if (mappedStores.length > 0) {
+        const firstStore = {
+          label: mappedStores[0].name + (mappedStores[0].city ? ` - ${mappedStores[0].city}` : ""),
+          value: mappedStores[0].id.toString(),
+          ...mappedStores[0],
+        };
+        setSelectedStore(firstStore);
+      }
+    } catch (error) {
+      console.error("Error fetching branches for StoreLocator:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchBranches();
+    }, [])
+  );
+
   const focusOnStore = (store: Store) => {
-    if (mapRef.current) {
+    if (mapRef.current && store) {
       mapRef.current.animateToRegion(
         {
           latitude: store.latitude,
@@ -104,6 +172,16 @@ const StoreLocator = () => {
   };
 
   const getDirections = (store: Store) => {
+    if (store.location_url) {
+      Linking.openURL(store.location_url).catch(() => {
+        openFallbackDirections(store);
+      });
+    } else {
+      openFallbackDirections(store);
+    }
+  };
+
+  const openFallbackDirections = (store: Store) => {
     const url = Platform.select({
       ios: `maps:${store.latitude},${store.longitude}?q=${store.name}`,
       android: `geo:${store.latitude},${store.longitude}?q=${store.latitude},${store.longitude}(${store.name})`,
@@ -112,96 +190,50 @@ const StoreLocator = () => {
     Linking.openURL(url || "");
   };
 
-  // Memoized translation for store addresses
-  const dropdownData = stores.map((store) => ({
-    label: t(`store_address_${store.id}`) || store.address,
+  const dropdownData = storesList.map((store) => ({
+    label: store.name + (store.city ? ` - ${store.city}` : ""),
     value: store.id.toString(),
     ...store,
   }));
 
-  // Update selectedStore if language changes
-  React.useEffect(() => {
-    if (stores.length > 0) {
-      const firstStore = {
-        label: t(`store_address_${stores[0].id}`) || stores[0].address,
-        value: stores[0].id.toString(),
-        ...stores[0],
-      };
-      setSelectedStore(firstStore);
-      focusOnStore(firstStore); // Focus map on first store when language changes
+  useEffect(() => {
+    if (storesList.length > 0 && selectedStore) {
+      const selected = storesList.find(s => s.id.toString() === selectedStore.value);
+      if (selected) {
+        focusOnStore(selected);
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [language]);
-
+  }, [selectedStore, storesList]);
 
   return (
     <AppLayoutWrapper showHeader={false} showBottomBar={false}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.container}
-      >
-        <SafeAreaView style={{ flex: 1 }}>
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 16 }}>
-            <ImageBackground
-              source={require("../../../../../assets/images/shop.jpg")}
-              style={styles.imageBackground}
+      <Stack.Screen options={{ title: t("ourBranches") || "Our Branches" }} />
+      <View style={styles.container}>
+        {/* Header */}
+        {/* <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t("ourStoresTitle") || "Our Stores"}</Text>
+          <View style={{ width: 24 }} />
+        </View> */}
+
+        {/* Map View */}
+        <View style={styles.mapContainer}>
+          {storesList.length > 0 ? (
+            <MapView
+              ref={mapRef}
+              style={styles.map}
+              initialRegion={{
+                latitude: selectedStore?.latitude || storesList[0].latitude,
+                longitude: selectedStore?.longitude || storesList[0].longitude,
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
+              }}
             >
-              <View style={styles.headerContainer}>
-                <LinearGradient
-                  colors={['transparent', 'rgba(0,0,0,0.8)']}
-                  style={styles.headerGradient}
-                >
-                  <Text style={styles.headerText}>{t("ourStoresTitle")}</Text>
-                </LinearGradient>
-              </View>
-            </ImageBackground>
-
-            <View style={styles.dropdownContainer}>
-              <Text style={styles.sectionLabel}>{t("selectStore") || "Select a Store"}</Text>
-              <Dropdown
-                style={[styles.dropdown, isFocus && { borderColor: theme.colors.primary }]}
-                placeholderStyle={styles.placeholderStyle}
-                selectedTextStyle={styles.selectedTextStyle}
-                inputSearchStyle={styles.inputSearchStyle}
-                iconStyle={styles.iconStyle}
-                data={dropdownData}
-                search
-                maxHeight={300}
-                labelField="label"
-                valueField="value"
-                placeholder={!isFocus ? t("selectStoreAddress") : "..."}
-                searchPlaceholder={t("searchAddresses")}
-                value={selectedStore?.value}
-                onFocus={() => setIsFocus(true)}
-                onBlur={() => setIsFocus(false)}
-                onChange={(item) => {
-                  setSelectedStore(item);
-                  setIsFocus(false);
-                  focusOnStore(item);
-                }}
-                renderLeftIcon={() => (
-                  <AntDesign
-                    name="environment"
-                    size={20}
-                    color={isFocus ? theme.colors.primary : "#666"}
-                    style={styles.icon}
-                  />
-                )}
-              />
-            </View>
-
-            <View style={styles.mapContainer}>
-              <MapView
-                ref={mapRef}
-                style={styles.map}
-                initialRegion={{
-                  latitude: stores[0].latitude,
-                  longitude: stores[0].longitude,
-                  latitudeDelta: 0.0922,
-                  longitudeDelta: 0.0421,
-                }}
-              >
-                {stores.map((store) => (
+              {storesList.map((store) => {
+                const isSelected = selectedStore?.value === store.id.toString();
+                return (
                   <Marker
                     key={store.id}
                     coordinate={{
@@ -210,32 +242,83 @@ const StoreLocator = () => {
                     }}
                     title={store.name}
                     description={store.address}
+                    pinColor={isSelected ? "red" : "orange"}
                   />
-                ))}
-              </MapView>
+                );
+              })}
+            </MapView>
+          ) : (
+            <View style={[styles.map, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#111' }]}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
+          )}
+        </View>
 
-            <View style={styles.storeList}>
-              {stores.map((store) => (
-                <View key={store.id} style={styles.storeListItem}>
-                  <View style={styles.storeInfo}>
-                    <Text style={styles.storeName}>{store.name}</Text>
-                    <Text style={styles.storeAddress}>
+        {/* Floating Store Carousel Overlay */}
+        {storesList.length > 0 && (
+          <View style={styles.carouselOverlay}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.carouselContainer}
+              snapToInterval={280 + 16}
+              decelerationRate="fast"
+            >
+              {storesList.map((store) => {
+                const isSelected = selectedStore?.value === store.id.toString();
+                return (
+                  <TouchableOpacity
+                    key={store.id}
+                    activeOpacity={0.9}
+                    style={[
+                      styles.storeCard,
+                      isSelected && styles.storeCardSelected,
+                    ]}
+                    onPress={() => {
+                      const item = {
+                        label: store.name + (store.city ? ` - ${store.city}` : ""),
+                        value: store.id.toString(),
+                        ...store,
+                      };
+                      setSelectedStore(item);
+                    }}
+                  >
+                    <View style={styles.cardHeaderRow}>
+                      <Ionicons
+                        name="business"
+                        size={20}
+                        color={isSelected ? theme.colors.primary : "#777"}
+                      />
+                      <Text style={[styles.cardTitleText, isSelected && { color: theme.colors.primary }]} numberOfLines={1}>
+                        {store.name}
+                      </Text>
+                    </View>
+
+                    <Text style={styles.cardAddressText} numberOfLines={2}>
                       {store.address}
                     </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.directionButton}
-                    onPress={() => getDirections(store)}
-                  >
-                    <Ionicons name="navigate-circle" size={40} color={theme.colors.primary} />
+
+                    {store.phone ? (
+                      <View style={styles.cardPhoneRow}>
+                        <Ionicons name="call" size={14} color="#777" />
+                        <Text style={styles.cardPhoneText}>{store.phone}</Text>
+                      </View>
+                    ) : null}
+
+                    <TouchableOpacity
+                      style={styles.cardDirectionsBtn}
+                      onPress={() => getDirections(store)}
+                    >
+                      <Ionicons name="navigate-circle" size={20} color="#fff" />
+                      <Text style={styles.cardDirectionsBtnText}>{t("getDirections") || "Directions"}</Text>
+                    </TouchableOpacity>
                   </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </KeyboardAvoidingView>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+      </View>
     </AppLayoutWrapper>
   );
 };
@@ -245,130 +328,108 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.quaternary,
   },
-  imageBackground: {
-    height: 220,
-    justifyContent: "flex-end",
-    borderRadius: 24,
-    overflow: "hidden",
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  headerContainer: {
-    overflow: "hidden",
-  },
-  headerGradient: {
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-  },
-  headerText: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "white",
-    textShadowColor: "rgba(0,0,0,0.3)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-    letterSpacing: 0.5,
-  },
-  dropdownContainer: {
-    marginBottom: 20,
-  },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.textMediumGrey,
-    marginBottom: 8,
-    marginLeft: 4,
-    textTransform: "uppercase",
-  },
-  dropdown: {
-    height: 56,
-    backgroundColor: "white",
-    borderRadius: 16,
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: theme.colors.quaternary,
+    paddingTop: Platform.OS === 'ios' ? 50 : 15,
+    paddingBottom: 15,
     paddingHorizontal: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.05)",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
   },
-  placeholderStyle: {
-    color: "#888",
-    fontSize: 15,
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
   },
-  selectedTextStyle: {
-    color: theme.colors.textDarkGrey,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  inputSearchStyle: {
-    height: 40,
-    fontSize: 16,
-    color: "#333",
-    borderRadius: 8,
-  },
-  icon: {
-    marginRight: 10,
-  },
-  iconStyle: {
-    width: 24,
-    height: 24,
-    tintColor: theme.colors.primary,
+  headerTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
   },
   mapContainer: {
-    borderRadius: 24,
-    overflow: 'hidden',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-    marginBottom: 24,
-    backgroundColor: 'white',
-    padding: 4,
+    flex: 1,
+    width: "100%",
+    height: "100%",
   },
   map: {
-    height: 320,
-    borderRadius: 20,
+    ...StyleSheet.absoluteFillObject,
   },
-  storeList: {
-    marginBottom: 30,
+  carouselOverlay: {
+    position: "absolute",
+    bottom: Platform.OS === 'ios' ? 40 : 20,
+    left: 0,
+    right: 0,
+    paddingVertical: 10,
+    zIndex: 10,
+  },
+  carouselContainer: {
+    paddingLeft: 16,
+    paddingRight: 16,
     gap: 16,
   },
-  storeListItem: {
+  storeCard: {
+    width: 280,
     backgroundColor: "white",
-    padding: 20,
     borderRadius: 20,
+    padding: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.03)'
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
+    borderWidth: 1.5,
+    borderColor: "rgba(0,0,0,0.05)",
   },
-  storeInfo: {
-    flex: 1,
-    marginRight: 12,
+  storeCardSelected: {
+    borderColor: theme.colors.primary,
+    borderWidth: 1.5,
   },
-  storeName: {
-    fontSize: 18,
+  cardHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
+  cardTitleText: {
+    fontSize: 16,
     fontWeight: "700",
-    color: theme.colors.primary,
-    marginBottom: 6,
+    color: "#2d3748",
+    flex: 1,
   },
-  storeAddress: {
-    fontSize: 14,
-    color: "#555",
-    lineHeight: 20,
+  cardAddressText: {
+    fontSize: 13,
+    color: "#4a5568",
+    lineHeight: 18,
+    height: 36,
+    marginBottom: 8,
   },
-  directionButton: {
-    padding: 4,
-  }
+  cardPhoneRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 12,
+  },
+  cardPhoneText: {
+    fontSize: 12,
+    color: "#718096",
+  },
+  cardDirectionsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 8,
+    borderRadius: 12,
+    gap: 6,
+  },
+  cardDirectionsBtnText: {
+    color: "white",
+    fontSize: 13,
+    fontWeight: "700",
+  },
 });
 
 export default StoreLocator;

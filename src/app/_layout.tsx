@@ -285,6 +285,8 @@ export default function RootLayout() {
                 rewards: 0,
                 mpinStatus: parsedUser.mpinStatus,
                 usertype: parsedUser.userType,
+                branch_id: parsedUser.branch_id,
+                allow_multi_branch: parsedUser.allow_multi_branch,
               });
               logger.auth(
                 "ðŸ” Layout: Updated global store with user data"

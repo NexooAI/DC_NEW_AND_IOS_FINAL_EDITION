@@ -123,7 +123,7 @@ interface GlobalStore {
   isTabVisible: boolean;
   setTabVisibility: (visible: boolean) => void;
 
-  // Cache for rates and schemes
+  // Cache for rates, schemes, and visibility
   cachedRates: {
     data: any;
     timestamp: number;
@@ -132,16 +132,24 @@ interface GlobalStore {
     data: any[];
     timestamp: number;
   } | null;
+  cachedVisibility: {
+    data: any;
+    timestamp: number;
+  } | null;
 
   // Cache functions
   setCachedRates: (data: any) => void;
   setCachedSchemes: (data: any[]) => void;
+  setCachedVisibility: (data: any) => void;
   getCachedRates: () => { data: any; timestamp: number } | null;
   getCachedSchemes: () => { data: any[]; timestamp: number } | null;
+  getCachedVisibility: () => { data: any; timestamp: number } | null;
   clearCachedRates: () => void;
   clearCachedSchemes: () => void;
+  clearCachedVisibility: () => void;
   isRatesCacheValid: (maxAge?: number) => boolean;
   isSchemesCacheValid: (maxAge?: number) => boolean;
+  isVisibilityCacheValid: (maxAge?: number) => boolean;
 
   // Chat Support visibility
   isChatOpen: boolean;
@@ -201,9 +209,12 @@ const useGlobalStore = create<GlobalStore>()(
             isLoggedIn: false,
             token: null,
             user: null,
-            // Clear payment data on logout
+            // Clear payment data and caches on logout
             paymentRetryData: null,
             currentPaymentSession: null,
+            cachedRates: null,
+            cachedSchemes: null,
+            cachedVisibility: null,
           });
 
           logger.auth('✅ Global Store: Logout completed - all data cleared');
@@ -289,9 +300,10 @@ const useGlobalStore = create<GlobalStore>()(
       isTabVisible: true,
       setTabVisibility: (visible: boolean) => set({ isTabVisible: visible }),
 
-      // Cache for rates and schemes
+      // Cache for rates, schemes, and visibility
       cachedRates: null,
       cachedSchemes: null,
+      cachedVisibility: null,
 
       // Cache functions
       setCachedRates: (data: any) => {
@@ -317,6 +329,16 @@ const useGlobalStore = create<GlobalStore>()(
         });
       },
 
+      setCachedVisibility: (data: any) => {
+        set({
+          cachedVisibility: {
+            data,
+            timestamp: Date.now(),
+          },
+        });
+        logger.log("📦 [Cache] Visibility data cached", { timestamp: Date.now() });
+      },
+
       getCachedRates: () => {
         const state = get();
         return state.cachedRates;
@@ -327,6 +349,11 @@ const useGlobalStore = create<GlobalStore>()(
         return state.cachedSchemes;
       },
 
+      getCachedVisibility: () => {
+        const state = get();
+        return state.cachedVisibility;
+      },
+
       clearCachedRates: () => {
         set({ cachedRates: null });
         logger.log("📦 [Cache] Gold rates cache cleared");
@@ -335,6 +362,11 @@ const useGlobalStore = create<GlobalStore>()(
       clearCachedSchemes: () => {
         set({ cachedSchemes: null });
         logger.log("📦 [Cache] Schemes cache cleared");
+      },
+
+      clearCachedVisibility: () => {
+        set({ cachedVisibility: null });
+        logger.log("📦 [Cache] Visibility cache cleared");
       },
 
       isRatesCacheValid: (maxAge: number = 5 * 60 * 1000) => {
@@ -350,6 +382,14 @@ const useGlobalStore = create<GlobalStore>()(
         const state = get();
         if (!state.cachedSchemes) return false;
         const age = Date.now() - state.cachedSchemes.timestamp;
+        return age < maxAge;
+      },
+
+      isVisibilityCacheValid: (maxAge: number = 15 * 60 * 1000) => {
+        // Default 15 minutes cache for visibility config
+        const state = get();
+        if (!state.cachedVisibility) return false;
+        const age = Date.now() - state.cachedVisibility.timestamp;
         return age < maxAge;
       },
 

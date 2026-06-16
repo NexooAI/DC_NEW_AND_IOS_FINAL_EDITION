@@ -87,7 +87,7 @@ const PinInput: React.FC<PinInputProps> = ({
 
 export default function SetMpinPage() {
   const { t } = useTranslation();
-  const { mobile, name, email, referral_code } = useLocalSearchParams();
+  const { mobile, name, email, referral_code, branch_id } = useLocalSearchParams();
   const router = useRouter();
   const [mpin, setMpin] = useState(["", "", "", ""]);
   const [confirmMpin, setConfirmMpin] = useState(["", "", "", ""]);
@@ -156,6 +156,7 @@ export default function SetMpinPage() {
         mpin: mpinValue,
         password: mpinValue,
         referral_code,
+        branch_id: branch_id ? Number(branch_id) : null,
       });
       const data = response.data;
       logger.log("🔍 Set MPIN response:", data);

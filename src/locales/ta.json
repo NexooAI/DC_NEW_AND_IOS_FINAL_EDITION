@@ -1260,5 +1260,7 @@
   "characters": "எழுத்துகள்",
   "mentionWhatYouWereTrying": "நீங்கள் என்ன செய்ய முயற்சித்தீர்கள் என்பதைக் குறிப்பிடவும்",
   "referralCodeAppliedFromClipboard": "பரிந்துரைக் குறியீடு {code} கிளிப்போர்டிலிருந்து பயன்படுத்தப்பட்டது!",
-  "account": "கணக்கு"
+  "account": "கணக்கு",
+  "ourBranches": "எங்கள் கிளைகள்",
+  "getDirections": "வழி பெறுக"
 }

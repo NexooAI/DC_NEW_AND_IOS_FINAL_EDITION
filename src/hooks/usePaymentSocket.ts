@@ -131,7 +131,10 @@ export const usePaymentSocket = ({
           console.log('Payment charged successfully');
           isPaymentCompleted.current = true;
 
-          if (router) {
+          if (onPaymentSuccess) {
+            console.log("[usePaymentSocket] Invoking onPaymentSuccess callback");
+            onPaymentSuccess(data);
+          } else if (router) {
             const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
             try {
               if (isBillOrBooking) {
@@ -155,7 +158,10 @@ export const usePaymentSocket = ({
                     amount: data?.paymentResponse?.amount,
                     txnId: data?.paymentResponse?.txn_id,
                     orderId: data?.paymentResponse?.order_id,
-                    message: data?.paymentResponse?.payment_gateway_response?.resp_message || 'Payment Successful'
+                    message: data?.paymentResponse?.payment_gateway_response?.resp_message || 'Payment Successful',
+                    investmentId: parsedUserDetails?.investmentId,
+                    schemeType: parsedUserDetails?.schemeType,
+                    paymentFrequency: parsedUserDetails?.paymentFrequency,
                   }
                 });
               }
@@ -175,7 +181,10 @@ export const usePaymentSocket = ({
           console.log('Payment not charged');
           isPaymentCompleted.current = true;
 
-          if (router) {
+          if (onPaymentFailure) {
+            console.log("[usePaymentSocket] Invoking onPaymentFailure callback");
+            onPaymentFailure(data);
+          } else if (router) {
             const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
             if (isBillOrBooking) {
               console.log("[usePaymentSocket] Routing to BookingPaymentFailure");
@@ -210,7 +219,6 @@ export const usePaymentSocket = ({
             }
           }
 
-          onPaymentFailure?.(data);
           if (socketInstance && socketInstance.connected) {
             socketInstance.disconnect();
           }

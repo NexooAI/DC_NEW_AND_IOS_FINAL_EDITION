@@ -71,7 +71,7 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
           question: questionText,
           category: "New Collections",
           subject: "New Collections",
-          priority: "medium",
+          priority: "medium" as const,
           userInfo: {
             name: user.name,
             email: user.email,

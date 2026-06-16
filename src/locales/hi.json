@@ -1262,5 +1262,7 @@
   "mentionWhatYouWereTrying": "उल्लेख करें कि आप क्या करने का प्रयास कर रहे थे",
   "referralCodeAppliedFromClipboard": "रेफ़रल कोड {code} क्लिपबोर्ड से लागू किया गया!",
   "sendingOtp": "OTP भेज रहा है...",
-  "account": "खाता"
+  "account": "खाता",
+  "ourBranches": "हमारी शाखाएँ",
+  "getDirections": "दिशा-निर्देश"
 }

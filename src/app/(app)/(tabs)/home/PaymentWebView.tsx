@@ -91,12 +91,12 @@ export default function PaymentWebView() {
         const routerParams = {
           pathname: "/(tabs)/home/payment-success",
           params: {
-            txnId: data?.paymentResponse?.txn_id,
-            orderId: data?.paymentResponse?.order_id,
-            amount: data?.paymentResponse?.amount,
-            investmentId: userDetails?.investmentId,
-            schemeType: userDetails?.schemeType,
-            paymentFrequency: userDetails?.paymentFrequency,
+            txnId: data?.paymentResponse?.txn_id || "",
+            orderId: data?.paymentResponse?.order_id || params.orderId || "",
+            amount: data?.paymentResponse?.amount || params.amount || "",
+            investmentId: userDetails?.investmentId || "",
+            schemeType: userDetails?.schemeType || "",
+            paymentFrequency: userDetails?.paymentFrequency || "",
           },
         }
         console.log("routerParams", routerParams);

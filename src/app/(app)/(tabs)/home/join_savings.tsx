@@ -434,17 +434,21 @@ export default function JoinSavings() {
       try {
         const branches = await api.get(`/branches`);
         //logger.log("branches", branches.data.data);
-        setBranch(branches.data.data);
-        // Auto-select if only one branch
-        if (branches.data.data.length === 1) {
-          handleChange("associated_branch", String(branches.data.data[0].id));
+        const branchData = branches.data.data || [];
+        setBranch(branchData);
+        // Auto-select based on user's registered branch, or if only one branch exists
+        const userAny = user as any;
+        if (userAny?.branch_id) {
+          handleChange("associated_branch", String(userAny.branch_id));
+        } else if (branchData.length === 1) {
+          handleChange("associated_branch", String(branchData[0].id));
         }
       } catch (error) {
         logger.error("Error fetching branches:", error);
       }
     };
     fetchBranche();
-  }, []);
+  }, [user]);
 
   // Fetch KYC status
   useFocusEffect(
@@ -1629,6 +1633,8 @@ export default function JoinSavings() {
   // Step 2 - Account Details & Summary Combined
   const renderStep2 = () => {
     const isSingleBranch = branch.length === 1;
+    const userAny = user as any;
+    const isPickerDisabled = isSingleBranch || (!!userAny?.branch_id && Number(userAny?.allow_multi_branch) !== 1);
     const selectedBranch = branch.find((b) => String(b.id) === formData.associated_branch);
 
     return (
@@ -1685,6 +1691,7 @@ export default function JoinSavings() {
                     onDonePress={() => { }}
                     placeholder={{ label: "Select Branch", value: "" }}
                     value={formData.associated_branch ? String(formData.associated_branch) : ""}
+                    disabled={isPickerDisabled}
                     items={branch.map((b) => ({
                       label: b.branch_name,
                       value: String(b.id),
@@ -1694,10 +1701,12 @@ export default function JoinSavings() {
                       inputIOS: [
                         pickerSelectStylesModern.inputIOS,
                         errors.associated_branch && styles.modernInputError,
+                        isPickerDisabled && { backgroundColor: "rgba(240, 240, 240, 0.4)", color: "#888" },
                       ],
                       inputAndroid: [
                         pickerSelectStylesModern.inputAndroid,
                         errors.associated_branch && styles.modernInputError,
+                        isPickerDisabled && { backgroundColor: "rgba(240, 240, 240, 0.4)", color: "#888" },
                       ],
                     }}
                     useNativeAndroidPickerStyle={false}
@@ -1705,7 +1714,7 @@ export default function JoinSavings() {
                       <Ionicons
                         name="chevron-down"
                         size={20}
-                        color={theme.colors.primary}
+                        color={isPickerDisabled ? "#888" : theme.colors.primary}
                       />
                     )}
                   />

@@ -1,4 +1,0 @@
-﻿
-> reactnativegoldapp@1.0.0 test
-> jest __tests__/flows/PaymentFlow.test.tsx
-

@@ -101,7 +101,7 @@ const MpinInput = ({
 };
 
 export default function MpinSetup() {
-  const { name, email, mobile, referral_code } = useLocalSearchParams();
+  const { name, email, mobile, referral_code, branch_id } = useLocalSearchParams();
   const router = useRouter();
   const { t } = useTranslation();
   const [mpin, setMpin] = useState("");
@@ -142,6 +142,7 @@ export default function MpinSetup() {
         mpin,
         password: mpin,
         referral_code: referral_code || "",
+        branch_id: branch_id ? Number(branch_id) : null,
       });
 
       if (response.status === 200) {

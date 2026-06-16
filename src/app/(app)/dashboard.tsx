@@ -29,6 +29,7 @@ import useGlobalStore from "@/store/global.store";
 import api, { userAPI } from "@/services/api";
 import { theme } from "@/constants/theme";
 import LanguageSelector from "@/components/LanguageSelector";
+import { fetchGoldRatesWithCache } from "@/utils/apiCache";
 
 const { wp, hp, rf } = responsiveUtils;
 const { width } = Dimensions.get("window");
@@ -78,17 +79,13 @@ export default function Dashboard() {
     }, [t])
   );
 
-  const loadData = async () => {
+  const loadData = async (forceRefresh: boolean = false) => {
     try {
       if (!user) return;
 
-      const res = await api.get(
-        `/home?userId=${user.id || (user as any).id}`,
-        { skipLoading: true } as any
-      );
-
-      if (res.data.success) {
-        setRates(res.data.data.currentRates);
+      const ratesData = await fetchGoldRatesWithCache(forceRefresh);
+      if (ratesData) {
+        setRates(ratesData);
       }
 
       const social = await api.get(
@@ -108,7 +105,7 @@ export default function Dashboard() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadData();
+    await loadData(true);
     setRefreshing(false);
   };
 

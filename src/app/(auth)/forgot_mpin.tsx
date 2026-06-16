@@ -1444,7 +1444,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cancelButtonText: {
-    color: theme.colors.black,
+    color: theme.colors.white,
     fontSize: 16,
     fontWeight: "600",
   },

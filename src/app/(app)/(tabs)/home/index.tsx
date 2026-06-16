@@ -1212,11 +1212,21 @@ export default function Home() {
 
   // Auto-refresh when screen comes into focus (user navigates back to home)
   const isInitialMount = useRef(true);
+  const lastFocusRefreshTime = useRef(Date.now());
   useFocusEffect(
     useCallback(() => {
       // Skip refresh on initial mount (handled by useEffect below)
       if (isInitialMount.current) {
         isInitialMount.current = false;
+        lastFocusRefreshTime.current = Date.now();
+        return;
+      }
+
+      // Check if we should throttle this focus refresh (e.g. 30 seconds)
+      const now = Date.now();
+      const timeSinceLastRefresh = now - lastFocusRefreshTime.current;
+      if (timeSinceLastRefresh < 30000) {
+        logger.log(`📦 Home: Skipping focus auto-refresh (throttled, last refresh was ${Math.round(timeSinceLastRefresh / 1000)}s ago)`);
         return;
       }
 
@@ -1224,13 +1234,22 @@ export default function Home() {
       logger.log("🔄 Home: Screen focused, auto-refreshing data...");
       const refreshData = async () => {
         try {
-          await Promise.all([
+          lastFocusRefreshTime.current = Date.now();
+          const refreshPromises: Promise<any>[] = [
             fetchHomeData(true),
             fetchInvestmentData(),
-            fetchSchemesData(true), // Force refresh schemes on focus
-            fetchKycStatus(), // Refresh KYC status (important for Quick Join flow)
-            refetchVisibility(),
-          ]);
+            fetchSchemesData(false), // Respect cache on focus
+            refetchVisibility(), // Auto-uses Zustand cache
+          ];
+
+          // Only fetch KYC status on focus if it is not already completed (true)
+          if (kycStatus !== true) {
+            refreshPromises.push(fetchKycStatus());
+          } else {
+            logger.log("📦 Home: KYC already completed, skipping status fetch");
+          }
+
+          await Promise.all(refreshPromises);
           logger.log("✅ Home: Auto-refresh completed");
         } catch (error) {
           logger.error("❌ Home: Auto-refresh error:", error);
@@ -1238,7 +1257,7 @@ export default function Home() {
       };
 
       refreshData();
-    }, [fetchHomeData, fetchInvestmentData, fetchSchemesData, fetchKycStatus, refetchVisibility])
+    }, [fetchHomeData, fetchInvestmentData, fetchSchemesData, fetchKycStatus, refetchVisibility, kycStatus])
   );
 
   // Handle back button press with confirmation

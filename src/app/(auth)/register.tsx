@@ -288,7 +288,10 @@ export default function Register() {
         // await SecureStore.setItemAsync("authToken", data.token);
         router.push({
           pathname: "/(auth)/userBasicDetails",
-          params: { mobile },
+          params: {
+            mobile,
+            emp_code: (params.emp_code as string) || (params.empCode as string) || (params.code as string) || ""
+          },
         });
         setPins(["", "", "", ""]);
       } else {
@@ -378,13 +381,7 @@ export default function Register() {
               contentContainerStyle={registerStyles.scrollViewContent}
               keyboardShouldPersistTaps="handled"
             >
-              <View style={registerStyles.logoContainer}>
-                <Image
-                  source={{ uri: theme.images.auth.logo }}
-                  style={registerStyles.logo}
-                  resizeMode="contain"
-                />
-              </View>
+              <View style={{ height: Platform.OS === 'ios' ? 100 : 80 }} />
 
               <View style={registerStyles.formContainer}>
                 <View style={registerStyles.cardContainer}>
