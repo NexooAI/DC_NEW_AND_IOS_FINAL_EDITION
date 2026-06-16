@@ -1243,7 +1243,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: "100%",
     alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 40 : 0,
+    paddingTop: Platform.OS === "ios" ? 40 : 130,
     marginBottom: 0,
   },
   logo: {

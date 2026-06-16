@@ -689,7 +689,7 @@ export default function Login() {
 
   const checkTokenValidity = async () => {
     try {
-      const token = await SecureStore.getItem("authToken");
+      const token = await SecureStore.getItemAsync("authToken");
       if (!token) return;
     } catch (error) {
       logger.error("Error checking token:", error);

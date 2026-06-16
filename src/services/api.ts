@@ -248,9 +248,9 @@ const isPublicEndpoint = (url: string | undefined): boolean => {
 
 const checkTokenValidity = async () => {
   try {
-    let token = await SecureStore.getItem("token");
+    let token = await SecureStore.getItemAsync("token");
     if (!token) {
-      token = await SecureStore.getItem("accessToken");
+      token = await SecureStore.getItemAsync("accessToken");
     }
 
     if (!token || typeof token !== 'string' || token.trim() === '') {
@@ -281,7 +281,7 @@ const checkTokenValidity = async () => {
 
       if (currentTime >= expirationTime) {
         logger.log('🔄 Token expired, attempting refresh...');
-        const refreshToken = await SecureStore.getItem("refreshToken");
+        const refreshToken = await SecureStore.getItemAsync("refreshToken");
         if (refreshToken) {
           try {
             logger.log('🔄 Token expired, attempting refresh...');
@@ -290,10 +290,10 @@ const checkTokenValidity = async () => {
             const newAccessToken = response.data.accessToken;
             const newRefreshToken = response.data.refreshtoken;
 
-            await SecureStore.setItem("token", newToken);
-            await SecureStore.setItem("accessToken", newAccessToken);
-            await SecureStore.setItem("refreshToken", newRefreshToken);
-            await SecureStore.setItem("authToken", newToken);
+            await SecureStore.setItemAsync("token", newToken);
+            await SecureStore.setItemAsync("accessToken", newAccessToken);
+            await SecureStore.setItemAsync("refreshToken", newRefreshToken);
+            await SecureStore.setItemAsync("authToken", newToken);
 
             logger.log('✅ Token refreshed successfully');
             return newToken;
@@ -481,7 +481,7 @@ apiClient.interceptors.response.use(
 
       try {
         logger.log('🔄 Starting token refresh process...');
-        const refreshToken = await SecureStore.getItem("refreshToken");
+        const refreshToken = await SecureStore.getItemAsync("refreshToken");
 
         if (!refreshToken) {
           logger.log('❌ No refresh token available, initiating logout');
@@ -502,10 +502,10 @@ apiClient.interceptors.response.use(
         const newRefreshToken = response.data.refreshtoken;
 
         // Store new tokens
-        await SecureStore.setItem("token", newToken);
-        await SecureStore.setItem("accessToken", newAccessToken);
-        await SecureStore.setItem("refreshToken", newRefreshToken);
-        await SecureStore.setItem("authToken", newToken);
+        await SecureStore.setItemAsync("token", newToken);
+        await SecureStore.setItemAsync("accessToken", newAccessToken);
+        await SecureStore.setItemAsync("refreshToken", newRefreshToken);
+        await SecureStore.setItemAsync("authToken", newToken);
 
         logger.log('✅ Token refreshed successfully, retrying original request');
 
