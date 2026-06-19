@@ -41,7 +41,7 @@ export default function SchemesHub() {
     return (
         <View style={styles.container}>
             <LinearGradient
-                colors={["#F2E6D2", "#F5DEB3"]}
+                colors={[theme.colors.primary, theme.colors.primary]}
                 style={styles.headerArea}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -53,9 +53,9 @@ export default function SchemesHub() {
                             style={{ padding: 4, marginRight: 12 }}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                            <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+                            <Ionicons name="arrow-back" size={24} color="#ffffff" />
                         </TouchableOpacity>
-                        <Text style={{ fontSize: 20, fontWeight: "700", color: "#1a1a1a" }}>
+                        <Text style={{ fontSize: 20, fontWeight: "700", color: "#ffffff" }}>
                             {typeof t("schemes") === 'object' ? t("schemes.title") : t("schemes") || "Schemes"}
                         </Text>
                     </View>
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     },
     pillSwitcherBg: {
         flexDirection: "row",
-        backgroundColor: "rgba(0,0,0,0.06)",
+        backgroundColor: "rgba(255,255,255,0.1)",
         borderRadius: 25,
         padding: 4,
         overflow: 'hidden',
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     pillTabText: {
         fontSize: 14,
         fontWeight: "700",
-        color: "#666",
+        color: "rgba(255,255,255,0.7)",
         zIndex: 1,
     },
     pillTabActiveText: {

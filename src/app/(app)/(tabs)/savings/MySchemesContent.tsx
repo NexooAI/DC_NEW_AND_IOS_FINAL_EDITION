@@ -81,6 +81,7 @@ interface InvestmentResponse {
     schemeName: string;
     type: string;
     schemeType: string;
+    duration_months?: number | string;
   };
   chits?: {
     amount: string;
@@ -223,11 +224,8 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
         return;
       }
 
-      // If investments is empty and success is true, do not set error (show EmptyState)
-      if (Array.isArray(investments) && investments.length === 0) {
-        setSavings([]);
-        setLoading(false);
-        return;
+      if (!Array.isArray(investments)) {
+        investments = [];
       }
       logger.log("Rewards data:", rewardsResponse, "investments", investments);
       // Process rewards data and add to investments
@@ -411,17 +409,85 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
             schemeCode: schemeObj.schemeId ? schemeObj.schemeId.toString() : "",
             noOfIns: chit.noOfInstallments
               ? chit.noOfInstallments.toString()
-              : "0",
+              : (schemeObj.duration_months ? schemeObj.duration_months.toString() : "0"),
             schemesData: schemeObj,
             chitData: chit,
             transactions: [],
             paymentFrequency: item.paymentFrequency || "Monthly",
             rewards: item.rewards || [],
+            dueDate: item.dueDate || "",
           };
         });
 
 
-      setSavings(transformedSavings);
+      let oldGoldDeposits: Scheme[] = [];
+      try {
+        const ogResponse = await api.get(`/old-gold/user/${user.id}`, { skipLoading: true } as any);
+        if (ogResponse.data && ogResponse.data.success && Array.isArray(ogResponse.data.data)) {
+          oldGoldDeposits = ogResponse.data.data.map((dep: any) => {
+            const doj = dep.depositDate
+              ? new Date(dep.depositDate).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+              : "N/A";
+
+            const dom = dep.maturityDate
+              ? new Date(dep.maturityDate).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+              : "N/A";
+
+            return {
+              chitId: dep.investmentId || "",
+              investmentId: String(dep.id),
+              id: String(dep.id),
+              schemeName: dep.schemeName || "Old Gold Chit Scheme",
+              metalType: "gold",
+              savingType: "old_gold",
+              status: dep.status || "active",
+              totalPaid: dep.valuationAmount || 0,
+              monthsPaid: 11 - Math.ceil(dep.daysToMaturity / 30) > 0 ? 11 - Math.ceil(dep.daysToMaturity / 30) : 0,
+              emiAmount: 0,
+              maturityDate: dom,
+              goldWeight: dep.netGoldWeight || dep.net_gold_weight || 0,
+              accountHolder: user.name || "",
+              accNo: String(dep.id),
+              joiningDate: doj,
+              schemeCode: "OLD_GOLD",
+              noOfIns: "11",
+              transactions: [],
+              paymentFrequency: "One-time",
+              rewards: [],
+              schemesData: {
+                schemeId: "OLD_GOLD",
+                schemeName: "Old Gold Chit Scheme",
+                type: "gold",
+                schemeType: "OLD_GOLD",
+                paymentFrequencyName: "One-time",
+                paymentFrequencyId: 4,
+              },
+              chitData: {
+                amount: "0",
+                noOfInstallments: 11,
+              },
+              grossWeight: dep.grossWeight,
+              purityCarat: dep.purityCarat,
+              daysToMaturity: dep.daysToMaturity,
+              ornamentDescription: dep.ornamentDescription,
+              ornamentPhotos: dep.ornamentPhotos,
+              valuationAmount: dep.valuationAmount,
+            };
+          });
+        }
+      } catch (err) {
+        logger.error("Error fetching old gold deposits in fetchUserData:", err);
+      }
+
+      setSavings([...transformedSavings, ...oldGoldDeposits]);
     } catch (err: any) {
       logger.error("Error fetching data:", err);
       setError(err.message || "Failed to fetch savings data");
@@ -486,9 +552,48 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
   const totalGold = savings.reduce((acc, curr) => acc + curr.goldWeight, 0);
   const hasAmountType = savings.some((s) => s.savingType === "amount");
 
-  // Filtered savings based on selectedType and subFilter
+  // Determine if the user has both types (at least one Fixed and at least one Flexi/Hybrid)
+  // of schemes in the currently selected status tab.
+  const showSubFilter = useMemo(() => {
+    const statusMatchedSavings = savings.filter((item: any) => {
+      const status = item.status?.toLowerCase() || "active";
+      if (selectedType === "Active") return (status === "active" || status === "y");
+      if (selectedType === "Matured") return (status === "matured");
+      if (selectedType === "Claimed") return (status.includes("claim") || status === "closed");
+      if (selectedType === "Drop") return (status.includes("drop") || status === "cancelled");
+      return false;
+    });
+
+    let hasFixed = false;
+    let hasFlexi = false;
+
+    for (const item of statusMatchedSavings) {
+      const nameStr = item.schemeName?.toLowerCase() || "";
+      const freqStr = item.paymentFrequency?.toLowerCase() || "";
+      // Flexi/Hybrid schemes have 'flexi' or 'hybrid' in name or payment frequency
+      const isFlexi =
+        freqStr.includes("flexi") ||
+        nameStr.includes("flexi") ||
+        freqStr.includes("hybrid") ||
+        nameStr.includes("hybrid");
+
+      if (isFlexi) {
+        hasFlexi = true;
+      } else {
+        hasFixed = true;
+      }
+
+      if (hasFixed && hasFlexi) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [savings, selectedType]);
+
+  // Filtered savings based on selectedType, subFilter and showSubFilter presence
   const filteredSavings = useMemo(() => {
-    logger.log("Filtering savings for type:", selectedType, "and subFilter:", subFilter);
+    logger.log("Filtering savings for type:", selectedType, "and subFilter:", subFilter, "showSubFilter:", showSubFilter);
     return savings.filter((item: any) => {
       // 1. Core Status filtering
       const status = item.status?.toLowerCase() || "active";
@@ -500,19 +605,25 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
 
       if (!statusMatch) return false;
 
-      // 2. SubFilter (Flexi vs Fixed)
+      // 2. SubFilter (Flexi vs Fixed) - only if we show sub-filters (both present)
+      if (!showSubFilter) return true;
+
       const nameStr = item.schemeName?.toLowerCase() || "";
       const freqStr = item.paymentFrequency?.toLowerCase() || "";
 
-      // Flexi schemes have 'flexi' in name or payment frequency
-      const isFlexi = freqStr.includes("flexi") || nameStr.includes("flexi");
+      // Flexi schemes have 'flexi' or 'hybrid' in name or payment frequency
+      const isFlexi =
+        freqStr.includes("flexi") ||
+        nameStr.includes("flexi") ||
+        freqStr.includes("hybrid") ||
+        nameStr.includes("hybrid");
 
       if (subFilter === "Flexi" && isFlexi) return true;
       if (subFilter === "Fixed" && !isFlexi) return true;
 
       return false;
     });
-  }, [savings, selectedType, subFilter]);
+  }, [savings, selectedType, subFilter, showSubFilter]);
 
   // Auto-scroll to specific investment
   useEffect(() => {
@@ -714,39 +825,41 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
       </View>
 
       {/* Sub Filter: Flexi vs Fixed Pill Tabs */}
-      <View style={styles.subPillContainer}>
-        <View style={styles.subPillBg}>
-          {["Flexi", "Fixed"].map((filterOpt) => (
-            <TouchableOpacity
-              key={filterOpt}
-              style={[
-                styles.subPillItem,
-                subFilter === filterOpt && styles.pillTabActive
-              ]}
-              onPress={() => setSubFilter(filterOpt as "Flexi" | "Fixed")}
-              activeOpacity={0.9}
-            >
-              {subFilter === filterOpt && (
-                <LinearGradient
-                  colors={['#FFD700', '#DAA520']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={StyleSheet.absoluteFill}
-                />
-              )}
-              <Text
+      {showSubFilter && (
+        <View style={styles.subPillContainer}>
+          <View style={styles.subPillBg}>
+            {["Flexi", "Fixed"].map((filterOpt) => (
+              <TouchableOpacity
+                key={filterOpt}
                 style={[
-                  styles.pillTabText,
-                  { fontSize: 12 },
-                  subFilter === filterOpt && styles.pillTabActiveText,
+                  styles.subPillItem,
+                  subFilter === filterOpt && styles.pillTabActive
                 ]}
+                onPress={() => setSubFilter(filterOpt as "Flexi" | "Fixed")}
+                activeOpacity={0.9}
               >
-                {filterOpt === "Flexi" ? (translations.flexi || "Flexi") : (translations.fixed || "Fixed")}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                {subFilter === filterOpt && (
+                  <LinearGradient
+                    colors={['#FFD700', '#DAA520']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                )}
+                <Text
+                  style={[
+                    styles.pillTabText,
+                    { fontSize: 12 },
+                    subFilter === filterOpt && styles.pillTabActiveText,
+                  ]}
+                >
+                  {filterOpt === "Flexi" ? (translations.flexi || "Flexi") : (translations.fixed || "Fixed")}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 

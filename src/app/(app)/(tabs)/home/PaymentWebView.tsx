@@ -16,6 +16,17 @@ import { logAppEvent } from "@/services/appEventService";
 
 let errorTimeout: NodeJS.Timeout | null = null;
 
+const safeParseJSON = (jsonString: any, fallback: any = {}) => {
+  if (!jsonString) return fallback;
+  if (typeof jsonString === 'object') return jsonString;
+  try {
+    return JSON.parse(jsonString);
+  } catch (e) {
+    console.error("Error parsing JSON:", e);
+    return fallback;
+  }
+};
+
 export default function PaymentWebView() {
   const params = useLocalSearchParams();
   const router = useRouter();
@@ -71,7 +82,7 @@ export default function PaymentWebView() {
       });
 
       console.log("params.userDetails", params.userDetails);
-      const userDetails = params.userDetails ? JSON.parse(params.userDetails as string) : {};
+      const userDetails = safeParseJSON(params.userDetails);
 
       const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
       if (isBillOrBooking) {
@@ -159,7 +170,7 @@ export default function PaymentWebView() {
         console.log("⚠️ Payment error due to disconnection - handled automatically, starting fallback polling");
         
         // Start polling fallback if not already started
-        const userDetails = params.userDetails ? JSON.parse(params.userDetails as string) : {};
+        const userDetails = safeParseJSON(params.userDetails);
         const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
         const successTarget = isBillOrBooking
           ? {
@@ -246,18 +257,16 @@ export default function PaymentWebView() {
         ]
       );
     },
-    parsedUserDetails: params.userDetails
-      ? JSON.parse(params.userDetails as string)
-      : {
-          ...user,
-          id: params.userId || user?.id,
-          orderId: params.orderId as string || "",
-          accountNumber: accountNumber || (user as any)?.accountNumber || (user as any)?.accountNo || (user as any)?.accNo || "",
-          accountName: accountName || user?.name || (user as any)?.accountName || "",
-          userId: params.userId || user?.id,
-          name: accountName || user?.name || "",
-          userMobile: user?.mobile || (user as any)?.mobileNumber || params.userMobile || ""
-        },
+    parsedUserDetails: safeParseJSON(params.userDetails, {
+      ...user,
+      id: params.userId || user?.id,
+      orderId: params.orderId as string || "",
+      accountNumber: accountNumber || (user as any)?.accountNumber || (user as any)?.accountNo || (user as any)?.accNo || "",
+      accountName: accountName || user?.name || (user as any)?.accountName || "",
+      userId: params.userId || user?.id,
+      name: accountName || user?.name || "",
+      userMobile: user?.mobile || (user as any)?.mobileNumber || params.userMobile || ""
+    }),
     router,
     orderId: params.orderId as string,
     bookingId,
@@ -526,7 +535,7 @@ export default function PaymentWebView() {
             {Platform.OS === 'android' ? (
               <WebView
                 ref={webViewRef}
-                source={{ uri: params.url as string }}
+                source={{ uri: url }}
                 style={{ flex: 1 }}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
@@ -545,7 +554,7 @@ export default function PaymentWebView() {
                   console.log("OPEN WINDOW:", event.nativeEvent);
                 }}
                 onLoadStart={() => {
-                  console.log("WebView started loading:", params.url);
+                  console.log("WebView started loading:", url);
                 }}
                 onLoadEnd={() => {
                   console.log("WebView finished loading");
@@ -601,7 +610,7 @@ export default function PaymentWebView() {
                   const currentUrl = navState.url.toLowerCase();
                   if (currentUrl.includes("/payments/status") || currentUrl.includes("/loading")) {
                     console.log("[DEBUG Payment Flow] WebView reached return url callback page. Starting polling...");
-                    const userDetails = params.userDetails ? JSON.parse(params.userDetails as string) : {};
+                    const userDetails = safeParseJSON(params.userDetails);
                     const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
                     const successTarget = isBillOrBooking
                       ? {
@@ -734,7 +743,7 @@ export default function PaymentWebView() {
             ) : (
               <WebView
                 ref={webViewRef}
-                source={{ uri: params.url as string }}
+                source={{ uri: url }}
                 style={{ flex: 1 }}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
@@ -754,7 +763,7 @@ export default function PaymentWebView() {
                 cacheEnabled={true}
                 incognito={false}
                 onLoadStart={() => {
-                  console.log("WebView started loading:", params.url);
+                  console.log("WebView started loading:", url);
                 }}
                 onLoadEnd={() => {
                   console.log("WebView finished loading");
@@ -810,7 +819,7 @@ export default function PaymentWebView() {
                   const currentUrl = navState.url.toLowerCase();
                   if (currentUrl.includes("/payments/status") || currentUrl.includes("/loading")) {
                     console.log("[DEBUG Payment Flow] WebView reached return url callback page. Starting polling...");
-                    const userDetails = params.userDetails ? JSON.parse(params.userDetails as string) : {};
+                    const userDetails = safeParseJSON(params.userDetails);
                     const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
                     const successTarget = isBillOrBooking
                       ? {

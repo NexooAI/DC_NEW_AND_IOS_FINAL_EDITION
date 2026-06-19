@@ -12,6 +12,7 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -21,6 +22,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "@/services/api";
+import { responsiveUtils } from "@/utils/responsiveUtils";
+
+const { rf } = responsiveUtils;
 
 import { logger } from "@/utils/logger";
 const { width: screenWidth } = Dimensions.get("window");
@@ -44,6 +48,8 @@ interface ApiScheme {
   DETAILEDDESCRIPTION?: string | { en: string; ta: string };
   ELIGIBILITY?: string[];
   DOCUMENTS?: string[];
+  SCHEME_PLAN_TYPE_ID?: number;
+  branch?: any[];
 }
 
 interface StaticSchemesHorizontalScrollProps {
@@ -65,6 +71,20 @@ export default function StaticSchemesHorizontalScroll({
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
+
+  const [branchModalVisible, setBranchModalVisible] = useState(false);
+  const [selectedBranches, setSelectedBranches] = useState<any[]>([]);
+
+  const getEnquiryButtonText = (lang: string) => {
+    const texts: Record<string, string> = {
+      en: "Visit Branch / Enquiry Now",
+      ta: "கிளையை அணுகவும் / விசாரிக்க",
+      te: "బ్రాంచ్ సందర్శించండి / విచారణ",
+      hi: "शाखा में संपर्क करें / पूछताछ",
+      mal: "ബ്രാഞ്ച് സന്ദർശിക്കുക / അന്വേഷണം",
+    };
+    return texts[lang] || texts.en;
+  };
 
   // Fetch schemes from API with cache
   useEffect(() => {
@@ -368,13 +388,28 @@ export default function StaticSchemesHorizontalScroll({
                     />
                     <Text style={styles.infoButtonText}>{t("info")}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.joinButton}
-                    onPress={() => handleSchemePress(item)}
-                  >
-                    <Text style={styles.joinButtonText}>{t("joinNow")}</Text>
-                    <Ionicons name="arrow-forward" size={16} color="#fff" />
-                  </TouchableOpacity>
+                  {item.SCHEME_PLAN_TYPE_ID === 4 ? (
+                    <TouchableOpacity
+                      style={[styles.joinButton, { backgroundColor: '#DAA520' }]}
+                      onPress={() => {
+                        setSelectedBranches(item.branch || []);
+                        setBranchModalVisible(true);
+                      }}
+                    >
+                      <Text style={styles.joinButtonText}>
+                        {getEnquiryButtonText(locale || "en")}
+                      </Text>
+                      <Ionicons name="call" size={16} color="#fff" />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.joinButton}
+                      onPress={() => handleSchemePress(item)}
+                    >
+                      <Text style={styles.joinButtonText}>{t("joinNow")}</Text>
+                      <Ionicons name="arrow-forward" size={16} color="#fff" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             </LinearGradient>
@@ -607,30 +642,51 @@ export default function StaticSchemesHorizontalScroll({
                       {t("moreInfo")}
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalJoinButton,
-                      {
-                        backgroundColor: getSchemeGradient(
-                          selectedSchemeForModal.TYPE || "flexible"
-                        )[0],
-                      },
-                    ]}
-                    onPress={() => {
-                      setModalVisible(false);
-                      router.push({
-                        pathname: "/home/join_savings",
-                        params: {
-                          schemeId: selectedSchemeForModal.SCHEMEID.toString(),
+                  {selectedSchemeForModal.SCHEME_PLAN_TYPE_ID === 4 ? (
+                    <TouchableOpacity
+                      style={[
+                        styles.modalJoinButton,
+                        {
+                          backgroundColor: '#DAA520',
                         },
-                      });
-                    }}
-                  >
-                    <Text style={styles.modalJoinButtonText}>
-                      {t("joinThisScheme")}
-                    </Text>
-                    <Ionicons name="arrow-forward" size={20} color="#fff" />
-                  </TouchableOpacity>
+                      ]}
+                      onPress={() => {
+                        setModalVisible(false);
+                        setSelectedBranches(selectedSchemeForModal.branch || []);
+                        setBranchModalVisible(true);
+                      }}
+                    >
+                      <Text style={styles.modalJoinButtonText}>
+                        {getEnquiryButtonText(locale || "en")}
+                      </Text>
+                      <Ionicons name="call" size={20} color="#fff" />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={[
+                        styles.modalJoinButton,
+                        {
+                          backgroundColor: getSchemeGradient(
+                            selectedSchemeForModal.TYPE || "flexible"
+                          )[0],
+                        },
+                      ]}
+                      onPress={() => {
+                        setModalVisible(false);
+                        router.push({
+                          pathname: "/home/join_savings",
+                          params: {
+                            schemeId: selectedSchemeForModal.SCHEMEID.toString(),
+                          },
+                        });
+                      }}
+                    >
+                      <Text style={styles.modalJoinButtonText}>
+                        {t("joinThisScheme")}
+                      </Text>
+                      <Ionicons name="arrow-forward" size={20} color="#fff" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             </>
@@ -724,6 +780,83 @@ export default function StaticSchemesHorizontalScroll({
       )}
 
       {renderModal()}
+
+      {/* Branch Details / Enquiry Modal */}
+      <Modal
+        visible={branchModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setBranchModalVisible(false)}
+      >
+        <SafeAreaView style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxHeight: '70%', paddingBottom: 20 }]}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleContainer}>
+                <View style={[styles.modalIconContainer, { backgroundColor: '#DAA520' }]}>
+                  <Ionicons name="business" size={24} color="#fff" />
+                </View>
+                <View style={styles.modalTitleText}>
+                  <Text style={styles.modalTitle}>
+                    {locale === "ta" ? "எங்களை தொடர்பு கொள்ளவும்" : "Contact / Enquiry"}
+                  </Text>
+                  <Text style={styles.modalSubtitle}>
+                    {locale === "ta" 
+                      ? "கீழே உள்ள எங்களின் கிளைகளைத் தொடர்பு கொண்டு இத்திட்டத்தில் இணையுங்கள்"
+                      : "Visit or call any of our branches to enroll in this scheme"
+                    }
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity style={styles.closeButton} onPress={() => setBranchModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView 
+              style={styles.modalBody}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
+              {selectedBranches && selectedBranches.length > 0 ? (
+                selectedBranches.map((branch, idx) => (
+                  <View key={idx} style={styles.branchCard}>
+                    <View style={styles.branchHeaderRow}>
+                      <Ionicons name="business" size={20} color="#DAA520" />
+                      <Text style={styles.branchNameText}>
+                        {branch.branchName || "Branch"}
+                      </Text>
+                    </View>
+                    
+                    <Text style={styles.branchAddressText}>
+                      {branch.branchAddress}, {branch.branchCity}, {branch.branchState}
+                    </Text>
+
+                    {branch.branchPhone && (
+                      <TouchableOpacity 
+                        style={styles.branchCallButton}
+                        onPress={() => {
+                          Linking.openURL(`tel:${branch.branchPhone}`);
+                        }}
+                      >
+                        <Ionicons name="call" size={14} color="#fff" />
+                        <Text style={styles.branchCallButtonText}>
+                          {branch.branchPhone}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))
+              ) : (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <Text style={{ color: '#666' }}>
+                    {locale === "ta" ? "கிளை விவரங்கள் கிடைக்கவில்லை" : "No branch details available"}
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </View>
   );
 }
@@ -743,10 +876,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 24,
+    fontSize: rf(18),
     fontWeight: "700",
     color: theme.colors.primary,
     marginBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: 14,
@@ -1207,5 +1342,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#777",
     textAlign: "center",
+  },
+  branchCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  branchHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  branchNameText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#212529',
+  },
+  branchAddressText: {
+    fontSize: 14,
+    color: '#495057',
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  branchCallButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#28a745',
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 8,
+  },
+  branchCallButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

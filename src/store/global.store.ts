@@ -97,6 +97,10 @@ interface GlobalStore {
     username?: string;
     birth?: string;
     gender?: string;
+    branch_id?: number | null;
+    allow_multi_branch?: number | null;
+    mpinStatus?: boolean;
+    usertype?: string;
   } | null;
   language: AppLocale;
 
@@ -155,6 +159,10 @@ interface GlobalStore {
   isChatOpen: boolean;
   setChatOpen: (open: boolean) => void;
 
+  // Unread Notifications Count
+  unreadNotificationsCount: number;
+  setUnreadNotificationsCount: (count: number) => void;
+
   // Debug function
   debugState: () => GlobalStore;
 }
@@ -196,6 +204,8 @@ const useGlobalStore = create<GlobalStore>()(
           await SecureStore.deleteItemAsync('accessToken');
           await SecureStore.deleteItemAsync('token');
           await SecureStore.deleteItemAsync('refreshToken');
+          await SecureStore.deleteItemAsync('user_mpin');
+          await SecureStore.deleteItemAsync('user_biometric_mpin');
 
           // Clear all FCM and notification data from AsyncStorage
           await AsyncStorage.removeItem('userData');
@@ -396,6 +406,10 @@ const useGlobalStore = create<GlobalStore>()(
       // Chat Support visibility
       isChatOpen: false,
       setChatOpen: (open: boolean) => set({ isChatOpen: open }),
+
+      // Unread Notifications Count
+      unreadNotificationsCount: 0,
+      setUnreadNotificationsCount: (count: number) => set({ unreadNotificationsCount: count }),
 
       // Debug function to check current state
       debugState: () => {

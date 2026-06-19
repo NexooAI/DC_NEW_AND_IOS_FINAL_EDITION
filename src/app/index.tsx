@@ -105,6 +105,8 @@ export default function AuthGuard() {
         SecureStore.deleteItemAsync("accessToken"),
         SecureStore.deleteItemAsync("token"),
         SecureStore.deleteItemAsync("refreshToken"),
+        SecureStore.deleteItemAsync("user_mpin"),
+        SecureStore.deleteItemAsync("user_biometric_mpin"),
         AsyncStorage.removeItem("userData"),
       ]);
       logger.log("✅ Authentication data cleared");

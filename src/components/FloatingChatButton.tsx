@@ -42,6 +42,7 @@ const TICKET_SUBJECTS = [
   "Branch Inquiry",
   "Bill Payment",
   "Advance Gold Inquiry",
+  "Old Gold Inquiry",
   "Others"
 ];
 
@@ -51,7 +52,7 @@ const FloatingChatButton = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const flatListRef = useRef<FlatList>(null);
-  
+
   // Custom Modals State
   const [isTicketModalVisible, setIsTicketModalVisible] = useState(false);
   const [isSubjectPickerVisible, setIsSubjectPickerVisible] = useState(false);
@@ -65,7 +66,7 @@ const FloatingChatButton = () => {
   const modalSlide = useRef(new Animated.Value(height)).current;
 
   // Support Number (from FAQ)
-  const SUPPORT_NUMBER = "919061803999"; 
+  const SUPPORT_NUMBER = "919061803999";
 
   // FAQ Data (Updated for Jewelry & Schemes)
   const FAQ_QUESTIONS = [
@@ -166,7 +167,7 @@ const FloatingChatButton = () => {
     const url = `whatsapp://send?phone=${SUPPORT_NUMBER}&text=${encodeURIComponent(
       initialText
     )}`;
-    
+
     try {
       // Attempt to open directly to bypass Android 11+ query visibility restrictions
       await Linking.openURL(url);
@@ -185,6 +186,7 @@ const FloatingChatButton = () => {
     try {
       setIsSubmittingTicket(true);
       const payload = {
+        userId: user?.id,
         name: user?.name || user?.firstName || "Customer",
         phone: user?.mobile?.toString() || "",
         email: user?.email || "",
@@ -196,18 +198,19 @@ const FloatingChatButton = () => {
       setIsSubmittingTicket(false);
 
       if (response.data?.success) {
+        const ticketNum = response.data.data?.ticketNumber || response.data.data?.ticket_no || response.data.data?.ticketId || response.data.data?.id || '';
         Alert.alert(
           "Success",
-          `Ticket created successfully! Reference: ${response.data.data?.ticket_no || response.data.data?.id || ''}`
+          `Ticket created successfully!\n\nFor your reference: ${ticketNum}`
         );
         setIsTicketModalVisible(false);
         setInputText(""); // Clear parent input
         setTicketDescription(""); // Clear modal input
-        
+
         // Add ticket confirmation message in chat list
         const botMsg: Message = {
           id: Date.now().toString(),
-          text: `🎫 Support Ticket Created!\nSubject: ${selectedSubject}\nReference No: ${response.data.data?.ticket_no || response.data.data?.id || ''}\nOur support representative will respond shortly.`,
+          text: `🎫 Support Ticket Created!\nSubject: ${selectedSubject}\nReference No: ${ticketNum}\nOur support representative will respond shortly.`,
           isUser: false,
           timestamp: new Date(),
         };
@@ -227,7 +230,7 @@ const FloatingChatButton = () => {
 
   const sendMessage = () => {
     if (inputText.trim() === "") return;
-    
+
     // Instead of WhatsApp, we trigger ticket generation modal pre-filled
     setTicketDescription(inputText.trim());
     setSelectedSubject("Scheme Inquiry"); // default subject
@@ -250,10 +253,10 @@ const FloatingChatButton = () => {
     };
 
     setMessages((prev) => [...prev, userMessage, botMessage]);
-    
+
     // Scroll to bottom
     setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
+      flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
   };
 
@@ -288,7 +291,7 @@ const FloatingChatButton = () => {
   return (
     <>
       {/* Floating Button Hidden as requested */}
-      
+
       {/* Chat Modal */}
       <Modal
         visible={isChatVisible}
@@ -296,134 +299,135 @@ const FloatingChatButton = () => {
         animationType="none"
         onRequestClose={closeChat}
       >
-        <KeyboardAvoidingView 
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.modalOverlay}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
         >
-            <Animated.View 
-                style={[
-                    styles.chatModalContainer,
-                    { transform: [{ translateY: modalSlide }] }
-                ]}
-            >
-                    {/* Header */}
-                    <View style={styles.chatHeader}> 
-                    {/* Replaced Gradient with solid view for testing or use simple style if Gradient problematic */}
-                        <View style={styles.headerTopRow}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <View style={styles.avatarContainer}>
-                                    <Image 
-                                        source={require("../../assets/images/logo.png")} 
-                                        style={styles.avatarImage} 
-                                        resizeMode="contain"
-                                    />
-                                </View>
-                                <View style={{ marginLeft: 12 }}>
-                                    <Text style={styles.chatHeaderTitle}>Support Assistant</Text>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <View style={styles.onlineDot} />
-                                        <Text style={styles.chatHeaderSubtitle}>Online</Text>
-                                    </View>
-                                </View>
-                            </View>
-                            
-                            <TouchableOpacity
-                                style={styles.closeButton}
-                                onPress={closeChat}
-                            >
-                                <Ionicons name="close-circle" size={32} color="white" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>                    {/* Messages Area */}
-                    <View style={styles.chatBody}>
-                         {/* Default Welcome Message if empty */}
-                          {messages.length === 0 && (
-                            <View style={styles.welcomeContainer}>
-                                <Text style={styles.welcomeText}>
-                                    👋 Hi there! How can we help you today?
-                                </Text>
-                                <Text style={styles.welcomeSubtext}>
-                                    Select a topic below or type your question to create a support ticket.
-                                </Text>
-                            </View>
-                        )}
-                        
-                        <FlatList
-                            ref={flatListRef}
-                            data={messages}
-                            renderItem={renderMessage}
-                            keyExtractor={(item) => item.id}
-                            style={styles.messagesList}
-                            contentContainerStyle={styles.messagesContent}
-                            showsVerticalScrollIndicator={false}
-                        />
-                        
-                        {/* FAQ Chips (Compact, Horizontal Scroll) */}
-                        <View style={styles.faqContainer}>
-                            <Text style={styles.sectionHeader}>Common Questions</Text>
-                            <ScrollView 
-                                horizontal 
-                                showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={styles.faqHorizontalScroll}
-                            >
-                                {filteredFaqs.map((faq) => (
-                                    <TouchableOpacity
-                                        key={faq.id}
-                                        style={styles.faqChipHorizontal}
-                                        onPress={() => sendFAQResponse(faq.question, faq.answer)}
-                                    >
-                                        <Text style={styles.faqTextHorizontal} numberOfLines={2}>{faq.question}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                        </View>
+          <Animated.View
+            style={[
+              styles.chatModalContainer,
+              { transform: [{ translateY: modalSlide }] }
+            ]}
+          >
+            {/* Header */}
+            <View style={styles.chatHeader}>
+              {/* Replaced Gradient with solid view for testing or use simple style if Gradient problematic */}
+              <View style={styles.headerTopRow}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={styles.avatarContainer}>
+                    <Image
+                      source={require("../../assets/images/logo.png")}
+                      style={styles.avatarImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <View style={{ marginLeft: 12 }}>
+                    <Text style={styles.chatHeaderTitle}>Support Assistant</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={styles.onlineDot} />
+                      <Text style={styles.chatHeaderSubtitle}>Online</Text>
                     </View>
+                  </View>
+                </View>
 
-                    {/* Input Area */}
-                    <View style={styles.inputWrapper}>
-                        <View style={styles.inputContainer}>
-                            <TouchableOpacity
-                                style={styles.leftMenuButton}
-                                onPress={() => {
-                                    setTicketDescription(inputText);
-                                    setIsSubjectPickerVisible(true);
-                                }}
-                            >
-                                <Ionicons
-                                    name="list-outline"
-                                    size={24}
-                                    color={theme.colors.primary}
-                                />
-                            </TouchableOpacity>
-                            <TextInput
-                                style={styles.textInput}
-                                value={inputText}
-                                onChangeText={setInputText}
-                                placeholder="Type a message..."
-                                placeholderTextColor="#999"
-                                multiline
-                                maxLength={500}
-                            />
-                            <TouchableOpacity
-                                style={[
-                                    styles.sendButton,
-                                    { backgroundColor: inputText.trim() ? theme.colors.primary : '#e0e0e0' }
-                                ]}
-                                onPress={sendMessage}
-                                disabled={inputText.trim() === ""}
-                            >
-                                <Ionicons
-                                    name="create-outline"
-                                    size={20}
-                                    color={inputText.trim() ? "white" : "#999"}
-                                />
-                            </TouchableOpacity>
-                        </View>
-                        <Text style={styles.whatsappHint}>
-                            Select topics or type a message to generate a support ticket
-                        </Text>
-                    </View>
-            </Animated.View>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={closeChat}
+                >
+                  <Ionicons name="close-circle" size={32} color="white" />
+                </TouchableOpacity>
+              </View>
+            </View>
+            {/* Messages Area */}
+            <View style={styles.chatBody}>
+              {/* Default Welcome Message if empty */}
+              {messages.length === 0 && (
+                <View style={styles.welcomeContainer}>
+                  <Text style={styles.welcomeText}>
+                    👋 Hi there! How can we help you today?
+                  </Text>
+                  <Text style={styles.welcomeSubtext}>
+                    Select a topic below or type your question to create a support ticket.
+                  </Text>
+                </View>
+              )}
+
+              <FlatList
+                ref={flatListRef}
+                data={messages}
+                renderItem={renderMessage}
+                keyExtractor={(item) => item.id}
+                style={styles.messagesList}
+                contentContainerStyle={styles.messagesContent}
+                showsVerticalScrollIndicator={false}
+              />
+
+              {/* FAQ Chips (Compact, Horizontal Scroll) */}
+              <View style={styles.faqContainer}>
+                <Text style={styles.sectionHeader}>Common Questions</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.faqHorizontalScroll}
+                >
+                  {filteredFaqs.map((faq) => (
+                    <TouchableOpacity
+                      key={faq.id}
+                      style={styles.faqChipHorizontal}
+                      onPress={() => sendFAQResponse(faq.question, faq.answer)}
+                    >
+                      <Text style={styles.faqTextHorizontal} numberOfLines={2}>{faq.question}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+
+            {/* Input Area */}
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputContainer}>
+                <TouchableOpacity
+                  style={styles.leftMenuButton}
+                  onPress={() => {
+                    setTicketDescription(inputText);
+                    setIsSubjectPickerVisible(true);
+                  }}
+                >
+                  <Ionicons
+                    name="list-outline"
+                    size={24}
+                    color={theme.colors.primary}
+                  />
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.textInput}
+                  value={inputText}
+                  onChangeText={setInputText}
+                  placeholder="Type a message..."
+                  placeholderTextColor="#999"
+                  multiline
+                  maxLength={500}
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.sendButton,
+                    { backgroundColor: inputText.trim() ? theme.colors.primary : '#e0e0e0' }
+                  ]}
+                  onPress={sendMessage}
+                  disabled={inputText.trim() === ""}
+                >
+                  <Ionicons
+                    name="create-outline"
+                    size={20}
+                    color={inputText.trim() ? "white" : "#999"}
+                  />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.whatsappHint}>
+                Select topics or type a message to generate a support ticket
+              </Text>
+            </View>
+          </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
 
@@ -596,7 +600,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
   },
-  
+
   // Modal Styles
   modalOverlay: {
     flex: 1,
@@ -663,7 +667,7 @@ const styles = StyleSheet.create({
   closeButton: {
     opacity: 0.9,
   },
-  
+
   // Chat Body
   chatBody: {
     flex: 1,
@@ -694,7 +698,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  
+
   // Messages
   messageContainer: {
     flexDirection: "row",
@@ -741,7 +745,7 @@ const styles = StyleSheet.create({
   botText: {
     color: "#333",
   },
-  
+
   // FAQ Section
   faqContainer: {
     padding: 16,
@@ -775,7 +779,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontWeight: '500',
   },
-  
+
   // Input Area
   inputWrapper: {
     backgroundColor: "white",

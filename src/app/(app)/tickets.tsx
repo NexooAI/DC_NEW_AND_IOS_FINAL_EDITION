@@ -24,8 +24,12 @@ import FAQService from '@/services/faqService';
 import useGlobalStore from '@/store/global.store';
 import { useTranslation } from '@/hooks/useTranslation';
 
-// Enable LayoutAnimation for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+// Enable LayoutAnimation for Android (only if not on the New Architecture / Fabric)
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental &&
+  !(global as any).RN$Fabric
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 

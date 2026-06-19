@@ -83,9 +83,10 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
         setIsSubmittingEnquiry(false);
 
         if (response.success) {
+          const ticketNum = response.data?.ticketNumber || response.data?.ticketId || response.ticketId || "";
           Alert.alert(
             t("ticketCreatedSuccessfully") || "Ticket Created",
-            `${t("yourSupportTicketCreated") || "Your support ticket ID is:"} ${response.ticketId}`,
+            `${t("yourSupportTicketCreated") || "Your support ticket ID is:"} ${ticketNum}\n\nFor your reference: ${ticketNum}`,
             [
               {
                 text: t("ok") || "OK",

@@ -211,6 +211,12 @@ export default function Dashboard() {
       iconType: "ionicons",
       onPress: () => router.push("/(app)/(tabs)/home"),
     },
+    {
+      title: t("oldGoldScheme") || "Old Gold Scheme",
+      icon: "gold",
+      iconType: "material",
+      onPress: () => router.push("/(app)/old_gold"),
+    },
   ];
 
   return (
@@ -356,13 +362,13 @@ export default function Dashboard() {
               </View>
             </View>
 
-            <ResponsiveText
+            {/* <ResponsiveText
               color="#ddd"
               size="sm"
               style={{ marginTop: 8 }}
             >
               Luxury Meets Excellence
-            </ResponsiveText>
+            </ResponsiveText> */}
           </LinearGradient>
 
           {/* Cards */}
@@ -370,10 +376,7 @@ export default function Dashboard() {
             {cards.map((item, index) => (
               <TouchableOpacity
                 key={index}
-                style={[
-                  styles.card,
-                  index === cards.length - 1 && { width: "100%" }
-                ]}
+                style={styles.card}
                 onPress={item.onPress}
                 activeOpacity={0.8}
               >

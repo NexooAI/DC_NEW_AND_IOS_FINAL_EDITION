@@ -237,7 +237,9 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: moderateScale(16),
     paddingVertical: moderateScale(8),
-    width: "100%",
+    width: responsiveUtils.isTabletDevice() ? 632 : "100%",
+    maxWidth: "100%",
+    alignSelf: responsiveUtils.isTabletDevice() ? "center" : "stretch",
   },
   cardGradient: {
     borderRadius: borderRadius.large,

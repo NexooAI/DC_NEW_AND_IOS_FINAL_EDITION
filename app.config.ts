@@ -66,7 +66,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         bundleIdentifier: themeConfig.bundleIdentifier,
         googleServicesFile: "./GoogleService-Info.plist",
         buildNumber: "3",
-        jsEngine: "jsc",
+        jsEngine: "hermes",
         infoPlist: {
             ITSAppUsesNonExemptEncryption: false,
             // Privacy usage descriptions - Required by Apple App Store
@@ -155,6 +155,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         "./plugins/withSmsRetriever",
         "./plugins/with-proguard.js",
         "./plugins/withAndroidQueries.js",
+        "@react-native-firebase/app",
+        "@react-native-firebase/crashlytics",
     ],
 
     extra: {

@@ -20,6 +20,8 @@
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-community/netinfo": "11.4.1",
     "@react-native-community/slider": "5.0.1",
+    "@react-native-firebase/app": "^24.1.1",
+    "@react-native-firebase/crashlytics": "^24.1.1",
     "@react-native-picker/picker": "2.11.1",
     "@react-navigation/bottom-tabs": "7.x",
     "@react-navigation/drawer": "^7.1.1",
@@ -120,10 +122,10 @@
     ]
   },
   "optionalDependencies": {
+    "lightningcss-darwin-arm64": "1.22.0",
+    "lightningcss-darwin-x64": "1.22.0",
     "lightningcss-linux-x64-gnu": "1.22.0",
     "lightningcss-linux-x64-musl": "1.22.0",
-    "lightningcss-darwin-x64": "1.22.0",
-    "lightningcss-darwin-arm64": "1.22.0",
     "lightningcss-win32-x64-msvc": "1.22.0"
   },
   "expo": {

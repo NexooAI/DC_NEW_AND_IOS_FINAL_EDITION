@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { userAPI } from '@/services/api';
 import useGlobalStore from '@/store/global.store';
-
 import { logger } from '@/utils/logger';
+
 interface Notification {
     id: number;
     title: string;
@@ -17,55 +17,77 @@ interface NotificationResponse {
     [key: string]: Notification[];
 }
 
-export const useUnreadNotifications = () => {
-    const [unreadCount, setUnreadCount] = useState(0);
-    const [loading, setLoading] = useState(false);
-    const { user } = useGlobalStore();
+// Module-level cache variables to share fetching state across component instances
+let lastFetchTime = 0;
+let activeFetchPromise: Promise<number> | null = null;
 
-    const fetchUnreadCount = async () => {
+export const useUnreadNotifications = () => {
+    const [loading, setLoading] = useState(false);
+    const { user, unreadNotificationsCount: unreadCount, setUnreadNotificationsCount: setUnreadCount } = useGlobalStore();
+
+    const fetchUnreadCount = async (force: boolean = false) => {
         if (!user?.id) {
             setUnreadCount(0);
-            return;
+            return 0;
         }
 
-        try {
-            setLoading(true);
-            logger.log('🔔 Fetching unread notifications count for user:', user.id);
+        // 1. If there is already an active fetch promise in progress, return it to deduplicate concurrent calls
+        if (activeFetchPromise) {
+            logger.log('🔔 useUnreadNotifications: Awaiting existing active fetch promise...');
+            return activeFetchPromise;
+        }
 
-            const response = await userAPI.getNotifications(user.id);
-            const data: NotificationResponse = response.data;
+        // 2. Throttle checks: skip API call if fetched successfully in the last 10 seconds (unless forced)
+        const now = Date.now();
+        if (!force && now - lastFetchTime < 10000) {
+            logger.log('🔔 useUnreadNotifications: Skipping request (throttled, last fetch was ' + Math.round((now - lastFetchTime) / 1000) + 's ago)');
+            return unreadCount;
+        }
 
-            logger.log('📊 Notifications API response for badge:', data);
+        // 3. Create active fetch promise
+        activeFetchPromise = (async () => {
+            try {
+                setLoading(true);
+                logger.log('🔔 [API] Fetching unread notifications count for user:', user.id);
 
-            if (data && typeof data === "object" && !Array.isArray(data)) {
-                // Count unread notifications across all categories
+                const response = await userAPI.getNotifications(user.id!);
+                const data: NotificationResponse = response.data;
+
+                logger.log('📊 [API] Notifications API response for badge:', data);
+
                 let totalUnread = 0;
-                Object.values(data).forEach((notifications) => {
-                    if (Array.isArray(notifications)) {
-                        const unreadInCategory = notifications.filter(
-                            (notification) => notification.status === 'unread'
-                        ).length;
-                        totalUnread += unreadInCategory;
-                    }
-                });
+                if (data && typeof data === "object" && !Array.isArray(data)) {
+                    // Count unread notifications across all categories
+                    Object.values(data).forEach((notifications) => {
+                        if (Array.isArray(notifications)) {
+                            const unreadInCategory = notifications.filter(
+                                (notification) => notification.status === 'unread'
+                            ).length;
+                            totalUnread += unreadInCategory;
+                        }
+                    });
+                }
 
-                logger.log('📊 Total unread notifications:', totalUnread);
+                logger.log('📊 [API] Total unread notifications calculated:', totalUnread);
                 setUnreadCount(totalUnread);
-            } else {
-                logger.log('📊 No notifications data or invalid format');
-                setUnreadCount(0);
+                lastFetchTime = Date.now();
+                return totalUnread;
+            } catch (error) {
+                logger.error('❌ [API] Error fetching unread notifications count:', error);
+                // Keep the current global unread count on error
+                return unreadCount;
+            } finally {
+                setLoading(false);
+                activeFetchPromise = null; // Reset promise tracker
             }
-        } catch (error) {
-            logger.error('❌ Error fetching unread notifications count:', error);
-            setUnreadCount(0);
-        } finally {
-            setLoading(false);
-        }
+        })();
+
+        return activeFetchPromise;
     };
 
     const markAsRead = (notificationId: string) => {
         // Optimistically update the count
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        setUnreadCount(Math.max(0, unreadCount - 1));
     };
 
     const markAllAsRead = () => {
@@ -73,7 +95,7 @@ export const useUnreadNotifications = () => {
     };
 
     const refreshCount = () => {
-        fetchUnreadCount();
+        fetchUnreadCount(true); // Force refresh
     };
 
     useEffect(() => {

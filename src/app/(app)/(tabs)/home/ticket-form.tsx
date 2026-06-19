@@ -36,7 +36,9 @@ export default function TicketFormScreen() {
   const designNumber = params.designNumber as string | undefined;
 
   const [question, setQuestion] = useState(
-    collectionName && designNumber
+    params.question
+      ? (params.question as string)
+      : collectionName && designNumber
       ? `Hello, I am interested in the collection "${collectionName}" (Design #${designNumber}). Can you please share more details?`
       : ""
   );
@@ -88,10 +90,11 @@ export default function TicketFormScreen() {
       const response = await FAQService.createTicket(ticketPayload);
 
       if (response.success) {
-        setSubmittedTicketId(response.ticketId);
+        const ticketNum = response.data?.ticketNumber || response.data?.ticketId || response.ticketId || "";
+        setSubmittedTicketId(ticketNum);
         Alert.alert(
           t("ticketCreatedSuccessfully"),
-          `${t("yourSupportTicketCreated")} ${response.ticketId}\n\n${t(
+          `${t("yourSupportTicketCreated")} ${ticketNum}\n\nFor your reference: ${ticketNum}\n\n${t(
             "supportTeamWillGetBack"
           )}`,
           [

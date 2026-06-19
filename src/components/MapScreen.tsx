@@ -107,7 +107,7 @@ export default function MapScreen() {
   };
 
   const handleCenterButtonPress = () => {
-    if (userLocation) {
+    if (userLocation && mapRef.current) {
       mapRef.current.animateToRegion(userLocation, 1000);
     }
   };

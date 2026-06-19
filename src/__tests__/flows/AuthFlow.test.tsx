@@ -8,23 +8,31 @@ import useGlobalStore from '@/store/global.store';
 // Mock Dependencies
 jest.mock('expo-router', () => ({
   useRouter: jest.fn(),
-  useFocusEffect: jest.fn((cb) => cb()),
+  useFocusEffect: (cb) => require('react').useEffect(cb, []),
 }));
 
 // We need to mock fetch since Login uses fetch directly, not the api service for some calls
 global.fetch = jest.fn();
 
-// Mock Store
-jest.mock('@/store/global.store', () => ({
-  __esModule: true,
-  default: jest.fn(() => ({
-    login: jest.fn(),
+const stableStoreState = {
+    user: null,
     isLoggedIn: false,
-    setIsLoggedIn: jest.fn(),
-  })),
-}));
+    login: jest.fn(),
+    logout: jest.fn(),
+    language: 'en',
+    setLanguage: jest.fn(),
+    isVisibilityCacheValid: jest.fn(() => true),
+    getCachedVisibility: jest.fn(() => ({ data: {}, timestamp: Date.now() })),
+    setCachedVisibility: jest.fn(),
+    cachedVisibility: { data: {}, timestamp: Date.now() },
+    debugState: jest.fn(() => ({})),
+};
 
-describe.skip('E2E Auth Flow: Login -> OTP -> Verify', () => {
+(useGlobalStore as unknown as jest.Mock).mockReturnValue(stableStoreState);
+
+
+
+describe('E2E Auth Flow: Login -> OTP -> Verify', () => {
     let mockReplace: jest.Mock;
 
     beforeEach(() => {
@@ -47,16 +55,16 @@ describe.skip('E2E Auth Flow: Login -> OTP -> Verify', () => {
         const { getByText, getByPlaceholderText, getByTestId } = render(<Login />);
 
         // 1. Enter Mobile Number
-        const mobileInput = getByPlaceholderText(/Mobile Number/i) || getByText(/Mobile Number/i);
+        const mobileInput = getByPlaceholderText('enterMobileNumber');
         fireEvent.changeText(mobileInput, '9876543210');
 
         // 2. Click "Get OTP"
-        const getOtpBtn = getByText(/Get OTP/i);
+        const getOtpBtn = getByText('getOtp');
         fireEvent.press(getOtpBtn);
 
         // 3. Verify OTP Screen appears (Wait for state update)
         await waitFor(() => {
-             expect(getByText(/Enter OTP/i)).toBeTruthy();
+             expect(getByText('enterOTP')).toBeTruthy();
         });
 
         // 4. Enter OTP (Assuming 4 inputs or one hidden input depending on implementation)

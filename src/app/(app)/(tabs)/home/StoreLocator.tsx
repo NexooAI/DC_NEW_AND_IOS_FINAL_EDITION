@@ -93,15 +93,17 @@ const StoreLocator = () => {
   };
 
   const focusOnStore = (store: any) => {
-    mapRef.current.animateToRegion(
-      {
-        latitude: store.latitude,
-        longitude: store.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      },
-      800
-    );
+    if (mapRef.current && store) {
+      mapRef.current.animateToRegion(
+        {
+          latitude: store.latitude,
+          longitude: store.longitude,
+          latitudeDelta: 0.005,
+          longitudeDelta: 0.005,
+        },
+        800
+      );
+    }
   };
 
   const dropdownData = stores.map((store) => ({

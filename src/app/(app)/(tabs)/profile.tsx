@@ -985,6 +985,29 @@ const ProfileScreen = () => {
                   </>
                 )}
 
+                {/* Payment History Button */}
+                <TouchableOpacity
+                  style={styles.settingItem}
+                  onPress={() => router.push("/payment-history")}
+                >
+                  <View
+                    style={[styles.settingIcon, { backgroundColor: "#E8F5E9" }]}
+                  >
+                    <Icon name="history" size={24} color="#2E7D32" />
+                  </View>
+                  <View style={styles.settingContent}>
+                    <Text style={styles.settingText}>
+                      {t("paymentHistory") || "Payment History"}
+                    </Text>
+                    <Text style={styles.settingDesc}>
+                      {t("paymentHistoryDesc") || "View all your successful and failed payment attempts"}
+                    </Text>
+                  </View>
+                  <Icon name="chevron-right" size={24} color="#9E9E9E" />
+                </TouchableOpacity>
+
+                <View style={styles.divider} />
+
                 {/* Delete Account Button */}
                 <TouchableOpacity
                   style={styles.settingItem}

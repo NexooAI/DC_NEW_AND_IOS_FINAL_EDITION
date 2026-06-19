@@ -126,6 +126,14 @@ export const usePaymentSocket = ({
         data?.paymentResponse?.status === "CHARGED" ||
         data?.paymentResponse?.txn_detail?.status === "CHARGED";
 
+      const isPending = data?.status === "pending" ||
+        data?.paymentResponse?.status === "PENDING" ||
+        data?.paymentResponse?.status === "PENDING_VBV" ||
+        data?.paymentResponse?.txn_detail?.status === "PENDING" ||
+        data?.paymentResponse?.txn_detail?.status === "PENDING_VBV" ||
+        data?.paymentResponse?.status?.startsWith("PENDING") ||
+        data?.paymentResponse?.txn_detail?.status?.startsWith("PENDING");
+
       try {
         if (isSuccess) {
           console.log('Payment charged successfully');
@@ -177,6 +185,9 @@ export const usePaymentSocket = ({
           if (socketInstance && socketInstance.connected) {
             socketInstance.disconnect();
           }
+        } else if (isPending) {
+          console.log('[usePaymentSocket] Payment is still pending (e.g. VBV verification). Waiting for final status...');
+          return; // Ignore and wait for next event
         } else {
           console.log('Payment not charged');
           isPaymentCompleted.current = true;

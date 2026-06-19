@@ -35,20 +35,14 @@ const ImageSlider = React.memo(
     // Get responsive layout values at component level
     const {
       screenWidth,
-      screenHeight,
-      deviceScale,
-      getResponsiveFontSize,
-      getResponsivePadding,
-      spacing,
-      fontSize,
-      padding,
-      getCardWidth,
-      getGridColumns,
-      getListItemHeight,
+      isTablet,
     } = useResponsiveLayout();
 
-    // Calculate responsive container width
-    const containerWidth = screenWidth * 0.95;
+    // Calculate responsive slider dimensions
+    const sliderWidth = isTablet ? 600 : screenWidth;
+    const sideOffset = isTablet ? 40 : 24;
+    const itemGap = 12;
+    const itemWidth = sliderWidth - (sideOffset * 2);
 
     useEffect(() => {
       startAutoPlay();
@@ -78,9 +72,9 @@ const ImageSlider = React.memo(
 
     const renderItem = ({ item, index }: { item: any; index: number }) => {
       const inputRange = [
-        (index - 1) * containerWidth,
-        index * containerWidth,
-        (index + 1) * containerWidth,
+        (index - 1) * (itemWidth + itemGap),
+        index * (itemWidth + itemGap),
+        (index + 1) * (itemWidth + itemGap),
       ];
 
       const scale = scrollX.interpolate({
@@ -95,10 +89,11 @@ const ImageSlider = React.memo(
             styles.itemContainer,
             {
               transform: [{ scale }],
-              width: containerWidth,
+              width: itemWidth,
               height: ITEM_HEIGHT,
-              maxWidth: containerWidth,
+              maxWidth: itemWidth,
               maxHeight: ITEM_HEIGHT,
+              marginHorizontal: itemGap / 2,
             },
           ]}
         >
@@ -112,9 +107,9 @@ const ImageSlider = React.memo(
               style={[
                 styles.image,
                 {
-                  width: containerWidth,
+                  width: itemWidth,
                   height: ITEM_HEIGHT,
-                  maxWidth: containerWidth,
+                  maxWidth: itemWidth,
                   maxHeight: ITEM_HEIGHT,
                 },
               ]}
@@ -154,13 +149,13 @@ const ImageSlider = React.memo(
     };
 
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { width: sliderWidth }]}>
         <Animated.FlatList
           ref={flatListRef}
           data={images}
           keyExtractor={(item) => item.id.toString()}
           horizontal
-          pagingEnabled
+          pagingEnabled={false}
           showsHorizontalScrollIndicator={false}
           renderItem={renderItem}
           onScroll={Animated.event(
@@ -168,13 +163,13 @@ const ImageSlider = React.memo(
             { useNativeDriver: true }
           )}
           getItemLayout={(_, index) => ({
-            length: containerWidth,
-            offset: containerWidth * index,
+            length: itemWidth + itemGap,
+            offset: (itemWidth + itemGap) * index,
             index,
           })}
           onMomentumScrollEnd={(event) => {
             const newIndex = Math.round(
-              event.nativeEvent.contentOffset.x / containerWidth
+              event.nativeEvent.contentOffset.x / (itemWidth + itemGap)
             );
             currentIndexRef.current = newIndex;
             setActiveIndex(newIndex);
@@ -182,24 +177,25 @@ const ImageSlider = React.memo(
           initialNumToRender={3}
           maxToRenderPerBatch={3}
           windowSize={3}
-          snapToInterval={containerWidth}
-          snapToAlignment="start"
+          snapToInterval={itemWidth + itemGap}
+          snapToAlignment="center"
           decelerationRate="fast"
           contentContainerStyle={{
             alignItems: "center",
+            paddingHorizontal: sideOffset - itemGap / 2,
           }}
         />
 
         {images.length > 1 && (
           <>
-            <TouchableOpacity style={styles.prevButton} onPress={handlePrev}>
+            <TouchableOpacity style={[styles.prevButton, { left: sideOffset + 10 }]} onPress={handlePrev}>
               <MaterialIcons
                 name="chevron-left"
                 size={20}
                 color={theme.colors.white}
               />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+            <TouchableOpacity style={[styles.nextButton, { right: sideOffset + 10 }]} onPress={handleNext}>
               <MaterialIcons
                 name="chevron-right"
                 size={20}

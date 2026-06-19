@@ -38,6 +38,7 @@ export interface TicketResponse {
         ticketId: string;
         status: string;
         createdAt: string;
+        ticketNumber?: string;
     };
 }
 
@@ -65,12 +66,15 @@ class FAQService {
                 "Bill Payment",
                 "Advance Gold Inquiry",
                 "New Collections",
+                "Old Gold Inquiry",
                 "Others"
             ];
             let finalSubject = payload.subject || payload.category || 'Others';
             if (!allowedSubjects.includes(finalSubject)) {
                 const lowerSubject = finalSubject.toLowerCase();
-                if (lowerSubject.includes('payment')) {
+                if (lowerSubject.includes('old gold')) {
+                    finalSubject = 'Old Gold Inquiry';
+                } else if (lowerSubject.includes('payment')) {
                     finalSubject = 'Payment Issue';
                 } else if (lowerSubject.includes('kyc') || lowerSubject.includes('account')) {
                     finalSubject = 'KYC & Account Support';

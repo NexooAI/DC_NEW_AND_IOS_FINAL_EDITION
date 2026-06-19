@@ -217,6 +217,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
             setIsNavigating(true);
             try {
               await SecureStore.deleteItemAsync("user_mpin");
+              await SecureStore.deleteItemAsync("user_biometric_mpin");
               logout();
               requestAnimationFrame(() => {
                 router.replace("/(auth)/login");

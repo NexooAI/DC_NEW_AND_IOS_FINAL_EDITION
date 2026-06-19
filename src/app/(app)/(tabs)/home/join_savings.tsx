@@ -981,7 +981,7 @@ export default function JoinSavings() {
   const renderGoldRateArea = () => (
     <View style={styles.progressHeader}>
       <View
-        style={[styles.goldRateCard, step > 1 && styles.selectedGoldRateCard]}
+        style={[styles.goldRateCard, step > 1 ? styles.selectedGoldRateCard : undefined]}
       >
         <Animated.View
           style={[styles.goldRateIcon, { opacity: goldIconOpacity }]}
@@ -1021,9 +1021,9 @@ export default function JoinSavings() {
               <TouchableOpacity
                 style={[
                   styles.progressStepCard,
-                  isCurrent && styles.progressStepCardActive,
-                  isActive && !isLocked && styles.progressStepCardCompleted,
-                  isLocked && styles.progressStepCardLocked,
+                  isCurrent ? styles.progressStepCardActive : undefined,
+                  (isActive && !isLocked) ? styles.progressStepCardCompleted : undefined,
+                  isLocked ? styles.progressStepCardLocked : undefined,
                 ]}
                 onPress={() => {
                   // Prevent going to step 1 if came from calculator
@@ -1042,9 +1042,9 @@ export default function JoinSavings() {
                   <View
                     style={[
                       styles.progressBadge,
-                      isCurrent && styles.progressBadgeActive,
-                      isActive && !isCurrent && !isLocked && styles.progressBadgeCompleted,
-                      isLocked && styles.progressBadgeLocked,
+                      isCurrent ? styles.progressBadgeActive : undefined,
+                      (isActive && !isCurrent && !isLocked) ? styles.progressBadgeCompleted : undefined,
+                      isLocked ? styles.progressBadgeLocked : undefined,
                     ]}
                   >
                     {isLocked ? (
@@ -1063,7 +1063,7 @@ export default function JoinSavings() {
                       <Text
                         style={[
                           styles.progressBadgeText,
-                          isCurrent && styles.progressBadgeTextActive,
+                          isCurrent ? styles.progressBadgeTextActive : undefined,
                         ]}
                       >
                         {num}
@@ -1075,9 +1075,9 @@ export default function JoinSavings() {
                   <Text
                     style={[
                       styles.progressStepLabel,
-                      isCurrent && styles.progressStepLabelActive,
-                      isActive && !isCurrent && !isLocked && styles.progressStepLabelCompleted,
-                      isLocked && styles.progressStepLabelLocked,
+                      isCurrent ? styles.progressStepLabelActive : undefined,
+                      (isActive && !isCurrent && !isLocked) ? styles.progressStepLabelCompleted : undefined,
+                      isLocked ? styles.progressStepLabelLocked : undefined,
                     ]}
                   >
                     {num === 1 ? "Amount" : "Details & Summary"}
@@ -1091,7 +1091,7 @@ export default function JoinSavings() {
                   <View
                     style={[
                       styles.progressConnectorLine,
-                      step > num && styles.progressConnectorLineActive,
+                      step > num ? styles.progressConnectorLineActive : undefined,
                     ]}
                   />
                 </View>
@@ -1402,7 +1402,7 @@ export default function JoinSavings() {
                 styles.inputCard,
                 styles.amountCard,
                 styles.zigzagCardLeft,
-                !showWeightInput && styles.zigzagCardCenter
+                !showWeightInput ? styles.zigzagCardCenter : undefined
               ]}>
                 <View style={styles.cardHeader}>
                   <View style={styles.titleWithIcon}>
@@ -1586,8 +1586,8 @@ export default function JoinSavings() {
                     key={quickAmount}
                     style={[
                       styles.quickAmountChip,
-                      isSelected && styles.selectedQuickAmountChip,
-                      isLastInRow && styles.lastInRow
+                      isSelected ? styles.selectedQuickAmountChip : undefined,
+                      isLastInRow ? styles.lastInRow : undefined
                     ]}
                     onPress={() => {
                       const newValue = (quickAmount - minAmount) / (maxAmount - minAmount);
@@ -1604,7 +1604,7 @@ export default function JoinSavings() {
                     <Text
                       style={[
                         styles.quickAmountChipText,
-                        isSelected && styles.selectedQuickAmountChipText,
+                        isSelected ? styles.selectedQuickAmountChipText : undefined,
                       ]}
                     >
                       ₹{quickAmount.toLocaleString("en-IN")}
@@ -1700,13 +1700,13 @@ export default function JoinSavings() {
                       ...pickerSelectStylesModern,
                       inputIOS: [
                         pickerSelectStylesModern.inputIOS,
-                        errors.associated_branch && styles.modernInputError,
-                        isPickerDisabled && { backgroundColor: "rgba(240, 240, 240, 0.4)", color: "#888" },
+                        errors.associated_branch ? styles.modernInputError : undefined,
+                        isPickerDisabled ? { backgroundColor: "rgba(240, 240, 240, 0.4)", color: "#888" } : undefined,
                       ],
                       inputAndroid: [
                         pickerSelectStylesModern.inputAndroid,
-                        errors.associated_branch && styles.modernInputError,
-                        isPickerDisabled && { backgroundColor: "rgba(240, 240, 240, 0.4)", color: "#888" },
+                        errors.associated_branch ? styles.modernInputError : undefined,
+                        isPickerDisabled ? { backgroundColor: "rgba(240, 240, 240, 0.4)", color: "#888" } : undefined,
                       ],
                     }}
                     useNativeAndroidPickerStyle={false}

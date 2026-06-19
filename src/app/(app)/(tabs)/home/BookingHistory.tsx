@@ -25,6 +25,12 @@ import { advanceBookingAPI } from '@/services/api';
 import useGlobalStore from '@/store/global.store';
 import { logAppEvent } from '@/services/appEventService';
 import { logger } from '@/utils/logger';
+import { saveFileToPublicDirectory } from '@/utils/fileUtils';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import * as Print from 'expo-print';
+import * as WebBrowser from 'expo-web-browser';
+import { generateBookingReceiptHTML, BookingReceiptData } from '@/templates/html';
 
 const { wp, hp, rf } = responsiveUtils;
 const QUATERNARY_COLOR = theme.colors.quaternary || '#F2E6D2';
@@ -71,6 +77,96 @@ export default function BookingHistory() {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
 
   const userId = (user as any)?.userId || user?.id;
+
+  const sanitizeFileName = (str: string) => str.replace(/[^a-zA-Z0-9]/g, '_');
+
+  const handleShareBookingReceipt = async (booking: BookingItem) => {
+    const receiptData: BookingReceiptData = {
+      bookingId: booking.id,
+      goldWeight: booking.goldWeight,
+      ratePerGram: booking.ratePerGram,
+      totalAmount: booking.totalAmount,
+      bookingAmount: booking.bookingAmount,
+      remainingAmount: booking.remainingAmount,
+      status: booking.status,
+      expiryDate: booking.expiryDate,
+      createdAt: booking.createdAt,
+      userName: user?.name,
+      userMobile: user?.mobile?.toString(),
+      userEmail: user?.email,
+      convertedBillId: booking.convertedBillId,
+    };
+
+    try {
+      const htmlContent = generateBookingReceiptHTML(receiptData);
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+
+      const customerName = sanitizeFileName(user?.name || 'Customer');
+      const accountNo = sanitizeFileName(user?.id?.toString() || '000000');
+      const fileName = `Booking_${customerName}_${accountNo}_${booking.id}.pdf`;
+
+      const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+      const targetUri = `${targetDir}${fileName}`;
+      await FileSystem.moveAsync({ from: uri, to: targetUri });
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(targetUri, {
+          UTI: 'com.adobe.pdf',
+          mimeType: 'application/pdf',
+          dialogTitle: 'Share booking receipt',
+        });
+      } else {
+        if (Platform.OS === 'ios') {
+          await WebBrowser.openBrowserAsync(targetUri);
+        } else {
+          Alert.alert(
+            'Saved',
+            `Receipt saved successfully!\n\nLocation:\n${targetUri}\n\nYou can access it from your device's Files/Documents folder: On My Device -> ${fileName}`
+          );
+        }
+      }
+    } catch (e) {
+      console.error('Booking receipt generation failed', e);
+      Alert.alert('Error', 'Failed to generate booking receipt');
+    }
+  };
+
+  const handleDownloadBookingReceipt = async (booking: BookingItem) => {
+    const receiptData: BookingReceiptData = {
+      bookingId: booking.id,
+      goldWeight: booking.goldWeight,
+      ratePerGram: booking.ratePerGram,
+      totalAmount: booking.totalAmount,
+      bookingAmount: booking.bookingAmount,
+      remainingAmount: booking.remainingAmount,
+      status: booking.status,
+      expiryDate: booking.expiryDate,
+      createdAt: booking.createdAt,
+      userName: user?.name,
+      userMobile: user?.mobile?.toString(),
+      userEmail: user?.email,
+      convertedBillId: booking.convertedBillId,
+    };
+
+    try {
+      const htmlContent = generateBookingReceiptHTML(receiptData);
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+
+      const customerName = sanitizeFileName(user?.name || 'Customer');
+      const accountNo = sanitizeFileName(user?.id?.toString() || '000000');
+      const fileName = `Booking_${customerName}_${accountNo}_${booking.id}.pdf`;
+
+      const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+      const targetUri = `${targetDir}${fileName}`;
+      await FileSystem.moveAsync({ from: uri, to: targetUri });
+
+      await saveFileToPublicDirectory(targetUri, fileName, "Booking receipt saved to your chosen folder successfully!");
+    } catch (e) {
+      console.error('Booking receipt download failed', e);
+      Alert.alert('Error', 'Failed to download booking receipt');
+    }
+  };
 
   const fetchBookings = useCallback(async (showLoader = true) => {
     if (!userId) {
@@ -289,62 +385,82 @@ export default function BookingHistory() {
             </View>
 
             {selectedBooking && (
-              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.detailScroll}>
-                <View style={styles.detailCard}>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>{t("bookingId")}</Text>
-                    <Text style={styles.detailValue}>#{selectedBooking.id}</Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>{t("goldWeight")}</Text>
-                    <Text style={styles.detailValue}>{Number(selectedBooking.goldWeight).toFixed(3)}{t("goldSymbol")}</Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>{t("lockedRate")}</Text>
-                    <Text style={styles.detailValue}>{formatCurrency(selectedBooking.ratePerGram)}/{t("goldSymbol")}</Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>{t("statusLabel")}</Text>
-                    <View style={[styles.statusBadge, selectedBooking.status === 'COMPLETED' ? styles.completedBadge : styles.expiredBadge]}>
-                      <Text style={[styles.statusText, selectedBooking.status === 'COMPLETED' ? styles.completedText : styles.expiredText]}>
-                        {selectedBooking.status === 'COMPLETED' ? t("purchased") : selectedBooking.status}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.detailDivider} />
-                  
-                  <View style={styles.amountLine}>
-                    <Text style={styles.amountLabel}>{t("totalAmount")}</Text>
-                    <Text style={styles.amountValue}>{formatCurrency(selectedBooking.totalAmount)}</Text>
-                  </View>
-                  <View style={styles.amountLine}>
-                    <Text style={styles.amountLabel}>{t("advancePaid")}</Text>
-                    <Text style={styles.amountValue}>{formatCurrency(selectedBooking.bookingAmount)}</Text>
-                  </View>
-                  <View style={styles.amountLine}>
-                    <Text style={styles.amountLabel}>{t("remainingBalance")}</Text>
-                    <Text style={[styles.amountValue, styles.remainingBalVal]}>{formatCurrency(selectedBooking.remainingAmount)}</Text>
-                  </View>
-
-                  <View style={styles.detailDivider} />
-                  
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>{t("bookingDate")}</Text>
-                    <Text style={styles.detailValue}>{formatDate(selectedBooking.createdAt)}</Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>{t("expiryDate")}</Text>
-                    <Text style={styles.detailValue}>{formatDate(selectedBooking.expiryDate)}</Text>
-                  </View>
-                  {selectedBooking.convertedBillId && (
+              <>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.detailScroll}>
+                  <View style={styles.detailCard}>
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t("convertedToBillId")}</Text>
-                      <Text style={styles.detailValue}>#{selectedBooking.convertedBillId}</Text>
+                      <Text style={styles.detailLabel}>{t("bookingId")}</Text>
+                      <Text style={styles.detailValue}>#{selectedBooking.id}</Text>
                     </View>
-                  )}
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t("goldWeight")}</Text>
+                      <Text style={styles.detailValue}>{Number(selectedBooking.goldWeight).toFixed(3)}{t("goldSymbol")}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t("lockedRate")}</Text>
+                      <Text style={styles.detailValue}>{formatCurrency(selectedBooking.ratePerGram)}/{t("goldSymbol")}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t("statusLabel")}</Text>
+                      <View style={[styles.statusBadge, selectedBooking.status === 'COMPLETED' ? styles.completedBadge : styles.expiredBadge]}>
+                        <Text style={[styles.statusText, selectedBooking.status === 'COMPLETED' ? styles.completedText : styles.expiredText]}>
+                          {selectedBooking.status === 'COMPLETED' ? t("purchased") : selectedBooking.status}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.detailDivider} />
+                    
+                    <View style={styles.amountLine}>
+                      <Text style={styles.amountLabel}>{t("totalAmount")}</Text>
+                      <Text style={styles.amountValue}>{formatCurrency(selectedBooking.totalAmount)}</Text>
+                    </View>
+                    <View style={styles.amountLine}>
+                      <Text style={styles.amountLabel}>{t("advancePaid")}</Text>
+                      <Text style={styles.amountValue}>{formatCurrency(selectedBooking.bookingAmount)}</Text>
+                    </View>
+                    <View style={styles.amountLine}>
+                      <Text style={styles.amountLabel}>{t("remainingBalance")}</Text>
+                      <Text style={[styles.amountValue, styles.remainingBalVal]}>{formatCurrency(selectedBooking.remainingAmount)}</Text>
+                    </View>
+
+                    <View style={styles.detailDivider} />
+                    
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t("bookingDate")}</Text>
+                      <Text style={styles.detailValue}>{formatDate(selectedBooking.createdAt)}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>{t("expiryDate")}</Text>
+                      <Text style={styles.detailValue}>{formatDate(selectedBooking.expiryDate)}</Text>
+                    </View>
+                    {selectedBooking.convertedBillId && (
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>{t("convertedToBillId")}</Text>
+                        <Text style={styles.detailValue}>#{selectedBooking.convertedBillId}</Text>
+                      </View>
+                    )}
+                  </View>
+                </ScrollView>
+                
+                <View style={styles.modalActionRow}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.downloadBtn]}
+                    onPress={() => handleDownloadBookingReceipt(selectedBooking)}
+                  >
+                    <Ionicons name="download-outline" size={18} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                    <Text style={styles.downloadBtnText}>Download</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.shareBtn]}
+                    onPress={() => handleShareBookingReceipt(selectedBooking)}
+                  >
+                    <Ionicons name="share-social-outline" size={18} color="white" style={{ marginRight: 6 }} />
+                    <Text style={styles.shareBtnText}>Share</Text>
+                  </TouchableOpacity>
                 </View>
-              </ScrollView>
+              </>
             )}
           </View>
         </View>
@@ -584,4 +700,38 @@ const styles = StyleSheet.create({
   amountLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: hp(0.9) },
   amountLabel: { fontSize: rf(14), color: '#555', fontWeight: '600' },
   amountValue: { fontSize: rf(16), color: '#222', fontWeight: '800' },
+  modalActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: hp(2),
+    gap: wp(3),
+  },
+  modalButton: {
+    flex: 1,
+    flexDirection: 'row',
+    height: hp(5.5),
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  downloadBtn: {
+    backgroundColor: 'transparent',
+    borderColor: theme.colors.primary,
+  },
+  downloadBtnText: {
+    color: theme.colors.primary,
+    fontWeight: '700',
+    fontSize: rf(12),
+  },
+  shareBtn: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  shareBtnText: {
+    color: 'white',
+    fontWeight: '700',
+    fontSize: rf(12),
+  },
 });

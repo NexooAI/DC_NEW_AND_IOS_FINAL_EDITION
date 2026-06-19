@@ -200,6 +200,15 @@ export default function SetMpinPage() {
             Date.now().toString()
           );
 
+          // Clear clipboard of referral code on successful registration to prevent reuse
+          try {
+            const Clipboard = require("expo-clipboard");
+            await Clipboard.setStringAsync("");
+            logger.log("🧹 Clipboard cleared successfully after registration");
+          } catch (clipError) {
+            logger.error("Failed to clear clipboard:", clipError);
+          }
+
           // Navigate directly to home page after successful registration
           logger.log("🔍 Set MPIN successful, navigating to home");
           router.replace("/(app)/(tabs)/home");

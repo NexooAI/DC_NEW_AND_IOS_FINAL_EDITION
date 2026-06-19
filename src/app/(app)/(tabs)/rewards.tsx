@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback } from "react";
 import {
     View,
     Text,
@@ -8,13 +8,14 @@ import {
     Platform,
     Modal,
     ActivityIndicator,
+    RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { rewardsAPI, investmentAPI } from "@/services/api";
 import useGlobalStore from "@/store/global.store";
 
@@ -25,15 +26,16 @@ export default function RewardsScreen() {
     const { user } = useGlobalStore();
     const [totalPoints, setTotalPoints] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const [hasInvestments, setHasInvestments] = useState<boolean | null>(null);
     const [redemptionModalVisible, setRedemptionModalVisible] = useState(false);
     const [noInvestmentModalVisible, setNoInvestmentModalVisible] = useState(false);
     const scrollY = useRef(new Animated.Value(0)).current;
 
-    const fetchRewards = useCallback(async () => {
+    const fetchRewards = useCallback(async (showLoader = true) => {
         if (!user?.id) return;
 
-        setLoading(true);
+        if (showLoader) setLoading(true);
         try {
             const response = await rewardsAPI.getMyReferrals(user.id);
             if (response.data.success && Array.isArray(response.data.data)) {
@@ -44,8 +46,14 @@ export default function RewardsScreen() {
             console.error("Error fetching rewards:", error);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     }, [user?.id]);
+
+    const handleRefresh = useCallback(() => {
+        setRefreshing(true);
+        fetchRewards(false);
+    }, [fetchRewards]);
 
     const checkInvestments = async () => {
         if (!user?.id) return false;
@@ -84,9 +92,11 @@ export default function RewardsScreen() {
         }
     };
 
-    useEffect(() => {
-        fetchRewards();
-    }, [fetchRewards]);
+    useFocusEffect(
+        useCallback(() => {
+            fetchRewards(true);
+        }, [fetchRewards])
+    );
 
     const headerOpacity = scrollY.interpolate({
         inputRange: [0, 80],
@@ -143,13 +153,21 @@ export default function RewardsScreen() {
                         <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t("rewardPoints") || "Reward Points"}</Text>
-                    <TouchableOpacity
-                        style={styles.historyPillButton}
-                        onPress={() => router.push("/(app)/(tabs)/rewards_history")}
-                    >
-                        <Text style={styles.historyPillText}>History</Text>
-                        <Ionicons name="receipt-outline" size={16} color="white" />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <TouchableOpacity
+                            style={styles.refreshRoundButton}
+                            onPress={handleRefresh}
+                        >
+                            <Ionicons name="refresh" size={18} color="white" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.historyPillButton}
+                            onPress={() => router.push("/(app)/(tabs)/rewards_history")}
+                        >
+                            <Text style={styles.historyPillText}>History</Text>
+                            <Ionicons name="receipt-outline" size={16} color="white" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </Animated.View>
 
@@ -162,6 +180,13 @@ export default function RewardsScreen() {
                     { useNativeDriver: true }
                 )}
                 scrollEventThrottle={16}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        tintColor={theme.colors.primary}
+                    />
+                }
             >
                 {/* Header */}
                 <View style={styles.header}>
@@ -169,13 +194,21 @@ export default function RewardsScreen() {
                         <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t("rewardPoints") || "Reward Points"}</Text>
-                    <TouchableOpacity
-                        style={styles.historyPillButton}
-                        onPress={() => router.push("/(app)/(tabs)/rewards_history")}
-                    >
-                        <Text style={styles.historyPillText}>History</Text>
-                        <Ionicons name="receipt-outline" size={16} color="white" />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <TouchableOpacity
+                            style={styles.refreshRoundButton}
+                            onPress={handleRefresh}
+                        >
+                            <Ionicons name="refresh" size={18} color="white" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.historyPillButton}
+                            onPress={() => router.push("/(app)/(tabs)/rewards_history")}
+                        >
+                            <Text style={styles.historyPillText}>History</Text>
+                            <Ionicons name="receipt-outline" size={16} color="white" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
 
@@ -672,6 +705,16 @@ const styles = StyleSheet.create({
     referSubtitle: {
         fontSize: 13,
         color: "#666",
+    },
+    refreshRoundButton: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: theme.colors.primary,
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.2)",
     },
     bottomBar: {
         position: "absolute",

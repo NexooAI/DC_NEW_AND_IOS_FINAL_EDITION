@@ -51,6 +51,25 @@ export default function PaymentNewOverView() {
   const isFlexi =
     params.paymentFrequency?.toString().toLowerCase() === "flexi" ||
     params.schemeType?.toString().toLowerCase() === "flexi";
+
+  const hybridStatus = useMemo(() => {
+    if (params.hybridStatus) {
+      try {
+        return JSON.parse(params.hybridStatus as string);
+      } catch (e) {
+        logger.error("Error parsing hybridStatus param:", e);
+      }
+    }
+    return null;
+  }, [params.hybridStatus]);
+
+  const isHybrid =
+    params.schemeType?.toString().toLowerCase() === "hybrid";
+
+  const isEditable = useMemo(() => {
+    return isFlexi || isHybrid;
+  }, [isFlexi, isHybrid]);
+
   // Dynamic amount limits from API (defaults to 100000 if not fetched)
   const [minAmount, setMinAmount] = useState(0);
   const [maxAmount, setMaxAmount] = useState(100000); // Default fallback
@@ -270,10 +289,14 @@ export default function PaymentNewOverView() {
     }
   }, []); // Empty dependency array to run only once
 
-  // Fetch amount limits for flexi schemes
+  // Fetch amount limits for flexi/hybrid schemes
   const fetchAmountLimits = async () => {
-    if (!isFlexi || !params.schemeId) {
-      return; // Only fetch for flexi schemes with schemeId
+    if ((!isFlexi && !isHybrid) || !params.schemeId) {
+      return; // Only fetch for flexi/hybrid schemes with schemeId
+    }
+
+    if (isHybrid && hybridStatus?.isFixedPhase && hybridStatus?.rangeReady) {
+      return; // Dynamic range already set from hybridStatus
     }
 
     try {
@@ -331,7 +354,7 @@ export default function PaymentNewOverView() {
 
   // Handle amount adjustment
   const adjustAmount = (increment: number) => {
-    if (!isFlexi) return; // Prevent adjustment if not flexi
+    if (!isEditable) return; // Prevent adjustment if not editable
     const newAmount = currentAmount + increment;
 
     if (newAmount < minAmount) {
@@ -421,10 +444,31 @@ export default function PaymentNewOverView() {
 
   useEffect(() => {
     fetchGoldRate();
-    if (isFlexi && params.schemeId) {
-      fetchAmountLimits();
+    if ((isFlexi || isHybrid) && params.schemeId) {
+      if (isHybrid && hybridStatus) {
+        if (hybridStatus.isFixedPhase && hybridStatus.rangeReady) {
+          const min = Number(hybridStatus.minAmount);
+          const max = Number(hybridStatus.maxAmount);
+          setMinAmount(min);
+          setMaxAmount(max);
+          
+          // Set current amount to min/max if out of bounds
+          if (currentAmount < min) {
+            setCurrentAmount(min);
+            calculateWeightPerGram(min, goldRate);
+          } else if (currentAmount > max) {
+            setCurrentAmount(max);
+            calculateWeightPerGram(max, goldRate);
+          }
+          logger.log("Hybrid fixed range limits set:", { min, max });
+        } else {
+          fetchAmountLimits();
+        }
+      } else {
+        fetchAmountLimits();
+      }
     }
-  }, [params.schemeId, isFlexi]);
+  }, [params.schemeId, isFlexi, isHybrid, hybridStatus, goldRate]);
 
   const fetchTermsAndConditions = async () => {
     try {
@@ -605,6 +649,7 @@ export default function PaymentNewOverView() {
           params: {
             url: paymentUrl,
             orderId: orderId, // Add orderId to params
+            amount: currentAmount.toString(),
             userDetails: JSON.stringify({
               ...userDetails,
               amount: currentAmount,
@@ -633,6 +678,7 @@ export default function PaymentNewOverView() {
           params: {
             url: paymentUrl,
             orderId: orderId,
+            amount: currentAmount.toString(),
             userDetails: JSON.stringify({
               ...userDetails,
               amount: currentAmount,
@@ -755,7 +801,7 @@ export default function PaymentNewOverView() {
         showsVerticalScrollIndicator={true}
       >
         {/* Amount Card */}
-        {isFlexi ? (
+        {isEditable ? (
           <View style={styles.amountCard}>
             <View style={styles.amountHeader}>
               <FontAwesome5
@@ -844,7 +890,7 @@ export default function PaymentNewOverView() {
                 <Text
                   style={[
                     styles.quickButtonText,
-                    isEditingAmount && styles.disabledText,
+                    isEditingAmount ? styles.disabledText : undefined,
                   ]}
                 >
                   -500
@@ -858,7 +904,7 @@ export default function PaymentNewOverView() {
                 <Text
                   style={[
                     styles.quickButtonText,
-                    isEditingAmount && styles.disabledText,
+                    isEditingAmount ? styles.disabledText : undefined,
                   ]}
                 >
                   -100
@@ -872,7 +918,7 @@ export default function PaymentNewOverView() {
                 <Text
                   style={[
                     styles.quickButtonText,
-                    isEditingAmount && styles.disabledText,
+                    isEditingAmount ? styles.disabledText : undefined,
                   ]}
                 >
                   +100
@@ -886,7 +932,7 @@ export default function PaymentNewOverView() {
                 <Text
                   style={[
                     styles.quickButtonText,
-                    isEditingAmount && styles.disabledText,
+                    isEditingAmount ? styles.disabledText : undefined,
                   ]}
                 >
                   +500
@@ -918,7 +964,7 @@ export default function PaymentNewOverView() {
           <TouchableOpacity
             style={[
               styles.cardHeader,
-              isUserDetailsExpanded && styles.cardHeaderWithBorder,
+              isUserDetailsExpanded ? styles.cardHeaderWithBorder : undefined,
             ]}
             onPress={toggleUserDetailsCard}
             activeOpacity={0.8}
@@ -974,7 +1020,7 @@ export default function PaymentNewOverView() {
           <TouchableOpacity
             style={[
               styles.cardHeader,
-              isSchemeDetailsExpanded && styles.cardHeaderWithBorder,
+              isSchemeDetailsExpanded ? styles.cardHeaderWithBorder : undefined,
             ]}
             onPress={toggleSchemeDetailsCard}
             activeOpacity={0.8}
@@ -1076,8 +1122,8 @@ export default function PaymentNewOverView() {
               style={styles.bottomTermsCheckbox}
               onPress={() => setIsTermsAccepted(!isTermsAccepted)}
             >
-              <Ionicons
-                name={isTermsAccepted ? "checkbox" : "square-outline"}
+              <MaterialCommunityIcons
+                name={isTermsAccepted ? "checkbox-marked" : "checkbox-blank-outline"}
                 size={24}
                 color={
                   isTermsAccepted
@@ -1101,7 +1147,7 @@ export default function PaymentNewOverView() {
           <TouchableOpacity
             style={[
               styles.bottomPaymentButton,
-              !isTermsAccepted && styles.bottomPaymentButtonDisabled,
+              !isTermsAccepted ? styles.bottomPaymentButtonDisabled : undefined,
             ]}
             onPress={handlePayment}
             disabled={!isTermsAccepted || isProcessing}

@@ -16,6 +16,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import * as Print from 'expo-print';
+import * as WebBrowser from 'expo-web-browser';
+import { generateBillReceiptHTML, BillReceiptData } from '@/templates/html';
 import { theme } from '@/constants/theme';
 import { COLORS } from '@/constants/colors';
 import ResponsiveText from '@/components/ResponsiveText';
@@ -23,6 +28,7 @@ import { responsiveUtils } from '@/utils/responsiveUtils';
 import apiClient, { billsAPI } from '@/services/api';
 import useGlobalStore from '@/store/global.store';
 import { logAppEvent } from '@/services/appEventService';
+import { saveFileToPublicDirectory } from '@/utils/fileUtils';
 
 const { wp, hp, rf } = responsiveUtils;
 const QUATERNARY_COLOR = theme.colors.quaternary || '#F2E6D2';
@@ -167,6 +173,92 @@ export default function BillPayment() {
   const [processingMessage, setProcessingMessage] = useState('');
 
   const userId = (user as any)?.userId || user?.id;
+
+  const sanitizeFileName = (str: string) => str.replace(/[^a-zA-Z0-9]/g, '_');
+
+  const handleShareBillReceipt = async (bill: BillItem) => {
+    const receiptData: BillReceiptData = {
+      billId: bill.id,
+      billNumber: bill.billNumber,
+      description: bill.description,
+      totalAmount: bill.totalAmount,
+      paidAmount: bill.paidAmount,
+      pendingAmount: bill.pendingAmount,
+      status: bill.status,
+      billDate: bill.billDate,
+      userName: user?.name,
+      userMobile: user?.mobile?.toString(),
+      userEmail: user?.email,
+    };
+
+    try {
+      const htmlContent = generateBillReceiptHTML(receiptData);
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+
+      const customerName = sanitizeFileName(user?.name || 'Customer');
+      const accountNo = sanitizeFileName(user?.id?.toString() || '000000');
+      const fileName = `Bill_${customerName}_${accountNo}_${bill.billNumber}.pdf`;
+
+      const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+      const targetUri = `${targetDir}${fileName}`;
+      await FileSystem.moveAsync({ from: uri, to: targetUri });
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(targetUri, {
+          UTI: 'com.adobe.pdf',
+          mimeType: 'application/pdf',
+          dialogTitle: 'Share bill receipt',
+        });
+      } else {
+        if (Platform.OS === 'ios') {
+          await WebBrowser.openBrowserAsync(targetUri);
+        } else {
+          Alert.alert(
+            'Saved',
+            `Receipt saved successfully!\n\nLocation:\n${targetUri}\n\nYou can access it from your device's Files/Documents folder: On My Device -> ${fileName}`
+          );
+        }
+      }
+    } catch (e) {
+      console.error('Bill receipt generation failed', e);
+      Alert.alert('Error', 'Failed to generate bill receipt');
+    }
+  };
+
+  const handleDownloadBillReceipt = async (bill: BillItem) => {
+    const receiptData: BillReceiptData = {
+      billId: bill.id,
+      billNumber: bill.billNumber,
+      description: bill.description,
+      totalAmount: bill.totalAmount,
+      paidAmount: bill.paidAmount,
+      pendingAmount: bill.pendingAmount,
+      status: bill.status,
+      billDate: bill.billDate,
+      userName: user?.name,
+      userMobile: user?.mobile?.toString(),
+      userEmail: user?.email,
+    };
+
+    try {
+      const htmlContent = generateBillReceiptHTML(receiptData);
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+
+      const customerName = sanitizeFileName(user?.name || 'Customer');
+      const accountNo = sanitizeFileName(user?.id?.toString() || '000000');
+      const fileName = `Bill_${customerName}_${accountNo}_${bill.billNumber}.pdf`;
+
+      const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+      const targetUri = `${targetDir}${fileName}`;
+      await FileSystem.moveAsync({ from: uri, to: targetUri });
+
+      await saveFileToPublicDirectory(targetUri, fileName, 'Bill receipt saved to your chosen folder successfully!');
+    } catch (e) {
+      console.error('Bill receipt download failed', e);
+      Alert.alert('Error', 'Failed to download bill receipt');
+    }
+  };
 
   const fetchBills = useCallback(async (showLoader = true) => {
     if (!userId) {
@@ -503,6 +595,26 @@ export default function BillPayment() {
                     </Text>
                   </View>
                 )}
+
+                {selectedBill.paidAmount > 0 && (
+                  <View style={styles.modalActionRow}>
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.downloadBtn]}
+                      onPress={() => handleDownloadBillReceipt(selectedBill)}
+                    >
+                      <Ionicons name="download-outline" size={18} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                      <Text style={styles.downloadBtnText}>Download</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.shareBtn]}
+                      onPress={() => handleShareBillReceipt(selectedBill)}
+                    >
+                      <Ionicons name="share-social-outline" size={18} color="white" style={{ marginRight: 6 }} />
+                      <Text style={styles.shareBtnText}>Share</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </ScrollView>
             )}
           </View>
@@ -687,4 +799,38 @@ const styles = StyleSheet.create({
   },
   processingTitle: { marginTop: hp(2), fontSize: rf(17), fontWeight: '800', color: theme.colors.textDark },
   processingMessage: { marginTop: hp(0.8), fontSize: rf(12), color: 'rgba(0,0,0,0.55)', textAlign: 'center' },
+  modalActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: hp(2),
+    gap: wp(3),
+  },
+  modalButton: {
+    flex: 1,
+    flexDirection: 'row',
+    height: hp(5.5),
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  downloadBtn: {
+    backgroundColor: 'transparent',
+    borderColor: theme.colors.primary,
+  },
+  downloadBtnText: {
+    color: theme.colors.primary,
+    fontWeight: '700',
+    fontSize: rf(12),
+  },
+  shareBtn: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  shareBtnText: {
+    color: 'white',
+    fontWeight: '700',
+    fontSize: rf(12),
+  },
 });

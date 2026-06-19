@@ -25,6 +25,7 @@ import { logger } from "@/utils/logger";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useGlobalStore from "@/store/global.store";
+import { responsiveUtils } from "@/utils/responsiveUtils";
 
 const { width: screenWidth } = Dimensions.get("window");
 console.log('DynamicSchemeCard', useAppVisibility);
@@ -1223,7 +1224,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
 
       <Modal
         visible={modalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={closeModal}
       >
@@ -1478,24 +1479,26 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: COLORS.background.overlay,
-    justifyContent: "flex-end", // Align to bottom
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center", // Center vertically
+    alignItems: "center", // Center horizontally
   },
   modalContainer: {
     backgroundColor: COLORS.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    margin: 0,
-    height: "80%", // Tall bottom sheet
-    width: "100%",
+    borderRadius: 24, // Rounded corners on all sides
+    width: responsiveUtils.isTabletDevice() ? "85%" : "90%",
+    maxWidth: responsiveUtils.isTabletDevice() ? 800 : 420,
+    height: responsiveUtils.isTabletDevice() ? "80%" : "75%",
+    maxHeight: responsiveUtils.isTabletDevice() ? 900 : 620,
     shadowColor: COLORS.shadow.black,
     shadowOffset: {
       width: 0,
-      height: -4, // Shadow upwards
+      height: 10, // Shadow downwards
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 10,
+    overflow: "hidden", // Clip content inside rounded corners
   },
   modalContent: {
     padding: 0,
@@ -1757,8 +1760,7 @@ const styles = StyleSheet.create({
   modalContentModern: {
       flex: 1,
       backgroundColor: COLORS.white,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
+      borderRadius: 24, // Ensure all corners are rounded
       overflow: "hidden",
   },
   modalScroll: {
@@ -1777,6 +1779,8 @@ const styles = StyleSheet.create({
       paddingVertical: 15,
       borderTopWidth: 1,
       borderTopColor: '#f0f0f0',
+      borderBottomLeftRadius: 24, // Align rounded corners at the bottom
+      borderBottomRightRadius: 24,
       elevation: 20,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: -5 },

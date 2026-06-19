@@ -216,6 +216,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
         transactions: JSON.stringify(item.transactions || []),
         paymentFrequency: getLocalizedText(item.paymentFrequency),
         rewards: JSON.stringify(item?.rewards || []),
+        dueDate: item.dueDate || "",
       },
     });
   };
@@ -272,6 +273,9 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
         ? item.transactions.length
         : 0;
 
+      // Extract hybridStatus if present
+      const hybridStatus = response?.data?.data?.hybridStatus || null;
+
       // Navigate directly to paymentNewOverView
       router.push({
         pathname: "/(app)/(tabs)/home/paymentNewOverView",
@@ -287,6 +291,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
           schemeType: parseSchemes.schemeTypeName || "Fixed",
           source: "savings_index",
           savinsTypes: parseSchemes.schemeType || "amount",
+          hybridStatus: hybridStatus ? JSON.stringify(hybridStatus) : "",
           userDetails: JSON.stringify({
             amount: item.emiAmount?.toString() || "0",
             accountname: item.accountHolder || "N/A",
@@ -368,30 +373,52 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                       getLocalizedText(item.metalType).slice(1)}
                   </Text>
                 </View>
-                <View
-                  style={[
-                    styles.savingTypeBadge,
-                    { backgroundColor: theme.colors.backgroundSecondary },
-                  ]}
-                >
-                  <Text style={styles.savingTypeText}>
-                    {getLocalizedText(
-                      item.schemesData?.paymentFrequencyName
-                    ) === "Flexi"
-                      ? translations.flexi
-                      : translations.fixed}
-                  </Text>
-                </View>
-                {item.schemesData.paymentFrequencyName.toLowerCase() !== "flexi" && <View
-                  style={[
-                    styles.savingTypeBadge,
-                    { backgroundColor: theme.colors.bgGoldHeavy },
-                  ]}
-                >
-                  <Text style={styles.savingTypeText}>
-                    {getLocalizedText(item.schemesData.paymentFrequencyName)}
-                  </Text>
-                </View>}
+                {item.savingType === "old_gold" ? (
+                  <View
+                    style={[
+                      styles.savingTypeBadge,
+                      { backgroundColor: theme.colors.bgGoldHeavy },
+                    ]}
+                  >
+                    <Text style={styles.savingTypeText}>Old Gold</Text>
+                  </View>
+                ) : (
+                  <>
+                    <View
+                      style={[
+                        styles.savingTypeBadge,
+                        { backgroundColor: theme.colors.backgroundSecondary },
+                      ]}
+                    >
+                      <Text style={styles.savingTypeText}>
+                        {getLocalizedText(
+                          item.schemesData?.paymentFrequencyName
+                        ) === "Flexi" ||
+                        getLocalizedText(
+                          item.schemesData?.paymentFrequencyName
+                        ) === "Hybrid" ||
+                        getLocalizedText(
+                          item.schemesData?.paymentFrequencyName
+                        ).toLowerCase() === "hybrid"
+                          ? translations.flexi
+                          : translations.fixed}
+                      </Text>
+                    </View>
+                    {item.schemesData?.paymentFrequencyName?.toLowerCase() !== "flexi" &&
+                    item.schemesData?.paymentFrequencyName?.toLowerCase() !== "hybrid" && (
+                      <View
+                        style={[
+                          styles.savingTypeBadge,
+                          { backgroundColor: theme.colors.bgGoldHeavy },
+                        ]}
+                      >
+                        <Text style={styles.savingTypeText}>
+                          {getLocalizedText(item.schemesData.paymentFrequencyName)}
+                        </Text>
+                      </View>
+                    )}
+                  </>
+                )}
                 <View
                   style={[
                     styles.savingTypeBadge,
@@ -399,7 +426,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                   ]}
                 >
                   <Text style={styles.savingTypeText}>
-                    {item.schemesData.schemeType.toLowerCase() === "weight" ? "Weight" : "Amount"}
+                    {item.savingType === "old_gold" ? "Weight" : (item.schemesData.schemeType.toLowerCase() === "weight" ? "Weight" : "Amount")}
                   </Text>
                 </View>
               </View>
@@ -479,7 +506,11 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
               </Text>
               <Text style={styles.paymentInfoValue}>
                 {getLocalizedText(item.schemesData?.paymentFrequencyName) ===
-                  "Flexi"
+                  "Flexi" ||
+                getLocalizedText(item.schemesData?.paymentFrequencyName) ===
+                  "Hybrid" ||
+                getLocalizedText(item.schemesData?.paymentFrequencyName).toLowerCase() ===
+                  "hybrid"
                   ? translations.flexi
                   : getLocalizedText(item.paymentFrequency)}
               </Text>
@@ -503,11 +534,16 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
 
         </TouchableOpacity>
 
-        {/* Action Buttons Container - Always Visible */}
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity
-            style={styles.detailsButton}
-            onPress={() => handleNavigation(item)}
+            style={item.savingType === "old_gold" ? [styles.detailsButton, { width: "100%" }] : styles.detailsButton}
+            onPress={() => {
+              if (item.savingType === "old_gold") {
+                router.push("/(app)/old_gold");
+              } else {
+                handleNavigation(item);
+              }
+            }}
           >
             <LinearGradient
               colors={theme.colors.gradientPrimary}
@@ -525,36 +561,38 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
               />
             </LinearGradient>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.payNowButtonLarge,
-              isLoading && styles.disabledButton,
-            ]}
-            onPress={handlePayNow}
-            disabled={isLoading}
-          >
-            <LinearGradient
-              colors={
-                isLoading
-                  ? ["#6B6B6B", "#4A4A4A", "#2E2E2E"] // Disabled / Loading
-                  : theme.colors.gradientPrimary // Use theme primary gradient
-              }
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.payNowButtonGradient}
+          {item.savingType !== "old_gold" && (
+            <TouchableOpacity
+              style={[
+                styles.payNowButtonLarge,
+                isLoading && styles.disabledButton,
+              ]}
+              onPress={handlePayNow}
+              disabled={isLoading}
             >
-              {isLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <Text style={styles.payNowButtonTextLarge}>
-                    {translations.payNow}
-                  </Text>
-                  <Ionicons name="card-outline" size={20} color="#fff" />
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
+              <LinearGradient
+                colors={
+                  isLoading
+                    ? ["#6B6B6B", "#4A4A4A", "#2E2E2E"] // Disabled / Loading
+                    : theme.colors.gradientPrimary // Use theme primary gradient
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.payNowButtonGradient}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Text style={styles.payNowButtonTextLarge}>
+                      {translations.payNow}
+                    </Text>
+                    <Ionicons name="card-outline" size={20} color="#fff" />
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
         </View>
 
         <Animated.View
@@ -571,49 +609,71 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
           {/* Enhanced Info Grid with More Relevant Data */}
           <View style={styles.enhancedInfoGrid}>
             <View style={styles.enhancedInfoRow}>
-              <View style={styles.enhancedInfoItem}>
-                <View style={styles.enhancedInfoIconContainer}>
-                  <Ionicons name="wallet-outline" size={20} color={theme.colors.primary} />
-                </View>
-                <Text style={styles.enhancedInfoLabel}>
-                  {translations.totalInvestedLabel}
-                </Text>
-                <Text style={styles.enhancedInfoValue}>
-                  ₹{(item.totalPaid + totalRewardAmount).toLocaleString()}
-                </Text>
-              </View>
-
-              {/* <View style={styles.enhancedInfoItem}>
-                <View style={styles.enhancedInfoIconContainer}>
-                  <Ionicons name="trending-up" size={20} color={theme.colors.secondary} />
-                </View>
-                <Text style={styles.enhancedInfoLabel}>
-                  {translations.goldWeightLabel}
-                </Text>
-                <Text style={styles.enhancedInfoValue}>
-                  {formatGoldWeight(item.goldWeight + totalRewardGoldGrams)}
-                </Text>
-              </View> */}
-                <View style={styles.enhancedInfoItem}>
-                  <View style={styles.enhancedInfoIconContainer}>
-                    <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
+              {item.savingType === "old_gold" ? (
+                <>
+                  <View style={styles.enhancedInfoItem}>
+                    <View style={styles.enhancedInfoIconContainer}>
+                      <Ionicons name="scale-outline" size={20} color={theme.colors.primary} />
+                    </View>
+                    <Text style={styles.enhancedInfoLabel}>Gross Weight</Text>
+                    <Text style={styles.enhancedInfoValue}>
+                      {((item as any).grossWeight || 0).toFixed(3)} g
+                    </Text>
                   </View>
-                  <Text style={styles.enhancedInfoLabel}>
-                    {translations.maturityDateLabel}
-                  </Text>
-                  <Text style={styles.enhancedInfoValue}>
-                    {item?.maturityDate}
-                  </Text>
-                </View>
-              <View style={styles.enhancedInfoItem}>
-                <View style={styles.enhancedInfoIconContainer}>
-                  <Ionicons name="cash-outline" size={20} color={theme.colors.primary} />
-                </View>
-                <Text style={styles.enhancedInfoLabel}>
-                  {translations.monthlyEMILabel}
-                </Text>
-                <Text style={styles.enhancedInfoValue}>₹{item.emiAmount}</Text>
-              </View>
+                  <View style={styles.enhancedInfoItem}>
+                    <View style={styles.enhancedInfoIconContainer}>
+                      <Ionicons name="ribbon-outline" size={20} color={theme.colors.primary} />
+                    </View>
+                    <Text style={styles.enhancedInfoLabel}>Purity Carat</Text>
+                    <Text style={styles.enhancedInfoValue}>
+                      {((item as any).purityCarat || 22)}K
+                    </Text>
+                  </View>
+                  <View style={styles.enhancedInfoItem}>
+                    <View style={styles.enhancedInfoIconContainer}>
+                      <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
+                    </View>
+                    <Text style={styles.enhancedInfoLabel}>Maturity Date</Text>
+                    <Text style={styles.enhancedInfoValue}>
+                      {item.maturityDate}
+                    </Text>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <View style={styles.enhancedInfoItem}>
+                    <View style={styles.enhancedInfoIconContainer}>
+                      <Ionicons name="wallet-outline" size={20} color={theme.colors.primary} />
+                    </View>
+                    <Text style={styles.enhancedInfoLabel}>
+                      {translations.totalInvestedLabel}
+                    </Text>
+                    <Text style={styles.enhancedInfoValue}>
+                      ₹{(item.totalPaid + totalRewardAmount).toLocaleString()}
+                    </Text>
+                  </View>
+                  <View style={styles.enhancedInfoItem}>
+                    <View style={styles.enhancedInfoIconContainer}>
+                      <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
+                    </View>
+                    <Text style={styles.enhancedInfoLabel}>
+                      {translations.maturityDateLabel}
+                    </Text>
+                    <Text style={styles.enhancedInfoValue}>
+                      {item?.maturityDate}
+                    </Text>
+                  </View>
+                  <View style={styles.enhancedInfoItem}>
+                    <View style={styles.enhancedInfoIconContainer}>
+                      <Ionicons name="cash-outline" size={20} color={theme.colors.primary} />
+                    </View>
+                    <Text style={styles.enhancedInfoLabel}>
+                      {translations.monthlyEMILabel}
+                    </Text>
+                    <Text style={styles.enhancedInfoValue}>₹{item.emiAmount}</Text>
+                  </View>
+                </>
+              )}
             </View>
 
             {/* Additional Row for More Details */}

@@ -37,7 +37,10 @@ export const responsiveFontSize = (size: number, options?: {
     const { minSize, maxSize, allowFontScaling = true } = options || {};
 
     // Calculate scale factor based on screen width
-    const scale = SCREEN_WIDTH / BASE_WIDTH;
+    let scale = SCREEN_WIDTH / BASE_WIDTH;
+    if (SCREEN_WIDTH >= BREAKPOINTS.tablet) {
+        scale = 1 + (scale - 1) * 0.22; // Dampen the scaling factor on tablets
+    }
 
     // Apply device-specific scaling
     const deviceType = getDeviceType(SCREEN_WIDTH);

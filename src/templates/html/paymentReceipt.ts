@@ -11,7 +11,10 @@ export interface PaymentReceiptData {
     amountPaid: number;
     paymentDate: string;
     paymentMode?: string;
-    status: string;
+    paymentModeType?: string;
+    orderId?: string;
+    utrReference?: string;
+    status?: string;
     goldRate?: number;
     userName?: string;
     userMobile?: string;
@@ -39,6 +42,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         amountPaid,
         paymentDate,
         paymentMode,
+        paymentModeType,
         status,
         goldRate,
         userName,
@@ -46,6 +50,8 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         rewardGoldGrams,
         inversement
     } = data;
+
+    const statusText = status || "Success";
 
     return `
    <!DOCTYPE html>
@@ -168,8 +174,10 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         </tr>
         <tr>
             <th>Payment Mode</th>
-            <td>${(paymentMode || "NB").toUpperCase()}</td>
+            <td>${(paymentMode || "NB").toUpperCase()}${paymentModeType ? ` (${paymentModeType.toUpperCase()})` : ""}</td>
         </tr>
+        ${data.orderId ? `<tr><th>Order ID</th><td>${data.orderId}</td></tr>` : ""}
+        ${data.utrReference ? `<tr><th>UTR Reference</th><td>${data.utrReference}</td></tr>` : ""}
         ${goldRate ? `<tr><th>Gold Rate</th><td>₹${goldRate}/gram</td></tr>` : ""}
         ${rewardAmount ? `<tr><th>Reward Amount</th><td>₹${Number(rewardAmount).toLocaleString()}</td></tr>` : ""}
         ${rewardGoldGrams ? `<tr><th>Reward Gold</th><td>${Number(rewardGoldGrams).toFixed(4)} grams</td></tr>` : ""}
@@ -187,7 +195,6 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         <tr><th>Joining Date</th><td>${new Date(inversement.joiningDate).toLocaleDateString("en-GB")}</td></tr>
         <tr><th>Payment Status</th><td>${inversement.paymentStatus}</td></tr>
         <tr><th>Maturity Date</th><td>${new Date(inversement.end_date).toLocaleDateString("en-GB")}</td></tr>
-        <tr><th>Status</th><td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td></tr>
         <tr><th>Current Gold Rate</th><td>₹${inversement.current_goldrate}/g</td></tr>
     </table>` : ""}
 

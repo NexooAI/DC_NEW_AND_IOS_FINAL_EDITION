@@ -15,55 +15,78 @@ jest.mock('@react-navigation/native', () => {
             navigate: jest.fn(),
             dispatch: jest.fn(),
         }),
-        useFocusEffect: jest.fn((callback) => callback()), // Execute callback immediately
+        useFocusEffect: (cb) => require('react').useEffect(cb, []),
         useIsFocused: jest.fn(() => true),
     };
 });
 
-jest.mock("expo-router", () => ({
-    router: {
-        push: jest.fn(),
-        replace: jest.fn(),
-        back: jest.fn(),
-    },
-    useRouter: () => ({
-        push: jest.fn(),
-        replace: jest.fn(),
-        back: jest.fn(),
-    }),
-}));
+jest.mock("expo-router", () => {
+    const innerMockStack = ({ children }: any) => children;
+    innerMockStack.Screen = () => null;
+    return {
+        router: {
+            push: jest.fn(),
+            replace: jest.fn(),
+            back: jest.fn(),
+        },
+        useRouter: () => ({
+            push: jest.fn(),
+            replace: jest.fn(),
+            back: jest.fn(),
+        }),
+        useLocalSearchParams: jest.fn(() => ({})),
+        useFocusEffect: (cb) => require('react').useEffect(cb, []),
+        usePathname: jest.fn(() => ''),
+        Stack: innerMockStack,
+    };
+});
 
 jest.mock('@/services/api');
 
-// Mock Global Store
-jest.mock('@/store/global.store', () => ({
-  __esModule: true,
-  default: jest.fn(() => ({
-    user: { id: 'test-user', name: 'Test User' },
-    isLoggedIn: true,
-    language: 'en',
-    setLanguage: jest.fn(),
-  })),
-}));
 
-// Mock Translation
-jest.mock('@/hooks/useTranslation', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
 
-describe.skip('Menu Navigation Integrity (Smoke Tests)', () => {
+
+
+describe('Menu Navigation Integrity (Smoke Tests)', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        (api.get as jest.Mock).mockImplementation((url) => {
+            if (url.includes('/home')) {
+                return Promise.resolve({
+                    data: {
+                        success: true,
+                        data: {
+                            currentRates: {
+                                gold_rate: "6000",
+                                gold_rate_18: "5000",
+                                gold_rate_14: "4000",
+                                updated_at: "2026-06-17T00:00:00.000Z"
+                            },
+                            videos: [],
+                            socialmedia: {}
+                        }
+                    }
+                });
+            }
+            if (url.includes('/branches')) {
+                return Promise.resolve({ data: { success: true, data: [] } });
+            }
+            if (url.includes('/kyc/status')) {
+                return Promise.resolve({ data: { success: true, kyc_status: "Completed", data: {} } });
+            }
+            return Promise.resolve({ data: { success: true, data: [] } });
+        });
+    });
     
     it('renders the Home screen successfully', async () => {
         const { getByText } = render(<Home />);
         await waitFor(() => {
-            expect(getByText('Gold Rate')).toBeTruthy();
+            expect(getByText('liveGoldRates')).toBeTruthy();
         });
     });
 
     // TODO: Fix async state update issues causing flaky test
-    it.skip('renders the Savings screen successfully', async () => {
+    it('renders the Savings screen successfully', async () => {
         (api.get as jest.Mock).mockResolvedValue({ data: { success: true, data: [] } });
         (api.post as jest.Mock).mockResolvedValue({ data: { success: true, rewards: [] } });
 

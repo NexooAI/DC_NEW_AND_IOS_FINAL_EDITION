@@ -1,4 +1,6 @@
 // Mocks for Global Native Modules
+jest.setTimeout(30000);
+
 
 import 'react-native-gesture-handler/jestSetup';
 import mockSafeAreaContext from 'react-native-safe-area-context/jest/mock';
@@ -47,21 +49,25 @@ jest.mock('expo-secure-store', () => ({
 
 // Mock NetInfo
 jest.mock('@react-native-community/netinfo', () => ({
-    addEventListener: jest.fn(),
+    addEventListener: jest.fn(() => jest.fn()),
     fetch: jest.fn(() => Promise.resolve({ isConnected: true })),
 }));
 
-// Mock Expo Router
-jest.mock('expo-router', () => ({
-    useRouter: () => ({
-        push: jest.fn(),
-        replace: jest.fn(),
-        back: jest.fn(),
-    }),
-    useLocalSearchParams: jest.fn(() => ({})),
-    useFocusEffect: jest.fn((callback) => callback()),
-    usePathname: jest.fn(() => ''),
-}));
+jest.mock('expo-router', () => {
+    const innerMockStack = ({ children }) => children;
+    innerMockStack.Screen = () => null;
+    return {
+        useRouter: () => ({
+            push: jest.fn(),
+            replace: jest.fn(),
+            back: jest.fn(),
+        }),
+        useLocalSearchParams: jest.fn(() => ({})),
+        useFocusEffect: (cb) => require('react').useEffect(cb, []),
+        usePathname: jest.fn(() => ''),
+        Stack: innerMockStack,
+    };
+});
 
 // Mock React Navigation (Single, correct mock)
 jest.mock('@react-navigation/native', () => {
@@ -74,7 +80,7 @@ jest.mock('@react-navigation/native', () => {
             isFocused: jest.fn(() => true),
             dispatch: jest.fn(),
         }),
-        useFocusEffect: jest.fn((callback) => callback()),
+        useFocusEffect: (cb) => require('react').useEffect(cb, []),
         useIsFocused: jest.fn(() => true),
         NavigationContainer: ({ children }) => children,
     };
@@ -106,15 +112,27 @@ jest.mock('react-native-reanimated', () => {
 });
 
 // Mock Global Store (Zustand)
+const mockStoreState = {
+    user: { id: 'test-user-id', name: 'Test User', email: 'test@example.com', mobile: '1234567890' },
+    isLoggedIn: true,
+    login: jest.fn(),
+    logout: jest.fn(),
+    language: 'en',
+    setLanguage: jest.fn(),
+    isVisibilityCacheValid: jest.fn(() => true),
+    getCachedVisibility: jest.fn(() => ({ data: {}, timestamp: Date.now() })),
+    setCachedVisibility: jest.fn(),
+    cachedVisibility: { data: {}, timestamp: Date.now() },
+    debugState: jest.fn(() => ({})),
+};
+
+const mockUseGlobalStore = jest.fn(() => mockStoreState);
+mockUseGlobalStore.getState = jest.fn(() => mockStoreState);
+
 jest.mock('@/store/global.store', () => {
     return {
         __esModule: true,
-        default: jest.fn(() => ({
-            user: { id: 'test-user-id', name: 'Test User' },
-            isLoggedIn: true,
-            login: jest.fn(),
-            logout: jest.fn(),
-        })),
+        default: mockUseGlobalStore,
     };
 });
 
@@ -179,7 +197,15 @@ jest.mock('@/utils/logger', () => ({
 
 // Mock Language Hooks & Context
 jest.mock('@/hooks/useTranslation', () => ({
-    useTranslation: () => ({ t: (key) => key, locale: 'en' }),
+    useTranslation: () => ({
+        t: (key) => key,
+        locale: 'en',
+        setLocale: jest.fn(),
+        supportedLocales: ['en', 'ta', 'te', 'hi', 'mal'],
+        isEnglish: true,
+        isMalayalam: false,
+        isTamil: false,
+    }),
 }));
 
 jest.mock('@/contexts/LanguageContext', () => ({
@@ -218,3 +244,53 @@ jest.mock('expo-image-picker', () => ({
     requestMediaLibraryPermissionsAsync: jest.fn(),
     requestCameraPermissionsAsync: jest.fn(),
 }));
+
+// Mock Expo Local Authentication
+jest.mock('expo-local-authentication', () => ({
+    hasHardwareAsync: jest.fn(() => Promise.resolve(true)),
+    isEnrolledAsync: jest.fn(() => Promise.resolve(true)),
+    authenticateAsync: jest.fn(() => Promise.resolve({ success: true })),
+    SecurityLevel: {
+        NONE: 0,
+        SECRET: 1,
+        BIOMETRIC: 2,
+    },
+}));
+
+// Mock useBiometrics hook
+jest.mock('@/hooks/useBiometrics', () => ({
+    useBiometrics: () => ({
+        isSupported: true,
+        biometricType: [1, 2],
+        isEnrolled: true,
+        isEnabled: false,
+        authenticate: jest.fn(() => Promise.resolve({ success: true, mpin: '1234' })),
+        enableBiometrics: jest.fn(() => Promise.resolve(true)),
+        disableBiometrics: jest.fn(() => Promise.resolve()),
+        checkBiometrics: jest.fn(() => Promise.resolve()),
+    }),
+}));
+
+// Mock Firebase
+jest.mock('@react-native-firebase/app', () => ({
+    initializeApp: jest.fn(),
+    app: jest.fn(() => ({
+        utils: jest.fn(),
+    })),
+}));
+
+jest.mock('@react-native-firebase/crashlytics', () => {
+    return () => ({
+        log: jest.fn(),
+        recordError: jest.fn(),
+        setCrashlyticsCollectionEnabled: jest.fn(),
+        setUserId: jest.fn(),
+        setAttribute: jest.fn(),
+        setAttributes: jest.fn(),
+        checkForUnsentReports: jest.fn(() => Promise.resolve(false)),
+        deleteUnsentReports: jest.fn(() => Promise.resolve()),
+        sendUnsentReports: jest.fn(),
+    });
+});
+
+

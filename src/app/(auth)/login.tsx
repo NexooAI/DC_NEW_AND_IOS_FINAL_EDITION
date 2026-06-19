@@ -1280,6 +1280,34 @@ export default function Login() {
                     >
                       {safeT("signInToContinue", "Sign in to continue")}
                     </ResponsiveText>
+                    {__DEV__ && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          try {
+                            const crashlytics = require('@react-native-firebase/crashlytics').default;
+                            crashlytics().log('Test crash triggered by developer');
+                            crashlytics().crash();
+                          } catch (error) {
+                            console.log('Crashlytics is not available in this environment:', error);
+                            Alert.alert('Not Available', 'Crashlytics is only available in a native Dev Client / Release build.');
+                          }
+                        }}
+                        style={{
+                          backgroundColor: "#E74C3C",
+                          paddingVertical: 8,
+                          paddingHorizontal: 16,
+                          borderRadius: 20,
+                          marginTop: 10,
+                          alignSelf: 'center',
+                          borderWidth: 1,
+                          borderColor: "rgba(255, 255, 255, 0.2)"
+                        }}
+                      >
+                        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>
+                          💥 Trigger Test Crash (Dev Only)
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </>
                   ) : null}
                   {!isShowOtp ? (

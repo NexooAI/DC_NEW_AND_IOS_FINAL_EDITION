@@ -950,7 +950,7 @@ export default function Home() {
   }, [user]);
 
   // Fetch investment data separately
-  const fetchInvestmentData = useCallback(async () => {
+  const fetchInvestmentData = useCallback(async (existingInvestments?: any[]) => {
     if (!user || !user.id) {
       logger.log(
         "⚠️ No user or userId available, skipping investment data fetch"
@@ -959,22 +959,26 @@ export default function Home() {
     }
 
     try {
-      logger.log("🔍 Fetching investment data for user:", user.id);
-      const response = await api.get(`investments/user_investments/${user.id}`, { skipLoading: true } as any);
-      logger.log("Investment API response:", response.data);
+      let investments = existingInvestments;
 
-      // Handle different possible response structures
-      let investments = [];
+      if (!investments) {
+        logger.log("🔍 Fetching investment data for user:", user.id);
+        const response = await api.get(`investments/user_investments/${user.id}`, { skipLoading: true } as any);
+        logger.log("Investment API response:", response.data);
 
-      if (response.data && response.data.data) {
-        // If response has data.data structure
-        investments = response.data.data;
-      } else if (response.data && Array.isArray(response.data)) {
-        // If response.data is directly an array
-        investments = response.data;
-      } else if (response.data && response.data.investments) {
-        // If response has investments property
-        investments = response.data.investments;
+        // Handle different possible response structures
+        if (response.data && response.data.data) {
+          // If response has data.data structure
+          investments = response.data.data;
+        } else if (response.data && Array.isArray(response.data)) {
+          // If response.data is directly an array
+          investments = response.data;
+        } else if (response.data && response.data.investments) {
+          // If response has investments property
+          investments = response.data.investments;
+        }
+      } else {
+        logger.log("📦 Using pre-fetched investments data count:", investments.length);
       }
 
       // Ensure investments is an array
@@ -983,25 +987,34 @@ export default function Home() {
         investments = [];
       }
 
-      logger.log("Total investments found:", investments.length);
+      // Fetch old gold deposits
+      let activeOldGoldCount = 0;
+      let activeOldGoldWeight = 0;
+      try {
+        const ogResponse = await api.get(`/old-gold/user/${user.id}`, { skipLoading: true } as any);
+        if (ogResponse.data && ogResponse.data.success && Array.isArray(ogResponse.data.data)) {
+          const activeOldGold = ogResponse.data.data.filter((dep: any) => dep.status === 'active');
+          activeOldGoldCount = activeOldGold.length;
+          activeOldGoldWeight = activeOldGold.reduce((sum: number, dep: any) => sum + (parseFloat(dep.netGoldWeight || dep.net_gold_weight || "0") || 0), 0);
+        }
+      } catch (err) {
+        logger.error("Error fetching old gold deposits in fetchInvestmentData:", err);
+      }
 
-      setActiveSchemesCount(investments.length || 0);
+      setActiveSchemesCount((investments.length || 0) + activeOldGoldCount);
 
       // Safely filter investments by schemeType
       const weightBased = investments.filter(
         (inv: any) => inv && inv.scheme && inv.scheme.schemeType === "weight"
       );
-      const amountBased = investments.filter(
-        (inv: any) => inv && inv.scheme && inv.scheme.schemeType === "amount"
-      );
+      
+      const totalGold = weightBased.reduce((sum: number, investment: any) => {
+        const goldWeight =
+          parseFloat(investment?.totalgoldweight || "0") || 0;
+        return sum + goldWeight;
+      }, 0) + activeOldGoldWeight;
 
-      if (weightBased.length > 0) {
-        // Calculate total gold only for weight-based schemes
-        const totalGold = weightBased.reduce((sum: number, investment: any) => {
-          const goldWeight =
-            parseFloat(investment?.totalgoldweight || "0") || 0;
-          return sum + goldWeight;
-        }, 0);
+      if (weightBased.length > 0 || activeOldGoldCount > 0) {
         setTotalGoldSavings(totalGold);
         setShowTotalGold(true);
       } else {
@@ -1061,6 +1074,24 @@ export default function Home() {
           logger.log("Home API response:", data);
 
           setHomeData(response.data);
+
+          // Populate investments calculations directly from pre-fetched list
+          if (data.investments) {
+            fetchInvestmentData(data.investments);
+          }
+
+          // Populate KYC status directly from home API payload
+          if (data.kycStatus) {
+            const kycStatusValue = data.kycStatus.kyc_status;
+            const hasKycData = data.kycStatus.data;
+            if (kycStatusValue === "Completed" || hasKycData) {
+              setKycStatus(true);
+              logger.log("✅ KYC is completed (pre-fetched)", { kyc_status: kycStatusValue });
+            } else {
+              setKycStatus(false);
+              logger.log("⚠️ KYC is not completed (pre-fetched)", { kyc_status: kycStatusValue });
+            }
+          }
 
           // Store entire home response data in AsyncStorage for offline cache loading
           try {
@@ -1237,17 +1268,9 @@ export default function Home() {
           lastFocusRefreshTime.current = Date.now();
           const refreshPromises: Promise<any>[] = [
             fetchHomeData(true),
-            fetchInvestmentData(),
             fetchSchemesData(false), // Respect cache on focus
             refetchVisibility(), // Auto-uses Zustand cache
           ];
-
-          // Only fetch KYC status on focus if it is not already completed (true)
-          if (kycStatus !== true) {
-            refreshPromises.push(fetchKycStatus());
-          } else {
-            logger.log("📦 Home: KYC already completed, skipping status fetch");
-          }
 
           await Promise.all(refreshPromises);
           logger.log("✅ Home: Auto-refresh completed");
@@ -1257,7 +1280,7 @@ export default function Home() {
       };
 
       refreshData();
-    }, [fetchHomeData, fetchInvestmentData, fetchSchemesData, fetchKycStatus, refetchVisibility, kycStatus])
+    }, [fetchHomeData, fetchSchemesData, refetchVisibility])
   );
 
   // Handle back button press with confirmation
@@ -1317,7 +1340,7 @@ export default function Home() {
           // Only apply cached data if homeData has not been populated by a fresh API response yet
           setHomeData((current) => {
             if (current) return current;
-            
+
             // Populate nested collections and slider images if they aren't loaded yet
             if (cachedData?.data?.collections && cachedData.data.collections.length > 0) {
               setCollectionsData((currentCols) => currentCols.length > 0 ? currentCols : cachedData.data.collections);
@@ -1377,11 +1400,9 @@ export default function Home() {
     logger.log("🔍 Home: Is user logged in:", !!user);
 
     fetchHomeData();
-    fetchInvestmentData();
     fetchSchemesData(false); // Use cache if available on initial load
-    fetchKycStatus();
     fetchBranches(); // Fetch branches on mount
-  }, [fetchHomeData, fetchInvestmentData, fetchSchemesData, fetchKycStatus, fetchBranches, user]);
+  }, [fetchHomeData, fetchSchemesData, fetchBranches, user]);
 
 
   useEffect(() => {
@@ -2960,6 +2981,7 @@ export default function Home() {
                         });
                       }
                     }}
+                    onInfoPress={handleSchemeInfoPress}
                     onQuickJoinPress={initiateQuickJoin}
                     showDots={false}
                     visibilityFlags={{
@@ -3137,7 +3159,7 @@ export default function Home() {
           <Modal
             visible={schemeInfoModalVisible}
             transparent={true}
-            animationType="none"
+            animationType="fade"
             onRequestClose={closeSchemeInfoModal}
             statusBarTranslucent={true}
           >
@@ -3151,18 +3173,19 @@ export default function Home() {
                 style={[
                   styles.schemeInfoModalContainer,
                   {
+                    opacity: schemeInfoModalAnimation,
                     transform: [
                       {
-                        translateY: schemeInfoModalAnimation.interpolate({
+                        scale: schemeInfoModalAnimation.interpolate({
                           inputRange: [0, 1],
-                          outputRange: [Dimensions.get("window").height, 0],
+                          outputRange: [0.9, 1],
                         }),
                       },
                     ],
                   },
                 ]}
               >
-                <SafeAreaView style={styles.schemeInfoModalContent} edges={["top"]}>
+                <View style={styles.schemeInfoModalContent}>
                   {/* Header */}
                   <View style={styles.schemeInfoModalHeader}>
                     <Text style={styles.schemeInfoModalTitle}>
@@ -3336,7 +3359,7 @@ export default function Home() {
                       </LinearGradient>
                     </TouchableOpacity>
                   </View>
-                </SafeAreaView>
+                </View>
               </Animated.View>
             </View>
           </Modal>
@@ -3888,6 +3911,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.primary,
     letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   collectionCompactToggle: {
     padding: spacing.xs,
@@ -4439,21 +4463,29 @@ const styles = StyleSheet.create({
   // Scheme Info Modal Styles
   schemeInfoModalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    justifyContent: "center", // Center vertically
+    alignItems: "center", // Center horizontally
   },
   schemeInfoModalBackdrop: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
   },
   schemeInfoModalContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: Dimensions.get("window").height * 0.92, // Leave space for header
     backgroundColor: COLORS.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    ...SHADOW_UTILS.card(),
+    borderRadius: 24, // Rounded corners on all sides
+    width: responsiveUtils.isTabletDevice() ? "85%" : "90%",
+    maxWidth: responsiveUtils.isTabletDevice() ? 800 : 420,
+    height: responsiveUtils.isTabletDevice() ? "80%" : "75%",
+    maxHeight: responsiveUtils.isTabletDevice() ? 900 : 620,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 10,
+    overflow: "hidden", // Clip content inside rounded corners
   },
   schemeInfoModalContent: {
     flex: 1,
@@ -4556,11 +4588,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: rp(24),
     paddingVertical: rp(20),
-    paddingBottom: Platform.OS === 'ios' ? rp(34) : rp(24),
     gap: rp(16),
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.border?.primary || "#e5e5e5",
+    borderBottomLeftRadius: 24, // Align rounded corners at the bottom
+    borderBottomRightRadius: 24,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.05,
@@ -4581,7 +4614,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: rp(16),
     paddingHorizontal: rp(16),
     gap: rp(8),
     height: 56,
@@ -4606,7 +4638,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: rp(16),
     paddingHorizontal: rp(16),
     gap: rp(8),
     height: 56,

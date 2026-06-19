@@ -22,6 +22,7 @@ import {
   ScrollView,
   Alert,
   Modal,
+  Linking,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -180,6 +181,20 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
   const router = useRouter();
   const { language } = useGlobalStore();
   const { t } = useTranslation();
+
+  const [branchModalVisible, setBranchModalVisible] = useState(false);
+  const [selectedBranches, setSelectedBranches] = useState<any[]>([]);
+
+  const getEnquiryButtonText = (lang: string) => {
+    const texts: Record<string, string> = {
+      en: "Visit Branch / Enquiry Now",
+      ta: "கிளையை அணுகவும் / விசாரிக்க",
+      te: "బ్రాంచ్ సందర్శించండి / విచారణ",
+      hi: "శాखा में संपर्क करें / पूछताछ",
+      mal: "ബ്രാഞ്ച് സന്ദർശിക്കുക / അന്വേഷണം",
+    };
+    return texts[lang] || texts.en;
+  };
 
   const underlineAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -1161,7 +1176,12 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                 onPress={() => {
                   if (selectedScheme) {
                     closeDetailModal();
-                    handleJoinScheme(selectedScheme);
+                    if (selectedScheme.SCHEME_PLAN_TYPE_ID === 4) {
+                      setSelectedBranches(selectedScheme.branch || []);
+                      setBranchModalVisible(true);
+                    } else {
+                      handleJoinScheme(selectedScheme);
+                    }
                   }
                 }}
                 style={styles.modalJoinNowButton}
@@ -1172,11 +1192,91 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                   end={{ x: 1, y: 0 }}
                   style={styles.modalJoinButtonGradient}
                 >
-                  <Ionicons name="add-circle" size={22} color="#000" />
-                  <Text style={styles.modalJoinButtonText}>{t("joinThisScheme") || "JOIN THIS SCHEME"}</Text>
+                  <Ionicons name={selectedScheme?.SCHEME_PLAN_TYPE_ID === 4 ? "call" : "add-circle"} size={22} color="#000" />
+                  <Text style={styles.modalJoinButtonText}>
+                    {selectedScheme?.SCHEME_PLAN_TYPE_ID === 4 
+                      ? getEnquiryButtonText(language)
+                      : (t("joinThisScheme") || "JOIN THIS SCHEME")
+                    }
+                  </Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Branch Details / Enquiry Modal */}
+      <Modal
+        visible={branchModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setBranchModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContentModern, { maxHeight: height * 0.7 }]}>
+            <TouchableOpacity style={styles.floatingCloseButton} onPress={() => setBranchModalVisible(false)}>
+              <View style={styles.closeButtonBlur}>
+                <Ionicons name="close" size={20} color="#000" />
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.modernHeader}>
+              <Text style={styles.modernTitle}>
+                {language === "ta" ? "எங்களை தொடர்பு கொள்ளவும்" : "Contact / Enquiry"}
+              </Text>
+              <Text style={styles.modernSlogan}>
+                {language === "ta" 
+                  ? "கீழே உள்ள எங்களின் கிளைகளைத் தொடர்பு கொண்டு இத்திட்டத்தில் இணையுங்கள்"
+                  : "Visit or call any of our branches to enroll in this scheme"
+                }
+              </Text>
+              <View style={styles.titleUnderlineGradient} />
+            </View>
+
+            <ScrollView 
+              style={styles.modalScroll}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 30 }}
+            >
+              {selectedBranches && selectedBranches.length > 0 ? (
+                selectedBranches.map((branch, idx) => (
+                  <View key={idx} style={styles.branchCard}>
+                    <View style={styles.branchHeaderRow}>
+                      <Ionicons name="business" size={22} color="#DAA520" />
+                      <Text style={styles.branchNameText}>
+                        {branch.branchName || "Branch"}
+                      </Text>
+                    </View>
+                    
+                    <Text style={styles.branchAddressText}>
+                      {branch.branchAddress}, {branch.branchCity}, {branch.branchState}
+                    </Text>
+
+                    {branch.branchPhone && (
+                      <TouchableOpacity 
+                        style={styles.branchCallButton}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                          Linking.openURL(`tel:${branch.branchPhone}`);
+                        }}
+                      >
+                        <Ionicons name="call" size={16} color="#fff" />
+                        <Text style={styles.branchCallButtonText}>
+                          {branch.branchPhone}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))
+              ) : (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <Text style={{ color: '#666' }}>
+                    {language === "ta" ? "கிளை விவரங்கள் கிடைக்கவில்லை" : "No branch details available"}
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1907,5 +2007,49 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#000',
     letterSpacing: 0.5,
+  },
+  branchCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  branchHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  branchNameText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#212529',
+  },
+  branchAddressText: {
+    fontSize: 14,
+    color: '#495057',
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  branchCallButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#28a745',
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 8,
+  },
+  branchCallButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

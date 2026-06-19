@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import * as SecureStore from "expo-secure-store";
 import NetInfo from '@react-native-community/netinfo';
 import { showToast } from './notification';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import LoadingService from './loadingServices';
 import useGlobalStore from '@/store/global.store';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -96,7 +96,7 @@ class ApiLogger {
         const trimmed = data.trim();
         if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
           (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-            return JSON.parse(data);
+          return JSON.parse(data);
         }
         // If it doesn't look like JSON (e.g. "undefined", "null", plain text), just return it
         return data;
@@ -345,6 +345,8 @@ const handleLogout = async () => {
       await SecureStore.deleteItemAsync("token");
       await SecureStore.deleteItemAsync("accessToken");
       await SecureStore.deleteItemAsync("refreshToken");
+      await SecureStore.deleteItemAsync("user_mpin");
+      await SecureStore.deleteItemAsync("user_biometric_mpin");
       await AsyncStorage.removeItem("userData");
       await AsyncStorage.removeItem("fcmToken");
       await AsyncStorage.removeItem("lastSentFcmToken");
@@ -400,6 +402,10 @@ apiClient.interceptors.request.use(
 
     // Store start time for response logging
     (config as any).startTime = startTime;
+
+    // Add client platform header
+    config.headers = config.headers || new axios.AxiosHeaders();
+    config.headers['x-client-platform'] = Platform.OS;
 
     // Add authentication token
     try {

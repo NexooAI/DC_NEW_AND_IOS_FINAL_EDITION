@@ -195,8 +195,46 @@ export default function FAQChatScreen() {
         setMessages((prev) => [...prev, botMessage]);
         setIsTyping(false);
       }, 1000);
+    } else {
+      // Simulate bot typing for unmatched query
+      setIsTyping(true);
+
+      setTimeout(() => {
+        const fallbackText = "I couldn't find an answer to your question in our FAQ. Would you like to raise a support ticket with this query?";
+        const botMessage: Message = {
+          id: Math.random().toString(36).substr(2, 9),
+          text: fallbackText,
+          createdAt: new Date(),
+          user: {
+            _id: "bot",
+            name: t("faqBot"),
+            avatar: "https://via.placeholder.com/40/007AFF/FFFFFF?text=B",
+          },
+        };
+        setMessages((prev) => [...prev, botMessage]);
+        setIsTyping(false);
+
+        // Open confirm alert after a small delay
+        setTimeout(() => {
+          Alert.alert(
+            t("needMoreHelpTitle"),
+            t("wouldLikeToCreateTicket"),
+            [
+              { text: t("cancel"), style: "cancel" },
+              {
+                text: t("createTicket"),
+                onPress: () =>
+                  router.push({
+                    pathname: "/(app)/(tabs)/home/ticket-form",
+                    params: { question: userMessage.text },
+                  }),
+              },
+            ]
+          );
+        }, 500);
+      }, 1000);
     }
-  }, [inputText, user, faqQuestions]);
+  }, [inputText, user, faqQuestions, t, router]);
 
   const handleFAQPress = useCallback(
     (faq: { id: string; question: string; answer: string }) => {

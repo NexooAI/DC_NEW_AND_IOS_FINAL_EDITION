@@ -687,6 +687,8 @@ export default function MpinVerify() {
             profile_photo: data.user.profile_photo || "",
             mpinStatus: data.user.mpinStatus || false,
             usertype: data.user.userType || data.user.usertype || "",
+            branch_id: data.user.branch_id !== undefined ? data.user.branch_id : null,
+            allow_multi_branch: data.user.allow_multi_branch !== undefined ? data.user.allow_multi_branch : null,
           };
 
           // Login to global store like in login flow
@@ -1210,6 +1212,7 @@ export default function MpinVerify() {
           if (modalData.type === "warning") {
             try {
               await SecureStore.deleteItemAsync("user_mpin");
+              await SecureStore.deleteItemAsync("user_biometric_mpin");
               logout();
               router.replace("/(auth)/login");
             } catch (error) {
@@ -1243,7 +1246,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: "100%",
     alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 40 : 130,
+    paddingTop: Platform.OS === "ios" ? 180 : 130,
     marginBottom: 0,
   },
   logo: {
