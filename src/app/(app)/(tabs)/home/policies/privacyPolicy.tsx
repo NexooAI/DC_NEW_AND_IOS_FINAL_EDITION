@@ -12,8 +12,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
 import AppLayoutWrapper from "@/components/AppLayoutWrapper";
+import { useRouter, Stack } from "expo-router";
+import LanguageSelector from "@/components/LanguageSelector";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
 import api from "@/services/api";
@@ -27,13 +28,24 @@ interface Policy {
 }
 
 export default function PrivacyPolicy() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const router = useRouter();
   const { language } = useGlobalStore();
 
-  const [policy, setPolicy] = useState<Policy | null>(null);
+  const [policy, setPolicy] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLanguageSelectorVisible, setIsLanguageSelectorVisible] = useState(false);
+
+  const getPolicyField = (field: "title" | "subtitle" | "description") => {
+    if (!policy) return "";
+    const targetField = field === "description" ? (policy.description !== undefined ? "description" : "content") : field;
+    if (locale === "en") {
+      return policy[targetField] || "";
+    }
+    const langKey = `${targetField}_${locale}`;
+    return policy[langKey] || policy[targetField] || "";
+  };
 
   const translations = useMemo(
     () => ({
@@ -131,12 +143,22 @@ export default function PrivacyPolicy() {
   );
 
   const renderMainContent = () => (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={styles.container}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
-    >
-      <View style={styles.container}>
+    <>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <TouchableOpacity onPress={() => setIsLanguageSelectorVisible(true)} style={{ marginRight: 16 }}>
+              <Ionicons name="language" size={24} color={theme.colors.primary} />
+            </TouchableOpacity>
+          ),
+        }}
+      />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.container}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+      >
+        <View style={styles.container}>
         {/* Hero Section */}
         {/* <LinearGradient
           colors={[theme.colors.quaternary, theme.colors.quaternary]}
@@ -165,16 +187,16 @@ export default function PrivacyPolicy() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {policy?.description ? (
+          {getPolicyField("description") ? (
             <View style={[styles.card, { marginTop: 10 }]}>
               <View style={styles.cardHeader}>
                 <Ionicons name="shield-checkmark" size={24} color={theme.colors.primary} />
                 <Text style={styles.cardTitle}>
-                  {policy?.title || translations.defaultTitle}
+                  {getPolicyField("title") || translations.defaultTitle}
                 </Text>
               </View>
               <Text style={styles.cardText}>
-                {policy.description}
+                {getPolicyField("description")}
               </Text>
             </View>
           ) : (
@@ -252,6 +274,7 @@ export default function PrivacyPolicy() {
         </ScrollView>
       </View>
     </KeyboardAvoidingView>
+    </>
   );
 
   return (
@@ -263,6 +286,10 @@ export default function PrivacyPolicy() {
             ? renderErrorState()
             : renderMainContent()}
       </View>
+      <LanguageSelector
+        visible={isLanguageSelectorVisible}
+        onClose={() => setIsLanguageSelectorVisible(false)}
+      />
     </AppLayoutWrapper>
   );
 }

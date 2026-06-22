@@ -544,6 +544,49 @@ apiClient.interceptors.response.use(
   }
 );
 
+// Active request promise tracker for deduplication
+const activeRequestsMap = new Map<string, Promise<any>>();
+
+// Helper to generate a unique key for a request
+const getRequestKey = (config: AxiosRequestConfig): string => {
+  const method = (config.method || 'get').toLowerCase();
+  const url = config.url || '';
+  const params = config.params ? JSON.stringify(config.params) : '';
+  const data = config.data ? (typeof config.data === 'string' ? config.data : JSON.stringify(config.data)) : '';
+  return `${method}:${url}:${params}:${data}`;
+};
+
+// Wrap the original request method to implement Request Merging/Deduplication
+const originalRequest = apiClient.request.bind(apiClient);
+apiClient.request = function <T = any, R = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D>): Promise<R> {
+  const method = (config.method || 'get').toLowerCase();
+  // Only merge GET requests to avoid side effects on POST/PUT/DELETE
+  if (method !== 'get') {
+    return originalRequest(config);
+  }
+
+  const key = getRequestKey(config);
+  if (activeRequestsMap.has(key)) {
+    logger.log(`🔄 [API Deduplication] Merging duplicate GET request for URL: ${config.url}`);
+    return activeRequestsMap.get(key)! as Promise<R>;
+  }
+
+  const promise = (originalRequest(config) as Promise<R>).then(
+    (response) => {
+      activeRequestsMap.delete(key);
+      return response;
+    },
+    (error) => {
+      activeRequestsMap.delete(key);
+      throw error;
+    }
+  ) as any as Promise<R>;
+
+  activeRequestsMap.set(key, promise);
+  return promise;
+};
+
+
 // ============================================================================
 // API FUNCTIONS
 // ============================================================================
@@ -745,6 +788,12 @@ export const billsAPI = {
 export const rewardsAPI = {
   getMyReferrals: async (userId: string | number) => {
     return apiClient.get(`/rewards/my-referrals?userId=${userId}`);
+  },
+  getWalletInfo: async (userId: string | number) => {
+    return apiClient.get(`/rewards/wallet?userId=${userId}`);
+  },
+  redeemPoints: async (payload: { points: number; payment_method: string; payment_details: string; userId?: number | string }) => {
+    return apiClient.post('/rewards/redeem', payload);
   }
 };
 
@@ -760,6 +809,18 @@ export const ticketsAPI = {
     referenceId?: string | number;
   }) => {
     return apiClient.post('/tickets', payload);
+  }
+};
+
+// Lucky Draw APIs
+export const luckyDrawAPI = {
+  getLuckyDraws: async (status?: string) => {
+    const url = status ? `/lucky-draw?status=${status}` : '/lucky-draw';
+    return apiClient.get(url);
+  },
+
+  getLuckyDrawDetails: async (id: number | string) => {
+    return apiClient.get(`/lucky-draw/${id}`);
   }
 };
 

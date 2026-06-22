@@ -82,6 +82,8 @@ interface Scheme {
   branch?: Array<any> | null | undefined;
   relevantChits?: Array<{ CHITID: number; AMOUNT: number }> | null | undefined;
   instant_intrest?: boolean | null | undefined;
+  scheme_plan_type_id?: number | null | undefined;
+  SCHEME_PLAN_TYPE_ID?: number | null | undefined;
 }
 
 const DEFAULT_SCHEME_TYPE = "Monthly";
@@ -222,23 +224,56 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
       const tabTypes = new Set<string>();
 
       schemesData.forEach((scheme) => {
-        if (scheme.ACTIVE === "Y" && scheme.chits && scheme.chits.length > 0) {
-          scheme.chits.forEach((chit) => {
-            if (
-              chit &&
-              chit.PAYMENT_FREQUENCY &&
-              chit.ACTIVE === "Y" &&
-              isValidString(chit.PAYMENT_FREQUENCY)
-            ) {
-              const normalizedFreq = chit.PAYMENT_FREQUENCY.trim();
-              tabTypes.add(normalizedFreq);
+        if (scheme.ACTIVE === "Y") {
+          // Check scheme-level fields
+          const schemeTypeLower = (scheme.SCHEMETYPE || "").toLowerCase();
+          const schemeNameLower = (getTranslatedText(scheme.SCHEMENAME, "en") || "").toLowerCase();
+          const insTypeLower = (scheme.INS_TYPE || "").toLowerCase();
 
-              if (normalizedFreq.toLowerCase().includes("flexi") ||
-                normalizedFreq.toLowerCase().includes("flexible")) {
-                tabTypes.add("Flexi");
+          const isSchemeFlexi =
+            schemeTypeLower.includes("flexi") ||
+            schemeTypeLower.includes("flexible") ||
+            schemeNameLower.includes("flexi") ||
+            insTypeLower.includes("flexi");
+
+          const isSchemeHybrid =
+            schemeTypeLower.includes("hybrid") ||
+            schemeNameLower.includes("hybrid") ||
+            insTypeLower.includes("hybrid") ||
+            scheme.scheme_plan_type_id === 3 ||
+            scheme.SCHEME_PLAN_TYPE_ID === 3;
+
+          if (isSchemeFlexi) {
+            tabTypes.add("Flexi");
+          }
+          if (isSchemeHybrid) {
+            tabTypes.add("Hybrid");
+          }
+
+          // Fallback to chit-level fields
+          if (scheme.chits && scheme.chits.length > 0) {
+            scheme.chits.forEach((chit) => {
+              if (
+                chit &&
+                chit.PAYMENT_FREQUENCY &&
+                chit.ACTIVE === "Y" &&
+                isValidString(chit.PAYMENT_FREQUENCY)
+              ) {
+                const normalizedFreq = chit.PAYMENT_FREQUENCY.trim();
+                tabTypes.add(normalizedFreq);
+
+                if (
+                  normalizedFreq.toLowerCase().includes("flexi") ||
+                  normalizedFreq.toLowerCase().includes("flexible")
+                ) {
+                  tabTypes.add("Flexi");
+                }
+                if (normalizedFreq.toLowerCase().includes("hybrid")) {
+                  tabTypes.add("Hybrid");
+                }
               }
-            }
-          });
+            });
+          }
         }
       });
 
@@ -248,6 +283,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
           Weekly: 2,
           Monthly: 3,
           Flexi: 4,
+          Hybrid: 5,
         };
         return (order[a] || 999) - (order[b] || 999);
       });
@@ -266,33 +302,60 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     allSchemes.forEach((scheme: Scheme) => {
       if (scheme.ACTIVE !== "Y") return;
 
+      const activeTabLower = activeTab.toLowerCase().trim();
+      const schemeTypeLower = (scheme.SCHEMETYPE || "").toLowerCase();
+      const schemeNameLower = (getTranslatedText(scheme.SCHEMENAME, "en") || "").toLowerCase();
+      const insTypeLower = (scheme.INS_TYPE || "").toLowerCase();
+
+      const isSchemeFlexi =
+        schemeTypeLower.includes("flexi") ||
+        schemeTypeLower.includes("flexible") ||
+        schemeNameLower.includes("flexi") ||
+        insTypeLower.includes("flexi");
+
+      const isSchemeHybrid =
+        schemeTypeLower.includes("hybrid") ||
+        schemeNameLower.includes("hybrid") ||
+        insTypeLower.includes("hybrid") ||
+        scheme.scheme_plan_type_id === 3 ||
+        scheme.SCHEME_PLAN_TYPE_ID === 3;
+
+      const isFlexiTab = activeTabLower === "flexi";
+      const isHybridTab = activeTabLower === "hybrid";
+      const matchesTabDirectly =
+        (isFlexiTab && isSchemeFlexi) || (isHybridTab && isSchemeHybrid);
+
       const chits = scheme.chits || [];
       const relevantChits = chits.filter(
         (chit) => {
           if (!chit || !chit.PAYMENT_FREQUENCY) return false;
 
           const chitFreq = chit.PAYMENT_FREQUENCY.toLowerCase().trim();
-          const activeTabLower = activeTab.toLowerCase().trim();
 
           if (chitFreq === activeTabLower) return true;
 
           if (activeTabLower === "flexi") {
             return chitFreq.includes("flexi") || chitFreq.includes("flexible");
           }
+          if (activeTabLower === "hybrid") {
+            return chitFreq.includes("hybrid");
+          }
 
           return false;
         }
       );
 
-      if (relevantChits.length > 0) {
+      if (relevantChits.length > 0 || matchesTabDirectly) {
         if (!buckets[activeTab.toLowerCase()]) {
           buckets[activeTab.toLowerCase()] = [];
         }
 
+        const chitsToUse = relevantChits.length > 0 ? relevantChits : chits;
+
         buckets[activeTab.toLowerCase()].push({
           ...scheme,
-          chits: relevantChits,
-          relevantChits: relevantChits.map((chit) => ({
+          chits: chitsToUse,
+          relevantChits: chitsToUse.map((chit) => ({
             CHITID: chit.CHITID || 0,
             AMOUNT: parseFloat(chit.AMOUNT || "0") || 0,
           })),
@@ -648,6 +711,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
       Weekly: ["#A1C4FD", "#C2E9FB"],
       Monthly: ["#FFECD2", "#FCB69F"],
       Flexi: ["#D4FC79", "#96E6A1"],
+      Hybrid: ["#e0c3fc", "#8ec5fc"], // Light lavender/sky blue gradient
     };
     return colors[title] || ["#667eea", "#764ba2"];
   };
@@ -718,6 +782,8 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         return "moon-outline";
       case "Flexi":
         return "options-outline";
+      case "Hybrid":
+        return "layers-outline";
       default:
         return "grid-outline";
     }
@@ -862,9 +928,12 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     const { min, max } = getMinMaxAmount(item);
 
     // Determine coin type
-    const coinSource = (getTranslatedText(item.SCHEMENAME, 'en') || "").toLowerCase().includes('silver')
+    const schemeNameLower = (getTranslatedText(item.SCHEMENAME, 'en') || "").toLowerCase();
+    const coinSource = schemeNameLower.includes('silver')
       ? require("../../../../../assets/images/silver_coin_badge.png")
-      : require("../../../../../assets/images/gold_coin_badge.png");
+      : schemeNameLower.includes('diamond')
+        ? require("../../../../../assets/images/diamond_coin_badge.png")
+        : require("../../../../../assets/images/gold_coin_badge.png");
 
     const cardAnimation = {
       opacity: cardAnimations,
@@ -1290,7 +1359,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   headerGradient: {
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingTop: Platform.OS === 'ios' ? 12 : 30,
     paddingBottom: 20,
     paddingHorizontal: 20,
     // Removed borderBottomLeftRadius and borderBottomRightRadius to remain flat
@@ -1780,12 +1849,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContentModern: {
-    flex: 1,
     backgroundColor: '#fff',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     overflow: "hidden",
-    height: '90%',
+    height: '85%',
   },
   floatingCloseButton: {
     position: 'absolute',

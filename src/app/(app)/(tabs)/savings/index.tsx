@@ -7,13 +7,14 @@ import {
     Animated,
     Dimensions,
     Platform,
+    StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
 import { useTranslation } from "@/hooks/useTranslation";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import MySchemesContent from "./MySchemesContent";
@@ -24,10 +25,13 @@ const { width } = Dimensions.get("window");
 export default function SchemesHub() {
     const { t } = useTranslation();
     const router = useRouter();
+    const params = useLocalSearchParams<{ tab?: string }>();
+    
+    const initialTab = params.tab === "join" ? "Join Schemes" : "My Schemes";
     const [activeTab, setActiveTab] = useState<"My Schemes" | "Join Schemes">(
-        "My Schemes"
+        initialTab
     );
-    const slideAnim = React.useRef(new Animated.Value(0)).current;
+    const slideAnim = React.useRef(new Animated.Value(initialTab === "My Schemes" ? 0 : -width)).current;
 
     const navigateTab = (tab: "My Schemes" | "Join Schemes") => {
         setActiveTab(tab);
@@ -38,26 +42,31 @@ export default function SchemesHub() {
         }).start();
     };
 
+    React.useEffect(() => {
+        if (params.tab === "join" && activeTab !== "Join Schemes") {
+            navigateTab("Join Schemes");
+        } else if (params.tab === "my" && activeTab !== "My Schemes") {
+            navigateTab("My Schemes");
+        }
+    }, [params.tab]);
+
     return (
         <View style={styles.container}>
-            <LinearGradient
-                colors={[theme.colors.primary, theme.colors.primary]}
-                style={styles.headerArea}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-            >
-                <SafeAreaView edges={["top"]} style={{ backgroundColor: "transparent" }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 0, paddingTop: 2 }}>
+            <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
+            <View style={[styles.headerArea, { backgroundColor: theme.colors.quaternary || '#F2E6D2' }]}>
+                <SafeAreaView edges={Platform.OS === 'ios' ? [] : ["top"]} style={{ backgroundColor: "transparent" }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 2 }}>
                         <TouchableOpacity
                             onPress={() => router.push("/(app)/(tabs)/home")}
-                            style={{ padding: 4, marginRight: 12 }}
+                            style={{ padding: 4 }}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                            <Ionicons name="arrow-back" size={24} color="#ffffff" />
+                            <Ionicons name="arrow-back" size={24} color={theme.colors.primary || "#850111"} />
                         </TouchableOpacity>
-                        <Text style={{ fontSize: 20, fontWeight: "700", color: "#ffffff" }}>
+                        <Text style={{ fontSize: 20, fontWeight: "700", color: theme.colors.primary || "#850111", flex: 1, textAlign: 'center' }}>
                             {typeof t("schemes") === 'object' ? t("schemes.title") : t("schemes") || "Schemes"}
                         </Text>
+                        <View style={{ width: 32 }} />
                     </View>
 
                     <View style={styles.pillSwitcherContainer}>
@@ -116,7 +125,7 @@ export default function SchemesHub() {
                         </View>
                     </View>
                 </SafeAreaView>
-            </LinearGradient>
+            </View>
 
             {/* Swipeable Content Area */}
             <View style={{ flex: 1, overflow: "hidden" }}>
@@ -170,7 +179,7 @@ const styles = StyleSheet.create({
     },
     pillSwitcherBg: {
         flexDirection: "row",
-        backgroundColor: "rgba(255,255,255,0.1)",
+        backgroundColor: "rgba(0,0,0,0.06)",
         borderRadius: 25,
         padding: 4,
         overflow: 'hidden',
@@ -193,7 +202,7 @@ const styles = StyleSheet.create({
     pillTabText: {
         fontSize: 14,
         fontWeight: "700",
-        color: "rgba(255,255,255,0.7)",
+        color: "rgba(133, 1, 17, 0.6)",
         zIndex: 1,
     },
     pillTabActiveText: {

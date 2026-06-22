@@ -633,7 +633,7 @@ const ProfileScreen = () => {
 
   return (
     <AuthGuard>
-      <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <SafeAreaView style={styles.container} edges={["left", "right"]}>
         <KeyboardAvoidingView
           style={styles.keyboardAvoid}
           behavior={Platform.OS === "ios" ? "padding" : "height"}

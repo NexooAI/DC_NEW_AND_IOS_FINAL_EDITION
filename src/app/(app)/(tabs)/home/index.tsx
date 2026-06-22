@@ -26,6 +26,7 @@ import {
   Platform,
   TextInput,
   BackHandler,
+  StatusBar,
 } from "react-native";
 import { Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -95,7 +96,7 @@ import SkeletonLoader, {
   SkeletonSchemeCard,
   SkeletonHomePage,
 } from "@/components/SkeletonLoader";
-import { fetchSchemesWithCache } from "@/utils/apiCache";
+import { fetchSchemesWithCache, fetchBranchesWithCache } from "@/utils/apiCache";
 import UserInfoCard from "@/components/home/UserInfoCard";
 import AnimatedGoldRate from "@/components/home/AnimatedGoldRate";
 
@@ -566,6 +567,52 @@ export default function Home() {
   // State
   const { language, user, debugState, setLanguage } = useGlobalStore();
 
+  // Refer & Lucky Draw Animations
+  const referAnim = useRef(new Animated.Value(0)).current;
+  const luckyAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // 1. Refer Icon horizontal slide loop (translateX)
+    const referLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(referAnim, {
+          toValue: 6,
+          duration: 800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(referAnim, {
+          toValue: -6,
+          duration: 800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    referLoop.start();
+
+    // 2. Lucky Draw Icon rotation loop (rotate)
+    const luckyLoop = Animated.loop(
+      Animated.timing(luckyAnim, {
+        toValue: 1,
+        duration: 4000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    luckyLoop.start();
+
+    return () => {
+      referLoop.stop();
+      luckyLoop.stop();
+    };
+  }, [referAnim, luckyAnim]);
+
+  const luckyRotation = luckyAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
+
   // App visibility settings
   const {
     visibleData,
@@ -789,24 +836,17 @@ export default function Home() {
   const fetchBranches = useCallback(async () => {
     try {
       logger.log("🔍 Fetching branches...");
-      const response = await api.get(`/branches`, { skipLoading: true } as any);
-      logger.log("Branches API response:", response.data);
+      const branchData = await fetchBranchesWithCache() || [];
+      setBranches(branchData);
 
-      if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        setBranches(response.data.data);
-
-        // Auto-select if only one branch
-        if (response.data.data.length === 1) {
-          setSelectedBranchId(String(response.data.data[0].id));
-          logger.log("Auto-selected branch:", response.data.data[0].id);
-        } else if (response.data.data.length > 0) {
-          // If multiple branches, select the first one by default
-          setSelectedBranchId(String(response.data.data[0].id));
-          logger.log("Selected first branch:", response.data.data[0].id);
-        }
-      } else {
-        logger.warn("No branches data found in response");
-        setBranches([]);
+      // Auto-select if only one branch
+      if (branchData.length === 1) {
+        setSelectedBranchId(String(branchData[0].id));
+        logger.log("Auto-selected branch:", branchData[0].id);
+      } else if (branchData.length > 0) {
+        // If multiple branches, select the first one by default
+        setSelectedBranchId(String(branchData[0].id));
+        logger.log("Selected first branch:", branchData[0].id);
       }
     } catch (error) {
       logger.error("Error fetching branches:", error);
@@ -1007,7 +1047,7 @@ export default function Home() {
       const weightBased = investments.filter(
         (inv: any) => inv && inv.scheme && inv.scheme.schemeType === "weight"
       );
-      
+
       const totalGold = weightBased.reduce((sum: number, investment: any) => {
         const goldWeight =
           parseFloat(investment?.totalgoldweight || "0") || 0;
@@ -1246,6 +1286,13 @@ export default function Home() {
   const lastFocusRefreshTime = useRef(Date.now());
   useFocusEffect(
     useCallback(() => {
+      // Reset status bar color and translucency when Home is focused
+      StatusBar.setBarStyle("dark-content");
+      if (Platform.OS === "android") {
+        StatusBar.setBackgroundColor(theme.colors.quaternary || "#F2E6D2");
+        StatusBar.setTranslucent(false);
+      }
+
       // Skip refresh on initial mount (handled by useEffect below)
       if (isInitialMount.current) {
         isInitialMount.current = false;
@@ -1636,6 +1683,41 @@ export default function Home() {
   // Handle notification press
   const handleNotificationPress = () => {
     router.push("/(app)/(tabs)/notifications");
+  };
+
+  const checkIsOldGold = (scheme: any): boolean => {
+    if (!scheme) return false;
+    
+    // Check plan type ID (safe from number/string type differences)
+    if (
+      String(scheme.scheme_plan_type_id) === "4" ||
+      String(scheme.SCHEME_PLAN_TYPE_ID) === "4"
+    ) {
+      return true;
+    }
+
+    const containsOldGold = (textObj: any): boolean => {
+      if (!textObj) return false;
+      if (typeof textObj === "string") {
+        const val = textObj.toLowerCase();
+        return val.includes("old gold") || val.includes("பழைய தங்கம்") || val.includes("பழைய");
+      }
+      if (typeof textObj === "object") {
+        for (const key of Object.keys(textObj)) {
+          const val = String(textObj[key]).toLowerCase();
+          if (val.includes("old gold") || val.includes("பழைய தங்கம்") || val.includes("பழைய")) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    return (
+      containsOldGold(scheme.INS_TYPE) ||
+      containsOldGold(scheme.SCHEMETYPE) ||
+      containsOldGold(scheme.SCHEMENAME)
+    );
   };
 
   // Handle scheme info press - Open modal
@@ -2810,11 +2892,23 @@ export default function Home() {
               {/* Our Schemes Section - Conditionally rendered based on API */}
               {isVisible("showSchemes") && (
                 <>
-                  <View style={styles.statusHeader}>
-                    <Ionicons name="ribbon-outline" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
-                    <Text style={styles.statusHeaderText}>
-                      {t("ourSchemes")}
-                    </Text>
+                  <View style={[styles.statusHeader, { justifyContent: 'space-between', alignItems: 'center' }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons name="ribbon-outline" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+                      <Text style={styles.statusHeaderText}>
+                        {t("ourSchemes")}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => router.push("/(tabs)/savings?tab=join")}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: theme.colors.primary }}>
+                        {t("viewAll") || "View All"}
+                      </Text>
+                      <Ionicons name="chevron-forward" size={14} color={theme.colors.primary} />
+                    </TouchableOpacity>
                   </View>
                   <DynamicSchemeCard
                     onJoinPress={async (scheme) => {
@@ -3007,15 +3101,19 @@ export default function Home() {
               {/* Social Media Card - Conditionally rendered based on API */}
 
               {/* Refer & Earn Premium Card (Refactored to match SupportContactCard) */}
+              {/* Refer & Earn and Lucky Draw Side-by-Side Premium Cards */}
               <View style={{
+                flexDirection: "row",
                 paddingHorizontal: moderateScale(16),
                 paddingVertical: moderateScale(8),
+                gap: moderateScale(12),
                 width: "100%",
               }}>
+                {/* Refer & Earn Card */}
                 <TouchableOpacity
                   onPress={() => router.push("/(app)/(tabs)/home/refer_earn")}
                   activeOpacity={0.9}
-                  style={{ width: "100%" }}
+                  style={{ flex: 1 }}
                 >
                   <LinearGradient
                     colors={["#FFD700", "#F5DEB3"]} // Premium gold to peach gradient
@@ -3023,82 +3121,184 @@ export default function Home() {
                     end={{ x: 1, y: 1 }}
                     style={{
                       borderRadius: moderateScale(16),
-                      padding: moderateScale(14),
+                      padding: moderateScale(12),
+                      height: moderateScale(130), // Fixed height to align them
+                      justifyContent: "space-between",
                       shadowColor: theme.colors.primary,
                       shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.25,
-                      shadowRadius: 8,
-                      elevation: 8,
+                      shadowOpacity: 0.15,
+                      shadowRadius: 6,
+                      elevation: 4,
                       borderWidth: 1,
                       borderColor: `rgba(255,201,12,0.6)`,
-                      overflow: "hidden",
                     }}
                   >
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
-                      {/* Left Icon */}
-                      <LinearGradient
-                        colors={["#ffffff", "#fefefe"]}
-                        style={{
-                          width: moderateScale(40),
-                          height: moderateScale(40),
-                          borderRadius: moderateScale(20),
-                          justifyContent: "center",
-                          alignItems: "center",
-                          marginRight: moderateScale(10),
-                          shadowColor: theme.colors.primary,
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: 0.1,
-                          shadowRadius: 4,
-                          elevation: 4,
-                        }}
-                      >
-                        <Ionicons
-                          name="gift"
-                          size={deviceScale(20)}
-                          color={theme.colors.primary}
-                        />
-                      </LinearGradient>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <Animated.View style={{ transform: [{ translateX: referAnim }] }}>
+                        <LinearGradient
+                          colors={["#ffffff", "#fefefe"]}
+                          style={{
+                            width: moderateScale(36),
+                            height: moderateScale(36),
+                            borderRadius: moderateScale(18),
+                            justifyContent: "center",
+                            alignItems: "center",
+                            shadowColor: theme.colors.primary,
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 4,
+                            elevation: 4,
+                          }}
+                        >
+                          <Ionicons
+                            name="gift"
+                            size={deviceScale(18)}
+                            color={theme.colors.primary}
+                          />
+                        </LinearGradient>
+                      </Animated.View>
 
-                      {/* Text Column */}
-                      <View style={{ flex: 1, justifyContent: "center" }}>
-                        <Text style={{
+                      <Ionicons name="chevron-forward" size={deviceScale(16)} color={theme.colors.primary} style={{ opacity: 0.8 }} />
+                    </View>
+
+                    <View>
+                      <Text style={{
+                        color: theme.colors.primary,
+                        fontSize: moderateScale(14),
+                        fontWeight: "800",
+                        letterSpacing: 0.3,
+                        marginBottom: 2
+                      }}>
+                        {t("referAndEarn") || "Refer & Earn"}
+                      </Text>
+                      <Text
+                        style={{
                           color: theme.colors.primary,
-                          fontSize: moderateScale(15),
+                          fontSize: moderateScale(10),
+                          fontWeight: "500",
+                          opacity: 0.85,
+                        }}
+                        numberOfLines={2}
+                      >
+                        {t("inviteFriendsEarn") || "Invite your friends and earn rewards."}
+                      </Text>
+                    </View>
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                {/* Lucky Draw Card */}
+                <TouchableOpacity
+                  onPress={() => router.push("/(app)/lucky_draw")}
+                  activeOpacity={0.9}
+                  style={{ flex: 1 }}
+                >
+                  <LinearGradient
+                    colors={["#4F46E5", "#7C3AED"]} // Indigo to Violet premium gradient
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{
+                      borderRadius: moderateScale(16),
+                      padding: moderateScale(12),
+                      height: moderateScale(130), // Same fixed height to match Refer card
+                      justifyContent: "space-between",
+                      shadowColor: "#7C3AED",
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.2,
+                      shadowRadius: 6,
+                      elevation: 4,
+                      borderWidth: 1.5,
+                      borderColor: "#FFD700", // Metallic Gold Border
+                    }}
+                  >
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <Animated.View style={{ transform: [{ rotate: luckyRotation }] }}>
+                        <LinearGradient
+                          colors={["#BF953F", "#FCF6BA", "#B38728", "#FBF5B7", "#AA771C"]}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={{
+                            width: moderateScale(36),
+                            height: moderateScale(36),
+                            borderRadius: moderateScale(18),
+                            justifyContent: "center",
+                            alignItems: "center",
+                            shadowColor: "#000",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.2,
+                            shadowRadius: 4,
+                            elevation: 4,
+                          }}
+                        >
+                          <Ionicons
+                            name="aperture"
+                            size={deviceScale(18)}
+                            color="#FFF"
+                          />
+                        </LinearGradient>
+                      </Animated.View>
+
+                      <Ionicons name="chevron-forward" size={deviceScale(16)} color="#FFF" style={{ opacity: 0.8 }} />
+                    </View>
+
+                    <View>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 2 }}>
+                        <Text style={{
+                          color: "#FFF",
+                          fontSize: moderateScale(14),
                           fontWeight: "800",
                           letterSpacing: 0.3,
-                          marginBottom: 4
                         }}>
-                          {t("referAndEarn") || "Refer & Earn"}
+                          {
+                            {
+                              en: "Lucky Draw",
+                              ta: "லக்கி டிரா",
+                              mal: "ലക്കി ഡ്രോ",
+                              te: "లక్కీ డ్రా",
+                              hi: "लकी ड्रा"
+                            }[language] || "Lucky Draw"
+                          }
                         </Text>
-                        <Text
-                          style={{
-                            color: theme.colors.primary,
-                            fontSize: moderateScale(11),
-                            fontWeight: "500",
-                            opacity: 0.85,
-                          }}
-                          numberOfLines={2}
-                        >
-                          {t("inviteFriendsEarn") || "Invite your friends and earn premium rewards on their first payment."}
-                        </Text>
+                        <View style={{
+                          backgroundColor: "#FFD700",
+                          paddingHorizontal: moderateScale(4),
+                          paddingVertical: moderateScale(1),
+                          borderRadius: moderateScale(4),
+                        }}>
+                          <Text style={{
+                            color: "#111",
+                            fontSize: moderateScale(8),
+                            fontWeight: "900",
+                          }}>
+                            NEW
+                          </Text>
+                        </View>
                       </View>
-
-                      {/* Right Action Arrow */}
-                      <View style={{
-                        width: moderateScale(30),
-                        height: moderateScale(30),
-                        justifyContent: "center",
-                        alignItems: "center",
-                        marginLeft: moderateScale(10)
-                      }}>
-                        <Ionicons name="chevron-forward" size={deviceScale(20)} color={theme.colors.primary} />
-                      </View>
+                      <Text
+                        style={{
+                          color: "#E2E8F0",
+                          fontSize: moderateScale(10),
+                          fontWeight: "500",
+                          opacity: 0.9,
+                        }}
+                        numberOfLines={2}
+                      >
+                        {
+                          {
+                            en: "Participate in draw & view winners",
+                            ta: "குலுக்கலில் வெற்றியாளர்களைக் காண்க",
+                            mal: "വിജയികളെ കാണുക",
+                            te: "విజేతలను చూడండి",
+                            hi: "विजेताओं को देखें"
+                          }[language] || "Participate in draw & view winners"
+                        }
+                      </Text>
                     </View>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
 
               {/* Support Contact Card - Conditionally rendered based on API */}
+
               {isVisible("showSupportCard") && <SupportContactCard />}
               {isVisible("showSocialMedia") && (
                 <SocialMediaCard
@@ -3322,43 +3522,42 @@ export default function Home() {
                   </ScrollView>
 
                   {/* Footer Buttons */}
-                  <View style={styles.schemeInfoModalFooter}>
-                    <TouchableOpacity
-                      style={styles.quickJoinButton}
-                      onPress={handleQuickJoinPress}
-                      activeOpacity={0.8}
-                    >
-                      <LinearGradient
-                        colors={[theme.colors.secondary, "#FFD700"]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.quickJoinButtonGradient}
+                  {!checkIsOldGold(selectedScheme) && (
+                    <View style={styles.schemeInfoModalFooter}>
+                      <TouchableOpacity
+                        style={styles.quickJoinButton}
+                        onPress={handleQuickJoinPress}
+                        activeOpacity={0.8}
                       >
-                        <Ionicons name="flash" size={20} color={COLORS.dark} />
-                        <Text style={styles.quickJoinButtonText}>
-                          {t("quickJoin") || "Quick Join"}
-                        </Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
+                        <LinearGradient
+                          colors={[theme.colors.secondary, "#FFD700"]}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={styles.quickJoinButtonGradient}
+                        >
+                          <Ionicons name="flash" size={24} color={COLORS.dark} />
+                        </LinearGradient>
+                      </TouchableOpacity>
 
-                    <TouchableOpacity
-                      style={styles.joinSchemesButton}
-                      onPress={handleJoinSchemesPress}
-                      activeOpacity={0.8}
-                    >
-                      <LinearGradient
-                        colors={[theme.colors.primary, theme.colors.bgPrimaryHeavy]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.joinSchemesButtonGradient}
+                      <TouchableOpacity
+                        style={styles.joinSchemesButton}
+                        onPress={handleJoinSchemesPress}
+                        activeOpacity={0.8}
                       >
-                        <Text style={styles.joinSchemesButtonText}>
-                          {t("joinThisSchemes") || "Join this Schemes"}
-                        </Text>
-                        <Ionicons name="arrow-forward" size={20} color={COLORS.white} />
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  </View>
+                        <LinearGradient
+                          colors={[theme.colors.primary, theme.colors.bgPrimaryHeavy]}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={styles.joinSchemesButtonGradient}
+                        >
+                          <Text style={styles.joinSchemesButtonText}>
+                            {t("joinThisSchemes") || "Join this Schemes"}
+                          </Text>
+                          <Ionicons name="arrow-forward" size={20} color={COLORS.white} />
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
               </Animated.View>
             </View>
@@ -3614,7 +3813,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: rp(16),
     paddingVertical: rp(12),
-    paddingTop: Platform.OS === "ios" ? rp(12) : rp(12),
+    paddingTop: Platform.OS === "ios" ? rp(0) : rp(12),
     backgroundColor: "transparent",
     zIndex: 10,
     elevation: 10,
@@ -4601,8 +4800,9 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   quickJoinButton: {
-    flex: 1,
-    borderRadius: 14,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     overflow: "hidden",
     shadowColor: theme.colors.secondary,
     shadowOffset: { width: 0, height: 4 },
@@ -4611,12 +4811,10 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   quickJoinButtonGradient: {
-    flexDirection: "row",
+    width: 56,
+    height: 56,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: rp(16),
-    gap: rp(8),
-    height: 56,
   },
   quickJoinButtonText: {
     fontSize: rf(15, { minSize: 14, maxSize: 17 }),
@@ -4625,7 +4823,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   joinSchemesButton: {
-    flex: 1.2, // Give slightly more weight to the primary action if needed, or keep equal. Let's try balanced.
+    flex: 1,
     borderRadius: 14,
     overflow: "hidden",
     shadowColor: theme.colors.primary,
@@ -4836,7 +5034,7 @@ const skeletonStyles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: rp(16),
     paddingVertical: rp(12),
-    paddingTop: Platform.OS === "ios" ? rp(12) : rp(12),
+    paddingTop: Platform.OS === "ios" ? rp(0) : rp(12),
   },
 });
 

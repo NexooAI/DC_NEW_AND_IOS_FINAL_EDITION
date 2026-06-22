@@ -16,11 +16,13 @@ export interface PaymentReceiptData {
     utrReference?: string;
     status?: string;
     goldRate?: number;
+    goldWeight?: number;
     userName?: string;
     userMobile?: string;
     userEmail?: string;
     rewardAmount?: number;
     rewardGoldGrams?: number;
+    maturityDate?: string;
     inversement?: {
         accountName: string;
         accountNo: string;
@@ -45,6 +47,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         paymentModeType,
         status,
         goldRate,
+        goldWeight,
         userName,
         rewardAmount,
         rewardGoldGrams,
@@ -52,6 +55,19 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
     } = data;
 
     const statusText = status || "Success";
+    
+    // Get weight directly or fall back to 0
+    let weight = Number(goldWeight || 0);
+
+    // Get gold rate directly
+    let rate = Number(goldRate || (inversement ? inversement.current_goldrate : 0));
+
+    // Fallbacks if one is missing but the other exists
+    if (rate === 0 && weight > 0 && amountPaid > 0) {
+        rate = Math.round(amountPaid / weight);
+    } else if (weight === 0 && rate > 0 && amountPaid > 0) {
+        weight = Number((amountPaid / rate).toFixed(3));
+    }
 
     return `
    <!DOCTYPE html>
@@ -137,10 +153,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="company-info">
-            ${theme.constants.customerName}
-        </div>
+    <div class="header" style="justify-content: center;">
         <div>
             <img src="https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp" alt="Logo" style="max-width:90px; height:auto;">
         </div>
@@ -180,7 +193,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         ${data.utrReference ? `<tr><th>UTR Reference</th><td>${data.utrReference}</td></tr>` : ""}
         ${goldRate ? `<tr><th>Gold Rate</th><td>₹${goldRate}/gram</td></tr>` : ""}
         ${rewardAmount ? `<tr><th>Reward Amount</th><td>₹${Number(rewardAmount).toLocaleString()}</td></tr>` : ""}
-        ${rewardGoldGrams ? `<tr><th>Reward Gold</th><td>${Number(rewardGoldGrams).toFixed(4)} grams</td></tr>` : ""}
+        ${rewardGoldGrams ? `<tr><th>Reward Gold</th><td>${Number(rewardGoldGrams).toFixed(3)} grams</td></tr>` : ""}
     </table>
 
     <!-- Investment Details -->
@@ -191,11 +204,12 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         </tr>
         <tr><th>Account Name</th><td>${inversement.accountName}</td></tr>
         <tr><th>Account No</th><td>${inversement.accountNo}</td></tr>
-        <tr><th>Scheme</th><td>${inversement.schemeName} (${inversement.paymentFrequencyName})</td></tr>
+        <tr><th>Scheme</th><td>${inversement.schemeName}</td></tr>
         <tr><th>Joining Date</th><td>${new Date(inversement.joiningDate).toLocaleDateString("en-GB")}</td></tr>
-        <tr><th>Payment Status</th><td>${inversement.paymentStatus}</td></tr>
-        <tr><th>Maturity Date</th><td>${new Date(inversement.end_date).toLocaleDateString("en-GB")}</td></tr>
-        <tr><th>Current Gold Rate</th><td>₹${inversement.current_goldrate}/g</td></tr>
+        <tr><th>Payment Status</th><td>${(inversement.paymentStatus && inversement.paymentStatus.toLowerCase() === 'charged') ? 'Paid' : (inversement.paymentStatus || '')}</td></tr>
+        <tr><th>Maturity Date</th><td>${data.maturityDate || (inversement.end_date ? new Date(inversement.end_date).toLocaleDateString("en-GB") : '')}</td></tr>
+        <tr><th>Board Rate</th><td>₹${rate || "N/A"}/g</td></tr>
+        ${weight > 0 ? `<tr><th>Gold Weight</th><td>${weight.toFixed(3)} grams</td></tr>` : ""}
     </table>` : ""}
 
     <p>Thank you for your trust and investment with <strong>${theme.constants.customerName}</strong>. This receipt serves as official proof of payment.</p>

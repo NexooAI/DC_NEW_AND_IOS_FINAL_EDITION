@@ -27,6 +27,7 @@ import { Picker } from "@react-native-picker/picker";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
 import api from "@/services/api";
 import { theme } from "@/constants/theme";
+import { fetchBranchesWithCache } from "@/utils/apiCache";
 import RNPickerSelect from "react-native-picker-select";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CustomAlert from "@/components/Alert";
@@ -199,7 +200,7 @@ export default function JoinSavings() {
   const [formData, setFormData] = useState({
     amount: "",
     accountname: user?.name || "",
-    associated_branch: "",
+    associated_branch: user?.branch_id ? String(user.branch_id) : "",
     name: "",
     mobile: "",
     email: "",
@@ -432,9 +433,7 @@ export default function JoinSavings() {
   useEffect(() => {
     const fetchBranche = async () => {
       try {
-        const branches = await api.get(`/branches`);
-        //logger.log("branches", branches.data.data);
-        const branchData = branches.data.data || [];
+        const branchData = await fetchBranchesWithCache() || [];
         setBranch(branchData);
         // Auto-select based on user's registered branch, or if only one branch exists
         const userAny = user as any;
@@ -972,7 +971,7 @@ export default function JoinSavings() {
   };
 
   const handleChange = (field: keyof typeof formData, value: string): void => {
-    setFormData({ ...formData, [field]: value });
+    setFormData((prev) => ({ ...prev, [field]: value }));
     // Validate but don't show alerts during typing
     // Alerts will only be shown when clicking "Next" button
     validate(field, value);
@@ -1634,7 +1633,7 @@ export default function JoinSavings() {
   const renderStep2 = () => {
     const isSingleBranch = branch.length === 1;
     const userAny = user as any;
-    const isPickerDisabled = isSingleBranch || (!!userAny?.branch_id && Number(userAny?.allow_multi_branch) !== 1);
+    const isPickerDisabled = isSingleBranch || !!userAny?.branch_id;
     const selectedBranch = branch.find((b) => String(b.id) === formData.associated_branch);
 
     return (
@@ -1686,38 +1685,57 @@ export default function JoinSavings() {
                 <Text style={styles.fieldLabel}>{translations.branchName}</Text>
               </View>
                 <View>
-                  <RNPickerSelect
-                    onValueChange={(value) => handleChange("associated_branch", value)}
-                    onDonePress={() => { }}
-                    placeholder={{ label: "Select Branch", value: "" }}
-                    value={formData.associated_branch ? String(formData.associated_branch) : ""}
-                    disabled={isPickerDisabled}
-                    items={branch.map((b) => ({
-                      label: b.branch_name,
-                      value: String(b.id),
-                    }))}
-                    style={{
-                      ...pickerSelectStylesModern,
-                      inputIOS: [
+                  {isPickerDisabled ? (
+                    <View
+                      style={[
                         pickerSelectStylesModern.inputIOS,
                         errors.associated_branch ? styles.modernInputError : undefined,
-                        isPickerDisabled ? { backgroundColor: "rgba(240, 240, 240, 0.4)", color: "#888" } : undefined,
-                      ],
-                      inputAndroid: [
-                        pickerSelectStylesModern.inputAndroid,
-                        errors.associated_branch ? styles.modernInputError : undefined,
-                        isPickerDisabled ? { backgroundColor: "rgba(240, 240, 240, 0.4)", color: "#888" } : undefined,
-                      ],
-                    }}
-                    useNativeAndroidPickerStyle={false}
-                    Icon={() => (
-                      <Ionicons
-                        name="chevron-down"
-                        size={20}
-                        color={isPickerDisabled ? "#888" : theme.colors.primary}
-                      />
-                    )}
-                  />
+                        { backgroundColor: "rgba(240, 240, 240, 0.4)", flexDirection: "row", alignItems: "center", justifyContent: "space-between", position: 'relative' }
+                      ]}
+                    >
+                      <Text style={{ color: "#888", fontSize: 16 }}>
+                        {selectedBranch?.branch_name || "Select Branch"}
+                      </Text>
+                      <View style={{ position: 'absolute', right: 15 }}>
+                        <Ionicons
+                          name="chevron-down"
+                          size={20}
+                          color="#888"
+                        />
+                      </View>
+                    </View>
+                  ) : (
+                    <RNPickerSelect
+                      onValueChange={(value) => handleChange("associated_branch", value)}
+                      onDonePress={() => { }}
+                      placeholder={{ label: "Select Branch", value: "" }}
+                      value={formData.associated_branch ? String(formData.associated_branch) : ""}
+                      disabled={false}
+                      items={branch.map((b) => ({
+                        label: b.branch_name,
+                        value: String(b.id),
+                      }))}
+                      style={{
+                        ...pickerSelectStylesModern,
+                        inputIOS: [
+                          pickerSelectStylesModern.inputIOS,
+                          errors.associated_branch ? styles.modernInputError : undefined,
+                        ],
+                        inputAndroid: [
+                          pickerSelectStylesModern.inputAndroid,
+                          errors.associated_branch ? styles.modernInputError : undefined,
+                        ],
+                      }}
+                      useNativeAndroidPickerStyle={false}
+                      Icon={() => (
+                        <Ionicons
+                          name="chevron-down"
+                          size={20}
+                          color={theme.colors.primary}
+                        />
+                      )}
+                    />
+                  )}
                   {errors.associated_branch && (
                     <Text style={styles.modernErrorText}>
                       {errors.associated_branch}

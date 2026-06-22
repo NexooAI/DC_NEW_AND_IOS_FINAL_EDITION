@@ -17,7 +17,8 @@ import {
 } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useRouter, Stack } from "expo-router";
+import LanguageSelector from "@/components/LanguageSelector";
 // AppHeader is now handled by the layout wrapper
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
@@ -29,7 +30,7 @@ import { logger } from '@/utils/logger';
 const { width, height } = Dimensions.get("window");
 
 export default function OurPolicy() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { language } = useGlobalStore();
@@ -38,6 +39,17 @@ export default function OurPolicy() {
   const [policy, setPolicy] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
+  const [isLanguageSelectorVisible, setIsLanguageSelectorVisible] = useState(false);
+
+  const getPolicyField = (field: "title" | "subtitle" | "description") => {
+    if (!policy) return "";
+    const targetField = field === "description" ? (policy.description !== undefined ? "description" : "content") : field;
+    if (locale === "en") {
+      return policy[targetField] || "";
+    }
+    const langKey = `${targetField}_${locale}`;
+    return policy[langKey] || policy[targetField] || "";
+  };
 
   // Fetch policy data on component mount
   useEffect(() => {
@@ -133,7 +145,17 @@ export default function OurPolicy() {
   }
 
   return (
-    <KeyboardAvoidingView
+    <>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <TouchableOpacity onPress={() => setIsLanguageSelectorVisible(true)} style={{ marginRight: 16 }}>
+              <Ionicons name="language" size={24} color={theme.colors.primary} />
+            </TouchableOpacity>
+          ),
+        }}
+      />
+      <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={styles.container}
       keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
@@ -162,7 +184,7 @@ export default function OurPolicy() {
                 />
               </View>
               <Text style={styles.heroTitle}>
-                {policy?.title || translations.defaultTitle}
+                {getPolicyField("title") || translations.defaultTitle}
               </Text>
               <View style={styles.decorativeLine} />
             </View>
@@ -193,7 +215,7 @@ export default function OurPolicy() {
                 </View>
 
                 <Text style={styles.contentText}>
-                  {policy?.content || translations.defaultContent}
+                  {getPolicyField("description") || translations.defaultContent}
                 </Text>
               </LinearGradient>
             </View>
@@ -201,6 +223,11 @@ export default function OurPolicy() {
         </SafeAreaView>
       </ImageBackground>
     </KeyboardAvoidingView>
+      <LanguageSelector
+        visible={isLanguageSelectorVisible}
+        onClose={() => setIsLanguageSelectorVisible(false)}
+      />
+    </>
   );
 }
 

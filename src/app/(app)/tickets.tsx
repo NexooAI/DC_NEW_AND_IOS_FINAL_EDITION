@@ -11,6 +11,7 @@ import {
   LayoutAnimation,
   UIManager,
   ScrollView,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,10 +26,11 @@ import useGlobalStore from '@/store/global.store';
 import { useTranslation } from '@/hooks/useTranslation';
 
 // Enable LayoutAnimation for Android (only if not on the New Architecture / Fabric)
+const isNewArch = (global as any).RN$Fabric || (global as any).nativeFabricUIManager;
 if (
   Platform.OS === 'android' &&
   UIManager.setLayoutAnimationEnabledExperimental &&
-  !(global as any).RN$Fabric
+  !isNewArch
 ) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
@@ -147,7 +149,8 @@ export default function TicketsScreen() {
 
   if (!userId) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}>
+        <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
         <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
 
@@ -234,7 +237,8 @@ export default function TicketsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
       <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
 
@@ -318,7 +322,10 @@ export default function TicketsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: QUATERNARY_COLOR,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

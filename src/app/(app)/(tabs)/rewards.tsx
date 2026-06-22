@@ -9,6 +9,10 @@ import {
     Modal,
     ActivityIndicator,
     RefreshControl,
+    StatusBar,
+    TextInput,
+    Alert,
+    ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -30,17 +34,24 @@ export default function RewardsScreen() {
     const [hasInvestments, setHasInvestments] = useState<boolean | null>(null);
     const [redemptionModalVisible, setRedemptionModalVisible] = useState(false);
     const [noInvestmentModalVisible, setNoInvestmentModalVisible] = useState(false);
-    const scrollY = useRef(new Animated.Value(0)).current;
+    const chestScale = useRef(new Animated.Value(0)).current;
+    const pointsScale = useRef(new Animated.Value(0)).current;
+    const pointsTranslateY = useRef(new Animated.Value(30)).current;
+    const [isChestOpen, setIsChestOpen] = useState(false);
+
+    const [pointsToRedeem, setPointsToRedeem] = useState("");
+    const [redemptionMethod, setRedemptionMethod] = useState<"purchase" | "cash">("purchase");
+    const [paymentDetails, setPaymentDetails] = useState("");
+    const [submitting, setSubmitting] = useState(false);
 
     const fetchRewards = useCallback(async (showLoader = true) => {
         if (!user?.id) return;
 
         if (showLoader) setLoading(true);
         try {
-            const response = await rewardsAPI.getMyReferrals(user.id);
-            if (response.data.success && Array.isArray(response.data.data)) {
-                const total = response.data.data.reduce((sum: number, item: any) => sum + (item.reward_earned || 0), 0);
-                setTotalPoints(total);
+            const response = await rewardsAPI.getWalletInfo(user.id);
+            if (response.data.success && response.data.data) {
+                setTotalPoints(response.data.data.balance || 0);
             }
         } catch (error) {
             console.error("Error fetching rewards:", error);
@@ -54,6 +65,66 @@ export default function RewardsScreen() {
         setRefreshing(true);
         fetchRewards(false);
     }, [fetchRewards]);
+
+    const handleRedeemConfirm = async () => {
+        const pts = parseInt(pointsToRedeem);
+        if (isNaN(pts) || pts <= 0) {
+            Alert.alert(t("error") || "Error", t("pleaseEnterValidPoints") || "Please enter a valid amount of points");
+            return;
+        }
+
+        if (pts > totalPoints) {
+            Alert.alert(t("error") || "Error", t("insufficientPoints") || "Insufficient points balance");
+            return;
+        }
+
+        if (redemptionMethod === "cash" && !paymentDetails.trim()) {
+            Alert.alert(t("error") || "Error", t("pleaseEnterPaymentDetails") || "Please enter payment details (UPI / Bank)");
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            const methodLabel = redemptionMethod === "purchase" ? "purchase" : "cash";
+            const detailsText = redemptionMethod === "purchase" 
+                ? "Redeem for jewelry purchase discount" 
+                : paymentDetails.trim();
+
+            const response = await rewardsAPI.redeemPoints({
+                points: pts,
+                payment_method: methodLabel,
+                payment_details: detailsText,
+                userId: user?.id
+            });
+
+            if (response.data.success) {
+                Alert.alert(
+                    t("success") || "Success",
+                    redemptionMethod === "purchase"
+                        ? (t("purchaseRedeemSuccess") || "Purchase discount request submitted. You can redeem this when you purchase jewelry once your investments mature.")
+                        : (t("cashRedeemSuccess") || "Cash payout request submitted. Admin will process it shortly."),
+                    [{
+                        text: t("ok") || "OK",
+                        onPress: () => {
+                            setRedemptionModalVisible(false);
+                            setPointsToRedeem("");
+                            setPaymentDetails("");
+                            setRedemptionMethod("purchase");
+                            fetchRewards(false);
+                        }
+                    }]
+                );
+            } else {
+                Alert.alert(t("error") || "Error", response.data.message || "Redemption failed");
+            }
+        } catch (error: any) {
+            console.error("Error submitting redemption:", error);
+            const errMsg = error.response?.data?.error || error.message || "Failed to submit redemption request";
+            Alert.alert(t("error") || "Error", errMsg);
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     const checkInvestments = async () => {
         if (!user?.id) return false;
@@ -94,24 +165,52 @@ export default function RewardsScreen() {
 
     useFocusEffect(
         useCallback(() => {
+            StatusBar.setBarStyle("dark-content");
+            if (Platform.OS === "android") {
+                StatusBar.setBackgroundColor("#F2E6D2");
+                StatusBar.setTranslucent(false);
+            }
+
             fetchRewards(true);
+
+            // Reset animations
+            chestScale.setValue(0);
+            pointsScale.setValue(0);
+            pointsTranslateY.setValue(30);
+            setIsChestOpen(false);
+
+            // Sequence of animations: chest scale springs up first
+            Animated.sequence([
+                Animated.spring(chestScale, {
+                    toValue: 1,
+                    friction: 6,
+                    tension: 40,
+                    useNativeDriver: true,
+                }),
+                Animated.delay(200),
+            ]).start(() => {
+                // Open chest and trigger points pop-up
+                setIsChestOpen(true);
+                Animated.parallel([
+                    Animated.spring(pointsScale, {
+                        toValue: 1,
+                        friction: 5,
+                        tension: 45,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(pointsTranslateY, {
+                        toValue: -80,
+                        duration: 600,
+                        useNativeDriver: true,
+                    }),
+                ]).start();
+            });
         }, [fetchRewards])
     );
 
-    const headerOpacity = scrollY.interpolate({
-        inputRange: [0, 80],
-        outputRange: [0, 1],
-        extrapolate: "clamp",
-    });
-
-    const headerTranslateY = scrollY.interpolate({
-        inputRange: [0, 80],
-        outputRange: [-150, 0],
-        extrapolate: "clamp",
-    });
-
     return (
         <SafeAreaView style={styles.container} edges={["top"]}>
+            <StatusBar barStyle="dark-content" backgroundColor="#F2E6D2" />
             <LinearGradient
                 colors={["#F2E6D2", "#F5DEB3"]}
                 style={StyleSheet.absoluteFillObject}
@@ -132,63 +231,8 @@ export default function RewardsScreen() {
                 ))}
             </View>
 
-            {/* Sticky Header */}
-            <Animated.View
-                style={[
-                    styles.stickyHeader,
-                    {
-                        opacity: headerOpacity,
-                        transform: [{ translateY: headerTranslateY }],
-                    },
-                ]}
-            >
-                <LinearGradient
-                    colors={["#F2E6D2", "#F5DEB3"]}
-                    style={StyleSheet.absoluteFillObject}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                />
-                <View style={styles.stickyHeaderContent}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                        <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{t("rewardPoints") || "Reward Points"}</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <TouchableOpacity
-                            style={styles.refreshRoundButton}
-                            onPress={handleRefresh}
-                        >
-                            <Ionicons name="refresh" size={18} color="white" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.historyPillButton}
-                            onPress={() => router.push("/(app)/(tabs)/rewards_history")}
-                        >
-                            <Text style={styles.historyPillText}>History</Text>
-                            <Ionicons name="receipt-outline" size={16} color="white" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Animated.View>
-
-
-            <Animated.ScrollView
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-                onScroll={Animated.event(
-                    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-                    { useNativeDriver: true }
-                )}
-                scrollEventThrottle={16}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={handleRefresh}
-                        tintColor={theme.colors.primary}
-                    />
-                }
-            >
-                {/* Header */}
+            {/* Fixed Header */}
+            <View style={styles.headerContainer}>
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                         <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
@@ -210,8 +254,19 @@ export default function RewardsScreen() {
                         </TouchableOpacity>
                     </View>
                 </View>
+            </View>
 
-
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        tintColor={theme.colors.primary}
+                    />
+                }
+            >
                 {/* Points Display */}
                 <View style={styles.pointsContainer}>
                     <FontAwesome5 name="coins" size={32} color="#FF8C00" style={styles.coinIcon} />
@@ -222,12 +277,62 @@ export default function RewardsScreen() {
                     <Text style={styles.conversionText}> {t("conversionText") || "1 = ₹1"}</Text>
                 </View>
 
-                {/* Treasure Chest Placeholder Graphic */}
+                {/* Treasure Chest Graphic with opening and points floating animation */}
                 <View style={styles.chestGraphicContainer}>
-                    <FontAwesome5 name="box-open" size={120} color="#FF8C00" />
-                    <View style={styles.chestCoins}>
-                        <FontAwesome5 name="coins" size={50} color="#FFA500" />
-                    </View>
+                    <Animated.View style={{ transform: [{ scale: chestScale }] }}>
+                        <FontAwesome5
+                            name={isChestOpen ? "box-open" : "box"}
+                            size={120}
+                            color="#FF8C00"
+                        />
+                    </Animated.View>
+
+                    {/* Pop-up float points animation */}
+                    <Animated.View
+                        style={[
+                            styles.floatingPointsContainer,
+                            {
+                                opacity: pointsScale,
+                                transform: [
+                                    { scale: pointsScale },
+                                    { translateY: pointsTranslateY }
+                                ]
+                            }
+                        ]}
+                    >
+                        <LinearGradient
+                            colors={["#FF8C00", "#FF5722"]}
+                            style={styles.floatingBadge}
+                        >
+                            <FontAwesome5 name="coins" size={18} color="#fff" style={{ marginRight: 6 }} />
+                            <Text style={styles.floatingPointsText}>
+                                {totalPoints} {t("points") || "Pts"}
+                            </Text>
+                        </LinearGradient>
+                    </Animated.View>
+                </View>
+
+                {/* Refer & Earn Navigation Card */}
+                <View style={styles.referCardContainer}>
+                    <TouchableOpacity
+                        style={styles.referCard}
+                        activeOpacity={0.8}
+                        onPress={() => router.push("/home/refer_earn")}
+                    >
+                        <LinearGradient
+                            colors={['#ffffff', '#fcfcfc']}
+                            style={styles.referCardGradient}
+                        >
+                            <View style={styles.referIconContainer}>
+                                <Ionicons name="people" size={28} color={theme.colors.primary} />
+                            </View>
+                            <View style={styles.referContent}>
+                                <Text style={styles.referTitle}>{t("referAndEarn") || "Refer & Earn"}</Text>
+                                <Text style={styles.referSubtitle}>{t("refer_earn_subtitle") || "Invite friends and earn exciting rewards"}</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+                        </LinearGradient>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Steps to Redeem Card */}
@@ -279,30 +384,7 @@ export default function RewardsScreen() {
                     </View>
                 </View>
 
-                {/* Refer & Earn Navigation Card */}
-                <View style={styles.referCardContainer}>
-                    <TouchableOpacity
-                        style={styles.referCard}
-                        activeOpacity={0.8}
-                        onPress={() => router.push("/home/refer_earn")}
-                    >
-                        <LinearGradient
-                            colors={['#ffffff', '#fcfcfc']}
-                            style={styles.referCardGradient}
-                        >
-                            <View style={styles.referIconContainer}>
-                                <Ionicons name="people" size={28} color={theme.colors.primary} />
-                            </View>
-                            <View style={styles.referContent}>
-                                <Text style={styles.referTitle}>{t("referAndEarn") || "Refer & Earn"}</Text>
-                                <Text style={styles.referSubtitle}>{t("refer_earn_subtitle") || "Invite friends and earn exciting rewards"}</Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={20} color="#ccc" />
-                        </LinearGradient>
-                    </TouchableOpacity>
-                </View>
-
-            </Animated.ScrollView>
+            </ScrollView>
 
             {/* Floating Action Button */}
             <View style={styles.bottomBar}>
@@ -374,31 +456,114 @@ export default function RewardsScreen() {
                 visible={redemptionModalVisible}
                 transparent={true}
                 animationType="fade"
-                onRequestClose={() => setRedemptionModalVisible(false)}
+                onRequestClose={() => {
+                    if (!submitting) setRedemptionModalVisible(false);
+                }}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { maxWidth: 360 }]}>
                         <View style={styles.modalHeader}>
-                            <Ionicons name="gift" size={48} color={theme.colors.primary} />
-                            <Text style={styles.modalTitle}>{t("redeemAtShop") || "Redeem at Shop"}</Text>
+                            <Ionicons name="gift" size={40} color={theme.colors.primary} />
+                            <Text style={[styles.modalTitle, { fontSize: 20, marginTop: 8 }]}>
+                                {t("redeemPoints") || "Redeem Points"}
+                            </Text>
                         </View>
-                        <View style={styles.modalPointsContainer}>
-                            <Text style={styles.modalPointsValue}>{totalPoints}</Text>
+
+                        <View style={[styles.modalPointsContainer, { padding: 12, marginBottom: 12 }]}>
+                            <Text style={[styles.modalPointsValue, { fontSize: 32 }]}>{totalPoints}</Text>
                             <Text style={styles.modalPointsLabel}>{t("pointsAvailable") || "Points Available"}</Text>
                         </View>
-                        <Text style={styles.modalDescription}>
-                            {t("redemptionDesc") || "Visit our physical store to redeem these points against your purchase. Our staff will assist you with the redemption process."}
-                        </Text>
+
+                        {/* Method Selector */}
+                        <View style={styles.methodSelector}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.methodButton,
+                                    redemptionMethod === "purchase" && styles.methodButtonActive
+                                ]}
+                                onPress={() => setRedemptionMethod("purchase")}
+                                disabled={submitting}
+                            >
+                                <Text style={[
+                                    styles.methodText,
+                                    redemptionMethod === "purchase" && styles.methodTextActive
+                                ]}>
+                                    {t("purchaseDiscount") || "Purchase\nDiscount"}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    styles.methodButton,
+                                    redemptionMethod === "cash" && styles.methodButtonActive
+                                ]}
+                                onPress={() => setRedemptionMethod("cash")}
+                                disabled={submitting}
+                            >
+                                <Text style={[
+                                    styles.methodText,
+                                    redemptionMethod === "cash" && styles.methodTextActive
+                                ]}>
+                                    {t("readyCashPayout") || "Direct Cash\nPayout"}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Description/Input Area */}
+                        {redemptionMethod === "purchase" ? (
+                            <Text style={[styles.modalDescription, { fontSize: 13, marginBottom: 12, lineHeight: 18 }]}>
+                                {t("purchaseRedemptionHelp") || "Points will be converted to a jewelry purchase discount. Redeemable at the store when your investment matures."}
+                            </Text>
+                        ) : (
+                            <Text style={[styles.modalDescription, { fontSize: 13, marginBottom: 12, lineHeight: 18 }]}>
+                                {t("cashRedemptionHelp") || "Points will be converted to a direct cash payout. Enter your UPI ID or bank account details below."}
+                            </Text>
+                        )}
+
+                        <TextInput
+                            style={styles.pointsInput}
+                            keyboardType="number-pad"
+                            placeholder={t("enterPointsToRedeem") || "Points to redeem"}
+                            placeholderTextColor="#999"
+                            value={pointsToRedeem}
+                            onChangeText={setPointsToRedeem}
+                            editable={!submitting}
+                        />
+
+                        {redemptionMethod === "cash" && (
+                            <TextInput
+                                style={styles.detailsInput}
+                                placeholder={t("enterPaymentDetails") || "Enter UPI ID or Bank Account details"}
+                                placeholderTextColor="#999"
+                                value={paymentDetails}
+                                onChangeText={setPaymentDetails}
+                                multiline
+                                editable={!submitting}
+                            />
+                        )}
+
                         <TouchableOpacity
                             style={styles.modalActionButton}
-                            onPress={() => setRedemptionModalVisible(false)}
+                            onPress={handleRedeemConfirm}
+                            disabled={submitting}
                         >
                             <LinearGradient
                                 colors={[theme.colors.primary, "#002b24"]}
                                 style={styles.modalButtonGradient}
                             >
-                                <Text style={styles.modalButtonText}>{t("gotIt") || "Got It"}</Text>
+                                {submitting ? (
+                                    <ActivityIndicator size="small" color="#fff" />
+                                ) : (
+                                    <Text style={styles.modalButtonText}>{t("confirmRedemption") || "Confirm Redemption"}</Text>
+                                )}
                             </LinearGradient>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.modalCloseButton}
+                            onPress={() => setRedemptionModalVisible(false)}
+                            disabled={submitting}
+                        >
+                            <Text style={styles.modalCloseText}>{t("close") || "Close"}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -410,6 +575,7 @@ export default function RewardsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: "#F2E6D2",
     },
     scrollContent: {
         paddingBottom: 150,
@@ -504,30 +670,17 @@ const styles = StyleSheet.create({
         height: 40,
         backgroundColor: "#fff",
     },
-    stickyHeader: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: Platform.OS === 'ios' ? 90 : 70,
-        zIndex: 100,
-        elevation: 5,
-    },
-    stickyHeaderContent: {
-        flex: 1,
-        flexDirection: "row",
-        alignItems: "flex-end",
-        justifyContent: "space-between",
-        paddingHorizontal: 20,
-        paddingBottom: 15,
+    headerContainer: {
+        backgroundColor: "transparent",
+        borderBottomWidth: 1,
+        borderBottomColor: "rgba(0,0,0,0.05)",
     },
     header: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
         paddingHorizontal: 20,
-        paddingTop: 10,
-        marginBottom: 20,
+        paddingVertical: 12,
     },
     backButton: {
         padding: 8,
@@ -558,6 +711,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         marginBottom: 8,
+        marginTop: 20,
     },
     coinIcon: {
         marginRight: 12,
@@ -588,13 +742,32 @@ const styles = StyleSheet.create({
     chestGraphicContainer: {
         alignItems: "center",
         justifyContent: "center",
-        height: 200,
+        height: 220,
         marginBottom: 30,
+        position: "relative",
     },
-    chestCoins: {
+    floatingPointsContainer: {
         position: "absolute",
-        top: 30,
-        zIndex: -1,
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 5,
+    },
+    floatingBadge: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 25,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 8,
+    },
+    floatingPointsText: {
+        color: "#fff",
+        fontSize: 18,
+        fontWeight: "800",
     },
     stepsCard: {
         backgroundColor: "#fff",
@@ -668,6 +841,7 @@ const styles = StyleSheet.create({
     },
     referCardContainer: {
         marginTop: 20,
+        marginBottom: 20,
         marginHorizontal: 16,
     },
     referCard: {
@@ -747,5 +921,62 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: "700",
         letterSpacing: 0.5,
+    },
+    pointsInput: {
+        width: "100%",
+        height: 50,
+        borderWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        fontSize: 16,
+        color: "#1a1a1a",
+        backgroundColor: "#f9f9f9",
+        marginBottom: 16,
+        textAlign: "center",
+        fontWeight: "bold",
+    },
+    detailsInput: {
+        width: "100%",
+        height: 60,
+        borderWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        fontSize: 14,
+        color: "#1a1a1a",
+        backgroundColor: "#f9f9f9",
+        marginBottom: 16,
+        textAlignVertical: "top",
+    },
+    methodSelector: {
+        flexDirection: "row",
+        width: "100%",
+        gap: 10,
+        marginBottom: 16,
+    },
+    methodButton: {
+        flex: 1,
+        paddingVertical: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: "#ccc",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#fff",
+    },
+    methodButtonActive: {
+        borderColor: theme.colors.primary,
+        backgroundColor: "rgba(133,1,17,0.05)",
+    },
+    methodText: {
+        fontSize: 12,
+        fontWeight: "bold",
+        color: "#666",
+        textAlign: "center",
+    },
+    methodTextActive: {
+        color: theme.colors.primary,
     },
 });

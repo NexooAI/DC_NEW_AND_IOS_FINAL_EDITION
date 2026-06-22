@@ -1,14 +1,16 @@
 import { Stack } from "expo-router";
 import useGlobalStore from "@/store/global.store";
 import { useEffect } from "react";
-import { Platform } from "react-native";
+import { Platform, StatusBar } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
+import { useIsFocused } from "@react-navigation/native";
 
 export default function HomeLayout() {
   const { setTabVisibility } = useGlobalStore();
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
 
   useEffect(() => {
     // Default to showing tabs when entering the home stack
@@ -16,21 +18,28 @@ export default function HomeLayout() {
   }, [setTabVisibility]);
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: theme.colors.quaternary,
-        },
-        headerTintColor: theme.colors.primary,
-        headerTitleAlign: 'center', // Center align the header title
-        headerTitleStyle: {
-          fontWeight: "bold",
-          fontSize: Platform.OS === 'android' ? 16 : 18, // Slightly smaller font on Android
-        },
-        headerShadowVisible: false,
-      }}
-    >
+    <>
+      {isFocused && (
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={theme.colors.quaternary || '#F2E6D2'}
+        />
+      )}
+      <Stack
+        screenOptions={{
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: theme.colors.quaternary,
+          },
+          headerTintColor: theme.colors.primary,
+          headerTitleAlign: 'center', // Center align the header title
+          headerTitleStyle: {
+            fontWeight: "bold",
+            fontSize: Platform.OS === 'android' ? 16 : 18, // Slightly smaller font on Android
+          },
+          headerShadowVisible: false,
+        }}
+      >
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen
         name="productsdetails"
@@ -146,15 +155,8 @@ export default function HomeLayout() {
         name="BookingHistory"
         options={{ headerShown: false }}
       />
-      <Stack.Screen
-        name="BookingPaymentSuccess"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="BookingPaymentFailure"
-        options={{ headerShown: false }}
-      />
       {/* <Stack.Screen name="live-rates" options={{ title: "Live Rate", headerShown: false }} /> */}
-    </Stack>
+      </Stack>
+    </>
   );
 }

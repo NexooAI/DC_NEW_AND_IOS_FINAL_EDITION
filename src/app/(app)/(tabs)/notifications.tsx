@@ -10,7 +10,9 @@ import {
   RefreshControl,
   Animated as RNAnimated,
   Platform,
+  StatusBar,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { ScrollView, Swipeable, GestureHandlerRootView } from "react-native-gesture-handler";
 // Bypass type checking for Reanimated due to v4 export issues
 const Reanimated = require("react-native-reanimated");
@@ -52,18 +54,98 @@ const formatDate = (dateString: string) => {
 const getCategoryDisplayName = (category: string): string => {
   const categoryMap: { [key: string]: string } = {
     rates: "Gold Rates",
+    rate: "Gold Rates",
     offers: "Special Offers",
+    offer: "Special Offers",
     transactions: "Transactions",
+    transaction: "Transactions",
     reminders: "Reminders",
+    reminder: "Reminders",
     alerts: "Alerts",
+    alert: "Alerts",
     blogs: "Blog Posts",
+    blog: "Blog Posts",
     general: "General",
   };
 
   return (
-    categoryMap[category] ||
+    categoryMap[category.toLowerCase()] ||
     category.charAt(0).toUpperCase() + category.slice(1)
   );
+};
+
+// Colors mapping helper for notifications category
+const getCategoryColors = (type: string) => {
+  switch (type.toLowerCase()) {
+    case "offer":
+      return {
+        border: "#DD2476",
+        bg: "#FFF0F5",
+        iconBg: ["#FF512F", "#DD2476"] as [string, string, ...string[]],
+      };
+    case "transaction":
+      return {
+        border: "#2196F3",
+        bg: "#E3F2FD",
+        iconBg: ["#2196F3", "#21CBF3"] as [string, string, ...string[]],
+      };
+    case "reminder":
+      return {
+        border: "#56ab2f",
+        bg: "#F1F8E9",
+        iconBg: ["#56ab2f", "#a8e063"] as [string, string, ...string[]],
+      };
+    case "alert":
+      return {
+        border: "#FF8008",
+        bg: "#FFF8E1",
+        iconBg: ["#FFC837", "#FF8008"] as [string, string, ...string[]],
+      };
+    case "rate":
+      return {
+        border: "#D4AF37", // Gold
+        bg: "#FFFDF0",
+        iconBg: ["#FFD700", "#D4AF37"] as [string, string, ...string[]],
+      };
+    case "blog":
+      return {
+        border: "#F2994A",
+        bg: "#FFF3E0",
+        iconBg: ["#F2994A", "#F2C94C"] as [string, string, ...string[]],
+      };
+    default:
+      return {
+        border: "#850111",
+        bg: "#FFF5F6",
+        iconBg: ["#4facfe", "#00f2fe"] as [string, string, ...string[]],
+      };
+  }
+};
+
+// Category header left bar colors
+const getCategoryColor = (category: string) => {
+  switch (category.toLowerCase()) {
+    case "rates":
+    case "rate":
+      return "#D4AF37"; // Gold
+    case "offers":
+    case "offer":
+      return "#DD2476";
+    case "transactions":
+    case "transaction":
+      return "#2196F3";
+    case "reminders":
+    case "reminder":
+      return "#56ab2f";
+    case "alerts":
+    case "alert":
+      return "#FF8008";
+    case "blogs":
+    case "blog":
+      return "#F2994A";
+    default:
+      return "#850111"; // Burgundy default
+  }
 };
 
 // Types
@@ -95,29 +177,11 @@ const NotificationItem = React.memo(
     onPress: (id: string) => void;
     onDelete: (id: string) => void;
   }) => {
-    
-    // Gradient colors based on type
-    const getCategoryGradient = (type: string): [string, string, ...string[]] => {
-      switch (type) {
-        case "offer":
-          return ["#FF512F", "#DD2476"];
-        case "transaction":
-          return ["#2196F3", "#21CBF3"];
-        case "reminder":
-          return ["#56ab2f", "#a8e063"];
-        case "alert":
-          return ["#FFC837", "#FF8008"];
-        case "rate":
-          return ["#8E2DE2", "#4A00E0"];
-        case "blog":
-          return ["#F2994A", "#F2C94C"];
-        default:
-          return ["#4facfe", "#00f2fe"];
-      }
-    };
+    const isUnread = item.status === "unread";
+    const categoryColors = getCategoryColors(item.type);
 
     const getCategoryIcon = (type: string) => {
-      switch (type) {
+      switch (type.toLowerCase()) {
         case "offer":
           return "gift-outline";
         case "transaction":
@@ -135,8 +199,6 @@ const NotificationItem = React.memo(
       }
     };
 
-    const isUnread = item.status === "unread";
-    
     const renderRightActions = (progress: any, dragX: any) => {
       return (
         <TouchableOpacity
@@ -146,9 +208,7 @@ const NotificationItem = React.memo(
                 alignItems: 'center',
                 width: 80,
                 height: '100%',
-                borderRadius: 16,
-                marginBottom: 12,
-                marginLeft: 10
+                borderRadius: 0,
             }}
             onPress={() => onDelete(item.id.toString())}
         >
@@ -168,21 +228,13 @@ const NotificationItem = React.memo(
             onPress={() => onPress(item.id.toString())}
             style={({ pressed }) => ({
                 flexDirection: "row",
-                // Differentiation: Tinted background for unread, White for read
-                backgroundColor: isUnread ? "#FFF5F6" : "white", 
-                borderRadius: 16,
-                marginBottom: 12,
-                marginHorizontal: 2,
+                alignItems: "flex-start",
+                // Subtle tinted background for unread, transparent for read to let container card show white
+                backgroundColor: isUnread ? categoryColors.bg : "transparent", 
                 padding: 16,
-                // Differentiation: Stronger shadow for unread
-                shadowColor: isUnread ? theme.colors.primary : "#999",
-                shadowOffset: { width: 0, height: isUnread ? 4 : 2 },
-                shadowOpacity: isUnread ? 0.2 : 0.08,
-                shadowRadius: isUnread ? 8 : 4,
-                elevation: isUnread ? 5 : 2,
-                // Differentiation: Left border accent for unread
-                borderLeftWidth: isUnread ? 4 : 0,
-                borderLeftColor: theme.colors.primary,
+                // Left border accent matching category colors
+                borderLeftWidth: 4,
+                borderLeftColor: categoryColors.border,
                 // Differentiation: Slight opacity for read items to make them recede
                 opacity: isUnread ? 1 : 0.95,
                 transform: [{ scale: pressed ? 0.98 : 1 }],
@@ -190,7 +242,7 @@ const NotificationItem = React.memo(
             >
             {/* Icon Container with Gradient */}
             <LinearGradient
-                colors={getCategoryGradient(item.type)}
+                colors={categoryColors.iconBg}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={{
@@ -200,7 +252,6 @@ const NotificationItem = React.memo(
                 alignItems: "center",
                 justifyContent: "center",
                 marginRight: 16,
-                // Greyscale the icon slightly for read items? Optional, but let's keep it vibrant.
                 opacity: isUnread ? 1 : 0.8
                 }}
             >
@@ -288,13 +339,13 @@ const NotificationSection = React.memo(
     onNotificationDelete: (id: string) => void;
     baseIndex?: number;
   }) => (
-    <View style={{ marginTop: 24 }}>
+    <View style={{ marginTop: 20 }}>
       <Text
         style={{
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: "700",
           color: theme.colors.primary,
-          marginBottom: 16,
+          marginBottom: 10,
           paddingHorizontal: 4,
           textTransform: "uppercase",
           letterSpacing: 0.5,
@@ -303,15 +354,30 @@ const NotificationSection = React.memo(
       >
         {title}
       </Text>
-      {notifications.map((notification, index) => (
-        <NotificationItem
-          key={notification.id}
-          index={baseIndex + index}
-          item={notification}
-          onPress={onNotificationPress}
-          onDelete={onNotificationDelete}
-        />
-      ))}
+      <View
+        style={{
+          backgroundColor: "white",
+          borderRadius: 16,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 8,
+          elevation: 2,
+          overflow: "hidden",
+        }}
+      >
+        {notifications.map((notification, index) => (
+          <React.Fragment key={notification.id}>
+            {index > 0 && <View style={{ height: 1, backgroundColor: "#F0F0F0" }} />}
+            <NotificationItem
+              index={baseIndex + index}
+              item={notification}
+              onPress={onNotificationPress}
+              onDelete={onNotificationDelete}
+            />
+          </React.Fragment>
+        ))}
+      </View>
     </View>
   )
 );
@@ -413,6 +479,7 @@ const NotificationModal = ({
 
 // Main Component
 export default function NotificationsScreen() {
+  const router = useRouter();
   const { user } = useGlobalStore();
   const { refreshCount } = useUnreadNotifications();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -447,96 +514,53 @@ export default function NotificationsScreen() {
       logger.log("🔔 Fetching notifications from API for user:", user.id);
       const response = await userAPI.getNotifications(user.id);
       logger.log("✅ Notifications API response:", response.data);
-      logger.log("📊 Response type:", typeof response.data);
-      const data: NotificationResponse = response.data;
-      logger.log(
-        "📊 Is object:",
-        typeof data === "object" && !Array.isArray(data)
-      );
+      
+      const responseData = response.data;
+      let notificationsList: Notification[] = [];
+      let categorizedData: NotificationResponse = {};
 
-      if (data && typeof data === "object" && !Array.isArray(data)) {
-        // Store the categorized notifications
-        setCategorizedNotifications(data);
-        logger.log("📊 Categorized notifications:", data);
-
-        // Flatten all notifications from different categories into a single array
-        const allNotifications: Notification[] = [];
-        Object.entries(data).forEach(([category, notifications]) => {
-          if (Array.isArray(notifications)) {
-            logger.log(
-              `📋 Category '${category}': ${notifications.length} notifications`
-            );
-            allNotifications.push(...notifications);
-          }
-        });
-        logger.log(
-          "📊 Total flattened notifications:",
-          allNotifications.length
-        );
-        setNotifications(allNotifications);
-
-        // Check if all categories are empty
-        const hasAnyNotifications = Object.values(data).some(
-          (notifications) =>
-            Array.isArray(notifications) && notifications.length > 0
-        );
-
-        if (!hasAnyNotifications) {
-          logger.log("📭 All notification categories are empty");
-          // Don't set error, just show empty state
+      if (responseData) {
+        let rawNotifications: any = null;
+        
+        if (Array.isArray(responseData)) {
+          rawNotifications = responseData;
+        } else if (responseData.success && Array.isArray(responseData.data)) {
+          rawNotifications = responseData.data;
+        } else if (responseData.data && typeof responseData.data === 'object') {
+          rawNotifications = responseData.data;
+        } else if (typeof responseData === 'object') {
+          rawNotifications = responseData;
         }
-      } else {
-        setError("Invalid response format");
-        // Fallback to sample data if API fails
-        setNotifications([
-          {
-            id: 1,
-            title: "Special Diwali Offer",
-            message:
-              "Invest ₹1000 today and get ₹50 cashback on your first gold purchase! Limited time offer valid until Diwali.",
-            type: "offer",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            status: "unread",
-          },
-          {
-            id: 2,
-            title: "SIP Transaction Successful",
-            message:
-              "Your monthly SIP of ₹5,000 has been processed successfully. Gold units have been allocated to your portfolio.",
-            type: "transaction",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            status: "unread",
-          },
-        ]);
+
+        if (Array.isArray(rawNotifications)) {
+          notificationsList = rawNotifications;
+          rawNotifications.forEach((n: Notification) => {
+            const cat = n.type || "general";
+            if (!categorizedData[cat]) {
+              categorizedData[cat] = [];
+            }
+            categorizedData[cat].push(n);
+          });
+        } else if (rawNotifications && typeof rawNotifications === 'object' && !Array.isArray(rawNotifications)) {
+          categorizedData = rawNotifications;
+          Object.entries(rawNotifications).forEach(([category, list]) => {
+            if (Array.isArray(list)) {
+              notificationsList.push(...list);
+            }
+          });
+        }
       }
+
+      setCategorizedNotifications(categorizedData);
+      setNotifications(notificationsList);
+      logger.log("📊 Categorized notifications loaded:", Object.keys(categorizedData));
+      logger.log("📊 Flattened notifications count:", notificationsList.length);
+
     } catch (error: any) {
       logger.error("Error fetching notifications:", error);
       setError(error.response?.data?.message || "Failed to load notifications");
-      // Fallback to sample data on error
-      setNotifications([
-        {
-          id: 1,
-          title: "Special Diwali Offer",
-          message:
-            "Invest ₹1000 today and get ₹50 cashback on your first gold purchase! Limited time offer valid until Diwali.",
-          type: "offer",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          status: "unread",
-        },
-        {
-          id: 2,
-          title: "SIP Transaction Successful",
-          message:
-            "Your monthly SIP of ₹5,000 has been processed successfully. Gold units have been allocated to your portfolio.",
-          type: "transaction",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          status: "unread",
-        },
-      ]);
+      setNotifications([]);
+      setCategorizedNotifications({});
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -714,10 +738,11 @@ export default function NotificationsScreen() {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "white" }} edges={['right', 'bottom', 'left']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F9FA" }} edges={['right', 'bottom', 'left']}>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
       {/* Header Container */}
       <View style={{ 
-          backgroundColor: 'white',
+          backgroundColor: theme.colors.quaternary || '#F2E6D2',
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.05,
@@ -730,38 +755,40 @@ export default function NotificationsScreen() {
             justifyContent: "space-between",
             alignItems: "center",
             paddingHorizontal: 20,
-            paddingVertical: 12, // Reduced from 16
+            paddingVertical: 12,
         }}>
-            <View>
-                <Text style={{ 
-                    fontSize: moderateScale(24), 
-                    fontWeight: "800", 
-                    color: theme.colors.primary,
-                    letterSpacing: -0.5
-                }}>
-                    Notifications
-                </Text>
-                <Text style={{ fontSize: moderateScale(13), color: "#666", marginTop: 2 }}>
-                    Stay updated with your activities
-                </Text>
-            </View>
+            <TouchableOpacity onPress={() => router.push("/(app)/(tabs)/home")} style={{ padding: 8, marginLeft: -8 }}>
+                <Ionicons name="arrow-back" size={24} color={theme.colors.primary || "#850111"} />
+            </TouchableOpacity>
             
-            {unreadCount > 0 && (
-                <LinearGradient
-                    colors={[theme.colors.primary, '#E6B800']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 6,
-                        borderRadius: 20,
-                    }}
-                >
-                    <Text style={{ color: "white", fontWeight: "700", fontSize: 12 }}>
-                        {unreadCount} NEW
-                    </Text>
-                </LinearGradient>
-            )}
+            <Text style={{ 
+                fontSize: moderateScale(18), 
+                fontWeight: "700", 
+                color: theme.colors.primary,
+                textAlign: 'center',
+                flex: 1,
+            }}>
+                Notifications
+            </Text>
+            
+            <View style={{ width: 40, alignItems: "flex-end", justifyContent: "center" }}>
+                {unreadCount > 0 && (
+                    <View style={{
+                        backgroundColor: theme.colors.primary,
+                        borderRadius: 10,
+                        paddingHorizontal: 6,
+                        paddingVertical: 2,
+                        minWidth: 20,
+                        height: 20,
+                        justifyContent: "center",
+                        alignItems: "center",
+                    }}>
+                        <Text style={{ color: "white", fontWeight: "700", fontSize: 10 }}>
+                            {unreadCount}
+                        </Text>
+                    </View>
+                )}
+            </View>
         </View>
       </View>
 
@@ -845,8 +872,8 @@ export default function NotificationsScreen() {
                         alignItems: 'center'
                     }}
                   >
-                    <View style={{ width: 4, height: 16, backgroundColor: theme.colors.primary, borderRadius: 2, marginRight: 8 }} />
-                    <Text style={{ fontSize: 14, fontWeight: "700", color: "#666", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    <View style={{ width: 4, height: 16, backgroundColor: getCategoryColor(category), borderRadius: 2, marginRight: 8 }} />
+                    <Text style={{ fontSize: 14, fontWeight: "800", color: getCategoryColor(category), textTransform: "uppercase", letterSpacing: 0.5 }}>
                         {getCategoryDisplayName(category)}
                     </Text>
                   </LinearGradient>

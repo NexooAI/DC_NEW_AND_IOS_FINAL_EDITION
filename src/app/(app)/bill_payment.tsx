@@ -11,6 +11,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -364,10 +365,10 @@ export default function BillPayment() {
       setProcessingMessage('Initiating payment...');
       console.log("[DEBUG Payment Flow] Calling billsAPI.payBill with:", { billId, userId });
       const response = await billsAPI.payBill({ billId, userId });
-      
+
       console.log("[DEBUG Payment Flow] billsAPI.payBill response success:", response?.data?.success);
       console.log("[DEBUG Payment Flow] API returned data:", JSON.stringify(response?.data));
-      
+
       const data = response?.data?.data;
       const paymentSession = data?.paymentSession;
       const paymentUrl = extractPaymentUrl(paymentSession);
@@ -479,9 +480,10 @@ export default function BillPayment() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
-      <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[theme.colors.quaternary, theme.colors.quaternary]} style={StyleSheet.absoluteFill} />
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -605,7 +607,7 @@ export default function BillPayment() {
                       <Ionicons name="download-outline" size={18} color={theme.colors.primary} style={{ marginRight: 6 }} />
                       <Text style={styles.downloadBtnText}>Download</Text>
                     </TouchableOpacity>
-                    
+
                     <TouchableOpacity
                       style={[styles.modalButton, styles.shareBtn]}
                       onPress={() => handleShareBillReceipt(selectedBill)}
@@ -635,7 +637,10 @@ export default function BillPayment() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: QUATERNARY_COLOR,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

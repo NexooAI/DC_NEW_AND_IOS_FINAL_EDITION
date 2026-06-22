@@ -29,6 +29,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import useGlobalStore from "@/store/global.store";
 import { LinearGradient } from "expo-linear-gradient";
 import api from "@/services/api";
+import { fetchBranchesWithCache } from "@/utils/apiCache";
 
 interface Store {
   id: number;
@@ -112,8 +113,7 @@ const StoreLocator = () => {
   const fetchBranches = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/branches");
-      const branchData = response.data.data || [];
+      const branchData = await fetchBranchesWithCache() || [];
 
       const mappedStores: Store[] = branchData.map((branch: any) => {
         const locationUrl = branch.location || branch.location_url || "";

@@ -11,10 +11,11 @@ import {
   Alert,
   Platform,
   Linking,
+  StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import ResponsiveText from "@/components/ResponsiveText";
@@ -24,6 +25,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
 import api, { ticketsAPI } from "@/services/api";
 import { theme } from "@/constants/theme";
+import DynamicSchemeCard from "@/components/DynamicSchemeCard";
 
 const { wp, hp, rf } = responsiveUtils;
 const { width } = Dimensions.get("window");
@@ -55,15 +57,73 @@ interface Deposit {
   valuationAmount: number;
 }
 
+const getSafeString = (textObj: any): string => {
+  if (!textObj) return "";
+  if (typeof textObj === "string") return textObj;
+  if (typeof textObj === "object") {
+    return textObj.en || textObj.ta || Object.values(textObj)[0] || "";
+  }
+  return String(textObj);
+};
+
 export default function OldGoldScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const params = useLocalSearchParams();
+  const { t, locale } = useTranslation();
   const { user } = useGlobalStore();
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("deposits");
   const [deposits, setDeposits] = useState<Deposit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [submittingEnquiry, setSubmittingEnquiry] = useState<boolean>(false);
+  const [oldGoldSchemes, setOldGoldSchemes] = useState<any[]>([]);
+  const [expandedSchemeId, setExpandedSchemeId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (params.tab === "schemes") {
+      setActiveTab("schemes");
+    }
+    if (params.schemeId) {
+      setExpandedSchemeId(Number(params.schemeId));
+    }
+  }, [params.tab, params.schemeId]);
+
+  useEffect(() => {
+    const fetchOldGoldSchemes = async () => {
+      try {
+        const { fetchSchemesWithCache } = await import("@/utils/apiCache");
+        const schemesData = await fetchSchemesWithCache();
+        if (schemesData && Array.isArray(schemesData)) {
+          const filtered = schemesData.filter((scheme: any) => {
+            const schemeNameLower = getSafeString(scheme.SCHEMENAME).toLowerCase();
+            const insTypeLower = getSafeString(scheme.INS_TYPE).toLowerCase();
+            const schemeTypeLower = getSafeString(scheme.SCHEMETYPE).toLowerCase();
+            const isOldGold =
+              insTypeLower.includes("old gold") ||
+              scheme.scheme_plan_type_id === 4 ||
+              scheme.SCHEME_PLAN_TYPE_ID === 4 ||
+              schemeTypeLower.includes("old gold") ||
+              schemeNameLower.includes("old gold");
+            return isOldGold;
+          });
+          setOldGoldSchemes(filtered);
+        }
+      } catch (error) {
+        console.error("Error fetching old gold schemes:", error);
+      }
+    };
+    fetchOldGoldSchemes();
+  }, []);
+
+  const getTranslatedText = (textObj: any, lang: string = "en"): string => {
+    if (!textObj) return "";
+    if (typeof textObj === "string") return textObj;
+    if (typeof textObj === "object") {
+      // @ts-ignore
+      return textObj[lang] || textObj["en"] || Object.values(textObj)[0] || "";
+    }
+    return String(textObj);
+  };
 
   // Enquiry form state
   const [estWeight, setEstWeight] = useState("");
@@ -143,17 +203,17 @@ export default function OldGoldScreen() {
   };
 
   const renderHeader = () => (
-    <LinearGradient colors={[DARK, PRIMARY]} style={styles.header}>
+    <View style={[styles.header, { backgroundColor: theme.colors.quaternary }]}>
       <View style={styles.headerRow}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
-        <ResponsiveText color="#FFF" size="lg" weight="bold" style={styles.headerTitle}>
+        <ResponsiveText color={theme.colors.primary} size="lg" weight="bold" style={styles.headerTitle}>
           {t("oldGoldScheme") || "Old Gold Scheme"}
         </ResponsiveText>
         <View style={{ width: 40 }} />
       </View>
-    </LinearGradient>
+    </View>
   );
 
   const renderTabs = () => (
@@ -520,75 +580,33 @@ export default function OldGoldScreen() {
     </ScrollView>
   );
 
-  const renderSchemes = () => (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
-      <View style={styles.schemeDetailCard}>
-        <ResponsiveText color={GOLD} size="md" weight="bold" style={{ marginBottom: 12 }}>
-          {t("oldGoldChitSchemeTitle") || "Old Gold Chit Scheme"}
-        </ResponsiveText>
-        <ResponsiveText color="#FFF" size="sm" style={{ lineHeight: 22, marginBottom: 16 }}>
-          {t("oldGoldSchemeDescription") || "A simple scheme where customers deposit their old gold ornaments and buy new gold ornaments of the same weight after 11 months with zero making charges and zero wastage."}
-        </ResponsiveText>
-
-        <View style={styles.benefitRow}>
-          <Ionicons name="checkmark-circle" size={24} color={GOLD} />
-          <View style={styles.benefitTextCol}>
-            <ResponsiveText color="#FFF" size="sm" weight="bold">
-              {t("zeroWastage") || "Zero Wastage"}
-            </ResponsiveText>
-            <ResponsiveText color={GRAY_TEXT} size="xs">
-              {t("zeroWastageDesc") || "No wastage charges when purchasing new gold ornaments after maturity."}
-            </ResponsiveText>
-          </View>
+  const renderSchemes = () => {
+    if (oldGoldSchemes.length === 0) {
+      return (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color={GOLD} />
         </View>
+      );
+    }
 
-        <View style={styles.benefitRow}>
-          <Ionicons name="checkmark-circle" size={24} color={GOLD} />
-          <View style={styles.benefitTextCol}>
-            <ResponsiveText color="#FFF" size="sm" weight="bold">
-              {t("zeroMakingCharges") || "Zero Making Charges"}
-            </ResponsiveText>
-            <ResponsiveText color={GRAY_TEXT} size="xs">
-              {t("zeroMakingChargesDesc") || "Making charges for new ornaments are completely waived."}
-            </ResponsiveText>
-          </View>
-        </View>
-
-        <View style={styles.benefitRow}>
-          <Ionicons name="checkmark-circle" size={24} color={GOLD} />
-          <View style={styles.benefitTextCol}>
-            <ResponsiveText color="#FFF" size="sm" weight="bold">
-              {t("safeSecureLockers") || "100% Safe & Secure Lockers"}
-            </ResponsiveText>
-            <ResponsiveText color={GRAY_TEXT} size="xs">
-              {t("safeSecureLockersDesc") || "Your gold is stored with complete security in government-grade lockers."}
-            </ResponsiveText>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        <ResponsiveText color={GOLD} size="sm" weight="bold" style={{ marginBottom: 8, marginTop: 4 }}>
-          {t("showroomContacts") || "Showroom Contacts"}
-        </ResponsiveText>
-        <ResponsiveText color="#FFF" size="xs" style={{ marginBottom: 4, lineHeight: 16 }}>
-          <ResponsiveText color={GRAY_TEXT} size="xs" weight="bold">{t("addressLabel") || "Address: "}</ResponsiveText>
-          {theme.constants.address}
-        </ResponsiveText>
-        <ResponsiveText color="#FFF" size="xs" style={{ marginBottom: 4 }}>
-          <ResponsiveText color={GRAY_TEXT} size="xs" weight="bold">{t("phoneLabel") || "Phone/WhatsApp: "}</ResponsiveText>
-          {theme.constants.mobile}
-        </ResponsiveText>
-        <ResponsiveText color="#FFF" size="xs">
-          <ResponsiveText color={GRAY_TEXT} size="xs" weight="bold">{t("emailLabel") || "Email: "}</ResponsiveText>
-          {theme.constants.email}
-        </ResponsiveText>
+    return (
+      <View style={{ flex: 1 }}>
+        <DynamicSchemeCard
+          horizontal={false}
+          schemes={oldGoldSchemes}
+          initialSchemeId={expandedSchemeId || undefined}
+          onEnquirePress={(scheme) => {
+            setDescription(`Inquiry about ${getTranslatedText(scheme.SCHEMENAME, 'en')}`);
+            setActiveTab("enquiry");
+          }}
+        />
       </View>
-    </ScrollView>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
       {renderHeader()}
       {renderTabs()}
       <View style={{ flex: 1 }}>
@@ -606,7 +624,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.quaternary,
   },
   header: {
-    paddingTop: Platform.OS === "ios" ? 50 : 20,
+    paddingTop: Platform.OS === "ios" ? 12 : 20,
     paddingBottom: 16,
     paddingHorizontal: wp(4),
   },

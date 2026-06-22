@@ -33,6 +33,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
 import api from "@/services/api";
 import { getFullImageUrl } from "@/utils/imageUtils";
+import { fetchAboutPageWithCache } from "@/utils/apiCache";
 import { ActivityIndicator } from "react-native";
 
 const { width, height } = Dimensions.get("window");
@@ -108,9 +109,9 @@ export default function AboutUs() {
     const fetchAboutData = async () => {
       try {
         setLoading(true);
-        const response = await api.get("/about-page/latest");
-        if (response?.data?.success) {
-          setAboutData(response.data.data);
+        const data = await fetchAboutPageWithCache();
+        if (data) {
+          setAboutData(data);
         }
       } catch (error) {
         console.error("Error fetching about page:", error);

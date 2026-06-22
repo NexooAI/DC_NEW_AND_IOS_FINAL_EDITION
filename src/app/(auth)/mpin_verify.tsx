@@ -939,7 +939,7 @@ export default function MpinVerify() {
         style={styles.gradient}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={undefined}
           style={styles.container}
         >
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>

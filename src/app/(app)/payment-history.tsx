@@ -11,6 +11,7 @@ import {
   LayoutAnimation,
   ScrollView,
   UIManager,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,10 +26,11 @@ import { useTranslation } from '@/hooks/useTranslation';
 import apiWithLoader from '@/services/apiWithLoader';
 
 // Enable LayoutAnimation for Android (only if not on the New Architecture / Fabric)
+const isNewArch = (global as any).RN$Fabric || (global as any).nativeFabricUIManager;
 if (
   Platform.OS === 'android' &&
   UIManager.setLayoutAnimationEnabledExperimental &&
-  !(global as any).RN$Fabric
+  !isNewArch
 ) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
@@ -83,19 +85,26 @@ export default function PaymentHistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'success' | 'pending' | 'failed'>('all');
 
+  const isSuccessStatus = (status: string) => {
+    const s = String(status).toLowerCase();
+    return s === 'success' || s === 'successful' || s === 'charged';
+  };
+
+  const isFailedStatus = (status: string) => {
+    const s = String(status).toLowerCase();
+    return s === 'failed' || s === 'failure' || s === 'fail' || s === 'cancelled' || s === 'authorization_failed' || s === 'authentication_failed';
+  };
+
+  const isPendingStatus = (status: string) => {
+    return !isSuccessStatus(status) && !isFailedStatus(status);
+  };
+
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
       if (filter === 'all') return true;
-      const statusLower = String(tx.paymentStatus).toLowerCase();
-      if (filter === 'success') {
-        return statusLower === 'success' || statusLower === 'successful' || statusLower === 'charged';
-      }
-      if (filter === 'pending') {
-        return statusLower === 'pending';
-      }
-      if (filter === 'failed') {
-        return statusLower === 'failed' || statusLower === 'failure' || statusLower === 'fail' || statusLower === 'cancelled' || statusLower === 'authorization_failed' || statusLower === 'authentication_failed';
-      }
+      if (filter === 'success') return isSuccessStatus(tx.paymentStatus);
+      if (filter === 'pending') return isPendingStatus(tx.paymentStatus);
+      if (filter === 'failed') return isFailedStatus(tx.paymentStatus);
       return true;
     });
   }, [filter, transactions]);
@@ -106,23 +115,17 @@ export default function PaymentHistoryScreen() {
       {
         key: 'success',
         label: t('success') || 'Success',
-        count: transactions.filter(tx => {
-          const s = String(tx.paymentStatus).toLowerCase();
-          return s === 'success' || s === 'successful' || s === 'charged';
-        }).length
+        count: transactions.filter(tx => isSuccessStatus(tx.paymentStatus)).length
       },
       {
         key: 'pending',
         label: t('pending') || 'Pending',
-        count: transactions.filter(tx => String(tx.paymentStatus).toLowerCase() === 'pending').length
+        count: transactions.filter(tx => isPendingStatus(tx.paymentStatus)).length
       },
       {
         key: 'failed',
         label: t('failed') || 'Failed',
-        count: transactions.filter(tx => {
-          const s = String(tx.paymentStatus).toLowerCase();
-          return s === 'failed' || s === 'failure' || s === 'fail' || s === 'cancelled' || s === 'authorization_failed' || s === 'authentication_failed';
-        }).length
+        count: transactions.filter(tx => isFailedStatus(tx.paymentStatus)).length
       }
     ];
 
@@ -227,7 +230,8 @@ export default function PaymentHistoryScreen() {
 
   if (!userId) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
+        <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
         <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
 
@@ -325,6 +329,7 @@ export default function PaymentHistoryScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
       <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
 
@@ -354,36 +359,39 @@ export default function PaymentHistoryScreen() {
             keyExtractor={(item) => String(item.id)}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={theme.colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="receipt-outline" size={rf(50)} color="rgba(0,0,0,0.14)" />
-              <Text style={styles.emptyText}>
-                {t('noPaymentHistory') || 'No payment transactions found.'}
-              </Text>
-            </View>
-          }
-        />
-      </>
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={theme.colors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Ionicons name="receipt-outline" size={rf(50)} color="rgba(0,0,0,0.14)" />
+                <Text style={styles.emptyText}>
+                  {t('noPaymentHistory') || 'No payment transactions found.'}
+                </Text>
+              </View>
+            }
+          />
+        </>
       )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: QUATERNARY_COLOR,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: wp(5),
-    paddingVertical: hp(1.5),
+    paddingVertical: hp(0.5),
   },
   backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   guestContainer: {

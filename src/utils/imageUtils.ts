@@ -45,18 +45,6 @@ export const getImageSource = (path: string | any) => {
  * @returns Formatted gold weight string
  */
 export const formatGoldWeight = (weight: number): string => {
-  if (weight === 0) return "0 g";
-
-  // If weight is less than 1 gram, show 3 decimal places
-  if (weight < 1) {
-    return `${weight.toFixed(3)} g`;
-  }
-
-  // If weight is less than 10 grams, show 2 decimal places
-  if (weight < 10) {
-    return `${weight.toFixed(2)} g`;
-  }
-
-  // For weights 10 grams and above, show 1 decimal place
-  return `${weight.toFixed(1)} g`;
+  if (weight === 0) return "0.000 g";
+  return `${weight.toFixed(3)} g`;
 }; 

@@ -144,36 +144,38 @@ const StoreLocator = () => {
               <Ionicons name="arrow-back" size={28} color="#1a2a39" />
             </TouchableOpacity> */}
             {/* Dropdown at the top */}
-            <Dropdown
-              style={[styles.dropdown, isFocus && { borderColor: "#007bff" }]}
-              placeholderStyle={styles.placeholderStyle}
-              selectedTextStyle={styles.selectedTextStyle}
-              inputSearchStyle={styles.inputSearchStyle}
-              iconStyle={styles.iconStyle}
-              data={dropdownData}
-              search
-              maxHeight={700}
-              labelField="label"
-              valueField="value"
-              placeholder={!isFocus ? "Select Store Address" : "..."}
-              searchPlaceholder="Search addresses..."
-              value={selectedStore?.value}
-              onFocus={() => setIsFocus(true)}
-              onBlur={() => setIsFocus(false)}
-              onChange={(item) => {
-                setSelectedStore(item);
-                setIsFocus(false);
-                focusOnStore(item);
-              }}
-              renderLeftIcon={() => (
-                <AntDesign
-                  name="environment"
-                  size={20}
-                  color={isFocus ? "#007bff" : "#666"}
-                  style={styles.icon}
-                />
-              )}
-            />
+            <View style={{ zIndex: 1000, elevation: 10, position: 'relative' }}>
+              <Dropdown
+                style={[styles.dropdown, isFocus && { borderColor: "#007bff" }]}
+                placeholderStyle={styles.placeholderStyle}
+                selectedTextStyle={styles.selectedTextStyle}
+                inputSearchStyle={styles.inputSearchStyle}
+                iconStyle={styles.iconStyle}
+                data={dropdownData}
+                search
+                maxHeight={700}
+                labelField="label"
+                valueField="value"
+                placeholder={!isFocus ? "Select Store Address" : "..."}
+                searchPlaceholder="Search addresses..."
+                value={selectedStore?.value}
+                onFocus={() => setIsFocus(true)}
+                onBlur={() => setIsFocus(false)}
+                onChange={(item) => {
+                  setSelectedStore(item);
+                  setIsFocus(false);
+                  focusOnStore(item);
+                }}
+                renderLeftIcon={() => (
+                  <AntDesign
+                    name="environment"
+                    size={20}
+                    color={isFocus ? "#007bff" : "#666"}
+                    style={styles.icon}
+                  />
+                )}
+              />
+            </View>
 
             {/* Map View */}
             <MapView

@@ -1,9 +1,9 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, Modal, BackHandler } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, Modal, BackHandler, StatusBar } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { rewardsAPI } from "@/services/api";
@@ -39,9 +39,16 @@ export default function RewardsHistoryScreen() {
         }
     }, [user?.id]);
 
-    useEffect(() => {
-        fetchReferrals();
-    }, [fetchReferrals]);
+    useFocusEffect(
+        useCallback(() => {
+            StatusBar.setBarStyle("dark-content");
+            if (Platform.OS === "android") {
+                StatusBar.setBackgroundColor("#F2E6D2");
+                StatusBar.setTranslucent(false);
+            }
+            fetchReferrals();
+        }, [fetchReferrals])
+    );
 
     useEffect(() => {
         const handleBackPress = () => {
@@ -110,7 +117,8 @@ export default function RewardsHistoryScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
+            <StatusBar barStyle="dark-content" backgroundColor="#F2E6D2" />
             <View style={styles.headerContainer}>
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/(app)/(tabs)/rewards")}>
@@ -157,7 +165,7 @@ export default function RewardsHistoryScreen() {
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
                             <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.primary}>
-                                Reward Details
+                                {t("rewardDetails") || "Reward Details"}
                             </ResponsiveText>
                             <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
                                 <Ionicons name="close-circle" size={28} color="#ccc" />
@@ -167,17 +175,17 @@ export default function RewardsHistoryScreen() {
                         {selectedItem && (
                             <View style={styles.modalBody}>
                                 <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>Customer Name</Text>
+                                    <Text style={styles.detailLabel}>{t("customerName") || "Customer Name"}</Text>
                                     <Text style={styles.detailValue}>{selectedItem.name}</Text>
                                 </View>
                                 <View style={styles.detailDivider} />
                                 <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>Mobile Number</Text>
+                                    <Text style={styles.detailLabel}>{t("mobileNumberLabel") || "Mobile Number"}</Text>
                                     <Text style={styles.detailValue}>{selectedItem.mobile_number}</Text>
                                 </View>
                                 <View style={styles.detailDivider} />
                                 <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>Joined Date</Text>
+                                    <Text style={styles.detailLabel}>{t("joinedDate") || "Joined Date"}</Text>
                                     <Text style={styles.detailValue}>
                                         {new Date(selectedItem.joined_at).toLocaleDateString('en-IN', {
                                             day: '2-digit', month: 'long', year: 'numeric'
@@ -186,14 +194,14 @@ export default function RewardsHistoryScreen() {
                                 </View>
                                 <View style={styles.detailDivider} />
                                 <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>Points Earned</Text>
+                                    <Text style={styles.detailLabel}>{t("pointsEarned") || "Points Earned"}</Text>
                                     <View style={styles.pointsBadge}>
                                         <Text style={styles.pointsBadgeText}>+{selectedItem.reward_earned} Pts</Text>
                                     </View>
                                 </View>
                                 <View style={styles.detailDivider} />
                                 <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>Reference ID</Text>
+                                    <Text style={styles.detailLabel}>{t("referenceId") || "Reference ID"}</Text>
                                     <Text style={styles.detailValue}>#REF-{selectedItem.id.toString().padStart(4, '0')}</Text>
                                 </View>
 
@@ -201,7 +209,7 @@ export default function RewardsHistoryScreen() {
                                     style={styles.closeBtn}
                                     onPress={() => setDetailsModalVisible(false)}
                                 >
-                                    <Text style={styles.closeBtnText}>CLOSE</Text>
+                                    <Text style={styles.closeBtnText}>{t("close")?.toUpperCase() || "CLOSE"}</Text>
                                 </TouchableOpacity>
                             </View>
                         )}

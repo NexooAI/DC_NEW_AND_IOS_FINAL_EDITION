@@ -17,6 +17,7 @@ import AppLayoutWrapper from "@/components/AppLayoutWrapper";
 import { theme } from "@/constants/theme";
 import api from "@/services/api";
 import { getFullImageUrl } from "@/utils/imageUtils";
+import { fetchAboutPageWithCache } from "@/utils/apiCache";
 
 const ContactUs = () => {
   const { t } = useTranslation();
@@ -92,9 +93,9 @@ const ContactUs = () => {
   useEffect(() => {
     const fetchAboutData = async () => {
       try {
-        const response = await api.get("/about-page/latest");
-        if (response?.data?.success) {
-          setAboutData(response.data.data);
+        const data = await fetchAboutPageWithCache();
+        if (data) {
+          setAboutData(data);
         }
       } catch (error) {
         console.error("Error fetching contact page data:", error);

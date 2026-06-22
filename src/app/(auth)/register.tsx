@@ -24,7 +24,7 @@ import { Ionicons, Feather } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
 import { registerStyles } from "../../_styles/registerStyles";
 import { useTranslation } from "@/hooks/useTranslation";
-import LanguageSwitcher from "@/contexts/LanguageSwitcher";
+import LanguageSelector from "@/components/LanguageSelector";
 import { AppLocale } from "@/i18n";
 import useGlobalStore from "@/store/global.store";
 
@@ -34,64 +34,62 @@ const INITIAL_TIMER = 20;
 
 // Simple Language Switcher Component
 const SimpleLanguageSwitcher = () => {
-  const { language, setLanguage } = useGlobalStore();
+  const { language } = useGlobalStore();
+  const [showSelector, setShowSelector] = useState(false);
 
   const handleLanguageChange = () => {
-    let newLang: AppLocale;
-    switch (language) {
-      case "en":
-        newLang = "ta";
-        break;
-      case "ta":
-        newLang = "en";
-        break;
-      default:
-        newLang = "en";
-    }
-    setLanguage(newLang);
+    setShowSelector(true);
   };
 
   const getLanguageDisplayName = () => {
     switch (language) {
       case "en":
-        return "தமிழ்";
-      case "ta":
         return "English";
-      default:
+      case "ta":
         return "தமிழ்";
+      case "mal":
+        return "മലയാളം";
+      case "te":
+        return "తెలుగు";
+      case "hi":
+        return "हिन्दी";
+      default:
+        return "English";
     }
   };
 
   return (
-    <TouchableOpacity
-      onPress={handleLanguageChange}
-      style={{
-        position: "absolute",
-        top: Platform.OS === "ios" ? 60 : 40,
-        right: 20,
-        zIndex: 1000,
-        backgroundColor: theme.colors.overlayDark,
-        padding: 12,
-        borderRadius: 25,
-        flexDirection: "row",
-        alignItems: "center",
-        borderWidth: 1,
-        borderColor: theme.colors.overlayLight,
-      }}
-    >
-      <Image
-        source={{ uri: theme.images.translate.malayalam }}
+    <>
+      <TouchableOpacity
+        onPress={handleLanguageChange}
         style={{
-          width: 20,
-          height: 20,
-          marginRight: 8,
-          tintColor: COLORS.white,
+          position: 'absolute',
+          top: Platform.OS === 'ios' ? 60 : 40,
+          right: 20,
+          zIndex: 1000,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          padding: 12,
+          borderRadius: 25,
+          flexDirection: 'row',
+          alignItems: 'center',
+          borderWidth: 1,
+          borderColor: 'rgba(255, 255, 255, 0.3)',
         }}
+      >
+        <Image
+          source={theme.image.translate}
+          style={{ width: 20, height: 20, marginRight: 8, tintColor: '#ffffff' }}
+        />
+        <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: 'bold' }}>
+          {getLanguageDisplayName()}
+        </Text>
+      </TouchableOpacity>
+
+      <LanguageSelector
+        visible={showSelector}
+        onClose={() => setShowSelector(false)}
       />
-      <Text style={{ color: COLORS.white, fontSize: 14, fontWeight: "bold" }}>
-        {getLanguageDisplayName()}
-      </Text>
-    </TouchableOpacity>
+    </>
   );
 };
 

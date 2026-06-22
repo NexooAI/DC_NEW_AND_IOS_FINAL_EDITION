@@ -143,36 +143,22 @@ export const usePaymentSocket = ({
             console.log("[usePaymentSocket] Invoking onPaymentSuccess callback");
             onPaymentSuccess(data);
           } else if (router) {
-            const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
             try {
-              if (isBillOrBooking) {
-                console.log("[usePaymentSocket] Routing to BookingPaymentSuccess");
-                router.replace({
-                  pathname: '/(tabs)/home/BookingPaymentSuccess',
-                  params: {
-                    amount: data?.paymentResponse?.amount || amount || "",
-                    txnId: data?.paymentResponse?.txn_id || "",
-                    orderId: data?.paymentResponse?.order_id || orderId || "",
-                    message: data?.paymentResponse?.payment_gateway_response?.resp_message || 'Payment Successful',
-                    type: type === 'booking' ? 'advance_booking' : type,
-                    userId: parsedUserDetails?.userId || parsedUserDetails?.id || "",
-                  }
-                });
-              } else {
-                console.log("[usePaymentSocket] Routing to payment-success");
-                router.replace({
-                  pathname: '/(tabs)/home/payment-success',
-                  params: {
-                    amount: data?.paymentResponse?.amount,
-                    txnId: data?.paymentResponse?.txn_id,
-                    orderId: data?.paymentResponse?.order_id,
-                    message: data?.paymentResponse?.payment_gateway_response?.resp_message || 'Payment Successful',
-                    investmentId: parsedUserDetails?.investmentId,
-                    schemeType: parsedUserDetails?.schemeType,
-                    paymentFrequency: parsedUserDetails?.paymentFrequency,
-                  }
-                });
-              }
+              console.log("[usePaymentSocket] Routing to payment-success");
+              router.replace({
+                pathname: '/(tabs)/home/payment-success',
+                params: {
+                  amount: data?.paymentResponse?.amount || amount || "",
+                  txnId: data?.paymentResponse?.txn_id || "",
+                  orderId: data?.paymentResponse?.order_id || orderId || "",
+                  message: data?.paymentResponse?.payment_gateway_response?.resp_message || 'Payment Successful',
+                  investmentId: parsedUserDetails?.investmentId,
+                  schemeType: parsedUserDetails?.schemeType,
+                  paymentFrequency: parsedUserDetails?.paymentFrequency,
+                  type: type,
+                  userId: parsedUserDetails?.userId || parsedUserDetails?.id || "",
+                }
+              });
             } catch (error) {
               console.error("Error processing successful payment:", error);
               onPaymentError?.({
@@ -196,38 +182,21 @@ export const usePaymentSocket = ({
             console.log("[usePaymentSocket] Invoking onPaymentFailure callback");
             onPaymentFailure(data);
           } else if (router) {
-            const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
-            if (isBillOrBooking) {
-              console.log("[usePaymentSocket] Routing to BookingPaymentFailure");
-              router.replace({
-                pathname: '/(tabs)/home/BookingPaymentFailure',
-                params: {
-                  message: data?.paymentResponse?.payment_gateway_response?.resp_message ||
-                    data?.paymentResponse?.txn_detail?.error_message ||
-                    'Payment Failed',
-                  orderId: data?.paymentResponse?.order_id || orderId || "",
-                  txnId: data?.paymentResponse?.txn_id || "",
-                  amount: data?.paymentResponse?.amount || amount || "",
-                  status: data?.paymentResponse?.status || "FAILED",
-                  type: type === 'booking' ? 'advance_booking' : type,
-                  userId: parsedUserDetails?.userId || parsedUserDetails?.id || "",
-                }
-              });
-            } else {
-              console.log("[usePaymentSocket] Routing to payment-failure");
-              router.replace({
-                pathname: '/(tabs)/home/payment-failure',
-                params: {
-                  message: data?.paymentResponse?.payment_gateway_response?.resp_message ||
-                    data?.paymentResponse?.txn_detail?.error_message ||
-                    'Payment Failed',
-                  orderId: data?.paymentResponse?.order_id,
-                  txnId: data?.paymentResponse?.txn_id,
-                  amount: data?.paymentResponse?.amount,
-                  status: data?.paymentResponse?.status
-                }
-              });
-            }
+            console.log("[usePaymentSocket] Routing to payment-failure");
+            router.replace({
+              pathname: '/(tabs)/home/payment-failure',
+              params: {
+                message: data?.paymentResponse?.payment_gateway_response?.resp_message ||
+                  data?.paymentResponse?.txn_detail?.error_message ||
+                  'Payment Failed',
+                orderId: data?.paymentResponse?.order_id || orderId || "",
+                txnId: data?.paymentResponse?.txn_id || "",
+                amount: data?.paymentResponse?.amount || amount || "",
+                status: data?.paymentResponse?.status || "FAILED",
+                type: type,
+                userId: parsedUserDetails?.userId || parsedUserDetails?.id || "",
+              }
+            });
           }
 
           if (socketInstance && socketInstance.connected) {

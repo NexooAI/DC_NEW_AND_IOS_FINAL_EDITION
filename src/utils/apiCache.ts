@@ -14,6 +14,14 @@ const CACHE_CONFIG = {
     MAX_AGE: 30 * 60 * 1000, // 30 minutes
     ENDPOINT: '/schemes/active',
   },
+  BRANCHES: {
+    MAX_AGE: 24 * 60 * 60 * 1000, // 24 hours
+    ENDPOINT: '/branches',
+  },
+  ABOUT_PAGE: {
+    MAX_AGE: 12 * 60 * 60 * 1000, // 12 hours
+    ENDPOINT: '/about-page/latest',
+  },
 };
 
 /**
@@ -123,12 +131,118 @@ export const fetchSchemesWithCache = async (forceRefresh: boolean = false) => {
 };
 
 /**
+ * Fetch branches with caching
+ * @param forceRefresh - If true, bypass cache and fetch fresh data
+ * @returns Promise with branches data
+ */
+export const fetchBranchesWithCache = async (forceRefresh: boolean = false) => {
+  const store = useGlobalStore.getState();
+
+  // Check cache first if not forcing refresh
+  if (!forceRefresh && store.isBranchesCacheValid(CACHE_CONFIG.BRANCHES.MAX_AGE)) {
+    const cached = store.getCachedBranches();
+    logger.log("📦 [Cache] Using cached branches", {
+      age: Date.now() - (cached?.timestamp || 0),
+      cached: !!cached,
+    });
+    return cached?.data;
+  }
+
+  try {
+    logger.log("📡 [API] Fetching branches from API...");
+    const response = await api.get(CACHE_CONFIG.BRANCHES.ENDPOINT);
+    
+    if (response?.data?.data) {
+      // Cache the response
+      store.setCachedBranches(response.data.data);
+      logger.log("✅ [API] Branches fetched and cached", {
+        count: response.data.data.length,
+      });
+      return response.data.data;
+    }
+
+    // If API fails but we have cached data, return it
+    const cached = store.getCachedBranches();
+    if (cached) {
+      logger.warn("⚠️ [API] API failed, using stale cached branches");
+      return cached.data;
+    }
+
+    throw new Error("No branches data available");
+  } catch (error) {
+    logger.error("❌ [API] Error fetching branches:", error);
+    
+    // Return cached data even if expired as fallback
+    const cached = store.getCachedBranches();
+    if (cached) {
+      logger.warn("⚠️ [API] Using expired cached branches as fallback");
+      return cached.data;
+    }
+
+    throw error;
+  }
+};
+
+/**
+ * Fetch about page with caching
+ * @param forceRefresh - If true, bypass cache and fetch fresh data
+ * @returns Promise with about page data
+ */
+export const fetchAboutPageWithCache = async (forceRefresh: boolean = false) => {
+  const store = useGlobalStore.getState();
+
+  // Check cache first if not forcing refresh
+  if (!forceRefresh && store.isAboutPageCacheValid(CACHE_CONFIG.ABOUT_PAGE.MAX_AGE)) {
+    const cached = store.getCachedAboutPage();
+    logger.log("📦 [Cache] Using cached about page", {
+      age: Date.now() - (cached?.timestamp || 0),
+      cached: !!cached,
+    });
+    return cached?.data;
+  }
+
+  try {
+    logger.log("📡 [API] Fetching about page from API...");
+    const response = await api.get(CACHE_CONFIG.ABOUT_PAGE.ENDPOINT);
+    
+    if (response?.data?.data) {
+      // Cache the response
+      store.setCachedAboutPage(response.data.data);
+      logger.log("✅ [API] About page fetched and cached");
+      return response.data.data;
+    }
+
+    // If API fails but we have cached data, return it
+    const cached = store.getCachedAboutPage();
+    if (cached) {
+      logger.warn("⚠️ [API] API failed, using stale cached about page");
+      return cached.data;
+    }
+
+    throw new Error("No about page data available");
+  } catch (error) {
+    logger.error("❌ [API] Error fetching about page:", error);
+    
+    // Return cached data even if expired as fallback
+    const cached = store.getCachedAboutPage();
+    if (cached) {
+      logger.warn("⚠️ [API] Using expired cached about page as fallback");
+      return cached.data;
+    }
+
+    throw error;
+  }
+};
+
+/**
  * Clear all caches
  */
 export const clearAllCaches = () => {
   const store = useGlobalStore.getState();
   store.clearCachedRates();
   store.clearCachedSchemes();
+  store.clearCachedBranches();
+  store.clearCachedAboutPage();
   logger.log("📦 [Cache] All caches cleared");
 };
 
@@ -146,5 +260,21 @@ export const clearRatesCache = () => {
 export const clearSchemesCache = () => {
   const store = useGlobalStore.getState();
   store.clearCachedSchemes();
+};
+
+/**
+ * Clear branches cache
+ */
+export const clearBranchesCache = () => {
+  const store = useGlobalStore.getState();
+  store.clearCachedBranches();
+};
+
+/**
+ * Clear about page cache
+ */
+export const clearAboutPageCache = () => {
+  const store = useGlobalStore.getState();
+  store.clearCachedAboutPage();
 };
 

@@ -174,6 +174,40 @@ export default function StaticSchemesHorizontalScroll({
     }
   };
 
+  const checkIsOldGold = (scheme: ApiScheme | null | undefined): boolean => {
+    if (!scheme) return false;
+    
+    // Check plan type ID (safe from number/string type differences)
+    if (
+      String(scheme.SCHEME_PLAN_TYPE_ID) === "4"
+    ) {
+      return true;
+    }
+
+    const containsOldGold = (textObj: any): boolean => {
+      if (!textObj) return false;
+      if (typeof textObj === "string") {
+        const val = textObj.toLowerCase();
+        return val.includes("old gold") || val.includes("பழைய தங்கம்") || val.includes("பழைய");
+      }
+      if (typeof textObj === "object") {
+        for (const key of Object.keys(textObj)) {
+          const val = String(textObj[key]).toLowerCase();
+          if (val.includes("old gold") || val.includes("பழைய தங்கம்") || val.includes("பழைய")) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    return (
+      containsOldGold((scheme as any).INS_TYPE) ||
+      containsOldGold(scheme.TYPE) ||
+      containsOldGold(scheme.SCHEMENAME)
+    );
+  };
+
   // Handle status bar visibility when modal opens/closes
   useEffect(() => {
     if (modalVisible) {
@@ -419,8 +453,10 @@ export default function StaticSchemesHorizontalScroll({
     );
   };
 
-  const renderModal = () => (
-    <Modal
+  const renderModal = () => {
+    const isOldGold = checkIsOldGold(selectedSchemeForModal);
+    return (
+      <Modal
       visible={modalVisible}
       transparent
       animationType="fade"
@@ -603,65 +639,46 @@ export default function StaticSchemesHorizontalScroll({
               </ScrollView>
 
               {/* Modal Footer */}
-              <View style={styles.modalFooter}>
-                <View style={styles.modalFooterButtons}>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalInfoButton,
-                      {
-                        backgroundColor: "#f8f9fa",
-                        borderColor: getSchemeGradient(
-                          selectedSchemeForModal.TYPE || "flexible"
-                        )[0],
-                      },
-                    ]}
-                    onPress={() => {
-                      // Info button action - could show additional details or navigate to help
-                      logger.log("Info button pressed");
-                    }}
-                  >
-                    <Ionicons
-                      name="information-circle"
-                      size={20}
-                      color={
-                        getSchemeGradient(
-                          selectedSchemeForModal.TYPE || "flexible"
-                        )[0]
-                      }
-                    />
-                    <Text
+              {!isOldGold && (
+                <View style={styles.modalFooter}>
+                  <View style={styles.modalFooterButtons}>
+                    <TouchableOpacity
                       style={[
-                        styles.modalInfoButtonText,
+                        styles.modalInfoButton,
                         {
-                          color: getSchemeGradient(
+                          backgroundColor: "#f8f9fa",
+                          borderColor: getSchemeGradient(
                             selectedSchemeForModal.TYPE || "flexible"
                           )[0],
                         },
                       ]}
-                    >
-                      {t("moreInfo")}
-                    </Text>
-                  </TouchableOpacity>
-                  {selectedSchemeForModal.SCHEME_PLAN_TYPE_ID === 4 ? (
-                    <TouchableOpacity
-                      style={[
-                        styles.modalJoinButton,
-                        {
-                          backgroundColor: '#DAA520',
-                        },
-                      ]}
                       onPress={() => {
-                        setModalVisible(false);
-                        setSelectedBranches(selectedSchemeForModal.branch || []);
-                        setBranchModalVisible(true);
+                        // Info button action - could show additional details or navigate to help
+                        logger.log("Info button pressed");
                       }}
                     >
-                      <Text style={styles.modalJoinButtonText}>
-                        {getEnquiryButtonText(locale || "en")}
+                      <Ionicons
+                        name="information-circle"
+                        size={20}
+                        color={
+                          getSchemeGradient(
+                            selectedSchemeForModal.TYPE || "flexible"
+                          )[0]
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.modalInfoButtonText,
+                          {
+                            color: getSchemeGradient(
+                              selectedSchemeForModal.TYPE || "flexible"
+                            )[0],
+                          },
+                        ]}
+                      >
+                        {t("moreInfo")}
                       </Text>
-                      <Ionicons name="call" size={20} color="#fff" />
                     </TouchableOpacity>
-                  ) : (
                     <TouchableOpacity
                       style={[
                         styles.modalJoinButton,
@@ -686,15 +703,16 @@ export default function StaticSchemesHorizontalScroll({
                       </Text>
                       <Ionicons name="arrow-forward" size={20} color="#fff" />
                     </TouchableOpacity>
-                  )}
+                  </View>
                 </View>
-              </View>
+              )}
             </>
           )}
         </View>
       </SafeAreaView>
-    </Modal>
-  );
+      </Modal>
+    );
+  };
 
   const handleViewAll = () => {
     router.push("/(app)/(tabs)/home/schemes");

@@ -187,7 +187,7 @@ export default function MpinSetup() {
           style={styles.gradient}
         >
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            behavior={undefined}
             style={styles.keyboardAvoidingView}
           >
             {/* Header with Back Button */}

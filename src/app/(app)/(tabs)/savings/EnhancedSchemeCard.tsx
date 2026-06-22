@@ -47,6 +47,7 @@ type Scheme = {
   schemesData: any;
   chitData: any;
   paymentFrequency: string | { en: string; ta: string };
+  dueDate?: string;
 };
 
 interface EnhancedSchemeCardProps {

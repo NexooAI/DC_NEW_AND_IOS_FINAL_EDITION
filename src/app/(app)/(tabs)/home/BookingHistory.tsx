@@ -11,6 +11,7 @@ import {
   View,
   Modal,
   ScrollView,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -307,7 +308,7 @@ export default function BookingHistory() {
               <Text style={styles.dateLabel}>{t("bookedOn")} {formatDate(item.createdAt)}</Text>
               <Text style={styles.dateLabel}>{t("expiredOn")} {formatDate(item.expiryDate)}</Text>
             </View>
-            {isCompleted && item.convertedBillId && (
+            {isCompleted && !!item.convertedBillId && (
               <Text style={styles.remarksText}>{t("convertedToBillId")}: #{item.convertedBillId}</Text>
             )}
           </View>
@@ -318,8 +319,9 @@ export default function BookingHistory() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
-      <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[theme.colors.quaternary, theme.colors.quaternary]} style={StyleSheet.absoluteFill} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -410,7 +412,7 @@ export default function BookingHistory() {
                     </View>
 
                     <View style={styles.detailDivider} />
-                    
+
                     <View style={styles.amountLine}>
                       <Text style={styles.amountLabel}>{t("totalAmount")}</Text>
                       <Text style={styles.amountValue}>{formatCurrency(selectedBooking.totalAmount)}</Text>
@@ -425,7 +427,7 @@ export default function BookingHistory() {
                     </View>
 
                     <View style={styles.detailDivider} />
-                    
+
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>{t("bookingDate")}</Text>
                       <Text style={styles.detailValue}>{formatDate(selectedBooking.createdAt)}</Text>
@@ -434,7 +436,7 @@ export default function BookingHistory() {
                       <Text style={styles.detailLabel}>{t("expiryDate")}</Text>
                       <Text style={styles.detailValue}>{formatDate(selectedBooking.expiryDate)}</Text>
                     </View>
-                    {selectedBooking.convertedBillId && (
+                    {!!selectedBooking.convertedBillId && (
                       <View style={styles.detailRow}>
                         <Text style={styles.detailLabel}>{t("convertedToBillId")}</Text>
                         <Text style={styles.detailValue}>#{selectedBooking.convertedBillId}</Text>
@@ -442,7 +444,7 @@ export default function BookingHistory() {
                     )}
                   </View>
                 </ScrollView>
-                
+
                 <View style={styles.modalActionRow}>
                   <TouchableOpacity
                     style={[styles.modalButton, styles.downloadBtn]}
@@ -451,7 +453,7 @@ export default function BookingHistory() {
                     <Ionicons name="download-outline" size={18} color={theme.colors.primary} style={{ marginRight: 6 }} />
                     <Text style={styles.downloadBtnText}>Download</Text>
                   </TouchableOpacity>
-                  
+
                   <TouchableOpacity
                     style={[styles.modalButton, styles.shareBtn]}
                     onPress={() => handleShareBookingReceipt(selectedBooking)}
@@ -470,7 +472,10 @@ export default function BookingHistory() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: QUATERNARY_COLOR,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

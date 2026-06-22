@@ -1,6 +1,7 @@
-import { Text } from "react-native";
+import { Text, Platform } from "react-native";
 import CustomDrawerContent from "@/common/components/navigation/DrawerContent";
 import { Drawer } from "expo-router/drawer";
+import { useSegments } from "expo-router";
 import React, { useCallback, useEffect } from "react";
 import NavigationErrorBoundary from "@/components/NavigationErrorBoundary";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
@@ -17,6 +18,7 @@ import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 export default function AppLayout() {
   const { isVisible } = useAppVisibility();
+  const segments = useSegments();
 
   useEffect(() => {
     logDeviceInfo();
@@ -27,9 +29,26 @@ export default function AppLayout() {
     return <CustomDrawerContent {...props} />;
   }, []);
 
+  // Determine SafeAreaView backgroundColor dynamically based on active segment
+  const isLightBarScreen = 
+    segments.includes("home") ||
+    segments.includes("profile") ||
+    segments.includes("rewards") ||
+    segments.includes("gold_advance") ||
+    segments.includes("bill_payment") ||
+    segments.includes("tickets") ||
+    segments.includes("lucky_draw") ||
+    segments.includes("old_gold") ||
+    segments.includes("notifications") ||
+    segments.includes("savings");
+  const safeAreaBackgroundColor = isLightBarScreen ? (theme.colors.quaternary || "#F2E6D2") : theme.colors.textDark;
+
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.textDark }} edges={["top", "left", "right"]}>
+      <SafeAreaView 
+        style={{ flex: 1, backgroundColor: safeAreaBackgroundColor }} 
+        edges={Platform.OS === "ios" ? ["top", "left", "right"] : ["left", "right"]}
+      >
         <NavigationErrorBoundary>
           <Drawer
             screenOptions={{

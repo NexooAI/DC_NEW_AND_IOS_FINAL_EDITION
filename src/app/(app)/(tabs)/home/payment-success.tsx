@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,9 @@ import {
   BackHandler,
   Alert,
   ToastAndroid,
-  Platform
+  Platform,
+  ActivityIndicator,
+  ScrollView
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
@@ -21,6 +23,12 @@ import useGlobalStore from "@/store/global.store";
 import { logger } from "@/utils/logger";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 import RatingModal, { useRatingPrompt } from "@/components/RatingModal";
+import * as SecureStore from "expo-secure-store";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
+import * as Print from "expo-print";
+import { generatePaymentReceiptHTML, PaymentReceiptData } from "@/templates/html";
+import { investmentAPI, billsAPI } from "@/services/api";
 
 // Responsive constants
 const { wp, hp, rf, rp, rm, rb, getShadows } = responsiveUtils;
@@ -30,6 +38,9 @@ export default function PaymentSuccess() {
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const router = useRouter();
+
+  const type = (Array.isArray(params.type) ? params.type[0] : params.type) || "";
+  const isBillPayment = type === "bill";
 
   const {
     showRating,
@@ -48,7 +59,35 @@ export default function PaymentSuccess() {
   useEffect(() => {
     logger.log("Payment Success Params:", params);
   }, [params]);
-  const { setTabVisibility } = useGlobalStore();
+  const { user, setTabVisibility } = useGlobalStore();
+
+  const [fetchedInvestment, setFetchedInvestment] = useState<any>(null);
+  const userId = Array.isArray(params.userId) ? params.userId[0] : (params.userId || user?.id?.toString() || "");
+
+  useEffect(() => {
+    const fetchInvestmentDetails = async () => {
+      const investmentId = Array.isArray(params.investmentId) ? params.investmentId[0] : params.investmentId;
+      if (!investmentId) return;
+      try {
+        const response = await investmentAPI.getInvestmentDetails(investmentId);
+        if (response.data && response.data.success && response.data.data) {
+          setFetchedInvestment(response.data.data.investmentList);
+          logger.log("Successfully fetched investment details for receipt:", response.data.data.investmentList);
+        }
+      } catch (error) {
+        logger.error("Failed to fetch investment details on payment success:", error);
+      }
+    };
+    fetchInvestmentDetails();
+  }, [params.investmentId]);
+
+  useEffect(() => {
+    if (isBillPayment && userId) {
+      billsAPI.getUserBills(userId).catch((err) => {
+        logger.error("Failed to fetch user bills on payment success:", err);
+      });
+    }
+  }, [isBillPayment, userId]);
 
   // Hide tab bar on focus
   useFocusEffect(
@@ -57,7 +96,13 @@ export default function PaymentSuccess() {
       
       // Handle back button to go to home instead of back
       const onBackPress = () => {
-        router.replace("/(tabs)/home");
+        if (isBillPayment) {
+          router.replace("/(app)/bill_payment");
+        } else if (type === "booking" || type === "advance_booking") {
+          router.replace("/(tabs)/home");
+        } else {
+          router.replace("/(tabs)/home");
+        }
         return true;
       };
 
@@ -68,7 +113,7 @@ export default function PaymentSuccess() {
         setTabVisibility(true);
         backHandler.remove();
       };
-    }, [setTabVisibility, router])
+    }, [setTabVisibility, router, isBillPayment, type])
   );
 
   // Log payment success data when component mounts
@@ -94,7 +139,40 @@ export default function PaymentSuccess() {
   const [scaleAnim] = useState(new Animated.Value(0.8));
   const [pulseAnim] = useState(new Animated.Value(1));
   const [checkmarkAnim] = useState(new Animated.Value(0));
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const [isSharing, setIsSharing] = useState(false);
 
+  // Confetti Particle Generator
+  const confettiCount = 30;
+  const confettiAnims = useRef(
+    Array.from({ length: confettiCount }).map(() => ({
+      y: new Animated.Value(-100),
+      x: new Animated.Value(Math.random() * 400 - 200),
+      rotate: new Animated.Value(Math.random() * 360),
+      color: ["#ffc90c", "#850111", "#ff4444", "#4CAF50", "#007AFF"][Math.floor(Math.random() * 5)],
+      size: Math.random() * 8 + 6,
+    }))
+  ).current;
+
+  const startConfetti = () => {
+    confettiAnims.forEach((anim) => {
+      Animated.sequence([
+        Animated.delay(Math.random() * 1000),
+        Animated.parallel([
+          Animated.timing(anim.y, {
+            toValue: 800,
+            duration: Math.random() * 2000 + 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(anim.rotate, {
+            toValue: 360,
+            duration: Math.random() * 2000 + 2000,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+    });
+  };
 
   useEffect(() => {
     // Initial animation sequence
@@ -137,7 +215,90 @@ export default function PaymentSuccess() {
         }),
       ])
     ).start();
+
+    // Infinite rotation for gold coin
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 2500,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+
+    startConfetti();
   }, []);
+
+  const handleShareReceipt = async () => {
+    if (isSharing) return;
+    setIsSharing(true);
+    try {
+      const transactionId = Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || "");
+      if (!transactionId) {
+        Alert.alert("Error", "Transaction ID is missing");
+        setIsSharing(false);
+        return;
+      }
+
+      const receiptData: PaymentReceiptData = {
+        transactionId: transactionId,
+        paymentId: Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || ""),
+        amountPaid: Number(Array.isArray(params.amount) ? params.amount[0] : params.amount) || 0,
+        paymentDate: new Date().toISOString(),
+        paymentMode: "UPI/Card",
+        paymentModeType: "Online",
+        orderId: Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || ""),
+        userName: user?.name || "Customer",
+        userMobile: user?.mobile?.toString() || "",
+        userEmail: user?.email || "",
+        maturityDate: fetchedInvestment?.end_date || (Array.isArray(params.maturityDate) ? params.maturityDate[0] : params.maturityDate) || undefined,
+        inversement: {
+          accountName: fetchedInvestment?.accountName || user?.name || "",
+          accountNo: fetchedInvestment?.accountNo || user?.id?.toString() || "",
+          schemeName: fetchedInvestment?.schemeName || (Array.isArray(params.schemeName) ? params.schemeName[0] : params.schemeName) || (Array.isArray(params.schemeType) ? params.schemeType[0] : params.schemeType) || "Scheme",
+          paymentFrequencyName: fetchedInvestment?.paymentFrequencyName || Array.isArray(params.paymentFrequency) ? params.paymentFrequency[0] : (params.paymentFrequency || "Monthly"),
+          joiningDate: fetchedInvestment?.joiningDate || (Array.isArray(params.joiningDate) ? params.joiningDate[0] : params.joiningDate) || new Date().toISOString(),
+          end_date: fetchedInvestment?.end_date || (Array.isArray(params.maturityDate) ? params.maturityDate[0] : params.maturityDate) || new Date().toISOString(),
+          paymentStatus: "Paid",
+          total_paid: Number(Array.isArray(params.amount) ? params.amount[0] : params.amount) || 0,
+          totalgoldweight: fetchedInvestment?.totalgoldweight || 0,
+          current_goldrate: Number(Array.isArray(params.goldRate) ? params.goldRate[0] : params.goldRate) || fetchedInvestment?.current_goldrate || 0,
+        }
+      };
+
+      const htmlContent = generatePaymentReceiptHTML(receiptData);
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+
+      const sanitizeFileName = (str: string) => str.replace(/[^a-zA-Z0-9]/g, '_');
+      const customerName = sanitizeFileName(user?.name || 'Customer');
+      const fileName = `Receipt_${customerName}_${transactionId}.pdf`;
+
+      const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+      const targetUri = `${targetDir}${fileName}`;
+      await FileSystem.moveAsync({ from: uri, to: targetUri });
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(targetUri, {
+          mimeType: "application/pdf",
+          dialogTitle: "Share Receipt",
+          UTI: "com.adobe.pdf",
+        });
+      } else {
+        Alert.alert("Success", `Receipt generated at: ${targetUri}`);
+      }
+    } catch (error) {
+      logger.error("Error sharing receipt:", error);
+      Alert.alert("Error", "An error occurred while sharing the receipt.");
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
 
   const handleHomePress = () => {
     Animated.timing(fadeAnim, {
@@ -185,18 +346,48 @@ export default function PaymentSuccess() {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Animated.View
-        style={[
-          styles.content,
-          { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
-        ]}
-      >
+    <SafeAreaView style={styles.container} edges={["bottom", "left", "right"]}>
+      {/* Confetti Particles Container */}
+      <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden" }} pointerEvents="none">
+        {confettiAnims.map((anim, i) => (
+          <Animated.View
+            key={i}
+            style={{
+              position: "absolute",
+              width: anim.size,
+              height: anim.size * 1.5,
+              backgroundColor: anim.color,
+              borderRadius: anim.size / 4,
+              left: "50%", // offset to center screen dynamically
+              transform: [
+                { translateY: anim.y },
+                { translateX: anim.x },
+                {
+                  rotate: anim.rotate.interpolate({
+                    inputRange: [0, 360],
+                    outputRange: ["0deg", "360deg"],
+                  }),
+                },
+              ],
+              zIndex: 10,
+              opacity: 0.8,
+            }}
+          />
+        ))}
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <Animated.View
+          style={[
+            styles.content,
+            { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
+          ]}
+        >
         <View style={styles.iconContainer}>
           <Animated.View
             style={[
               styles.checkmarkContainer,
-              { transform: [{ scale: pulseAnim }] },
+              { transform: [{ scale: pulseAnim }, { rotateY: spin }] },
             ]}
           >
             <Animated.View
@@ -205,7 +396,9 @@ export default function PaymentSuccess() {
                 { transform: [{ scale: checkmarkScale }] },
               ]}
             >
-              <Ionicons name="checkmark-circle" size={rp(80)} color="#16c72e" />
+              <Ionicons name="ellipse" size={rp(100)} color="#ffc90c" />
+              <Ionicons name="checkmark-circle" size={rp(60)} color="#16c72e" style={{ position: "absolute" }} />
+              <Ionicons name="sparkles" size={rp(24)} color="#fff" style={styles.coinSparkle} />
             </Animated.View>
           </Animated.View>
         </View>
@@ -286,27 +479,73 @@ export default function PaymentSuccess() {
           </View>
         </View>
 
-        {/* Button Row: Home (left) and Savings (right) */}
-        {/* Button Row: Home (left) and Savings (right) */}
-        <View style={styles.buttonRow}>
+
+
+        {/* Share Receipt Button */}
+        {!(type === "bill" || type === "booking" || type === "advance_booking") && (
           <TouchableOpacity
-            style={[styles.button, styles.buttonLeft, styles.buttonHome]}
-            onPress={handleHomePress}
-            activeOpacity={0.9}
+            style={[styles.shareButton, isSharing && { opacity: 0.7 }]}
+            onPress={handleShareReceipt}
+            disabled={isSharing}
           >
-            <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
-            <Text style={[styles.buttonText, styles.buttonTextHome]}>{t("home")}</Text>
+            {isSharing ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Ionicons name="share-social-outline" size={20} color="#fff" />
+                <Text style={styles.shareButtonText}>{t("shareReceipt")}</Text>
+              </>
+            )}
           </TouchableOpacity>
+        )}
+
+        {/* Button Row depending on payment type */}
+        {type === "bill" ? (
           <TouchableOpacity
-            style={[styles.button, styles.buttonRight, styles.buttonSavings]}
-            onPress={handleSavingsPress}
-            activeOpacity={0.9}
+            style={styles.shareButton} // Full width styled button like shareButton
+            onPress={() => router.replace("/(app)/bill_payment")}
           >
-            <Ionicons name="wallet" size={rp(20)} color="#fff" />
-            <Text style={styles.buttonText}>{t("savings")}</Text>
+            <Text style={styles.shareButtonText}>{(t("backToBills") || "BACK TO BILLS").toUpperCase()}</Text>
           </TouchableOpacity>
-        </View>
+        ) : (type === "booking" || type === "advance_booking") ? (
+          <View style={{ width: "100%", gap: rp(12) }}>
+            <TouchableOpacity
+              style={styles.shareButton} // Full width styled primary button
+              onPress={() => router.replace("/(tabs)/home/BookingHistory")}
+            >
+              <Ionicons name="time-outline" size={20} color="#fff" />
+              <Text style={styles.shareButtonText}>{(t("showAdvanceHistory") || "SHOW ADVANCE HISTORY").toUpperCase()}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.buttonHome, { width: "100%", minHeight: rp(56) }]} // Full width styled secondary button
+              onPress={() => router.replace("/(tabs)/home")}
+            >
+              <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
+              <Text style={[styles.buttonText, styles.buttonTextHome]}>{(t("backToHome") || "BACK TO HOME").toUpperCase()}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={[styles.button, styles.buttonLeft, styles.buttonHome]}
+              onPress={handleHomePress}
+              activeOpacity={0.9}
+            >
+              <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
+              <Text style={[styles.buttonText, styles.buttonTextHome]}>{t("home")}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.buttonRight, styles.buttonSavings]}
+              onPress={handleSavingsPress}
+              activeOpacity={0.9}
+            >
+              <Ionicons name="wallet" size={rp(20)} color="#fff" />
+              <Text style={styles.buttonText}>{t("savings")}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </Animated.View>
+      </ScrollView>
       <RatingModal
         visible={showRating}
         onClose={hideRating}
@@ -321,11 +560,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f9ff",
   },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   content: {
-    flex: 1,
+    width: "100%",
     padding: rp(16),
     alignItems: "center",
-    justifyContent: "space-between", // Distribute space
+    justifyContent: "center",
     paddingVertical: rp(20),
   },
   iconContainer: {
@@ -473,5 +717,43 @@ const styles = StyleSheet.create({
   },
   buttonTextHome: {
     color: theme.colors.textDark,
+  },
+  countdownText: {
+    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+    color: "#718096",
+    fontFamily: "Inter_400Regular",
+    marginBottom: rp(16),
+    textAlign: "center",
+  },
+  coinSparkle: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    textShadowColor: "rgba(255, 255, 255, 0.8)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+  },
+  shareButton: {
+    width: "100%",
+    minHeight: rp(56),
+    borderRadius: rb(16),
+    backgroundColor: "#16c72e",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: rp(16),
+    paddingHorizontal: rp(20),
+    elevation: 4,
+    shadowColor: "#16c72e",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    gap: 8,
+  },
+  shareButtonText: {
+    color: "#ffffff",
+    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
   },
 });

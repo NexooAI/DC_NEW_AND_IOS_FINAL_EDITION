@@ -3,7 +3,7 @@ import { View, Modal, StyleSheet, Alert, Text, TouchableOpacity, ActivityIndicat
 import { WebView } from "react-native-webview";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { usePaymentSocket } from "@/hooks/usePaymentSocket";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import NetInfo from "@react-native-community/netinfo";
 import { hp } from "@/utils/responsiveUtils";
 import { theme } from "@/constants/theme";
@@ -28,12 +28,14 @@ const safeParseJSON = (jsonString: any, fallback: any = {}) => {
 };
 
 export default function PaymentWebView() {
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const router = useRouter();
   const [showExitModal, setShowExitModal] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const urlBlockedAlertShown = useRef(false);
   const webViewRef = useRef<any>(null);
   const wasDisconnectedRef = useRef(false);
@@ -46,6 +48,10 @@ export default function PaymentWebView() {
   const url = (params.url || params.paymentUrl || "") as string;
   const accountNumber = params.accountNumber as string;
   const accountName = params.accountName as string;
+  const schemeName = (params.schemeName || "") as string;
+  const goldRate = (params.goldRate || "") as string;
+  const maturityDate = (params.maturityDate || "") as string;
+  const joiningDate = (params.joiningDate || "") as string;
 
   // Debug logging
   console.log("PaymentWebView params:", {
@@ -68,6 +74,7 @@ export default function PaymentWebView() {
 
   const { socket, handleCancel } = usePaymentSocket({
     onPaymentSuccess: (data) => {
+      setIsVerifyingPayment(true);
       // Disconnect socket before navigation
       if (socket && socket.connected) {
         socket.disconnect();
@@ -84,37 +91,28 @@ export default function PaymentWebView() {
       console.log("params.userDetails", params.userDetails);
       const userDetails = safeParseJSON(params.userDetails);
 
-      const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
-      if (isBillOrBooking) {
-        console.log("[PaymentWebView] Routing to BookingPaymentSuccess");
-        router.replace({
-          pathname: '/(tabs)/home/BookingPaymentSuccess',
-          params: {
-            amount: data?.paymentResponse?.amount || amount || "",
-            txnId: data?.paymentResponse?.txn_id || "",
-            orderId: data?.paymentResponse?.order_id || params.orderId || "",
-            message: data?.paymentResponse?.payment_gateway_response?.resp_message || 'Payment Successful',
-            type: type === 'booking' ? 'advance_booking' : type,
-            userId: params.userId as string || user?.id || "",
-          }
-        });
-      } else {
-        const routerParams = {
-          pathname: "/(tabs)/home/payment-success",
-          params: {
-            txnId: data?.paymentResponse?.txn_id || "",
-            orderId: data?.paymentResponse?.order_id || params.orderId || "",
-            amount: data?.paymentResponse?.amount || params.amount || "",
-            investmentId: userDetails?.investmentId || "",
-            schemeType: userDetails?.schemeType || "",
-            paymentFrequency: userDetails?.paymentFrequency || "",
-          },
-        }
-        console.log("routerParams", routerParams);
-        router.replace(routerParams);
-      }
+      const routerParams = {
+        pathname: "/(tabs)/home/payment-success",
+        params: {
+          txnId: data?.paymentResponse?.txn_id || "",
+          orderId: data?.paymentResponse?.order_id || params.orderId || "",
+          amount: data?.paymentResponse?.amount || params.amount || amount || "",
+          investmentId: userDetails?.investmentId || "",
+          schemeType: userDetails?.schemeType || "",
+          paymentFrequency: userDetails?.paymentFrequency || "",
+          schemeName: schemeName,
+          goldRate: goldRate,
+          joiningDate: joiningDate || userDetails?.joiningDate || "",
+          maturityDate: maturityDate || userDetails?.maturityDate || "",
+          type: type,
+          userId: params.userId as string || user?.id || "",
+        },
+      };
+      console.log("routerParams", routerParams);
+      router.replace(routerParams);
     },
     onPaymentFailure: (data) => {
+      setIsVerifyingPayment(true);
       // Disconnect socket before navigation
       if (socket && socket.connected) {
         socket.disconnect();
@@ -131,38 +129,22 @@ export default function PaymentWebView() {
         type,
       });
 
-      const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
-      if (isBillOrBooking) {
-        console.log("[PaymentWebView] Routing to BookingPaymentFailure");
-        router.replace({
-          pathname: '/(tabs)/home/BookingPaymentFailure',
-          params: {
-            message: data?.paymentResponse?.payment_gateway_response?.resp_message ||
-              data?.paymentResponse?.txn_detail?.error_message ||
-              'Payment Failed',
-            orderId: data?.paymentResponse?.order_id || params.orderId || "",
-            txnId: data?.paymentResponse?.txn_id || "",
-            amount: data?.paymentResponse?.amount || amount || "",
-            status: data?.paymentResponse?.status || "FAILED",
-            type: type === 'booking' ? 'advance_booking' : type,
-            userId: params.userId as string || user?.id || "",
-          }
-        });
-      } else {
-        router.replace({
-          pathname: "/(tabs)/home/payment-failure",
-          params: {
-            message:
-              (data?.paymentResponse?.txn_detail as any)?.error_message ||
-              (data?.paymentResponse?.txn_detail as any)?.response_message ||
-              "Payment Failed",
-            orderId: data?.paymentResponse?.order_id,
-            txnId: data?.paymentResponse?.txn_id,
-            amount: data?.paymentResponse?.amount,
-            status: data?.paymentResponse?.status,
-          },
-        });
-      }
+      router.replace({
+        pathname: "/(tabs)/home/payment-failure",
+        params: {
+          message:
+            data?.paymentResponse?.payment_gateway_response?.resp_message ||
+            data?.paymentResponse?.txn_detail?.error_message ||
+            (data?.paymentResponse?.txn_detail as any)?.response_message ||
+            "Payment Failed",
+          orderId: data?.paymentResponse?.order_id || params.orderId || "",
+          txnId: data?.paymentResponse?.txn_id || "",
+          amount: data?.paymentResponse?.amount || params.amount || amount || "",
+          status: data?.paymentResponse?.status || "FAILED",
+          type: type,
+          userId: params.userId as string || user?.id || "",
+        },
+      });
     },
     onPaymentError: (error) => {
       // Don't show error for network disconnection - we handle it automatically by starting polling
@@ -171,51 +153,35 @@ export default function PaymentWebView() {
         
         // Start polling fallback if not already started
         const userDetails = safeParseJSON(params.userDetails);
-        const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
-        const successTarget = isBillOrBooking
-          ? {
-              pathname: "/(tabs)/home/BookingPaymentSuccess" as any,
-              params: {
-                amount: params.amount as string || "",
-                txnId: "",
-                orderId: params.orderId as string || "",
-                message: 'Payment Successful',
-                type: type === 'booking' ? 'advance_booking' : type,
-                userId: params.userId as string || user?.id || "",
-              }
-            }
-          : {
-              pathname: "/(tabs)/home/payment-success" as any,
-              params: {
-                txnId: "",
-                orderId: params.orderId as string,
-                amount: params.amount as string,
-                investmentId: userDetails?.investmentId,
-                schemeType: userDetails?.schemeType,
-                paymentFrequency: userDetails?.paymentFrequency,
-              },
-            };
-        const failureTarget = isBillOrBooking
-          ? {
-              pathname: "/(tabs)/home/BookingPaymentFailure" as any,
-              params: {
-                message: "Payment Verification Pending/Failed",
-                orderId: params.orderId as string || "",
-                txnId: "",
-                amount: params.amount as string || "",
-                status: "FAILED",
-                type: type === 'booking' ? 'advance_booking' : type,
-                userId: params.userId as string || user?.id || "",
-              }
-            }
-          : {
-              pathname: "/(tabs)/home/payment-failure" as any,
-              params: {
-                message: "Payment Verification Pending/Failed",
-                orderId: params.orderId as string,
-                amount: params.amount as string,
-              },
-            };
+        const successTarget = {
+          pathname: "/(tabs)/home/payment-success" as any,
+          params: {
+            txnId: "",
+            orderId: params.orderId as string,
+            amount: params.amount as string,
+            investmentId: userDetails?.investmentId,
+            schemeType: userDetails?.schemeType,
+            paymentFrequency: userDetails?.paymentFrequency,
+            schemeName: schemeName,
+            goldRate: goldRate,
+            joiningDate: joiningDate || userDetails?.joiningDate || "",
+            maturityDate: maturityDate || userDetails?.maturityDate || "",
+            type: type,
+            userId: params.userId as string || user?.id || "",
+          },
+        };
+        const failureTarget = {
+          pathname: "/(tabs)/home/payment-failure" as any,
+          params: {
+            message: "Payment Verification Pending/Failed",
+            orderId: params.orderId as string,
+            txnId: "",
+            amount: params.amount as string,
+            status: "FAILED",
+            type: type,
+            userId: params.userId as string || user?.id || "",
+          },
+        };
         startStatusPolling(params.orderId as string, successTarget, failureTarget);
         return;
       }
@@ -279,6 +245,7 @@ export default function PaymentWebView() {
 
   const startStatusPolling = (orderIdValue: string, successTarget: any, failureTarget: any) => {
     if (pollingIntervalRef.current) return;
+    setIsVerifyingPayment(true);
 
     console.log(`[Polling Fallback] Starting interval checks for orderId: ${orderIdValue}`);
 
@@ -335,6 +302,9 @@ export default function PaymentWebView() {
 
   // Handle back button press
   const handleBackPress = () => {
+    if (isVerifyingPayment || isCancelling) {
+      return;
+    }
     Alert.alert(
       "Cancel Payment",
       "Are you sure you want to cancel this payment?",
@@ -453,12 +423,23 @@ export default function PaymentWebView() {
     const { url } = request;
     console.log("WebView attempting to load:", url);
 
-    // Allow http/https and about:blank
+    // Allow standard web schemes
     if (
       url.startsWith("http://") ||
       url.startsWith("https://") ||
-      url.startsWith("about:blank")
+      url.startsWith("about:blank") ||
+      url.startsWith("about:srcdoc") ||
+      url.startsWith("data:")
     ) {
+      return true;
+    }
+
+    // Only intercept known custom / UPI schemes
+    const customSchemes = ['upi:', 'tez:', 'phonepe:', 'paytm:', 'gpay:', 'bhim:', 'intent:'];
+    const isCustomScheme = customSchemes.some(scheme => url.toLowerCase().startsWith(scheme));
+
+    if (!isCustomScheme) {
+      // Allow other internal/web schemes to load within the webview
       return true;
     }
 
@@ -497,7 +478,7 @@ export default function PaymentWebView() {
 
   return (
     <>
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
       <Modal visible={true} animationType="slide" presentationStyle="fullScreen" onRequestClose={handleBackPress}>
         <View style={styles.container}>
           {/* Loading overlay when cancelling */}
@@ -507,9 +488,19 @@ export default function PaymentWebView() {
               <Text style={styles.loadingText}>Cancelling payment...</Text>
             </View>
           )}
-          <SafeAreaView style={styles.safeAreaContainer}>
+          {/* Loading overlay when verifying */}
+          {isVerifyingPayment && (
+            <View style={styles.loadingOverlay}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <Text style={styles.loadingText}>Verifying payment status...</Text>
+              <Text style={{ marginTop: 8, fontSize: 13, color: "#999", textAlign: "center" }}>
+                Please do not close the app or press back
+              </Text>
+            </View>
+          )}
+          <View style={styles.safeAreaContainer}>
             {/* Header with back button */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: insets.top > 0 ? insets.top : (Platform.OS === 'android' ? 24 : 12) }]}>
               <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
                 <Text style={styles.backButtonText}>← Back</Text>
               </TouchableOpacity>
@@ -541,6 +532,12 @@ export default function PaymentWebView() {
                 domStorageEnabled={true}
                 originWhitelist={["*"]}
                 startInLoadingState={true}
+                renderLoading={() => (
+                  <View style={styles.webViewLoading}>
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                    <Text style={styles.webViewLoadingText}>Loading secure payment gateway...</Text>
+                  </View>
+                )}
                 allowsInlineMediaPlayback={true}
                 thirdPartyCookiesEnabled={true}
                 textZoom={100}
@@ -612,50 +609,35 @@ export default function PaymentWebView() {
                     console.log("[DEBUG Payment Flow] WebView reached return url callback page. Starting polling...");
                     const userDetails = safeParseJSON(params.userDetails);
                     const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
-                    const successTarget = isBillOrBooking
-                      ? {
-                          pathname: "/(tabs)/home/BookingPaymentSuccess" as any,
-                          params: {
-                            amount: params.amount as string || "",
-                            txnId: "",
-                            orderId: params.orderId as string || "",
-                            message: 'Payment Successful',
-                            type: type === 'booking' ? 'advance_booking' : type,
-                            userId: params.userId as string || user?.id || "",
-                          }
-                        }
-                      : {
-                          pathname: "/(tabs)/home/payment-success" as any,
-                          params: {
-                            txnId: "",
-                            orderId: params.orderId as string,
-                            amount: params.amount as string,
-                            investmentId: userDetails?.investmentId,
-                            schemeType: userDetails?.schemeType,
-                            paymentFrequency: userDetails?.paymentFrequency,
-                          },
-                        };
-                    const failureTarget = isBillOrBooking
-                      ? {
-                          pathname: "/(tabs)/home/BookingPaymentFailure" as any,
-                          params: {
-                            message: "Payment Verification Pending/Failed",
-                            orderId: params.orderId as string || "",
-                            txnId: "",
-                            amount: params.amount as string || "",
-                            status: "FAILED",
-                            type: type === 'booking' ? 'advance_booking' : type,
-                            userId: params.userId as string || user?.id || "",
-                          }
-                        }
-                      : {
-                          pathname: "/(tabs)/home/payment-failure" as any,
-                          params: {
-                            message: "Payment Verification Pending/Failed",
-                            orderId: params.orderId as string,
-                            amount: params.amount as string,
-                          },
-                        };
+                    const successTarget = {
+                      pathname: "/(tabs)/home/payment-success" as any,
+                      params: {
+                        txnId: "",
+                        orderId: params.orderId as string,
+                        amount: params.amount as string,
+                        investmentId: userDetails?.investmentId,
+                        schemeType: userDetails?.schemeType,
+                        paymentFrequency: userDetails?.paymentFrequency,
+                        schemeName: schemeName,
+                        goldRate: goldRate,
+                        joiningDate: joiningDate || userDetails?.joiningDate || "",
+                        maturityDate: maturityDate || userDetails?.maturityDate || "",
+                        type: type,
+                        userId: params.userId as string || user?.id || "",
+                      },
+                    };
+                    const failureTarget = {
+                      pathname: "/(tabs)/home/payment-failure" as any,
+                      params: {
+                        message: "Payment Verification Pending/Failed",
+                        orderId: params.orderId as string,
+                        txnId: "",
+                        amount: params.amount as string,
+                        status: "FAILED",
+                        type: type,
+                        userId: params.userId as string || user?.id || "",
+                      },
+                    };
                     startStatusPolling(params.orderId as string, successTarget, failureTarget);
                   }
 
@@ -749,6 +731,12 @@ export default function PaymentWebView() {
                 domStorageEnabled={true}
                 originWhitelist={["*"]}
                 startInLoadingState={true}
+                renderLoading={() => (
+                  <View style={styles.webViewLoading}>
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                    <Text style={styles.webViewLoadingText}>Loading secure payment gateway...</Text>
+                  </View>
+                )}
                 allowsInlineMediaPlayback={true}
                 sharedCookiesEnabled={true}
                 thirdPartyCookiesEnabled={true}
@@ -821,50 +809,35 @@ export default function PaymentWebView() {
                     console.log("[DEBUG Payment Flow] WebView reached return url callback page. Starting polling...");
                     const userDetails = safeParseJSON(params.userDetails);
                     const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
-                    const successTarget = isBillOrBooking
-                      ? {
-                          pathname: "/(tabs)/home/BookingPaymentSuccess" as any,
-                          params: {
-                            amount: params.amount as string || "",
-                            txnId: "",
-                            orderId: params.orderId as string || "",
-                            message: 'Payment Successful',
-                            type: type === 'booking' ? 'advance_booking' : type,
-                            userId: params.userId as string || user?.id || "",
-                          }
-                        }
-                      : {
-                          pathname: "/(tabs)/home/payment-success" as any,
-                          params: {
-                            txnId: "",
-                            orderId: params.orderId as string,
-                            amount: params.amount as string,
-                            investmentId: userDetails?.investmentId,
-                            schemeType: userDetails?.schemeType,
-                            paymentFrequency: userDetails?.paymentFrequency,
-                          },
-                        };
-                    const failureTarget = isBillOrBooking
-                      ? {
-                          pathname: "/(tabs)/home/BookingPaymentFailure" as any,
-                          params: {
-                            message: "Payment Verification Pending/Failed",
-                            orderId: params.orderId as string || "",
-                            txnId: "",
-                            amount: params.amount as string || "",
-                            status: "FAILED",
-                            type: type === 'booking' ? 'advance_booking' : type,
-                            userId: params.userId as string || user?.id || "",
-                          }
-                        }
-                      : {
-                          pathname: "/(tabs)/home/payment-failure" as any,
-                          params: {
-                            message: "Payment Verification Pending/Failed",
-                            orderId: params.orderId as string,
-                            amount: params.amount as string,
-                          },
-                        };
+                    const successTarget = {
+                      pathname: "/(tabs)/home/payment-success" as any,
+                      params: {
+                        txnId: "",
+                        orderId: params.orderId as string,
+                        amount: params.amount as string,
+                        investmentId: userDetails?.investmentId,
+                        schemeType: userDetails?.schemeType,
+                        paymentFrequency: userDetails?.paymentFrequency,
+                        schemeName: schemeName,
+                        goldRate: goldRate,
+                        joiningDate: joiningDate || userDetails?.joiningDate || "",
+                        maturityDate: maturityDate || userDetails?.maturityDate || "",
+                        type: type,
+                        userId: params.userId as string || user?.id || "",
+                      },
+                    };
+                    const failureTarget = {
+                      pathname: "/(tabs)/home/payment-failure" as any,
+                      params: {
+                        message: "Payment Verification Pending/Failed",
+                        orderId: params.orderId as string,
+                        txnId: "",
+                        amount: params.amount as string,
+                        status: "FAILED",
+                        type: type,
+                        userId: params.userId as string || user?.id || "",
+                      },
+                    };
                     startStatusPolling(params.orderId as string, successTarget, failureTarget);
                   }
 
@@ -951,7 +924,7 @@ export default function PaymentWebView() {
               />
             )}
             </View>
-          </SafeAreaView>
+          </View>
         </View>
       </Modal>
 
@@ -992,22 +965,21 @@ export default function PaymentWebView() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.quaternary || '#F2E6D2',
   },
   safeAreaContainer: {
     flex: 1,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.quaternary || '#F2E6D2',
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 40 : 12,
     paddingBottom: 12,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.quaternary || '#F2E6D2',
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.primary,
+    borderBottomColor: theme.colors.quaternary || '#F2E6D2',
   },
   backButton: {
     paddingVertical: 8,
@@ -1015,13 +987,13 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: "#fff",
+    color: theme.colors.primary,
     fontWeight: "500",
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#fff",
+    color: theme.colors.primary,
   },
   placeholder: {
     width: 60,
@@ -1129,6 +1101,22 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: "#666",
+    fontWeight: "500",
+  },
+  webViewLoading: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  webViewLoadingText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: "#555",
     fontWeight: "500",
   },
 });

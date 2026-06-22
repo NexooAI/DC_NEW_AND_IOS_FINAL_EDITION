@@ -26,6 +26,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import api from "@/services/api";
 import { useTranslation } from "@/hooks/useTranslation";
+import { fetchBranchesWithCache } from "@/utils/apiCache";
 import RNPickerSelect from "react-native-picker-select";
 import ResponsiveText from "@/components/ResponsiveText";
 import ResponsiveButton from "@/components/ResponsiveButton";
@@ -221,11 +222,8 @@ export default function BasicDetailsForm() {
 
     const fetchBranches = async () => {
       try {
-        const response = await api.get("/branches");
-        if (response.data && response.data.success !== false) {
-          const branchList = Array.isArray(response.data) ? response.data : response.data.data || [];
-          setBranches(branchList);
-        }
+        const branchList = await fetchBranchesWithCache() || [];
+        setBranches(branchList);
       } catch (error) {
         logger.error("Error fetching branches for registration:", error);
       }
@@ -1199,78 +1197,100 @@ export default function BasicDetailsForm() {
                       style={styles.inputIconLeft}
                     />
                     <View style={{ flex: 1, justifyContent: 'center' }}>
-                      <RNPickerSelect
-                        onValueChange={(value) => {
-                          if (branches.length > 0) {
-                            setSelectedBranchId(value ? Number(value) : null);
-                            validateBranch(value ? Number(value) : null);
-                          }
-                        }}
-                        placeholder={
-                          branches.length === 0
-                            ? { label: "No branches available", value: null, color: '#d32f2f' }
-                            : { label: "Select your home branch", value: null }
-                        }
-                        value={selectedBranchId}
-                        disabled={isBranchDisabled || branches.length === 0}
-                        items={
-                          branches.length === 0
-                            ? []
-                            : branches.map((b) => ({
-                                label: b.branch_name,
-                                value: b.id,
-                              }))
-                        }
-                        style={{
-                          viewContainer: {
-                            flex: 1,
-                            justifyContent: 'center',
-                            width: '100%',
-                          },
-                          inputIOS: {
-                            color: isBranchDisabled 
-                              ? "rgba(0, 0, 0, 0.4)" 
-                              : branches.length === 0 
-                                ? "#d32f2f" 
-                                : theme.colors.black,
+                      {isBranchDisabled && branches.length > 0 ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 30 }}>
+                          <Text style={{
+                            color: "rgba(0, 0, 0, 0.4)",
                             fontSize: getResponsiveSize(14, 16),
                             paddingVertical: 10,
-                            paddingHorizontal: 0,
-                            minHeight: getResponsiveHeight(38, 42),
-                            width: "100%",
-                            paddingRight: 30,
-                          },
-                          inputAndroid: {
-                            color: isBranchDisabled 
-                              ? "rgba(0, 0, 0, 0.4)" 
-                              : branches.length === 0 
-                                ? "#d32f2f" 
-                                : theme.colors.black,
-                            fontSize: getResponsiveSize(14, 16),
-                            paddingVertical: 10,
-                            paddingHorizontal: 0,
-                            minHeight: getResponsiveHeight(38, 42),
-                            width: "100%",
-                            paddingRight: 30,
-                          },
-                          iconContainer: {
-                            top: Platform.OS === 'ios' ? 8 : 10,
-                            right: 0,
-                          },
-                          placeholder: { 
-                            color: branches.length === 0 ? "#d32f2f" : "rgba(10, 1, 1, 0.6)", 
-                            fontSize: 16 
+                          }}>
+                            {(() => {
+                              const b = branches.find((br) => Number(br.id) === Number(selectedBranchId));
+                              return b ? b.branch_name : "Home Branch";
+                            })()}
+                          </Text>
+                          <View style={{ position: 'absolute', right: 0, top: Platform.OS === 'ios' ? 8 : 10 }}>
+                            <Ionicons
+                              name="chevron-down"
+                              size={20}
+                              color={theme.colors.secondary}
+                            />
+                          </View>
+                        </View>
+                      ) : (
+                        <RNPickerSelect
+                          onValueChange={(value) => {
+                            if (branches.length > 0) {
+                              setSelectedBranchId(value ? Number(value) : null);
+                              validateBranch(value ? Number(value) : null);
+                            }
+                          }}
+                          placeholder={
+                            branches.length === 0
+                              ? { label: "No branches available", value: null, color: '#d32f2f' }
+                              : { label: "Select your home branch", value: null }
                           }
-                        }}
-                        useNativeAndroidPickerStyle={false}
-                        Icon={() => (
-                          <Ionicons
-                            name="chevron-down"
-                            size={20}
-                            color={branches.length === 0 ? "#d32f2f" : theme.colors.secondary}
-                          />
-                        )}
-                      />
+                          value={selectedBranchId}
+                          disabled={isBranchDisabled || branches.length === 0}
+                          items={
+                            branches.length === 0
+                              ? []
+                              : branches.map((b) => ({
+                                  label: b.branch_name,
+                                  value: b.id,
+                                }))
+                          }
+                          style={{
+                            viewContainer: {
+                              flex: 1,
+                              justifyContent: 'center',
+                              width: '100%',
+                            },
+                            inputIOS: {
+                              color: isBranchDisabled 
+                                ? "rgba(0, 0, 0, 0.4)" 
+                                : branches.length === 0 
+                                  ? "#d32f2f" 
+                                  : theme.colors.black,
+                              fontSize: getResponsiveSize(14, 16),
+                              paddingVertical: 10,
+                              paddingHorizontal: 0,
+                              minHeight: getResponsiveHeight(38, 42),
+                              width: "100%",
+                              paddingRight: 30,
+                            },
+                            inputAndroid: {
+                              color: isBranchDisabled 
+                                ? "rgba(0, 0, 0, 0.4)" 
+                                : branches.length === 0 
+                                  ? "#d32f2f" 
+                                  : theme.colors.black,
+                              fontSize: getResponsiveSize(14, 16),
+                              paddingVertical: 10,
+                              paddingHorizontal: 0,
+                              minHeight: getResponsiveHeight(38, 42),
+                              width: "100%",
+                              paddingRight: 30,
+                            },
+                            iconContainer: {
+                              top: Platform.OS === 'ios' ? 8 : 10,
+                              right: 0,
+                            },
+                            placeholder: { 
+                              color: branches.length === 0 ? "#d32f2f" : "rgba(10, 1, 1, 0.6)", 
+                              fontSize: 16 
+                            }
+                          }}
+                          useNativeAndroidPickerStyle={false}
+                          Icon={() => (
+                            <Ionicons
+                              name="chevron-down"
+                              size={20}
+                              color={branches.length === 0 ? "#d32f2f" : theme.colors.secondary}
+                            />
+                          )}
+                        />
+                      )}
                     </View>
                   </View>
                   {branchError ? (
@@ -1662,6 +1682,8 @@ export default function BasicDetailsForm() {
                   placeholder="----"
                   placeholderTextColor="#aaa"
                   editable={!otpVerifying && !autoOtpSending}
+                  textContentType="oneTimeCode"
+                  autoComplete="sms-otp"
                 />
 
                 <TouchableOpacity

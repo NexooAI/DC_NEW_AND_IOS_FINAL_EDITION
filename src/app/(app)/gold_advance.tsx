@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   TextInput,
   Alert,
+  Platform,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -99,7 +101,7 @@ export default function GoldAdvanceScreen() {
             const goldIcons = ["flash", "trending-up", "star", "diamond"];
             const silverIcons = ["cube", "shield", "ribbon", "trophy"];
             const icons = isSilver ? silverIcons : goldIcons;
-            
+
             return {
               percentage: `${pct}%`,
               days: days,
@@ -195,7 +197,7 @@ export default function GoldAdvanceScreen() {
   const handleEnquire = (option: any) => {
     router.push({
       pathname: "/(app)/(tabs)/joinAdvGold",
-      params: { 
+      params: {
         advancePercent: option.percentage.replace("%", ""),
         metalType: option.metalType
       },
@@ -209,7 +211,8 @@ export default function GoldAdvanceScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : undefined}>
+        <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
         <View style={styles.header}>
           <TouchableOpacity onPress={() => {
@@ -234,11 +237,12 @@ export default function GoldAdvanceScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : undefined}>
+      <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
       {/* Background */}
       <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
       <LinearGradient
-        colors={["rgba(133,1,17,0.05)", "transparent"]}
+        colors={[theme.colors.quaternary, theme.colors.quaternary]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -304,10 +308,10 @@ export default function GoldAdvanceScreen() {
                   <View style={styles.headerLeft}>
                     {/* Metal Badge */}
                     <View style={option.metalType === 'SILVER' ? styles.metalBadgeSilver : styles.metalBadge}>
-                      <Ionicons 
-                        name={option.metalType === 'SILVER' ? "shield" : "ribbon"} 
-                        size={12} 
-                        color={option.metalType === 'SILVER' ? "#cbd5e1" : "#FFD700"} 
+                      <Ionicons
+                        name={option.metalType === 'SILVER' ? "shield" : "ribbon"}
+                        size={12}
+                        color={option.metalType === 'SILVER' ? "#cbd5e1" : "#FFD700"}
                       />
                       <Text style={option.metalType === 'SILVER' ? styles.metalBadgeTextSilver : styles.metalBadgeText}>
                         {option.metalType}
@@ -434,7 +438,7 @@ export default function GoldAdvanceScreen() {
                   <Ionicons name="close" size={24} color={COLORS.white} />
                 </TouchableOpacity>
               </LinearGradient>
-              
+
               <ScrollView contentContainerStyle={styles.enquiryModalBody} keyboardShouldPersistTaps="handled">
                 {enquirySuccess ? (
                   <View style={styles.successContainer}>
@@ -494,9 +498,9 @@ export default function GoldAdvanceScreen() {
                       placeholderTextColor="gray"
                     />
 
-                    <TouchableOpacity 
-                      style={styles.submitButton} 
-                      onPress={submitEnquiry} 
+                    <TouchableOpacity
+                      style={styles.submitButton}
+                      onPress={submitEnquiry}
                       disabled={submittingEnquiry}
                     >
                       {submittingEnquiry ? (
@@ -519,6 +523,7 @@ export default function GoldAdvanceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: QUATERNARY_COLOR,
   },
   header: {
     flexDirection: "row",

@@ -83,12 +83,16 @@ interface Scheme {
   }
   | null
   | undefined;
+  INS_TYPE?: string | null | undefined;
+  scheme_plan_type_id?: number | null | undefined;
+  SCHEME_PLAN_TYPE_ID?: number | null | undefined;
 }
 
 interface DynamicSchemeCardProps {
   onJoinPress?: (scheme: Scheme) => void;
   onInfoPress?: (scheme: Scheme) => void;
   onQuickJoinPress?: (scheme: Scheme) => void;
+  onEnquirePress?: (scheme: Scheme) => void;
   showDots?: boolean; // Show pagination dots
   visibilityFlags?: {
     showFlexiScheme: boolean;
@@ -97,14 +101,21 @@ interface DynamicSchemeCardProps {
     showWeeklyScheme: boolean;
     showMonthlyScheme: boolean;
   };
+  schemes?: Scheme[];
+  initialSchemeId?: number;
+  horizontal?: boolean; // Add horizontal prop
 }
 
 const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
   onJoinPress,
   onInfoPress,
   onQuickJoinPress,
+  onEnquirePress,
   showDots = true,
   visibilityFlags,
+  schemes: propSchemes,
+  initialSchemeId,
+  horizontal = true, // Default to horizontal scrolling
 }) => {
   const { t, locale } = useTranslation();
   const router = useRouter();
@@ -120,8 +131,27 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
   const currentLanguage = locale;
   const showSchemsPage = isVisible("showSchemsPage");
 
+  useEffect(() => {
+    if (schemes.length > 0 && initialSchemeId) {
+      const idx = schemes.findIndex(s => s.SCHEMEID === initialSchemeId);
+      if (idx !== -1) {
+        setCurrentIndex(idx);
+        setTimeout(() => {
+          flatListRef.current?.scrollToIndex({
+            index: idx,
+            animated: true,
+          });
+        }, 300);
+      }
+    }
+  }, [schemes, initialSchemeId]);
+
   // Load schemes data from API with cache
   useEffect(() => {
+    if (propSchemes) {
+      setSchemes(propSchemes);
+      return;
+    }
     const fetchSchemes = async () => {
       try {
         const { fetchSchemesWithCache } = await import("@/utils/apiCache");
@@ -337,6 +367,15 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
     }
   };
 
+  const handleEnquirePress = (scheme: Scheme) => {
+    closeModal();
+    if (onEnquirePress) {
+      onEnquirePress(scheme);
+    } else {
+      router.push("/(app)/old_gold?tab=schemes");
+    }
+  };
+
   const getLocalizedText = (textObj: any): string => {
     return getTranslatedText(textObj, currentLanguage);
   };
@@ -404,6 +443,41 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
     } catch {
       return "";
     }
+  };
+
+  const checkIsOldGold = (scheme: Scheme | null | undefined): boolean => {
+    if (!scheme) return false;
+    
+    // Check plan type ID (safe from number/string type differences)
+    if (
+      String(scheme.scheme_plan_type_id) === "4" ||
+      String(scheme.SCHEME_PLAN_TYPE_ID) === "4"
+    ) {
+      return true;
+    }
+
+    const containsOldGold = (textObj: any): boolean => {
+      if (!textObj) return false;
+      if (typeof textObj === "string") {
+        const val = textObj.toLowerCase();
+        return val.includes("old gold") || val.includes("பழைய தங்கம்") || val.includes("பழைய");
+      }
+      if (typeof textObj === "object") {
+        for (const key of Object.keys(textObj)) {
+          const val = String(textObj[key]).toLowerCase();
+          if (val.includes("old gold") || val.includes("பழைய தங்கம்") || val.includes("பழைய")) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    return (
+      containsOldGold(scheme.INS_TYPE) ||
+      containsOldGold(scheme.SCHEMETYPE) ||
+      containsOldGold(scheme.SCHEMENAME)
+    );
   };
 
   const getCardGradient = (schemeId: number | null | undefined) => {
@@ -797,9 +871,14 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
     const accentColor = getCardAccentColor(item.SCHEMEID);
 
     // Determine coin type
-    const coinSource = (getTranslatedText(item.SCHEMENAME as any, "en") || "").toLowerCase().includes("silver")
+    const schemeNameLower = (getTranslatedText(item.SCHEMENAME as any, "en") || "").toLowerCase();
+    const coinSource = schemeNameLower.includes("silver")
       ? require("../../assets/images/silver_coin_badge.png")
-      : require("../../assets/images/gold_coin_badge.png");
+      : schemeNameLower.includes("diamond")
+        ? require("../../assets/images/diamond_coin_badge.png")
+        : require("../../assets/images/gold_coin_badge.png");
+
+    const isOldGoldScheme = checkIsOldGold(item);
 
     return (
       <View style={[styles.card, { borderColor: accentColor }]}>
@@ -926,30 +1005,53 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-               style={[
-                styles.joinButton,
-                isLoading && styles.disabledButton,
-              ]}
-              onPress={() => handleJoinPress(item)}
-              disabled={isLoading}
-            >
-               <LinearGradient
+            {isOldGoldScheme ? (
+              <TouchableOpacity
+                style={[
+                  styles.joinButton,
+                  isLoading && styles.disabledButton,
+                ]}
+                onPress={() => handleEnquirePress(item)}
+                disabled={isLoading}
+              >
+                <LinearGradient
+                  colors={["#FFD700", "#FF8C00"]} // Premium Gold/Orange gradient
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.joinButtonGradient}
+                >
+                  <Ionicons name="chatbubble-ellipses-outline" size={20} color="#000" />
+                  <Text style={[styles.joinButtonText, { color: "#000" }]}>
+                    {t("enquireNow") || "Enquire Now"}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.joinButton,
+                  isLoading && styles.disabledButton,
+                ]}
+                onPress={() => handleJoinPress(item)}
+                disabled={isLoading}
+              >
+                <LinearGradient
                   colors={[accentColor, "#FDB931", accentColor]} // Gold gradient
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.joinButtonGradient}
                 >
-                {isLoading ? (
-                  <ActivityIndicator size="small" color="#000" />
-                ) : (
-                  <Ionicons name="add-circle" size={20} color="#000" />
-                )}
-                <Text style={styles.joinButtonText}>
-                  {isLoading ? t("loading") || "Loading..." : t("joinNow")}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#000" />
+                  ) : (
+                    <Ionicons name="add-circle" size={20} color="#000" />
+                  )}
+                  <Text style={styles.joinButtonText}>
+                    {isLoading ? t("loading") || "Loading..." : t("joinNow")}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
           </View>
         </LinearGradient>
       </View>
@@ -985,6 +1087,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
     if (!selectedScheme) return null;
     const accentColor = "#FFD700"; // Gold
     const gradientColors = ["#0A0A0A", "#252525"];
+    const isOldGold = checkIsOldGold(selectedScheme);
 
     return (
       <View style={styles.modalContentModern}>
@@ -1016,6 +1119,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
 
 
              {/* Pill Badges Row */}
+            {!isOldGold && (
             <View style={styles.pillBadgesContainer}>
                 {selectedScheme.SCHEMETYPE && getLocalizedText(selectedScheme.SCHEMETYPE) && (
                    <View style={styles.pillBadge}>
@@ -1024,8 +1128,8 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
                 )}
                  {selectedScheme.DURATION_MONTHS && !isNaN(selectedScheme.DURATION_MONTHS) && (
                      <View style={styles.pillBadge}>
-                         <Text style={styles.pillBadgeText}>{selectedScheme.DURATION_MONTHS} {t("monthsLabel") || "Months"}</Text>
-                     </View>
+                          <Text style={styles.pillBadgeText}>{selectedScheme.DURATION_MONTHS} {t("monthsLabel") || "Months"}</Text>
+                      </View>
                  )}
                  {/* Saving Type Pill */}
                  <View style={[styles.pillBadge, { backgroundColor: '#F0F0FF' }]}>
@@ -1034,9 +1138,11 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
                      </Text>
                  </View>
             </View>
+            )}
 
 
           {/* 2-Column Grid Benefits */}
+            {!isOldGold && (
             <View style={styles.gridSection}>
               <Text style={styles.gridSectionTitle}>{t("benefits") || "Benefits"}</Text>
               <View style={styles.benefitsGrid}>
@@ -1064,6 +1170,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
                   })()}
               </View>
             </View>
+            )}
 
           {/* Description Section */}
           {selectedScheme.DESCRIPTION && getLocalizedText(selectedScheme.DESCRIPTION) && (
@@ -1075,8 +1182,18 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
             </View>
           )}
 
+            {/* Terms & Conditions Section for Old Gold */}
+            {isOldGold && (
+              <View style={styles.modernSection}>
+                <Text style={styles.modernSectionTitle}>{t("termsAndConditions") || "Terms & Conditions"}</Text>
+                <Text style={styles.modernDescription}>
+                  {t("termsAndConditionsDiscription") || "Welcome to DC Jewellers..."}
+                </Text>
+              </View>
+            )}
+
            {/* Scheme Details Table */}
-           {selectedScheme.table_meta &&
+           {!isOldGold && selectedScheme.table_meta &&
             selectedScheme.table_meta.headers &&
             selectedScheme.table_meta.rows &&
             selectedScheme.table_meta.rows.length > 0 && (
@@ -1105,74 +1222,106 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
         </ScrollView>
         
         {/* Sticky Footer */}
-        <View style={styles.stickyModalFooter}>
-             <View style={styles.modalFooter}>
-             {/* Quick Join Button (Lightning) */}
-            <TouchableOpacity
-              style={styles.modalQuickJoinButton}
-              onPress={() => handleQuickJoinPress(selectedScheme)}
-            >
-              <LinearGradient
-                colors={["#FFD700", "#FFA500"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.modalQuickJoinGradient}
+        {!isOldGold && (
+          <View style={styles.stickyModalFooter}>
+            <View style={styles.modalFooter}>
+              {/* Quick Join Button (Lightning) */}
+              <TouchableOpacity
+                style={styles.modalQuickJoinButton}
+                onPress={() => handleQuickJoinPress(selectedScheme)}
               >
-                <Ionicons name="flash" size={20} color="#000" />
-              </LinearGradient>
-            </TouchableOpacity>
+                <LinearGradient
+                  colors={["#FFD700", "#FFA500"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.modalQuickJoinGradient}
+                >
+                  <Ionicons name="flash" size={20} color="#000" />
+                </LinearGradient>
+              </TouchableOpacity>
 
-            {/* Join Button */}
-            <TouchableOpacity
-              style={[
-                styles.modalJoinButton,
-                isLoading && styles.disabledButton,
-              ]}
-              onPress={async () => {
-                if (!isLoading) {
-                  setIsLoading(true);
-                  try {
-                    await handleJoinPress(selectedScheme);
-                    await new Promise((resolve: any) => setTimeout(resolve, 500));
-                    closeModal();
-                  } catch (error) {
-                    console.error("Error in modal join:", error);
-                  } finally {
-                    setIsLoading(false);
+              {/* Join / Enquire Button */}
+              <TouchableOpacity
+                style={[
+                  styles.modalJoinButton,
+                  isLoading && styles.disabledButton,
+                ]}
+                onPress={async () => {
+                  if (!isLoading) {
+                    setIsLoading(true);
+                    try {
+                      await handleJoinPress(selectedScheme);
+                      await new Promise((resolve: any) => setTimeout(resolve, 500));
+                      closeModal();
+                    } catch (error) {
+                      console.error("Error in modal join:", error);
+                    } finally {
+                      setIsLoading(false);
+                    }
                   }
-                }
-              }}
-              disabled={isLoading}
-            >
-              <LinearGradient
+                }}
+                disabled={isLoading}
+              >
+                <LinearGradient
                   colors={[accentColor, "#FDB931", accentColor]} // Gold gradient
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.joinButtonGradient}
                 >
-              {isLoading ? (
-                <ActivityIndicator size="small" color="#000" />
-              ) : (
-                <Ionicons name="add-circle" size={22} color="#000" />
-              )}
-              <Text style={styles.joinButtonText}>
-                {isLoading ? t("loading") || "Loading..." : t("joinThisScheme")}
-              </Text>
-              </LinearGradient>
-            </TouchableOpacity>
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#000" />
+                  ) : (
+                    <Ionicons name="add-circle" size={22} color="#000" />
+                  )}
+                  <Text style={styles.joinButtonText}>
+                    {isLoading ? t("loading") || "Loading..." : t("joinThisScheme")}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        )}
 
       </View>
     );
   };
-
 
   if (schemes.length === 0) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
         <Text style={styles.loadingText}>{t("loading")}...</Text>
+      </View>
+    );
+  }
+
+  if (!horizontal) {
+    return (
+      <View style={styles.container}>
+        <FlatList
+          data={schemes}
+          renderItem={renderSchemeCard}
+          keyExtractor={(item, index) =>
+            item?.SCHEMEID?.toString() || `scheme-${index}`
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.verticalListContainer}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={6}
+          windowSize={5}
+          initialNumToRender={4}
+        />
+
+        <Modal
+          visible={modalVisible}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={closeModal}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>{renderModalContent()}</View>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -1243,12 +1392,17 @@ const styles = StyleSheet.create({
   horizontalListContainer: {
     alignItems: "center",
   },
+  verticalListContainer: {
+    paddingVertical: 12,
+    alignItems: "center",
+  },
   listContainer: {
     padding: 16,
   },
   card: {
     borderRadius: 20,
     marginHorizontal: 10,
+    marginVertical: 8, // Spacing between stacked vertical cards
     width: screenWidth - 60,
     height: 230,
     shadowColor: "#000",

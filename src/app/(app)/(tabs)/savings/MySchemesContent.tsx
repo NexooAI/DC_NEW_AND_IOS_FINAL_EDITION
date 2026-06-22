@@ -71,6 +71,7 @@ type Scheme = {
   schemesData: any;
   chitData: any;
   paymentFrequency: string; // Add payment frequency
+  dueDate?: string;
 };
 
 interface InvestmentResponse {
@@ -97,6 +98,7 @@ interface InvestmentResponse {
   accountNo: string;
   amount: string;
   paymentFrequency: string;
+  dueDate?: string;
   rewards?: Array<{
     id: number;
     amount: number;
@@ -123,10 +125,9 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
   // Flexi vs Fixed filter (default to Flexi)
   const [subFilter, setSubFilter] = useState<"Flexi" | "Fixed">("Flexi");
 
-  const { bottom, top } = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
-  // Increased bottomPadding multiplier from 0.1 to 0.2
-  const bottomPadding = height * 0.1 + bottom;
+  const { top } = useSafeAreaInsets();
+  // Reduced bottomPadding to prevent massive blank gap above menu tab bar
+  const bottomPadding = 20;
 
   // React to param changes to switch tabs even if component is already mounted
   useEffect(() => {
@@ -704,7 +705,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
               </View>
               <View style={styles.statInfo}>
                 <Text style={styles.statLabel}>{translations.gold}</Text>
-                <Text style={styles.statValue}>{totalGold.toFixed(2)} g</Text>
+                <Text style={styles.statValue}>{totalGold.toFixed(3)} g</Text>
               </View>
             </View>
           </View>
@@ -879,7 +880,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
           ]}
           style={StyleSheet.absoluteFillObject}
         />
-        <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
+        <View style={{ flex: 1 }}>
           {/* Header Skeleton */}
           <View style={[styles.pageHeaderContainer, { paddingTop: top + 12 }]}>
             <Text style={styles.pageHeaderTitle}>
@@ -920,7 +921,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
             <SkeletonSavingsCard style={{ marginTop: 16 }} />
             <SkeletonSavingsCard style={{ marginTop: 16 }} />
           </ScrollView>
-        </SafeAreaView>
+        </View>
       </ImageBackground>
     </View>
   );
@@ -957,7 +958,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
           style={StyleSheet.absoluteFillObject}
         />
 
-        <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
+        <View style={{ flex: 1 }}>
           {/* Custom Header with Page Name (hidden if nested) */}
           {!isNested && (
             <View style={[styles.pageHeaderContainer, { paddingTop: 12 }]}>
@@ -991,7 +992,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
               });
             }}
           />
-        </SafeAreaView>
+        </View>
       </View>
       {/* </ImageBackground> */}
     </View>

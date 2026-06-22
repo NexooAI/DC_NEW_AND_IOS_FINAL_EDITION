@@ -15,6 +15,8 @@ import {
   useWindowDimensions,
   Dimensions,
 } from "react-native";
+import { Stack } from "expo-router";
+import LanguageSelector from "@/components/LanguageSelector";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { moderateScale } from "react-native-size-matters";
 import { LinearGradient } from "expo-linear-gradient";
@@ -186,6 +188,7 @@ export default function FAQScreen() {
   const { language, setTabVisibility } = useGlobalStore();
   const { width } = useWindowDimensions();
   const router = useRouter();
+  const [isLanguageSelectorVisible, setIsLanguageSelectorVisible] = useState(false);
 
   const translations: Translations = useMemo(
     () => ({
@@ -325,6 +328,15 @@ export default function FAQScreen() {
 
   return (
     <AppLayoutWrapper showHeader={false} showBottomBar={false}>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <TouchableOpacity onPress={() => setIsLanguageSelectorVisible(true)} style={{ marginRight: 16 }}>
+              <Ionicons name="language" size={24} color={theme.colors.primary} />
+            </TouchableOpacity>
+          ),
+        }}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.container}
@@ -404,6 +416,10 @@ export default function FAQScreen() {
           </ScrollView>
         </LinearGradient>
       </KeyboardAvoidingView>
+      <LanguageSelector
+        visible={isLanguageSelectorVisible}
+        onClose={() => setIsLanguageSelectorVisible(false)}
+      />
     </AppLayoutWrapper>
   );
 }

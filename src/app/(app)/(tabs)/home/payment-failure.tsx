@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,9 @@ import {
   InteractionManager,
   Alert,
   ToastAndroid,
-  Platform
+  Platform,
+  Linking,
+  ScrollView
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
@@ -32,13 +34,35 @@ export default function PaymentFailure() {
   const router = useRouter();
   const { user, setTabVisibility } = useGlobalStore();
 
+  const type = (Array.isArray(params.type) ? params.type[0] : params.type) || "";
+  const isBillPayment = type === "bill";
+  const userId = Array.isArray(params.userId) ? params.userId[0] : (params.userId || user?.id?.toString() || "");
+
+  useEffect(() => {
+    if (isBillPayment && userId) {
+      const fetchBills = async () => {
+        try {
+          const { billsAPI } = await import("@/services/api");
+          await billsAPI.getUserBills(userId);
+        } catch (err) {
+          logger.error("Failed to fetch user bills on payment failure:", err);
+        }
+      };
+      fetchBills();
+    }
+  }, [isBillPayment, userId]);
+
   // Hide tab bar on focus & Handle Back Button
   useFocusEffect(
     useCallback(() => {
       setTabVisibility(false);
       
       const onBackPress = () => {
-        router.replace("/(tabs)/home");
+        if (isBillPayment) {
+          router.replace("/(app)/bill_payment");
+        } else {
+          router.replace("/(tabs)/home");
+        }
         return true;
       };
 
@@ -48,7 +72,7 @@ export default function PaymentFailure() {
         setTabVisibility(true);
         backHandler.remove();
       };
-    }, [setTabVisibility, router])
+    }, [setTabVisibility, router, isBillPayment])
   );
 
   // Log payment failure data when component mounts
@@ -136,6 +160,22 @@ export default function PaymentFailure() {
     }
   };
 
+  const handleSupportPress = async () => {
+    const whatsappUrl = `whatsapp://send?phone=${theme.constants.whatsapp}&text=Hi, I faced a payment issue with Order ID: ${params.orderId || "N/A"}`;
+    const fallbackUrl = `https://wa.me/${theme.constants.whatsapp}`;
+    try {
+      const supported = await Linking.canOpenURL(whatsappUrl);
+      if (supported) {
+        await Linking.openURL(whatsappUrl);
+      } else {
+        await Linking.openURL(fallbackUrl);
+      }
+    } catch (error) {
+      logger.error("Error opening WhatsApp support:", error);
+      Alert.alert("Support", "Please call us at " + theme.constants.mobile);
+    }
+  };
+
   const handleRetry = () => {
     Animated.timing(fadeAnim, {
       toValue: 0,
@@ -215,13 +255,14 @@ export default function PaymentFailure() {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Animated.View
-        style={[
-          styles.content,
-          { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
-        ]}
-      >
+    <SafeAreaView style={styles.container} edges={["bottom", "left", "right"]}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <Animated.View
+          style={[
+            styles.content,
+            { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
+          ]}
+        >
         <View style={styles.iconContainer}>
           <Animated.View
             style={[styles.iconWrapper, { transform: [{ scale: pulseAnim }] }]}
@@ -242,6 +283,14 @@ export default function PaymentFailure() {
         <Text style={styles.message}>
           {Array.isArray(params.message) ? params.message[0] : (params.message || t("paymentFailedMessage"))}
         </Text>
+
+        {/* UPI Notice Box */}
+        <View style={styles.upiNoticeBox}>
+          <Ionicons name="warning" size={18} color="#c53030" style={{ marginRight: 8 }} />
+          <Text style={styles.upiNoticeText}>
+            {t("npciUpiNotice")}
+          </Text>
+        </View>
 
         <View style={styles.detailsCard}>
           <Text style={styles.detailsTitle}>{t("paymentDetails")}</Text>
@@ -315,25 +364,81 @@ export default function PaymentFailure() {
             </View>
           </View>
         </View>
+
+        {/* WhatsApp/Call Support Button */}
+        <TouchableOpacity
+          style={styles.supportButton}
+          onPress={handleSupportPress}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="logo-whatsapp" size={20} color="#fff" />
+          <Text style={styles.supportButtonText}>{t("contactSupport")}</Text>
+        </TouchableOpacity>
+
+
+
         <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[styles.button, styles.buttonHalf, styles.buttonRetry]}
-            onPress={handleRetry}
-            activeOpacity={0.9}
-          >
-            <Ionicons name="refresh" size={rp(20)} color="#fff" />
-            <Text style={styles.buttonText}>{t("retry")}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, styles.buttonHalf, styles.buttonHome]}
-            onPress={handleHomePress}
-            activeOpacity={0.9}
-          >
-            <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
-            <Text style={[styles.buttonText, styles.buttonTextHome]}>{t("home")}</Text>
-          </TouchableOpacity>
+          {isBillPayment ? (
+            <>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonHalf, styles.buttonRetry]}
+                onPress={() => router.replace("/(app)/bill_payment")}
+                activeOpacity={0.9}
+              >
+                <Ionicons name="receipt-outline" size={rp(20)} color="#fff" />
+                <Text style={styles.buttonText}>{(t("backToBills") || "BACK TO BILLS").toUpperCase()}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonHalf, styles.buttonHome]}
+                onPress={handleHomePress}
+                activeOpacity={0.9}
+              >
+                <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
+                <Text style={[styles.buttonText, styles.buttonTextHome]}>{(t("home") || "GO TO HOME").toUpperCase()}</Text>
+              </TouchableOpacity>
+            </>
+          ) : (type === "booking" || type === "advance_booking") ? (
+            <>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonHalf, styles.buttonRetry]}
+                onPress={() => router.replace("/(tabs)/home")}
+                activeOpacity={0.9}
+              >
+                <Ionicons name="refresh" size={rp(20)} color="#fff" />
+                <Text style={styles.buttonText}>{(t("tryAgain") || "TRY AGAIN").toUpperCase()}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonHalf, styles.buttonHome]}
+                onPress={handleHomePress}
+                activeOpacity={0.9}
+              >
+                <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
+                <Text style={[styles.buttonText, styles.buttonTextHome]}>{(t("home") || "GO TO HOME").toUpperCase()}</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonHalf, styles.buttonRetry]}
+                onPress={handleRetry}
+                activeOpacity={0.9}
+              >
+                <Ionicons name="refresh" size={rp(20)} color="#fff" />
+                <Text style={styles.buttonText}>{t("retry")}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonHalf, styles.buttonHome]}
+                onPress={handleHomePress}
+                activeOpacity={0.9}
+              >
+                <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
+                <Text style={[styles.buttonText, styles.buttonTextHome]}>{t("home")}</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
         </Animated.View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -346,11 +451,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     padding: rp(16),
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     width: "100%",
     paddingVertical: rp(20),
   },
@@ -503,5 +609,52 @@ const styles = StyleSheet.create({
   },
   buttonTextHome: {
     color: theme.colors.textDark,
+  },
+  upiNoticeBox: {
+    backgroundColor: "#fff5f5",
+    borderColor: "#feb2b2",
+    borderWidth: 1,
+    borderRadius: rb(16),
+    padding: rp(14),
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: rp(16),
+    width: "100%",
+  },
+  upiNoticeText: {
+    color: "#c53030",
+    fontSize: rf(13, { minSize: 11, maxSize: 15 }),
+    flex: 1,
+    lineHeight: rp(18),
+  },
+  supportButton: {
+    width: "100%",
+    minHeight: rp(56),
+    borderRadius: rb(16),
+    backgroundColor: "#25d366",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: rp(16),
+    paddingHorizontal: rp(20),
+    elevation: 4,
+    shadowColor: "#25d366",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    gap: 8,
+  },
+  supportButtonText: {
+    color: "#ffffff",
+    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
+  },
+  countdownText: {
+    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+    color: "#718096",
+    fontFamily: "Inter_400Regular",
+    marginBottom: rp(16),
+    textAlign: "center",
   },
 });

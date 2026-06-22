@@ -246,7 +246,7 @@ export default function RateChart() {
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.container}>
+            <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={theme.colors.primary} />
                     <Text style={styles.loadingText}>{t("rateChart_loadingRates")}</Text>
@@ -257,7 +257,7 @@ export default function RateChart() {
 
     if (error) {
         return (
-            <SafeAreaView style={styles.container}>
+            <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
                 <View style={styles.errorContainer}>
                     <Ionicons name="alert-circle" size={48} color={theme.colors.error} />
                     <Text style={styles.errorText}>{error}</Text>
@@ -270,7 +270,7 @@ export default function RateChart() {
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={["top"]}>
+        <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
     headerSection: {
-        marginBottom: 24,
+        marginBottom: 0,
     },
     title: {
         fontSize: 28,

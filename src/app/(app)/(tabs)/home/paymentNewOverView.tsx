@@ -23,6 +23,8 @@ import { theme } from "@/constants/theme";
 import api from "@/services/api";
 import paymentService from "../../../../services/payment.service";
 import { PaymentInitPayload } from "@/types/payment.types";
+import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { logger } from '@/utils/logger';
 export default function PaymentNewOverView() {
@@ -79,6 +81,46 @@ export default function PaymentNewOverView() {
   const userDetailsHeight = useRef(new Animated.Value(1)).current;
   const [isSchemeDetailsExpanded, setIsSchemeDetailsExpanded] = useState(true);
   const schemeDetailsHeight = useRef(new Animated.Value(1)).current;
+
+  const [secondsLeft, setSecondsLeft] = useState(300); // 5 minutes
+  const amountScale = useRef(new Animated.Value(1)).current;
+
+  const animateAmountText = () => {
+    amountScale.setValue(0.95);
+    Animated.spring(amountScale, {
+      toValue: 1,
+      friction: 4,
+      tension: 100,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  useEffect(() => {
+    if (isProcessing) return;
+    
+    const timer = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          Alert.alert(
+            "Session Expired",
+            "Your payment session has expired. Please try again.",
+            [{ text: "OK", onPress: () => router.back() }]
+          );
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isProcessing]);
+
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
 
   // Check if it's first payment based on paid payment count from params
   const isFirstPayment = useMemo(() => {
@@ -355,6 +397,10 @@ export default function PaymentNewOverView() {
   // Handle amount adjustment
   const adjustAmount = (increment: number) => {
     if (!isEditable) return; // Prevent adjustment if not editable
+    
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    animateAmountText();
+
     const newAmount = currentAmount + increment;
 
     if (newAmount < minAmount) {
@@ -377,6 +423,9 @@ export default function PaymentNewOverView() {
     // Remove any non-numeric characters except decimal point
     const cleanText = text.replace(/[^0-9.]/g, "");
     const amount = parseFloat(cleanText) || 0;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    animateAmountText();
 
     if (amount < minAmount) {
       setCurrentAmount(minAmount);
@@ -650,10 +699,18 @@ export default function PaymentNewOverView() {
             url: paymentUrl,
             orderId: orderId, // Add orderId to params
             amount: currentAmount.toString(),
+            schemeName: schemeName,
+            goldRate: goldRate.toString(),
+            maturityDate: params.maturityDate ? params.maturityDate.toString() : "",
+            joiningDate: params.joiningDate ? params.joiningDate.toString() : "",
             userDetails: JSON.stringify({
               ...userDetails,
               amount: currentAmount,
               orderId: orderId, // Include orderId in userDetails
+              schemeName: schemeName,
+              goldRate: goldRate,
+              maturityDate: params.maturityDate || "",
+              joiningDate: params.joiningDate || "",
               // investmentId: params.investmentId,
               // schemeId: params.schemeId,
               // chitId:  params.chitId,
@@ -679,10 +736,18 @@ export default function PaymentNewOverView() {
             url: paymentUrl,
             orderId: orderId,
             amount: currentAmount.toString(),
+            schemeName: schemeName,
+            goldRate: goldRate.toString(),
+            maturityDate: params.maturityDate ? params.maturityDate.toString() : "",
+            joiningDate: params.joiningDate ? params.joiningDate.toString() : "",
             userDetails: JSON.stringify({
               ...userDetails,
               amount: currentAmount,
               orderId: orderId,
+              schemeName: schemeName,
+              goldRate: goldRate,
+              maturityDate: params.maturityDate || "",
+              joiningDate: params.joiningDate || "",
               userId: userDetails.userId || user?.id,
               paymentFrequency: params.paymentFrequency,
               schemeType: params.schemeType,
@@ -749,52 +814,18 @@ export default function PaymentNewOverView() {
     setShowExitModal(false);
   };
 
-  const TermsAndConditionsModal = () => (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={showTermsModal}
-      onRequestClose={() => setShowTermsModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{t("termsAndConditions")}</Text>
-            <TouchableOpacity
-              onPress={() => setShowTermsModal(false)}
-              style={styles.closeButton}
-            >
-              <Ionicons name="close" size={24} color={theme.colors.primary} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            style={styles.modalBody}
-            contentContainerStyle={styles.modalBodyContent}
-            showsVerticalScrollIndicator={true}
-          >
-            <Text style={styles.termsText}>
 
-              {termsContent}
-            </Text>
-          </ScrollView>
-          <View style={styles.modalFooter}>
-            <TouchableOpacity
-              style={styles.acceptButton}
-              onPress={() => {
-                setIsTermsAccepted(true);
-                setShowTermsModal(false);
-              }}
-            >
-              <Text style={styles.acceptButtonText}>{t("accept")}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
 
   return (
     <View style={styles.container}>
+      {/* Session Timer Banner */}
+      <View style={styles.timerBanner}>
+        <Ionicons name="time-outline" size={18} color="#d97706" />
+        <Text style={styles.timerText}>
+          Session expires in: <Text style={styles.timerCountdown}>{formatTimer(secondsLeft)}</Text>
+        </Text>
+      </View>
+
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.contentContainer}
@@ -802,7 +833,10 @@ export default function PaymentNewOverView() {
       >
         {/* Amount Card */}
         {isEditable ? (
-          <View style={styles.amountCard}>
+          <LinearGradient
+            colors={theme.colors.gradientPrimaryDark || ["#850111", "#5a000b", "#2e0406"]}
+            style={styles.amountCard}
+          >
             <View style={styles.amountHeader}>
               <FontAwesome5
                 name="coins"
@@ -851,10 +885,9 @@ export default function PaymentNewOverView() {
                     autoFocus={true}
                   />
                 ) : (
-                  <>
+                  <Animated.View style={{ transform: [{ scale: amountScale }] }}>
                     <Text style={styles.amountValue}>{formattedAmount}</Text>
-
-                  </>
+                  </Animated.View>
                 )}
                 <Text style={styles.weightText}>
                   {formattedWeight} grams (₹{(goldRate && !isNaN(goldRate) ? Number(goldRate).toFixed(2) : "0.00")}/gram)
@@ -939,9 +972,12 @@ export default function PaymentNewOverView() {
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </LinearGradient>
         ) : (
-          <View style={styles.amountCard}>
+          <LinearGradient
+            colors={theme.colors.gradientPrimaryDark || ["#850111", "#5a000b", "#2e0406"]}
+            style={styles.amountCard}
+          >
             <View style={styles.amountHeader}>
               <FontAwesome5
                 name="coins"
@@ -956,7 +992,7 @@ export default function PaymentNewOverView() {
                 {formattedWeight} grams (₹{(goldRate && !isNaN(goldRate) ? Number(goldRate).toFixed(2) : "0.00")}/gram)
               </Text>}
             </View>
-          </View>
+          </LinearGradient>
         )}
 
         {/* User Details Card */}
@@ -1066,12 +1102,30 @@ export default function PaymentNewOverView() {
               </View>
             )}
 
-            {params.noOfIns && (
-              <View style={styles.schemeDetailsRow}>
-                <Text style={styles.schemeDetailLabel}>{t("installmentProgress")}:</Text>
-                <Text style={styles.schemeDetailValue}>
-                  {params.paidPaymentCount || 0}/{params.noOfIns}
-                </Text>
+            {!isFlexi && !isHybrid && params.noOfIns && (
+              <View style={styles.progressRowContainer}>
+                <View style={styles.schemeDetailsRow}>
+                  <Text style={styles.schemeDetailLabel}>{t("installmentProgress")}:</Text>
+                  <Text style={styles.schemeDetailValue}>
+                    {params.paidPaymentCount || 0}/{params.noOfIns}
+                  </Text>
+                </View>
+                <View style={styles.progressBarBackground}>
+                  <View
+                    style={[
+                      styles.progressBarFill,
+                      {
+                        width: `${Math.min(
+                          100,
+                          Math.max(
+                            0,
+                            (Number(params.paidPaymentCount || 0) / Number(params.noOfIns)) * 100
+                          )
+                        )}%`,
+                      },
+                    ]}
+                  />
+                </View>
               </View>
             )}
 
@@ -1120,7 +1174,10 @@ export default function PaymentNewOverView() {
           <View style={styles.bottomTermsSection}>
             <TouchableOpacity
               style={styles.bottomTermsCheckbox}
-              onPress={() => setIsTermsAccepted(!isTermsAccepted)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                setIsTermsAccepted(!isTermsAccepted);
+              }}
             >
               <MaterialCommunityIcons
                 name={isTermsAccepted ? "checkbox-marked" : "checkbox-blank-outline"}
@@ -1164,7 +1221,46 @@ export default function PaymentNewOverView() {
       </View>
 
       {/* Terms Modal */}
-      <TermsAndConditionsModal />
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showTermsModal}
+        onRequestClose={() => setShowTermsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t("termsAndConditions")}</Text>
+              <TouchableOpacity
+                onPress={() => setShowTermsModal(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color={theme.colors.primary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              style={styles.modalBody}
+              contentContainerStyle={styles.modalBodyContent}
+              showsVerticalScrollIndicator={true}
+            >
+              <Text style={styles.termsText}>
+                {termsContent}
+              </Text>
+            </ScrollView>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.acceptButton}
+                onPress={() => {
+                  setIsTermsAccepted(true);
+                  setShowTermsModal(false);
+                }}
+              >
+                <Text style={styles.acceptButtonText}>{t("accept")}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Exit Confirmation Modal */}
       <Modal
@@ -1892,5 +1988,42 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: theme.colors.secondary,
     fontWeight: "bold",
+  },
+  timerBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fffbeb",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#fef3c7",
+    gap: 8,
+  },
+  timerText: {
+    fontSize: 14,
+    color: "#78350f",
+    fontWeight: "500",
+  },
+  timerCountdown: {
+    fontWeight: "700",
+    color: "#d97706",
+  },
+  progressRowContainer: {
+    marginBottom: 16,
+    width: "100%",
+  },
+  progressBarBackground: {
+    width: "100%",
+    height: 6,
+    backgroundColor: "#e2e8f0",
+    borderRadius: 3,
+    marginTop: 6,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: theme.colors.primary,
+    borderRadius: 3,
   },
 });

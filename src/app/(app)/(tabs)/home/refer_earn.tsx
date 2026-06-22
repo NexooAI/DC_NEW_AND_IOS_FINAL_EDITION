@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import {
   Linking,
   Animated,
   Easing,
+  ActivityIndicator,
+  StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Clipboard from "expo-clipboard";
@@ -21,6 +23,7 @@ import useGlobalStore from "@/store/global.store";
 import { useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { rewardsAPI } from "@/services/api";
 
 const { width } = Dimensions.get("window");
 
@@ -31,6 +34,31 @@ export default function ReferCodeScreen() {
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState(t("refer_earn_tab_refer") || "Refer & Earn");
+  const [referrals, setReferrals] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchReferrals = useCallback(async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const response = await rewardsAPI.getMyReferrals(user.id);
+      if (response.data.success && Array.isArray(response.data.data)) {
+        setReferrals(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching referrals in ReferEarn:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchReferrals();
+  }, [fetchReferrals]);
+
+  const totalEarnings = useMemo(() => {
+    return referrals.reduce((sum, item) => sum + (item.reward_earned || 0), 0);
+  }, [referrals]);
 
   // Animation value for tab transitions
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -111,17 +139,6 @@ export default function ReferCodeScreen() {
   const renderFaqs = () => {
     return (
       <View style={styles.faqContainer}>
-        <View style={styles.totalEarningsHeader}>
-          <View>
-            <Text style={styles.earningsLabel}>{t("refer_earn_total_earnings") || "Total Earnings"}</Text>
-            <View style={styles.earningsValueRow}>
-              <Ionicons name="star" size={24} color="#FF9800" />
-              <Text style={styles.earningsValue}>0 {t("refer_earn_points") || "Points"}</Text>
-            </View>
-          </View>
-          <FontAwesome5 name="gem" size={32} color="#9C27B0" />
-        </View>
-
         {faqs.map((faq, index) => {
           const isExpanded = expandedFaq === index;
           return (
@@ -334,9 +351,76 @@ export default function ReferCodeScreen() {
     </View>
   );
 
+  const renderMyReferrals = () => {
+    return (
+      <View style={{ padding: 16 }}>
+        <View style={styles.totalEarningsHeader}>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={styles.earningsLabel}>{t("refer_earn_total_earnings") || "Total Earnings"}</Text>
+            <View style={styles.earningsValueRow}>
+              <Ionicons name="star" size={24} color="#FF9800" />
+              <Text style={styles.earningsValue}>{totalEarnings} {t("refer_earn_points") || "Points"}</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.redeemButton}
+            onPress={() => router.push("/(tabs)/rewards")}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="gift-outline" size={16} color="#fff" style={{ marginRight: 6 }} />
+            <Text style={styles.redeemButtonText}>{t("redeemPoints") || "Redeem"}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {loading ? (
+          <View style={{ padding: 40, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        ) : referrals.length === 0 ? (
+          <View style={{ padding: 40, alignItems: 'center', marginTop: 30 }}>
+            <Ionicons name="people-outline" size={64} color="#ccc" style={{ marginBottom: 12 }} />
+            <Text style={{ fontSize: 16, color: '#888', fontWeight: '600' }}>
+              {t("no_referrals_yet") || "No Referrals Yet"}
+            </Text>
+            <Text style={{ fontSize: 13, color: '#aaa', marginTop: 4, textAlign: 'center', paddingHorizontal: 20 }}>
+              {t("no_referrals_yet_desc") || "Share your invite code with friends to start earning points together!"}
+            </Text>
+          </View>
+        ) : (
+          referrals.map((item, index) => {
+            const dateObj = new Date(item.joined_at);
+            const formattedDate = dateObj.toLocaleDateString('en-IN', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            });
+            return (
+              <View key={item.id || index} style={styles.referralItem}>
+                <View style={styles.referralIcon}>
+                  <Ionicons name="person" size={20} color="#004B40" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.referralName}>{item.name}</Text>
+                  <Text style={styles.referralMobile}>{item.mobile_number}</Text>
+                  <Text style={styles.referralDate}>{formattedDate}</Text>
+                </View>
+                <View style={styles.referralPointsContainer}>
+                  <Text style={styles.referralPoints}>+{item.reward_earned || 0}</Text>
+                  <Text style={styles.referralPointsLabel}>{t("points") || "Pts"}</Text>
+                </View>
+              </View>
+            );
+          })
+        )}
+        <View style={{ height: 100 }} />
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* <View style={styles.header}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
@@ -344,7 +428,7 @@ export default function ReferCodeScreen() {
         <TouchableOpacity style={styles.historyButton}>
           <Text style={styles.historyText}>{t("refer_earn_history") || "History"}</Text>
         </TouchableOpacity>
-      </View> */}
+      </View>
 
       <View style={[styles.tabsContainer, { backgroundColor: '#fff', zIndex: 10 }]}>
         {[
@@ -381,12 +465,7 @@ export default function ReferCodeScreen() {
         <Animated.View style={{ opacity: fadeAnim }}>
           {activeTab === (t("refer_earn_tab_refer") || "Refer & Earn") && renderReferAndEarn()}
           {activeTab === (t("refer_earn_tab_faqs") || "FAQS") && renderFaqs()}
-          {activeTab === (t("refer_earn_tab_referrals") || "My Referrals") && (
-            <View style={{ padding: 20, alignItems: 'center', marginTop: 50 }}>
-              <Ionicons name="people-outline" size={50} color="#ccc" />
-              <Text style={{ marginTop: 10, color: '#666' }}>{(t("refer_earn_content_coming_soon") || "Content coming soon for {tab}").replace("{tab}", activeTab)}</Text>
-            </View>
-          )}
+          {activeTab === (t("refer_earn_tab_referrals") || "My Referrals") && renderMyReferrals()}
         </Animated.View>
       </ScrollView>
 
@@ -471,8 +550,78 @@ const styles = StyleSheet.create({
   earningsLabel: { fontSize: 14, color: '#666', marginBottom: 4 },
   earningsValueRow: { flexDirection: 'row', alignItems: 'center' },
   earningsValue: { fontSize: 24, fontWeight: '800', color: '#004B40', marginLeft: 8 },
+  redeemButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#004B40',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  redeemButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
   faqItem: { backgroundColor: '#fff', borderRadius: 12, marginBottom: 12, padding: 16, borderWidth: 1, borderColor: '#eaeaea', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 2, elevation: 1 },
   faqHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   faqQuestion: { fontSize: 15, fontWeight: '700', color: '#333', flex: 1, paddingRight: 16 },
-  faqAnswer: { fontSize: 14, color: '#666', marginTop: 12, lineHeight: 22, borderTopWidth: 1, borderTopColor: '#f0f0f0', paddingTop: 12 }
+  faqAnswer: { fontSize: 14, color: '#666', marginTop: 12, lineHeight: 22, borderTopWidth: 1, borderTopColor: '#f0f0f0', paddingTop: 12 },
+
+  referralItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#eef2f5',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  referralIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 75, 64, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  referralName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 2,
+  },
+  referralMobile: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  referralDate: {
+    fontSize: 10,
+    color: '#999',
+  },
+  referralPointsContainer: {
+    alignItems: 'flex-end',
+  },
+  referralPoints: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#4CAF50',
+  },
+  referralPointsLabel: {
+    fontSize: 10,
+    color: '#666',
+  },
 });

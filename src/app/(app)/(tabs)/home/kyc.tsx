@@ -693,7 +693,7 @@ export default function KycForm() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+    <SafeAreaView style={styles.container} edges={["left", "right"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoid}
@@ -1489,9 +1489,13 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderWidth: 1,
     borderColor: "#E0E0E0",
+    zIndex: 1,
+    overflow: "visible",
   },
   activeSectionCard: {
     borderColor: "#bfa14a",
     borderWidth: 1.5,
+    zIndex: 100,
+    elevation: 10,
   },
 });

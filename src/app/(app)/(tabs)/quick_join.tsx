@@ -26,7 +26,7 @@ const ENDPOINTS = {
     BRANCHES: '/branches',
     INVESTMENTS: '/investments'
 };
-import { fetchSchemesWithCache } from '@/utils/apiCache';
+import { fetchSchemesWithCache, fetchBranchesWithCache } from '@/utils/apiCache';
 import { formatGoldWeight } from '@/utils/imageUtils';
 import { logger } from '@/utils/logger';
 
@@ -360,9 +360,9 @@ export default function QuickJoinScreen() {
 
   const fetchBranches = async () => {
       try {
-          const res = await api.get(ENDPOINTS.BRANCHES);
-          if (res.data?.data) {
-              setBranches(res.data.data);
+          const branchData = await fetchBranchesWithCache();
+          if (branchData) {
+              setBranches(branchData);
           }
       } catch (e) {
           logger.error("Error fetching branches", e);

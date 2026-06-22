@@ -68,6 +68,7 @@ type Transaction = {
   status: string;
   current_goldrate: string;
   gold_rate: string;
+  gold_weight?: string | number;
   rewardsList?: {
     id: number;
     amount: number;
@@ -231,6 +232,20 @@ const SavingsDetail = () => {
     return selectedPayments.length * Number(params.emiAmount);
   }, [selectedPayments, params.emiAmount]);
 
+  const { displayGoldRate, displayGoldWeight } = useMemo(() => {
+    if (!selectedTransaction) return { displayGoldRate: 0, displayGoldWeight: 0 };
+    const amount = Number(selectedTransaction.amountPaid || 0);
+    let rate = Number(selectedTransaction.gold_rate || selectedTransaction.current_goldrate || 0);
+    let weight = Number(selectedTransaction.gold_weight || 0);
+
+    if (rate === 0 && weight > 0 && amount > 0) {
+      rate = Math.round(amount / weight);
+    } else if (weight === 0 && rate > 0 && amount > 0) {
+      weight = Number((amount / rate).toFixed(3));
+    }
+    return { displayGoldRate: rate, displayGoldWeight: weight };
+  }, [selectedTransaction]);
+
   const schemesData = useMemo(() => {
     try {
       return JSON.parse(params.schemesData);
@@ -281,12 +296,17 @@ const SavingsDetail = () => {
       utrReference: transaction.utrReference,
       status: transaction.status,
       goldRate: Number(transaction.gold_rate),
+      goldWeight: Number(transaction.gold_weight),
       userName: user?.name,
       userMobile: user?.mobile?.toString(),
       userEmail: user?.email,
       rewardAmount: rewardAmount,
       rewardGoldGrams: rewardGoldGrams,
-      inversement: inversement,
+      maturityDate: params.maturityDate as string,
+      inversement: {
+        ...inversement,
+        schemeName: params.schemeName || inversement?.schemeName,
+      },
     };
 
     try {
@@ -350,12 +370,17 @@ const SavingsDetail = () => {
       utrReference: transaction.utrReference,
       status: transaction.status,
       goldRate: Number(transaction.gold_rate),
+      goldWeight: Number(transaction.gold_weight),
       userName: user?.name,
       userMobile: user?.mobile?.toString(),
       userEmail: user?.email,
       rewardAmount: rewardAmount,
       rewardGoldGrams: rewardGoldGrams,
-      inversement: inversement,
+      maturityDate: params.maturityDate as string,
+      inversement: {
+        ...inversement,
+        schemeName: params.schemeName || inversement?.schemeName,
+      },
     };
 
     try {
@@ -450,8 +475,9 @@ const SavingsDetail = () => {
             paymentFrequency: parseSchemes.paymentFrequencyName || params.paymentFrequency,
             chitId: responce?.data.data?.chitId,
           }),
-          paidPaymentCount: String(paymentHistrory?.length + 1 || 0),
+           paidPaymentCount: String(paymentHistrory?.length + 1 || 0),
           maturityDate: params.maturityDate,
+          joiningDate: params.joiningDate || inversement?.joiningDate,
           totalPaid: params.totalPaid,
           noOfIns: params.noOfIns,
           goldWeight: params.goldWeight,
@@ -599,6 +625,7 @@ const SavingsDetail = () => {
             (paymentHistrory?.length || 0) + selectedPayments.length
           ),
           maturityDate: params.maturityDate,
+          joiningDate: params.joiningDate || inversement?.joiningDate,
           totalPaid: params.totalPaid,
           noOfIns: params.noOfIns,
           goldWeight: params.goldWeight,
@@ -863,7 +890,7 @@ const SavingsDetail = () => {
               >
                 {/* Left status icon */}
                 <View style={[styles.statusIconContainer, { backgroundColor: statusConfig.bg }]}>
-                  <Ionicons name={statusConfig.icon} size={20} color={statusConfig.text} />
+                  <Ionicons name={statusConfig.icon as any} size={20} color={statusConfig.text} />
                 </View>
 
                 {/* Transaction Info */}
@@ -911,12 +938,12 @@ const SavingsDetail = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
       <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
         {/* Header */}
         <View style={[styles.header, { paddingTop: Platform.OS === 'android' ? top + 10 : top - 60 }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#FFF" />
+            <Ionicons name="arrow-back" size={24} color={theme.colors.primary || "#850111"} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{translations.schemeDetails}</Text>
           <View style={{ width: 40 }} />
@@ -975,7 +1002,12 @@ const SavingsDetail = () => {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Transaction Details</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={styles.modalTitle}>Transaction Details</Text>
+                  <View style={{ backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
+                    <Text style={{ color: '#2E7D32', fontSize: 12, fontWeight: 'bold' }}>SUCCESS</Text>
+                  </View>
+                </View>
                 <TouchableOpacity onPress={() => setSelectedTransaction(null)}>
                   <Ionicons name="close" size={24} color="#333" />
                 </TouchableOpacity>
@@ -1026,28 +1058,19 @@ const SavingsDetail = () => {
                     <Text style={styles.receiptValue}>{selectedTransaction.utrReference}</Text>
                   </View>
                 )}
-                {selectedTransaction.gold_rate && (
-                  <View style={styles.receiptRow}>
-                    <Text style={styles.receiptLabel}>Gold Rate</Text>
-                    <Text style={styles.receiptValue}>₹{Number(selectedTransaction.gold_rate).toLocaleString()}/g</Text>
-                  </View>
-                )}
-                {selectedTransaction.status && (
-                  <View style={styles.receiptRow}>
-                    <Text style={styles.receiptLabel}>Status</Text>
-                    <Text style={[
-                      styles.receiptValue,
-                      {
-                        color: selectedTransaction.status.toUpperCase() === "SUCCESS" || selectedTransaction.status.toUpperCase() === "PAID"
-                          ? 'green'
-                          : selectedTransaction.status.toUpperCase() === "PENDING"
-                            ? 'orange'
-                            : 'red'
-                      }
-                    ]}>
-                      {selectedTransaction.status.toUpperCase()}
-                    </Text>
-                  </View>
+                {(displayGoldRate > 0 || displayGoldWeight > 0) && (
+                  <>
+                    <View style={styles.receiptRow}>
+                      <Text style={styles.receiptLabel}>Gold Weight</Text>
+                      <Text style={styles.receiptValue}>
+                        {displayGoldWeight.toFixed(3)} g
+                      </Text>
+                    </View>
+                    <View style={styles.receiptRow}>
+                      <Text style={styles.receiptLabel}>Gold Rate</Text>
+                      <Text style={styles.receiptValue}>₹{displayGoldRate.toLocaleString()}/g</Text>
+                    </View>
+                  </>
                 )}
               </View>
 
@@ -1091,13 +1114,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingBottom: 10,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.quaternary,
     zIndex: 10,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#ffffffff',
+    color: theme.colors.primary,
   },
   backButton: {
     padding: 8,
@@ -1509,7 +1532,7 @@ const styles = StyleSheet.create({
   receiptValueHighlight: {
     fontSize: 18,
     fontWeight: '700',
-    color: theme.colors.primary,
+    color: theme.colors.success || "green",
   },
   downloadButton: {
     backgroundColor: theme.colors.primary,

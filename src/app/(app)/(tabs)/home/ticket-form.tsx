@@ -103,7 +103,7 @@ export default function TicketFormScreen() {
               onPress: () => {
                 setQuestion("");
                 setSubmittedTicketId(null);
-                router.back();
+                router.replace("/tickets");
               },
             },
           ]
@@ -129,7 +129,7 @@ export default function TicketFormScreen() {
             onPress: () => {
               setQuestion("");
               setSubmittedTicketId(null);
-              router.back();
+              router.replace("/tickets");
             },
           },
         ]
@@ -177,7 +177,7 @@ export default function TicketFormScreen() {
                 style={styles.backToFaqButton}
                 onPress={() => {
                   setSubmittedTicketId(null);
-                  router.back();
+                  router.replace("/tickets");
                 }}
               >
                 <LinearGradient

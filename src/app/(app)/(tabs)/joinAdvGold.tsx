@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Alert, View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, ActivityIndicator } from 'react-native';
+import { Alert, View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, ActivityIndicator, Platform, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -104,19 +104,19 @@ export default function JoinAdvGold() {
           const configs = response.data.data;
           const percents: number[] = [];
           const daysMap: Record<number, number> = {};
-          
+
           // Sort by percentage ascending
           const sortedConfigs = [...configs].sort((a: any, b: any) => a.percentage - b.percentage);
-          
+
           sortedConfigs.forEach((c: any) => {
             const pct = Math.round(parseFloat(c.percentage));
             percents.push(pct);
             daysMap[pct] = parseInt(c.booking_days);
           });
-          
+
           setAdvancePercents(percents);
           setPercentToDays(daysMap);
-          
+
           // Set initial default selection to the first percent if not already set by params
           if (percents.length > 0 && !params.advancePercent) {
             setAdvancePercent(percents[0]);
@@ -148,7 +148,7 @@ export default function JoinAdvGold() {
             if (rateVal) {
               const rate = Math.round(parseFloat(rateVal));
               setGoldRate(rate);
-              
+
               // Also dynamically update the default amount based on 1 gram
               const gramsNum = parseFloat(goldGrams) || 1;
               setAmount(Math.round(gramsNum * rate).toString());
@@ -280,11 +280,11 @@ export default function JoinAdvGold() {
         source: "APP",
         expiryDate: expiryDate.toISOString().split('T')[0]
       };
-      
+
       console.log("[DEBUG Payment Flow] handleJoinButton payload:", JSON.stringify(payload));
 
       const response = await advanceBookingAPI.createBooking(payload);
-      
+
       console.log("[DEBUG Payment Flow] createBooking response success:", response?.data?.success);
       console.log("[DEBUG Payment Flow] API returned data:", JSON.stringify(response?.data));
 
@@ -335,8 +335,9 @@ export default function JoinAdvGold() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}>
       {/* Background */}
+      <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
       <LinearGradient
         colors={["rgba(133,1,17,0.05)", "transparent"]}
@@ -514,14 +515,14 @@ export default function JoinAdvGold() {
         <View style={{ height: hp(2) }} />
 
         {/* Royal Join Button */}
-        <TouchableOpacity 
-          style={[styles.joinButton, isProcessing && { opacity: 0.7 }]} 
-          onPress={handleJoinButton} 
-          disabled={isProcessing} 
+        <TouchableOpacity
+          style={[styles.joinButton, isProcessing && { opacity: 0.7 }]}
+          onPress={handleJoinButton}
+          disabled={isProcessing}
           activeOpacity={0.9}
         >
           <LinearGradient
-            colors={["#DAA520", "#b8860b"]}
+            colors={[theme.colors.primary, theme.colors.primary]}
             style={styles.joinButtonGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -566,6 +567,7 @@ export default function JoinAdvGold() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: QUATERNARY_COLOR,
   },
   header: {
     flexDirection: "row",

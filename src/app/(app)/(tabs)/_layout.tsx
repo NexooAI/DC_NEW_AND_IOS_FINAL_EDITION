@@ -201,6 +201,7 @@ export default function TabsLayout() {
             options={{
               title: t("notifications") || "Notifications",
               href: null, // Hide from tab bar
+              headerShown: false,
             }}
           />
           <Tabs.Screen

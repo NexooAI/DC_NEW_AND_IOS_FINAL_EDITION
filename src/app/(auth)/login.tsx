@@ -17,6 +17,10 @@ import {
   Modal,
   AppState,
   AppStateStatus,
+  Keyboard,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  StatusBar,
 } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
@@ -1129,123 +1133,97 @@ export default function Login() {
   // Show loading while translations are being initialized
   if (translationLoading) {
     return (
-      <SafeAreaView style={[registerStyles.container, { paddingTop: 0 }]}>
+      <View style={[registerStyles.container, { paddingTop: 0, backgroundColor: theme.colors.quaternary }]}>
         <View
-          style={[registerStyles.backgroundImage, { backgroundColor: theme.colors.quaternary }]}
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
-          <View
-            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-          >
-            <Loader visible={true} message="Loading..." />
-          </View>
+          <Loader visible={true} message="Loading..." />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView
-      style={[
-        registerStyles.container,
-        {
-          paddingTop: 0,
-          // Prevent any keyboard-related adjustments
-          position: "relative",
-        },
-      ]}
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: theme.colors.primary,
+      }}
     >
-      <View
-        style={[
-          registerStyles.backgroundImage,
-          {
-            // Ensure background doesn't move with keyboard
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: theme.colors.quaternary,
-          },
-        ]}
-      >
-        {/* Dark overlay for background */}
-
-        <LinearGradient
-          colors={[
-            theme.colors.primary,
-            theme.colors.quaternary,
-            theme.colors.quaternary,
-          ]}
-          style={registerStyles.gradient}
-        >
-          <SimpleLanguageSwitcher />
-
-          {/* Debug Button */}
-
-
-          {showError && (
-            <ErrorAlert message={errorMessage} onClose={hideErrorAlert} />
-          )}
-          <View
-            style={[
-              registerStyles.keyboardAvoidingView,
-              {
-                // Ensure no keyboard lifting behavior
-                position: "relative",
-                flex: 1,
-              },
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={{ flex: 1 }}>
+          <LinearGradient
+            colors={[
+              theme.colors.primary,
+              theme.colors.quaternary,
+              theme.colors.quaternary,
             ]}
+            style={StyleSheet.absoluteFill}
           >
-            <ScrollView
-              contentContainerStyle={[
-                registerStyles.scrollViewContent,
-                {
-                  flexGrow: 1,
-                  minHeight: screenHeight - insets.top - insets.bottom,
-                  paddingTop: isSmallScreen ? 20 : isMediumScreen ? 30 : 40,
-                  // Prevent any keyboard-related adjustments
-                  position: "relative",
-                },
-              ]}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
+            <SimpleLanguageSwitcher />
+
+            {/* Debug Button */}
+
+
+            {showError && (
+              <ErrorAlert message={errorMessage} onClose={hideErrorAlert} />
+            )}
+            <KeyboardAvoidingView
+              behavior={undefined}
+              style={{ flex: 1 }}
             >
-              <View
-                style={[
-                  registerStyles.logoContainer,
+              <ScrollView
+                contentContainerStyle={[
+                  registerStyles.scrollViewContent,
                   {
-                    paddingTop: spacing.xl,
-                    marginBottom: 0,
+                    flexGrow: 1,
+                    minHeight: screenHeight,
+                    paddingTop: insets.top + (isSmallScreen ? 20 : 30),
+                    paddingBottom: insets.bottom + 40,
+                    // Prevent any keyboard-related adjustments
+                    position: "relative",
                   },
                 ]}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
               >
-                <Image
-                  source={require("../../../assets/images/logo_trans.png")}
+                <View
                   style={[
-                    registerStyles.logo,
+                    registerStyles.logoContainer,
                     {
-                      width: wp(30),
-                      height: isSmallScreen
-                        ? hp(35)
-                        : isMediumScreen
-                          ? hp(35)
-                          : hp(35),
+                      paddingTop: spacing.md,
+                      marginBottom: 0,
                     },
                   ]}
-                  resizeMode="contain"
-                />
-              </View>
+                >
+                  <Image
+                    source={require("../../../assets/images/logo_trans.png")}
+                    style={[
+                      registerStyles.logo,
+                      {
+                        width: wp(30),
+                        height: isSmallScreen
+                          ? hp(15)
+                          : isMediumScreen
+                            ? hp(18)
+                            : hp(20),
+                      },
+                    ]}
+                    resizeMode="contain"
+                  />
+                </View>
 
-              <View
-                style={[
-                  registerStyles.formContainer,
-                  {
-                    paddingHorizontal: spacing.lg,
-                    paddingTop: 0,
-                    paddingBottom: spacing.xl,
-                  },
-                ]}
-              >
+                <View
+                  style={[
+                    registerStyles.formContainer,
+                    {
+                      paddingHorizontal: spacing.lg,
+                      paddingTop: 0,
+                      paddingBottom: spacing.xl,
+                    },
+                  ]}
+                >
                 <View
                   style={[
                     {
@@ -1680,14 +1658,13 @@ export default function Login() {
                 </View>
               </View>
             </ScrollView>
-          </View>
+          </KeyboardAvoidingView>
           {/* <View style={registerStyles.poweredByContainer}>
             <Text style={registerStyles.poweredByText}>
               {t("poweredBy")} <Text style={{textDecorationLine: 'underline', color: theme.colors.textLight}} onPress={() => Linking.openURL('https://agnisofterp.com/')}>Agni Soft ERP</Text>
             </Text>
           </View> */}
         </LinearGradient>
-      </View>
 
       {/* Invalid Mobile Modal */}
       <InvalidMobileModal
@@ -1715,7 +1692,9 @@ export default function Login() {
         onRefreshToken={handleRefreshToken}
         isRefreshing={isRefreshingToken}
       />
-    </SafeAreaView>
+        </View>
+      </TouchableWithoutFeedback>
+    </View>
   );
 }
 

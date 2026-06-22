@@ -17,6 +17,8 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -25,6 +27,7 @@ import { moderateScale } from "react-native-size-matters";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
 import { ticketsAPI } from "@/services/api";
+import { useRouter } from "expo-router";
 
 const { width, height } = Dimensions.get("window");
 
@@ -48,6 +51,7 @@ const TICKET_SUBJECTS = [
 
 const FloatingChatButton = () => {
   const { t } = useTranslation();
+  const router = useRouter();
   const [isChatVisible, setIsChatVisible] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
@@ -179,7 +183,7 @@ const FloatingChatButton = () => {
 
   const handleCreateTicket = async () => {
     if (ticketDescription.trim() === "") {
-      Alert.alert(t("error") || "Error", "Please enter a description/message.");
+      Alert.alert(t("error") || "Error", t("pleaseEnterDescription") || "Please enter a description/message.");
       return;
     }
 
@@ -200,8 +204,8 @@ const FloatingChatButton = () => {
       if (response.data?.success) {
         const ticketNum = response.data.data?.ticketNumber || response.data.data?.ticket_no || response.data.data?.ticketId || response.data.data?.id || '';
         Alert.alert(
-          "Success",
-          `Ticket created successfully!\n\nFor your reference: ${ticketNum}`
+          t("success") || "Success",
+          `${t("ticketCreatedSuccessfully") || "Ticket created successfully!"}\n\n${t("referenceNo") || "Reference No"}: ${ticketNum}`
         );
         setIsTicketModalVisible(false);
         setInputText(""); // Clear parent input
@@ -210,7 +214,7 @@ const FloatingChatButton = () => {
         // Add ticket confirmation message in chat list
         const botMsg: Message = {
           id: Date.now().toString(),
-          text: `🎫 Support Ticket Created!\nSubject: ${selectedSubject}\nReference No: ${ticketNum}\nOur support representative will respond shortly.`,
+          text: `${t("supportTicketCreated") || "🎫 Support Ticket Created!"}\n${t("subject") || "Subject"}: ${selectedSubject}\n${t("referenceNo") || "Reference No"}: ${ticketNum}\n${t("supportRepresentativeRespond") || "Our support representative will respond shortly."}`,
           isUser: false,
           timestamp: new Date(),
         };
@@ -322,10 +326,10 @@ const FloatingChatButton = () => {
                     />
                   </View>
                   <View style={{ marginLeft: 12 }}>
-                    <Text style={styles.chatHeaderTitle}>Support Assistant</Text>
+                    <Text style={styles.chatHeaderTitle}>{t("supportAssistant") || "Support Assistant"}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <View style={styles.onlineDot} />
-                      <Text style={styles.chatHeaderSubtitle}>Online</Text>
+                      <Text style={styles.chatHeaderSubtitle}>{t("online") || "Online"}</Text>
                     </View>
                   </View>
                 </View>
@@ -344,11 +348,28 @@ const FloatingChatButton = () => {
               {messages.length === 0 && (
                 <View style={styles.welcomeContainer}>
                   <Text style={styles.welcomeText}>
-                    👋 Hi there! How can we help you today?
+                    {t("howCanWeHelp") || "👋 Hi there! How can we help you today?"}
                   </Text>
                   <Text style={styles.welcomeSubtext}>
-                    Select a topic below or type your question to create a support ticket.
+                    {t("selectTopicOrType") || "Select a topic below or type your question to create a support ticket."}
                   </Text>
+                  <TouchableOpacity
+                    style={styles.viewTicketsButton}
+                    onPress={() => {
+                      closeChat();
+                      router.push("/tickets");
+                    }}
+                  >
+                    <LinearGradient
+                      colors={[theme.colors.primary, "#002b24"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.viewTicketsGradient}
+                    >
+                      <Ionicons name="receipt-outline" size={16} color="white" style={{ marginRight: 8 }} />
+                      <Text style={styles.viewTicketsText}>{t("viewExistingTickets") || "View Existing Tickets"}</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
                 </View>
               )}
 
@@ -364,7 +385,7 @@ const FloatingChatButton = () => {
 
               {/* FAQ Chips (Compact, Horizontal Scroll) */}
               <View style={styles.faqContainer}>
-                <Text style={styles.sectionHeader}>Common Questions</Text>
+                <Text style={styles.sectionHeader}>{t("commonQuestions") || "Common Questions"}</Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -403,7 +424,7 @@ const FloatingChatButton = () => {
                   style={styles.textInput}
                   value={inputText}
                   onChangeText={setInputText}
-                  placeholder="Type a message..."
+                  placeholder={t("typeAMessage") || "Type a message..."}
                   placeholderTextColor="#999"
                   multiline
                   maxLength={500}
@@ -424,138 +445,132 @@ const FloatingChatButton = () => {
                 </TouchableOpacity>
               </View>
               <Text style={styles.whatsappHint}>
-                Select topics or type a message to generate a support ticket
+                {t("selectTopicsOrTypeToGenerate") || "Select topics or type a message to generate a support ticket"}
               </Text>
             </View>
           </Animated.View>
-        </KeyboardAvoidingView>
-      </Modal>
 
-      {/* Subject Picker Modal */}
-      <Modal
-        visible={isSubjectPickerVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setIsSubjectPickerVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.pickerOverlay}
-          activeOpacity={1}
-          onPress={() => setIsSubjectPickerVisible(false)}
-        >
-          <View style={styles.pickerContainer}>
-            <View style={styles.pickerHeader}>
-              <Text style={styles.pickerTitle}>Select Inquiry Subject</Text>
-              <TouchableOpacity onPress={() => setIsSubjectPickerVisible(false)}>
-                <Ionicons name="close" size={24} color="#333" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.pickerList}>
-              {TICKET_SUBJECTS.map((sub) => (
-                <TouchableOpacity
-                  key={sub}
-                  style={styles.pickerItem}
-                  onPress={() => {
-                    setSelectedSubject(sub);
-                    setIsSubjectPickerVisible(false);
-                    setIsTicketModalVisible(true);
-                  }}
-                >
-                  <Text style={styles.pickerItemText}>{sub}</Text>
-                  <Ionicons name="chevron-forward" size={18} color="#999" />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Create Ticket Modal */}
-      <Modal
-        visible={isTicketModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setIsTicketModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.ticketOverlay}
-        >
-          <View style={styles.ticketContainer}>
-            <View style={styles.ticketHeader}>
-              <Text style={styles.ticketTitle}>Create Support Ticket</Text>
-              <TouchableOpacity onPress={() => setIsTicketModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#333" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.ticketContent} keyboardShouldPersistTaps="handled">
-              {/* Name Field (Read-only) */}
-              <Text style={styles.label}>Name</Text>
-              <View style={styles.readOnlyInput}>
-                <Text style={styles.readOnlyText}>
-                  {user?.name || user?.firstName || "Customer"}
-                </Text>
-              </View>
-
-              {/* Phone Field (Read-only) */}
-              <Text style={styles.label}>Phone Number</Text>
-              <View style={styles.readOnlyInput}>
-                <Text style={styles.readOnlyText}>
-                  {user?.mobile || "N/A"}
-                </Text>
-              </View>
-
-              {/* Subject Field (Clickable to change) */}
-              <Text style={styles.label}>Inquiry Subject</Text>
+          {/* Subject Picker Overlay */}
+          {isSubjectPickerVisible && (
+            <TouchableOpacity
+              style={[StyleSheet.absoluteFillObject, styles.pickerOverlay, { zIndex: 1000 }]}
+              activeOpacity={1}
+              onPress={() => setIsSubjectPickerVisible(false)}
+            >
               <TouchableOpacity
-                style={styles.subjectSelector}
-                onPress={() => {
-                  setIsTicketModalVisible(false);
-                  setIsSubjectPickerVisible(true);
-                }}
+                activeOpacity={1}
+                style={styles.pickerContainer}
               >
-                <Text style={styles.subjectText}>{selectedSubject}</Text>
-                <Ionicons name="arrow-down-circle" size={20} color={theme.colors.primary} />
+                <View style={styles.pickerHeader}>
+                  <Text style={styles.pickerTitle}>{t("selectInquirySubject") || "Select Inquiry Subject"}</Text>
+                  <TouchableOpacity onPress={() => setIsSubjectPickerVisible(false)}>
+                    <Ionicons name="close" size={24} color="#333" />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.pickerList}>
+                  {TICKET_SUBJECTS.map((sub) => (
+                    <TouchableOpacity
+                      key={sub}
+                      style={styles.pickerItem}
+                      onPress={() => {
+                        setSelectedSubject(sub);
+                        setIsSubjectPickerVisible(false);
+                        setIsTicketModalVisible(true);
+                      }}
+                    >
+                      <Text style={styles.pickerItemText}>{sub}</Text>
+                      <Ionicons name="chevron-forward" size={18} color="#999" />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </TouchableOpacity>
+            </TouchableOpacity>
+          )}
 
-              {/* Description Field */}
-              <Text style={styles.label}>Description / Message</Text>
-              <TextInput
-                style={styles.ticketDescriptionInput}
-                value={ticketDescription}
-                onChangeText={setTicketDescription}
-                placeholder="Describe your issue or inquiry..."
-                placeholderTextColor="#999"
-                multiline
-                numberOfLines={4}
-                maxLength={1000}
-              />
+          {/* Create Ticket Overlay */}
+          {isTicketModalVisible && (
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <View style={[StyleSheet.absoluteFillObject, styles.ticketOverlay, { zIndex: 1001 }]}>
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                  <View style={styles.ticketContainer}>
+                    <View style={styles.ticketHeader}>
+                      <Text style={styles.ticketTitle}>{t("createSupportTicket") || "Create Support Ticket"}</Text>
+                      <TouchableOpacity onPress={() => setIsTicketModalVisible(false)}>
+                        <Ionicons name="close" size={24} color="#333" />
+                      </TouchableOpacity>
+                    </View>
 
-              {/* Action Buttons */}
-              {isSubmittingTicket ? (
-                <View style={styles.ticketLoading}>
-                  <ActivityIndicator size="large" color={theme.colors.primary} />
-                </View>
-              ) : (
-                <View style={styles.ticketActions}>
-                  <TouchableOpacity
-                    style={[styles.btnCancel, { borderWidth: 1, borderColor: '#ccc' }]}
-                    onPress={() => setIsTicketModalVisible(false)}
-                  >
-                    <Text style={[styles.btnCancelText, { color: '#666' }]}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.btnSubmit, { backgroundColor: theme.colors.primary }]}
-                    onPress={handleCreateTicket}
-                    disabled={ticketDescription.trim() === ""}
-                  >
-                    <Text style={styles.btnSubmitText}>Generate Ticket</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </ScrollView>
-          </View>
+                    <ScrollView contentContainerStyle={styles.ticketContent} keyboardShouldPersistTaps="handled">
+                      {/* Name Field (Read-only) */}
+                      <Text style={styles.label}>{t("name") || "Name"}</Text>
+                      <View style={styles.readOnlyInput}>
+                        <Text style={styles.readOnlyText}>
+                          {user?.name || user?.firstName || "Customer"}
+                        </Text>
+                      </View>
+
+                      {/* Phone Field (Read-only) */}
+                      <Text style={styles.label}>{t("mobileNumberLabel") || "Phone Number"}</Text>
+                      <View style={styles.readOnlyInput}>
+                        <Text style={styles.readOnlyText}>
+                          {user?.mobile || "N/A"}
+                        </Text>
+                      </View>
+
+                      {/* Subject Field (Clickable to change) */}
+                      <Text style={styles.label}>{t("inquirySubject") || "Inquiry Subject"}</Text>
+                      <TouchableOpacity
+                        style={styles.subjectSelector}
+                        onPress={() => {
+                          setIsTicketModalVisible(false);
+                          setIsSubjectPickerVisible(true);
+                        }}
+                      >
+                        <Text style={styles.subjectText}>{selectedSubject}</Text>
+                        <Ionicons name="arrow-down-circle" size={20} color={theme.colors.primary} />
+                      </TouchableOpacity>
+
+                      {/* Description Field */}
+                      <Text style={styles.label}>{t("descriptionMessage") || "Description / Message"}</Text>
+                      <TextInput
+                        style={styles.ticketDescriptionInput}
+                        value={ticketDescription}
+                        onChangeText={setTicketDescription}
+                        placeholder={t("ticketDescriptionPlaceholder") || "Describe your issue or inquiry..."}
+                        placeholderTextColor="#999"
+                        multiline
+                        numberOfLines={4}
+                        maxLength={1000}
+                      />
+
+                      {/* Action Buttons */}
+                      {isSubmittingTicket ? (
+                        <View style={styles.ticketLoading}>
+                          <ActivityIndicator size="large" color={theme.colors.primary} />
+                        </View>
+                      ) : (
+                        <View style={styles.ticketActions}>
+                          <TouchableOpacity
+                            style={[styles.btnCancel, { borderWidth: 1, borderColor: '#ccc' }]}
+                            onPress={() => setIsTicketModalVisible(false)}
+                          >
+                            <Text style={[styles.btnCancelText, { color: '#666' }]}>{t("cancel") || "Cancel"}</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.btnSubmit, { backgroundColor: theme.colors.primary }]}
+                            onPress={handleCreateTicket}
+                            disabled={ticketDescription.trim() === ""}
+                          >
+                            <Text style={styles.btnSubmitText}>{t("generateTicket") || "Generate Ticket"}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </ScrollView>
+                  </View>
+                </TouchableWithoutFeedback>
+              </View>
+            </TouchableWithoutFeedback>
+          )}
         </KeyboardAvoidingView>
       </Modal>
     </>
@@ -859,7 +874,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '50%',
+    maxHeight: '70%',
     padding: 20,
   },
   pickerHeader: {
@@ -1008,6 +1023,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
+  },
+  viewTicketsButton: {
+    marginTop: 16,
+    borderRadius: 20,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  viewTicketsGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  viewTicketsText: {
+    color: "white",
+    fontSize: moderateScale(13),
+    fontWeight: "700",
   },
 });
 

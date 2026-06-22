@@ -140,6 +140,14 @@ interface GlobalStore {
     data: any;
     timestamp: number;
   } | null;
+  cachedBranches: {
+    data: any[];
+    timestamp: number;
+  } | null;
+  cachedAboutPage: {
+    data: any;
+    timestamp: number;
+  } | null;
 
   // Cache functions
   setCachedRates: (data: any) => void;
@@ -154,6 +162,14 @@ interface GlobalStore {
   isRatesCacheValid: (maxAge?: number) => boolean;
   isSchemesCacheValid: (maxAge?: number) => boolean;
   isVisibilityCacheValid: (maxAge?: number) => boolean;
+  setCachedBranches: (data: any[]) => void;
+  setCachedAboutPage: (data: any) => void;
+  getCachedBranches: () => { data: any[]; timestamp: number } | null;
+  getCachedAboutPage: () => { data: any; timestamp: number } | null;
+  clearCachedBranches: () => void;
+  clearCachedAboutPage: () => void;
+  isBranchesCacheValid: (maxAge?: number) => boolean;
+  isAboutPageCacheValid: (maxAge?: number) => boolean;
 
   // Chat Support visibility
   isChatOpen: boolean;
@@ -225,6 +241,8 @@ const useGlobalStore = create<GlobalStore>()(
             cachedRates: null,
             cachedSchemes: null,
             cachedVisibility: null,
+            cachedBranches: null,
+            cachedAboutPage: null,
           });
 
           logger.auth('✅ Global Store: Logout completed - all data cleared');
@@ -314,6 +332,8 @@ const useGlobalStore = create<GlobalStore>()(
       cachedRates: null,
       cachedSchemes: null,
       cachedVisibility: null,
+      cachedBranches: null,
+      cachedAboutPage: null,
 
       // Cache functions
       setCachedRates: (data: any) => {
@@ -400,6 +420,65 @@ const useGlobalStore = create<GlobalStore>()(
         const state = get();
         if (!state.cachedVisibility) return false;
         const age = Date.now() - state.cachedVisibility.timestamp;
+        return age < maxAge;
+      },
+
+      setCachedBranches: (data: any[]) => {
+        set({
+          cachedBranches: {
+            data,
+            timestamp: Date.now(),
+          },
+        });
+        logger.log("📦 [Cache] Branches cached", {
+          count: data.length,
+          timestamp: Date.now()
+        });
+      },
+
+      setCachedAboutPage: (data: any) => {
+        set({
+          cachedAboutPage: {
+            data,
+            timestamp: Date.now(),
+          },
+        });
+        logger.log("📦 [Cache] About page cached", { timestamp: Date.now() });
+      },
+
+      getCachedBranches: () => {
+        const state = get();
+        return state.cachedBranches;
+      },
+
+      getCachedAboutPage: () => {
+        const state = get();
+        return state.cachedAboutPage;
+      },
+
+      clearCachedBranches: () => {
+        set({ cachedBranches: null });
+        logger.log("📦 [Cache] Branches cache cleared");
+      },
+
+      clearCachedAboutPage: () => {
+        set({ cachedAboutPage: null });
+        logger.log("📦 [Cache] About page cache cleared");
+      },
+
+      isBranchesCacheValid: (maxAge: number = 24 * 60 * 60 * 1000) => {
+        // Default 24 hours cache for branches
+        const state = get();
+        if (!state.cachedBranches) return false;
+        const age = Date.now() - state.cachedBranches.timestamp;
+        return age < maxAge;
+      },
+
+      isAboutPageCacheValid: (maxAge: number = 12 * 60 * 60 * 1000) => {
+        // Default 12 hours cache for about page
+        const state = get();
+        if (!state.cachedAboutPage) return false;
+        const age = Date.now() - state.cachedAboutPage.timestamp;
         return age < maxAge;
       },
 

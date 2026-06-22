@@ -38,6 +38,6 @@ export const changeLocale = async (locale: AppLocale) => {
   i18n.locale = locale;
 };
 
-export const t = (key: string) => i18n.t(key);
+export const t = (key: string, options?: any) => i18n.t(key, options);
 
 export default i18n;
