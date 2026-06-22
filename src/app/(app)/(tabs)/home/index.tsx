@@ -36,7 +36,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import LanguageSwitcher from "@/contexts/LanguageSwitcher";
 import LanguageSelector from "@/components/LanguageSelector";
 import LiveRateCard from "@/components/LiveRateCard";
-import ImageSlider from "@/components/ImageSlider";
+import PostersSlider from "@/components/PostersSlider";
 import { useTranslation } from "@/hooks/useTranslation";
 // AppHeader is now handled by the layout wrapper
 import ProductsList from "@/components/Products";
@@ -2866,7 +2866,7 @@ export default function Home() {
                   {isSliderLoading ? (
                     <SkeletonImageSlider style={{ marginVertical: rp(8) }} />
                   ) : (
-                    <ImageSlider images={sliderImages} />
+                    <PostersSlider images={sliderImages} />
                   )}
                 </>
               )}
