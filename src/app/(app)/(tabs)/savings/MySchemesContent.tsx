@@ -521,6 +521,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
       accountNumberLabel: t("accountNumberLabel"),
       frequency: t("frequency"),
       totalWeight: t("totalWeight"),
+      paymentsMade: t("paymentsMade"),
       installmentProgress: t("installmentProgress"),
       investmentTimeline: t("investmentTimeline"),
       started: t("started"),

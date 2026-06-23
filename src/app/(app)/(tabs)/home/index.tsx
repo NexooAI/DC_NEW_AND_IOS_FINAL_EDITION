@@ -127,9 +127,9 @@ const getDummyData = (t: (key: string) => string) => ({
   },
   sliderImages: [
     require("../../../../../assets/images/slider1.png"),
-    require("../../../../../assets/images/slider2.png"),
-    require("../../../../../assets/images/slider3.png"),
-    require("../../../../../assets/images/slider4.png"),
+    require("../../../../../assets/images/slider1.png"),
+    require("../../../../../assets/images/slider1.png"),
+    require("../../../../../assets/images/slider1.png"),
   ],
   defaultPopups: [
     {
@@ -143,7 +143,7 @@ const getDummyData = (t: (key: string) => string) => ({
     {
       id: 2,
       title: t("specialGoldOffer"),
-      image: require("../../../../../assets/images/slider2.png"),
+      image: require("../../../../../assets/images/slider1.png"),
       description: t("limitedTimeOfferOnGoldSchemes"),
       actionText: t("viewOffers"),
       actionUrl: "/(app)/(tabs)/home/schemes",
@@ -151,7 +151,7 @@ const getDummyData = (t: (key: string) => string) => ({
     {
       id: 3,
       title: t("goldRateUpdates"),
-      image: require("../../../../../assets/images/slider2.png"),
+      image: require("../../../../../assets/images/slider1.png"),
       description: t("stayUpdatedWithLiveGoldRates"),
       actionText: t("checkRates"),
       actionUrl: "#", // Live rates page removed
@@ -180,8 +180,8 @@ const getDefaultStatusImages = (t: (key: string) => string): Collection[] => [
     thumbnail: require("../../../../../assets/images/status1.jpg"),
     status_images: [
       require("../../../../../assets/images/status1.jpg"),
-      require("../../../../../assets/images/status2.jpg"),
-      require("../../../../../assets/images/status3.jpg"),
+      require("../../../../../assets/images/status1.jpg"),
+      require("../../../../../assets/images/status1.jpg"),
     ],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -189,11 +189,11 @@ const getDefaultStatusImages = (t: (key: string) => string): Collection[] => [
   {
     id: 2,
     name: t("silverCollection"),
-    thumbnail: require("../../../../../assets/images/status4.jpg"),
+    thumbnail: require("../../../../../assets/images/status1.jpg"),
     status_images: [
-      require("../../../../../assets/images/status4.jpg"),
-      require("../../../../../assets/images/status5.jpg"),
-      require("../../../../../assets/images/status6.jpg"),
+      require("../../../../../assets/images/status1.jpg"),
+      require("../../../../../assets/images/status1.jpg"),
+      require("../../../../../assets/images/status1.jpg"),
     ],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -201,11 +201,11 @@ const getDefaultStatusImages = (t: (key: string) => string): Collection[] => [
   {
     id: 3,
     name: t("diamondCollection"),
-    thumbnail: require("../../../../../assets/images/status7.jpg"),
+    thumbnail: require("../../../../../assets/images/status1.jpg"),
     status_images: [
-      require("../../../../../assets/images/status7.jpg"),
-      require("../../../../../assets/images/status8.jpg"),
-      require("../../../../../assets/images/status9.jpg"),
+      require("../../../../../assets/images/status1.jpg"),
+      require("../../../../../assets/images/status1.jpg"),
+      require("../../../../../assets/images/status1.jpg"),
     ],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -213,11 +213,11 @@ const getDefaultStatusImages = (t: (key: string) => string): Collection[] => [
   {
     id: 4,
     name: t("platinumCollection"),
-    thumbnail: require("../../../../../assets/images/status10.jpg"),
+    thumbnail: require("../../../../../assets/images/status1.jpg"),
     status_images: [
-      require("../../../../../assets/images/status10.jpg"),
-      require("../../../../../assets/images/status11.jpg"),
-      require("../../../../../assets/images/status12.jpg"),
+      require("../../../../../assets/images/status1.jpg"),
+      require("../../../../../assets/images/status1.jpg"),
+      require("../../../../../assets/images/status1.jpg"),
     ],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -225,11 +225,11 @@ const getDefaultStatusImages = (t: (key: string) => string): Collection[] => [
   {
     id: 5,
     name: t("exclusiveCollection"),
-    thumbnail: require("../../../../../assets/images/status13.jpg"),
+    thumbnail: require("../../../../../assets/images/status1.jpg"),
     status_images: [
-      require("../../../../../assets/images/status13.jpg"),
-      require("../../../../../assets/images/status14.jpg"),
-      require("../../../../../assets/images/status15.jpg"),
+      require("../../../../../assets/images/status1.jpg"),
+      require("../../../../../assets/images/status1.jpg"),
+      require("../../../../../assets/images/status1.jpg"),
     ],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -1687,7 +1687,7 @@ export default function Home() {
 
   const checkIsOldGold = (scheme: any): boolean => {
     if (!scheme) return false;
-    
+
     // Check plan type ID (safe from number/string type differences)
     if (
       String(scheme.scheme_plan_type_id) === "4" ||
@@ -2499,7 +2499,7 @@ export default function Home() {
   // Show skeleton loading screen while data is being fetched
   if (isLoading) {
     return (
-      <View style={styles.fullHeightBackground}>
+      <SafeAreaView style={styles.fullHeightBackground} edges={Platform.OS === "android" ? ["top"] : []}>
         {/* Home Page Header Skeleton */}
         <View style={styles.homeHeader}>
           <View style={styles.headerLeft}>
@@ -2582,7 +2582,7 @@ export default function Home() {
             <View style={styles.spacer} />
           </View>
         </ScrollView>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -2590,7 +2590,7 @@ export default function Home() {
   if (!user || !user.id) {
     return (
       <>
-        <View style={styles.fullHeightBackground}>
+        <SafeAreaView style={styles.fullHeightBackground} edges={Platform.OS === "android" ? ["top"] : []}>
           <View style={styles.loadingContainer}>
             <Ionicons
               name="person-circle-outline"
@@ -2618,14 +2618,14 @@ export default function Home() {
               style={styles.loginButton}
             />
           </View>
-        </View>
+        </SafeAreaView>
       </>
     );
   }
 
   return (
     <AuthGuard>
-      <View style={styles.fullHeightBackground}>
+      <SafeAreaView style={styles.fullHeightBackground} edges={Platform.OS === "android" ? ["top"] : []}>
         {/* {showFlashBanner && (
           <FlashBanner
             imageSource={images.banners.flashBanner}
@@ -3763,7 +3763,7 @@ export default function Home() {
 
         </View>
 
-      </View>
+      </SafeAreaView>
 
       {/* Rating Modal */}
       <RatingModal
@@ -3813,7 +3813,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: rp(16),
     paddingVertical: rp(12),
-    paddingTop: Platform.OS === "ios" ? rp(0) : rp(12),
+    paddingTop: 0,
     backgroundColor: "transparent",
     zIndex: 10,
     elevation: 10,

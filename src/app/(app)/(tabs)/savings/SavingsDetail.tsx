@@ -160,6 +160,17 @@ const SavingsDetail = () => {
     });
   }, [paymentHistrory, statusFilter, searchQuery]);
 
+  const chronologicalPayments = useMemo(() => {
+    return [...paymentHistrory]
+      .filter((txn) => {
+        const s = (txn.status || "Success").toUpperCase();
+        return s === "SUCCESS" || s === "ACTIVE" || s === "COMPLETED";
+      })
+      .sort((a, b) => {
+        return new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime();
+      });
+  }, [paymentHistrory]);
+
   const getStatusColor = (status?: string) => {
     const s = (status || "Success").toUpperCase();
     if (s === "SUCCESS" || s === "ACTIVE" || s === "COMPLETED") {
@@ -449,6 +460,24 @@ const SavingsDetail = () => {
         };
       }
 
+      if (parseSchemes) {
+        const isSchemeHybridType = parseSchemes.SCHEMETYPE === "Hybrid" ||
+          parseSchemes.SCHEMETYPE?.toLowerCase() === "hybrid" ||
+          parseSchemes.schemeType === "Hybrid" ||
+          parseSchemes.schemeType?.toLowerCase() === "hybrid";
+
+        const isFixedNull = parseSchemes.FIXED === null ||
+          parseSchemes.FIXED === undefined ||
+          parseSchemes.FIXED === "" ||
+          parseSchemes.fixed === null ||
+          parseSchemes.fixed === undefined ||
+          parseSchemes.fixed === "";
+
+        if (isSchemeHybridType && isFixedNull) {
+          parseSchemes.schemeTypeName = "Flexi";
+        }
+      }
+
       const hybridStatus = responce?.data?.data?.hybridStatus || null;
 
       router.push({
@@ -475,7 +504,7 @@ const SavingsDetail = () => {
             paymentFrequency: parseSchemes.paymentFrequencyName || params.paymentFrequency,
             chitId: responce?.data.data?.chitId,
           }),
-           paidPaymentCount: String(paymentHistrory?.length + 1 || 0),
+          paidPaymentCount: String(paymentHistrory?.length + 1 || 0),
           maturityDate: params.maturityDate,
           joiningDate: params.joiningDate || inversement?.joiningDate,
           totalPaid: params.totalPaid,
@@ -590,6 +619,24 @@ const SavingsDetail = () => {
           schemeTypeName: "Fixed",
           paymentFrequencyName: params.paymentFrequency || "Monthly",
         };
+      }
+
+      if (parseSchemes) {
+        const isSchemeHybridType = parseSchemes.SCHEMETYPE === "Hybrid" ||
+          parseSchemes.SCHEMETYPE?.toLowerCase() === "hybrid" ||
+          parseSchemes.schemeType === "Hybrid" ||
+          parseSchemes.schemeType?.toLowerCase() === "hybrid";
+
+        const isFixedNull = parseSchemes.FIXED === null ||
+          parseSchemes.FIXED === undefined ||
+          parseSchemes.FIXED === "" ||
+          parseSchemes.fixed === null ||
+          parseSchemes.fixed === undefined ||
+          parseSchemes.fixed === "";
+
+        if (isSchemeHybridType && isFixedNull) {
+          parseSchemes.schemeTypeName = "Flexi";
+        }
       }
 
       const hybridStatus = responce?.data?.data?.hybridStatus || null;
@@ -803,14 +850,14 @@ const SavingsDetail = () => {
   const renderTransactionHistory = () => {
     const displayList = showAllTransactions
       ? filteredHistory
-      : filteredHistory.slice(0, 5);
+      : filteredHistory.slice(0, 20);
 
     return (
       <View style={[styles.sectionContainer, { marginBottom: 120 }]}>
         {/* Header with View All toggle */}
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Transaction History ({paymentHistrory.length})</Text>
-          {filteredHistory.length > 5 && (
+          {filteredHistory.length > 20 && (
             <TouchableOpacity onPress={() => setShowAllTransactions(!showAllTransactions)}>
               <Text style={styles.viewAllText}>
                 {showAllTransactions ? "Show Less" : translations.viewAll}
@@ -890,7 +937,20 @@ const SavingsDetail = () => {
               >
                 {/* Left status icon */}
                 <View style={[styles.statusIconContainer, { backgroundColor: statusConfig.bg }]}>
-                  <Ionicons name={statusConfig.icon as any} size={20} color={statusConfig.text} />
+                  {(() => {
+                    const s = (txn.status || "Success").toUpperCase();
+                    const isSuccess = s === "SUCCESS" || s === "ACTIVE" || s === "COMPLETED";
+                    const seqNum = isSuccess
+                      ? chronologicalPayments.findIndex(p => p.paymentId === txn.paymentId || (p.transactionId && p.transactionId === txn.transactionId)) + 1
+                      : 0;
+                    return seqNum > 0 ? (
+                      <Text style={{ color: statusConfig.text, fontWeight: "bold", fontSize: 15 }}>
+                        {seqNum}
+                      </Text>
+                    ) : (
+                      <Ionicons name={statusConfig.icon as any} size={20} color={statusConfig.text} />
+                    );
+                  })()}
                 </View>
 
                 {/* Transaction Info */}

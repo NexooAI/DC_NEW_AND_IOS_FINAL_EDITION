@@ -24,12 +24,14 @@ import { luckyDrawAPI } from "@/services/api";
 const { wp, hp, rf } = responsiveUtils;
 
 const luckyDrawColors = {
-  surface: "#FFFDF8",
-  surfaceWarm: "#FFF6E8",
-  surfaceSoft: "rgba(255,255,255,0.58)",
-  primary: theme.colors.primary,
-  primaryDark: theme.colors.textDark,
-  goldDeep: theme.colors.goldDark,
+  surface: "#FFFFFF",
+  surfaceWarm: "#FFFDF0",
+  surfaceSoft: "rgba(255,255,255,0.72)",
+  primary: "#850111", // Burgundy
+  primaryDark: "#2C0006",
+  goldDeep: "#B8860B", // Dark Gold
+  goldPremium: "#D4AF37", // Elegant Gold
+  goldLight: "#FAF3E0",
   muted: theme.colors.textMediumGrey,
   subtle: theme.colors.textLightGrey,
 };
@@ -128,19 +130,24 @@ const LuckyDrawCard = ({ item, onPress }: { item: LuckyDrawItem; onPress?: () =>
   const isCompleted = item.status === "completed";
   const userWon = item.userWon;
 
+  // Premium colors based on draw status
+  const cardGradientColors = isCompleted
+    ? ["#FAFAFA", "#F5F5F5"]
+    : userWon
+      ? ["#FFFDF0", "#FFF9C4", "#FFF59D"]
+      : [luckyDrawColors.surface, luckyDrawColors.surfaceWarm];
+
   return (
-    <TouchableOpacity activeOpacity={0.9} style={[styles.card, userWon && styles.cardWon]} onPress={onPress}>
+    <TouchableOpacity activeOpacity={0.9} style={[styles.card, userWon && styles.cardWon, isCompleted && styles.cardCompleted]} onPress={onPress}>
       <LinearGradient
-        colors={userWon 
-          ? ["#FFFBE6", "#FFF5CC"] 
-          : [luckyDrawColors.surface, luckyDrawColors.surfaceWarm]}
+        colors={cardGradientColors}
         style={styles.cardGradient}
       >
         <View style={styles.cardHeader}>
           <View style={[
             styles.badge, 
-            isCompleted && { backgroundColor: "#4CAF50" },
-            userWon && { backgroundColor: "#FFD700" }
+            isCompleted && { backgroundColor: "#78909C" },
+            userWon && { backgroundColor: luckyDrawColors.goldPremium }
           ]}>
             <ResponsiveText color={userWon ? "#000" : "#fff"} size="xs" weight="bold">
               {userWon 
@@ -172,8 +179,8 @@ const LuckyDrawCard = ({ item, onPress }: { item: LuckyDrawItem; onPress?: () =>
             </ResponsiveText>
 
             {item.ticketNumber ? (
-              <View style={[styles.ticketBadge, userWon && { backgroundColor: "rgba(218,165,32,0.15)", borderColor: "rgba(218,165,32,0.4)" }]}>
-                <MaterialCommunityIcons name="ticket-confirmation" size={14} color={userWon ? "#B8860B" : luckyDrawColors.primary} />
+              <View style={[styles.ticketBadge, userWon && { backgroundColor: "rgba(218,165,32,0.18)", borderColor: "rgba(218,165,32,0.5)" }]}>
+                <MaterialCommunityIcons name="ticket-confirmation" size={14} color={userWon ? "#B8860B" : luckyDrawColors.goldPremium} />
                 <ResponsiveText color={userWon ? "#B8860B" : luckyDrawColors.primary} size="xs" weight="bold" style={{ marginLeft: 6 }}>
                   {t("luckyDrawDrawNo").replace("{no}", item.ticketNumber)}
                 </ResponsiveText>
@@ -197,8 +204,8 @@ const LuckyDrawCard = ({ item, onPress }: { item: LuckyDrawItem; onPress?: () =>
             />
             <MaterialCommunityIcons 
               name={userWon ? "trophy-outline" : "trophy-award"} 
-              size={rf(50)} 
-              color={userWon ? "#FFD700" : luckyDrawColors.goldDeep} 
+              size={rf(44)} 
+              color={userWon ? "#FFD700" : luckyDrawColors.goldPremium} 
             />
           </View>
         </View>
@@ -212,7 +219,7 @@ const LuckyDrawCard = ({ item, onPress }: { item: LuckyDrawItem; onPress?: () =>
               const isCurrentUser = winner.user_id === item.currentUserId;
               return (
                 <View key={idx} style={[styles.winnerRow, isCurrentUser && styles.winnerRowCurrentUser]}>
-                  <Ionicons name="ribbon" size={14} color={isCurrentUser ? "#FFD700" : luckyDrawColors.goldDeep} />
+                  <Ionicons name="ribbon" size={14} color={isCurrentUser ? "#FFD700" : luckyDrawColors.goldPremium} />
                   <ResponsiveText color={luckyDrawColors.primaryDark} size="xs" style={{ marginLeft: 6, flex: 1 }} weight={isCurrentUser ? "bold" : "normal"}>
                     {winner.user_name || winner.userName} {isCurrentUser && `(You - ${t("luckyDrawCongratulations") || "Won!"})`}
                   </ResponsiveText>
@@ -237,8 +244,8 @@ const LuckyDrawCard = ({ item, onPress }: { item: LuckyDrawItem; onPress?: () =>
             <TouchableOpacity style={styles.entryButton} onPress={onPress}>
               <LinearGradient
                 colors={item.ticketNumber 
-                  ? ["#4CAF50", "#2E7D32"] 
-                  : [luckyDrawColors.primary, theme.colors.redDark]}
+                  ? ["#388E3C", "#1B5E20"] 
+                  : [luckyDrawColors.primary, "#4A0010"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.entryButtonGradient}
@@ -533,8 +540,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: luckyDrawColors.surfaceSoft,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(133,1,17,0.12)",
+    borderWidth: 1.5,
+    borderColor: "rgba(212, 175, 55, 0.25)",
   },
   historyButton: {
     width: 40,
@@ -543,8 +550,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: luckyDrawColors.surfaceSoft,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(133,1,17,0.12)",
+    borderWidth: 1.5,
+    borderColor: "rgba(212, 175, 55, 0.25)",
   },
   segmentWrapper: {
     paddingHorizontal: wp(5),
@@ -552,11 +559,11 @@ const styles = StyleSheet.create({
   },
   segmentContainer: {
     flexDirection: "row",
-    backgroundColor: "rgba(133,1,17,0.06)",
+    backgroundColor: "rgba(212, 175, 55, 0.04)",
     borderRadius: 12,
     padding: 4,
-    borderWidth: 1,
-    borderColor: "rgba(133,1,17,0.12)",
+    borderWidth: 1.5,
+    borderColor: "rgba(212, 175, 55, 0.25)",
   },
   segmentButton: {
     flex: 1,
@@ -592,7 +599,7 @@ const styles = StyleSheet.create({
     width: wp(80),
     height: wp(80),
     borderRadius: wp(40),
-    backgroundColor: "rgba(133,1,17,0.08)",
+    backgroundColor: "rgba(212, 175, 55, 0.08)",
   },
   bgDecorCircle2: {
     position: "absolute",
@@ -601,7 +608,7 @@ const styles = StyleSheet.create({
     width: wp(80),
     height: wp(80),
     borderRadius: wp(40),
-    backgroundColor: "rgba(255,201,12,0.12)",
+    backgroundColor: "rgba(212, 175, 55, 0.08)",
   },
   banner: {
     width: "100%",
@@ -609,6 +616,8 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     overflow: "hidden",
     marginVertical: hp(2),
+    borderWidth: 1.5,
+    borderColor: "#D4AF37", // Elegant gold border
     ...shadowUtils.SHADOW_PRESETS.medium,
   },
   bannerGradient: {
@@ -637,11 +646,13 @@ const styles = StyleSheet.create({
   winnersTicker: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "rgba(0,0,0,0.4)",
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 15,
     alignSelf: "flex-start",
+    borderWidth: 0.5,
+    borderColor: "rgba(212, 175, 55, 0.4)",
   },
   sectionHeader: {
     flexDirection: "row",
@@ -652,20 +663,32 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    borderRadius: 20,
+    borderRadius: 24,
     overflow: "hidden",
     marginBottom: hp(2.5),
-    borderWidth: 1,
-    borderColor: "rgba(133,1,17,0.12)",
-    ...shadowUtils.SHADOW_PRESETS.small,
+    borderWidth: 1.5,
+    borderColor: "rgba(212, 175, 55, 0.22)", // Premium soft gold border
+    backgroundColor: "#FFFFFF",
+    ...shadowUtils.SHADOW_PRESETS.medium,
   },
   cardWon: {
     borderWidth: 2.5,
-    borderColor: "#FFD700",
-    ...shadowUtils.SHADOW_PRESETS.medium,
+    borderColor: "#D4AF37", // Bright gold metallic border
+    shadowColor: "#FFD700",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  cardCompleted: {
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    opacity: 0.9,
+    shadowOpacity: 0.03,
+    elevation: 1,
   },
   cardGradient: {
-    padding: wp(4.5),
+    padding: wp(5),
   },
   cardHeader: {
     flexDirection: "row",
@@ -675,19 +698,21 @@ const styles = StyleSheet.create({
   },
   badge: {
     backgroundColor: luckyDrawColors.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: "rgba(212, 175, 55, 0.25)",
   },
   timerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(133,1,17,0.06)",
+    backgroundColor: "rgba(212, 175, 55, 0.08)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(133,1,17,0.12)",
+    borderColor: "rgba(212, 175, 55, 0.28)",
   },
   cardBody: {
     flexDirection: "row",
@@ -700,44 +725,50 @@ const styles = StyleSheet.create({
   imageSection: {
     width: wp(20),
     height: wp(20),
-    backgroundColor: "rgba(255,201,12,0.12)",
-    borderRadius: 15,
+    backgroundColor: "rgba(212, 175, 55, 0.08)",
+    borderRadius: wp(10), // Fully circular
     justifyContent: "center",
     alignItems: "center",
     marginLeft: wp(4),
-    borderWidth: 1,
-    borderColor: "rgba(184,134,11,0.18)",
+    borderWidth: 1.5,
+    borderColor: "#D4AF37", // Elegant gold border
+    shadowColor: "#D4AF37",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
   },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 15,
+    borderRadius: wp(10),
   },
   cardTitle: {
     marginBottom: 4,
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   ticketBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(133,1,17,0.06)",
+    backgroundColor: "rgba(212, 175, 55, 0.08)",
     paddingVertical: 4,
     paddingHorizontal: 8,
-    borderRadius: 6,
+    borderRadius: 8,
     alignSelf: "flex-start",
     marginTop: 10,
-    borderWidth: 0.5,
-    borderColor: "rgba(133,1,17,0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(212, 175, 55, 0.45)",
+    borderStyle: "dashed", // Realistic tear-off ticket design
   },
   prizeText: {
     marginBottom: 8,
+    fontSize: rf(19),
   },
   descText: {
     lineHeight: 18,
   },
   winnersContainer: {
     borderTopWidth: 1,
-    borderTopColor: "rgba(133,1,17,0.08)",
+    borderTopColor: "rgba(212, 175, 55, 0.15)",
     paddingTop: hp(1.5),
     marginBottom: hp(1.5),
   },
@@ -747,15 +778,18 @@ const styles = StyleSheet.create({
   winnerRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    marginBottom: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: "rgba(212, 175, 55, 0.06)",
+    borderWidth: 0.5,
+    borderColor: "rgba(212, 175, 55, 0.2)",
+    marginBottom: 6,
   },
   winnerRowCurrentUser: {
-    backgroundColor: "rgba(255,215,0,0.15)",
-    borderWidth: 0.5,
-    borderColor: "rgba(255,215,0,0.3)",
+    backgroundColor: "rgba(212, 175, 55, 0.18)",
+    borderWidth: 1,
+    borderColor: "#D4AF37",
   },
   cardFooter: {
     flexDirection: "row",
@@ -763,7 +797,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: hp(2),
     borderTopWidth: 1,
-    borderTopColor: "rgba(133,1,17,0.08)",
+    borderTopColor: "rgba(212, 175, 55, 0.15)",
   },
   participantInfo: {
     flexDirection: "row",
@@ -772,6 +806,8 @@ const styles = StyleSheet.create({
   entryButton: {
     borderRadius: 10,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(212, 175, 55, 0.3)",
   },
   entryButtonGradient: {
     paddingHorizontal: 16,

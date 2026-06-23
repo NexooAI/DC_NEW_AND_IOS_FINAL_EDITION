@@ -40,7 +40,8 @@ export default function AppLayout() {
     segments.includes("lucky_draw") ||
     segments.includes("old_gold") ||
     segments.includes("notifications") ||
-    segments.includes("savings");
+    segments.includes("savings") ||
+    segments.includes("payment-history");
   const safeAreaBackgroundColor = isLightBarScreen ? (theme.colors.quaternary || "#F2E6D2") : theme.colors.textDark;
 
   return (

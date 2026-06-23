@@ -50,10 +50,6 @@ export default function PaymentNewOverView() {
   const isNavigatingRef = useRef(false); // Prevent multiple simultaneous navigations
   const isMountedRef = useRef(true); // More reliable mount tracking for async operations
   // Check for Flexi type using both paymentFrequency and schemeType parameters
-  const isFlexi =
-    params.paymentFrequency?.toString().toLowerCase() === "flexi" ||
-    params.schemeType?.toString().toLowerCase() === "flexi";
-
   const hybridStatus = useMemo(() => {
     if (params.hybridStatus) {
       try {
@@ -68,9 +64,56 @@ export default function PaymentNewOverView() {
   const isHybrid =
     params.schemeType?.toString().toLowerCase() === "hybrid";
 
+  const parsedFixedType = useMemo(() => {
+    // Try to extract fixed type from params or userDetails
+    if (params.fixedType) return params.fixedType.toString();
+    if (params.fixed_type) return params.fixed_type.toString();
+    if (params.fixed) return params.fixed.toString();
+    if (params.FIXED) return params.FIXED.toString();
+
+    // Check userDetails
+    if (params.userDetails) {
+      try {
+        const details = JSON.parse(params.userDetails as string);
+        if (details.fixedType !== undefined) return details.fixedType;
+        if (details.fixed_type !== undefined) return details.fixed_type;
+        if (details.fixed !== undefined) return details.fixed;
+        if (details.FIXED !== undefined) return details.FIXED;
+      } catch (e) { }
+    }
+
+    // Check hybridStatus
+    if (hybridStatus) {
+      if (hybridStatus.fixedType !== undefined) return hybridStatus.fixedType;
+      if (hybridStatus.fixed_type !== undefined) return hybridStatus.fixed_type;
+      if (hybridStatus.fixed !== undefined) return hybridStatus.fixed;
+      if (hybridStatus.FIXED !== undefined) return hybridStatus.FIXED;
+    }
+
+    return null;
+  }, [params.fixedType, params.fixed_type, params.fixed, params.FIXED, params.userDetails, hybridStatus]);
+
+  // Check for Flexi type using paymentFrequency, schemeType parameters, or hybrid null fixed types
+  const isFlexi = useMemo(() => {
+    const isFlexiParam =
+      params.paymentFrequency?.toString().toLowerCase() === "flexi" ||
+      params.schemeType?.toString().toLowerCase() === "flexi";
+
+    const isHybridParam =
+      params.paymentFrequency?.toString().toLowerCase() === "hybrid" ||
+      params.schemeType?.toString().toLowerCase() === "hybrid";
+
+    const isFixedNull = parsedFixedType === null || parsedFixedType === "null" || parsedFixedType === "";
+
+    if (isHybridParam && isFixedNull) {
+      return true;
+    }
+    return isFlexiParam;
+  }, [params.paymentFrequency, params.schemeType, parsedFixedType]);
+
   const isEditable = useMemo(() => {
-    return isFlexi || isHybrid;
-  }, [isFlexi, isHybrid]);
+    return isFlexi;
+  }, [isFlexi]);
 
   // Dynamic amount limits from API (defaults to 100000 if not fetched)
   const [minAmount, setMinAmount] = useState(0);
@@ -97,7 +140,7 @@ export default function PaymentNewOverView() {
 
   useEffect(() => {
     if (isProcessing) return;
-    
+
     const timer = setInterval(() => {
       setSecondsLeft((prev) => {
         if (prev <= 1) {
@@ -397,8 +440,8 @@ export default function PaymentNewOverView() {
   // Handle amount adjustment
   const adjustAmount = (increment: number) => {
     if (!isEditable) return; // Prevent adjustment if not editable
-    
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
     animateAmountText();
 
     const newAmount = currentAmount + increment;
@@ -424,7 +467,7 @@ export default function PaymentNewOverView() {
     const cleanText = text.replace(/[^0-9.]/g, "");
     const amount = parseFloat(cleanText) || 0;
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
     animateAmountText();
 
     if (amount < minAmount) {
@@ -481,26 +524,27 @@ export default function PaymentNewOverView() {
     let name = Array.isArray(params.schemeName)
       ? params.schemeName[0]
       : (params.schemeName || userDetails?.schemeName || t("digiGold") || "DigiGold");
-    
+
     // Handle case where name is a localized object (e.g. {en: "...", ta: "..."})
     if (typeof name === 'object' && name !== null) {
       // @ts-ignore
       return name[language] || name['en'] || name['ta'] || "DigiGold";
     }
-    
+
     return name;
   }, [params.schemeName, userDetails?.schemeName, t, language]);
 
   useEffect(() => {
     fetchGoldRate();
     if ((isFlexi || isHybrid) && params.schemeId) {
-      if (isHybrid && hybridStatus) {
-        if (hybridStatus.isFixedPhase && hybridStatus.rangeReady) {
+      if (hybridStatus) {
+        // If hybridStatus has dynamic limits, use them!
+        if (hybridStatus.minAmount !== undefined && hybridStatus.maxAmount !== undefined) {
           const min = Number(hybridStatus.minAmount);
           const max = Number(hybridStatus.maxAmount);
           setMinAmount(min);
           setMaxAmount(max);
-          
+
           // Set current amount to min/max if out of bounds
           if (currentAmount < min) {
             setCurrentAmount(min);
@@ -509,7 +553,7 @@ export default function PaymentNewOverView() {
             setCurrentAmount(max);
             calculateWeightPerGram(max, goldRate);
           }
-          logger.log("Hybrid fixed range limits set:", { min, max });
+          logger.log("Hybrid dynamic range limits set:", { min, max });
         } else {
           fetchAmountLimits();
         }
@@ -527,31 +571,31 @@ export default function PaymentNewOverView() {
         // Select terms based on current language with robust progressive fallback
         let selectedTerms = "";
         const termsObj = response.data.data || {};
-        
+
         // 1. Try specific language key (e.g. terms_conditions_te, terms_conditions_hi, terms_conditions_ta)
         const targetKey = `terms_conditions_${language}`;
         selectedTerms = termsObj[targetKey] || "";
-        
+
         // 2. If language is Malayalam ('mal'), check terms_conditions_ml as well
         if (language === "mal" && !selectedTerms) {
           selectedTerms = termsObj.terms_conditions_ml || "";
         }
-        
+
         // 3. Fallback to English
         if (!selectedTerms) {
           selectedTerms = termsObj.terms_conditions_en || "";
         }
-        
+
         // 4. Fallback to Tamil
         if (!selectedTerms) {
           selectedTerms = termsObj.terms_conditions_ta || "";
         }
-        
+
         // 5. Fallback to generic terms_description
         if (!selectedTerms) {
           selectedTerms = termsObj.terms_description || "";
         }
-        
+
         // 6. Fallback to generic description
         if (!selectedTerms) {
           selectedTerms = termsObj.description || "";
@@ -1175,7 +1219,7 @@ export default function PaymentNewOverView() {
             <TouchableOpacity
               style={styles.bottomTermsCheckbox}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
                 setIsTermsAccepted(!isTermsAccepted);
               }}
             >

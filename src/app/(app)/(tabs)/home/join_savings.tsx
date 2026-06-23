@@ -84,6 +84,7 @@ export default function JoinSavings() {
           let parsedData;
           try {
             parsedData = JSON.parse(storedSchemeData);
+            console.log("parsedData", parsedData);
           } catch (parseError) {
             logger.error("Error parsing stored scheme data:", parseError);
             // Fallback: try to fetch from API
@@ -623,7 +624,7 @@ export default function JoinSavings() {
     const isWeightBased = parsedData?.savingType === "weight";
     const isFlexi = parsedData?.schemeType === "flexi" || parsedData?.type?.toLowerCase()?.includes("flexi");
     const allowWeightCalc = isWeightBased || isFlexi;
-    
+
     if (allowWeightCalc) {
       setGoldWeight(calculateGoldWeight(finalAmount));
     }
@@ -1684,64 +1685,64 @@ export default function JoinSavings() {
                 />
                 <Text style={styles.fieldLabel}>{translations.branchName}</Text>
               </View>
-                <View>
-                  {isPickerDisabled ? (
-                    <View
-                      style={[
+              <View>
+                {isPickerDisabled ? (
+                  <View
+                    style={[
+                      pickerSelectStylesModern.inputIOS,
+                      errors.associated_branch ? styles.modernInputError : undefined,
+                      { backgroundColor: "rgba(240, 240, 240, 0.4)", flexDirection: "row", alignItems: "center", justifyContent: "space-between", position: 'relative' }
+                    ]}
+                  >
+                    <Text style={{ color: "#888", fontSize: 16 }}>
+                      {selectedBranch?.branch_name || "Select Branch"}
+                    </Text>
+                    <View style={{ position: 'absolute', right: 15 }}>
+                      <Ionicons
+                        name="chevron-down"
+                        size={20}
+                        color="#888"
+                      />
+                    </View>
+                  </View>
+                ) : (
+                  <RNPickerSelect
+                    onValueChange={(value) => handleChange("associated_branch", value)}
+                    onDonePress={() => { }}
+                    placeholder={{ label: "Select Branch", value: "" }}
+                    value={formData.associated_branch ? String(formData.associated_branch) : ""}
+                    disabled={false}
+                    items={branch.map((b) => ({
+                      label: b.branch_name,
+                      value: String(b.id),
+                    }))}
+                    style={{
+                      ...pickerSelectStylesModern,
+                      inputIOS: [
                         pickerSelectStylesModern.inputIOS,
                         errors.associated_branch ? styles.modernInputError : undefined,
-                        { backgroundColor: "rgba(240, 240, 240, 0.4)", flexDirection: "row", alignItems: "center", justifyContent: "space-between", position: 'relative' }
-                      ]}
-                    >
-                      <Text style={{ color: "#888", fontSize: 16 }}>
-                        {selectedBranch?.branch_name || "Select Branch"}
-                      </Text>
-                      <View style={{ position: 'absolute', right: 15 }}>
-                        <Ionicons
-                          name="chevron-down"
-                          size={20}
-                          color="#888"
-                        />
-                      </View>
-                    </View>
-                  ) : (
-                    <RNPickerSelect
-                      onValueChange={(value) => handleChange("associated_branch", value)}
-                      onDonePress={() => { }}
-                      placeholder={{ label: "Select Branch", value: "" }}
-                      value={formData.associated_branch ? String(formData.associated_branch) : ""}
-                      disabled={false}
-                      items={branch.map((b) => ({
-                        label: b.branch_name,
-                        value: String(b.id),
-                      }))}
-                      style={{
-                        ...pickerSelectStylesModern,
-                        inputIOS: [
-                          pickerSelectStylesModern.inputIOS,
-                          errors.associated_branch ? styles.modernInputError : undefined,
-                        ],
-                        inputAndroid: [
-                          pickerSelectStylesModern.inputAndroid,
-                          errors.associated_branch ? styles.modernInputError : undefined,
-                        ],
-                      }}
-                      useNativeAndroidPickerStyle={false}
-                      Icon={() => (
-                        <Ionicons
-                          name="chevron-down"
-                          size={20}
-                          color={theme.colors.primary}
-                        />
-                      )}
-                    />
-                  )}
-                  {errors.associated_branch && (
-                    <Text style={styles.modernErrorText}>
-                      {errors.associated_branch}
-                    </Text>
-                  )}
-                </View>
+                      ],
+                      inputAndroid: [
+                        pickerSelectStylesModern.inputAndroid,
+                        errors.associated_branch ? styles.modernInputError : undefined,
+                      ],
+                    }}
+                    useNativeAndroidPickerStyle={false}
+                    Icon={() => (
+                      <Ionicons
+                        name="chevron-down"
+                        size={20}
+                        color={theme.colors.primary}
+                      />
+                    )}
+                  />
+                )}
+                {errors.associated_branch && (
+                  <Text style={styles.modernErrorText}>
+                    {errors.associated_branch}
+                  </Text>
+                )}
+              </View>
             </View>
           </View>
         </View>
@@ -2231,7 +2232,7 @@ export default function JoinSavings() {
         associated_branch: formData.associated_branch,
         payment_frequency_id: selectedChit && selectedChit.PAYMENT_FREQUENCY_ID,
       };
-      //logger.log(payload ,selectedChit );
+      logger.log(payload, selectedChit);
       api
         .post("/investments", payload)
         .then((data: any) => {

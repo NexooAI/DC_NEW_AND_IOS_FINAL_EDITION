@@ -1,5 +1,8 @@
 {
   "newSchemes": "புதிய திட்டங்கள்",
+  "paymentsMade": "செலுத்தப்பட்ட தவணைகள்",
+  "visitBranchToRedeemTitle": "கிளைக்குச் சென்று மீட்டெடுக்கவும்",
+  "visitBranchToRedeemDesc": "உங்கள் வெகுமதிப் புள்ளிகளைப் பயன்படுத்த தயவுசெய்து எங்களது கிளை அல்லது ஷோரூமிற்கு நேரடியாகச் செல்லவும்.",
   "oldGoldScheme": "பழைய தங்க திட்டம்",
   "myDeposits": "எனது வைப்புகள்",
   "newEnquiry": "புதிய விசாரணை",
@@ -1377,5 +1380,10 @@
   "subject": "தலைப்பு",
   "referenceNo": "குறிப்பு எண்",
   "supportRepresentativeRespond": "எங்கள் ஆதரவுப் பிரதிநிதி விரைவில் பதிலளிப்பார்.",
-  "pleaseEnterDescription": "தயவுசெய்து ஒரு விவரம்/செய்தியை உள்ளிடவும்."
+  "pleaseEnterDescription": "தயவுசெய்து ஒரு விவரம்/செய்தியை உள்ளிடவும்.",
+  "callUs": "அழைக்கவும்",
+  "whatsappUs": "வாட்ஸ்அப்",
+  "needImmediateAssistance": "உடனடி உதவி தேவையா?",
+  "oldGoldContactDesc": "பழைய தங்கத் திட்டம் தொடர்பான அவசர விசாரணைகளுக்கு, எங்களது ஷோரூமிற்கு நேரடியாக அழைக்கலாம் அல்லது வாட்ஸ்அப் செய்யலாம்.",
+  "luckyDrawRecentWinnerLabel": "சமீபத்திய வெற்றியாளர்"
 }

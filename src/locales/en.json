@@ -1,5 +1,8 @@
 {
   "newSchemes": "New Schemes",
+  "paymentsMade": "Payments Made",
+  "visitBranchToRedeemTitle": "Visit Branch to Redeem",
+  "visitBranchToRedeemDesc": "Please visit our showroom/branch directly to redeem your accumulated reward points.",
   "oldGoldScheme": "Old Gold Scheme",
   "myDeposits": "My Deposits",
   "newEnquiry": "New Enquiry",
@@ -1386,5 +1389,10 @@
   "subject": "Subject",
   "referenceNo": "Reference No",
   "supportRepresentativeRespond": "Our support representative will respond shortly.",
-  "pleaseEnterDescription": "Please enter a description/message."
+  "pleaseEnterDescription": "Please enter a description/message.",
+  "callUs": "Call Us",
+  "whatsappUs": "WhatsApp",
+  "needImmediateAssistance": "Need Immediate Assistance?",
+  "oldGoldContactDesc": "For urgent inquiries regarding the Old Gold Scheme, please feel free to call or WhatsApp our showroom directly.",
+  "luckyDrawRecentWinnerLabel": "Recent Winner"
 }

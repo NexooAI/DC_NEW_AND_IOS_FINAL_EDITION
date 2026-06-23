@@ -973,16 +973,24 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                 {getTranslatedText(item.SCHEMENAME, language) || "Unnamed Scheme"}
               </Text>
               
-              <View style={styles.amountRangeContainer}>
-                 <Text style={styles.minAmountLabel}>
-                  {t("schemes.minimumAmount") || "Min"} : {formatAmount(min)}
-                </Text>
-                {max > min && (
+              {min > 0 ? (
+                <View style={styles.amountRangeContainer}>
                   <Text style={styles.minAmountLabel}>
-                    {" | "}{t("maximum") || "Max"} : {formatAmount(max)}
+                    {t("schemes.minimumAmount") || "Min"} : {formatAmount(min)}
                   </Text>
-                )}
-              </View>
+                  {max > min && (
+                    <Text style={styles.minAmountLabel}>
+                      {" | "}{t("maximum") || "Max"} : {formatAmount(max)}
+                    </Text>
+                  )}
+                </View>
+              ) : item.SLOGAN ? (
+                <View style={styles.amountRangeContainer}>
+                  <Text style={styles.minAmountLabel} numberOfLines={1}>
+                    {getTranslatedText(item.SLOGAN, language)}
+                  </Text>
+                </View>
+              ) : null}
 
               <View style={styles.inlineInfoRow}>
                 <View style={styles.infoPill}>

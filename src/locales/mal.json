@@ -1379,5 +1379,10 @@
   "subject": "വിഷയം",
   "referenceNo": "റഫറൻസ് നമ്പർ",
   "supportRepresentativeRespond": "ഞങ്ങളുടെ സപ്പോർട്ട് പ്രതിനിധി ഉടൻ മറുപടി നൽകും.",
-  "pleaseEnterDescription": "ദയവായി വിവരണം/സന്ദേശം നൽകുക."
+  "pleaseEnterDescription": "ദയവായി വിവരണം/സന്ദേശം നൽകുക.",
+  "callUs": "വിളിക്കുക",
+  "whatsappUs": "വാട്ട്സ്ആപ്പ്",
+  "needImmediateAssistance": "ഉടൻ സഹായം ആവശ്യമുണ്ടോ?",
+  "oldGoldContactDesc": "പഴയ സ്വർണ്ണ പദ്ധതിയെക്കുറിച്ചുള്ള അടിയന്തിര അന്വേഷണങ്ങൾക്ക്, ദയവായി ഞങ്ങളുടെ ഷോറൂമിലേക്ക് നേരിട്ട് വിളിക്കുകയോ വാട്ട്സ്ആപ്പ് ചെയ്യുകയോ ചെയ്യുക.",
+  "luckyDrawRecentWinnerLabel": "സമീപകാല വിജയി"
 }

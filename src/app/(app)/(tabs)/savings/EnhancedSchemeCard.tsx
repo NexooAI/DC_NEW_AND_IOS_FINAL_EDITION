@@ -137,12 +137,27 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
       return "";
     }
   };
-  
+
   const progressPercentage = useMemo(() => {
     const monthsPaid = Number(item.monthsPaid) || 0;
     const totalMonths = Number(item.noOfIns) || 1;
     return Math.round((monthsPaid / totalMonths) * 100);
   }, [item.monthsPaid, item.noOfIns]);
+
+  const isHybrid = useMemo(() => {
+    const frequency = (getLocalizedText(item.paymentFrequency) || "").toLowerCase();
+    const name = (getLocalizedText(item.schemeName) || "").toLowerCase();
+    const freqName = (getLocalizedText(item.schemesData?.paymentFrequencyName) || "").toLowerCase();
+    return frequency.includes("hybrid") || name.includes("hybrid") || freqName.includes("hybrid");
+  }, [item.paymentFrequency, item.schemeName, item.schemesData?.paymentFrequencyName]);
+
+  const isFlexiOrHybrid = useMemo(() => {
+    const frequency = (getLocalizedText(item.paymentFrequency) || "").toLowerCase();
+    const name = (getLocalizedText(item.schemeName) || "").toLowerCase();
+    const freqName = (getLocalizedText(item.schemesData?.paymentFrequencyName) || "").toLowerCase();
+    return frequency.includes("flexi") || name.includes("flexi") || freqName.includes("flexi") ||
+      frequency.includes("hybrid") || name.includes("hybrid") || freqName.includes("hybrid");
+  }, [item.paymentFrequency, item.schemeName, item.schemesData?.paymentFrequencyName]);
 
   // Calculate total reward amount and gold grams from all rewards
   const totalRewardAmount = useMemo(() => {
@@ -246,10 +261,10 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
         // Handle error - show alert
         logger.error("Payment check failed:", response?.data?.message);
         setAlertConfig({
-            visible: true,
-            title: "Payment Status",
-            message: response?.data?.message || "Payment already made for this month or an error occurred.",
-            type: "warning",
+          visible: true,
+          title: "Payment Status",
+          message: response?.data?.message || "Payment already made for this month or an error occurred.",
+          type: "warning",
         });
         setIsLoading(false);
         return;
@@ -258,7 +273,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
       // Safely parse schemes data
       let parseSchemes;
       try {
-        parseSchemes = item.schemesData || {};
+        parseSchemes = item.schemesData ? { ...item.schemesData } : {};
       } catch (parseError) {
         logger.error("Error parsing schemes data:", parseError);
         parseSchemes = {
@@ -267,6 +282,24 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             item.schemesData?.paymentFrequencyName
           ) || "Monthly",
         };
+      }
+
+      if (parseSchemes) {
+        const isSchemeHybridType = parseSchemes.SCHEMETYPE === "Hybrid" ||
+          parseSchemes.SCHEMETYPE?.toLowerCase() === "hybrid" ||
+          parseSchemes.schemeType === "Hybrid" ||
+          parseSchemes.schemeType?.toLowerCase() === "hybrid";
+
+        const isFixedNull = parseSchemes.FIXED === null ||
+          parseSchemes.FIXED === undefined ||
+          parseSchemes.FIXED === "" ||
+          parseSchemes.fixed === null ||
+          parseSchemes.fixed === undefined ||
+          parseSchemes.fixed === "";
+
+        if (isSchemeHybridType && isFixedNull) {
+          parseSchemes.schemeTypeName = "Flexi";
+        }
       }
 
       // Get payment history length for paidPaymentCount
@@ -356,182 +389,190 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
         style={styles.cardBackgroundImage}
       >
         <TouchableOpacity activeOpacity={0.9} onPress={toggleExpand}>
-        <View style={styles.cardHeader}>
-          <View style={styles.schemeInfo}>
-            <View style={styles.schemeTitleContainer}>
-              <Text style={styles.schemeTitle}>
-                {getLocalizedText(item.schemeName)}
-              </Text>
-              <View style={styles.schemeSubtitleContainer}>
-                <View
-                  style={[
-                    styles.metalTypeBadge,
-                    { backgroundColor: theme.colors.secondary },
-                  ]}
-                >
-                  <Text style={styles.metalTypeText}>
-                    {getLocalizedText(item.metalType).charAt(0).toUpperCase() +
-                      getLocalizedText(item.metalType).slice(1)}
-                  </Text>
-                </View>
-                {item.savingType === "old_gold" ? (
+          <View style={styles.cardHeader}>
+            <View style={styles.schemeInfo}>
+              <View style={styles.schemeTitleContainer}>
+                <Text style={styles.schemeTitle}>
+                  {getLocalizedText(item.schemeName)}
+                </Text>
+                <View style={styles.schemeSubtitleContainer}>
                   <View
                     style={[
-                      styles.savingTypeBadge,
-                      { backgroundColor: theme.colors.bgGoldHeavy },
+                      styles.metalTypeBadge,
+                      { backgroundColor: theme.colors.secondary },
                     ]}
                   >
-                    <Text style={styles.savingTypeText}>Old Gold</Text>
+                    <Text style={styles.metalTypeText}>
+                      {getLocalizedText(item.metalType).charAt(0).toUpperCase() +
+                        getLocalizedText(item.metalType).slice(1)}
+                    </Text>
                   </View>
-                ) : (
-                  <>
+                  {item.savingType === "old_gold" ? (
                     <View
                       style={[
                         styles.savingTypeBadge,
-                        { backgroundColor: theme.colors.backgroundSecondary },
+                        { backgroundColor: theme.colors.bgGoldHeavy },
                       ]}
                     >
-                      <Text style={styles.savingTypeText}>
-                        {getLocalizedText(
-                          item.schemesData?.paymentFrequencyName
-                        ) === "Flexi" ||
-                        getLocalizedText(
-                          item.schemesData?.paymentFrequencyName
-                        ) === "Hybrid" ||
-                        getLocalizedText(
-                          item.schemesData?.paymentFrequencyName
-                        ).toLowerCase() === "hybrid"
-                          ? translations.flexi
-                          : translations.fixed}
-                      </Text>
+                      <Text style={styles.savingTypeText}>Old Gold</Text>
                     </View>
-                    {item.schemesData?.paymentFrequencyName?.toLowerCase() !== "flexi" &&
-                    item.schemesData?.paymentFrequencyName?.toLowerCase() !== "hybrid" && (
+                  ) : (
+                    <>
                       <View
                         style={[
                           styles.savingTypeBadge,
-                          { backgroundColor: theme.colors.bgGoldHeavy },
+                          { backgroundColor: theme.colors.backgroundSecondary },
                         ]}
                       >
                         <Text style={styles.savingTypeText}>
-                          {getLocalizedText(item.schemesData.paymentFrequencyName)}
+                          {isHybrid
+                            ? "Hybrid"
+                            : isFlexiOrHybrid
+                              ? translations.flexi
+                              : translations.fixed}
                         </Text>
                       </View>
-                    )}
-                  </>
-                )}
-                <View
-                  style={[
-                    styles.savingTypeBadge,
-                    { backgroundColor: theme.colors.bgErrorMedium },
-                  ]}
-                >
-                  <Text style={styles.savingTypeText}>
-                    {item.savingType === "old_gold" ? "Weight" : (item.schemesData.schemeType.toLowerCase() === "weight" ? "Weight" : "Amount")}
-                  </Text>
+                      {!isFlexiOrHybrid && item.schemesData?.paymentFrequencyName && (
+                        <View
+                          style={[
+                            styles.savingTypeBadge,
+                            { backgroundColor: theme.colors.bgGoldHeavy },
+                          ]}
+                        >
+                          <Text style={styles.savingTypeText}>
+                            {getLocalizedText(item.schemesData.paymentFrequencyName)}
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  )}
+                  <View
+                    style={[
+                      styles.savingTypeBadge,
+                      { backgroundColor: theme.colors.bgErrorMedium },
+                    ]}
+                  >
+                    <Text style={styles.savingTypeText}>
+                      {item.savingType === "old_gold" ? "Weight" : (item.schemesData.schemeType.toLowerCase() === "weight" ? "Weight" : "Amount")}
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
-          <View style={styles.headerRight}>
-            <View
-              style={[
-                styles.statusBadge,
-                {
-                  backgroundColor:
-                    item.status === "ACTIVE"
-                      ? "rgba(8, 237, 8, 0.56)"
-                      : "rgba(255, 0, 0, 0.2)",
-                },
-              ]}
-            >
-              <Text
+            <View style={styles.headerRight}>
+              <View
                 style={[
-                  styles.statusText,
+                  styles.statusBadge,
                   {
-                    color: item.status === "ACTIVE" ? "#000" : "#FF0000",
+                    backgroundColor:
+                      item.status === "ACTIVE"
+                        ? "rgba(8, 237, 8, 0.56)"
+                        : "rgba(255, 0, 0, 0.2)",
                   },
                 ]}
               >
-                {item.status || "INACTIVE"}
-              </Text>
-            </View>
-            <View style={styles.expandIcon}>
-              <Ionicons
-                name={isExpanded ? "chevron-up" : "chevron-down"}
-                size={20}
-                color={theme.colors.primary}
-              />
+                <Text
+                  style={[
+                    styles.statusText,
+                    {
+                      color: item.status === "ACTIVE" ? "#000" : "#FF0000",
+                    },
+                  ]}
+                >
+                  {item.status || "INACTIVE"}
+                </Text>
+              </View>
+              <View style={styles.expandIcon}>
+                <Ionicons
+                  name={isExpanded ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color={theme.colors.primary}
+                />
+              </View>
             </View>
           </View>
-        </View>
 
-        <View style={styles.paymentInfoRow}>
-          <View style={styles.paymentInfoItem}>
-            <View style={styles.paymentInfoIconContainer}>
-              <Ionicons name="person-outline" size={16} color={theme.colors.primary} />
+          <View style={styles.paymentInfoRow}>
+            <View style={styles.paymentInfoItem}>
+              <View style={styles.paymentInfoIconContainer}>
+                <Ionicons name="person-outline" size={16} color={theme.colors.primary} />
+              </View>
+              <View style={styles.paymentInfoContent}>
+                <Text style={styles.paymentInfoLabel}>
+                  {translations.accountHolderLabel}
+                </Text>
+                <Text style={styles.paymentInfoValue}>
+                  {item.accountHolder?.toUpperCase()}
+                </Text>
+              </View>
             </View>
-            <View style={styles.paymentInfoContent}>
-              <Text style={styles.paymentInfoLabel}>
-                {translations.accountHolderLabel}
-              </Text>
-              <Text style={styles.paymentInfoValue}>
-                {item.accountHolder?.toUpperCase()}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.paymentInfoDivider} />
-          <View style={styles.paymentInfoItem}>
-            <View style={styles.paymentInfoIconContainer}>
-              <Ionicons name="card-outline" size={16} color={theme.colors.primary} />
-            </View>
-            <View style={styles.paymentInfoContent}>
-              <Text style={styles.paymentInfoLabel}>
-                {translations.accountNumberLabel}
-              </Text>
-              <Text style={styles.paymentInfoValue}>
-                DCJ-{item.accNo}
-              </Text>
-            </View>
-          </View>
-        </View>
-        {/* Payment Info Row - Always Visible */}
-        {item.schemesData.schemeType.toLowerCase() === "weight" && <View style={styles.paymentInfoRow}>
-          <View style={styles.paymentInfoItem}>
-            <View style={styles.paymentInfoIconContainer}>
-              <Ionicons name="time-outline" size={16} color={theme.colors.primary} />
-            </View>
-            <View style={styles.paymentInfoContent}>
-              <Text style={styles.paymentInfoLabel}>
-                {translations.frequency}
-              </Text>
-              <Text style={styles.paymentInfoValue}>
-                {getLocalizedText(item.schemesData?.paymentFrequencyName) ===
-                  "Flexi" ||
-                getLocalizedText(item.schemesData?.paymentFrequencyName) ===
-                  "Hybrid" ||
-                getLocalizedText(item.schemesData?.paymentFrequencyName).toLowerCase() ===
-                  "hybrid"
-                  ? translations.flexi
-                  : getLocalizedText(item.paymentFrequency)}
-              </Text>
+            <View style={styles.paymentInfoDivider} />
+            <View style={styles.paymentInfoItem}>
+              <View style={styles.paymentInfoIconContainer}>
+                <Ionicons name="card-outline" size={16} color={theme.colors.primary} />
+              </View>
+              <View style={styles.paymentInfoContent}>
+                <Text style={styles.paymentInfoLabel}>
+                  {translations.accountNumberLabel}
+                </Text>
+                <Text style={styles.paymentInfoValue}>
+                  DCJ-{item.accNo}
+                </Text>
+              </View>
             </View>
           </View>
-          <View style={styles.paymentInfoDivider} />
-          {item.schemesData.schemeType.toLowerCase() === "weight" && <View style={styles.paymentInfoItem}>
-            <View style={styles.paymentInfoIconContainer}>
-              <Ionicons name="scale-outline" size={16} color={theme.colors.primary} />
+          {/* Payment Info Row - Always Visible */}
+          <View style={styles.paymentInfoRow}>
+            <View style={styles.paymentInfoItem}>
+              <View style={styles.paymentInfoIconContainer}>
+                <Ionicons name="time-outline" size={16} color={theme.colors.primary} />
+              </View>
+              <View style={styles.paymentInfoContent}>
+                <Text style={styles.paymentInfoLabel}>
+                  {translations.frequency}
+                </Text>
+                <Text style={styles.paymentInfoValue}>
+                  {isHybrid
+                    ? "Hybrid"
+                    : isFlexiOrHybrid
+                      ? translations.flexi
+                      : getLocalizedText(item.paymentFrequency) || getLocalizedText(item.schemesData?.paymentFrequencyName)}
+                </Text>
+              </View>
             </View>
-            <View style={styles.paymentInfoContent}>
-              <Text style={styles.paymentInfoLabel}>
-                {translations.totalWeight}
-              </Text>
-              <Text style={styles.paymentInfoValue}>
-                {formatGoldWeight(item.goldWeight)}
-              </Text>
+            <View style={styles.paymentInfoDivider} />
+            <View style={styles.paymentInfoItem}>
+              {item.savingType === "old_gold" || item.schemesData?.schemeType?.toLowerCase() === "weight" ? (
+                <>
+                  <View style={styles.paymentInfoIconContainer}>
+                    <Ionicons name="scale-outline" size={16} color={theme.colors.primary} />
+                  </View>
+                  <View style={styles.paymentInfoContent}>
+                    <Text style={styles.paymentInfoLabel}>
+                      {translations.totalWeight}
+                    </Text>
+                    <Text style={styles.paymentInfoValue}>
+                      {formatGoldWeight(item.goldWeight)}
+                    </Text>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <View style={styles.paymentInfoIconContainer}>
+                    <Ionicons name="checkmark-circle-outline" size={16} color={theme.colors.primary} />
+                  </View>
+                  <View style={styles.paymentInfoContent}>
+                    <Text style={styles.paymentInfoLabel}>
+                      {translations.paymentsMade || "Payments Made"}
+                    </Text>
+                    <Text style={styles.paymentInfoValue}>
+                      {item.monthsPaid}
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
-          </View>}
-        </View>}
+          </View>
 
         </TouchableOpacity>
 
@@ -718,23 +759,27 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                 </Text>
                 <View style={styles.progressStats}>
                   <Text style={styles.progressMonths}>
-                    {item.monthsPaid}/{item.noOfIns} {translations.monthsLabel}
+                    {isFlexiOrHybrid
+                      ? `${item.monthsPaid} ${translations.paid}`
+                      : `${item.monthsPaid}/${item.noOfIns} ${translations.monthsLabel}`}
                   </Text>
                 </View>
               </View>
-              <View style={styles.progressBar}>
-                <Animated.View
-                  style={[
-                    styles.progressFill,
-                    {
-                      width: animatedHeight.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ["0%", `${progressPercentage}%`],
-                      }),
-                    },
-                  ]}
-                />
-              </View>
+              {!isFlexiOrHybrid && (
+                <View style={styles.progressBar}>
+                  <Animated.View
+                    style={[
+                      styles.progressFill,
+                      {
+                        width: animatedHeight.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ["0%", `${progressPercentage}%`],
+                        }),
+                      },
+                    ]}
+                  />
+                </View>
+              )}
               <View style={styles.monthsInfo}>
                 <View style={styles.monthItem}>
                   <View
@@ -743,22 +788,26 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                   <Text style={styles.monthLabel}>{translations.paid}</Text>
                   <Text style={styles.monthLabel}>{item.monthsPaid}</Text>
                 </View>
-                <View style={styles.monthItem}>
-                  <View
-                    style={[styles.monthDot, { backgroundColor: "#DAA520" }]}
-                  />
-                  <Text style={styles.monthLabel}>{translations.pending}</Text>
-                  <Text style={styles.monthLabel}>
-                    {Number(item.noOfIns) - Number(item.monthsPaid)}
-                  </Text>
-                </View>
-                <View style={styles.monthItem}>
-                  <View
-                    style={[styles.monthDot, { backgroundColor: "#850111" }]}
-                  />
-                  <Text style={styles.monthLabel}>{translations.total}</Text>
-                  <Text style={styles.monthLabel}>{item.noOfIns}</Text>
-                </View>
+                {!isFlexiOrHybrid && (
+                  <>
+                    <View style={styles.monthItem}>
+                      <View
+                        style={[styles.monthDot, { backgroundColor: "#DAA520" }]}
+                      />
+                      <Text style={styles.monthLabel}>{translations.pending}</Text>
+                      <Text style={styles.monthLabel}>
+                        {Number(item.noOfIns) - Number(item.monthsPaid)}
+                      </Text>
+                    </View>
+                    <View style={styles.monthItem}>
+                      <View
+                        style={[styles.monthDot, { backgroundColor: "#850111" }]}
+                      />
+                      <Text style={styles.monthLabel}>{translations.total}</Text>
+                      <Text style={styles.monthLabel}>{item.noOfIns}</Text>
+                    </View>
+                  </>
+                )}
               </View>
             </View>
           )}

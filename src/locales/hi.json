@@ -1379,5 +1379,10 @@
   "subject": "विषय",
   "referenceNo": "संदर्भ संख्या",
   "supportRepresentativeRespond": "हमारे सहायता प्रतिनिधि जल्द ही जवाब देंगे।",
-  "pleaseEnterDescription": "कृपया विवरण/संदेश दर्ज करें।"
+  "pleaseEnterDescription": "कृपया विवरण/संदेश दर्ज करें‌।",
+  "callUs": "कॉल करें",
+  "whatsappUs": "व्हाट्सएप",
+  "needImmediateAssistance": "तुरंत सहायता की आवश्यकता है?",
+  "oldGoldContactDesc": "पुरानी सोना योजना के संबंध में तत्काल पूछताछ के लिए, कृपया हमारे शोरूम को सीधे कॉल या व्हाट्सएप करें।",
+  "luckyDrawRecentWinnerLabel": "हाल ही के विजेता"
 }

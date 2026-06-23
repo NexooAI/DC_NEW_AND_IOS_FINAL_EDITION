@@ -8,7 +8,6 @@ import {
   Alert,
   ScrollView,
   Dimensions,
-  SafeAreaView,
   Platform,
   Linking,
   Animated,
@@ -16,6 +15,7 @@ import {
   ActivityIndicator,
   StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Clipboard from "expo-clipboard";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
@@ -418,9 +418,9 @@ export default function ReferCodeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
@@ -428,7 +428,7 @@ export default function ReferCodeScreen() {
         <TouchableOpacity style={styles.historyButton}>
           <Text style={styles.historyText}>{t("refer_earn_history") || "History"}</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
 
       <View style={[styles.tabsContainer, { backgroundColor: '#fff', zIndex: 10 }]}>
         {[
@@ -480,7 +480,7 @@ export default function ReferCodeScreen() {
           <Ionicons name="share-social-outline" size={22} color="#128C7E" />
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -19,14 +19,18 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useRouter, useFocusEffect, useNavigation } from "expo-router";
 import { rewardsAPI, investmentAPI } from "@/services/api";
 import useGlobalStore from "@/store/global.store";
+import { useEffect } from "react";
 
+
+const DISABLE_REDEMPTION_FORM = true; // Set to false to restore original redemption modal flow
 
 export default function RewardsScreen() {
     const { t } = useTranslation();
     const router = useRouter();
+    const navigation = useNavigation();
     const { user } = useGlobalStore();
     const [totalPoints, setTotalPoints] = useState(0);
     const [loading, setLoading] = useState(false);
@@ -34,6 +38,7 @@ export default function RewardsScreen() {
     const [hasInvestments, setHasInvestments] = useState<boolean | null>(null);
     const [redemptionModalVisible, setRedemptionModalVisible] = useState(false);
     const [noInvestmentModalVisible, setNoInvestmentModalVisible] = useState(false);
+    const [visitBranchModalVisible, setVisitBranchModalVisible] = useState(false);
     const chestScale = useRef(new Animated.Value(0)).current;
     const pointsScale = useRef(new Animated.Value(0)).current;
     const pointsTranslateY = useRef(new Animated.Value(30)).current;
@@ -66,6 +71,45 @@ export default function RewardsScreen() {
         fetchRewards(false);
     }, [fetchRewards]);
 
+    useEffect(() => {
+        navigation.setOptions({
+            headerShown: true,
+            title: t("rewardPoints") || "Reward Points",
+            headerStyle: {
+                backgroundColor: "#F2E6D2",
+                elevation: 0,
+                shadowOpacity: 0,
+            },
+            headerTintColor: "#1a1a1a",
+            headerTitleStyle: {
+                fontWeight: "700",
+                fontSize: 18,
+            },
+            headerLeft: () => (
+                <TouchableOpacity style={{ marginLeft: 16 }} onPress={() => router.back()}>
+                    <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+                </TouchableOpacity>
+            ),
+            headerRight: () => (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 16 }}>
+                    <TouchableOpacity
+                        style={styles.refreshRoundButton}
+                        onPress={handleRefresh}
+                    >
+                        <Ionicons name="refresh" size={18} color="white" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.historyPillButton}
+                        onPress={() => router.push("/(app)/(tabs)/rewards_history")}
+                    >
+                        <Text style={styles.historyPillText}>History</Text>
+                        <Ionicons name="receipt-outline" size={16} color="white" />
+                    </TouchableOpacity>
+                </View>
+            ),
+        });
+    }, [navigation, handleRefresh, t, router]);
+
     const handleRedeemConfirm = async () => {
         const pts = parseInt(pointsToRedeem);
         if (isNaN(pts) || pts <= 0) {
@@ -86,8 +130,8 @@ export default function RewardsScreen() {
         setSubmitting(true);
         try {
             const methodLabel = redemptionMethod === "purchase" ? "purchase" : "cash";
-            const detailsText = redemptionMethod === "purchase" 
-                ? "Redeem for jewelry purchase discount" 
+            const detailsText = redemptionMethod === "purchase"
+                ? "Redeem for jewelry purchase discount"
                 : paymentDetails.trim();
 
             const response = await rewardsAPI.redeemPoints({
@@ -157,7 +201,11 @@ export default function RewardsScreen() {
         setLoading(false);
 
         if (active) {
-            setRedemptionModalVisible(true);
+            if (DISABLE_REDEMPTION_FORM) {
+                setVisitBranchModalVisible(true);
+            } else {
+                setRedemptionModalVisible(true);
+            }
         } else {
             setNoInvestmentModalVisible(true);
         }
@@ -209,7 +257,7 @@ export default function RewardsScreen() {
     );
 
     return (
-        <SafeAreaView style={styles.container} edges={["top"]}>
+        <SafeAreaView style={styles.container} edges={["bottom"]}>
             <StatusBar barStyle="dark-content" backgroundColor="#F2E6D2" />
             <LinearGradient
                 colors={["#F2E6D2", "#F5DEB3"]}
@@ -229,31 +277,6 @@ export default function RewardsScreen() {
                         ]}
                     />
                 ))}
-            </View>
-
-            {/* Fixed Header */}
-            <View style={styles.headerContainer}>
-                <View style={styles.header}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                        <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{t("rewardPoints") || "Reward Points"}</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <TouchableOpacity
-                            style={styles.refreshRoundButton}
-                            onPress={handleRefresh}
-                        >
-                            <Ionicons name="refresh" size={18} color="white" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.historyPillButton}
-                            onPress={() => router.push("/(app)/(tabs)/rewards_history")}
-                        >
-                            <Text style={styles.historyPillText}>History</Text>
-                            <Ionicons name="receipt-outline" size={16} color="white" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
             </View>
 
             <ScrollView
@@ -446,6 +469,37 @@ export default function RewardsScreen() {
                             onPress={() => setNoInvestmentModalVisible(false)}
                         >
                             <Text style={styles.modalCloseText}>{t("close") || "Close"}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Visit Branch Modal */}
+            <Modal
+                visible={visitBranchModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setVisitBranchModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Ionicons name="storefront-outline" size={48} color={theme.colors.primary} />
+                            <Text style={styles.modalTitle}>{t("visitBranchToRedeemTitle") || "Visit Branch to Redeem"}</Text>
+                        </View>
+                        <Text style={styles.modalDescription}>
+                            {t("visitBranchToRedeemDesc") || "Please visit our showroom/branch directly to redeem your accumulated reward points."}
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.modalActionButton}
+                            onPress={() => setVisitBranchModalVisible(false)}
+                        >
+                            <LinearGradient
+                                colors={[theme.colors.primary, "#002b24"]}
+                                style={styles.modalButtonGradient}
+                            >
+                                <Text style={styles.modalButtonText}>{t("ok") || "OK"}</Text>
+                            </LinearGradient>
                         </TouchableOpacity>
                     </View>
                 </View>

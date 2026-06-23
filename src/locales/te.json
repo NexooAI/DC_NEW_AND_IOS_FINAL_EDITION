@@ -1379,5 +1379,10 @@
   "subject": "విషయం",
   "referenceNo": "రిఫరెన్స్ సంఖ్య",
   "supportRepresentativeRespond": "మా సపోర్ట్ ప్రతినిధి త్వరలో స్పందిస్తారు.",
-  "pleaseEnterDescription": "దయచేసి వివరణ/సందేశాన్ని నమోదు చేయండి."
+  "pleaseEnterDescription": "దయచేసి వివరణ/సందేశాన్ని నమోదు చేయండి.",
+  "callUs": "కాల్ చేయండి",
+  "whatsappUs": "వాట్సాప్",
+  "needImmediateAssistance": "తక్షణ సహాయం కావాలా?",
+  "oldGoldContactDesc": "పాత బంగారు పథకం గురించి అత్యవసర విచారణల కోసం, దయచేసి మా షోరూమ్‌కు నేరుగా కాల్ చేయండి లేదా వాట్సాప్ చేయండి.",
+  "luckyDrawRecentWinnerLabel": "ఇటీవలి విజేత"
 }

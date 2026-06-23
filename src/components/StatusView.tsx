@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   Text,
   Animated,
-  TouchableWithoutFeedback,
   ActivityIndicator,
   Dimensions,
   Platform,
   StatusBar,
   Alert,
+  PanResponder,
 } from "react-native";
 import { Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -236,49 +236,90 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
       }
     };
 
-    const handleTouchStart = (event: any) => {
-      touchStartX.current = event.nativeEvent.locationX;
-      touchStartTime.current = Date.now();
-      // Temporarily stop animation/timer on touch down (for hold behavior)
-      progressAnim.stopAnimation();
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
+    const stateRef = useRef({
+      handlePrev,
+      handleNext,
+      onClose,
+      isPaused,
+      setIsPaused,
+      setShowEnquiryModal,
+      startProgressAnimation,
+    });
 
-    const handleTouchEnd = (event: any) => {
-      const touchEndX = event.nativeEvent.locationX;
-      const touchEndTime = Date.now();
-      const swipeDistance = touchEndX - touchStartX.current;
-      const touchDuration = touchEndTime - touchStartTime.current;
-      const screenW = Dimensions.get("window").width;
+    useEffect(() => {
+      stateRef.current = {
+        handlePrev,
+        handleNext,
+        onClose,
+        isPaused,
+        setIsPaused,
+        setShowEnquiryModal,
+        startProgressAnimation,
+      };
+    });
 
-      if (touchDuration < 250) {
-        // Tap behavior
-        if (swipeDistance > 50) {
-          handlePrev();
-          if (!isPaused) startProgressAnimation();
-        } else if (swipeDistance < -50) {
-          handleNext();
-          if (!isPaused) startProgressAnimation();
-        } else {
-          // Tap logic - split screen left/right/center
-          if (touchEndX < screenW * 0.3) {
-            handlePrev();
-            if (!isPaused) startProgressAnimation();
-          } else if (touchEndX > screenW * 0.7) {
-            handleNext();
-            if (!isPaused) startProgressAnimation();
-          } else {
-            // Center tap - toggle explicit paused state
-            setIsPaused((prev) => !prev);
+    const panResponder = useRef(
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (evt, gestureState) => {
+          touchStartX.current = evt.nativeEvent.pageX;
+          touchStartTime.current = Date.now();
+          progressAnim.stopAnimation();
+          if (timerRef.current) clearTimeout(timerRef.current);
+        },
+        onPanResponderRelease: (evt, gestureState) => {
+          const touchDuration = Date.now() - touchStartTime.current;
+          const screenW = Dimensions.get("window").width;
+
+          // Check vertical swipes first
+          if (gestureState.dy > 120) {
+            // Swipe down -> close
+            stateRef.current.onClose();
+            return;
+          } else if (gestureState.dy < -120) {
+            // Swipe up -> trigger enquiry
+            stateRef.current.setIsPaused(true);
+            stateRef.current.setShowEnquiryModal(true);
+            return;
           }
-        }
-      } else {
-        // Press-and-hold ended: resume progression if not explicitly paused
-        if (!isPaused) {
-          startProgressAnimation();
-        }
-      }
-    };
+
+          if (touchDuration < 250) {
+            // Tap behavior / horizontal swipe
+            if (gestureState.dx > 50) {
+              stateRef.current.handlePrev();
+              if (!stateRef.current.isPaused) stateRef.current.startProgressAnimation();
+            } else if (gestureState.dx < -50) {
+              stateRef.current.handleNext();
+              if (!stateRef.current.isPaused) stateRef.current.startProgressAnimation();
+            } else {
+              // Tap logic based on screen coordinates (pageX)
+              const touchEndX = evt.nativeEvent.pageX;
+              if (touchEndX < screenW * 0.3) {
+                stateRef.current.handlePrev();
+                if (!stateRef.current.isPaused) stateRef.current.startProgressAnimation();
+              } else if (touchEndX > screenW * 0.7) {
+                stateRef.current.handleNext();
+                if (!stateRef.current.isPaused) stateRef.current.startProgressAnimation();
+              } else {
+                // Center tap
+                stateRef.current.setIsPaused(!stateRef.current.isPaused);
+              }
+            }
+          } else {
+            // Press-and-hold ended: resume if not paused
+            if (!stateRef.current.isPaused) {
+              stateRef.current.startProgressAnimation();
+            }
+          }
+        },
+        onPanResponderTerminate: () => {
+          if (!stateRef.current.isPaused) {
+            stateRef.current.startProgressAnimation();
+          }
+        },
+      })
+    ).current;
 
     // Error handling effects
     useEffect(() => {
@@ -365,12 +406,10 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
             )}
 
             {/* Touch Layer for Navigation (Below controls) */}
-            <TouchableWithoutFeedback
-              onPressIn={handleTouchStart}
-              onPressOut={handleTouchEnd}
-            >
-              <View style={[StyleSheet.absoluteFill, { zIndex: 1 }]} />
-            </TouchableWithoutFeedback>
+            <View
+              style={[StyleSheet.absoluteFill, { zIndex: 1 }]}
+              {...panResponder.panHandlers}
+            />
 
             {/* Top Gradient Overlay for Header Text */}
             <LinearGradient
