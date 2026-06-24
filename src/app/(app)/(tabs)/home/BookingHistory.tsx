@@ -13,7 +13,7 @@ import {
   ScrollView,
   StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -69,6 +69,7 @@ const formatDate = (value?: string) => {
 export default function BookingHistory() {
   const router = useRouter();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const { user } = useGlobalStore();
   const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active');
   const [bookings, setBookings] = useState<BookingItem[]>([]);
@@ -324,7 +325,7 @@ export default function BookingHistory() {
       <LinearGradient colors={[theme.colors.quaternary, theme.colors.quaternary]} style={StyleSheet.absoluteFill} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, Platform.OS === 'android' && { paddingTop: insets.top }]}>
         <TouchableOpacity onPress={() => {
           router.back();
           router.replace('/(app)/gold_advance');

@@ -710,6 +710,7 @@ export default function Home() {
   const [schemeAmountLimits, setSchemeAmountLimits] = useState<{
     min_amount: number;
     max_amount: number;
+    limit_type?: string;
     quickselectedamount: number[];
   } | null>(null);
 
@@ -858,7 +859,7 @@ export default function Home() {
   const fetchSchemeAmountLimits = useCallback(async (schemeId: number) => {
     try {
       logger.log("🔍 Fetching amount limits for scheme:", schemeId);
-      const response = await api.get(`/amount-limits/scheme/${schemeId}`, { skipLoading: true } as any);
+      const response = await api.get(`/amount-limits/scheme/${schemeId}?userId=${user?.id || ''}`, { skipLoading: true } as any);
       logger.log("Amount limits API response:", response.data);
 
       if (response.data && response.data.data) {
@@ -872,6 +873,7 @@ export default function Home() {
           const limits = {
             min_amount: parseFloat(activeLimit.min_amount) || 0,
             max_amount: parseFloat(activeLimit.max_amount) || 0,
+            limit_type: activeLimit.limit_type,
             quickselectedamount: activeLimit.quickselectedamount || [],
           };
           setSchemeAmountLimits(limits);
@@ -2129,12 +2131,16 @@ export default function Home() {
       } else {
         // Validate against scheme-specific amount limits if available
         // Use <= and >= to allow exact min and max amounts (no rounding)
-        if (schemeAmountLimits) {
-          if (amountValue < schemeAmountLimits.min_amount) {
-            errors.amount = `Minimum amount is ₹${schemeAmountLimits.min_amount.toLocaleString("en-IN")}`;
-          } else if (amountValue > schemeAmountLimits.max_amount) {
-            errors.amount = `Maximum amount is ₹${schemeAmountLimits.max_amount.toLocaleString("en-IN")}`;
-          }
+        const min = schemeAmountLimits?.min_amount ?? 0;
+        const max = schemeAmountLimits?.max_amount ?? 100000;
+        if (amountValue < min) {
+          errors.amount = schemeAmountLimits?.limit_type === "user"
+            ? `User-specific minimum amount is ₹${min.toLocaleString("en-IN")}`
+            : `Minimum amount is ₹${min.toLocaleString("en-IN")}`;
+        } else if (amountValue > max) {
+          errors.amount = schemeAmountLimits?.limit_type === "user"
+            ? `User-specific maximum amount is ₹${max.toLocaleString("en-IN")}`
+            : `Maximum amount is ₹${max.toLocaleString("en-IN")}`;
         }
       }
     }
@@ -2385,6 +2391,7 @@ export default function Home() {
           chitId: chitId ? String(chitId) : "",
           paymentFrequency: paymentFrequency,
           schemeType: selectedSchemeType,
+          savinsTypes: selectedSchemeType || "amount",
           userDetails: userDetailsString,
         },
       });

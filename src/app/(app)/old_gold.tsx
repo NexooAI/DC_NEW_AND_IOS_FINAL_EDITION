@@ -12,6 +12,7 @@ import {
   Platform,
   Linking,
   StatusBar,
+  KeyboardAvoidingView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -456,128 +457,139 @@ export default function OldGoldScreen() {
   };
 
   const renderEnquiryForm = () => (
-    <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-      <View style={styles.formContainer}>
-        <ResponsiveText color="#FFF" size="md" weight="bold" style={{ marginBottom: 16 }}>
-          {t("oldGoldEnquiryForm") || "Old Gold Scheme Enquiry Form"}
-        </ResponsiveText>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+    >
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={true}
+      >
+        <View style={styles.formContainer}>
+          <ResponsiveText color="#FFF" size="md" weight="bold" style={{ marginBottom: 16 }}>
+            {t("oldGoldEnquiryForm") || "Old Gold Scheme Enquiry Form"}
+          </ResponsiveText>
 
-        <ResponsiveText color={GRAY_TEXT} size="xs" style={styles.label}>
-          {t("nameLabel") || "Name"}
-        </ResponsiveText>
-        <TextInput
-          style={[styles.input, styles.disabledInput]}
-          value={user?.name || ""}
-          editable={false}
-        />
+          <ResponsiveText color={GRAY_TEXT} size="xs" style={styles.label}>
+            {t("nameLabel") || "Name"}
+          </ResponsiveText>
+          <TextInput
+            style={[styles.input, styles.disabledInput]}
+            value={user?.name || ""}
+            editable={false}
+          />
 
-        <ResponsiveText color={GRAY_TEXT} size="xs" style={styles.label}>
-          {t("mobileNumberLabel") || "Mobile Number"}
-        </ResponsiveText>
-        <TextInput
-          style={[styles.input, styles.disabledInput]}
-          value={user?.mobile?.toString() || ""}
-          editable={false}
-        />
+          <ResponsiveText color={GRAY_TEXT} size="xs" style={styles.label}>
+            {t("mobileNumberLabel") || "Mobile Number"}
+          </ResponsiveText>
+          <TextInput
+            style={[styles.input, styles.disabledInput]}
+            value={user?.mobile?.toString() || ""}
+            editable={false}
+          />
 
-        <ResponsiveText color={GRAY_TEXT} size="xs" style={styles.label}>
-          {t("estimatedGoldWeight") || "Estimated Gold Weight (grams) *"}
-        </ResponsiveText>
-        <TextInput
-          style={styles.input}
-          placeholder={t("eg10") || "e.g. 10"}
-          placeholderTextColor="#666"
-          value={estWeight}
-          onChangeText={setEstWeight}
-          keyboardType="numeric"
-        />
+          <ResponsiveText color={GRAY_TEXT} size="xs" style={styles.label}>
+            {t("estimatedGoldWeight") || "Estimated Gold Weight (grams) *"}
+          </ResponsiveText>
+          <TextInput
+            style={styles.input}
+            placeholder={t("eg10") || "e.g. 10"}
+            placeholderTextColor="#666"
+            value={estWeight}
+            onChangeText={setEstWeight}
+            keyboardType="numeric"
+          />
 
-        <ResponsiveText color={GRAY_TEXT} size="xs" style={styles.label}>
-          {t("purityCarats") || "Purity (Carats)"}
-        </ResponsiveText>
-        <View style={styles.purityRow}>
-          {["18K", "22K", "24K"].map((c) => (
-            <TouchableOpacity
-              key={c}
-              style={[styles.purityBtn, purity === c && styles.purityBtnActive]}
-              onPress={() => setPurity(c)}
-            >
-              <ResponsiveText color={purity === c ? DARK : "#FFF"} weight="bold">
-                {c}
+          <ResponsiveText color={GRAY_TEXT} size="xs" style={styles.label}>
+            {t("purityCarats") || "Purity (Carats)"}
+          </ResponsiveText>
+          <View style={styles.purityRow}>
+            {["18K", "22K", "24K"].map((c) => (
+              <TouchableOpacity
+                key={c}
+                style={[styles.purityBtn, purity === c && styles.purityBtnActive]}
+                onPress={() => setPurity(c)}
+              >
+                <ResponsiveText color={purity === c ? DARK : "#FFF"} weight="bold">
+                  {c}
+                </ResponsiveText>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <ResponsiveText color={GRAY_TEXT} size="xs" style={styles.label}>
+            {t("ornamentDescription") || "Ornament Description"}
+          </ResponsiveText>
+          <TextInput
+            style={[styles.input, { height: 60 }]}
+            placeholder={t("ornamentPlaceholder") || "e.g. Bangles, Chains..."}
+            placeholderTextColor="#666"
+            value={description}
+            onChangeText={setDescription}
+            multiline
+          />
+
+          <ResponsiveText color={GRAY_TEXT} size="xs" style={styles.label}>
+            {t("additionalComments") || "Additional Comments"}
+          </ResponsiveText>
+          <TextInput
+            style={[styles.input, { height: 80 }]}
+            placeholder={t("commentsPlaceholder") || "If you have any queries, ask here..."}
+            placeholderTextColor="#666"
+            value={comments}
+            onChangeText={setComments}
+            multiline
+          />
+
+          <TouchableOpacity
+            style={[styles.submitBtn, submittingEnquiry && styles.disabledButton]}
+            onPress={handleSubmitEnquiry}
+            disabled={submittingEnquiry}
+          >
+            {submittingEnquiry ? (
+              <ActivityIndicator color={DARK} />
+            ) : (
+              <ResponsiveText color={DARK} weight="bold">
+                {t("submitEnquiry") || "Submit Enquiry"}
               </ResponsiveText>
-            </TouchableOpacity>
-          ))}
-        </View>
+            )}
+          </TouchableOpacity>
 
-        <ResponsiveText color={GRAY_TEXT} size="xs" style={styles.label}>
-          {t("ornamentDescription") || "Ornament Description"}
-        </ResponsiveText>
-        <TextInput
-          style={[styles.input, { height: 60 }]}
-          placeholder={t("ornamentPlaceholder") || "e.g. Bangles, Chains..."}
-          placeholderTextColor="#666"
-          value={description}
-          onChangeText={setDescription}
-          multiline
-        />
-
-        <ResponsiveText color={GRAY_TEXT} size="xs" style={styles.label}>
-          {t("additionalComments") || "Additional Comments"}
-        </ResponsiveText>
-        <TextInput
-          style={[styles.input, { height: 80 }]}
-          placeholder={t("commentsPlaceholder") || "If you have any queries, ask here..."}
-          placeholderTextColor="#666"
-          value={comments}
-          onChangeText={setComments}
-          multiline
-        />
-
-        <TouchableOpacity
-          style={[styles.submitBtn, submittingEnquiry && styles.disabledButton]}
-          onPress={handleSubmitEnquiry}
-          disabled={submittingEnquiry}
-        >
-          {submittingEnquiry ? (
-            <ActivityIndicator color={DARK} />
-          ) : (
-            <ResponsiveText color={DARK} weight="bold">
-              {t("submitEnquiry") || "Submit Enquiry"}
+          {/* Contact Showroom Card */}
+          <View style={styles.contactCard}>
+            <ResponsiveText color={GOLD} size="sm" weight="bold" style={{ marginBottom: 8 }}>
+              {t("needImmediateAssistance") || "Need Immediate Assistance?"}
             </ResponsiveText>
-          )}
-        </TouchableOpacity>
-
-        {/* Contact Showroom Card */}
-        <View style={styles.contactCard}>
-          <ResponsiveText color={GOLD} size="sm" weight="bold" style={{ marginBottom: 8 }}>
-            {t("needImmediateAssistance") || "Need Immediate Assistance?"}
-          </ResponsiveText>
-          <ResponsiveText color={GRAY_TEXT} size="xs" style={{ marginBottom: 12, lineHeight: 16 }}>
-            {t("oldGoldContactDesc") || "For urgent inquiries regarding the Old Gold Scheme, please feel free to call or WhatsApp our showroom directly."}
-          </ResponsiveText>
-          <View style={styles.contactRow}>
-            <TouchableOpacity 
-              style={styles.contactBtn}
-              onPress={() => Linking.openURL(`tel:${theme.constants.mobile}`)}
-            >
-              <Ionicons name="call" size={16} color={DARK} />
-              <ResponsiveText color={DARK} size="xs" weight="bold" style={{ marginLeft: 6 }}>
-                {t("callUs") || "Call Us"}
-              </ResponsiveText>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.contactBtn, { backgroundColor: "#25D366" }]}
-              onPress={() => Linking.openURL(`https://wa.me/${theme.constants.whatsapp.replace('+', '')}`)}
-            >
-              <Ionicons name="logo-whatsapp" size={16} color="#FFF" />
-              <ResponsiveText color="#FFF" size="xs" weight="bold" style={{ marginLeft: 6 }}>
-                {t("whatsappUs") || "WhatsApp"}
-              </ResponsiveText>
-            </TouchableOpacity>
+            <ResponsiveText color={GRAY_TEXT} size="xs" style={{ marginBottom: 12, lineHeight: 16 }}>
+              {t("oldGoldContactDesc") || "For urgent inquiries regarding the Old Gold Scheme, please feel free to call or WhatsApp our showroom directly."}
+            </ResponsiveText>
+            <View style={styles.contactRow}>
+              <TouchableOpacity
+                style={styles.contactBtn}
+                onPress={() => Linking.openURL(`tel:${theme.constants.mobile}`)}
+              >
+                <Ionicons name="call" size={16} color={DARK} />
+                <ResponsiveText color={DARK} size="xs" weight="bold" style={{ marginLeft: 6 }}>
+                  {t("callUs") || "Call Us"}
+                </ResponsiveText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.contactBtn, { backgroundColor: "#25D366" }]}
+                onPress={() => Linking.openURL(`https://wa.me/${theme.constants.whatsapp.replace('+', '')}`)}
+              >
+                <Ionicons name="logo-whatsapp" size={16} color="#FFF" />
+                <ResponsiveText color="#FFF" size="xs" weight="bold" style={{ marginLeft: 6 }}>
+                  {t("whatsappUs") || "WhatsApp"}
+                </ResponsiveText>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 
   const renderSchemes = () => {

@@ -362,48 +362,25 @@ export default function BillPayment() {
         return;
       }
 
-      setProcessingMessage('Initiating payment...');
-      console.log("[DEBUG Payment Flow] Calling billsAPI.payBill with:", { billId, userId });
-      const response = await billsAPI.payBill({ billId, userId });
-
-      console.log("[DEBUG Payment Flow] billsAPI.payBill response success:", response?.data?.success);
-      console.log("[DEBUG Payment Flow] API returned data:", JSON.stringify(response?.data));
-
-      const data = response?.data?.data;
-      const paymentSession = data?.paymentSession;
-      const paymentUrl = extractPaymentUrl(paymentSession);
-
-      console.log("[DEBUG Payment Flow] Extracted paymentUrl:", paymentUrl);
-      console.log("[DEBUG Payment Flow] Extracted orderId:", data?.orderId);
-
-      if (!response?.data?.success || !data?.orderId || !paymentUrl) {
-        throw new Error(response?.data?.message || 'Payment session not available');
-      }
-
-      setProcessingMessage('Opening payment gateway...');
       setDetailModalVisible(false);
 
-      console.log("[DEBUG Payment Flow] Routing to PaymentWebView with params:", {
-        url: paymentUrl,
-        orderId: String(data.orderId),
-        bookingId: String(billId),
-        amount: String(bill.pendingAmount),
-        userId: String(userId),
-        type: 'bill',
-      });
+      console.log("[DEBUG Payment Flow] Routing to paymentNewOverView with params for bill:", billId);
 
       router.push({
-        pathname: '/(tabs)/home/PaymentWebView',
+        pathname: '/(tabs)/home/paymentNewOverView',
         params: {
-          url: paymentUrl,
-          orderId: String(data.orderId),
-          bookingId: String(billId),
+          paymentType: 'bill',
+          billId: String(billId),
+          billNumber: bill.billNumber,
+          description: bill.description,
           amount: String(bill.pendingAmount),
-          userId: String(userId),
-          type: 'bill',
-          paymentIntentId: String(data.paymentIntentId || ''),
-          accountNumber: String((user as any)?.accountNumber || (user as any)?.accountNo || (user as any)?.accNo || ''),
-          accountName: String(user?.name || ''),
+          userDetails: JSON.stringify({
+            userId: String(userId),
+            name: user?.name || '',
+            mobile: user?.mobile?.toString() || '',
+            email: user?.email || '',
+            accountNo: String((user as any)?.accountNumber || (user as any)?.accountNo || (user as any)?.accNo || ''),
+          }),
         },
       });
     } catch (error) {

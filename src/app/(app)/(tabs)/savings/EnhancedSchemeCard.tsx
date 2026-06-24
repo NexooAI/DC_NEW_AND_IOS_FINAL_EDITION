@@ -453,7 +453,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                     ]}
                   >
                     <Text style={styles.savingTypeText}>
-                      {item.savingType === "old_gold" ? "Weight" : (item.schemesData.schemeType.toLowerCase() === "weight" ? "Weight" : "Amount")}
+                      {item.savingType === "old_gold" ? "Weight" : (item.schemesData?.schemeType?.toLowerCase() === "weight" ? "Weight" : "Amount")}
                     </Text>
                   </View>
                 </View>
@@ -876,6 +876,7 @@ const styles = StyleSheet.create({
   },
   schemeSubtitleContainer: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   metalTypeBadge: {

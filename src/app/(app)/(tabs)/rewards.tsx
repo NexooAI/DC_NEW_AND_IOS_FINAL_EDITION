@@ -14,7 +14,7 @@ import {
     Alert,
     ScrollView,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
@@ -29,6 +29,7 @@ const DISABLE_REDEMPTION_FORM = true; // Set to false to restore original redemp
 
 export default function RewardsScreen() {
     const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const navigation = useNavigation();
     const { user } = useGlobalStore();
@@ -79,7 +80,9 @@ export default function RewardsScreen() {
                 backgroundColor: "#F2E6D2",
                 elevation: 0,
                 shadowOpacity: 0,
+                height: Platform.OS === 'android' ? (60 + insets.top) : 60,
             },
+            headerStatusBarHeight: Platform.OS === 'android' ? insets.top : 0,
             headerTintColor: "#1a1a1a",
             headerTitleStyle: {
                 fontWeight: "700",

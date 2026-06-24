@@ -699,7 +699,7 @@ export default function KycForm() {
         style={styles.keyboardAvoid}
       >
         {/* Fixed Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, Platform.OS === 'android' && { paddingTop: insets.top }]}>
           <View style={styles.headerContent}>
             <TouchableOpacity
               onPress={handleBack}

@@ -27,9 +27,81 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { logger } from '@/utils/logger';
+
+const getFirstValue = (...values: any[]) => values.find((value) => value !== undefined && value !== null && value !== '');
+
+const extractPaymentUrl = (paymentSession: any) => {
+  if (!paymentSession) return '';
+  if (typeof paymentSession === 'string') return paymentSession;
+  return (
+    paymentSession?.payment_links?.web ||
+    paymentSession?.paymentLinks?.web ||
+    paymentSession?.links?.web ||
+    paymentSession?.web ||
+    paymentSession?.url ||
+    paymentSession?.paymentUrl ||
+    paymentSession?.payment_url ||
+    ''
+  );
+};
+
+const extractPaymentLink = (responseData: any) => {
+  const data = responseData?.data || responseData;
+  const session = data?.session || data?.paymentSession || data?.payment_session;
+  const bookingSession = data?.bookingId?.url || data?.booking?.url;
+  return (
+    data?.paymentLink ||
+    data?.payment_link ||
+    data?.paymentUrl ||
+    data?.payment_url ||
+    data?.payment_links?.web ||
+    data?.paymentLinks?.web ||
+    bookingSession?.payment_links?.web ||
+    bookingSession?.paymentLinks?.web ||
+    bookingSession?.links?.web ||
+    bookingSession?.web ||
+    bookingSession?.url ||
+    session?.payment_links?.web ||
+    session?.paymentLinks?.web ||
+    session?.links?.web ||
+    session?.web ||
+    session?.url ||
+    ''
+  );
+};
+
+const extractOrderId = (responseData: any) => {
+  const data = responseData?.data || responseData;
+  const session = data?.session || data?.paymentSession || data?.payment_session;
+  const bookingSession = data?.bookingId?.url || data?.booking?.url;
+  return getFirstValue(
+    data?.orderId,
+    data?.order_id,
+    data?.bookingId?.orderId,
+    data?.bookingId?.order_id,
+    bookingSession?.order_id,
+    bookingSession?.orderId,
+    session?.order_id,
+    session?.orderId
+  );
+};
+
+const extractBookingId = (responseData: any) => {
+  const data = responseData?.data || responseData;
+  return getFirstValue(
+    data?.bookingId?.bookingId,
+    data?.bookingId?.id,
+    data?.booking_id,
+    data?.bookingId,
+    data?.id,
+    data?.booking?.id
+  );
+};
+
 export default function PaymentNewOverView() {
   const { t } = useTranslation();
   const params = useLocalSearchParams();
+  const paymentType = params.paymentType?.toString() || '';
   const router = useRouter();
   const { language, user } = useGlobalStore();
   const [userDetails, setUserDetails] = useState<any>(null);
@@ -112,12 +184,13 @@ export default function PaymentNewOverView() {
   }, [params.paymentFrequency, params.schemeType, parsedFixedType]);
 
   const isEditable = useMemo(() => {
-    return isFlexi;
-  }, [isFlexi]);
+    return isFlexi && !paymentType;
+  }, [isFlexi, paymentType]);
 
   // Dynamic amount limits from API (defaults to 100000 if not fetched)
   const [minAmount, setMinAmount] = useState(0);
   const [maxAmount, setMaxAmount] = useState(100000); // Default fallback
+  const [limitType, setLimitType] = useState<string | null>(null);
   // Scheme calculation slider state
 
   const [isUserDetailsExpanded, setIsUserDetailsExpanded] = useState(true);
@@ -273,7 +346,7 @@ export default function PaymentNewOverView() {
         // Check for critical missing fields with better error messages
         // userId should be set by now (either from userDetails or user.id fallback)
         const hasUserId = !!details.userId;
-        const hasInvestmentId = !!details.investmentId;
+        const hasInvestmentId = paymentType ? true : !!details.investmentId;
         const missingFields: string[] = [];
 
         if (!hasUserId) {
@@ -376,6 +449,9 @@ export default function PaymentNewOverView() {
 
   // Fetch amount limits for flexi/hybrid schemes
   const fetchAmountLimits = async () => {
+    if (paymentType) {
+      return;
+    }
     if ((!isFlexi && !isHybrid) || !params.schemeId) {
       return; // Only fetch for flexi/hybrid schemes with schemeId
     }
@@ -389,12 +465,16 @@ export default function PaymentNewOverView() {
         ? params.schemeId[0]
         : params.schemeId;
 
-      const response = await api.get(`/amount-limits/scheme/${schemeId}`);
+      const response = await api.get(
+        `/amount-limits/scheme/${schemeId}?userId=${userDetails?.userId || user?.id || ""}&investmentId=${userDetails?.investmentId || ""}`
+      );
 
       if (isMountedRef.current && response?.data) {
         const data = response.data.data || response.data;
-        const min = Number(data.minAmount || data.min_amount || 0);
-        const max = Number(data.maxAmount || data.max_amount || 100000);
+        const limitsObj = Array.isArray(data) ? data.find((limit: any) => limit.is_active === 1) : data;
+        const min = Number(limitsObj?.min_amount || limitsObj?.minAmount || 0);
+        const max = Number(limitsObj?.max_amount || limitsObj?.maxAmount || 100000);
+        const type = limitsObj?.limit_type || null;
 
         if (!isNaN(min) && isFinite(min) && min >= 0) {
           setMinAmount(min);
@@ -402,8 +482,9 @@ export default function PaymentNewOverView() {
         if (!isNaN(max) && isFinite(max) && max > 0) {
           setMaxAmount(max);
         }
+        setLimitType(type);
 
-        logger.log("Amount limits fetched", { min, max, schemeId });
+        logger.log("Amount limits fetched", { min, max, type, schemeId });
       }
     } catch (error) {
       logger.error("Error fetching amount limits:", error);
@@ -449,7 +530,11 @@ export default function PaymentNewOverView() {
     if (newAmount < minAmount) {
       setCurrentAmount(minAmount);
       calculateWeightPerGram(minAmount, goldRate);
-      setAmountError(`Minimum amount allowed is ₹${minAmount.toLocaleString('en-IN')}`);
+      setAmountError(
+        limitType === "user"
+          ? `User-specific minimum amount allowed is ₹${minAmount.toLocaleString('en-IN')}`
+          : `Minimum amount allowed is ₹${minAmount.toLocaleString('en-IN')}`
+      );
     } else if (newAmount >= minAmount && newAmount <= maxAmount) {
       setCurrentAmount(newAmount);
       calculateWeightPerGram(newAmount, goldRate);
@@ -457,7 +542,11 @@ export default function PaymentNewOverView() {
     } else if (newAmount > maxAmount) {
       setCurrentAmount(maxAmount);
       calculateWeightPerGram(maxAmount, goldRate);
-      setAmountError(`Maximum amount allowed is ₹${maxAmount.toLocaleString('en-IN')}`);
+      setAmountError(
+        limitType === "user"
+          ? `User-specific maximum amount allowed is ₹${maxAmount.toLocaleString('en-IN')}`
+          : `Maximum amount allowed is ₹${maxAmount.toLocaleString('en-IN')}`
+      );
     }
   };
 
@@ -473,11 +562,19 @@ export default function PaymentNewOverView() {
     if (amount < minAmount) {
       setCurrentAmount(minAmount);
       calculateWeightPerGram(minAmount, goldRate);
-      setAmountError(`Minimum amount allowed is ₹${minAmount.toLocaleString('en-IN')}`);
+      setAmountError(
+        limitType === "user"
+          ? `User-specific minimum amount allowed is ₹${minAmount.toLocaleString('en-IN')}`
+          : `Minimum amount allowed is ₹${minAmount.toLocaleString('en-IN')}`
+      );
     } else if (amount > maxAmount) {
       setCurrentAmount(maxAmount);
       calculateWeightPerGram(maxAmount, goldRate);
-      setAmountError(`Maximum amount allowed is ₹${maxAmount.toLocaleString('en-IN')}`);
+      setAmountError(
+        limitType === "user"
+          ? `User-specific maximum amount allowed is ₹${maxAmount.toLocaleString('en-IN')}`
+          : `Maximum amount allowed is ₹${maxAmount.toLocaleString('en-IN')}`
+      );
     } else {
       setCurrentAmount(amount);
       calculateWeightPerGram(amount, goldRate);
@@ -535,10 +632,15 @@ export default function PaymentNewOverView() {
   }, [params.schemeName, userDetails?.schemeName, t, language]);
 
   useEffect(() => {
+    if (paymentType) {
+      setMinAmount(0);
+      setMaxAmount(9999999);
+      return;
+    }
     fetchGoldRate();
     if ((isFlexi || isHybrid) && params.schemeId) {
-      if (hybridStatus) {
-        // If hybridStatus has dynamic limits, use them!
+      if (hybridStatus && hybridStatus.isFixedPhase) {
+        // If hybridStatus has dynamic limits and we are in the fixed phase, use them!
         if (hybridStatus.minAmount !== undefined && hybridStatus.maxAmount !== undefined) {
           const min = Number(hybridStatus.minAmount);
           const max = Number(hybridStatus.maxAmount);
@@ -553,7 +655,7 @@ export default function PaymentNewOverView() {
             setCurrentAmount(max);
             calculateWeightPerGram(max, goldRate);
           }
-          logger.log("Hybrid dynamic range limits set:", { min, max });
+          logger.log("Hybrid dynamic range limits set (Fixed Phase):", { min, max });
         } else {
           fetchAmountLimits();
         }
@@ -561,9 +663,21 @@ export default function PaymentNewOverView() {
         fetchAmountLimits();
       }
     }
-  }, [params.schemeId, isFlexi, isHybrid, hybridStatus, goldRate]);
+  }, [params.schemeId, isFlexi, isHybrid, hybridStatus, goldRate, paymentType]);
 
   const fetchTermsAndConditions = async () => {
+    if (paymentType === 'bill') {
+      setTermsContent("By proceeding with this payment, you authorize the settlement of your outstanding bill amount. The transaction is secure and will be updated in your account history upon successful payment gateway confirmation.");
+      return;
+    }
+    if (paymentType === 'advance_booking') {
+      setTermsContent("By proceeding with this payment, you agree to book the gold/silver at today's locked rate by paying the specified advance amount. You will have the designated days to complete the purchase. In case of cancellation or non-completion, standard terms and conditions of advance booking will apply.");
+      return;
+    }
+    if (!params.schemeId) {
+      setTermsContent("Terms and conditions not available. Please contact support.");
+      return;
+    }
     try {
 
       const response = await api.get(`/schemes/${params.schemeId}`);
@@ -664,6 +778,90 @@ export default function PaymentNewOverView() {
         return;
       }
 
+      // Bill Payment Flow
+      if (paymentType === 'bill') {
+        const billId = params.billId?.toString();
+        const userId = userDetails.userId || user?.id;
+
+        logger.log("[DEBUG Payment Flow Overview] Calling billsAPI.payBill with:", { billId, userId });
+        const response = await api.post('/bills/pay', { billId, userId });
+
+        logger.log("[DEBUG Payment Flow Overview] billsAPI.payBill response success:", response?.data?.success);
+
+        const data = response?.data?.data;
+        const paymentSession = data?.paymentSession;
+        const paymentUrl = extractPaymentUrl(paymentSession);
+
+        if (!response?.data?.success || !data?.orderId || !paymentUrl) {
+          throw new Error(response?.data?.message || 'Payment session not available');
+        }
+
+        router.push({
+          pathname: '/(tabs)/home/PaymentWebView',
+          params: {
+            url: paymentUrl,
+            orderId: String(data.orderId),
+            bookingId: String(billId),
+            amount: String(currentAmount),
+            userId: String(userId),
+            type: 'bill',
+            paymentIntentId: String(data.paymentIntentId || ''),
+            accountNumber: String(userDetails.accountNo || ''),
+            accountName: String(userDetails.name || ''),
+          },
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      // Advance Booking Flow
+      if (paymentType === 'advance_booking') {
+        const userId = userDetails.userId || user?.id;
+        const payload = {
+          userId,
+          goldWeight: parseFloat(params.goldWeight as string) || 0,
+          totalAmount: parseFloat(params.totalAmount as string) || 0,
+          userName: userDetails.name,
+          userEmail: userDetails.email,
+          userMobile: userDetails.mobile,
+          ratePerGram: parseFloat(params.ratePerGram as string) || 0,
+          bookingAmount: parseFloat(params.bookingAmount as string) || 0,
+          paymentMode: "UPI",
+          accountNumber: userDetails.accountNo,
+          source: "APP",
+          expiryDate: params.expiryDate as string
+        };
+
+        logger.log("[DEBUG Payment Flow Overview] Calling advanceBookingAPI.createBooking with:", JSON.stringify(payload));
+        const response = await api.post('/advancebookings', payload);
+
+        logger.log("[DEBUG Payment Flow Overview] createBooking response success:", response?.data?.success);
+
+        const paymentLink = extractPaymentLink(response?.data);
+        const orderId = extractOrderId(response?.data);
+        const bookingId = extractBookingId(response?.data);
+
+        if (!response?.data?.success || !paymentLink) {
+          throw new Error(response?.data?.message || 'Booking or payment session not available');
+        }
+
+        router.push({
+          pathname: '/(tabs)/home/PaymentWebView',
+          params: {
+            url: String(paymentLink),
+            orderId: orderId ? String(orderId) : '',
+            bookingId: bookingId ? String(bookingId) : '',
+            amount: String(payload.bookingAmount),
+            type: 'advance_booking',
+            userId: String(userId),
+            accountNumber: String(payload.accountNumber),
+            accountName: String(payload.userName),
+          }
+        });
+        setIsProcessing(false);
+        return;
+      }
+
       // Validate critical fields
       if (!userDetails.investmentId) {
         logger.crash(new Error("Missing investmentId"), {
@@ -693,7 +891,10 @@ export default function PaymentNewOverView() {
 
       if (currentAmount < minAmount) {
         if (isMountedRef.current) {
-          Alert.alert("Invalid Amount", `Minimum amount allowed is ₹${minAmount.toLocaleString('en-IN')}`);
+          const errorMsg = limitType === "user"
+            ? `User-specific minimum amount allowed is ₹${minAmount.toLocaleString('en-IN')}`
+            : `Minimum amount allowed is ₹${minAmount.toLocaleString('en-IN')}`;
+          Alert.alert("Invalid Amount", errorMsg);
           setIsProcessing(false);
         }
         return;
@@ -701,7 +902,10 @@ export default function PaymentNewOverView() {
 
       if (currentAmount > maxAmount) {
         if (isMountedRef.current) {
-          Alert.alert("Invalid Amount", `Maximum amount allowed is ₹${maxAmount.toLocaleString('en-IN')}`);
+          const errorMsg = limitType === "user"
+            ? `User-specific maximum amount allowed is ₹${maxAmount.toLocaleString('en-IN')}`
+            : `Maximum amount allowed is ₹${maxAmount.toLocaleString('en-IN')}`;
+          Alert.alert("Invalid Amount", errorMsg);
           setIsProcessing(false);
         }
         return;
@@ -933,9 +1137,11 @@ export default function PaymentNewOverView() {
                     <Text style={styles.amountValue}>{formattedAmount}</Text>
                   </Animated.View>
                 )}
-                <Text style={styles.weightText}>
-                  {formattedWeight} grams (₹{(goldRate && !isNaN(goldRate) ? Number(goldRate).toFixed(2) : "0.00")}/gram)
-                </Text>
+                {(params.savinsTypes)?.toString().toLowerCase() === "weight" && (
+                  <Text style={styles.weightText}>
+                    {formattedWeight} grams (₹{(goldRate && !isNaN(goldRate) ? Number(goldRate).toFixed(2) : "0.00")}/gram)
+                  </Text>
+                )}
                 {amountError ? (
                   <Text style={styles.errorText}>{amountError}</Text>
                 ) : null}
@@ -1028,7 +1234,13 @@ export default function PaymentNewOverView() {
                 size={20}
                 color={theme.colors.secondary}
               />
-              <Text style={styles.amountTitle}>{t("totalAmount")}</Text>
+              <Text style={styles.amountTitle}>
+                {paymentType === 'bill'
+                  ? 'Bill Amount'
+                  : paymentType === 'advance_booking'
+                    ? 'Advance Payment Amount'
+                    : t("totalAmount")}
+              </Text>
             </View>
             <View style={styles.amountDisplay}>
               <Text style={styles.amountValue}>{formattedAmount}</Text>
@@ -1095,117 +1307,237 @@ export default function PaymentNewOverView() {
           </Animated.View>
         </View>
 
-        {/* Scheme Details Card */}
-        <View style={styles.schemeDetailsCard}>
-          <TouchableOpacity
-            style={[
-              styles.cardHeader,
-              isSchemeDetailsExpanded ? styles.cardHeaderWithBorder : undefined,
-            ]}
-            onPress={toggleSchemeDetailsCard}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name="business"
-              size={24}
-              color={theme.colors.secondary}
-            />
-            <Text style={styles.cardTitle}>
-              {isSchemeDetailsExpanded ? t("schemeDetails") : schemeName}
-            </Text>
-            <Ionicons
-              name={isSchemeDetailsExpanded ? "chevron-up" : "chevron-down"}
-              size={20}
-              color={theme.colors.secondary}
-              style={styles.expandIcon}
-            />
-          </TouchableOpacity>
-          <Animated.View
-            style={[
-              styles.cardContent,
-              {
-                maxHeight: schemeDetailsHeight.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, 400], // Increased height for more details
-                }),
-                opacity: schemeDetailsHeight,
-              },
-            ]}
-          >
-            <View style={styles.schemeDetailsRow}>
-              <Text style={styles.schemeDetailLabel}>{t("accountNo")}:</Text>
-              <Text style={styles.schemeDetailValue}>
-                {params.accNo ? `DCJ-${params.accNo}` : (userDetails?.accNo || "N/A")}
-              </Text>
-            </View>
-
-            {params.maturityDate && (
+        {/* Scheme / Bill / Booking Details Card */}
+        {paymentType === 'bill' ? (
+          <View style={styles.schemeDetailsCard}>
+            <TouchableOpacity
+              style={[
+                styles.cardHeader,
+                isSchemeDetailsExpanded ? styles.cardHeaderWithBorder : undefined,
+              ]}
+              onPress={toggleSchemeDetailsCard}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="receipt"
+                size={24}
+                color={theme.colors.secondary}
+              />
+              <Text style={styles.cardTitle}>Bill Details</Text>
+              <Ionicons
+                name={isSchemeDetailsExpanded ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={theme.colors.secondary}
+                style={styles.expandIcon}
+              />
+            </TouchableOpacity>
+            <Animated.View
+              style={[
+                styles.cardContent,
+                {
+                  maxHeight: schemeDetailsHeight.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 200],
+                  }),
+                  opacity: schemeDetailsHeight,
+                },
+              ]}
+            >
               <View style={styles.schemeDetailsRow}>
-                <Text style={styles.schemeDetailLabel}>{t("maturityDate")}:</Text>
-                <Text style={styles.schemeDetailValue}>{params.maturityDate}</Text>
+                <Text style={styles.schemeDetailLabel}>Bill Number:</Text>
+                <Text style={styles.schemeDetailValue}>{params.billNumber || "N/A"}</Text>
               </View>
-            )}
-
-            {!isFlexi && !isHybrid && params.noOfIns && (
-              <View style={styles.progressRowContainer}>
-                <View style={styles.schemeDetailsRow}>
-                  <Text style={styles.schemeDetailLabel}>{t("installmentProgress")}:</Text>
-                  <Text style={styles.schemeDetailValue}>
-                    {params.paidPaymentCount || 0}/{params.noOfIns}
-                  </Text>
-                </View>
-                <View style={styles.progressBarBackground}>
-                  <View
-                    style={[
-                      styles.progressBarFill,
-                      {
-                        width: `${Math.min(
-                          100,
-                          Math.max(
-                            0,
-                            (Number(params.paidPaymentCount || 0) / Number(params.noOfIns)) * 100
-                          )
-                        )}%`,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-            )}
-
-            {params.totalPaid && (
               <View style={styles.schemeDetailsRow}>
-                <Text style={styles.schemeDetailLabel}>{t("totalPaid")}:</Text>
+                <Text style={styles.schemeDetailLabel}>Description:</Text>
+                <Text style={styles.schemeDetailValue}>{params.description || "N/A"}</Text>
+              </View>
+              <View style={styles.schemeDetailsRow}>
+                <Text style={styles.schemeDetailLabel}>Account Number:</Text>
                 <Text style={styles.schemeDetailValue}>
-                  ₹{Number(params.totalPaid).toLocaleString("en-IN")}
+                  {userDetails?.accountNo || userDetails?.accNo || "N/A"}
                 </Text>
               </View>
-            )}
+            </Animated.View>
+          </View>
+        ) : paymentType === 'advance_booking' ? (
+          <View style={styles.schemeDetailsCard}>
+            <TouchableOpacity
+              style={[
+                styles.cardHeader,
+                isSchemeDetailsExpanded ? styles.cardHeaderWithBorder : undefined,
+              ]}
+              onPress={toggleSchemeDetailsCard}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="shield-checkmark"
+                size={24}
+                color={theme.colors.secondary}
+              />
+              <Text style={styles.cardTitle}>Booking Details</Text>
+              <Ionicons
+                name={isSchemeDetailsExpanded ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={theme.colors.secondary}
+                style={styles.expandIcon}
+              />
+            </TouchableOpacity>
+            <Animated.View
+              style={[
+                styles.cardContent,
+                {
+                  maxHeight: schemeDetailsHeight.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 300],
+                  }),
+                  opacity: schemeDetailsHeight,
+                },
+              ]}
+            >
+              <View style={styles.schemeDetailsRow}>
+                <Text style={styles.schemeDetailLabel}>Metal Type:</Text>
+                <Text style={styles.schemeDetailValue}>{params.metalType || "N/A"}</Text>
+              </View>
+              <View style={styles.schemeDetailsRow}>
+                <Text style={styles.schemeDetailLabel}>Booked Weight:</Text>
+                <Text style={styles.schemeDetailValue}>{params.goldWeight || "0"} grams</Text>
+              </View>
+              <View style={styles.schemeDetailsRow}>
+                <Text style={styles.schemeDetailLabel}>Rate Per Gram:</Text>
+                <Text style={styles.schemeDetailValue}>₹{Number(params.ratePerGram || 0).toLocaleString("en-IN")}/g</Text>
+              </View>
+              <View style={styles.schemeDetailsRow}>
+                <Text style={styles.schemeDetailLabel}>Total Metal Value:</Text>
+                <Text style={styles.schemeDetailValue}>₹{Number(params.totalAmount || 0).toLocaleString("en-IN")}</Text>
+              </View>
+              <View style={styles.schemeDetailsRow}>
+                <Text style={styles.schemeDetailLabel}>Booking Period:</Text>
+                <Text style={styles.schemeDetailValue}>{params.bookingDays || "30"} Days</Text>
+              </View>
+              <View style={styles.schemeDetailsRow}>
+                <Text style={styles.schemeDetailLabel}>Expiry Date:</Text>
+                <Text style={styles.schemeDetailValue}>{params.expiryDate || "N/A"}</Text>
+              </View>
+              <View style={styles.schemeDetailsRow}>
+                <Text style={styles.schemeDetailLabel}>Account Number:</Text>
+                <Text style={styles.schemeDetailValue}>
+                  {userDetails?.accountNo || userDetails?.accNo || "N/A"}
+                </Text>
+              </View>
+            </Animated.View>
+          </View>
+        ) : (
+          <View style={styles.schemeDetailsCard}>
+            <TouchableOpacity
+              style={[
+                styles.cardHeader,
+                isSchemeDetailsExpanded ? styles.cardHeaderWithBorder : undefined,
+              ]}
+              onPress={toggleSchemeDetailsCard}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="business"
+                size={24}
+                color={theme.colors.secondary}
+              />
+              <Text style={styles.cardTitle}>
+                {isSchemeDetailsExpanded ? t("schemeDetails") : schemeName}
+              </Text>
+              <Ionicons
+                name={isSchemeDetailsExpanded ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={theme.colors.secondary}
+                style={styles.expandIcon}
+              />
+            </TouchableOpacity>
+            <Animated.View
+              style={[
+                styles.cardContent,
+                {
+                  maxHeight: schemeDetailsHeight.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 400], // Increased height for more details
+                  }),
+                  opacity: schemeDetailsHeight,
+                },
+              ]}
+            >
+              <View style={styles.schemeDetailsRow}>
+                <Text style={styles.schemeDetailLabel}>{t("accountNo")}:</Text>
+                <Text style={styles.schemeDetailValue}>
+                  {params.accNo ? `DCJ-${params.accNo}` : (userDetails?.accNo || "N/A")}
+                </Text>
+              </View>
 
-            <View style={styles.schemeDetailsRow}>
-              <Text style={styles.schemeDetailLabel}>{t("schemeType")}:</Text>
-              <Text style={styles.schemeDetailValue}>
-                {params.schemeType
-                  ? t(params.schemeType.toString())
-                  : t("monthly")}
-              </Text>
-            </View>
-            <View style={styles.schemeDetailsRow}>
-              <Text style={styles.schemeDetailLabel}>
-                {t("paymentFrequency")}:
-              </Text>
-              <Text style={styles.schemeDetailValue}>
-                {params.paymentFrequency
-                  ? t(params.paymentFrequency.toString())
-                  : t("monthly")}
-              </Text>
-            </View>
-            <View style={styles.schemeDetailsRow}>
-              <Text style={styles.schemeDetailLabel}>{t("schemeName")}:</Text>
-              <Text style={styles.schemeDetailValue}>{schemeName}</Text>
-            </View>
-          </Animated.View>
-        </View>
+              {params.maturityDate && (
+                <View style={styles.schemeDetailsRow}>
+                  <Text style={styles.schemeDetailLabel}>{t("maturityDate")}:</Text>
+                  <Text style={styles.schemeDetailValue}>{params.maturityDate}</Text>
+                </View>
+              )}
+
+              {!isFlexi && !isHybrid && params.noOfIns && (
+                <View style={styles.progressRowContainer}>
+                  <View style={styles.schemeDetailsRow}>
+                    <Text style={styles.schemeDetailLabel}>{t("installmentProgress")}:</Text>
+                    <Text style={styles.schemeDetailValue}>
+                      {params.paidPaymentCount || 0}/{params.noOfIns}
+                    </Text>
+                  </View>
+                  <View style={styles.progressBarBackground}>
+                    <View
+                      style={[
+                        styles.progressBarFill,
+                        {
+                          width: `${Math.min(
+                            100,
+                            Math.max(
+                              0,
+                              (Number(params.paidPaymentCount || 0) / Number(params.noOfIns)) * 100
+                            )
+                          )}%`,
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+              )}
+
+              {params.totalPaid && (
+                <View style={styles.schemeDetailsRow}>
+                  <Text style={styles.schemeDetailLabel}>{t("totalPaid")}:</Text>
+                  <Text style={styles.schemeDetailValue}>
+                    ₹{Number(params.totalPaid).toLocaleString("en-IN")}
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.schemeDetailsRow}>
+                <Text style={styles.schemeDetailLabel}>{t("schemeType")}:</Text>
+                <Text style={styles.schemeDetailValue}>
+                  {params.schemeType
+                    ? t(params.schemeType.toString())
+                    : t("monthly")}
+                </Text>
+              </View>
+              <View style={styles.schemeDetailsRow}>
+                <Text style={styles.schemeDetailLabel}>
+                  {t("paymentFrequency")}:
+                </Text>
+                <Text style={styles.schemeDetailValue}>
+                  {params.paymentFrequency
+                    ? t(params.paymentFrequency.toString())
+                    : t("monthly")}
+                </Text>
+              </View>
+              <View style={styles.schemeDetailsRow}>
+                <Text style={styles.schemeDetailLabel}>{t("schemeName")}:</Text>
+                <Text style={styles.schemeDetailValue}>{schemeName}</Text>
+              </View>
+            </Animated.View>
+          </View>
+        )}
 
         {/* Terms and Conditions */}
 

@@ -638,7 +638,7 @@ const ProfileScreen = () => {
           style={styles.keyboardAvoid}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <View style={styles.header}>
+          <View style={[styles.header, Platform.OS === 'android' && { paddingTop: insets.top }]}>
             <View style={styles.headerContent}>
               <TouchableOpacity
                 onPress={() => router.push("/home")}

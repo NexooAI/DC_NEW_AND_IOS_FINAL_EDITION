@@ -140,7 +140,7 @@ const LuckyDrawCard = ({ item, onPress }: { item: LuckyDrawItem; onPress?: () =>
   return (
     <TouchableOpacity activeOpacity={0.9} style={[styles.card, userWon && styles.cardWon, isCompleted && styles.cardCompleted]} onPress={onPress}>
       <LinearGradient
-        colors={cardGradientColors}
+        colors={cardGradientColors as any}
         style={styles.cardGradient}
       >
         <View style={styles.cardHeader}>
@@ -151,9 +151,9 @@ const LuckyDrawCard = ({ item, onPress }: { item: LuckyDrawItem; onPress?: () =>
           ]}>
             <ResponsiveText color={userWon ? "#000" : "#fff"} size="xs" weight="bold">
               {userWon 
-                ? "YOU WON! 🎉"
+                ? t("luckyDrawYouWonBadge") || "YOU WON! 🎉"
                 : isCompleted 
-                  ? "Completed" 
+                  ? t("luckyDrawCompleted") || "Completed" 
                   : t("luckyDrawLive")}
             </ResponsiveText>
           </View>
@@ -347,7 +347,7 @@ export default function LuckyDraw() {
     if (item.userWon) {
       Alert.alert(
         "🎉 " + (t("luckyDrawCongratulations") || "CONGRATULATIONS!") + " 🎉",
-        `${t("luckyDrawYouWonDesc") || "You won in this draw!"}\n\n${t("luckyDrawDraw") || "Draw"}: ${item.title}\n\n${t("prize") || "Prize"}: ${item.prize}\n\n${t("luckyDrawTicket") || "Ticket"}: ${item.ticketNumber}\n\n${t("luckyDrawDeliveryDesc") || "Our team will contact you shortly to deliver your prize."}`,
+        `${t("luckyDrawYouWonDesc") || "You won in this draw!"}\n\n${t("luckyDrawDraw") || "Draw"}: ${item.title}\n\n${t("luckyDrawPrize") || "Prize"}: ${item.prize}\n\n${t("luckyDrawTicket") || "Ticket"}: ${item.ticketNumber}\n\n${t("luckyDrawDeliveryDesc") || "Our team will contact you shortly to deliver your prize."}`,
         [{ text: t("ok") || "OK" }]
       );
       return;

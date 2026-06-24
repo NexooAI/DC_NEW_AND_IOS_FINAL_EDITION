@@ -371,7 +371,7 @@ export default function QuickJoinScreen() {
 
   const fetchSchemeLimits = async (schemeId: string | number) => {
     try {
-      const response = await api.get(`${ENDPOINTS.SCHEME_AMOUNT_LIMIT}/${schemeId}`);
+      const response = await api.get(`${ENDPOINTS.SCHEME_AMOUNT_LIMIT}/${schemeId}?userId=${user?.id || ''}`);
       if (response.data?.data) {
         const limitData = response.data.data;
         // Find active limit Logic from home/index.tsx
@@ -383,6 +383,7 @@ export default function QuickJoinScreen() {
           setSchemeAmountLimits({
             min_amount: parseFloat(activeLimit.min_amount) || 0,
             max_amount: parseFloat(activeLimit.max_amount) || 0,
+            limit_type: activeLimit.limit_type,
             quickselectedamount: activeLimit.quickselectedamount || [],
           });
         }
@@ -410,15 +411,21 @@ export default function QuickJoinScreen() {
       isValid = false;
     } else {
       const amt = Number(formData.amount.replace(/,/g, ''));
+      const min = schemeAmountLimits?.min_amount ?? 0;
+      const max = schemeAmountLimits?.max_amount ?? 100000;
       if (isNaN(amt) || amt <= 0) {
         newErrors.amount = t('enterValidAmount') || 'Invalid amount';
         isValid = false;
-      } else if (schemeAmountLimits) {
-        if (amt < schemeAmountLimits.min_amount) {
-          newErrors.amount = `${t('min') || 'Min'} ₹${schemeAmountLimits.min_amount}`;
+      } else {
+        if (amt < min) {
+          newErrors.amount = schemeAmountLimits?.limit_type === 'user'
+            ? `User-specific minimum is ₹${min.toLocaleString('en-IN')}`
+            : `${t('min') || 'Min'} ₹${min.toLocaleString('en-IN')}`;
           isValid = false;
-        } else if (amt > schemeAmountLimits.max_amount) {
-          newErrors.amount = `${t('max') || 'Max'} ₹${schemeAmountLimits.max_amount}`;
+        } else if (amt > max) {
+          newErrors.amount = schemeAmountLimits?.limit_type === 'user'
+            ? `User-specific maximum is ₹${max.toLocaleString('en-IN')}`
+            : `${t('max') || 'Max'} ₹${max.toLocaleString('en-IN')}`;
           isValid = false;
         }
       }
@@ -503,6 +510,7 @@ export default function QuickJoinScreen() {
           schemeId: String(selectedScheme.SCHEMEID),
           chitId: String(activeChit.CHITID),
           schemeType: selectedScheme.SCHEMETYPE || 'monthly',
+          savinsTypes: selectedScheme.savingType || (selectedScheme.SCHEMETYPE?.toLowerCase() === "weight" ? "weight" : "amount"),
           userDetails: JSON.stringify(paymentSessionData.userDetails),
         },
       });

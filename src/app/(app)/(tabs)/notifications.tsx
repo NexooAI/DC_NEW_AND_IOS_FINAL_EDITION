@@ -202,123 +202,119 @@ const NotificationItem = React.memo(
     const renderRightActions = (progress: any, dragX: any) => {
       return (
         <TouchableOpacity
-            style={{
-                backgroundColor: '#FF4B4B',
-                justifyContent: 'center',
-                alignItems: 'center',
-                width: 80,
-                height: '100%',
-                borderRadius: 0,
-            }}
-            onPress={() => onDelete(item.id.toString())}
+          style={{
+            backgroundColor: '#FF4B4B',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: 80,
+            height: '100%',
+            borderRadius: 0,
+          }}
+          onPress={() => onDelete(item.id.toString())}
         >
-            <Ionicons name="trash-outline" size={28} color="white" />
+          <Ionicons name="trash-outline" size={28} color="white" />
         </TouchableOpacity>
       );
     };
 
     return (
-      <Animated.View 
+      <Animated.View
         // entering={FadeIn.delay(index * 50).springify()} // Animation disabled due to import error
         layout={Layout.springify()}
         exiting={FadeOut}
       >
         <Swipeable renderRightActions={renderRightActions}>
-            <Pressable
+          <Pressable
             onPress={() => onPress(item.id.toString())}
             style={({ pressed }) => ({
-                flexDirection: "row",
-                alignItems: "flex-start",
-                // Subtle tinted background for unread, transparent for read to let container card show white
-                backgroundColor: isUnread ? categoryColors.bg : "transparent", 
-                padding: 16,
-                // Left border accent matching category colors
-                borderLeftWidth: 4,
-                borderLeftColor: categoryColors.border,
-                // Differentiation: Slight opacity for read items to make them recede
-                opacity: isUnread ? 1 : 0.95,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
+              flexDirection: "column",
+              alignItems: "stretch",
+              // Subtle tinted background for unread, transparent for read to let container card show white
+              backgroundColor: isUnread ? categoryColors.bg : "transparent",
+              padding: 16,
+              // Left border accent matching category colors
+              borderLeftWidth: 4,
+              borderLeftColor: categoryColors.border,
+              // Differentiation: Slight opacity for read items to make them recede
+              opacity: isUnread ? 1 : 0.95,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
             })}
-            >
-            {/* Icon Container with Gradient */}
-            <LinearGradient
+          >
+            {/* NEW status badge on top */}
+            {isUnread && (
+              <View
+                style={{
+                  backgroundColor: "#FFE5E5",
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  borderRadius: 20,
+                  alignSelf: "flex-start",
+                  marginBottom: 10,
+                }}
+              >
+                <Text style={{ fontSize: 10, color: theme.colors.primary, fontWeight: "bold" }}>NEW</Text>
+              </View>
+            )}
+
+            {/* Header Row: Left Image (Icon) and Title next to it */}
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+              {/* Icon Container with Gradient */}
+              <LinearGradient
                 colors={categoryColors.iconBg}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 16,
-                opacity: isUnread ? 1 : 0.8
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 12,
+                  opacity: isUnread ? 1 : 0.8
                 }}
-            >
+              >
                 <Ionicons
-                name={getCategoryIcon(item.type) as any}
-                size={24}
-                color="white"
+                  name={getCategoryIcon(item.type) as any}
+                  size={20}
+                  color="white"
                 />
-            </LinearGradient>
+              </LinearGradient>
 
-            <View style={{ flex: 1 }}>
-                <View
+              <Text
                 style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    marginBottom: 6,
-                }}
-                >
-                <Text
-                    style={{
-                    fontSize: moderateScale(15),
-                    fontWeight: isUnread ? "700" : "500", // Bolder for unread
-                    color: isUnread ? "#1a1a1a" : "#4b5563", // Darker black for unread, grayish for read
-                    flex: 1,
-                    marginRight: 8,
-                    lineHeight: 22,
-                    }}
-                    numberOfLines={2}
-                >
-                    {item.title}
-                </Text>
-                
-                {isUnread && (
-                    <View
-                    style={{
-                        backgroundColor: "#FFE5E5",
-                        paddingHorizontal: 8,
-                        paddingVertical: 2,
-                        borderRadius: 10,
-                    }}
-                    >
-                    <Text style={{ fontSize: 10, color: theme.colors.primary, fontWeight: "bold" }}>NEW</Text>
-                    </View>
-                )}
-                </View>
-
-                <Text
-                style={{
-                    fontSize: moderateScale(13),
-                    color: isUnread ? "#444" : "#6b7280", // Darker gray for unread body, lighter for read
-                    lineHeight: 19,
-                    marginBottom: 10,
+                  fontSize: moderateScale(15),
+                  fontWeight: isUnread ? "700" : "500", // Bolder for unread
+                  color: isUnread ? "#1a1a1a" : "#4b5563", // Darker black for unread, grayish for read
+                  flex: 1,
+                  lineHeight: 22,
                 }}
                 numberOfLines={2}
-                >
-                {item.message}
-                </Text>
-
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Ionicons name="time-outline" size={14} color="#9CA3AF" />
-                <Text style={{ fontSize: 12, color: "#9CA3AF", marginLeft: 4 }}>
-                    {formatDate(item.created_at)}
-                </Text>
-                </View>
+              >
+                {item.title}
+              </Text>
             </View>
-            </Pressable>
+
+            {/* Next Row: Message/Body Content */}
+            <Text
+              style={{
+                fontSize: moderateScale(13),
+                color: isUnread ? "#444" : "#6b7280", // Darker gray for unread body, lighter for read
+                lineHeight: 19,
+                marginBottom: 10,
+              }}
+              numberOfLines={3}
+            >
+              {item.message}
+            </Text>
+
+            {/* Date/Time Row */}
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Ionicons name="time-outline" size={14} color="#9CA3AF" />
+              <Text style={{ fontSize: 12, color: "#9CA3AF", marginLeft: 4 }}>
+                {formatDate(item.created_at)}
+              </Text>
+            </View>
+          </Pressable>
         </Swipeable>
       </Animated.View>
     );
@@ -357,7 +353,7 @@ const NotificationSection = React.memo(
       <View
         style={{
           backgroundColor: "white",
-          borderRadius: 16,
+          padding: 16,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.05,
@@ -411,66 +407,66 @@ const NotificationModal = ({
         }}
       >
         <Animated.View
-            // entering={FadeIn.springify()} // Animation disabled due to import error
-            layout={Layout.springify()}
-            style={{
-                backgroundColor: "white",
-                borderRadius: 24,
-                width: "100%",
-                maxWidth: 400,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 10 },
-                shadowOpacity: 0.3,
-                shadowRadius: 20,
-                elevation: 10,
-                overflow: 'hidden'
-            }}
+          // entering={FadeIn.springify()} // Animation disabled due to import error
+          layout={Layout.springify()}
+          style={{
+            backgroundColor: "white",
+            borderRadius: 24,
+            width: "100%",
+            maxWidth: 400,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.3,
+            shadowRadius: 20,
+            elevation: 10,
+            overflow: 'hidden'
+          }}
         >
-            {/* Header / Banner */}
-             <LinearGradient
-                colors={[theme.colors.primary, '#850111']}
-                style={{ padding: 24, alignItems: 'center' }}
-             >
-                <View style={{
-                    width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.2)',
-                    justifyContent: 'center', alignItems: 'center', marginBottom: 12
-                }}>
-                     <Ionicons name="notifications" size={30} color="white" />
-                </View>
-                 <Text style={{ fontSize: 20, fontWeight: "bold", color: "white", textAlign: "center" }}>
-                    {notification.title}
-                 </Text>
-                 <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 }}>
-                    {formatDate(notification.created_at)}
-                 </Text>
-                 
-                <TouchableOpacity 
-                    onPress={onClose} 
-                    style={{ position: 'absolute', top: 16, right: 16, padding: 8 }}
-                >
-                    <Ionicons name="close-circle" size={30} color="rgba(255,255,255,0.5)" />
-                </TouchableOpacity>
-             </LinearGradient>
+          {/* Header / Banner */}
+          <LinearGradient
+            colors={[theme.colors.primary, '#850111']}
+            style={{ padding: 24, alignItems: 'center' }}
+          >
+            <View style={{
+              width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.2)',
+              justifyContent: 'center', alignItems: 'center', marginBottom: 12
+            }}>
+              <Ionicons name="notifications" size={30} color="white" />
+            </View>
+            <Text style={{ fontSize: 20, fontWeight: "bold", color: "white", textAlign: "center" }}>
+              {notification.title}
+            </Text>
+            <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 }}>
+              {formatDate(notification.created_at)}
+            </Text>
 
-            {/* Content */}
-             <View style={{ padding: 24 }}>
-                 <Text style={{ fontSize: 16, lineHeight: 26, color: "#333", textAlign: "left" }}>
-                    {notification.message}
-                 </Text>
-                 
-                 <TouchableOpacity
-                    onPress={onClose}
-                    style={{
-                        marginTop: 24,
-                        backgroundColor: "#f5f5f5",
-                        paddingVertical: 14,
-                        borderRadius: 12,
-                        alignItems: "center"
-                    }}
-                 >
-                     <Text style={{ fontSize: 16, fontWeight: "600", color: "#666" }}>Dismiss</Text>
-                 </TouchableOpacity>
-             </View>
+            <TouchableOpacity
+              onPress={onClose}
+              style={{ position: 'absolute', top: 16, right: 16, padding: 8 }}
+            >
+              <Ionicons name="close-circle" size={30} color="rgba(255,255,255,0.5)" />
+            </TouchableOpacity>
+          </LinearGradient>
+
+          {/* Content */}
+          <View style={{ padding: 24 }}>
+            <Text style={{ fontSize: 16, lineHeight: 26, color: "#333", textAlign: "left" }}>
+              {notification.message}
+            </Text>
+
+            <TouchableOpacity
+              onPress={onClose}
+              style={{
+                marginTop: 24,
+                backgroundColor: "#f5f5f5",
+                paddingVertical: 14,
+                borderRadius: 12,
+                alignItems: "center"
+              }}
+            >
+              <Text style={{ fontSize: 16, fontWeight: "600", color: "#666" }}>Dismiss</Text>
+            </TouchableOpacity>
+          </View>
         </Animated.View>
       </View>
     </Modal>
@@ -514,14 +510,14 @@ export default function NotificationsScreen() {
       logger.log("🔔 Fetching notifications from API for user:", user.id);
       const response = await userAPI.getNotifications(user.id);
       logger.log("✅ Notifications API response:", response.data);
-      
+
       const responseData = response.data;
       let notificationsList: Notification[] = [];
       let categorizedData: NotificationResponse = {};
 
       if (responseData) {
         let rawNotifications: any = null;
-        
+
         if (Array.isArray(responseData)) {
           rawNotifications = responseData;
         } else if (responseData.success && Array.isArray(responseData.data)) {
@@ -741,67 +737,67 @@ export default function NotificationsScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F9FA" }} edges={['right', 'bottom', 'left']}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
       {/* Header Container */}
-      <View style={{ 
-          backgroundColor: theme.colors.quaternary || '#F2E6D2',
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 10,
-          elevation: 5,
-          zIndex: 10,
+      <View style={{
+        backgroundColor: theme.colors.quaternary || '#F2E6D2',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 5,
+        zIndex: 10,
       }}>
         <View style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingHorizontal: 20,
-            paddingVertical: 12,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          paddingHorizontal: 20,
+          paddingVertical: 12,
         }}>
-            <TouchableOpacity onPress={() => router.push("/(app)/(tabs)/home")} style={{ padding: 8, marginLeft: -8 }}>
-                <Ionicons name="arrow-back" size={24} color={theme.colors.primary || "#850111"} />
-            </TouchableOpacity>
-            
-            <Text style={{ 
-                fontSize: moderateScale(18), 
-                fontWeight: "700", 
-                color: theme.colors.primary,
-                textAlign: 'center',
-                flex: 1,
-            }}>
-                Notifications
-            </Text>
-            
-            <View style={{ width: 40, alignItems: "flex-end", justifyContent: "center" }}>
-                {unreadCount > 0 && (
-                    <View style={{
-                        backgroundColor: theme.colors.primary,
-                        borderRadius: 10,
-                        paddingHorizontal: 6,
-                        paddingVertical: 2,
-                        minWidth: 20,
-                        height: 20,
-                        justifyContent: "center",
-                        alignItems: "center",
-                    }}>
-                        <Text style={{ color: "white", fontWeight: "700", fontSize: 10 }}>
-                            {unreadCount}
-                        </Text>
-                    </View>
-                )}
-            </View>
+          <TouchableOpacity onPress={() => router.push("/(app)/(tabs)/home")} style={{ padding: 8, marginLeft: -8 }}>
+            <Ionicons name="arrow-back" size={24} color={theme.colors.primary || "#850111"} />
+          </TouchableOpacity>
+
+          <Text style={{
+            fontSize: moderateScale(18),
+            fontWeight: "700",
+            color: theme.colors.primary,
+            textAlign: 'center',
+            flex: 1,
+          }}>
+            Notifications
+          </Text>
+
+          <View style={{ width: 40, alignItems: "flex-end", justifyContent: "center" }}>
+            {unreadCount > 0 && (
+              <View style={{
+                backgroundColor: theme.colors.primary,
+                borderRadius: 10,
+                paddingHorizontal: 6,
+                paddingVertical: 2,
+                minWidth: 20,
+                height: 20,
+                justifyContent: "center",
+                alignItems: "center",
+              }}>
+                <Text style={{ color: "white", fontWeight: "700", fontSize: 10 }}>
+                  {unreadCount}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
       </View>
 
-        {/* Scrollable Content */}
-        <View style={{ flex: 1, backgroundColor: "#F8F9FA" }}>
-            <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{
-                flexGrow: 1,
-                paddingBottom: 80,
-                paddingHorizontal: 20,
-                paddingTop: 20,
-            }}
+      {/* Scrollable Content */}
+      <View style={{ flex: 1, backgroundColor: "#F8F9FA" }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingBottom: 80,
+            paddingHorizontal: 20,
+            paddingTop: 20,
+          }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -863,18 +859,18 @@ export default function NotificationsScreen() {
                 <View key={category} style={{ marginBottom: 24 }}>
                   <LinearGradient
                     colors={['rgba(0,0,0,0.02)', 'rgba(0,0,0,0)']}
-                    style={{ 
-                        paddingVertical: 8, 
-                        paddingHorizontal: 12, 
-                        borderRadius: 8, 
-                        marginBottom: 12,
-                        flexDirection: 'row',
-                        alignItems: 'center'
+                    style={{
+                      paddingVertical: 8,
+                      paddingHorizontal: 12,
+                      borderRadius: 8,
+                      marginBottom: 12,
+                      flexDirection: 'row',
+                      alignItems: 'center'
                     }}
                   >
                     <View style={{ width: 4, height: 16, backgroundColor: getCategoryColor(category), borderRadius: 2, marginRight: 8 }} />
                     <Text style={{ fontSize: 14, fontWeight: "800", color: getCategoryColor(category), textTransform: "uppercase", letterSpacing: 0.5 }}>
-                        {getCategoryDisplayName(category)}
+                      {getCategoryDisplayName(category)}
                     </Text>
                   </LinearGradient>
 
@@ -908,15 +904,15 @@ export default function NotificationsScreen() {
                 }}
               >
                 <View style={{
-                    width: 120,
-                    height: 120,
-                    borderRadius: 60,
-                    backgroundColor: 'rgba(133, 1, 17, 0.05)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 24,
+                  width: 120,
+                  height: 120,
+                  borderRadius: 60,
+                  backgroundColor: 'rgba(133, 1, 17, 0.05)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 24,
                 }}>
-                    <Ionicons name="notifications-outline" size={60} color={theme.colors.primary} style={{ opacity: 0.5 }} />
+                  <Ionicons name="notifications-outline" size={60} color={theme.colors.primary} style={{ opacity: 0.5 }} />
                 </View>
                 <Text
                   style={{
@@ -944,11 +940,11 @@ export default function NotificationsScreen() {
         </ScrollView>
       </View>
 
-        <NotificationModal
-          visible={modalVisible}
-          notification={selectedNotification}
-          onClose={closeModal}
-        />
+      <NotificationModal
+        visible={modalVisible}
+        notification={selectedNotification}
+        onClose={closeModal}
+      />
     </SafeAreaView>
   );
 }

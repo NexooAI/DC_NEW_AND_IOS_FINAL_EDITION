@@ -266,62 +266,31 @@ export default function JoinAdvGold() {
       }
 
       const accountNumber = getFirstValue((user as any)?.accountNumber, (user as any)?.accountNo, (user as any)?.accNo) ?? '';
-      const payload: CreateAdvanceBookingPayload = {
-        userId,
-        goldWeight: parseFloat(goldGrams) || 0,
-        totalAmount: amountNum,
-        userName: userName,
-        userEmail: user?.email || '',
-        userMobile: userMobile,
-        ratePerGram: goldRate,
-        bookingAmount: advancePay,
-        paymentMode: "UPI",
-        accountNumber,
-        source: "APP",
-        expiryDate: expiryDate.toISOString().split('T')[0]
-      };
 
-      console.log("[DEBUG Payment Flow] handleJoinButton payload:", JSON.stringify(payload));
+      console.log("[DEBUG Payment Flow] Routing to paymentNewOverView with params for advance booking");
 
-      const response = await advanceBookingAPI.createBooking(payload);
-
-      console.log("[DEBUG Payment Flow] createBooking response success:", response?.data?.success);
-      console.log("[DEBUG Payment Flow] API returned data:", JSON.stringify(response?.data));
-
-      const paymentLink = extractPaymentLink(response?.data);
-      const orderId = extractOrderId(response?.data);
-      const bookingId = extractBookingId(response?.data);
-
-      console.log("[DEBUG Payment Flow] Extracted paymentLink:", paymentLink);
-      console.log("[DEBUG Payment Flow] Extracted orderId:", orderId);
-      console.log("[DEBUG Payment Flow] Extracted bookingId:", bookingId);
-
-      if (paymentLink) {
-        console.log("[DEBUG Payment Flow] Routing to PaymentWebView with params:", {
-          url: String(paymentLink),
-          orderId: orderId ? String(orderId) : '',
-          bookingId: bookingId ? String(bookingId) : '',
-          amount: advancePay.toString(),
-          type: 'advance_booking',
-          userId: String(userId)
-        });
-
-        router.push({
-          pathname: '/(tabs)/home/PaymentWebView',
-          params: {
-            url: String(paymentLink),
-            orderId: orderId ? String(orderId) : '',
-            bookingId: bookingId ? String(bookingId) : '',
-            amount: advancePay.toString(),
-            type: 'advance_booking',
+      router.push({
+        pathname: '/(tabs)/home/paymentNewOverView',
+        params: {
+          paymentType: 'advance_booking',
+          goldWeight: String(goldGrams),
+          totalAmount: String(amountNum),
+          ratePerGram: String(goldRate),
+          bookingAmount: String(advancePay),
+          expiryDate: expiryDate.toISOString().split('T')[0],
+          metalType: metalType,
+          advancePercent: String(advancePercent),
+          bookingDays: String(percentToDays[advancePercent] || 30),
+          amount: String(advancePay),
+          userDetails: JSON.stringify({
             userId: String(userId),
-            accountNumber: String(accountNumber),
-            accountName: String(userName),
-          }
-        });
-      } else {
-        Alert.alert('Error', response?.data?.message || 'Failed to initialize booking.');
-      }
+            name: userName,
+            mobile: userMobile,
+            email: user?.email || '',
+            accountNo: String(accountNumber),
+          }),
+        },
+      });
     } catch (error: any) {
       console.error('[DEBUG Payment Flow] Booking Error:', error);
       Alert.alert('Error', error?.response?.data?.message || 'Something went wrong. Please try again.');

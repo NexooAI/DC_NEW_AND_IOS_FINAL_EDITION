@@ -252,6 +252,7 @@ export default function JoinSavings() {
   const [amountLimits, setAmountLimits] = useState<{
     min_amount: string;
     max_amount: string;
+    limit_type?: string;
     quickselectedamount?: number[];
   } | null>(null);
 
@@ -886,9 +887,13 @@ export default function JoinSavings() {
         newErrors.amount = !value
           ? "Amount is required"
           : numValue < minAmount
-            ? `Minimum amount should be ₹${minAmount.toLocaleString("en-IN")}`
+            ? (amountLimits?.limit_type === "user"
+                ? `User-specific minimum amount should be ₹${minAmount.toLocaleString("en-IN")}`
+                : `Minimum amount should be ₹${minAmount.toLocaleString("en-IN")}`)
             : numValue > maxAmount
-              ? `Maximum amount should be ₹${maxAmount.toLocaleString("en-IN")}`
+              ? (amountLimits?.limit_type === "user"
+                  ? `User-specific maximum amount should be ₹${maxAmount.toLocaleString("en-IN")}`
+                  : `Maximum amount should be ₹${maxAmount.toLocaleString("en-IN")}`)
               : "";
         break;
       case "name":
@@ -2372,6 +2377,7 @@ export default function JoinSavings() {
                 chitId: selectedChit?.CHITID ? String(selectedChit.CHITID) : "",
                 paymentFrequency: selectedChit?.PAYMENT_FREQUENCY || "",
                 schemeType: schemeType || "",
+                savinsTypes: parsedData?.savingType || "amount",
                 userDetails: userDetailsString,
               },
             };
@@ -2479,7 +2485,7 @@ export default function JoinSavings() {
       }
 
       logger.log("🔍 Fetching amount limits for scheme:", schemeId);
-      const response = await api.get(`/amount-limits/scheme/${schemeId}`);
+      const response = await api.get(`/amount-limits/scheme/${schemeId}?userId=${user?.id || ''}`);
       logger.log("Amount limits API response:", response.data);
 
       if (response.data && response.data.data) {
@@ -2503,6 +2509,7 @@ export default function JoinSavings() {
           const limits = {
             min_amount: String(activeLimit.min_amount || 0),
             max_amount: String(activeLimit.max_amount || 0),
+            limit_type: activeLimit.limit_type,
             quickselectedamount: quickAmounts,
           };
           setAmountLimits(limits);
@@ -2751,7 +2758,7 @@ export default function JoinSavings() {
       style={styles.safeAreaContainer}
       edges={["left", "right"]}
     >
-      <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? insets.top : 0 }]}>
+      <View style={styles.container}>
         {/* <View style={styles.header}>
           <TouchableOpacity
             onPress={() => {
