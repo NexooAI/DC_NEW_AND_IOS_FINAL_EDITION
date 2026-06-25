@@ -8,7 +8,10 @@ import {
   StatusBar,
   ActivityIndicator,
   Alert,
+  Animated,
+  Modal,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -125,10 +128,43 @@ const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
   );
 };
 
-const LuckyDrawCard = ({ item, onPress }: { item: LuckyDrawItem; onPress?: () => void }) => {
+const LuckyDrawCard = ({
+  item,
+  onPress,
+  isRevealed,
+  onReveal
+}: {
+  item: LuckyDrawItem;
+  onPress?: () => void;
+  isRevealed?: boolean;
+  onReveal?: () => void;
+}) => {
   const { t } = useTranslation();
   const isCompleted = item.status === "completed";
   const userWon = item.userWon;
+
+  // Local animated scratch effect values
+  const [foilOpacity] = useState(new Animated.Value(1));
+  const [foilScale] = useState(new Animated.Value(1));
+
+  const handleScratch = () => {
+    Animated.parallel([
+      Animated.timing(foilOpacity, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+      }),
+      Animated.timing(foilScale, {
+        toValue: 1.12,
+        duration: 350,
+        useNativeDriver: true,
+      })
+    ]).start(() => {
+      if (onReveal) onReveal();
+    });
+  };
+
+  const isWonAndUnrevealed = isCompleted && userWon && !isRevealed;
 
   // Premium colors based on draw status
   const cardGradientColors = isCompleted
@@ -138,22 +174,26 @@ const LuckyDrawCard = ({ item, onPress }: { item: LuckyDrawItem; onPress?: () =>
       : [luckyDrawColors.surface, luckyDrawColors.surfaceWarm];
 
   return (
-    <TouchableOpacity activeOpacity={0.9} style={[styles.card, userWon && styles.cardWon, isCompleted && styles.cardCompleted]} onPress={onPress}>
+    <TouchableOpacity
+      activeOpacity={0.9}
+      style={[styles.card, userWon && styles.cardWon, isCompleted && styles.cardCompleted]}
+      onPress={isWonAndUnrevealed ? handleScratch : onPress}
+    >
       <LinearGradient
         colors={cardGradientColors as any}
         style={styles.cardGradient}
       >
         <View style={styles.cardHeader}>
           <View style={[
-            styles.badge, 
+            styles.badge,
             isCompleted && { backgroundColor: "#78909C" },
             userWon && { backgroundColor: luckyDrawColors.goldPremium }
           ]}>
             <ResponsiveText color={userWon ? "#000" : "#fff"} size="xs" weight="bold">
-              {userWon 
+              {userWon
                 ? t("luckyDrawYouWonBadge") || "YOU WON! 🎉"
-                : isCompleted 
-                  ? t("luckyDrawCompleted") || "Completed" 
+                : isCompleted
+                  ? t("luckyDrawCompleted") || "Completed"
                   : t("luckyDrawLive")}
             </ResponsiveText>
           </View>
@@ -202,10 +242,10 @@ const LuckyDrawCard = ({ item, onPress }: { item: LuckyDrawItem; onPress?: () =>
               colors={userWon ? ["rgba(255,215,0,0.3)", "transparent"] : ["rgba(255,201,12,0.3)", "transparent"]}
               style={styles.imageOverlay}
             />
-            <MaterialCommunityIcons 
-              name={userWon ? "trophy-outline" : "trophy-award"} 
-              size={rf(44)} 
-              color={userWon ? "#FFD700" : luckyDrawColors.goldPremium} 
+            <MaterialCommunityIcons
+              name={userWon ? "trophy-outline" : "trophy-award"}
+              size={rf(44)}
+              color={userWon ? "#FFD700" : luckyDrawColors.goldPremium}
             />
           </View>
         </View>
@@ -243,16 +283,16 @@ const LuckyDrawCard = ({ item, onPress }: { item: LuckyDrawItem; onPress?: () =>
           {!isCompleted && (
             <TouchableOpacity style={styles.entryButton} onPress={onPress}>
               <LinearGradient
-                colors={item.ticketNumber 
-                  ? ["#388E3C", "#1B5E20"] 
+                colors={item.ticketNumber
+                  ? ["#388E3C", "#1B5E20"]
                   : [luckyDrawColors.primary, "#4A0010"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.entryButtonGradient}
               >
                 <ResponsiveText color="#fff" size="xs" weight="bold">
-                  {item.ticketNumber 
-                    ? t("registered") || "Registered" 
+                  {item.ticketNumber
+                    ? t("registered") || "Registered"
                     : t("luckyDrawHowToParticipate") || "How to Participate"}
                 </ResponsiveText>
               </LinearGradient>
@@ -260,6 +300,42 @@ const LuckyDrawCard = ({ item, onPress }: { item: LuckyDrawItem; onPress?: () =>
           )}
         </View>
       </LinearGradient>
+
+      {/* Interactive Golden Scratch Foil Overlay */}
+      {isWonAndUnrevealed && (
+        <Animated.View style={[
+          StyleSheet.absoluteFill,
+          {
+            zIndex: 100,
+            opacity: foilOpacity,
+            transform: [{ scale: foilScale }],
+            backgroundColor: "#B8860B",
+            borderRadius: 24,
+            overflow: "hidden"
+          }
+        ]}>
+          <TouchableOpacity
+            activeOpacity={0.95}
+            style={styles.foilContainer}
+            onPress={handleScratch}
+          >
+            <LinearGradient
+              colors={["#FFD700", "#B8860B", "#D4AF37"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.foilGradient}
+            >
+              <MaterialCommunityIcons name="gift-outline" size={rf(32)} color="#fff" style={styles.foilGiftIcon} />
+              <ResponsiveText color="#fff" size="sm" weight="bold" style={styles.foilText}>
+                {t("luckyDrawYouWonBadge") || "YOU WON! 🎉"}
+              </ResponsiveText>
+              <ResponsiveText color="#fff" size="xs" weight="semibold" style={styles.foilSubText}>
+                Tap to scratch & claim!
+              </ResponsiveText>
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
     </TouchableOpacity>
   );
 };
@@ -276,6 +352,69 @@ export default function LuckyDraw() {
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const [recentWinner, setRecentWinner] = useState<string>("");
 
+  // Scratch reveal states
+  const [revealedDraws, setRevealedDraws] = useState<Record<string, boolean>>({});
+  // Celebration Modal states
+  const [celebrationVisible, setCelebrationVisible] = useState(false);
+  const [celebrationItem, setCelebrationItem] = useState<LuckyDrawItem | null>(null);
+
+  // Animated values
+  const [scaleAnim] = useState(new Animated.Value(0));
+  const [slideAnim] = useState(new Animated.Value(0));
+
+  // Load revealed scratchcards on mount
+  useEffect(() => {
+    const loadRevealed = async () => {
+      try {
+        const stored = await AsyncStorage.getItem("revealed_lucky_draws");
+        if (stored) {
+          setRevealedDraws(JSON.parse(stored));
+        }
+      } catch (err) {
+        console.error("Error loading revealed draws:", err);
+      }
+    };
+    loadRevealed();
+  }, []);
+
+  const handleReveal = async (item: LuckyDrawItem) => {
+    try {
+      const updated = { ...revealedDraws, [item.id]: true };
+      setRevealedDraws(updated);
+      await AsyncStorage.setItem("revealed_lucky_draws", JSON.stringify(updated));
+      showCelebration(item);
+    } catch (err) {
+      console.error("Error saving revealed draw:", err);
+    }
+  };
+
+  const showCelebration = (item: LuckyDrawItem) => {
+    setCelebrationItem(item);
+    setCelebrationVisible(true);
+    scaleAnim.setValue(0);
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      tension: 60,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // Sliding tab indicator animation
+  useEffect(() => {
+    Animated.spring(slideAnim, {
+      toValue: activeTab === "active" ? 0 : 1,
+      tension: 100,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  }, [activeTab]);
+
+  const tabTranslateX = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, wp(45) - 4],
+  });
+
   const fetchLuckyDraws = async () => {
     try {
       setLoading(true);
@@ -283,8 +422,8 @@ export default function LuckyDraw() {
       if (response && response.data && response.data.success) {
         const list = response.data.data.map((apiItem: any): LuckyDrawItem => {
           const firstPrize = apiItem.prizes?.find((p: any) => p.prize_rank === 1) || apiItem.prizes?.[0];
-          const prizeStr = firstPrize 
-            ? `${firstPrize.description || firstPrize.prize_value} (${firstPrize.prize_type})` 
+          const prizeStr = firstPrize
+            ? `${firstPrize.description || firstPrize.prize_value} (${firstPrize.prize_type})`
             : "Special Prize";
 
           return {
@@ -315,8 +454,8 @@ export default function LuckyDraw() {
         if (completedDraw) {
           const firstWinner = completedDraw.winners.find((w: any) => w.prize_rank === 1) || completedDraw.winners[0];
           const firstPrize = completedDraw.prizes?.find((p: any) => p.prize_rank === 1) || completedDraw.prizes?.[0];
-          const prizeStr = firstPrize 
-            ? `${firstPrize.description || firstPrize.prize_value}` 
+          const prizeStr = firstPrize
+            ? `${firstPrize.description || firstPrize.prize_value}`
             : "Special Prize";
           const winnerName = firstWinner.user_name || firstWinner.userName || "Customer";
           setRecentWinner(`${t("luckyDrawRecentWinnerLabel") || "Recent Winner"}: ${winnerName} won ${prizeStr}`);
@@ -345,11 +484,7 @@ export default function LuckyDraw() {
 
   const handleParticipatePress = (item: LuckyDrawItem) => {
     if (item.userWon) {
-      Alert.alert(
-        "🎉 " + (t("luckyDrawCongratulations") || "CONGRATULATIONS!") + " 🎉",
-        `${t("luckyDrawYouWonDesc") || "You won in this draw!"}\n\n${t("luckyDrawDraw") || "Draw"}: ${item.title}\n\n${t("luckyDrawPrize") || "Prize"}: ${item.prize}\n\n${t("luckyDrawTicket") || "Ticket"}: ${item.ticketNumber}\n\n${t("luckyDrawDeliveryDesc") || "Our team will contact you shortly to deliver your prize."}`,
-        [{ text: t("ok") || "OK" }]
-      );
+      showCelebration(item);
       return;
     }
 
@@ -400,10 +535,10 @@ export default function LuckyDraw() {
           {t("luckyDraw")}
         </ResponsiveText>
         <TouchableOpacity style={styles.historyButton} onPress={() => setActiveTab(activeTab === "active" ? "history" : "active")}>
-          <MaterialCommunityIcons 
-            name={activeTab === "active" ? "history" : "trophy-outline"} 
-            size={24} 
-            color={luckyDrawColors.primary} 
+          <MaterialCommunityIcons
+            name={activeTab === "active" ? "history" : "trophy-outline"}
+            size={24}
+            color={luckyDrawColors.primary}
           />
         </TouchableOpacity>
       </View>
@@ -411,8 +546,13 @@ export default function LuckyDraw() {
       {/* Toggle Segment */}
       <View style={styles.segmentWrapper}>
         <View style={styles.segmentContainer}>
+          <Animated.View style={[
+            styles.segmentIndicator,
+            { transform: [{ translateX: tabTranslateX }] }
+          ]} />
           <TouchableOpacity
-            style={[styles.segmentButton, activeTab === "active" && styles.segmentButtonActive]}
+            activeOpacity={0.8}
+            style={styles.segmentButton}
             onPress={() => setActiveTab("active")}
           >
             <ResponsiveText
@@ -424,7 +564,8 @@ export default function LuckyDraw() {
             </ResponsiveText>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.segmentButton, activeTab === "history" && styles.segmentButtonActive]}
+            activeOpacity={0.8}
+            style={styles.segmentButton}
             onPress={() => setActiveTab("history")}
           >
             <ResponsiveText
@@ -485,24 +626,114 @@ export default function LuckyDraw() {
           {/* Lucky Draw Cards / Empty state */}
           {luckyDraws.length > 0 ? (
             luckyDraws.map((item) => (
-              <LuckyDrawCard 
-                key={item.id} 
-                item={item} 
+              <LuckyDrawCard
+                key={item.id}
+                item={item}
                 onPress={() => handleParticipatePress(item)}
+                isRevealed={revealedDraws[item.id]}
+                onReveal={() => handleReveal(item)}
               />
             ))
           ) : (
             <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons 
-                name={activeTab === "active" ? "clover" : "history"} 
-                size={64} 
-                color={luckyDrawColors.subtle} 
+              <MaterialCommunityIcons
+                name={activeTab === "active" ? "clover" : "history"}
+                size={64}
+                color={luckyDrawColors.subtle}
               />
               <ResponsiveText color={luckyDrawColors.muted} size="sm" style={styles.emptyText}>
                 {activeTab === "active" ? t("luckyDrawNoActive") : t("luckyDrawNoHistory")}
               </ResponsiveText>
             </View>
           )}
+
+          {/* Custom Winner Celebration Modal */}
+          <Modal
+            visible={celebrationVisible}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setCelebrationVisible(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <Animated.View style={[
+                styles.celebrationCard,
+                {
+                  transform: [{ scale: scaleAnim }]
+                }
+              ]}>
+                <LinearGradient
+                  colors={["#2C0006", "#850111", "#4A0010"]}
+                  style={styles.celebrationGradient}
+                >
+                  <View style={styles.confettiContainer}>
+                    <MaterialCommunityIcons name="star-four-points" size={16} color="#FFD700" style={[styles.confettiStar, { top: '10%', left: '15%' }]} />
+                    <MaterialCommunityIcons name="star-four-points" size={24} color="#FFD700" style={[styles.confettiStar, { top: '15%', right: '20%' }]} />
+                    <MaterialCommunityIcons name="star-four-points" size={14} color="#FFD700" style={[styles.confettiStar, { bottom: '25%', left: '25%' }]} />
+                    <MaterialCommunityIcons name="star-four-points" size={20} color="#FFD700" style={[styles.confettiStar, { bottom: '15%', right: '15%' }]} />
+                  </View>
+
+                  <View style={styles.celebrationHeader}>
+                    <ResponsiveText color="#FFD700" size="lg" weight="bold" style={styles.celebrationTitle}>
+                      {t("luckyDrawCongratulations") || "CONGRATULATIONS!"}
+                    </ResponsiveText>
+                    <ResponsiveText color="#fff" size="sm" style={styles.celebrationSubtitle}>
+                      {t("luckyDrawYouWonDesc") || "You won in this draw!"}
+                    </ResponsiveText>
+                  </View>
+
+                  <View style={styles.trophyWrapper}>
+                    <LinearGradient
+                      colors={["#FFD700", "#B8860B"]}
+                      style={styles.trophyBg}
+                    >
+                      <MaterialCommunityIcons name="trophy" size={rf(60)} color="#fff" />
+                    </LinearGradient>
+                  </View>
+
+                  <View style={styles.prizeDetails}>
+                    <ResponsiveText color="#FFD700" size="md" weight="bold" style={styles.raffleName}>
+                      {celebrationItem?.title}
+                    </ResponsiveText>
+                    <ResponsiveText color="#fff" size="lg" weight="bold" style={styles.prizeName}>
+                      {celebrationItem?.prize}
+                    </ResponsiveText>
+                    <ResponsiveText color="rgba(255,255,255,0.7)" size="xs" style={styles.prizeDesc}>
+                      {celebrationItem?.description}
+                    </ResponsiveText>
+                  </View>
+
+                  {celebrationItem?.ticketNumber && (
+                    <View style={styles.ticketBadgeCelebration}>
+                      <MaterialCommunityIcons name="ticket-confirmation" size={16} color="#FFD700" />
+                      <ResponsiveText color="#FFD700" size="xs" weight="bold" style={{ marginLeft: 8 }}>
+                        {t("luckyDrawDrawNo").replace("{no}", celebrationItem.ticketNumber)}
+                      </ResponsiveText>
+                    </View>
+                  )}
+
+                  <ResponsiveText color="rgba(255,255,255,0.8)" size="xs" style={styles.contactDetailsText}>
+                    {t("luckyDrawDeliveryDesc") || "Our team will contact you shortly to deliver your prize."}
+                  </ResponsiveText>
+
+                  <TouchableOpacity
+                    style={styles.claimButton}
+                    onPress={() => setCelebrationVisible(false)}
+                  >
+                    <LinearGradient
+                      colors={["#FFD700", "#B8860B"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.claimButtonGradient}
+                    >
+                      <ResponsiveText color="#2C0006" size="sm" weight="bold">
+                        {t("ok") || "Done"}
+                      </ResponsiveText>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </LinearGradient>
+              </Animated.View>
+            </View>
+          </Modal>
 
           {/* Footer info */}
           <View style={styles.footerInfo}>
@@ -820,5 +1051,142 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: wp(2),
     marginTop: hp(1),
+  },
+  segmentIndicator: {
+    position: "absolute",
+    top: 4,
+    bottom: 4,
+    left: 4,
+    width: wp(45) - 6,
+    backgroundColor: luckyDrawColors.primary,
+    borderRadius: 8,
+  },
+  foilContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  foilGradient: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: wp(4),
+  },
+  foilGiftIcon: {
+    marginBottom: 8,
+  },
+  foilText: {
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    marginBottom: 4,
+  },
+  foilSubText: {
+    opacity: 0.8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: wp(6),
+  },
+  celebrationCard: {
+    width: "100%",
+    borderRadius: 28,
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "#FFD700",
+    shadowColor: "#FFD700",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 15,
+  },
+  celebrationGradient: {
+    paddingVertical: hp(4),
+    paddingHorizontal: wp(6),
+    alignItems: "center",
+  },
+  confettiContainer: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  confettiStar: {
+    position: "absolute",
+    opacity: 0.6,
+  },
+  celebrationHeader: {
+    alignItems: "center",
+    marginBottom: hp(3),
+  },
+  celebrationTitle: {
+    letterSpacing: 2,
+    marginBottom: 6,
+    textTransform: "uppercase",
+    textAlign: "center",
+  },
+  celebrationSubtitle: {
+    opacity: 0.9,
+    textAlign: "center",
+  },
+  trophyWrapper: {
+    marginBottom: hp(3),
+  },
+  trophyBg: {
+    width: wp(26),
+    height: wp(26),
+    borderRadius: wp(13),
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  prizeDetails: {
+    alignItems: "center",
+    marginBottom: hp(3),
+  },
+  raffleName: {
+    opacity: 0.8,
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  prizeName: {
+    textAlign: "center",
+    marginBottom: 6,
+  },
+  prizeDesc: {
+    textAlign: "center",
+  },
+  ticketBadgeCelebration: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,215,0,0.12)",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,215,0,0.35)",
+    borderStyle: "dashed",
+    marginBottom: hp(3),
+  },
+  contactDetailsText: {
+    textAlign: "center",
+    opacity: 0.8,
+    marginBottom: hp(4),
+    lineHeight: 18,
+  },
+  claimButton: {
+    width: "80%",
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  claimButtonGradient: {
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
   }
 });

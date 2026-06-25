@@ -36,6 +36,9 @@ export default function ReferCodeScreen() {
   const [activeTab, setActiveTab] = useState(t("refer_earn_tab_refer") || "Refer & Earn");
   const [referrals, setReferrals] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [walletTotalEarned, setWalletTotalEarned] = useState(0);
+  const [history, setHistory] = useState<any[]>([]);
 
   const fetchReferrals = useCallback(async () => {
     if (!user?.id) return;
@@ -44,6 +47,15 @@ export default function ReferCodeScreen() {
       const response = await rewardsAPI.getMyReferrals(user.id);
       if (response.data.success && Array.isArray(response.data.data)) {
         setReferrals(response.data.data);
+      }
+
+      const walletResponse = await rewardsAPI.getWalletInfo(user.id);
+      if (walletResponse.data.success && walletResponse.data.data) {
+        setWalletBalance(walletResponse.data.data.balance || 0);
+        setWalletTotalEarned(walletResponse.data.data.total_earned || 0);
+        if (Array.isArray(walletResponse.data.data.history)) {
+          setHistory(walletResponse.data.data.history);
+        }
       }
     } catch (error) {
       console.error("Error fetching referrals in ReferEarn:", error);
@@ -356,11 +368,14 @@ export default function ReferCodeScreen() {
       <View style={{ padding: 16 }}>
         <View style={styles.totalEarningsHeader}>
           <View style={{ flex: 1, marginRight: 12 }}>
-            <Text style={styles.earningsLabel}>{t("refer_earn_total_earnings") || "Total Earnings"}</Text>
+            <Text style={styles.earningsLabel}>{t("available_balance") || "Available Balance"}</Text>
             <View style={styles.earningsValueRow}>
-              <Ionicons name="star" size={24} color="#FF9800" />
-              <Text style={styles.earningsValue}>{totalEarnings} {t("refer_earn_points") || "Points"}</Text>
+              <Ionicons name="wallet-outline" size={24} color="#004B40" style={{ marginRight: 8 }} />
+              <Text style={styles.earningsValue}>{walletBalance} {t("refer_earn_points") || "Points"}</Text>
             </View>
+            <Text style={[styles.earningsLabel, { marginTop: 6, fontSize: 12, opacity: 0.8 }]}>
+              {t("refer_earn_total_earnings") || "Total Earnings"}: {walletTotalEarned} Pts
+            </Text>
           </View>
           <TouchableOpacity
             style={styles.redeemButton}
@@ -376,7 +391,7 @@ export default function ReferCodeScreen() {
           <View style={{ padding: 40, alignItems: 'center' }}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
           </View>
-        ) : referrals.length === 0 ? (
+        ) : history.length === 0 ? (
           <View style={{ padding: 40, alignItems: 'center', marginTop: 30 }}>
             <Ionicons name="people-outline" size={64} color="#ccc" style={{ marginBottom: 12 }} />
             <Text style={{ fontSize: 16, color: '#888', fontWeight: '600' }}>
@@ -387,25 +402,45 @@ export default function ReferCodeScreen() {
             </Text>
           </View>
         ) : (
-          referrals.map((item, index) => {
-            const dateObj = new Date(item.joined_at);
+          history.map((item, index) => {
+            const isReferral = item.type === "referral";
+            const dateObj = new Date(item.created_at || item.joined_at);
             const formattedDate = dateObj.toLocaleDateString('en-IN', {
               day: '2-digit',
               month: 'short',
               year: 'numeric'
             });
+            
             return (
-              <View key={item.id || index} style={styles.referralItem}>
-                <View style={styles.referralIcon}>
-                  <Ionicons name="person" size={20} color="#004B40" />
+              <View key={item.id || `${item.type}_${index}`} style={styles.referralItem}>
+                <View style={[
+                  styles.referralIcon,
+                  !isReferral && { backgroundColor: 'rgba(244, 67, 54, 0.05)' }
+                ]}>
+                  <Ionicons 
+                    name={isReferral ? "person" : "gift"} 
+                    size={20} 
+                    color={isReferral ? "#004B40" : "#F44336"} 
+                  />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.referralName}>{item.name}</Text>
-                  <Text style={styles.referralMobile}>{item.mobile_number}</Text>
-                  <Text style={styles.referralDate}>{formattedDate}</Text>
+                  <Text style={styles.referralName}>
+                    {isReferral ? item.description : (t("points_redeemed") || "Points Redeemed")}
+                  </Text>
+                  <Text style={styles.referralMobile}>
+                    {isReferral ? (item.mobile_number || "") : item.description}
+                  </Text>
+                  <Text style={styles.referralDate}>
+                    {formattedDate} {item.status ? `• ${t("status_" + item.status) || item.status}` : ""}
+                  </Text>
                 </View>
                 <View style={styles.referralPointsContainer}>
-                  <Text style={styles.referralPoints}>+{item.reward_earned || 0}</Text>
+                  <Text style={[
+                    styles.referralPoints,
+                    { color: isReferral ? "#4CAF50" : "#F44336" }
+                  ]}>
+                    {isReferral ? `+${item.points || item.reward_earned || 0}` : `-${item.points || 0}`}
+                  </Text>
                   <Text style={styles.referralPointsLabel}>{t("points") || "Pts"}</Text>
                 </View>
               </View>

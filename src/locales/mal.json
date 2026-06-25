@@ -1391,5 +1391,15 @@
   "whatsappUs": "വാട്ട്സ്ആപ്പ്",
   "needImmediateAssistance": "ഉടൻ സഹായം ആവശ്യമുണ്ടോ?",
   "oldGoldContactDesc": "പഴയ സ്വർണ്ണ പദ്ധതിയെക്കുറിച്ചുള്ള അടിയന്തിര അന്വേഷണങ്ങൾക്ക്, ദയവായി ഞങ്ങളുടെ ഷോറൂമിലേക്ക് നേരിട്ട് വിളിക്കുകയോ വാട്ട്സ്ആപ്പ് ചെയ്യുകയോ ചെയ്യുക.",
-  "luckyDrawRecentWinnerLabel": "സമീപകാല വിജയി"
+  "luckyDrawRecentWinnerLabel": "സമീപകാല വിജയി",
+  "no_referrals_yet": "ഇതുവരെ റഫറലുകൾ ഇല്ല",
+  "no_referrals_yet_desc": "നിങ്ങളുടെ ഇൻവൈറ്റ് കോഡ് സുഹൃത്തുക്കളുമായി പങ്കിടൂ, ഒന്നിച്ച് പോയിന്റുകൾ നേടാൻ തുടങ്ങൂ!",
+  "redemptionDetails": "റിഡീം വിവരങ്ങൾ",
+  "transactionType": "ഇടപാട് തരം",
+  "points_redeemed": "റിഡീം ചെയ്ത പോയിന്റുകൾ",
+  "pointsRedeemed": "റിഡീം ചെയ്ത പോയിന്റുകൾ",
+  "status_credited": "ക്രെഡിറ്റ് ചെയ്തു",
+  "status_pending": "പെൻഡിംഗ്",
+  "status_completed": "പൂർത്തിയായി",
+  "status_rejected": "നിരസിച്ചു"
 }

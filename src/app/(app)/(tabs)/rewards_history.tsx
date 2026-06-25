@@ -18,22 +18,22 @@ export default function RewardsHistoryScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const { user } = useGlobalStore();
-    const [referrals, setReferrals] = useState<any[]>([]);
+    const [transactions, setTransactions] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [selectedItem, setSelectedItem] = useState<any>(null);
     const [detailsModalVisible, setDetailsModalVisible] = useState(false);
 
-    const fetchReferrals = useCallback(async () => {
+    const fetchTransactions = useCallback(async () => {
         if (!user?.id) return;
 
         setLoading(true);
         try {
-            const response = await rewardsAPI.getMyReferrals(user.id);
-            if (response.data.success && Array.isArray(response.data.data)) {
-                setReferrals(response.data.data);
+            const response = await rewardsAPI.getWalletInfo(user.id);
+            if (response.data.success && response.data.data && Array.isArray(response.data.data.history)) {
+                setTransactions(response.data.data.history);
             }
         } catch (error) {
-            console.error("Error fetching referrals:", error);
+            console.error("Error fetching transactions:", error);
         } finally {
             setLoading(false);
         }
@@ -46,8 +46,8 @@ export default function RewardsHistoryScreen() {
                 StatusBar.setBackgroundColor("#F2E6D2");
                 StatusBar.setTranslucent(false);
             }
-            fetchReferrals();
-        }, [fetchReferrals])
+            fetchTransactions();
+        }, [fetchTransactions])
     );
 
     useEffect(() => {
@@ -70,10 +70,10 @@ export default function RewardsHistoryScreen() {
     };
 
     const renderTransactionItem = ({ item }: { item: any }) => {
-        const isEarn = true; // All from this API are earned rewards
+        const isReferral = item.type === "referral";
 
         // Manual date formatting instead of moment
-        const dateObj = new Date(item.joined_at);
+        const dateObj = new Date(item.created_at);
         const formattedDate = dateObj.toLocaleDateString('en-GB', {
             day: '2-digit',
             month: 'short',
@@ -85,6 +85,8 @@ export default function RewardsHistoryScreen() {
             hour12: true
         });
 
+        const formattedStatus = item.status ? (t("status_" + item.status) || (item.status.charAt(0).toUpperCase() + item.status.slice(1))) : "";
+
         return (
             <TouchableOpacity
                 style={styles.transactionCard}
@@ -93,22 +95,28 @@ export default function RewardsHistoryScreen() {
             >
                 <View style={styles.transactionIconContainer}>
                     <Ionicons
-                        name={"arrow-down-circle"}
+                        name={isReferral ? "arrow-down-circle" : "arrow-up-circle"}
                         size={32}
-                        color={"#4CAF50"}
+                        color={isReferral ? "#4CAF50" : "#F44336"}
                     />
                 </View>
                 <View style={styles.transactionDetails}>
-                    <Text style={styles.transactionTitle}>{item.name}</Text>
-                    <Text style={styles.transactionSubtitle}>{item.mobile_number}</Text>
-                    <Text style={styles.transactionDate}>{formattedDate} • {formattedTime}</Text>
+                    <Text style={styles.transactionTitle}>
+                        {isReferral ? item.description : (t("points_redeemed") || "Points Redeemed")}
+                    </Text>
+                    <Text style={styles.transactionSubtitle}>
+                        {isReferral ? (item.mobile_number || "") : item.description}
+                    </Text>
+                    <Text style={styles.transactionDate}>
+                        {formattedDate} • {formattedTime} {formattedStatus ? `• ${formattedStatus}` : ""}
+                    </Text>
                 </View>
                 <View style={styles.transactionPointsContainer}>
                     <Text style={[
                         styles.transactionPoints,
-                        { color: "#4CAF50" }
+                        { color: isReferral ? "#4CAF50" : "#F44336" }
                     ]}>
-                        +{item.reward_earned}
+                        {isReferral ? `+${item.points}` : `-${item.points}`}
                     </Text>
                     <Text style={styles.pointsLabel}>{t("points") || "Pts"}</Text>
                 </View>
@@ -117,7 +125,7 @@ export default function RewardsHistoryScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
+        <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}>
             <StatusBar barStyle="dark-content" backgroundColor="#F2E6D2" />
             <View style={styles.headerContainer}>
                 <View style={styles.header}>
@@ -136,15 +144,15 @@ export default function RewardsHistoryScreen() {
             </View>
 
             <View style={styles.contentContainer}>
-                {referrals.length > 0 ? (
+                {transactions.length > 0 ? (
                     <FlatList
-                        data={referrals}
-                        keyExtractor={(item) => item.id.toString()}
+                        data={transactions}
+                        keyExtractor={(item, index) => `${item.type}_${item.id}_${index}`}
                         renderItem={renderTransactionItem}
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
                         refreshing={loading}
-                        onRefresh={fetchReferrals}
+                        onRefresh={fetchTransactions}
                     />
                 ) : (
                     <View style={styles.emptyContainer}>
@@ -165,7 +173,7 @@ export default function RewardsHistoryScreen() {
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
                             <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.primary}>
-                                {t("rewardDetails") || "Reward Details"}
+                                {selectedItem?.type === 'referral' ? (t("rewardDetails") || "Reward Details") : (t("redemptionDetails") || "Redemption Details")}
                             </ResponsiveText>
                             <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
                                 <Ionicons name="close-circle" size={28} color="#ccc" />
@@ -174,35 +182,83 @@ export default function RewardsHistoryScreen() {
 
                         {selectedItem && (
                             <View style={styles.modalBody}>
-                                <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>{t("customerName") || "Customer Name"}</Text>
-                                    <Text style={styles.detailValue}>{selectedItem.name}</Text>
-                                </View>
+                                {selectedItem.type === 'referral' ? (
+                                    <>
+                                        <View style={styles.detailRow}>
+                                            <Text style={styles.detailLabel}>{t("customerName") || "Customer Name"}</Text>
+                                            <Text style={styles.detailValue}>{selectedItem.description}</Text>
+                                        </View>
+                                        <View style={styles.detailDivider} />
+                                        <View style={styles.detailRow}>
+                                            <Text style={styles.detailLabel}>{t("mobileNumberLabel") || "Mobile Number"}</Text>
+                                            <Text style={styles.detailValue}>{selectedItem.mobile_number}</Text>
+                                        </View>
+                                        <View style={styles.detailDivider} />
+                                        <View style={styles.detailRow}>
+                                            <Text style={styles.detailLabel}>{t("joinedDate") || "Joined Date"}</Text>
+                                            <Text style={styles.detailValue}>
+                                                {new Date(selectedItem.created_at).toLocaleDateString('en-IN', {
+                                                    day: '2-digit', month: 'long', year: 'numeric'
+                                                })}
+                                            </Text>
+                                        </View>
+                                    </>
+                                ) : (
+                                    <>
+                                        <View style={styles.detailRow}>
+                                            <Text style={styles.detailLabel}>{t("transactionType") || "Transaction Type"}</Text>
+                                            <Text style={styles.detailValue}>{t("points_redeemed") || "Points Redeemed"}</Text>
+                                        </View>
+                                        <View style={styles.detailDivider} />
+                                        <View style={styles.detailRow}>
+                                            <Text style={styles.detailLabel}>{t("details") || "Details"}</Text>
+                                            <Text style={styles.detailValue}>{selectedItem.description}</Text>
+                                        </View>
+                                        <View style={styles.detailDivider} />
+                                        <View style={styles.detailRow}>
+                                            <Text style={styles.detailLabel}>{t("transactionDate") || "Transaction Date"}</Text>
+                                            <Text style={styles.detailValue}>
+                                                {new Date(selectedItem.created_at).toLocaleDateString('en-IN', {
+                                                    day: '2-digit', month: 'long', year: 'numeric'
+                                                })}
+                                            </Text>
+                                        </View>
+                                    </>
+                                )}
                                 <View style={styles.detailDivider} />
                                 <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>{t("mobileNumberLabel") || "Mobile Number"}</Text>
-                                    <Text style={styles.detailValue}>{selectedItem.mobile_number}</Text>
-                                </View>
-                                <View style={styles.detailDivider} />
-                                <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>{t("joinedDate") || "Joined Date"}</Text>
-                                    <Text style={styles.detailValue}>
-                                        {new Date(selectedItem.joined_at).toLocaleDateString('en-IN', {
-                                            day: '2-digit', month: 'long', year: 'numeric'
-                                        })}
+                                    <Text style={styles.detailLabel}>
+                                        {selectedItem.type === 'referral' ? (t("pointsEarned") || "Points Earned") : (t("pointsRedeemed") || "Points Redeemed")}
                                     </Text>
-                                </View>
-                                <View style={styles.detailDivider} />
-                                <View style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>{t("pointsEarned") || "Points Earned"}</Text>
-                                    <View style={styles.pointsBadge}>
-                                        <Text style={styles.pointsBadgeText}>+{selectedItem.reward_earned} Pts</Text>
+                                    <View style={[
+                                        styles.pointsBadge,
+                                        { backgroundColor: selectedItem.type === 'referral' ? "rgba(76,175,80,0.1)" : "rgba(244,67,54,0.1)" }
+                                    ]}>
+                                        <Text style={[
+                                            styles.pointsBadgeText,
+                                            { color: selectedItem.type === 'referral' ? "#4CAF50" : "#F44336" }
+                                        ]}>
+                                            {selectedItem.type === 'referral' ? `+${selectedItem.points}` : `-${selectedItem.points}`} {t("points") || "Pts"}
+                                        </Text>
                                     </View>
                                 </View>
                                 <View style={styles.detailDivider} />
                                 <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>{t("statusLabel") || "Status"}</Text>
+                                    <Text style={[
+                                        styles.detailValue,
+                                        { color: selectedItem.status === 'completed' || selectedItem.status === 'credited' ? "#4CAF50" : selectedItem.status === 'rejected' ? "#F44336" : "#FF9800" }
+                                    ]}>
+                                        {selectedItem.status ? (t("status_" + selectedItem.status) || (selectedItem.status.charAt(0).toUpperCase() + selectedItem.status.slice(1))) : ""}
+                                    </Text>
+                                </View>
+                                <View style={styles.detailDivider} />
+                                <View style={styles.detailRow}>
                                     <Text style={styles.detailLabel}>{t("referenceId") || "Reference ID"}</Text>
-                                    <Text style={styles.detailValue}>#REF-{selectedItem.id.toString().padStart(4, '0')}</Text>
+                                    <Text style={styles.detailValue}>
+                                        {selectedItem.type === 'referral' ? '#REF-' : '#RED-'}
+                                        {selectedItem.id ? selectedItem.id.toString().padStart(4, '0') : "0000"}
+                                    </Text>
                                 </View>
 
                                 <TouchableOpacity

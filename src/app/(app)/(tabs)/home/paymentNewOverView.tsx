@@ -666,6 +666,44 @@ export default function PaymentNewOverView() {
   }, [params.schemeId, isFlexi, isHybrid, hybridStatus, goldRate, paymentType]);
 
   const fetchTermsAndConditions = async () => {
+    try {
+      let response;
+      if (paymentType === 'bill') {
+        response = await api.get('/policies/type/bill_payment_terms');
+      } else if (paymentType === 'advance_booking') {
+        response = await api.get('/policies/type/advance_booking_terms');
+      }
+
+      if (response && response.data && response.data.success && response.data.data) {
+        const policy = response.data.data;
+        let selectedTerms = "";
+        
+        // Match language with robust progressive fallback
+        const targetKey = `description_${language}`;
+        selectedTerms = policy[targetKey] || "";
+
+        if (language === "mal" && !selectedTerms) {
+          selectedTerms = policy.description_mal || "";
+        }
+
+        if (!selectedTerms) {
+          selectedTerms = policy.description || ""; // Fallback to English description
+        }
+
+        if (!selectedTerms) {
+          selectedTerms = policy.description_ta || ""; // Fallback to Tamil
+        }
+
+        if (selectedTerms && isMountedRef.current) {
+          setTermsContent(selectedTerms);
+          return;
+        }
+      }
+    } catch (error) {
+      logger.error("Error fetching policy terms and conditions:", error);
+    }
+
+    // Local fallback if API call fails or is empty
     if (paymentType === 'bill') {
       setTermsContent("By proceeding with this payment, you authorize the settlement of your outstanding bill amount. The transaction is secure and will be updated in your account history upon successful payment gateway confirmation.");
       return;
@@ -796,6 +834,22 @@ export default function PaymentNewOverView() {
           throw new Error(response?.data?.message || 'Payment session not available');
         }
 
+        // Store payment session in global store for retry capability
+        const sessionData = {
+          amount: Number(currentAmount),
+          userDetails: {
+            ...userDetails,
+            userId: userId,
+            investmentId: billId,
+            source: 'bill',
+            paymentFrequency: params.paymentFrequency || userDetails.paymentFrequency,
+            schemeType: params.schemeType || userDetails.schemeType,
+            schemeName: params.schemeName || userDetails.schemeName,
+          },
+          timestamp: new Date().toISOString(),
+        };
+        useGlobalStore.getState().storePaymentSession(sessionData);
+
         router.push({
           pathname: '/(tabs)/home/PaymentWebView',
           params: {
@@ -844,6 +898,27 @@ export default function PaymentNewOverView() {
         if (!response?.data?.success || !paymentLink) {
           throw new Error(response?.data?.message || 'Booking or payment session not available');
         }
+
+        // Store payment session in global store for retry capability
+        const sessionData = {
+          amount: Number(payload.bookingAmount),
+          userDetails: {
+            ...userDetails,
+            userId: userId,
+            investmentId: bookingId,
+            source: 'advance_booking',
+            goldWeight: payload.goldWeight,
+            totalAmount: payload.totalAmount,
+            ratePerGram: payload.ratePerGram,
+            bookingAmount: payload.bookingAmount,
+            expiryDate: payload.expiryDate,
+            paymentFrequency: params.paymentFrequency || userDetails.paymentFrequency,
+            schemeType: params.schemeType || userDetails.schemeType,
+            schemeName: params.schemeName || userDetails.schemeName,
+          },
+          timestamp: new Date().toISOString(),
+        };
+        useGlobalStore.getState().storePaymentSession(sessionData);
 
         router.push({
           pathname: '/(tabs)/home/PaymentWebView',
@@ -941,6 +1016,29 @@ export default function PaymentNewOverView() {
         console.log("Payment URL:", paymentUrl);
         console.log("Order ID:", orderId);
 
+        // Store payment session in global store for retry capability
+        const sessionData = {
+          amount: Number(currentAmount),
+          userDetails: {
+            ...userDetails,
+            userId: userDetails.userId || user?.id,
+            investmentId: userDetails.investmentId,
+            schemeId: params.schemeId || userDetails.schemeId,
+            chitId: userDetails.chitId || params.chitId,
+            paymentFrequency: params.paymentFrequency || userDetails.paymentFrequency,
+            schemeType: params.schemeType || userDetails.schemeType,
+            schemeName: params.schemeName || userDetails.schemeName,
+            noOfIns: params.noOfIns || userDetails.noOfIns,
+            totalPaid: params.totalPaid || userDetails.totalPaid,
+            paidPaymentCount: params.paidPaymentCount || userDetails.paidPaymentCount,
+            maturityDate: params.maturityDate || userDetails.maturityDate,
+            joiningDate: params.joiningDate || userDetails.joiningDate,
+            source: params.source || userDetails.source || "payment",
+          },
+          timestamp: new Date().toISOString(),
+        };
+        useGlobalStore.getState().storePaymentSession(sessionData);
+
         router.push({
           pathname: "/(tabs)/home/PaymentWebView",
           params: {
@@ -977,6 +1075,29 @@ export default function PaymentNewOverView() {
 
         console.log("Fallback Payment URL:", paymentUrl);
         console.log("Fallback Order ID:", orderId);
+
+        // Store payment session in global store for retry capability
+        const sessionData = {
+          amount: Number(currentAmount),
+          userDetails: {
+            ...userDetails,
+            userId: userDetails.userId || user?.id,
+            investmentId: userDetails.investmentId,
+            schemeId: params.schemeId || userDetails.schemeId,
+            chitId: userDetails.chitId || params.chitId,
+            paymentFrequency: params.paymentFrequency || userDetails.paymentFrequency,
+            schemeType: params.schemeType || userDetails.schemeType,
+            schemeName: params.schemeName || userDetails.schemeName,
+            noOfIns: params.noOfIns || userDetails.noOfIns,
+            totalPaid: params.totalPaid || userDetails.totalPaid,
+            paidPaymentCount: params.paidPaymentCount || userDetails.paidPaymentCount,
+            maturityDate: params.maturityDate || userDetails.maturityDate,
+            joiningDate: params.joiningDate || userDetails.joiningDate,
+            source: params.source || userDetails.source || "payment",
+          },
+          timestamp: new Date().toISOString(),
+        };
+        useGlobalStore.getState().storePaymentSession(sessionData);
 
         router.push({
           pathname: "/(tabs)/home/PaymentWebView",

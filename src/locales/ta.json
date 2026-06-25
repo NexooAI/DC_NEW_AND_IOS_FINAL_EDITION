@@ -1392,5 +1392,15 @@
   "whatsappUs": "வாட்ஸ்அப்",
   "needImmediateAssistance": "உடனடி உதவி தேவையா?",
   "oldGoldContactDesc": "பழைய தங்கத் திட்டம் தொடர்பான அவசர விசாரணைகளுக்கு, எங்களது ஷோரூமிற்கு நேரடியாக அழைக்கலாம் அல்லது வாட்ஸ்அப் செய்யலாம்.",
-  "luckyDrawRecentWinnerLabel": "சமீபத்திய வெற்றியாளர்"
+  "luckyDrawRecentWinnerLabel": "சமீபத்திய வெற்றியாளர்",
+  "no_referrals_yet": "இன்னும் பரிந்துரைகள் இல்லை",
+  "no_referrals_yet_desc": "உங்கள் நண்பர்களுடன் உங்கள் இன்வைት கோடைப் பகிர்ந்து கொள்ளுங்கள், ஒன்றாகப் புள்ளிகளைப் பெறத் தொடங்குங்கள்!",
+  "redemptionDetails": "மீட்பு விவரங்கள்",
+  "transactionType": "பரிவர்த்தனை வகை",
+  "points_redeemed": "மீட்டெடுக்கப்பட்ட புள்ளிகள்",
+  "pointsRedeemed": "மீட்டெடுக்கப்பட்ட புள்ளிகள்",
+  "status_credited": "வரவு வைக்கப்பட்டது",
+  "status_pending": "நிலுவையில் உள்ளது",
+  "status_completed": "நிறைவடைந்தது",
+  "status_rejected": "நிராகரிக்கப்பட்டது"
 }

@@ -34,6 +34,7 @@ export default function AppLayout() {
     segments.includes("home") ||
     segments.includes("profile") ||
     segments.includes("rewards") ||
+    segments.includes("rewards_history") ||
     segments.includes("gold_advance") ||
     segments.includes("bill_payment") ||
     segments.includes("tickets") ||

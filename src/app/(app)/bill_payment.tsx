@@ -173,6 +173,49 @@ export default function BillPayment() {
   const [payingBillId, setPayingBillId] = useState<string | null>(null);
   const [processingMessage, setProcessingMessage] = useState('');
 
+  const [termsModalVisible, setTermsModalVisible] = useState(false);
+  const [termsContent, setTermsContent] = useState("");
+  const [termsLoading, setTermsLoading] = useState(false);
+  const closeTermsModal = () => {
+    setTermsModalVisible(false);
+    // Restore detail modal visibility
+    setDetailModalVisible(true);
+  };
+
+  const fetchBillPaymentTerms = async () => {
+    try {
+      setTermsLoading(true);
+      // Close details modal temporarily to prevent native Modal overlapping bug on iOS
+      setDetailModalVisible(false);
+      setTermsModalVisible(true);
+      const response = await apiClient.get('/policies/type/bill_payment_terms');
+      if (response.data && response.data.success && response.data.data) {
+        const policy = response.data.data;
+        const appLanguage = useGlobalStore.getState().language || "en";
+        const targetKey = `description_${appLanguage}`;
+        let selectedTerms = policy[targetKey] || "";
+
+        if (appLanguage === "mal" && !selectedTerms) {
+          selectedTerms = policy.description_mal || "";
+        }
+        if (!selectedTerms) {
+          selectedTerms = policy.description || "";
+        }
+        if (!selectedTerms) {
+          selectedTerms = policy.description_ta || "";
+        }
+        setTermsContent(selectedTerms);
+      } else {
+        setTermsContent("Terms and Conditions not available.");
+      }
+    } catch (error) {
+      console.error("Error fetching bill payment terms:", error);
+      setTermsContent("1. Bill payment transactions are processed securely.\n2. Once payment is successful, it cannot be cancelled or refunded.\n3. Receipt will be generated instantly after payment verification.");
+    } finally {
+      setTermsLoading(false);
+    }
+  };
+
   const userId = (user as any)?.userId || user?.id;
 
   const sanitizeFileName = (str: string) => str.replace(/[^a-zA-Z0-9]/g, '_');
@@ -549,6 +592,16 @@ export default function BillPayment() {
                   {renderAmountLine('Pending Amount', selectedBill.pendingAmount, true)}
                 </View>
 
+                {canPayBill(selectedBill) && (
+                  <TouchableOpacity
+                    style={styles.termsLinkRow}
+                    onPress={fetchBillPaymentTerms}
+                  >
+                    <Ionicons name="document-text-outline" size={16} color={theme.colors.primary} />
+                    <Text style={styles.termsLinkText}>View Bill Payment Terms & Conditions</Text>
+                  </TouchableOpacity>
+                )}
+
                 {canPayBill(selectedBill) ? (
                   <TouchableOpacity
                     style={[styles.modalPayButton, payingBillId === selectedBill.id && styles.disabledButton]}
@@ -596,6 +649,43 @@ export default function BillPayment() {
                 )}
               </ScrollView>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Terms and Conditions Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={termsModalVisible}
+        onRequestClose={closeTermsModal}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeTermsModal} />
+          <View style={styles.detailModalContent}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Terms & Conditions</Text>
+              <TouchableOpacity
+                onPress={closeTermsModal}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close-circle" size={32} color={theme.colors.primary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              style={{ maxHeight: hp(50) }}
+              contentContainerStyle={{ paddingBottom: hp(4) }}
+              showsVerticalScrollIndicator={true}
+            >
+              {termsLoading ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginVertical: 20 }} />
+              ) : (
+                <Text style={{ fontSize: rf(12), color: '#333', lineHeight: rf(18) }}>
+                  {termsContent}
+                </Text>
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -812,7 +902,20 @@ const styles = StyleSheet.create({
   },
   shareBtnText: {
     color: 'white',
-    fontWeight: '700',
     fontSize: rf(12),
+    fontWeight: 'bold',
+  },
+  termsLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: hp(1.5),
+    gap: wp(2),
+  },
+  termsLinkText: {
+    fontSize: rf(12),
+    color: theme.colors.primary,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

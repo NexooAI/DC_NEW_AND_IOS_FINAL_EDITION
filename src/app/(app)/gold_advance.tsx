@@ -17,7 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import useGlobalStore from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "src/constants/colors";
 import { theme } from "@/constants/theme";
 import ResponsiveText from "@/components/ResponsiveText";
@@ -37,6 +37,9 @@ export default function GoldAdvanceScreen() {
   const [pressedButton, setPressedButton] = useState<number | null>(null);
   const [options, setOptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [termsContent, setTermsContent] = useState("");
+  const [termsLoading, setTermsLoading] = useState(false);
+  const [isTermsAccepted, setIsTermsAccepted] = useState(false);
 
   const advanceOptions = [
     {
@@ -129,14 +132,50 @@ export default function GoldAdvanceScreen() {
     fetchConfigs();
   }, []);
 
+  const fetchAdvanceBookingTerms = async () => {
+    try {
+      setTermsLoading(true);
+      const response = await api.get('/policies/type/advance_booking_terms');
+      if (response.data && response.data.success && response.data.data) {
+        const policy = response.data.data;
+        const appLanguage = useGlobalStore.getState().language || "en";
+        const targetKey = `description_${appLanguage}`;
+        let selectedTerms = policy[targetKey] || "";
+
+        if (appLanguage === "mal" && !selectedTerms) {
+          selectedTerms = policy.description_mal || "";
+        }
+        if (!selectedTerms) {
+          selectedTerms = policy.description || "";
+        }
+        if (!selectedTerms) {
+          selectedTerms = policy.description_ta || "";
+        }
+        setTermsContent(selectedTerms);
+      } else {
+        setTermsContent("Terms and Conditions not available.");
+      }
+    } catch (error) {
+      console.error("Error fetching advance booking terms:", error);
+      setTermsContent("1. Advance Booking rate is fixed based on the current gold/silver rate.\n2. Booking amount is non-refundable.\n3. The balance payment must be settled at the time of delivery.");
+    } finally {
+      setTermsLoading(false);
+    }
+  };
+
   const handleInfo = (option: any) => {
     setSelectedOption(option);
+    setTermsContent("");
+    setIsTermsAccepted(false);
     setModalVisible(true);
+    fetchAdvanceBookingTerms();
   };
 
   const handleCloseModal = () => {
     setModalVisible(false);
     setSelectedOption(null);
+    setTermsContent("");
+    setIsTermsAccepted(false);
   };
 
   const [enquiryModalVisible, setEnquiryModalVisible] = useState(false);
@@ -325,16 +364,6 @@ export default function GoldAdvanceScreen() {
                       <Ionicons name="calendar-outline" size={12} color={COLORS.white} />
                       <Text style={styles.daysBadgeText}>{option.days} {t("schemes.days").toUpperCase()}</Text>
                     </View>
-                    <TouchableOpacity
-                      style={styles.infoButtonNew}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleInfo(option);
-                      }}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Ionicons name="information-circle-outline" size={20} color={COLORS.white} />
-                    </TouchableOpacity>
                   </View>
                 </View>
 
@@ -380,7 +409,7 @@ export default function GoldAdvanceScreen() {
                       style={styles.enquireButtonNew}
                       onPress={(e) => {
                         e.stopPropagation();
-                        handleEnquire(option);
+                        handleInfo(option);
                       }}
                       activeOpacity={0.8}
                     >
@@ -391,7 +420,7 @@ export default function GoldAdvanceScreen() {
                         end={{ x: 1, y: 0 }}
                       >
                         <Text style={option.metalType === 'SILVER' ? styles.buttonTextNewSilver : styles.buttonTextNew}>
-                          {t("bookNow")}
+                          {t("knowMore") || "Know More"}
                         </Text>
                       </LinearGradient>
                     </TouchableOpacity>
@@ -402,24 +431,69 @@ export default function GoldAdvanceScreen() {
           ))}
         </View>
 
-        {/* Info Modal */}
-        <Modal visible={modalVisible} animationType="fade" transparent onRequestClose={handleCloseModal}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+        {/* Bottom Sheet Details & Terms Modal */}
+        <Modal 
+          visible={modalVisible} 
+          animationType="slide" 
+          transparent 
+          onRequestClose={handleCloseModal}
+        >
+          <View style={styles.bottomSheetOverlay}>
+            <View style={styles.bottomSheetContent}>
               <LinearGradient colors={["#850111", "#6b0010"]} style={styles.modalHeader}>
                 <ResponsiveText variant="title" size="sm" weight="bold" color={COLORS.white} style={{ flex: 1 }}>
-                  {t("advanceOptionDetails")}
+                  {selectedOption ? `${selectedOption.metalType} ${t("goldAdvance")}` : t("advanceOptionDetails")}
                 </ResponsiveText>
                 <TouchableOpacity onPress={handleCloseModal} style={styles.closeButton}>
                   <Ionicons name="close" size={24} color={COLORS.white} />
                 </TouchableOpacity>
               </LinearGradient>
+              
               {selectedOption && (
-                <View style={styles.modalBody}>
-                  <Text style={styles.modalDetail}><Text style={styles.boldDetail}>{t("advancePercentLabel")}</Text> {selectedOption.percentage}</Text>
-                  <Text style={styles.modalDetail}><Text style={styles.boldDetail}>{t("daysWithColon")}</Text> {selectedOption.days}</Text>
-                  <Text style={styles.modalDetail}><Text style={styles.boldDetail}>{t("minPaymentLabel")}</Text> {selectedOption.minPayment}</Text>
-                  <Text style={styles.modalDetail}><Text style={styles.boldDetail}>{t("detailsWithColon")}</Text> {selectedOption.details}</Text>
+                <View style={{ flex: 1 }}>
+                  <ScrollView style={styles.bottomSheetBody} contentContainerStyle={{ paddingBottom: 30 }}>
+                    <View style={styles.bottomSheetGrid}>
+                      <View style={styles.bottomSheetCol}>
+                        <Text style={styles.bottomSheetLabel}>{t("advancePercentLabel")?.replace(':', '')}</Text>
+                        <Text style={styles.bottomSheetValue}>{selectedOption.percentage}</Text>
+                      </View>
+                      <View style={styles.bottomSheetSeparator} />
+                      <View style={styles.bottomSheetCol}>
+                        <Text style={styles.bottomSheetLabel}>{t("daysWithColon")?.replace(':', '')}</Text>
+                        <Text style={styles.bottomSheetValue}>{selectedOption.days} Days</Text>
+                      </View>
+                      <View style={styles.bottomSheetSeparator} />
+                      <View style={styles.bottomSheetCol}>
+                        <Text style={styles.bottomSheetLabel}>{t("minPaymentLabel")?.replace(':', '')}</Text>
+                        <Text style={styles.bottomSheetValue}>{selectedOption.minPayment}</Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.bottomSheetSectionTitle}>Description</Text>
+                    <Text style={styles.bottomSheetDescription}>{selectedOption.details}</Text>
+
+                    <View style={styles.bottomSheetDivider} />
+
+                    <Text style={styles.bottomSheetSectionTitle}>{t("termsAndConditions")}</Text>
+                    {termsLoading ? (
+                      <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginVertical: 20 }} />
+                    ) : (
+                      <Text style={styles.bottomSheetTermsText}>{termsContent}</Text>
+                    )}
+                  </ScrollView>
+
+                  {/* Book Button Section */}
+                  <View style={styles.bottomSheetFooter}>
+                    <TouchableOpacity
+                      style={styles.bottomSheetBookButton}
+                      onPress={() => {
+                        handleEnquire(selectedOption);
+                        handleCloseModal();
+                      }}
+                    >
+                      <Text style={styles.bottomSheetBookButtonText}>{t("bookNow")}</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
             </View>
@@ -884,6 +958,116 @@ const styles = StyleSheet.create({
   successCloseBtnText: {
     color: COLORS.white,
     fontSize: rf(11),
+    fontWeight: "bold",
+  },
+  bottomSheetOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
+  },
+  bottomSheetContent: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    width: "100%",
+    height: "75%",
+    overflow: "hidden",
+    elevation: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+  },
+  bottomSheetBody: {
+    flex: 1,
+    padding: wp(5),
+  },
+  bottomSheetGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#f7f7f9",
+    borderRadius: 12,
+    paddingVertical: hp(1.2),
+    paddingHorizontal: wp(3),
+    marginBottom: hp(2),
+  },
+  bottomSheetCol: {
+    flex: 1,
+    alignItems: "center",
+  },
+  bottomSheetSeparator: {
+    width: 1,
+    height: hp(3),
+    backgroundColor: "rgba(0,0,0,0.1)",
+  },
+  bottomSheetLabel: {
+    fontSize: rf(9.5),
+    color: "gray",
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  bottomSheetValue: {
+    fontSize: rf(13),
+    color: theme.colors.textDark,
+    fontWeight: "bold",
+  },
+  bottomSheetSectionTitle: {
+    fontSize: rf(14),
+    fontWeight: "bold",
+    color: theme.colors.primary,
+    marginTop: hp(1.5),
+    marginBottom: hp(0.8),
+  },
+  bottomSheetDescription: {
+    fontSize: rf(12),
+    color: "gray",
+    lineHeight: rf(18),
+    marginBottom: hp(1.5),
+  },
+  bottomSheetDivider: {
+    height: 1,
+    backgroundColor: "#e5e5e5",
+    marginVertical: hp(1.5),
+  },
+  bottomSheetTermsText: {
+    fontSize: rf(11.5),
+    color: "#475569",
+    lineHeight: rf(17),
+  },
+  bottomSheetFooter: {
+    padding: wp(5),
+    borderTopWidth: 1,
+    borderTopColor: "#e5e5e5",
+    backgroundColor: "#fff",
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: hp(1.5),
+    gap: 8,
+  },
+  checkboxTouch: {
+    padding: 2,
+  },
+  checkboxText: {
+    fontSize: rf(12),
+    color: theme.colors.textDark,
+    fontWeight: "500",
+  },
+  bottomSheetBookButton: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: 10,
+    paddingVertical: hp(1.4),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bottomSheetBookButtonDisabled: {
+    opacity: 0.5,
+  },
+  bottomSheetBookButtonText: {
+    color: COLORS.white,
+    fontSize: rf(13),
     fontWeight: "bold",
   },
 });

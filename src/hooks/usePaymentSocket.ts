@@ -195,6 +195,7 @@ export const usePaymentSocket = ({
                 status: data?.paymentResponse?.status || "FAILED",
                 type: type,
                 userId: parsedUserDetails?.userId || parsedUserDetails?.id || "",
+                investmentId: parsedUserDetails?.investmentId || "",
               }
             });
           }

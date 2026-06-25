@@ -129,6 +129,8 @@ export default function PaymentWebView() {
         type,
       });
 
+      const userDetails = safeParseJSON(params.userDetails);
+      const investmentId = userDetails?.investmentId || params.investmentId || "";
       router.replace({
         pathname: "/(tabs)/home/payment-failure",
         params: {
@@ -143,6 +145,7 @@ export default function PaymentWebView() {
           status: data?.paymentResponse?.status || "FAILED",
           type: type,
           userId: params.userId as string || user?.id || "",
+          investmentId: String(investmentId),
         },
       });
     },
@@ -345,6 +348,8 @@ export default function PaymentWebView() {
 
     // Small delay to ensure socket disconnection completes, then navigate to payment failure page
     setTimeout(() => {
+      const userDetails = safeParseJSON(params.userDetails);
+      const investmentId = userDetails?.investmentId || params.investmentId || "";
       router.replace({
         pathname: "/(tabs)/home/payment-failure",
         params: {
@@ -353,6 +358,9 @@ export default function PaymentWebView() {
           txnId: "",
           amount: params.amount as string || "",
           status: "CANCELLED",
+          type: type,
+          userId: params.userId as string || user?.id || "",
+          investmentId: String(investmentId),
         },
       });
     }, 500); // 500ms delay for socket disconnection
@@ -605,10 +613,42 @@ export default function PaymentWebView() {
                   }
 
                   const currentUrl = navState.url.toLowerCase();
+                  
+                  // Check for explicit cancel/failed status in the URL first
+                  const isExplicitCancel = currentUrl.includes("status=cancelled") || currentUrl.includes("/cancel");
+                  const isExplicitFailure = currentUrl.includes("status=failed") || currentUrl.includes("status=failure") || currentUrl.includes("/failed") || currentUrl.includes("/error");
+                  
+                  if (isExplicitCancel || isExplicitFailure) {
+                    console.log(`[DEBUG Payment Flow] WebView reached explicit cancel/failure page (${isExplicitCancel ? 'Cancel' : 'Failure'}). Routing to failure screen...`);
+                    stopStatusPolling();
+                    if (socket && socket.connected) {
+                      socket.disconnect();
+                    }
+                    
+                    if (!isTransitioningRef.current) {
+                      isTransitioningRef.current = true;
+                      const userDetails = safeParseJSON(params.userDetails);
+                      const investmentId = userDetails?.investmentId || params.investmentId || "";
+                      router.replace({
+                        pathname: "/(tabs)/home/payment-failure",
+                        params: {
+                          message: isExplicitCancel ? "Payment cancelled by user" : "Payment Verification Pending/Failed",
+                          orderId: params.orderId as string || "",
+                          txnId: "",
+                          amount: params.amount as string || "",
+                          status: isExplicitCancel ? "CANCELLED" : "FAILED",
+                          type: type,
+                          userId: params.userId as string || user?.id || "",
+                          investmentId: String(investmentId),
+                        },
+                      });
+                    }
+                    return;
+                  }
+
                   if (currentUrl.includes("/payments/status") || currentUrl.includes("/loading")) {
                     console.log("[DEBUG Payment Flow] WebView reached return url callback page. Starting polling...");
                     const userDetails = safeParseJSON(params.userDetails);
-                    const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
                     const successTarget = {
                       pathname: "/(tabs)/home/payment-success" as any,
                       params: {
@@ -636,23 +676,10 @@ export default function PaymentWebView() {
                         status: "FAILED",
                         type: type,
                         userId: params.userId as string || user?.id || "",
+                        investmentId: userDetails?.investmentId || params.investmentId || "",
                       },
                     };
                     startStatusPolling(params.orderId as string, successTarget, failureTarget);
-                  }
-
-                  if (
-                    currentUrl.includes("/cancel") ||
-                    currentUrl.includes("/error") ||
-                    currentUrl.includes("/failed") ||
-                    (currentUrl.includes("payment") &&
-                      currentUrl.includes("status=failed"))
-                  ) {
-                    stopStatusPolling();
-                    if (socket && socket.connected) {
-                      socket.disconnect();
-                    }
-                    handleCancel();
                   }
                 }}
                 onError={(err) => {
@@ -805,10 +832,42 @@ export default function PaymentWebView() {
                   }
 
                   const currentUrl = navState.url.toLowerCase();
+                  
+                  // Check for explicit cancel/failed status in the URL first
+                  const isExplicitCancel = currentUrl.includes("status=cancelled") || currentUrl.includes("/cancel");
+                  const isExplicitFailure = currentUrl.includes("status=failed") || currentUrl.includes("status=failure") || currentUrl.includes("/failed") || currentUrl.includes("/error");
+                  
+                  if (isExplicitCancel || isExplicitFailure) {
+                    console.log(`[DEBUG Payment Flow] WebView reached explicit cancel/failure page (${isExplicitCancel ? 'Cancel' : 'Failure'}). Routing to failure screen...`);
+                    stopStatusPolling();
+                    if (socket && socket.connected) {
+                      socket.disconnect();
+                    }
+                    
+                    if (!isTransitioningRef.current) {
+                      isTransitioningRef.current = true;
+                      const userDetails = safeParseJSON(params.userDetails);
+                      const investmentId = userDetails?.investmentId || params.investmentId || "";
+                      router.replace({
+                        pathname: "/(tabs)/home/payment-failure",
+                        params: {
+                          message: isExplicitCancel ? "Payment cancelled by user" : "Payment Verification Pending/Failed",
+                          orderId: params.orderId as string || "",
+                          txnId: "",
+                          amount: params.amount as string || "",
+                          status: isExplicitCancel ? "CANCELLED" : "FAILED",
+                          type: type,
+                          userId: params.userId as string || user?.id || "",
+                          investmentId: String(investmentId),
+                        },
+                      });
+                    }
+                    return;
+                  }
+
                   if (currentUrl.includes("/payments/status") || currentUrl.includes("/loading")) {
                     console.log("[DEBUG Payment Flow] WebView reached return url callback page. Starting polling...");
                     const userDetails = safeParseJSON(params.userDetails);
-                    const isBillOrBooking = type === 'bill' || type === 'advance_booking' || type === 'booking';
                     const successTarget = {
                       pathname: "/(tabs)/home/payment-success" as any,
                       params: {
@@ -836,23 +895,10 @@ export default function PaymentWebView() {
                         status: "FAILED",
                         type: type,
                         userId: params.userId as string || user?.id || "",
+                        investmentId: userDetails?.investmentId || params.investmentId || "",
                       },
                     };
                     startStatusPolling(params.orderId as string, successTarget, failureTarget);
-                  }
-
-                  if (
-                    currentUrl.includes("/cancel") ||
-                    currentUrl.includes("/error") ||
-                    currentUrl.includes("/failed") ||
-                    (currentUrl.includes("payment") &&
-                      currentUrl.includes("status=failed"))
-                  ) {
-                    stopStatusPolling();
-                    if (socket && socket.connected) {
-                      socket.disconnect();
-                    }
-                    handleCancel();
                   }
                 }}
                 onError={(err) => {

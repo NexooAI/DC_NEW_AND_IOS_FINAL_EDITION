@@ -95,12 +95,12 @@ export default function RewardsScreen() {
             ),
             headerRight: () => (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 16 }}>
-                    <TouchableOpacity
+                    {/* <TouchableOpacity
                         style={styles.refreshRoundButton}
                         onPress={handleRefresh}
                     >
                         <Ionicons name="refresh" size={18} color="white" />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                     <TouchableOpacity
                         style={styles.historyPillButton}
                         onPress={() => router.push("/(app)/(tabs)/rewards_history")}

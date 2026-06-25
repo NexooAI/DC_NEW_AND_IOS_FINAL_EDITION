@@ -1391,5 +1391,15 @@
   "whatsappUs": "వాట్సాప్",
   "needImmediateAssistance": "తక్షణ సహాయం కావాలా?",
   "oldGoldContactDesc": "పాత బంగారు పథకం గురించి అత్యవసర విచారణల కోసం, దయచేసి మా షోరూమ్‌కు నేరుగా కాల్ చేయండి లేదా వాట్సాప్ చేయండి.",
-  "luckyDrawRecentWinnerLabel": "ఇటీవలి విజేత"
+  "luckyDrawRecentWinnerLabel": "ఇటీవలి విజేత",
+  "no_referrals_yet": "ఇంకా రిఫరల్స్ లేవు",
+  "no_referrals_yet_desc": "మీ ఇన్వైట్ కోడ్‌ని మీ స్నేహితులతో పంచుకోండి మరియు కలిసి పాయింట్లను సంపాదించడం ప్రారంభించండి!",
+  "redemptionDetails": "రీడీమ్ వివరాలు",
+  "transactionType": "లావాదేవీ రకం",
+  "points_redeemed": "రీడీమ్ చేసిన పాయింట్లు",
+  "pointsRedeemed": "రీడీమ్ చేసిన పాయింట్లు",
+  "status_credited": "జమ చేయబడింది",
+  "status_pending": "పెండింగ్‌లో ఉంది",
+  "status_completed": "పూర్తయింది",
+  "status_rejected": "తిరస్కరించబడింది"
 }

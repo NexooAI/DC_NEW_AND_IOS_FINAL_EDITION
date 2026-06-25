@@ -1401,5 +1401,15 @@
   "whatsappUs": "WhatsApp",
   "needImmediateAssistance": "Need Immediate Assistance?",
   "oldGoldContactDesc": "For urgent inquiries regarding the Old Gold Scheme, please feel free to call or WhatsApp our showroom directly.",
-  "luckyDrawRecentWinnerLabel": "Recent Winner"
+  "luckyDrawRecentWinnerLabel": "Recent Winner",
+  "no_referrals_yet": "No Referrals Yet",
+  "no_referrals_yet_desc": "Share your invite code with friends to start earning points together!",
+  "redemptionDetails": "Redemption Details",
+  "transactionType": "Transaction Type",
+  "points_redeemed": "Points Redeemed",
+  "pointsRedeemed": "Points Redeemed",
+  "status_credited": "Credited",
+  "status_pending": "Pending",
+  "status_completed": "Completed",
+  "status_rejected": "Rejected"
 }

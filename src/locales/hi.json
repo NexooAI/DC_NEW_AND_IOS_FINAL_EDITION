@@ -1391,5 +1391,15 @@
   "whatsappUs": "व्हाट्सएप",
   "needImmediateAssistance": "तुरंत सहायता की आवश्यकता है?",
   "oldGoldContactDesc": "पुरानी सोना योजना के संबंध में तत्काल पूछताछ के लिए, कृपया हमारे शोरूम को सीधे कॉल या व्हाट्सएप करें।",
-  "luckyDrawRecentWinnerLabel": "हाल ही के विजेता"
+  "luckyDrawRecentWinnerLabel": "हाल ही के विजेता",
+  "no_referrals_yet": "अभी तक कोई रेफ़रल नहीं",
+  "no_referrals_yet_desc": "अपने दोस्तों के साथ अपना इनवाइट कोड साझा करें और साथ में पॉइंट्स कमाना शुरू करें!",
+  "redemptionDetails": "रिडीम विवरण",
+  "transactionType": "लेनदेन का प्रकार",
+  "points_redeemed": "रिडीम किए गए पॉइंट्स",
+  "pointsRedeemed": "रिडीम किए गए पॉइंट्स",
+  "status_credited": "जमा किया गया",
+  "status_pending": "लंबित",
+  "status_completed": "पूरा हुआ",
+  "status_rejected": "अस्वीकृत"
 }

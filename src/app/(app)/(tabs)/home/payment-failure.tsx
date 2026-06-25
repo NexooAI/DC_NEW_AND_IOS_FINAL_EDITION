@@ -37,6 +37,7 @@ export default function PaymentFailure() {
   const type = (Array.isArray(params.type) ? params.type[0] : params.type) || "";
   const isBillPayment = type === "bill";
   const userId = Array.isArray(params.userId) ? params.userId[0] : (params.userId || user?.id?.toString() || "");
+  const investmentId = Array.isArray(params.investmentId) ? params.investmentId[0] : (params.investmentId || "");
 
   useEffect(() => {
     if (isBillPayment && userId) {
@@ -60,6 +61,13 @@ export default function PaymentFailure() {
       const onBackPress = () => {
         if (isBillPayment) {
           router.replace("/(app)/bill_payment");
+        } else if (type === "booking" || type === "advance_booking") {
+          router.replace("/(tabs)/home/BookingHistory");
+        } else if (type === "scheme" && investmentId && investmentId !== "0" && investmentId !== "undefined") {
+          router.replace({
+            pathname: "/(tabs)/savings/SavingsDetail",
+            params: { investmentId }
+          });
         } else {
           router.replace("/(tabs)/home");
         }
@@ -72,7 +80,7 @@ export default function PaymentFailure() {
         setTabVisibility(true);
         backHandler.remove();
       };
-    }, [setTabVisibility, router, isBillPayment])
+    }, [setTabVisibility, router, isBillPayment, type, investmentId])
   );
 
   // Log payment failure data when component mounts
@@ -147,7 +155,20 @@ export default function PaymentFailure() {
       toValue: 0,
       duration: 300,
       useNativeDriver: true,
-    }).start(() => router.replace("/(tabs)/home"));
+    }).start(() => {
+      if (isBillPayment) {
+        router.replace("/(app)/bill_payment");
+      } else if (type === "booking" || type === "advance_booking") {
+        router.replace("/(tabs)/home/BookingHistory");
+      } else if (type === "scheme" && investmentId && investmentId !== "0" && investmentId !== "undefined") {
+        router.replace({
+          pathname: "/(tabs)/savings/SavingsDetail",
+          params: { investmentId }
+        });
+      } else {
+        router.replace("/(tabs)/home");
+      }
+    });
   };
 
   const handleCopy = async (text: string, label: string) => {
@@ -220,6 +241,24 @@ export default function PaymentFailure() {
           }
           if (userDetails.schemeType) {
             navigationParams.params.schemeType = userDetails.schemeType;
+          }
+          if (userDetails.noOfIns) {
+            navigationParams.params.noOfIns = String(userDetails.noOfIns);
+          }
+          if (userDetails.totalPaid) {
+            navigationParams.params.totalPaid = String(userDetails.totalPaid);
+          }
+          if (userDetails.paidPaymentCount) {
+            navigationParams.params.paidPaymentCount = String(userDetails.paidPaymentCount);
+          }
+          if (userDetails.maturityDate) {
+            navigationParams.params.maturityDate = String(userDetails.maturityDate);
+          }
+          if (userDetails.joiningDate) {
+            navigationParams.params.joiningDate = String(userDetails.joiningDate);
+          }
+          if (userDetails.schemeName) {
+            navigationParams.params.schemeName = String(userDetails.schemeName);
           }
           navigationParams.params.source = userDetails.source || "payment_retry";
 
@@ -401,19 +440,19 @@ export default function PaymentFailure() {
             <>
               <TouchableOpacity
                 style={[styles.button, styles.buttonHalf, styles.buttonRetry]}
-                onPress={() => router.replace("/(tabs)/home")}
+                onPress={() => router.replace("/(tabs)/home/BookingHistory")}
                 activeOpacity={0.9}
               >
-                <Ionicons name="refresh" size={rp(20)} color="#fff" />
-                <Text style={styles.buttonText}>{(t("tryAgain") || "TRY AGAIN").toUpperCase()}</Text>
+                <Ionicons name="time" size={rp(20)} color="#fff" />
+                <Text style={styles.buttonText}>{(t("bookingHistory") || "BOOKING HISTORY").toUpperCase()}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, styles.buttonHalf, styles.buttonHome]}
-                onPress={handleHomePress}
+                onPress={() => router.replace("/(app)/gold_advance")}
                 activeOpacity={0.9}
               >
-                <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
-                <Text style={[styles.buttonText, styles.buttonTextHome]}>{(t("home") || "GO TO HOME").toUpperCase()}</Text>
+                <Ionicons name="arrow-back" size={rp(20)} color={theme.colors.textDark} />
+                <Text style={[styles.buttonText, styles.buttonTextHome]}>{(t("goBack") || "GO BACK").toUpperCase()}</Text>
               </TouchableOpacity>
             </>
           ) : (
@@ -431,8 +470,16 @@ export default function PaymentFailure() {
                 onPress={handleHomePress}
                 activeOpacity={0.9}
               >
-                <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
-                <Text style={[styles.buttonText, styles.buttonTextHome]}>{t("home")}</Text>
+                <Ionicons 
+                  name={investmentId && investmentId !== "0" && investmentId !== "undefined" ? "wallet" : "home"} 
+                  size={rp(20)} 
+                  color={theme.colors.textDark} 
+                />
+                <Text style={[styles.buttonText, styles.buttonTextHome]}>
+                  {investmentId && investmentId !== "0" && investmentId !== "undefined"
+                    ? (t("backToSavings") || "BACK TO SAVINGS")
+                    : t("home")}
+                </Text>
               </TouchableOpacity>
             </>
           )}
