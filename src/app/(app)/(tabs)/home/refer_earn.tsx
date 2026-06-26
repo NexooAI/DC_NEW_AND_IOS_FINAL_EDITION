@@ -412,7 +412,7 @@ export default function ReferCodeScreen() {
             });
             
             return (
-              <View key={item.id || `${item.type}_${index}`} style={styles.referralItem}>
+              <View key={`${item.type}_${item.id || index}`} style={styles.referralItem}>
                 <View style={[
                   styles.referralIcon,
                   !isReferral && { backgroundColor: 'rgba(244, 67, 54, 0.05)' }

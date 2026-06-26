@@ -84,6 +84,10 @@ export default function PaymentHistoryScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'success' | 'pending' | 'failed'>('all');
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const LIMIT = 10;
 
   const isSuccessStatus = (status: string) => {
     const s = String(status).toLowerCase();
@@ -99,34 +103,12 @@ export default function PaymentHistoryScreen() {
     return !isSuccessStatus(status) && !isFailedStatus(status);
   };
 
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((tx) => {
-      if (filter === 'all') return true;
-      if (filter === 'success') return isSuccessStatus(tx.paymentStatus);
-      if (filter === 'pending') return isPendingStatus(tx.paymentStatus);
-      if (filter === 'failed') return isFailedStatus(tx.paymentStatus);
-      return true;
-    });
-  }, [filter, transactions]);
-
   const renderFilterChips = () => {
-    const filters: Array<{ key: 'all' | 'success' | 'pending' | 'failed'; label: string; count: number }> = [
-      { key: 'all', label: t('filterAll') || 'All', count: transactions.length },
-      {
-        key: 'success',
-        label: t('success') || 'Success',
-        count: transactions.filter(tx => isSuccessStatus(tx.paymentStatus)).length
-      },
-      {
-        key: 'pending',
-        label: t('pending') || 'Pending',
-        count: transactions.filter(tx => isPendingStatus(tx.paymentStatus)).length
-      },
-      {
-        key: 'failed',
-        label: t('failed') || 'Failed',
-        count: transactions.filter(tx => isFailedStatus(tx.paymentStatus)).length
-      }
+    const filters: Array<{ key: 'all' | 'success' | 'pending' | 'failed'; label: string }> = [
+      { key: 'all', label: t('filterAll') || 'All' },
+      { key: 'success', label: t('success') || 'Success' },
+      { key: 'pending', label: t('pending') || 'Pending' },
+      { key: 'failed', label: t('failed') || 'Failed' }
     ];
 
     return (
@@ -149,7 +131,7 @@ export default function PaymentHistoryScreen() {
                 }}
               >
                 <Text style={[styles.filterChipText, isActive && styles.activeFilterChipText]}>
-                  {item.label} ({item.count})
+                  {item.label}
                 </Text>
               </TouchableOpacity>
             );
@@ -161,35 +143,88 @@ export default function PaymentHistoryScreen() {
 
   const userId = (user as any)?.userId || user?.id;
 
-  const fetchHistory = useCallback(async (showLoader = true) => {
+  const fetchHistory = useCallback(async (currentOffset: number, currentFilter: string, showLoader = true) => {
     if (!userId) {
       setTransactions([]);
       setLoading(false);
+      setLoadingMore(false);
       return;
     }
 
     try {
-      if (showLoader) setLoading(true);
-      const response = await apiWithLoader.payments.getPaymentHistory(String(userId));
+      if (currentOffset === 0) {
+        if (showLoader) setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      const response = await apiWithLoader.payments.getPaymentHistory(
+        String(userId),
+        LIMIT,
+        currentOffset,
+        currentFilter
+      );
       const list = response?.data?.data || [];
-      setTransactions(Array.isArray(list) ? list : []);
+      const pagination = response?.data?.pagination;
+
+      setTransactions((prev) => {
+        if (currentOffset === 0) {
+          return Array.isArray(list) ? list : [];
+        } else {
+          return Array.isArray(list) ? [...prev, ...list] : prev;
+        }
+      });
+
+      if (pagination) {
+        setHasMore(pagination.hasMore);
+      } else {
+        setHasMore(list.length === LIMIT);
+      }
     } catch (error) {
       console.error('Error fetching payment history:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
   }, [userId]);
 
   useFocusEffect(
     useCallback(() => {
-      fetchHistory(true);
-    }, [fetchHistory])
+      setOffset(0);
+      fetchHistory(0, filter, true);
+    }, [userId, filter, fetchHistory])
   );
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchHistory(false);
+    setOffset(0);
+    fetchHistory(0, filter, false);
+  };
+
+  const handleLoadMore = () => {
+    if (loadingMore || !hasMore) return;
+    const nextOffset = offset + LIMIT;
+    setOffset(nextOffset);
+    fetchHistory(nextOffset, filter, false);
+  };
+
+  const renderFooter = () => {
+    if (loadingMore) {
+      return (
+        <View style={styles.footerLoader}>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+        </View>
+      );
+    }
+    if (hasMore) {
+      return (
+        <TouchableOpacity style={styles.loadMoreButton} onPress={handleLoadMore}>
+          <Text style={styles.loadMoreButtonText}>{t('loadMore') || 'Load More'}</Text>
+        </TouchableOpacity>
+      );
+    }
+    return null;
   };
 
   const getStatusMeta = (status: string) => {
@@ -354,7 +389,7 @@ export default function PaymentHistoryScreen() {
         <>
           {renderFilterChips()}
           <FlatList
-            data={filteredTransactions}
+            data={transactions}
             renderItem={renderTransactionItem}
             keyExtractor={(item) => String(item.id)}
             contentContainerStyle={styles.listContent}
@@ -374,6 +409,7 @@ export default function PaymentHistoryScreen() {
                 </Text>
               </View>
             }
+            ListFooterComponent={renderFooter}
           />
         </>
       )}
@@ -555,4 +591,24 @@ const styles = StyleSheet.create({
   },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: hp(12) },
   emptyText: { fontSize: rf(13), color: 'rgba(0,0,0,0.35)', marginTop: hp(2), textAlign: 'center' },
+  footerLoader: {
+    paddingVertical: hp(2),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadMoreButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: hp(1.5),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.primary || '#850111',
+    borderRadius: 8,
+    marginVertical: hp(2),
+  },
+  loadMoreButtonText: {
+    color: theme.colors.primary || '#850111',
+    fontSize: rf(13),
+    fontWeight: 'bold',
+  },
 });

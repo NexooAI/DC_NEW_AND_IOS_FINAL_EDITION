@@ -45,7 +45,7 @@ import YouTubeVideo from "@/components/YouTubeVideo";
 import SupportContactCard from "@/components/SupportContactCard";
 import SocialMediaCard from "@/components/SocialMediaCard";
 import useGlobalStore from "@/store/global.store";
-import api from "@/services/api";
+import api, { offersAPI } from "@/services/api";
 import NetInfo from "@react-native-community/netinfo";
 import { ScaledSheet, moderateScale } from "react-native-size-matters";
 import { theme } from "@/constants/theme";
@@ -57,7 +57,7 @@ import StatusView from "@/components/StatusView";
 import Constants from "expo-constants";
 import { AppLocale } from "@/i18n";
 import AuthGuard from "@/components/AuthGuard";
-import { getFullImageUrl, formatGoldWeight } from "@/utils/imageUtils";
+import { getFullImageUrl, formatGoldWeight, getImageSource } from "@/utils/imageUtils";
 import { images } from "@/constants/images";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
@@ -682,6 +682,12 @@ export default function Home() {
   const [isKycLoading, setIsKycLoading] = useState(false);
   const [languageSelectorVisible, setLanguageSelectorVisible] = useState(false);
 
+  // Floating Offer Promo States
+  const [activeOffers, setActiveOffers] = useState<any[]>([]);
+  const [latestOffer, setLatestOffer] = useState<any | null>(null);
+  const [showFloatingOffer, setShowFloatingOffer] = useState(false);
+  const [offerModalVisible, setOfferModalVisible] = useState(false);
+
   // Scheme Info Modal States
   const [schemeInfoModalVisible, setSchemeInfoModalVisible] = useState(false);
   const [selectedScheme, setSelectedScheme] = useState<any>(null);
@@ -1116,6 +1122,25 @@ export default function Home() {
           logger.log("Home API response:", data);
 
           setHomeData(response.data);
+
+          // Fetch dynamic offers for the floating widget
+          try {
+            const offersResponse = await offersAPI.getOffers();
+            if (offersResponse.data && offersResponse.data.success) {
+              const fetchedOffers = offersResponse.data.data || [];
+              const activeOnly = fetchedOffers.filter((o: any) => o.status === 'active');
+              setActiveOffers(activeOnly);
+              if (activeOnly.length > 0) {
+                setLatestOffer(activeOnly[0]);
+                setShowFloatingOffer(true);
+              } else {
+                setLatestOffer(null);
+                setShowFloatingOffer(false);
+              }
+            }
+          } catch (offerErr) {
+            logger.error("Error fetching offers in fetchHomeData:", offerErr);
+          }
 
           // Populate investments calculations directly from pre-fetched list
           if (data.investments) {
@@ -3770,6 +3795,125 @@ export default function Home() {
 
         </View>
 
+        {/* Floating Offer Card */}
+        {showFloatingOffer && latestOffer && (
+          <View style={styles.floatingOfferContainer}>
+            <TouchableOpacity
+              style={styles.floatingOfferCard}
+              onPress={() => setOfferModalVisible(true)}
+              activeOpacity={0.9}
+            >
+              <Image
+                source={getImageSource(latestOffer.image_url) ?? { uri: getFullImageUrl('/uploads/default.jpg') }}
+                style={styles.floatingOfferImage}
+                resizeMode="cover"
+              />
+              {parseFloat(latestOffer.discount) > 0 && (
+                <View style={styles.floatingDiscountBadge}>
+                  <Text style={styles.floatingDiscountText}>
+                    {parseInt(latestOffer.discount)}% OFF
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.floatingOfferCloseButton}
+              onPress={() => setShowFloatingOffer(false)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close-circle" size={24} color={theme.colors.primary} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Offer Details Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={offerModalVisible}
+          onRequestClose={() => setOfferModalVisible(false)}
+        >
+          <View style={styles.offerModalOverlay}>
+            <View style={styles.offerModalContent}>
+              {latestOffer && (
+                <>
+                  {/* Modal Header */}
+                  <View style={styles.offerModalHeader}>
+                    <Text style={styles.offerModalTitle} numberOfLines={1}>
+                      {latestOffer.title}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setOfferModalVisible(false)}
+                      style={styles.offerModalCloseButton}
+                    >
+                      <Ionicons name="close" size={24} color="#666" />
+                    </TouchableOpacity>
+                  </View>
+
+                  <ScrollView
+                    style={styles.offerModalBody}
+                    showsVerticalScrollIndicator={false}
+                  >
+                    {/* Large Banner Image */}
+                    <Image
+                      source={getImageSource(latestOffer.image_url) ?? { uri: getFullImageUrl('/uploads/default.jpg') }}
+                      style={styles.offerModalImage}
+                      resizeMode="cover"
+                    />
+
+                    {/* Discount Section */}
+                    {parseFloat(latestOffer.discount) > 0 && (
+                      <View style={styles.offerModalDiscountBadge}>
+                        <Text style={styles.offerModalDiscountText}>
+                          {parseInt(latestOffer.discount)}% DISCOUNT
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Details Description */}
+                    <Text style={styles.offerModalSubtitle}>
+                      {latestOffer.subtitle}
+                    </Text>
+
+                    {/* Validity Info */}
+                    <View style={styles.offerModalValidityContainer}>
+                      <Ionicons name="calendar-outline" size={18} color="#666" />
+                      <Text style={styles.offerModalValidityText}>
+                        Validity: {latestOffer.start_date} to {latestOffer.end_date}
+                      </Text>
+                    </View>
+
+                    {/* Terms & Conditions */}
+                    <View style={styles.offerModalTermsContainer}>
+                      <Text style={styles.offerModalTermsTitle}>
+                        {t("termsAndConditions") || "Terms & Conditions"}
+                      </Text>
+                      <View style={styles.offerModalTermItem}>
+                        <Ionicons name="checkmark-circle" size={16} color={theme.colors.primary} />
+                        <Text style={styles.offerModalTermText}>
+                          Offer is valid on selected jewellery collections.
+                        </Text>
+                      </View>
+                      <View style={styles.offerModalTermItem}>
+                        <Ionicons name="checkmark-circle" size={16} color={theme.colors.primary} />
+                        <Text style={styles.offerModalTermText}>
+                          Cannot be combined with any other schemes or discount offers.
+                        </Text>
+                      </View>
+                      <View style={styles.offerModalTermItem}>
+                        <Ionicons name="checkmark-circle" size={16} color={theme.colors.primary} />
+                        <Text style={styles.offerModalTermText}>
+                          Please present this offer popup at the billing counter to claim.
+                        </Text>
+                      </View>
+                    </View>
+                  </ScrollView>
+                </>
+              )}
+            </View>
+          </View>
+        </Modal>
+
       </SafeAreaView>
 
       {/* Rating Modal */}
@@ -5028,6 +5172,170 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
 
+  // Floating Offer Card Styles
+  floatingOfferContainer: {
+    position: "absolute",
+    bottom: Platform.OS === 'ios' ? 100 : 90,
+    right: 16,
+    width: 120,
+    height: 160,
+    borderRadius: 16,
+    backgroundColor: "white",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+    zIndex: 9999,
+    padding: 2,
+  },
+  floatingOfferCard: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  floatingOfferImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 14,
+  },
+  floatingDiscountBadge: {
+    position: "absolute",
+    top: 6,
+    left: 6,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  floatingDiscountText: {
+    color: "white",
+    fontSize: 9,
+    fontWeight: "800",
+  },
+  floatingOfferCloseButton: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    backgroundColor: "white",
+    borderRadius: 12,
+    zIndex: 10000,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+
+  // Offer Details Modal Styles
+  offerModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  offerModalContent: {
+    width: "100%",
+    maxWidth: 400,
+    backgroundColor: "white",
+    borderRadius: 24,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+    maxHeight: "80%",
+  },
+  offerModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  offerModalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#333",
+    flex: 1,
+    marginRight: 10,
+  },
+  offerModalCloseButton: {
+    padding: 4,
+  },
+  offerModalBody: {
+    padding: 20,
+  },
+  offerModalImage: {
+    width: "100%",
+    height: 180,
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  offerModalDiscountBadge: {
+    backgroundColor: theme.colors.primary,
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  offerModalDiscountText: {
+    color: "white",
+    fontWeight: "800",
+    fontSize: 12,
+    letterSpacing: 0.5,
+  },
+  offerModalSubtitle: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#444",
+    marginBottom: 16,
+    fontWeight: "500",
+  },
+  offerModalValidityContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F9F9F9",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  offerModalValidityText: {
+    marginLeft: 8,
+    fontSize: 13,
+    color: "#666",
+    fontWeight: "600",
+  },
+  offerModalTermsContainer: {
+    marginBottom: 24,
+  },
+  offerModalTermsTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  offerModalTermItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 10,
+    gap: 8,
+  },
+  offerModalTermText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#666",
+    lineHeight: 18,
+  },
 });
 // Skeleton loading styles
 const skeletonStyles = StyleSheet.create({

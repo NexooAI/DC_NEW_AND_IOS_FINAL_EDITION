@@ -1,6 +1,7 @@
 // services/forceUpdateService.ts - Force Update Service
 import * as Application from 'expo-application';
 import * as Linking from 'expo-linking';
+import Constants from 'expo-constants';
 import { Alert } from 'react-native';
 import apiClient from './api';
 
@@ -48,7 +49,7 @@ class ForceUpdateService {
      */
     getCurrentVersion(): string {
         try {
-            const version = Application.nativeApplicationVersion;
+            const version = Constants.expoConfig?.version || Application.nativeApplicationVersion;
             logger.log('📱 Current app version:', version);
             return version || '1.0.0';
         } catch (error) {
@@ -135,9 +136,9 @@ class ForceUpdateService {
                 apiNeedsUpdate,
             });
 
-            // Use API's needsUpdate field or fallback to version comparison
-            const needsUpdate = apiNeedsUpdate === 'true' || this.compareVersions(currentVersion, latestVersion) < 0;
-
+            // Use API's needsUpdate field and check if current version is lower than latest version
+            const versionComparison = this.compareVersions(currentVersion, latestVersion);
+            const needsUpdate = (apiNeedsUpdate === 'true' || apiNeedsUpdate == '1' || apiNeedsUpdate == true || apiNeedsUpdate == 1) && versionComparison < 0;
             const result: ForceUpdateResult = {
                 needsUpdate,
                 currentVersion,

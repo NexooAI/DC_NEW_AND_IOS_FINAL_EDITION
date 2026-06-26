@@ -36,6 +36,7 @@ import { theme } from "@/constants/theme";
 import AuthGuard from "@/components/AuthGuard";
 import { formatGoldWeight } from "@/utils/imageUtils";
 import EnhancedSchemeCard from "./EnhancedSchemeCard";
+import OldGoldSchemeCard from "./OldGoldSchemeCard";
 import {
   SkeletonSavingsCard,
   SkeletonSavingsPortfolio,
@@ -627,18 +628,34 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
     });
   }, [savings, selectedType, subFilter, showSubFilter]);
 
+  // Partition filtered savings to render regular schemes first, and then old gold schemes under a separate heading
+  const listData = useMemo(() => {
+    const regular = filteredSavings.filter(s => s.savingType !== 'old_gold');
+    const oldGold = filteredSavings.filter(s => s.savingType === 'old_gold');
+
+    const data: any[] = [...regular];
+    if (oldGold.length > 0) {
+      data.push({
+        isHeader: true,
+        title: t("oldGoldDeposits") || "Old Gold Schemes"
+      });
+      data.push(...oldGold);
+    }
+    return data;
+  }, [filteredSavings, t]);
+
   // Auto-scroll to specific investment
   useEffect(() => {
     logger.log("Auto-scroll effect triggered:", {
       investmentId: params.investmentId,
-      filteredSavingsLength: filteredSavings.length,
+      listDataLength: listData.length,
       loading,
       selectedType
     });
 
-    if (params.investmentId && filteredSavings.length > 0 && !loading) {
-      const index = filteredSavings.findIndex(
-        (item) => item.id.toString() === params.investmentId?.toString()
+    if (params.investmentId && listData.length > 0 && !loading) {
+      const index = listData.findIndex(
+        (item) => !item.isHeader && item.id.toString() === params.investmentId?.toString()
       );
 
       logger.log("Auto-scroll index found:", index);
@@ -655,17 +672,37 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
         }, 500);
       }
     }
-  }, [filteredSavings, params.investmentId, loading]);
+  }, [listData, params.investmentId, loading]);
 
   // Memoized renderItem for FlatList
   const renderSchemeItem = useCallback(
-    ({ item }: { item: any }) => (
-      <EnhancedSchemeCard
-        item={item}
-        translations={translations}
-        autoExpand={params.investmentId?.toString() === item.id.toString()}
-      />
-    ),
+    ({ item }: { item: any }) => {
+      if (item.isHeader) {
+        return (
+          <View style={styles.sectionHeaderContainer}>
+            <Text style={styles.sectionHeaderTitle}>{item.title}</Text>
+            <View style={styles.sectionHeaderLine} />
+          </View>
+        );
+      }
+
+      if (item.savingType === "old_gold") {
+        return (
+          <OldGoldSchemeCard
+            item={item}
+            translations={translations}
+          />
+        );
+      }
+
+      return (
+        <EnhancedSchemeCard
+          item={item}
+          translations={translations}
+          autoExpand={params.investmentId?.toString() === item.id.toString()}
+        />
+      );
+    },
     [translations, params.investmentId]
   );
 
@@ -971,10 +1008,15 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
 
           <FlatList
             ref={flatListRef}
-            data={filteredSavings}
-            keyExtractor={(item, index) =>
-              item.id && item.id !== "" ? item.id : index.toString()
-            }
+            data={listData}
+            keyExtractor={(item, index) => {
+              if (item.isHeader) {
+                return `header_${item.title}`;
+              }
+              const type = item.savingType || "saving";
+              const id = item.id || item.investmentId || index;
+              return `${type}_${id}`;
+            }}
             renderItem={renderSchemeItem}
             ListHeaderComponent={savings.length > 0 ? <ListHeader /> : null}
             ListEmptyComponent={<EmptyState />}
@@ -1013,6 +1055,25 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
 }
 
 const styles = StyleSheet.create({
+  sectionHeaderContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  sectionHeaderTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: theme.colors.primary,
+    letterSpacing: 0.5,
+  },
+  sectionHeaderLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.15)",
+  },
   pageHeaderContainer: {
     flexDirection: "row",
     alignItems: "center",

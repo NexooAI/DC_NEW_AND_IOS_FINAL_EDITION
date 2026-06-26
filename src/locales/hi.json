@@ -1,4 +1,7 @@
 {
+  "available_balance": "उपलब्ध शेष राशि",
+  "oldGoldDeposits": "ओल्ड गोल्ड डिपॉजिट",
+  "documents": "दस्तावेज़ और रसीदें",
   "myDeposits": "मेरी जमा राशि",
   "newEnquiry": "नई पूछताछ",
   "schemeDetails": "योजना विवरण",
@@ -1401,5 +1404,6 @@
   "status_credited": "जमा किया गया",
   "status_pending": "लंबित",
   "status_completed": "पूरा हुआ",
-  "status_rejected": "अस्वीकृत"
+  "status_rejected": "अस्वीकृत",
+  "loadMore": "और लोड करें"
 }

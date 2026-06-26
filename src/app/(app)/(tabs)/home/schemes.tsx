@@ -1173,10 +1173,42 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentModern}>
              <TouchableOpacity style={styles.floatingCloseButton} onPress={closeDetailModal}>
-                <View style={styles.closeButtonBlur}>
-                   <Ionicons name="close" size={20} color="#000" />
-                </View>
-            </TouchableOpacity>
+                 <View style={styles.closeButtonBlur}>
+                    <Ionicons name="close" size={20} color="#000" />
+                 </View>
+             </TouchableOpacity>
+
+            <View style={styles.stickyModalHeader}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (selectedScheme) {
+                    closeDetailModal();
+                    if (selectedScheme.SCHEME_PLAN_TYPE_ID === 4) {
+                      setSelectedBranches(selectedScheme.branch || []);
+                      setBranchModalVisible(true);
+                    } else {
+                      handleJoinScheme(selectedScheme);
+                    }
+                  }
+                }}
+                style={[styles.modalJoinNowButton, { marginRight: 45, height: 50 }]}
+              >
+                <LinearGradient
+                  colors={['#FFD700', '#DAA520']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.modalJoinButtonGradient}
+                >
+                  <Ionicons name={selectedScheme?.SCHEME_PLAN_TYPE_ID === 4 ? "call" : "add-circle"} size={22} color="#000" />
+                  <Text style={styles.modalJoinButtonText}>
+                    {selectedScheme?.SCHEME_PLAN_TYPE_ID === 4 
+                      ? getEnquiryButtonText(language)
+                      : (t("joinThisScheme") || "JOIN THIS SCHEME")
+                    }
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
 
             <ScrollView 
                 style={styles.modalScroll}
@@ -1247,38 +1279,6 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                 </>
               )}
             </ScrollView>
-
-            <View style={styles.stickyModalFooter}>
-              <TouchableOpacity
-                onPress={() => {
-                  if (selectedScheme) {
-                    closeDetailModal();
-                    if (selectedScheme.SCHEME_PLAN_TYPE_ID === 4) {
-                      setSelectedBranches(selectedScheme.branch || []);
-                      setBranchModalVisible(true);
-                    } else {
-                      handleJoinScheme(selectedScheme);
-                    }
-                  }
-                }}
-                style={styles.modalJoinNowButton}
-              >
-                <LinearGradient
-                  colors={['#FFD700', '#DAA520']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.modalJoinButtonGradient}
-                >
-                  <Ionicons name={selectedScheme?.SCHEME_PLAN_TYPE_ID === 4 ? "call" : "add-circle"} size={22} color="#000" />
-                  <Text style={styles.modalJoinButtonText}>
-                    {selectedScheme?.SCHEME_PLAN_TYPE_ID === 4 
-                      ? getEnquiryButtonText(language)
-                      : (t("joinThisScheme") || "JOIN THIS SCHEME")
-                    }
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </Modal>
@@ -1886,7 +1886,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalScrollContent: {
-    paddingBottom: 150,
+    paddingBottom: 45,
   },
   modernHeader: {
     paddingHorizontal: 24,
@@ -2028,24 +2028,17 @@ const styles = StyleSheet.create({
     color: '#495057',
     fontWeight: '600',
   },
-  stickyModalFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  stickyModalHeader: {
     backgroundColor: '#fff',
     paddingHorizontal: 20,
-    paddingVertical: 20,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 25,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F3F5',
+    paddingTop: 15,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F3F5',
     flexDirection: 'row',
-    gap: 12,
-    elevation: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -5 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    zIndex: 10,
   },
   modalCancelButton: {
     flex: 1,

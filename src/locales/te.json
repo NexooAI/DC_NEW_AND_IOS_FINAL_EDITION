@@ -1,4 +1,7 @@
 {
+  "available_balance": "లభ్యమైన నిల్వ",
+  "oldGoldDeposits": "పాత బంగారు డిపాజిట్లు",
+  "documents": "పత్రాలు & రశీదులు",
   "myDeposits": "నా డిపాజిట్లు",
   "newEnquiry": "కొత్త విచారణ",
   "schemeDetails": "స్కీమ్ వివరాలు",
@@ -1401,5 +1404,6 @@
   "status_credited": "జమ చేయబడింది",
   "status_pending": "పెండింగ్‌లో ఉంది",
   "status_completed": "పూర్తయింది",
-  "status_rejected": "తిరస్కరించబడింది"
+  "status_rejected": "తిరస్కరించబడింది",
+  "loadMore": "మరిన్ని లోడ్ చేయండి"
 }

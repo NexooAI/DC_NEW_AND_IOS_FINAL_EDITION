@@ -56,16 +56,26 @@ export const useUnreadNotifications = () => {
                 logger.log('📊 [API] Notifications API response for badge:', data);
 
                 let totalUnread = 0;
-                if (data && typeof data === "object" && !Array.isArray(data)) {
-                    // Count unread notifications across all categories
-                    Object.values(data).forEach((notifications) => {
-                        if (Array.isArray(notifications)) {
-                            const unreadInCategory = notifications.filter(
-                                (notification) => notification.status === 'unread'
-                            ).length;
-                            totalUnread += unreadInCategory;
-                        }
-                    });
+                if (data) {
+                    if (Array.isArray(data)) {
+                        totalUnread = data.filter(
+                            (notification) => notification.status === 'unread'
+                        ).length;
+                    } else if ((data as any).success && Array.isArray((data as any).data)) {
+                        totalUnread = (data as any).data.filter(
+                            (notification: any) => notification.status === 'unread'
+                        ).length;
+                    } else if (typeof data === 'object') {
+                        // Count unread notifications across all categories
+                        Object.values(data).forEach((notifications) => {
+                            if (Array.isArray(notifications)) {
+                                const unreadInCategory = notifications.filter(
+                                    (notification) => notification.status === 'unread'
+                                ).length;
+                                totalUnread += unreadInCategory;
+                            }
+                        });
+                    }
                 }
 
                 logger.log('📊 [API] Total unread notifications calculated:', totalUnread);

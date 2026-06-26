@@ -73,9 +73,13 @@ export const apiWithLoader = {
         'Processing payment...'
       );
     },
-    getPaymentHistory: async (userId: string) => {
+    getPaymentHistory: async (userId: string, limit?: number, offset?: number, status?: string) => {
+      const params: any = {};
+      if (limit !== undefined) params.limit = limit;
+      if (offset !== undefined) params.offset = offset;
+      if (status && status !== 'all') params.status = status;
       return LoadingService.withLoading(
-        () => api.get(`/payments/history/${userId}`),
+        () => api.get(`/payments/history/${userId}`, { params }),
         'Loading payment history...'
       );
     },

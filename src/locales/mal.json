@@ -1,4 +1,7 @@
 {
+  "available_balance": "ലഭ്യമായ ബാലൻസ്",
+  "oldGoldDeposits": "പഴയ സ്വർണ്ണ നിക്ഷേപങ്ങൾ",
+  "documents": "രേഖകളും രസീതുകളും",
   "myDeposits": "എന്റെ നിക്ഷേപങ്ങൾ",
   "newEnquiry": "പുതിയ അന്വേഷണം",
   "schemeDetails": "സ്കീം വിശദാംശങ്ങൾ",
@@ -1401,5 +1404,6 @@
   "status_credited": "ക്രെഡിറ്റ് ചെയ്തു",
   "status_pending": "പെൻഡിംഗ്",
   "status_completed": "പൂർത്തിയായി",
-  "status_rejected": "നിരസിച്ചു"
+  "status_rejected": "നിരസിച്ചു",
+  "loadMore": "കൂടുതൽ ലോഡ് ചെയ്യുക"
 }

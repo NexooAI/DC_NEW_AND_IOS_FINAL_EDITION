@@ -361,6 +361,15 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
           {/* Support Section */}
           <SectionHeader title={t("information") || "Information"} />
           <DrawerMenuItem
+            label={t("offers") || "Our Offers"}
+            iconName="pricetag-outline"
+            onPress={() => handleNavigation("/(tabs)/home/offers")}
+            disabled={isNavigating}
+            isActive={isRouteActive("/(tabs)/home/offers")}
+            delay={190}
+            iconColor="#EA4335" // Red
+          />
+          <DrawerMenuItem
             label={t("ourStores")}
             iconName="storefront-outline"
             onPress={() => handleNavigation("/(tabs)/home/our_stores")}

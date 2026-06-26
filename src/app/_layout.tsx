@@ -72,6 +72,14 @@ export default function RootLayout() {
     retryCheck,
   } = useForceUpdate();
 
+  // Trigger force update check on every navigation to home or root
+  useEffect(() => {
+    if (pathname && (pathname.includes("home") || pathname === "/")) {
+      logger.log("🔄 Pathname changed to home/root, triggering force update check:", pathname);
+      retryCheck();
+    }
+  }, [pathname, retryCheck]);
+
   const handleNotificationNavigation = useCallback(
     (data: NotificationData) => {
       logger.log("ðŸ”” Handling notification navigation with data:", data);
@@ -357,7 +365,8 @@ export default function RootLayout() {
     return () => backHandler.remove();
   }, [navigation]);
 
-  if (!__DEV__ && needsUpdate && updateInfo) {
+  console.log("🎨 RootLayout render state:", { needsUpdate, hasUpdateInfo: !!updateInfo, isCheckingUpdate });
+  if (needsUpdate && updateInfo) {
     return (
       <ForceUpdateScreen
         currentVersion={updateInfo.currentVersion}
@@ -368,7 +377,7 @@ export default function RootLayout() {
     );
   }
 
-  if (isFirstLaunch === null || isCheckingUpdate || overallLoading) {
+  if (isFirstLaunch === null || overallLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color={theme.colors.primary} />

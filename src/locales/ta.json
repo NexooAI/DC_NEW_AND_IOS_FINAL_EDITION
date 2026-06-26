@@ -1,4 +1,7 @@
 {
+  "available_balance": "கிடைக்கக்கூடிய இருப்பு",
+  "oldGoldDeposits": "பழைய தங்க வைப்புகள்",
+  "documents": "ஆவணங்கள் மற்றும் ரசீதுகள்",
   "newSchemes": "புதிய திட்டங்கள்",
   "paymentsMade": "செலுத்தப்பட்ட தவணைகள்",
   "visitBranchToRedeemTitle": "கிளைக்குச் சென்று மீட்டெடுக்கவும்",
@@ -1402,5 +1405,6 @@
   "status_credited": "வரவு வைக்கப்பட்டது",
   "status_pending": "நிலுவையில் உள்ளது",
   "status_completed": "நிறைவடைந்தது",
-  "status_rejected": "நிராகரிக்கப்பட்டது"
+  "status_rejected": "நிராகரிக்கப்பட்டது",
+  "loadMore": "மேலும் ஏற்றவும்"
 }

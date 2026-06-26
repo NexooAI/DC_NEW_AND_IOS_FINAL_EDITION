@@ -824,6 +824,16 @@ export const luckyDrawAPI = {
   }
 };
 
+// Offers APIs
+export const offersAPI = {
+  getOffers: async () => {
+    return apiClient.get('/offers');
+  },
+  getOfferById: async (id: number | string) => {
+    return apiClient.get(`/offers/${id}`);
+  }
+};
+
 // ============================================================================
 // EXPORTS
 // ============================================================================

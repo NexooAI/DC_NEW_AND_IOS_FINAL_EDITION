@@ -1,99 +1,60 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   ScrollView,
-  ImageBackground,
   TouchableOpacity,
   StyleSheet,
   Modal,
   Dimensions,
+  Image,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { MaterialIcons, Ionicons, FontAwesome } from "@expo/vector-icons";
+import { MaterialIcons, FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-// AppHeader is now handled by the layout wrapper
 import { moderateScale } from "react-native-size-matters";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { offersAPI } from "@/services/api";
+import { getImageSource, getFullImageUrl } from "@/utils/imageUtils";
+import { logger } from "@/utils/logger";
 
 const { width, height } = Dimensions.get("window");
-
-interface Offer {
-  id: number;
-  title: string;
-  description: string;
-  icon: keyof typeof MaterialIcons.glyphMap;
-  color: string;
-  fullDescription: string;
-  validUntil: string;
-  terms: string[];
-  discount: string;
-  category: string;
-}
 
 export default function Offers() {
   const { t } = useTranslation();
   const router = useRouter();
-  const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+  const [offersList, setOffersList] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedOffer, setSelectedOffer] = useState<any | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const offers: Offer[] = [
-    {
-      id: 1,
-      title: t("festiveSpecial"),
-      description: t("enjoy20Off"),
-      icon: "celebration",
-      color: "#FFD700",
-      fullDescription: t("fullDescriptionFestive"),
-      validUntil: t("validUntil") + " December 31, 2024",
-      terms: [
-        t("categoryGoldJewelry"),
-        t("exclusiveMemberOffers"),
-        t("validUntil") + " December 31, 2024",
-        t("termsAndConditions"),
-      ],
-      discount: t("discount20"),
-      category: t("categoryGoldJewelry"),
-    },
-    {
-      id: 2,
-      title: t("newArrivals"),
-      description: t("flat15OffDiamond"),
-      icon: "diamond",
-      color: "#40E0D0",
-      fullDescription: t("fullDescriptionDiamond"),
-      validUntil: t("validUntil") + " January 15, 2025",
-      terms: [
-        t("categoryDiamondCollection"),
-        t("exclusiveMemberOffers"),
-        t("validUntil") + " January 15, 2025",
-        t("termsAndConditions"),
-      ],
-      discount: t("discount15"),
-      category: t("categoryDiamondCollection"),
-    },
-    {
-      id: 3,
-      title: t("exclusiveMembership"),
-      description: t("specialOffersAllYear"),
-      icon: "star",
-      color: theme.colors.primary,
-      fullDescription: t("fullDescriptionMembership"),
-      validUntil: t("ongoing"),
-      terms: [
-        t("annualMembershipFee"),
-        t("exclusiveMemberOffers"),
-        t("earlyAccess"),
-        t("priorityCustomerService"),
-      ],
-      discount: t("vipBenefitsDiscount"),
-      category: t("categoryMembership"),
-    },
-  ];
+  const fetchOffers = async (isRefreshing = false) => {
+    try {
+      isRefreshing ? setRefreshing(true) : setIsLoading(true);
+      const response = await offersAPI.getOffers();
+      if (response.data && response.data.success) {
+        const fetchedOffers = response.data.data || [];
+        const activeOnly = fetchedOffers.filter((o: any) => o.status === "active");
+        setOffersList(activeOnly);
+      }
+    } catch (error) {
+      logger.error("Error fetching offers page:", error);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
 
-  const openOfferModal = (offer: Offer) => {
+  useEffect(() => {
+    fetchOffers();
+  }, []);
+
+  const openOfferModal = (offer: any) => {
     setSelectedOffer(offer);
     setModalVisible(true);
   };
@@ -105,8 +66,17 @@ export default function Offers() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      {/* Header is now handled by the layout wrapper */}
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => fetchOffers(true)}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
         {/* Hero Section */}
         <LinearGradient
           colors={[theme.colors.primary, "#a8000a"]}
@@ -115,58 +85,79 @@ export default function Offers() {
           end={{ x: 1, y: 0 }}
         >
           <FontAwesome name="tag" size={48} color="rgba(255,255,255,0.2)" />
-          <Text style={styles.heroTitle}>{t("specialDealsAwait")}</Text>
+          <Text style={styles.heroTitle}>{t("specialDealsAwait") || "Special Deals Await"}</Text>
           <Text style={styles.heroSubtitle}>
-            {t("discoverLimitedTimeOffers")}
+            {t("discoverLimitedTimeOffers") || "Discover limited-time offers curated just for you"}
           </Text>
         </LinearGradient>
 
-        {/* Offers List */}
-        <View style={styles.offersContainer}>
-          {offers.map((offer) => (
-            <TouchableOpacity
-              key={offer.id}
-              style={styles.card}
-              onPress={() => openOfferModal(offer)}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={["white", "#FFF8F8"]}
-                style={styles.cardGradient}
+        {/* Loading State */}
+        {isLoading && !refreshing ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={styles.loadingText}>Loading latest offers...</Text>
+          </View>
+        ) : offersList.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <MaterialIcons name="local-offer" size={64} color="#ccc" />
+            <Text style={styles.emptyText}>No active offers available at the moment.</Text>
+          </View>
+        ) : (
+          /* Offers List */
+          <View style={styles.offersContainer}>
+            {offersList.map((offer) => (
+              <TouchableOpacity
+                key={offer.id}
+                style={styles.card}
+                onPress={() => openOfferModal(offer)}
+                activeOpacity={0.8}
               >
-                <View style={styles.cardHeader}>
-                  <View
-                    style={[
-                      styles.iconContainer,
-                      { backgroundColor: offer.color },
-                    ]}
-                  >
-                    <MaterialIcons name={offer.icon} size={24} color="white" />
-                  </View>
-                  <Text style={styles.cardTitle}>{offer.title}</Text>
-                </View>
-                <Text style={styles.cardDescription}>{offer.description}</Text>
-                <View style={styles.claimButton}>
-                  <Text style={styles.claimButtonText}>{t("viewDetails")}</Text>
-                  <MaterialIcons
-                    name="chevron-right"
-                    size={20}
-                    color={theme.colors.primary}
+                <LinearGradient
+                  colors={["white", "#FFF8F8"]}
+                  style={styles.cardGradient}
+                >
+                  <Image
+                    source={getImageSource(offer.image_url) ?? { uri: getFullImageUrl('/uploads/default.jpg') }}
+                    style={styles.cardImage}
+                    resizeMode="cover"
                   />
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          ))}
-        </View>
+                  <View style={styles.cardInfoContainer}>
+                    <Text style={styles.cardTitle}>{offer.title}</Text>
+                    <Text style={styles.cardDescription} numberOfLines={2}>
+                      {offer.subtitle}
+                    </Text>
+                    
+                    <View style={styles.cardFooter}>
+                      <View style={styles.validityBadge}>
+                        <MaterialIcons name="schedule" size={14} color="#666" />
+                        <Text style={styles.validityBadgeText}>
+                          Until {offer.end_date}
+                        </Text>
+                      </View>
+                      
+                      {parseFloat(offer.discount) > 0 && (
+                        <View style={styles.discountBadgeInline}>
+                          <Text style={styles.discountBadgeInlineText}>
+                            {parseInt(offer.discount)}% OFF
+                          </Text>
+                        </View>
+                      )}
+                    </View>
 
-        {/* Footer CTA */}
-        {/* <TouchableOpacity
-          style={styles.ctaButton}
-          onPress={() => router.push("/membership")}
-        >
-          <Text style={styles.ctaText}>Become a VIP Member</Text>
-          <Ionicons name="sparkles" size={20} color="white" />
-        </TouchableOpacity> */}
+                    <View style={styles.claimButton}>
+                      <Text style={styles.claimButtonText}>{t("viewDetails") || "View Details"}</Text>
+                      <MaterialIcons
+                        name="chevron-right"
+                        size={20}
+                        color={theme.colors.primary}
+                      />
+                    </View>
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         <View style={styles.spacer} />
       </ScrollView>
@@ -185,24 +176,9 @@ export default function Offers() {
                 {/* Modal Header */}
                 <View style={styles.modalHeader}>
                   <View style={styles.modalHeaderContent}>
-                    <View
-                      style={[
-                        styles.modalIconContainer,
-                        { backgroundColor: selectedOffer.color },
-                      ]}
-                    >
-                      <MaterialIcons
-                        name={selectedOffer.icon}
-                        size={32}
-                        color="white"
-                      />
-                    </View>
                     <View style={styles.modalTitleContainer}>
                       <Text style={styles.modalTitle}>
                         {selectedOffer.title}
-                      </Text>
-                      <Text style={styles.modalCategory}>
-                        {selectedOffer.category}
                       </Text>
                     </View>
                   </View>
@@ -215,49 +191,71 @@ export default function Offers() {
                 </View>
 
                 {/* Discount Badge */}
-                <View style={styles.discountBadge}>
-                  <Text style={styles.discountText}>
-                    {selectedOffer.discount}
-                  </Text>
-                </View>
+                {parseFloat(selectedOffer.discount) > 0 && (
+                  <View style={styles.discountBadge}>
+                    <Text style={styles.discountText}>
+                      {parseInt(selectedOffer.discount)}% DISCOUNT
+                    </Text>
+                  </View>
+                )}
 
                 {/* Modal Body */}
                 <ScrollView
                   style={styles.modalBody}
                   showsVerticalScrollIndicator={false}
                 >
+                  <Image
+                    source={getImageSource(selectedOffer.image_url) ?? { uri: getFullImageUrl('/uploads/default.jpg') }}
+                    style={styles.modalImage}
+                    resizeMode="cover"
+                  />
+
                   <Text style={styles.modalDescription}>
-                    {selectedOffer.fullDescription}
+                    {selectedOffer.subtitle}
                   </Text>
 
                   <View style={styles.validUntilContainer}>
                     <MaterialIcons name="schedule" size={16} color="#666" />
                     <Text style={styles.validUntilText}>
-                      {selectedOffer.validUntil}
+                      Validity: {selectedOffer.start_date} to {selectedOffer.end_date}
                     </Text>
                   </View>
 
                   <View style={styles.termsContainer}>
                     <Text style={styles.termsTitle}>
-                      {t("termsAndConditions")}
+                      {t("termsAndConditions") || "Terms & Conditions"}
                     </Text>
-                    {selectedOffer.terms.map((term, index) => (
-                      <View key={index} style={styles.termItem}>
-                        <MaterialIcons
-                          name="check-circle"
-                          size={16}
-                          color={theme.colors.primary}
-                        />
-                        <Text style={styles.termText}>{term}</Text>
-                      </View>
-                    ))}
+                    <View style={styles.termItem}>
+                      <MaterialIcons
+                        name="check-circle"
+                        size={16}
+                        color={theme.colors.primary}
+                      />
+                      <Text style={styles.termText}>Offer is valid on selected jewellery collections.</Text>
+                    </View>
+                    <View style={styles.termItem}>
+                      <MaterialIcons
+                        name="check-circle"
+                        size={16}
+                        color={theme.colors.primary}
+                      />
+                      <Text style={styles.termText}>Cannot be combined with any other schemes or discount offers.</Text>
+                    </View>
+                    <View style={styles.termItem}>
+                      <MaterialIcons
+                        name="check-circle"
+                        size={16}
+                        color={theme.colors.primary}
+                      />
+                      <Text style={styles.termText}>Please present this offer screen at the billing counter to claim.</Text>
+                    </View>
                   </View>
                 </ScrollView>
 
                 {/* Modal Footer */}
                 <View style={styles.modalFooter}>
-                  <TouchableOpacity style={styles.claimOfferButton}>
-                    <Text style={styles.claimOfferText}>{t("claimOffer")}</Text>
+                  <TouchableOpacity style={styles.claimOfferButton} onPress={closeOfferModal}>
+                    <Text style={styles.claimOfferText}>{t("claimOffer") || "Claim Offer"}</Text>
                     <MaterialIcons
                       name="arrow-forward"
                       size={20}
@@ -280,13 +278,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9F9F9",
   },
   scrollContent: {
-    paddingVertical: 60,
+    paddingVertical: 16,
     paddingHorizontal: 20,
   },
   hero: {
     borderRadius: 16,
     padding: 24,
-    marginBottom: 40,
+    marginBottom: 20,
     overflow: "hidden",
   },
   heroTitle: {
@@ -301,73 +299,110 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
+  loadingContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 80,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#666",
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 80,
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#999",
+    textAlign: "center",
+  },
   offersContainer: {
     marginBottom: 24,
   },
   card: {
     borderRadius: 16,
-    marginBottom: 16,
+    marginBottom: 20,
     backgroundColor: "white",
-    elevation: 2,
+    elevation: 4,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 6,
+    overflow: "hidden",
   },
   cardGradient: {
-    padding: 20,
     borderRadius: 16,
   },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
+  cardImage: {
+    width: "100%",
+    height: 180,
   },
-  iconContainer: {
-    borderRadius: 12,
-    padding: 10,
-    marginRight: 12,
+  cardInfoContainer: {
+    padding: 16,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#333",
+    marginBottom: 6,
   },
   cardDescription: {
     fontSize: 14,
     color: "#666",
-    lineHeight: 22,
-    marginBottom: 16,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  validityBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0F0F0",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  validityBadgeText: {
+    fontSize: 12,
+    color: "#666",
+    fontWeight: "500",
+  },
+  discountBadgeInline: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  discountBadgeInlineText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "700",
   },
   claimButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F0",
+    paddingTop: 12,
   },
   claimButtonText: {
     color: theme.colors.primary,
     fontWeight: "600",
     marginRight: 4,
   },
-  ctaButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginHorizontal: 20,
-  },
-  ctaText: {
-    color: "white",
-    fontWeight: "600",
-    marginRight: 8,
-    fontSize: 16,
-  },
   spacer: {
     height: 20,
   },
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -393,11 +428,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
   },
-  modalIconContainer: {
-    borderRadius: 16,
-    padding: 12,
-    marginRight: 16,
-  },
   modalTitleContainer: {
     flex: 1,
   },
@@ -405,11 +435,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     color: "#333",
-    marginBottom: 4,
-  },
-  modalCategory: {
-    fontSize: 14,
-    color: "#666",
   },
   closeButton: {
     padding: 8,
@@ -426,11 +451,17 @@ const styles = StyleSheet.create({
   discountText: {
     color: "white",
     fontWeight: "700",
-    fontSize: 16,
+    fontSize: 14,
   },
   modalBody: {
     flex: 1,
     padding: 20,
+  },
+  modalImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 16,
+    marginBottom: 16,
   },
   modalDescription: {
     fontSize: 16,
@@ -450,6 +481,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: "#666",
+    fontWeight: "600",
   },
   termsContainer: {
     marginBottom: 20,
@@ -463,10 +495,10 @@ const styles = StyleSheet.create({
   termItem: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 8,
+    marginBottom: 10,
+    gap: 8,
   },
   termText: {
-    marginLeft: 8,
     fontSize: 14,
     color: "#666",
     lineHeight: 20,

@@ -44,7 +44,8 @@ export const getImageSource = (path: string | any) => {
  * @param weight - The gold weight in grams
  * @returns Formatted gold weight string
  */
-export const formatGoldWeight = (weight: number): string => {
-  if (weight === 0) return "0.000 g";
-  return `${weight.toFixed(3)} g`;
+export const formatGoldWeight = (weight: any): string => {
+  const parsedWeight = parseFloat(weight);
+  if (isNaN(parsedWeight) || parsedWeight === 0) return "0.000 g";
+  return `${parsedWeight.toFixed(3)} g`;
 }; 

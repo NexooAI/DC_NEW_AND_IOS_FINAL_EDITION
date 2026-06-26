@@ -1,4 +1,7 @@
 {
+  "available_balance": "Available Balance",
+  "oldGoldDeposits": "Old Gold Deposits",
+  "documents": "Documents & Receipts",
   "newSchemes": "New Schemes",
   "paymentsMade": "Payments Made",
   "visitBranchToRedeemTitle": "Visit Branch to Redeem",
@@ -1411,5 +1414,6 @@
   "status_credited": "Credited",
   "status_pending": "Pending",
   "status_completed": "Completed",
-  "status_rejected": "Rejected"
+  "status_rejected": "Rejected",
+  "loadMore": "Load More"
 }

@@ -25,15 +25,6 @@ export function useForceUpdate(): UseForceUpdateReturn {
     const [updateInfo, setUpdateInfo] = useState<ForceUpdateResult | null>(null);
 
     const checkForUpdate = useCallback(async () => {
-        // Skip force update check in development builds
-        if (__DEV__) {
-            logger.log('🚫 Skipping force update check in development build');
-            setNeedsUpdate(false);
-            setUpdateInfo(null);
-            setIsChecking(false);
-            return;
-        }
-
         try {
             setIsChecking(true);
             logger.log('🔍 Starting force update check...');
@@ -64,15 +55,6 @@ export function useForceUpdate(): UseForceUpdateReturn {
     }, []);
 
     const retryCheck = useCallback(async () => {
-        // Skip force update check in development builds
-        if (__DEV__) {
-            logger.log('🚫 Skipping force update retry in development build');
-            setNeedsUpdate(false);
-            setUpdateInfo(null);
-            setIsChecking(false);
-            return;
-        }
-
         try {
             setIsChecking(true);
             logger.log('🔄 Retrying force update check...');
