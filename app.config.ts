@@ -15,11 +15,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     const projectId = isIos ? "07310377-0452-4d15-8e38-d42462be6fd8" : "9af1745a-105c-44f9-9e53-a111bc6ed9ce";
     const owner = isIos ? "dcjewellers" : "sudhakarg";
 
+    const version = isIos ? "2.0.1" : "3.0.6";
+
     return {
         ...config,
         name: themeConfig.customerName,
         slug: themeConfig.slug,
-        version: "3.0.6",
+        version: version,
         orientation: "portrait",
         userInterfaceStyle: "automatic",
         scheme: "acme",
@@ -79,7 +81,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             icon: "./assets/images/playstore-icon.png",
             bundleIdentifier: bundleIdentifier,
             googleServicesFile: "./GoogleService-Info.plist",
-            buildNumber: "4",
+            buildNumber: "1",
             jsEngine: "hermes",
             config: {
                 googleMapsApiKey: "AIzaSyAkuOcNddEvozQR4D4yPdTrbwXCiPsuEFc",
