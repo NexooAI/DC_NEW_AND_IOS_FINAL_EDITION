@@ -153,9 +153,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                             "android.permission.WRITE_EXTERNAL_STORAGE",
                         ],
                     },
-                    ios: {
-                        useModularHeaders: true,
-                    },
                 },
             ],
 
@@ -180,6 +177,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             ],
 
             "expo-web-browser",
+            "./plugins/withModularHeaders",
             "./plugins/withSmsRetriever",
             "./plugins/with-proguard.js",
             "./plugins/withAndroidQueries.js",
