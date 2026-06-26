@@ -153,6 +153,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                             "android.permission.WRITE_EXTERNAL_STORAGE",
                         ],
                     },
+                    ios: {
+                        useFrameworks: "static",
+                    },
                 },
             ],
 
