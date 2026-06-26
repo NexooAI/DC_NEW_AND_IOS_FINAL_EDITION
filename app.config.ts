@@ -154,7 +154,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                         ],
                     },
                     ios: {
-                        useFrameworks: "static",
+                        useModularHeaders: true,
                     },
                 },
             ],
