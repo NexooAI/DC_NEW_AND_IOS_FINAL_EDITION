@@ -670,7 +670,7 @@ export default function PaymentNewOverView() {
       let response;
       if (paymentType === 'bill') {
         response = await api.get('/policies/type/bill_payment_terms');
-      } else if (paymentType === 'advance_booking') {
+      } else if (paymentType === 'advance_booking' || paymentType === 'advance_booking_repayment') {
         response = await api.get('/policies/type/advance_booking_terms');
       }
 
@@ -708,7 +708,7 @@ export default function PaymentNewOverView() {
       setTermsContent("By proceeding with this payment, you authorize the settlement of your outstanding bill amount. The transaction is secure and will be updated in your account history upon successful payment gateway confirmation.");
       return;
     }
-    if (paymentType === 'advance_booking') {
+    if (paymentType === 'advance_booking' || paymentType === 'advance_booking_repayment') {
       setTermsContent("By proceeding with this payment, you agree to book the gold/silver at today's locked rate by paying the specified advance amount. You will have the designated days to complete the purchase. In case of cancellation or non-completion, standard terms and conditions of advance booking will apply.");
       return;
     }
@@ -937,8 +937,52 @@ export default function PaymentNewOverView() {
         return;
       }
 
+      // Advance Booking Repayment Flow
+      if (paymentType === 'advance_booking_repayment') {
+        const userId = userDetails.userId || user?.id;
+        const bookingId = params.bookingId?.toString();
+        const payload = {
+          userId,
+          bookingAmount: parseFloat(params.amount as string) || Number(currentAmount),
+          paymentMode: "UPI",
+          accountNumber: userDetails.accountNo,
+          userName: userDetails.name,
+          userEmail: userDetails.email,
+          userMobile: userDetails.mobile,
+          source: "APP",
+        };
+
+        logger.log("[DEBUG Repayment Flow] Calling advancebookings pay with:", JSON.stringify(payload));
+        const response = await api.post(`/advancebookings/${bookingId}/pay`, payload);
+
+        logger.log("[DEBUG Repayment Flow] pay response success:", response?.data?.success);
+
+        const paymentLink = extractPaymentLink(response?.data);
+        const orderId = extractOrderId(response?.data);
+
+        if (!response?.data?.success || !paymentLink) {
+          throw new Error(response?.data?.message || 'Repayment session not available');
+        }
+
+        router.push({
+          pathname: '/(tabs)/home/PaymentWebView',
+          params: {
+            url: String(paymentLink),
+            orderId: orderId ? String(orderId) : '',
+            bookingId: bookingId ? String(bookingId) : '',
+            amount: String(payload.bookingAmount),
+            type: 'advance_booking_repayment',
+            userId: String(userId),
+            accountNumber: String(payload.accountNumber),
+            accountName: String(payload.userName),
+          }
+        });
+        setIsProcessing(false);
+        return;
+      }
+
       // Validate critical fields
-      if (!userDetails.investmentId) {
+      if (!userDetails.investmentId && paymentType !== 'advance_booking_repayment') {
         logger.crash(new Error("Missing investmentId"), {
           context: "handlePayment validation",
           userDetails,

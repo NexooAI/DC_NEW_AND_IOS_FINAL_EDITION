@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import useGlobalStore from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -22,7 +22,7 @@ import { COLORS } from "src/constants/colors";
 import { theme } from "@/constants/theme";
 import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";
-import api from "@/services/api";
+import api, { advanceBookingAPI } from "@/services/api";
 
 const { wp, hp, rf } = responsiveUtils;
 const QUATERNARY_COLOR = theme.colors.quaternary || "#F2E6D2";
@@ -40,6 +40,89 @@ export default function GoldAdvanceScreen() {
   const [termsContent, setTermsContent] = useState("");
   const [termsLoading, setTermsLoading] = useState(false);
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
+
+  const [selectedPercentIndex, setSelectedPercentIndex] = useState(0);
+
+  const [userBookings, setUserBookings] = useState<any[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
+
+  const userId = user?.id || (user as any)?.userId;
+
+  const fetchUserBookings = useCallback(async () => {
+    if (!userId) return;
+    try {
+      setLoadingBookings(true);
+      const response = await advanceBookingAPI.getBookingsByUser(userId);
+      const list = response?.data?.data || [];
+      // Filter active bookings only
+      const activeList = list.filter((b: any) => b.status === "ACTIVE" || b.status === "PARTIAL");
+      setUserBookings(activeList);
+    } catch (err) {
+      console.error("Error fetching user active bookings in gold_advance:", err);
+    } finally {
+      setLoadingBookings(false);
+    }
+  }, [userId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserBookings();
+    }, [fetchUserBookings])
+  );
+
+  const activeOption = options.length > 0 ? options[selectedPercentIndex] : null;
+
+  const getCustomTranslation = (key: string, fallback: string) => {
+    const lang = useGlobalStore.getState().language || "en";
+    const dict: Record<string, Record<string, string>> = {
+      ta: {
+        myActiveBookings: "எனது ஆக்டிவ் முன்பதிவுகள்",
+        viewAll: "அனைத்தையும் காட்டு",
+        viewDetails: "விவரங்களைக் காண்க",
+        daysLeft: "நாட்கள் மீதமுள்ளன",
+        viewHistory: "வரலாறு",
+        amountLimit: "தொகை வரம்புகள்",
+        weightLimit: "எடை வரம்புகள்",
+      },
+      en: {
+        myActiveBookings: "My Active Bookings",
+        viewAll: "View All",
+        viewDetails: "View Details",
+        daysLeft: "Days Left",
+        viewHistory: "History",
+        amountLimit: "AMOUNT LIMITS",
+        weightLimit: "WEIGHT LIMITS",
+      },
+      te: {
+        myActiveBookings: "నా క్రియాశీల బుకింగ్‌లు",
+        viewAll: "அனைத்தையும் காட்டு",
+        viewDetails: "விவரాలు చూడండి",
+        daysLeft: "రోజులు మిగిలి ఉన్నాయి",
+        viewHistory: "చరిత్ర",
+        amountLimit: "మొత్తం పరిమితులు",
+        weightLimit: "బరువు పరిమితులు",
+      },
+      hi: {
+        myActiveBookings: "मेरी सक्रिय बुकिंग",
+        viewAll: "सभी देखें",
+        viewDetails: "विवरण देखें",
+        daysLeft: "दिन शेष",
+        viewHistory: "इतिहास",
+        amountLimit: "राशि सीमा",
+        weightLimit: "वजन सीमा",
+      },
+      mal: {
+        myActiveBookings: "എന്റെ സജീവ ബുക്കിംഗുകൾ",
+        viewAll: "എല്ലാം കാണുക",
+        viewDetails: "വിശദാംശങ്ങൾ കാണുക",
+        daysLeft: "ദിവസങ്ങൾ ബാക്കി",
+        viewHistory: "ചരിത്രം",
+        amountLimit: "തുക പരിധി",
+        weightLimit: "ഭാര പരിധി",
+      }
+    };
+    return dict[lang]?.[key] || dict["en"]?.[key] || fallback;
+  };
 
   const advanceOptions = [
     {
@@ -115,6 +198,8 @@ export default function GoldAdvanceScreen() {
               metalType: config.metal_type?.toUpperCase() || 'GOLD',
               minBookingAmount: Number(config.min_booking_amount || 0),
               maxBookingAmount: Number(config.max_booking_amount || 0),
+              minGram: Number(config.min_gram || 0),
+              maxGram: Number(config.max_gram || 0),
             };
           });
           setOptions(mapped);
@@ -299,9 +384,9 @@ export default function GoldAdvanceScreen() {
         <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
           {t("goldAdvance")}
         </ResponsiveText>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/home/BookingHistory')} style={styles.historyButton}>
+        <TouchableOpacity onPress={() => router.push('/(app)/(tabs)/home/BookingHistory')} style={styles.historyButton}>
           <Ionicons name="time-outline" size={18} color={theme.colors.primary} />
-          <Text style={styles.historyText}>{t("history")}</Text>
+          <Text style={styles.historyText}>{getCustomTranslation("viewHistory", t("history"))}</Text>
         </TouchableOpacity>
       </View>
 
@@ -316,120 +401,236 @@ export default function GoldAdvanceScreen() {
           <View style={styles.decorativeLine} />
         </View>
 
-        <View style={styles.cardsContainer}>
-          {options.map((option, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[styles.cardWrapper, pressedButton === index && styles.cardPressed]}
-              onPress={() => {
-                handleButtonPress(index);
-                handleInfo(option);
-              }}
-              activeOpacity={0.9}
-            >
-              {/* Glow Effect */}
-              <View style={[styles.cardGlow, { backgroundColor: option.metalType === 'SILVER' ? '#cbd5e1' : '#DAA520' }]} />
-
-              <LinearGradient
-                colors={option.gradient}
-                style={styles.cardGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+        {/* Percentage Toggle Row */}
+        <View style={styles.percentageSelectorContainer}>
+          {options.map((option, index) => {
+            const isSelected = index === selectedPercentIndex;
+            return (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.percentTab,
+                  isSelected && styles.percentTabActive,
+                  option.metalType === 'SILVER' && isSelected && styles.percentTabActiveSilver
+                ]}
+                onPress={() => setSelectedPercentIndex(index)}
+                activeOpacity={0.8}
               >
-                {/* Glossy Overlay */}
-                <LinearGradient
-                  colors={["rgba(255,255,255,0.12)", "transparent", "rgba(0,0,0,0.3)"]}
-                  style={StyleSheet.absoluteFill}
-                />
-
-                {/* Card Top Section */}
-                <View style={styles.cardHeaderNew}>
-                  <View style={styles.headerLeft}>
-                    {/* Metal Badge */}
-                    <View style={option.metalType === 'SILVER' ? styles.metalBadgeSilver : styles.metalBadge}>
-                      <Ionicons
-                        name={option.metalType === 'SILVER' ? "shield" : "ribbon"}
-                        size={12}
-                        color={option.metalType === 'SILVER' ? "#cbd5e1" : "#FFD700"}
-                      />
-                      <Text style={option.metalType === 'SILVER' ? styles.metalBadgeTextSilver : styles.metalBadgeText}>
-                        {option.metalType}
-                      </Text>
-                    </View>
-                    <Text style={styles.percentageTextNew}>{option.percentage}</Text>
-                  </View>
-
-                  <View style={styles.headerRight}>
-                    <View style={styles.daysBadge}>
-                      <Ionicons name="calendar-outline" size={12} color={COLORS.white} />
-                      <Text style={styles.daysBadgeText}>{option.days} {t("schemes.days").toUpperCase()}</Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Card Divider Line */}
-                <View style={styles.cardDivider} />
-
-                {/* Card Body Section */}
-                <View style={styles.cardBodyNew}>
-                  {/* Dynamic Limits & Payments Grid */}
-                  <View style={styles.detailsGrid}>
-                    <View style={styles.detailsCol}>
-                      <Text style={styles.detailsLabel}>{t("minAdvance")}</Text>
-                      <Text style={styles.detailsValue}>{option.minPayment}</Text>
-                    </View>
-                    <View style={styles.gridSeparator} />
-                    <View style={styles.detailsCol}>
-                      <Text style={styles.detailsLabel}>{t("limits")}</Text>
-                      <Text style={styles.detailsValue}>
-                        ₹{option.minBookingAmount ? option.minBookingAmount.toLocaleString('en-IN') : '0'} - ₹{option.maxBookingAmount ? option.maxBookingAmount.toLocaleString('en-IN') : '0'}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* 2-line Description */}
-                  <Text style={styles.descriptionText} numberOfLines={2}>
-                    {option.details}
-                  </Text>
-
-                  {/* Actions Row */}
-                  <View style={styles.actionRowNew}>
-                    <TouchableOpacity
-                      style={styles.moreButtonNew}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleOpenEnquiryModal(option);
-                      }}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.moreButtonTextNew}>{t("enquireNow")}</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.enquireButtonNew}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleInfo(option);
-                      }}
-                      activeOpacity={0.8}
-                    >
-                      <LinearGradient
-                        colors={option.metalType === 'SILVER' ? ["#e2e8f0", "#94a3b8"] : ["#FFD700", "#DAA520"]}
-                        style={styles.buttonGradientNew}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                      >
-                        <Text style={option.metalType === 'SILVER' ? styles.buttonTextNewSilver : styles.buttonTextNew}>
-                          {t("knowMore") || "Know More"}
-                        </Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          ))}
+                <Text style={[
+                  styles.percentTabText,
+                  isSelected && styles.percentTabTextActive
+                ]}>
+                  {option.percentage}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
+
+        {activeOption && (
+          <TouchableOpacity
+            style={styles.cardWrapper}
+            onPress={() => handleInfo(activeOption)}
+            activeOpacity={0.9}
+          >
+            {/* Glow Effect */}
+            <View style={[styles.cardGlow, { backgroundColor: activeOption.metalType === 'SILVER' ? 'rgba(203, 213, 225, 0.3)' : 'rgba(218, 165, 32, 0.3)' }]} />
+
+            <LinearGradient
+              colors={activeOption.gradient}
+              style={[
+                styles.cardGradient,
+                { borderColor: activeOption.metalType === 'SILVER' ? 'rgba(203, 213, 225, 0.35)' : 'rgba(218, 165, 32, 0.35)' }
+              ]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              {/* Glossy Overlay */}
+              <LinearGradient
+                colors={["rgba(255,255,255,0.12)", "transparent", "rgba(0,0,0,0.3)"]}
+                style={StyleSheet.absoluteFill}
+              />
+
+              {/* Card Top Section */}
+              <View style={styles.cardHeaderNew}>
+                <View style={styles.headerLeft}>
+                  {/* Metal Badge */}
+                  <View style={activeOption.metalType === 'SILVER' ? styles.metalBadgeSilver : styles.metalBadge}>
+                    <Ionicons
+                      name={activeOption.metalType === 'SILVER' ? "shield" : "ribbon"}
+                      size={12}
+                      color={activeOption.metalType === 'SILVER' ? "#cbd5e1" : "#FFD700"}
+                    />
+                    <Text style={activeOption.metalType === 'SILVER' ? styles.metalBadgeTextSilver : styles.metalBadgeText}>
+                      {activeOption.metalType}
+                    </Text>
+                  </View>
+                  <Text style={styles.percentageTextNew}>{activeOption.percentage}</Text>
+                </View>
+
+                <View style={styles.headerRight}>
+                  <View style={styles.daysBadge}>
+                    <Ionicons name="calendar-outline" size={12} color={COLORS.white} />
+                    <Text style={styles.daysBadgeText}>{activeOption.days} {t("schemes.days").toUpperCase()}</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Card Divider Line */}
+              <View style={styles.cardDivider} />
+
+              {/* Card Body Section */}
+              <View style={styles.cardBodyNew}>
+                {/* Dynamic Limits & Payments Grid */}
+                <View style={styles.detailsGrid}>
+                  <View style={styles.detailsCol}>
+                    <Text style={styles.detailsLabel}>{getCustomTranslation("amountLimit", "AMOUNT LIMITS")}</Text>
+                    <Text style={styles.detailsValue}>
+                      {activeOption.minBookingAmount || activeOption.maxBookingAmount
+                        ? `₹${activeOption.minBookingAmount ? activeOption.minBookingAmount.toLocaleString('en-IN') : '0'} - ₹${activeOption.maxBookingAmount ? activeOption.maxBookingAmount.toLocaleString('en-IN') : '∞'}`
+                        : 'No Limit'
+                      }
+                    </Text>
+                  </View>
+                  <View style={styles.gridSeparator} />
+
+                  <View style={styles.detailsCol}>
+                    <Text style={styles.detailsLabel}>{getCustomTranslation("weightLimit", "WEIGHT LIMITS")}</Text>
+                    <Text style={styles.detailsValue}>
+                      {activeOption.minGram || activeOption.maxGram
+                        ? `${activeOption.minGram || 0}g - ${activeOption.maxGram ? activeOption.maxGram + 'g' : '∞'}`
+                        : 'No Limit'
+                      }
+                    </Text>
+                  </View>
+                </View>
+
+                {/* 2-line Description */}
+                <Text style={styles.descriptionText} numberOfLines={2}>
+                  {activeOption.details}
+                </Text>
+
+                {/* Actions Row */}
+                <View style={styles.actionRowNew}>
+                  <TouchableOpacity
+                    style={styles.moreButtonNew}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleOpenEnquiryModal(activeOption);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.moreButtonTextNew}>{t("enquireNow")}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.enquireButtonNew}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleInfo(activeOption);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <LinearGradient
+                      colors={activeOption.metalType === 'SILVER' ? ["#e2e8f0", "#94a3b8"] : ["#FFD700", "#DAA520"]}
+                      style={styles.buttonGradientNew}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                    >
+                      <Text style={activeOption.metalType === 'SILVER' ? styles.buttonTextNewSilver : styles.buttonTextNew}>
+                        {t("knowMore") || "Know More"}
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+
+        {/* Active Bookings Section */}
+        {userBookings.length > 0 && (
+          <View style={styles.activeBookingsContainer}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: hp(1.5), marginTop: hp(1) }}>
+              <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.primary} style={styles.activeBookingsTitle}>
+                {getCustomTranslation("myActiveBookings", "My Active Bookings")}
+              </ResponsiveText>
+              <TouchableOpacity onPress={() => router.push('/(app)/(tabs)/home/BookingHistory')}>
+                <Text style={{ color: theme.colors.primary, fontSize: rf(11.5), fontWeight: "bold" }}>
+                  {getCustomTranslation("viewAll", "View All")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {userBookings.slice(0, 2).map((booking) => {
+              const now = new Date();
+              const expiry = new Date(booking.expiryDate);
+              const remainingTime = expiry.getTime() - now.getTime();
+              const remainingDays = Math.max(0, Math.ceil(remainingTime / (1000 * 60 * 60 * 24)));
+
+              return (
+                <TouchableOpacity
+                  key={booking.id}
+                  style={styles.activeBookingCard}
+                  activeOpacity={0.85}
+                  onPress={() => router.push('/(app)/(tabs)/home/BookingHistory')}
+                >
+                  <View style={styles.activeCardHeader}>
+                    <View style={styles.activeHeaderLeft}>
+                      <View style={styles.activeIconWrapper}>
+                        <Ionicons name="diamond" size={16} color="#DAA520" />
+                      </View>
+                      <View>
+                        <Text style={styles.activeWeightText}>
+                          {Number(booking.goldWeight).toFixed(3)}g {booking.metalType || 'GOLD'}
+                        </Text>
+                        <Text style={styles.activeRateText}>
+                          {t("lockedRateLabel") || "Locked Rate"}: ₹{Number(booking.ratePerGram).toLocaleString('en-IN')}/g
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.activeStatusBadge}>
+                      <Text style={styles.activeStatusText}>
+                        {booking.status === 'PARTIAL' ? 'PARTIAL' : 'ACTIVE'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.activeGrid}>
+                    <View style={styles.activeGridCol}>
+                      <Text style={styles.activeGridLabel}>{t("contractValue") || "Value"}</Text>
+                      <Text style={styles.activeGridValue}>
+                        ₹{Number(booking.totalAmount).toLocaleString('en-IN')}
+                      </Text>
+                    </View>
+                    <View style={styles.activeGridCol}>
+                      <Text style={styles.activeGridLabel}>{t("advancePaid") || "Paid"}</Text>
+                      <Text style={styles.activeGridValue}>
+                        ₹{Number(booking.bookingAmount).toLocaleString('en-IN')}
+                      </Text>
+                    </View>
+                    <View style={styles.activeGridCol}>
+                      <Text style={styles.activeGridLabel}>{t("remainingBal") || "Remaining"}</Text>
+                      <Text style={[styles.activeGridValue, styles.activeGridValueHighlight]}>
+                        ₹{Number(booking.remainingAmount).toLocaleString('en-IN')}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.activeFooter}>
+                    <Text style={styles.activeExpiryText}>
+                      {remainingDays} {getCustomTranslation("daysLeft", "Days Left")}
+                    </Text>
+                    <View style={styles.viewDetailsBtn}>
+                      <Text style={styles.viewDetailsText}>{getCustomTranslation("viewDetails", "View Details")}</Text>
+                      <Ionicons name="arrow-forward" size={14} color={theme.colors.primary} />
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
 
         {/* Bottom Sheet Details & Terms Modal */}
         <Modal 
@@ -471,6 +672,31 @@ export default function GoldAdvanceScreen() {
 
                     <Text style={styles.bottomSheetSectionTitle}>Description</Text>
                     <Text style={styles.bottomSheetDescription}>{selectedOption.details}</Text>
+
+                    <View style={styles.bottomSheetDivider} />
+
+                    <Text style={styles.bottomSheetSectionTitle}>Limits</Text>
+                    <View style={[styles.bottomSheetGrid, { marginTop: hp(0.5) }]}>
+                      <View style={styles.bottomSheetCol}>
+                        <Text style={styles.bottomSheetLabel}>Amount Limits</Text>
+                        <Text style={styles.bottomSheetValue}>
+                          {selectedOption.minBookingAmount || selectedOption.maxBookingAmount
+                            ? `₹${selectedOption.minBookingAmount ? selectedOption.minBookingAmount.toLocaleString('en-IN') : '0'} - ₹${selectedOption.maxBookingAmount ? selectedOption.maxBookingAmount.toLocaleString('en-IN') : '∞'}`
+                            : 'No Limit'
+                          }
+                        </Text>
+                      </View>
+                      <View style={styles.bottomSheetSeparator} />
+                      <View style={styles.bottomSheetCol}>
+                        <Text style={styles.bottomSheetLabel}>Weight Limits</Text>
+                        <Text style={styles.bottomSheetValue}>
+                          {selectedOption.minGram || selectedOption.maxGram
+                            ? `${selectedOption.minGram || 0}g - ${selectedOption.maxGram ? selectedOption.maxGram + 'g' : '∞'}`
+                            : 'No Limit'
+                          }
+                        </Text>
+                      </View>
+                    </View>
 
                     <View style={styles.bottomSheetDivider} />
 
@@ -641,10 +867,12 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: rf(24),
     marginBottom: hp(1),
+    color: theme.colors.primary,
   },
   subtitle: {
     fontSize: rf(12),
     marginBottom: hp(2),
+    color: "rgba(0, 0, 0, 0.6)",
   },
   decorativeLine: {
     width: wp(15),
@@ -1069,6 +1297,155 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: rf(13),
     fontWeight: "bold",
+  },
+  activeBookingsContainer: {
+    marginTop: hp(4),
+    paddingTop: hp(2),
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0, 0, 0, 0.08)",
+  },
+  activeBookingsTitle: {
+    fontSize: rf(15),
+    fontWeight: "bold",
+    color: theme.colors.primary,
+  },
+  activeBookingCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: wp(4),
+    marginBottom: hp(2),
+    borderWidth: 1,
+    borderColor: "rgba(218,165,32,0.15)",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  activeCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: hp(1.5),
+  },
+  activeHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: wp(2),
+  },
+  activeIconWrapper: {
+    width: wp(8),
+    height: wp(8),
+    borderRadius: wp(4),
+    backgroundColor: "rgba(218,165,32,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  activeWeightText: {
+    fontSize: rf(13.5),
+    fontWeight: "800",
+    color: theme.colors.textDark,
+  },
+  activeRateText: {
+    fontSize: rf(10),
+    color: "rgba(0,0,0,0.5)",
+    marginTop: 1,
+  },
+  activeStatusBadge: {
+    backgroundColor: "rgba(218,165,32,0.12)",
+    paddingHorizontal: wp(2.5),
+    paddingVertical: hp(0.5),
+    borderRadius: 8,
+  },
+  activeStatusText: {
+    color: "#DAA520",
+    fontWeight: "800",
+    fontSize: rf(10),
+  },
+  activeGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: hp(1.5),
+  },
+  activeGridCol: {
+    flex: 1,
+    alignItems: "flex-start",
+  },
+  activeGridLabel: {
+    fontSize: rf(9),
+    color: "rgba(0,0,0,0.45)",
+    marginBottom: 2,
+  },
+  activeGridValue: {
+    fontSize: rf(11.5),
+    fontWeight: "700",
+    color: theme.colors.textDark,
+  },
+  activeGridValueHighlight: {
+    color: "#850111", // Deep Red for remaining amount
+  },
+  activeFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: hp(1),
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.05)",
+  },
+  activeExpiryText: {
+    fontSize: rf(10.5),
+    color: "#B22222", // Firebrick color for urgency
+    fontWeight: "700",
+  },
+  viewDetailsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  viewDetailsText: {
+    fontSize: rf(11),
+    color: theme.colors.primary,
+    fontWeight: "bold",
+  },
+  percentageSelectorContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: wp(3),
+    marginBottom: hp(3),
+    flexWrap: "wrap",
+  },
+  percentTab: {
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(1),
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    borderWidth: 1.5,
+    borderColor: "rgba(133, 1, 17, 0.15)",
+    minWidth: wp(18),
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  percentTabActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  percentTabActiveSilver: {
+    backgroundColor: "#64748b",
+    borderColor: "#64748b",
+  },
+  percentTabText: {
+    fontSize: rf(12),
+    fontWeight: "bold",
+    color: theme.colors.primary,
+  },
+  percentTabTextActive: {
+    color: COLORS.white,
   },
 });
 

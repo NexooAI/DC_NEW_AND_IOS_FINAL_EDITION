@@ -203,6 +203,41 @@ export default function BookingHistory() {
     fetchBookings(false);
   };
 
+  const getRepaymentTranslation = () => {
+    const lang = useGlobalStore.getState().language || "en";
+    const dict: Record<string, string> = {
+      ta: "மீதித் தொகை செலுத்தவும்",
+      en: "PAY REMAINING BALANCE",
+      te: "మిగిలిన బ్యాలెన్స్ చెల్లించండి",
+      hi: "शेष राशि का भुगतान करें",
+      mal: "ബാക്കി തുക അടയ്ക്കുക"
+    };
+    return dict[lang] || dict["en"];
+  };
+
+  const handlePayBalance = (booking: any) => {
+    setDetailModalVisible(false);
+    
+    const { user } = useGlobalStore.getState();
+    const userIdVal = user?.id || (user as any)?.userId;
+
+    router.push({
+      pathname: '/(app)/(tabs)/home/paymentNewOverView',
+      params: {
+        paymentType: 'advance_booking_repayment',
+        bookingId: String(booking.id),
+        amount: String(booking.remainingAmount),
+        userDetails: JSON.stringify({
+          userId: String(userIdVal),
+          name: user?.name || '',
+          mobile: user?.mobile || '',
+          email: user?.email || '',
+          accountNo: booking.accountNumber || '',
+        }),
+      },
+    });
+  };
+
   const displayedBookings = useMemo(() => {
     const now = new Date();
     return bookings.filter((item) => {
@@ -463,6 +498,16 @@ export default function BookingHistory() {
                     <Text style={styles.shareBtnText}>Share</Text>
                   </TouchableOpacity>
                 </View>
+
+                {(selectedBooking.status === 'ACTIVE' || selectedBooking.status === 'PARTIAL') && Number(selectedBooking.remainingAmount) > 0 && (
+                  <TouchableOpacity
+                    style={styles.payBalanceButton}
+                    onPress={() => handlePayBalance(selectedBooking)}
+                  >
+                    <Ionicons name="card-outline" size={18} color="white" style={{ marginRight: 6 }} />
+                    <Text style={styles.payBalanceText}>{getRepaymentTranslation()}</Text>
+                  </TouchableOpacity>
+                )}
               </>
             )}
           </View>
@@ -739,5 +784,22 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '700',
     fontSize: rf(12),
+  },
+  payBalanceButton: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+    borderWidth: 1,
+    height: hp(5.5),
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    marginTop: hp(1.5),
+  },
+  payBalanceText: {
+    color: 'white',
+    fontWeight: '800',
+    fontSize: rf(12.5),
+    letterSpacing: 0.5,
   },
 });

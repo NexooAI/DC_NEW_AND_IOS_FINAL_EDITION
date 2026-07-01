@@ -138,7 +138,7 @@ class ForceUpdateService {
 
             // Use API's needsUpdate field and check if current version is lower than latest version
             const versionComparison = this.compareVersions(currentVersion, latestVersion);
-            const needsUpdate = (apiNeedsUpdate === 'true' || apiNeedsUpdate == '1' || apiNeedsUpdate == true || apiNeedsUpdate == 1) && versionComparison < 0;
+            const needsUpdate = ((apiNeedsUpdate as any) === 'true' || (apiNeedsUpdate as any) == '1' || (apiNeedsUpdate as any) === true || (apiNeedsUpdate as any) == 1) && versionComparison < 0;
             const result: ForceUpdateResult = {
                 needsUpdate,
                 currentVersion,

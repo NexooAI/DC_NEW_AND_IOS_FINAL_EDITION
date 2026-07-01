@@ -92,6 +92,15 @@ export default function JoinAdvGold() {
     20: 90,
     30: 120
   });
+  const [percentToMinGram, setPercentToMinGram] = useState<Record<number, number>>({
+    5: 5,
+    10: 5,
+    20: 5,
+    30: 5
+  });
+  const [percentToMaxGram, setPercentToMaxGram] = useState<Record<number, number>>({});
+  const [percentToMinAmount, setPercentToMinAmount] = useState<Record<number, number>>({});
+  const [percentToMaxAmount, setPercentToMaxAmount] = useState<Record<number, number>>({});
   const [loadingConfig, setLoadingConfig] = useState(true);
 
   // Fetch configs from /advance-booking-config
@@ -104,6 +113,10 @@ export default function JoinAdvGold() {
           const configs = response.data.data;
           const percents: number[] = [];
           const daysMap: Record<number, number> = {};
+          const minGramsMap: Record<number, number> = {};
+          const maxGramsMap: Record<number, number> = {};
+          const minAmountsMap: Record<number, number> = {};
+          const maxAmountsMap: Record<number, number> = {};
 
           // Sort by percentage ascending
           const sortedConfigs = [...configs].sort((a: any, b: any) => a.percentage - b.percentage);
@@ -112,10 +125,18 @@ export default function JoinAdvGold() {
             const pct = Math.round(parseFloat(c.percentage));
             percents.push(pct);
             daysMap[pct] = parseInt(c.booking_days);
+            minGramsMap[pct] = parseFloat(c.min_gram || 0);
+            maxGramsMap[pct] = parseFloat(c.max_gram || 0);
+            minAmountsMap[pct] = parseFloat(c.min_booking_amount || 0);
+            maxAmountsMap[pct] = parseFloat(c.max_booking_amount || 0);
           });
 
           setAdvancePercents(percents);
           setPercentToDays(daysMap);
+          setPercentToMinGram(minGramsMap);
+          setPercentToMaxGram(maxGramsMap);
+          setPercentToMinAmount(minAmountsMap);
+          setPercentToMaxAmount(maxAmountsMap);
 
           // Set initial default selection to the first percent if not already set by params
           if (percents.length > 0 && !params.advancePercent) {
@@ -164,7 +185,22 @@ export default function JoinAdvGold() {
 
   // Derived
   const amountNum = parseFloat(amount) || 0;
-  const advancePay = amountNum * (advancePercent / 100);
+  const gramsNum = parseFloat(goldGrams) || 0;
+  const activeMinGram = percentToMinGram[advancePercent] || 0;
+  const activeMaxGram = percentToMaxGram[advancePercent] || 0;
+  const activeMinAmount = percentToMinAmount[advancePercent] || 0;
+  const activeMaxAmount = percentToMaxAmount[advancePercent] || 0;
+
+  const isSubMinGram = activeMinGram > 0 && gramsNum < activeMinGram;
+  const isSubMinAmount = activeMinAmount > 0 && amountNum < activeMinAmount;
+  const isBelowMinLimit = isSubMinGram || isSubMinAmount;
+
+  const isOverMaxGram = activeMaxGram > 0 && gramsNum > activeMaxGram;
+  const isOverMaxAmount = activeMaxAmount > 0 && amountNum > activeMaxAmount;
+  const isAboveMaxLimit = isOverMaxGram || isOverMaxAmount;
+
+  const effectiveAdvancePercent = isBelowMinLimit ? 100 : advancePercent;
+  const advancePay = amountNum * (effectiveAdvancePercent / 100);
   const pendingPay = amountNum - advancePay;
 
   // Handlers for Gold Weight
@@ -221,6 +257,18 @@ export default function JoinAdvGold() {
     }
   }, [params.advancePercent, loadingConfig, advancePercents]);
 
+  // Pre-fill weight and amount when plan changes
+  useEffect(() => {
+    if (!loadingConfig && advancePercent) {
+      const minGram = percentToMinGram[advancePercent] || 0;
+      const initialGram = minGram > 0 ? minGram : 1;
+      setGoldGrams(initialGram.toString());
+      if (goldRate > 0) {
+        setAmount(Math.round(initialGram * goldRate).toString());
+      }
+    }
+  }, [advancePercent, loadingConfig, goldRate]);
+
   // Autofill user details
   const userName = user?.name || '';
   const userMobile = user?.mobile ? String(user.mobile) : '';
@@ -228,6 +276,16 @@ export default function JoinAdvGold() {
   const handleJoinButton = async () => {
     if (!amountNum || amountNum <= 0) {
       Alert.alert('Error', 'Please enter a valid amount.');
+      return;
+    }
+
+    if (isAboveMaxLimit) {
+      const errorMsg = isOverMaxGram && isOverMaxAmount
+        ? `Booking weight exceeds the maximum limit of ${activeMaxGram}g and amount exceeds ₹${activeMaxAmount.toLocaleString('en-IN')}.`
+        : isOverMaxGram
+        ? `Booking weight exceeds the maximum limit of ${activeMaxGram}g.`
+        : `Booking amount exceeds the maximum limit of ₹${activeMaxAmount.toLocaleString('en-IN')}.`;
+      Alert.alert('Limit Exceeded', errorMsg);
       return;
     }
 
@@ -279,7 +337,7 @@ export default function JoinAdvGold() {
           bookingAmount: String(advancePay),
           expiryDate: expiryDate.toISOString().split('T')[0],
           metalType: metalType,
-          advancePercent: String(advancePercent),
+          advancePercent: String(effectiveAdvancePercent),
           bookingDays: String(percentToDays[advancePercent] || 30),
           amount: String(advancePay),
           userDetails: JSON.stringify({
@@ -326,7 +384,6 @@ export default function JoinAdvGold() {
         </ResponsiveText>
         <View style={{ width: 40 }} />
       </View>
-
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Royal Title Section */}
         <View style={styles.titleContainer}>
@@ -339,20 +396,58 @@ export default function JoinAdvGold() {
           <View style={styles.decorativeLine} />
         </View>
 
-        {/* Gold Advance (Combined Card) */}
+        {/* Card 1: Plan Selection (Percentage Tabs moved to top!) */}
+        <View style={styles.cardContainer}>
+          <View style={styles.cardHeader}>
+            <View style={styles.iconCircle}>
+              <Ionicons name="pie-chart-outline" size={rf(18)} color={theme.colors.primary} />
+            </View>
+            <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.primary}>
+              Select Plan Percentage
+            </ResponsiveText>
+          </View>
+          <View style={styles.percentGrid}>
+            {advancePercents.map((p) => {
+              const isActive = effectiveAdvancePercent === p;
+              return (
+                <TouchableOpacity
+                  key={p}
+                  style={[styles.percentButton, isActive && styles.percentButtonActive]}
+                  onPress={() => {
+                    if (isBelowMinLimit) {
+                      const lockMsg = isSubMinGram && isSubMinAmount
+                        ? `Weight entered (${gramsNum}g) is below ${activeMinGram}g and amount is below ₹${activeMinAmount.toLocaleString('en-IN')}. Only 100% full payment is allowed.`
+                        : isSubMinGram
+                        ? `Weight entered (${gramsNum}g) is below ${activeMinGram}g. Only 100% full payment is allowed.`
+                        : `Amount entered (₹${amountNum}) is below ₹${activeMinAmount.toLocaleString('en-IN')}. Only 100% full payment is allowed.`;
+                      Alert.alert("Advance Payment Locked", lockMsg);
+                      return;
+                    }
+                    setAdvancePercent(p);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.percentButtonText, isActive && styles.percentButtonTextActive]}>{p}%</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Card 2: Weight & Amount Calculator inputs */}
         <View style={styles.cardContainer}>
           <View style={styles.cardHeader}>
             <View style={styles.iconCircle}>
               <Ionicons name="scale-outline" size={rf(18)} color={theme.colors.primary} />
             </View>
             <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.primary}>
-              {metalType === 'SILVER' ? 'Silver' : 'Gold'} Advance
+              {metalType === 'SILVER' ? 'Silver' : 'Gold'} Calculator
             </ResponsiveText>
           </View>
           <View style={styles.inputGroup}>
             {/* Metal Weight Control */}
             <ResponsiveText variant="body" size="sm" color="rgba(0,0,0,0.6)" style={{ marginBottom: hp(1) }}>
-              {metalType === 'SILVER' ? 'Silver' : 'Gold'} Weight
+              Enter Weight
             </ResponsiveText>
             <View style={styles.weightControlRow}>
               <TouchableOpacity onPress={handleWeightDecrement} style={styles.controlButton}>
@@ -407,32 +502,25 @@ export default function JoinAdvGold() {
           </View>
         </View>
 
-        {/* Advance % Selector */}
-        <View style={styles.cardContainer}>
-          <View style={styles.cardHeader}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="pie-chart-outline" size={rf(18)} color={theme.colors.primary} />
-            </View>
-            <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.primary}>
-              Advance Percentage
-            </ResponsiveText>
+        {/* Minimum Limit Validation Warning Banner */}
+        {isBelowMinLimit && (
+          <View style={styles.warningBanner}>
+            <Ionicons name="warning" size={20} color="#D32F2F" style={{ marginRight: 8 }} />
+            <Text style={styles.warningText}>
+              You are going below the minimum allowed limit in this plan. If you go below minimum, you must make a full payment (100%).
+            </Text>
           </View>
-          <View style={styles.percentGrid}>
-            {advancePercents.map((p) => {
-              const isActive = advancePercent === p;
-              return (
-                <TouchableOpacity
-                  key={p}
-                  style={[styles.percentButton, isActive && styles.percentButtonActive]}
-                  onPress={() => setAdvancePercent(p)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.percentButtonText, isActive && styles.percentButtonTextActive]}>{p}%</Text>
-                </TouchableOpacity>
-              );
-            })}
+        )}
+
+        {/* Maximum Limit Validation Warning Banner */}
+        {isAboveMaxLimit && (
+          <View style={styles.warningBanner}>
+            <Ionicons name="warning" size={20} color="#D32F2F" style={{ marginRight: 8 }} />
+            <Text style={styles.warningText}>
+              Maximum weight/limit is not allowed. Please enter a value within the limits.
+            </Text>
           </View>
-        </View>
+        )}
 
         {/* Royal Summary Card */}
         <LinearGradient
@@ -465,7 +553,7 @@ export default function JoinAdvGold() {
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Advance ({advancePercent}%):</Text>
+              <Text style={styles.summaryLabel}>Advance ({effectiveAdvancePercent}%):</Text>
               <Text style={styles.summaryValueHighlight}>₹{advancePay ? advancePay.toLocaleString('en-IN', { maximumFractionDigits: 0 }) : '--'}</Text>
             </View>
             <View style={styles.summaryDivider} />
@@ -485,9 +573,9 @@ export default function JoinAdvGold() {
 
         {/* Royal Join Button */}
         <TouchableOpacity
-          style={[styles.joinButton, isProcessing && { opacity: 0.7 }]}
+          style={[styles.joinButton, (isProcessing || isAboveMaxLimit) && { opacity: 0.5 }]}
           onPress={handleJoinButton}
-          disabled={isProcessing}
+          disabled={isProcessing || isAboveMaxLimit}
           activeOpacity={0.9}
         >
           <LinearGradient
@@ -537,6 +625,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: QUATERNARY_COLOR,
+  },
+  warningBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(211, 47, 47, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(211, 47, 47, 0.2)",
+    borderRadius: 12,
+    padding: wp(4),
+    marginHorizontal: wp(5),
+    marginBottom: hp(2),
+  },
+  warningText: {
+    flex: 1,
+    fontSize: rf(11),
+    color: "#D32F2F",
+    fontWeight: "600",
+    lineHeight: rf(16),
   },
   header: {
     flexDirection: "row",

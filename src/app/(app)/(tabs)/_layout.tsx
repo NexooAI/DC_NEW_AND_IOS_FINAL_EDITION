@@ -10,6 +10,7 @@ import { useSegments, useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
 import useGlobalStore from "@/store/global.store";
+import { BlurView } from "expo-blur";
 
 export default function TabsLayout() {
   const { t } = useTranslation();
@@ -28,15 +29,28 @@ export default function TabsLayout() {
         <Tabs
           screenOptions={{
             headerShown: true,
-            tabBarActiveTintColor: theme.colors.primary, // Gold color for active tabs
-            tabBarInactiveTintColor: theme.colors.primary,
+            tabBarActiveTintColor: "#FFD700", // Gold color for active tabs
+            tabBarInactiveTintColor: "#cbd5e1", // Light silver/grey for inactive tabs
+            tabBarBackground: () => (
+              <BlurView
+                tint="dark"
+                intensity={85}
+                style={StyleSheet.absoluteFill}
+              />
+            ),
             tabBarStyle: {
               height: 60,
-              paddingBottom: 8,
+              overflow: 'hidden',
+              backgroundColor: 'rgba(26, 2, 4, 0.90)', // Dark black-maroon base
+              borderTopWidth: 1.5,
+              borderTopColor: 'rgba(218, 165, 32, 0.25)', // Glowing gold top border line
+              elevation: 10,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -3 },
+              shadowOpacity: 0.15,
+              shadowRadius: 6,
+              paddingBottom: Platform.OS === 'ios' ? 12 : 8,
               paddingTop: 8,
-              backgroundColor: COLORS.white,
-              borderTopWidth: 1,
-              borderTopColor: COLORS.border?.primary || '#e5e5e5',
               display: isTabVisible ? 'flex' : 'none',
             },
             headerStyle: {
@@ -78,17 +92,21 @@ export default function TabsLayout() {
                   <Ionicons
                     name={isActive ? "home" : "home-outline"}
                     size={size}
-                    color={isActive ? theme.colors.primary : color}
+                    color={isActive ? "#FFD700" : color}
                   />
                 );
               },
               tabBarLabel: t("home") || "Home",
               headerShown: false, // Hide header on home page
             }}
-            listeners={() => ({
+            listeners={({ navigation }) => ({
               tabPress: (e) => {
-                e.preventDefault();
-                router.push("/(app)/(tabs)/home");
+                if (navigation.isFocused()) {
+                  e.preventDefault();
+                } else {
+                  e.preventDefault();
+                  router.push("/(app)/(tabs)/home");
+                }
               },
             })}
           />
@@ -106,6 +124,13 @@ export default function TabsLayout() {
               tabBarLabel: t("schemes.title") || "Schemes",
               headerShown: false, // Hide header for savings tab
             }}
+            listeners={({ navigation }) => ({
+              tabPress: (e) => {
+                if (navigation.isFocused()) {
+                  e.preventDefault();
+                }
+              },
+            })}
           />
           <Tabs.Screen
             name="dashboard_tab"
@@ -117,7 +142,7 @@ export default function TabsLayout() {
                 <Ionicons
                   name={focused ? "grid" : "grid-outline"}
                   size={size}
-                  color={focused ? theme.colors.primary : color}
+                  color={focused ? "#FFD700" : color}
                 />
               ),
               tabBarLabel: t("dashboard") || "Dashboard",
@@ -181,13 +206,20 @@ export default function TabsLayout() {
                   <Ionicons
                     name={focused ? "gift" : "gift-outline"}
                     size={size}
-                    color={focused ? theme.colors.primary : color}
+                    color={focused ? "#FFD700" : color}
                   />
                 );
               },
               tabBarLabel: t("rewards") || "Rewards",
               headerShown: false,
             }}
+            listeners={({ navigation }) => ({
+              tabPress: (e) => {
+                if (navigation.isFocused()) {
+                  e.preventDefault();
+                }
+              },
+            })}
           />
           <Tabs.Screen
             name="rewards_history"
@@ -218,6 +250,13 @@ export default function TabsLayout() {
               tabBarLabel: t("profile") || "Profile",
               headerShown: false,
             }}
+            listeners={({ navigation }) => ({
+              tabPress: (e) => {
+                if (navigation.isFocused()) {
+                  e.preventDefault();
+                }
+              },
+            })}
           />
 
           <Tabs.Screen
