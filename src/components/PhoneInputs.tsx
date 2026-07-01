@@ -1,3 +1,5 @@
+import { theme } from "@/constants/theme";
+import { useAppTheme } from "@/store/global.store";
 import React, { useState } from "react";
 import {
   View,
@@ -8,7 +10,6 @@ import {
   Keyboard,
 } from "react-native";
 import { useTranslation } from "@/hooks/useTranslation";
-import { theme } from "@/constants";
 
 interface PhoneInputProps {
   value: string;
@@ -27,6 +28,8 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   disableBlurAlert = false,
   label,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const [error, setError] = useState("");
 
@@ -103,7 +106,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     marginBottom: 4,
     width: "100%",
@@ -193,6 +196,8 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     fontWeight: "500",
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default PhoneInput;

@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -92,6 +93,8 @@ const ErrorAlert = ({
 };
 
 export default function BasicDetailsForm() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [referralCode, setReferralCode] = useState("");
@@ -463,7 +466,7 @@ export default function BasicDetailsForm() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   backgroundImage: {
     flex: 1,
     resizeMode: "cover",
@@ -674,4 +677,6 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 5,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

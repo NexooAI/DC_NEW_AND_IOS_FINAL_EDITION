@@ -24,7 +24,7 @@ import api from "@/services/api";
 import { logger } from "@/utils/logger";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -117,6 +117,8 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
   initialSchemeId,
   horizontal = true, // Default to horizontal scrolling
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t, locale } = useTranslation();
   const router = useRouter();
   const { language } = useGlobalStore();
@@ -1395,7 +1397,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -2135,6 +2137,8 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.6,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default DynamicSchemeCard;

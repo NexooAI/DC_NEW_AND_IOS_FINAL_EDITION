@@ -1,4 +1,5 @@
 // components/Alert.tsx
+import { useAppTheme } from "@/store/global.store";
 import React from "react";
 import {
   View,
@@ -53,6 +54,8 @@ const CustomAlert = ({
   amount,
   order_id,
 }: AlertProps) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const {
     screenWidth,
     isTinyScreen,
@@ -328,7 +331,7 @@ const CustomAlert = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -442,6 +445,8 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: "#1a2a39", // Dark blue-gray
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default CustomAlert;

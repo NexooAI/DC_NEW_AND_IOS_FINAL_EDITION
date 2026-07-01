@@ -1,3 +1,5 @@
+import { theme } from "@/constants/theme";
+import { useAppTheme } from "@/store/global.store";
 import React, { useRef, useState } from "react";
 import {
   StyleSheet,
@@ -70,6 +72,8 @@ const stores = [
 ];
 
 const StoreLocator = () => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const scrollY = new Animated.Value(0);
   const { width } = useWindowDimensions();
@@ -217,31 +221,31 @@ const StoreLocator = () => {
   );
 };
 // In your StyleSheet
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: theme.colors.backgroundSecondary,
     padding: 16,
   },
   dropdown: {
     height: 50,
-    borderColor: "#ccc",
+    borderColor: theme.colors.border,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
     marginBottom: 12,
-    backgroundColor: "white",
+    backgroundColor: theme.colors.background,
   },
   icon: {
     marginRight: 8,
   },
   placeholderStyle: {
     fontSize: 16,
-    color: "#666",
+    color: theme.colors.textSecondary,
   },
   selectedTextStyle: {
     fontSize: 16,
-    color: "#333",
+    color: theme.colors.textDark,
   },
   inputSearchStyle: {
     height: 40,
@@ -259,24 +263,24 @@ const styles = StyleSheet.create({
   },
   storeList: {
     maxHeight: "20%",
-    backgroundColor: "white",
+    backgroundColor: theme.colors.background,
     borderRadius: 12,
     elevation: 2,
   },
   storeListItem: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: theme.colors.borderLight,
   },
   storeName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: theme.colors.textDark,
     marginBottom: 4,
   },
   storeAddress: {
     fontSize: 14,
-    color: "#666",
+    color: theme.colors.textSecondary,
   },
   backButton: {
     position: "absolute",
@@ -287,6 +291,8 @@ const styles = StyleSheet.create({
     elevation: 3,
     zIndex: 10,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default StoreLocator;

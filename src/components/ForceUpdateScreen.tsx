@@ -1,4 +1,5 @@
 // components/ForceUpdateScreen.tsx - Force Update Screen Component
+import { useAppTheme } from "@/store/global.store";
 import React from "react";
 import {
   View,
@@ -32,6 +33,8 @@ export default function ForceUpdateScreen({
   storeUrl,
   onRetry,
 }: ForceUpdateScreenProps) {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const { screenWidth } = useResponsiveLayout();
   const [isUpdating, setIsUpdating] = React.useState(false);
@@ -169,7 +172,7 @@ export default function ForceUpdateScreen({
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   backgroundImage: {
     flex: 1,
     resizeMode: "cover",
@@ -337,4 +340,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     paddingHorizontal: 16,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

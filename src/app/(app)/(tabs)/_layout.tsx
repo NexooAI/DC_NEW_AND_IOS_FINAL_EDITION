@@ -9,10 +9,12 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useSegments, useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { BlurView } from "expo-blur";
 
 export default function TabsLayout() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const { isTabVisible } = useGlobalStore();
   const insets = useSafeAreaInsets();
@@ -278,4 +280,6 @@ export default function TabsLayout() {
   );
 }
 
-const styles = StyleSheet.create({});
+function getStyles(theme: any) { return StyleSheet.create({}) }
+
+var styles = getStyles(theme);;

@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -25,6 +26,8 @@ interface FlashNewsProps {
 }
 
 const FlashNews: React.FC<FlashNewsProps> = ({ news = [], onNewsPress }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -195,7 +198,7 @@ const FlashNews: React.FC<FlashNewsProps> = ({ news = [], onNewsPress }) => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     marginHorizontal: 16,
     marginVertical: 8,
@@ -294,6 +297,8 @@ const styles = StyleSheet.create({
     opacity: 1,
     backgroundColor: theme.colors.gold,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default FlashNews;

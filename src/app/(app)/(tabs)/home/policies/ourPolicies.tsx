@@ -21,7 +21,7 @@ import { useRouter, Stack } from "expo-router";
 import LanguageSelector from "@/components/LanguageSelector";
 // AppHeader is now handled by the layout wrapper
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import api from "@/services/api";
 import { theme } from "@/constants/theme";
 import { moderateScale } from "react-native-size-matters";
@@ -30,6 +30,8 @@ import { logger } from '@/utils/logger';
 const { width, height } = Dimensions.get("window");
 
 export default function OurPolicy() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t, locale } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -150,7 +152,7 @@ export default function OurPolicy() {
         options={{
           headerRight: () => (
             <TouchableOpacity onPress={() => setIsLanguageSelectorVisible(true)} style={{ marginRight: 16 }}>
-              <Ionicons name="language" size={24} color={theme.colors.primary} />
+              <Ionicons name="language" size={24} color={theme.colors.textDark} />
             </TouchableOpacity>
           ),
         }}
@@ -231,7 +233,7 @@ export default function OurPolicy() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f7f7f7",
@@ -359,4 +361,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

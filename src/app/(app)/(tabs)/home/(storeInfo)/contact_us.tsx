@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
@@ -20,6 +21,8 @@ import { getFullImageUrl } from "@/utils/imageUtils";
 import { fetchAboutPageWithCache } from "@/utils/apiCache";
 
 const ContactUs = () => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const router = useRouter();
   const [aboutData, setAboutData] = useState<any>(null);
@@ -180,7 +183,7 @@ const ContactUs = () => {
               <View
                 style={[styles.actionIcon, { backgroundColor: "#E3F2FD" }]}
               >
-                <Ionicons name="call" size={24} color={theme.colors.primary} />
+                <Ionicons name="call" size={24} color={theme.colors.textDark} />
               </View>
               <Text style={styles.actionText}>{t("callNow")}</Text>
             </TouchableOpacity>
@@ -262,10 +265,10 @@ const ContactUs = () => {
                   </Text>
                 </View>
                 <View style={[styles.hourRow, { borderBottomWidth: 0 }]}>
-                  <Text style={[styles.dayText, { color: theme.colors.primary }]}>
+                  <Text style={[styles.dayText, { color: theme.colors.textDark }]}>
                     {t("sunday")}
                   </Text>
-                  <Text style={[styles.timeText, { color: theme.colors.primary }]}>
+                  <Text style={[styles.timeText, { color: theme.colors.textDark }]}>
                     {t("closed")}
                   </Text>
                 </View>
@@ -319,7 +322,7 @@ const ContactUs = () => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.quaternary,
@@ -369,7 +372,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    backgroundColor: "white",
+    backgroundColor: theme.colors.background,
     paddingVertical: 20,
     borderRadius: 20,
     alignItems: "center",
@@ -431,7 +434,7 @@ const styles = StyleSheet.create({
   hoursContainer: {
     marginTop: 24,
     marginHorizontal: 16,
-    backgroundColor: "white",
+    backgroundColor: theme.colors.background,
     borderRadius: 20,
     padding: 24,
     elevation: 3,
@@ -460,7 +463,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(133, 1, 17, 0.2)",
   },
   toggleButtonText: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -470,17 +473,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#f5f5f5",
+    borderBottomColor: theme.colors.borderLight,
   },
   dayText: {
     fontSize: 15,
     fontWeight: "500",
-    color: "#666",
+    color: theme.colors.textSecondary,
   },
   timeText: {
     fontSize: 15,
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   companyContainer: {
     marginTop: 24,
@@ -496,7 +499,7 @@ const styles = StyleSheet.create({
   companyTitle: {
     fontSize: 22,
     fontWeight: "800",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginBottom: 4,
     textAlign: "center",
     letterSpacing: 0.5,
@@ -504,7 +507,7 @@ const styles = StyleSheet.create({
   companySubtitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#888",
+    color: theme.colors.textSecondary,
     marginBottom: 16,
     textAlign: "center",
     textTransform: "uppercase",
@@ -512,11 +515,13 @@ const styles = StyleSheet.create({
   },
   companyAddress: {
     fontSize: 14,
-    color: "#666",
+    color: theme.colors.textSecondary,
     textAlign: "center",
     lineHeight: 22,
     maxWidth: "80%",
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default ContactUs;

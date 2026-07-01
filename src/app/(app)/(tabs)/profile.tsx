@@ -22,13 +22,13 @@ import { ScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import * as ImagePicker from "expo-image-picker";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme } from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { theme } from "@/constants/theme";
+// theme import removed to use useAppTheme hook instead
 import { COLORS } from "@/constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -49,8 +49,10 @@ import { wp, hp, rf } from "@/utils/responsiveUtils";
 
 
 const ProfileScreen = () => {
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
   const { t } = useTranslation();
-  const { isLoggedIn, user, language, logout, setLanguage, updateUser } =
+  const { isLoggedIn, user, language, logout, setLanguage, updateUser, themeMode, toggleThemeMode } =
     useGlobalStore();
   const [editing, setEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -91,7 +93,7 @@ const ProfileScreen = () => {
 
   // Function to open Rate Us URL directly
   const openRateUs = () => {
-    const packageName = "com.nexooai.dcjewellery"; // Correct Application ID
+    const packageName = "com.nexooai.srithangathamarai"; // Correct Application ID
     const url = Platform.OS === 'android'
       ? `market://details?id=${packageName}`
       : `https://apps.apple.com/us/app/dc-jewellers-gold-diamonds/id6755081937`; // Replace with actual iOS ID if available
@@ -429,13 +431,13 @@ const ProfileScreen = () => {
   const handleShareApp = async () => {
     try {
       const playStoreLink =
-        "https://play.google.com/store/apps/details?id=com.nexooai.dcjewellery&hl=en_IN";
-      const message = `Join me on DC Jewellers Gold and Diamonds! Download the app from: ${playStoreLink}`;
+        "https://play.google.com/store/apps/details?id=com.nexooai.srithangathamarai&hl=en_IN";
+      const message = `Join me on ${theme.constants.customerName} Gold and Diamonds! Download the app from: ${playStoreLink}`;
 
       const result = await Share.share({
         message: message,
         url: playStoreLink,
-        title: "DC Jewellers",
+        title: theme.constants.customerName,
       });
     } catch (error) {
       logger.error("Error sharing:", error);
@@ -686,7 +688,7 @@ const ProfileScreen = () => {
                       />
                     ) : (
                       <View style={styles.profileImagePlaceholder}>
-                        <Icon name="person" size={40} color={theme.colors.primary} />
+                        <Icon name="person" size={40} color={theme.colors.textDark} />
                       </View>
                     )}
                     <View style={styles.profileImageEdit}>
@@ -793,7 +795,7 @@ const ProfileScreen = () => {
 
                 //     <View style={styles.referralHeader}>
                 //       <View style={styles.referralIcon}>
-                //         <Icon name="card-giftcard" size={24} color={theme.colors.primary} />
+                //         <Icon name="card-giftcard" size={24} color={theme.colors.textDark} />
                 //       </View>
                 //       <Text style={styles.referralTitle}>{t("referral_rewards")}</Text>
                 //     </View>
@@ -861,7 +863,7 @@ const ProfileScreen = () => {
 
                 <TouchableOpacity style={styles.settingItem} onPress={handleChangeKYC}>
                   <View style={[styles.settingIcon, { backgroundColor: '#E3F2FD' }]}>
-                    <Icon name="verified-user" size={24} color={theme.colors.primary} />
+                    <Icon name="verified-user" size={24} color={theme.colors.textDark} />
                   </View>
                   <View style={styles.settingContent}>
                     <Text style={styles.settingText}>{t("changeKYC")}</Text>
@@ -890,7 +892,7 @@ const ProfileScreen = () => {
                   <>
                     <View style={styles.settingItem}>
                       <View style={[styles.settingIcon, { backgroundColor: '#E0F7FA' }]}>
-                        <Icon name="fingerprint" size={24} color={theme.colors.primary} />
+                        <Icon name="fingerprint" size={24} color={theme.colors.textDark} />
                       </View>
                       <View style={styles.settingContent}>
                         <Text style={styles.settingText}>{t("biometricLogin") || "Biometric Login"}</Text>
@@ -907,11 +909,27 @@ const ProfileScreen = () => {
                   </>
                 )}
 
+                {/* Dark Mode Toggle */}
+                <View style={styles.settingItem}>
+                  <View style={[styles.settingIcon, { backgroundColor: '#F0F2F5' }]}>
+                    <Ionicons name={themeMode === 'dark' ? "moon" : "sunny-outline"} size={22} color={themeMode === 'dark' ? theme.colors.secondary : theme.colors.textMediumGrey} />
+                  </View>
+                  <View style={styles.settingContent}>
+                    <Text style={styles.settingText}>{t("darkMode") || "Dark Mode"}</Text>
+                    <Text style={styles.settingDesc}>{t("darkModeDesc") || "Toggle dark mode theme"}</Text>
+                  </View>
+                  <Switch
+                    value={themeMode === 'dark'}
+                    onValueChange={toggleThemeMode}
+                    trackColor={{ false: "#767577", true: theme.colors.secondary }}
+                    thumbColor={themeMode === 'dark' ? theme.colors.primary : "#f4f3f4"}
+                  />
+                </View>
                 <View style={styles.divider} />
 
                 <TouchableOpacity style={styles.settingItem} onPress={toggleLanguage}>
                   <View style={[styles.settingIcon, { backgroundColor: '#FFF3E0' }]}>
-                    <Icon name="language" size={24} color={theme.colors.primary} />
+                    <Icon name="language" size={24} color={theme.colors.textDark} />
                   </View>
                   <View style={styles.settingContent}>
                     <Text style={styles.settingText}>{t("language")}</Text>
@@ -968,7 +986,7 @@ const ProfileScreen = () => {
                       <View
                         style={[styles.settingIcon, { backgroundColor: "#E0F7FA" }]}
                       >
-                        <Icon name="bug-report" size={24} color={theme.colors.primary} />
+                        <Icon name="bug-report" size={24} color={theme.colors.textDark} />
                       </View>
                       <View style={styles.settingContent}>
                         <Text style={styles.settingText}>
@@ -1184,7 +1202,7 @@ const ProfileScreen = () => {
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               <View style={{ marginBottom: 15 }}>
-                <Icon name="support-agent" size={50} color={theme.colors.primary} />
+                <Icon name="support-agent" size={50} color={theme.colors.textDark} />
               </View>
               <Text style={styles.modalTitle}>
                 {t("contactUs")}
@@ -1218,7 +1236,7 @@ const ProfileScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.quaternary,
@@ -1270,11 +1288,11 @@ const styles = StyleSheet.create({
   },
   // Profile Card
   profileCard: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.white,
     borderRadius: 24,
     padding: 20,
     marginBottom: 24,
-    shadowColor: '#000',
+    shadowColor: theme.colors.black,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.08,
     shadowRadius: 24,
@@ -1288,12 +1306,12 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: theme.colors.backgroundTertiary || '#F0F2F5',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: 'white',
-    shadowColor: '#000',
+    borderColor: theme.colors.borderLight || 'white',
+    shadowColor: theme.colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -1308,7 +1326,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 35,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: theme.colors.backgroundSecondary || '#F0F2F5',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1323,7 +1341,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'white',
+    borderColor: theme.colors.borderLight || 'white',
   },
   profileInfo: {
     flex: 1,
@@ -1332,16 +1350,16 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1A1D1E',
+    color: theme.colors.textDarkGrey || '#1A1D1E',
     marginBottom: 4,
   },
   profileEmail: {
     fontSize: 14,
-    color: '#6E7687',
+    color: theme.colors.textGrey || '#6E7687',
     marginBottom: 8,
   },
   userIdBadge: {
-    backgroundColor: '#F5F7FA',
+    backgroundColor: theme.colors.backgroundSecondary || '#F5F7FA',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -1349,25 +1367,25 @@ const styles = StyleSheet.create({
   },
   userIdText: {
     fontSize: 12,
-    color: '#6E7687',
+    color: theme.colors.textMediumGrey || '#6E7687',
     fontWeight: '600',
   },
   editButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: theme.colors.backgroundSecondary || '#F5F7FA',
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   // Edit Form
   editFormCard: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.white,
     borderRadius: 24,
     padding: 24,
     marginBottom: 24,
-    shadowColor: '#000',
+    shadowColor: theme.colors.black,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.05,
     shadowRadius: 16,
@@ -1376,7 +1394,7 @@ const styles = StyleSheet.create({
   editFormTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1A1D1E',
+    color: theme.colors.textDarkGrey || '#1A1D1E',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -1386,23 +1404,23 @@ const styles = StyleSheet.create({
   editFormLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#4A5568',
+    color: theme.colors.textGrey || '#4A5568',
     marginBottom: 8,
     marginLeft: 4,
   },
   editFormInput: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.backgroundTertiary || '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.border || '#E2E8F0',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
     fontSize: 15,
-    color: '#1A202C',
+    color: theme.colors.textDarkGrey || '#1A202C',
   },
   disabledInput: {
-    backgroundColor: '#F1F5F9',
-    color: '#94A3B8',
+    backgroundColor: theme.colors.backgroundSecondary || '#F1F5F9',
+    color: theme.colors.textLightGrey || '#94A3B8',
   },
   editFormActions: {
     flexDirection: 'row',
@@ -1412,14 +1430,14 @@ const styles = StyleSheet.create({
   cancelEditButton: {
     flex: 1,
     paddingVertical: 14,
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.border || '#E2E8F0',
   },
   cancelEditText: {
-    color: '#64748B',
+    color: theme.colors.textGrey || '#64748B',
     fontSize: 15,
     fontWeight: '600',
   },
@@ -1436,18 +1454,18 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   saveEditText: {
-    color: 'white',
+    color: theme.colors.white,
     fontSize: 15,
     fontWeight: '600',
   },
 
   // Referral Card
   referralCard: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.white,
     borderRadius: 24,
     padding: 24,
     marginBottom: 24,
-    shadowColor: '#000',
+    shadowColor: theme.colors.black,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.05,
     shadowRadius: 16,
@@ -1463,7 +1481,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FFF0F3', // Light pink/primary tint
+    backgroundColor: theme.colors.backgroundTertiary || '#FFF0F3', // Light pink/primary tint
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -1471,14 +1489,14 @@ const styles = StyleSheet.create({
   referralTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1A1D1E',
+    color: theme.colors.textDarkGrey || '#1A1D1E',
   },
   referralContent: {
     marginBottom: 20,
   },
   referralDesc: {
     fontSize: 14,
-    color: '#6E7687',
+    color: theme.colors.textGrey || '#6E7687',
     marginBottom: 16,
     lineHeight: 20,
   },
@@ -1510,7 +1528,7 @@ const styles = StyleSheet.create({
   referralCodeText: {
     fontSize: 22,
     fontWeight: '700',
-    color: 'white',
+    color: '#ffffff',
     letterSpacing: 1.5,
   },
   copyButton: {
@@ -1522,11 +1540,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rewardsSection: {
-    backgroundColor: '#FFF8F0',
+    backgroundColor: theme.colors.backgroundSecondary || '#FFF8F0',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#FFE0B2',
+    borderColor: theme.colors.border || '#FFE0B2',
   },
   rewardsInfo: {
     flexDirection: 'row',
@@ -1537,14 +1555,14 @@ const styles = StyleSheet.create({
   },
   rewardsLabel: {
     fontSize: 13,
-    color: '#D87A04',
+    color: theme.colors.secondary || '#D87A04',
     marginBottom: 2,
     fontWeight: '600',
   },
   rewardsValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#D87A04',
+    color: theme.colors.secondary || '#D87A04',
   },
   inviteButton: {
     borderRadius: 16,
@@ -1562,7 +1580,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   inviteButtonText: {
-    color: 'white',
+    color: '#ffffff',
     fontSize: 15,
     fontWeight: '600',
     marginLeft: 8,
@@ -1570,11 +1588,11 @@ const styles = StyleSheet.create({
 
   // Settings Card
   settingsCard: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.white,
     borderRadius: 24,
     padding: 24,
     marginBottom: 24,
-    shadowColor: '#000',
+    shadowColor: theme.colors.black,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.05,
     shadowRadius: 16,
@@ -1583,7 +1601,7 @@ const styles = StyleSheet.create({
   settingsTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1A1D1E',
+    color: theme.colors.textDarkGrey || '#1A1D1E',
     marginBottom: 16,
   },
   settingItem: {
@@ -1605,19 +1623,19 @@ const styles = StyleSheet.create({
   settingText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1A1D1E',
+    color: theme.colors.textDarkGrey || '#1A1D1E',
     marginBottom: 2,
   },
   settingDesc: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: theme.colors.textGrey || '#94A3B8',
     lineHeight: 16,
   },
   languageBadge: {
     fontSize: 11,
     fontWeight: '700',
-    color: theme.colors.primary,
-    backgroundColor: '#FFF0F3',
+    color: theme.colors.textDark,
+    backgroundColor: theme.colors.backgroundSecondary || '#FFF0F3',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -1625,24 +1643,24 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.borderLight || '#F1F5F9',
     marginLeft: 60, // Indent divider to align with text
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFF5F5', // Light red bg
+    backgroundColor: theme.colors.backgroundSecondary || '#FFF5F5', // Light red bg
     borderRadius: 16,
     paddingVertical: 16,
     marginBottom: 40,
     borderWidth: 1,
-    borderColor: '#FED7D7',
+    borderColor: theme.colors.error || '#FED7D7',
   },
   logoutText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#E53E3E',
+    color: theme.colors.error || '#E53E3E',
     marginLeft: 8,
   },
 
@@ -1651,15 +1669,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   modalCard: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.white,
     borderRadius: 24,
     padding: 24,
     width: '85%',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.colors.black,
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.3,
     shadowRadius: 30,
@@ -1669,7 +1687,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#FFF5F5',
+    backgroundColor: theme.colors.backgroundSecondary || '#FFF5F5',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -1677,13 +1695,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1A1D1E',
+    color: theme.colors.textDarkGrey || '#1A1D1E',
     marginBottom: 8,
     textAlign: 'center',
   },
   modalMessage: {
     fontSize: 15,
-    color: '#64748B',
+    color: theme.colors.textGrey || '#64748B',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 22,
@@ -1696,14 +1714,14 @@ const styles = StyleSheet.create({
   modalCancelButton: {
     flex: 1,
     paddingVertical: 14,
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.border || '#E2E8F0',
   },
   modalCancelText: {
-    color: '#64748B',
+    color: theme.colors.textGrey || '#64748B',
     fontSize: 15,
     fontWeight: '600',
   },
@@ -1714,10 +1732,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     justifyContent: 'center',
     paddingVertical: 14,
-    backgroundColor: '#E53E3E',
+    backgroundColor: theme.colors.error || '#E53E3E',
   },
   modalConfirmText: {
-    color: 'white',
+    color: '#ffffff',
     fontSize: 15,
     fontWeight: '600',
   },
@@ -1725,7 +1743,7 @@ const styles = StyleSheet.create({
   // MPIN Modal (Specific)
   mpinModalContainer: {
     width: '85%',
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.white,
     borderRadius: 24,
     padding: 24,
     alignItems: 'center',
@@ -1735,11 +1753,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: '#1A1D1E',
+    color: theme.colors.textDarkGrey || '#1A1D1E',
   },
   mpinModalDesc: {
     fontSize: 14,
-    color: '#64748B',
+    color: theme.colors.textGrey || '#64748B',
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -1747,13 +1765,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 56,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.border || '#E2E8F0',
     borderRadius: 16,
     textAlign: 'center',
     fontSize: 24,
     marginBottom: 24,
-    color: '#1A1D1E',
-    backgroundColor: '#F8FAFC',
+    color: theme.colors.textDarkGrey || '#1A1D1E',
+    backgroundColor: theme.colors.backgroundTertiary || '#F8FAFC',
     letterSpacing: 8,
   },
   mpinModalActions: {
@@ -1767,7 +1785,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.border || '#E2E8F0',
     alignItems: 'center',
   },
   mpinModalConfirm: {
@@ -1780,12 +1798,12 @@ const styles = StyleSheet.create({
   mpinModalCancelText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textGrey || '#64748B',
   },
   mpinModalConfirmText: {
     fontSize: 15,
     fontWeight: '600',
-    color: 'white',
+    color: '#ffffff',
   },
 });
 

@@ -26,7 +26,7 @@ import { registerStyles } from "../../_styles/registerStyles";
 import { useTranslation } from "@/hooks/useTranslation";
 import LanguageSelector from "@/components/LanguageSelector";
 import { AppLocale } from "@/i18n";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 
 import { logger } from "@/utils/logger";
 const OTP_RESEND_LIMIT = 3;
@@ -113,6 +113,7 @@ const ErrorAlert = ({
 );
 
 export default function Register() {
+  const theme = useAppTheme();
   const { t } = useTranslation();
   const [mobile, setMobile] = useState("");
   const [otpSent, setOtpSent] = useState(false);

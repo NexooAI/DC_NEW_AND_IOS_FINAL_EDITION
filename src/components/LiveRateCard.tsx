@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useEffect, useRef } from "react";
 import {
   View,
@@ -31,6 +32,8 @@ const LiveRateCard = ({
   onPress,
   isSingle,
 }: LiveRateCardProps) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const {
     screenWidth,
@@ -297,7 +300,7 @@ const LiveRateCard = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   goldGlow: {
     shadowColor: theme.colors.gold,
     borderWidth: 2,
@@ -333,6 +336,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default LiveRateCard;

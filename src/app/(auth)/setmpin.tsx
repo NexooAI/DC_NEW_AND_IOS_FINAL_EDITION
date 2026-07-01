@@ -25,7 +25,7 @@ import * as SecureStore from "expo-secure-store";
 import * as Crypto from "expo-crypto";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 
 import { logger } from "@/utils/logger";
 const { width } = Dimensions.get("window");
@@ -86,6 +86,8 @@ const PinInput: React.FC<PinInputProps> = ({
 };
 
 export default function SetMpinPage() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const { mobile, name, email, referral_code, branch_id } = useLocalSearchParams();
   const router = useRouter();
@@ -388,7 +390,7 @@ export default function SetMpinPage() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   backgroundImage: {
     flex: 1,
     resizeMode: "cover",
@@ -578,4 +580,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 10,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

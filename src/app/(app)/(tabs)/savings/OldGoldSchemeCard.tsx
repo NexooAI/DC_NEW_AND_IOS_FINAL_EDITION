@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useRef } from "react";
 import {
   View,
@@ -44,6 +45,8 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
   item,
   translations,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
   const animatedHeight = useRef(new Animated.Value(0)).current;
@@ -147,7 +150,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
         <View style={styles.paymentInfoRow}>
           <View style={styles.paymentInfoItem}>
             <View style={styles.paymentInfoIconContainer}>
-              <Ionicons name="person-outline" size={16} color={theme.colors.primary} />
+              <Ionicons name="person-outline" size={16} color={theme.colors.textDark} />
             </View>
             <View style={styles.paymentInfoContent}>
               <Text style={styles.paymentInfoLabel}>
@@ -161,7 +164,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
           <View style={styles.paymentInfoDivider} />
           <View style={styles.paymentInfoItem}>
             <View style={styles.paymentInfoIconContainer}>
-              <Ionicons name="card-outline" size={16} color={theme.colors.primary} />
+              <Ionicons name="card-outline" size={16} color={theme.colors.textDark} />
             </View>
             <View style={styles.paymentInfoContent}>
               <Text style={styles.paymentInfoLabel}>
@@ -178,7 +181,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
         <View style={styles.paymentInfoRow}>
           <View style={styles.paymentInfoItem}>
             <View style={styles.paymentInfoIconContainer}>
-              <Ionicons name="time-outline" size={16} color={theme.colors.primary} />
+              <Ionicons name="time-outline" size={16} color={theme.colors.textDark} />
             </View>
             <View style={styles.paymentInfoContent}>
               <Text style={styles.paymentInfoLabel}>
@@ -190,7 +193,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
           <View style={styles.paymentInfoDivider} />
           <View style={styles.paymentInfoItem}>
             <View style={styles.paymentInfoIconContainer}>
-              <Ionicons name="scale-outline" size={16} color={theme.colors.primary} />
+              <Ionicons name="scale-outline" size={16} color={theme.colors.textDark} />
             </View>
             <View style={styles.paymentInfoContent}>
               <Text style={styles.paymentInfoLabel}>
@@ -221,7 +224,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
           <View style={styles.infoRow}>
             <View style={styles.infoItem}>
               <View style={styles.infoIconContainer}>
-                <Ionicons name="wallet-outline" size={20} color={theme.colors.primary} />
+                <Ionicons name="wallet-outline" size={20} color={theme.colors.textDark} />
               </View>
               <Text style={styles.infoLabel}>Valuation Amount</Text>
               <Text style={styles.infoValue}>
@@ -230,7 +233,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
             </View>
             <View style={styles.infoItem}>
               <View style={styles.infoIconContainer}>
-                <Ionicons name="scale-outline" size={20} color={theme.colors.primary} />
+                <Ionicons name="scale-outline" size={20} color={theme.colors.textDark} />
               </View>
               <Text style={styles.infoLabel}>Gross Weight</Text>
               <Text style={styles.infoValue}>
@@ -239,7 +242,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
             </View>
             <View style={styles.infoItem}>
               <View style={styles.infoIconContainer}>
-                <Ionicons name="ribbon-outline" size={20} color={theme.colors.primary} />
+                <Ionicons name="ribbon-outline" size={20} color={theme.colors.textDark} />
               </View>
               <Text style={styles.infoLabel}>Purity Carat</Text>
               <Text style={styles.infoValue}>
@@ -395,7 +398,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   cardWrapper: {
     marginHorizontal: 16,
     marginBottom: 20,
@@ -701,6 +704,8 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginRight: 8,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default OldGoldSchemeCard;

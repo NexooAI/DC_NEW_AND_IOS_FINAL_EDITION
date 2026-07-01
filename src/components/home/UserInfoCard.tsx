@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -56,6 +57,8 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
     onImageError,
     onImageLoad,
   }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
     const { t } = useTranslation();
     const [isExpanded, setIsExpanded] = useState(true);
     const arrowOpacity = useRef(new Animated.Value(1)).current;
@@ -233,7 +236,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
   }
 );
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     paddingHorizontal: moderateScale(16),
     paddingVertical: moderateScale(8),
@@ -430,6 +433,8 @@ const styles = StyleSheet.create({
       textTransform: "uppercase",
       letterSpacing: 0.5
   }
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default UserInfoCard;

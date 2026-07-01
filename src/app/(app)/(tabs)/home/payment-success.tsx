@@ -19,7 +19,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { logger } from "@/utils/logger";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 import RatingModal, { useRatingPrompt } from "@/components/RatingModal";
@@ -35,6 +35,8 @@ const { wp, hp, rf, rp, rm, rb, getShadows } = responsiveUtils;
 const shadows = getShadows();
 
 export default function PaymentSuccess() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const router = useRouter();
@@ -426,7 +428,7 @@ export default function PaymentSuccess() {
                 <Text style={styles.detailValue}>
                   {Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || "N/A")}
                 </Text>
-                <Ionicons name="copy-outline" size={16} color={theme.colors.primary} style={{ marginLeft: 8 }} />
+                <Ionicons name="copy-outline" size={16} color={theme.colors.textDark} style={{ marginLeft: 8 }} />
               </TouchableOpacity>
             </View>
           </View>
@@ -450,7 +452,7 @@ export default function PaymentSuccess() {
                 <Text style={styles.detailValue}>
                   {Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || "N/A")}
                 </Text>
-                <Ionicons name="copy-outline" size={16} color={theme.colors.primary} style={{ marginLeft: 8 }} />
+                <Ionicons name="copy-outline" size={16} color={theme.colors.textDark} style={{ marginLeft: 8 }} />
               </TouchableOpacity>
             </View>
           </View>
@@ -555,7 +557,7 @@ export default function PaymentSuccess() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8f9ff",
@@ -756,4 +758,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

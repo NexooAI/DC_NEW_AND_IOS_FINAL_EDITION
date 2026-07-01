@@ -1,7 +1,7 @@
 import AppLayoutWrapper from "@/components/AppLayoutWrapper";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import React, { useState, useRef, useMemo, useCallback } from "react";
 import {
   StyleSheet,
@@ -183,6 +183,8 @@ const FAQItem: React.FC<FAQItemProps> = ({
 };
 
 export default function FAQScreen() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const [openItemId, setOpenItemId] = useState<number | null>(null);
   const { language, setTabVisibility } = useGlobalStore();
@@ -332,7 +334,7 @@ export default function FAQScreen() {
         options={{
           headerRight: () => (
             <TouchableOpacity onPress={() => setIsLanguageSelectorVisible(true)} style={{ marginRight: 16 }}>
-              <Ionicons name="language" size={24} color={theme.colors.primary} />
+              <Ionicons name="language" size={24} color={theme.colors.textDark} />
             </TouchableOpacity>
           ),
         }}
@@ -360,7 +362,7 @@ export default function FAQScreen() {
               >
                 <View style={styles.heroContent}>
                   <View style={styles.iconContainer}>
-                    <Ionicons name="help-buoy-outline" size={48} color={theme.colors.primary} />
+                    <Ionicons name="help-buoy-outline" size={48} color={theme.colors.textDark} />
                   </View>
                   <Text style={styles.heroTitle}>
                     {translations.faqQuestion}
@@ -426,7 +428,7 @@ export default function FAQScreen() {
 
 const { width, height } = Dimensions.get("window");
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.quaternary,
@@ -473,14 +475,14 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 28,
     fontWeight: "800",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     textAlign: "center",
     marginBottom: 8,
     letterSpacing: 0.5,
   },
   heroSubtitle: {
     fontSize: 16,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     textAlign: "center",
     maxWidth: width * 0.8,
   },
@@ -492,7 +494,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   faqItem: {
-    backgroundColor: "white",
+    backgroundColor: theme.colors.background,
     borderRadius: 16,
     overflow: "hidden",
     shadowColor: "#000",
@@ -521,7 +523,7 @@ const styles = StyleSheet.create({
   questionText: {
     fontSize: moderateScale(16),
     fontWeight: "600",
-    color: "#333",
+    color: theme.colors.textDark,
     flex: 1,
     marginRight: 16,
     lineHeight: 22,
@@ -544,7 +546,7 @@ const styles = StyleSheet.create({
   expandIcon: {
     fontSize: 16,
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   expandIconOpen: {
     color: "white",
@@ -554,18 +556,18 @@ const styles = StyleSheet.create({
   },
   answerContent: {
     padding: 20,
-    backgroundColor: "white",
+    backgroundColor: theme.colors.background,
   },
   answerText: {
     fontSize: moderateScale(14),
-    color: "#666",
+    color: theme.colors.textSecondary,
     lineHeight: 24,
     letterSpacing: 0.3,
   },
   tableContainer: {
     marginTop: 20,
     borderWidth: 1,
-    borderColor: "#e0e0e0",
+    borderColor: theme.colors.border,
     borderRadius: 12,
     overflow: "hidden",
     shadowColor: "#000",
@@ -589,20 +591,20 @@ const styles = StyleSheet.create({
   tableRow: {
     flexDirection: "row",
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: theme.colors.borderLight,
   },
   tableRowEven: {
-    backgroundColor: "#fafafa",
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   tableRowOdd: {
-    backgroundColor: "white",
+    backgroundColor: theme.colors.background,
   },
   tableCell: {
     flex: 1,
     padding: 16,
     textAlign: "center",
     fontSize: moderateScale(14),
-    color: "#333",
+    color: theme.colors.textDark,
     fontWeight: "500",
   },
   footerContainer: {
@@ -612,7 +614,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: moderateScale(14),
-    color: "#888",
+    color: theme.colors.textSecondary,
     textAlign: "center",
     fontStyle: "italic",
     marginBottom: 20,
@@ -641,4 +643,6 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(12),
     color: "rgba(255,255,255,0.8)",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

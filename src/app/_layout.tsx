@@ -15,7 +15,7 @@ import "../global.css";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { initializeAppLocale } from "@/i18n";
 import { LanguageProvider1 } from "@/contexts/LanguageContext";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import * as SecureStore from "expo-secure-store";
 import LoadingService from "@/services/loadingServices";
 import setupAppStateListener from "@/store/appState";
@@ -34,6 +34,7 @@ interface NotificationData {
 }
 
 export default function RootLayout() {
+  const theme = useAppTheme();
   const isExpoGo = Constants.executionEnvironment === "storeClient";
   const { isFirstLaunch } = useFirstLaunch();
   const router = useRouter();

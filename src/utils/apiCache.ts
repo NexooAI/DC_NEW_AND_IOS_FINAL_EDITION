@@ -22,6 +22,10 @@ const CACHE_CONFIG = {
     MAX_AGE: 12 * 60 * 60 * 1000, // 12 hours
     ENDPOINT: '/about-page/latest',
   },
+  APP_CONFIG: {
+    MAX_AGE: 12 * 60 * 60 * 1000, // 12 hours
+    ENDPOINT: '/app-config',
+  },
 };
 
 /**
@@ -276,5 +280,25 @@ export const clearBranchesCache = () => {
 export const clearAboutPageCache = () => {
   const store = useGlobalStore.getState();
   store.clearCachedAboutPage();
+};
+
+/**
+ * Fetch dynamic app configuration from the backend
+ */
+export const fetchAppConfigWithCache = async (forceRefresh: boolean = false) => {
+  const store = useGlobalStore.getState();
+
+  try {
+    const response = await api.get(CACHE_CONFIG.APP_CONFIG.ENDPOINT, { skipLoading: true } as any);
+    if (response?.data?.success && response?.data?.data) {
+      logger.log("✅ [Config] Syncing configuration from server success");
+      store.setAppConfig(response.data.data);
+      return response.data.data;
+    }
+  } catch (err) {
+    logger.log("⚠️ [Config] Failed to fetch server config, using local fallbacks", err);
+  }
+
+  return null;
 };
 

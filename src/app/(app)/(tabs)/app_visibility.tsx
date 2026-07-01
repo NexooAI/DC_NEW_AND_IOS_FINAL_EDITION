@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
@@ -40,6 +41,8 @@ interface AppVisibilityData {
 }
 
 export default function AppVisibilityScreen() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const [visibleData, setVisibleData] = useState<AppVisibilityData | null>(
     null
@@ -102,7 +105,7 @@ export default function AppVisibilityScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color={theme.colors.secondary} />
           <Text style={styles.loadingText}>
             Loading app visibility settings...
           </Text>
@@ -357,7 +360,7 @@ export default function AppVisibilityScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -447,7 +450,9 @@ const styles = StyleSheet.create({
   },
   retryText: {
     fontSize: 16,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     textDecorationLine: "underline",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Constants from 'expo-constants';
@@ -15,6 +16,8 @@ const DrawerContentLayout: React.FC<DrawerContentLayoutProps> = ({
   title,
   showLanguageSwitcher = true,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const version = Constants.expoConfig?.version || '1.0.0';
 
   return (
@@ -44,7 +47,7 @@ const DrawerContentLayout: React.FC<DrawerContentLayoutProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background, // Ensure background matches theme
@@ -72,7 +75,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: theme.colors.textLightGrey,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default DrawerContentLayout;
  

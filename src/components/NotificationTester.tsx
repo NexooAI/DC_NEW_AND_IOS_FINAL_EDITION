@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState } from 'react';
 import {
     View,
@@ -67,6 +68,8 @@ const testNotifications: TestNotification[] = [
 ];
 
 export default function NotificationTester() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
     const [fcmToken, setFcmToken] = useState<string | null>(null);
     const [showToken, setShowToken] = useState(false);
 
@@ -262,7 +265,7 @@ export default function NotificationTester() {
     );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f5f5f5',
@@ -381,5 +384,7 @@ const styles = StyleSheet.create({
         color: '#333',
         fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     },
-});
+}) }
+
+var styles = getStyles(theme);;
 

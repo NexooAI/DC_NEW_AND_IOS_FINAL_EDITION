@@ -30,7 +30,7 @@ import { moderateScale } from "react-native-size-matters";
 import { theme } from "@/constants/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import api from "@/services/api";
 import { getFullImageUrl } from "@/utils/imageUtils";
 import { fetchAboutPageWithCache } from "@/utils/apiCache";
@@ -92,6 +92,8 @@ const stats = [
 ];
 
 export default function AboutUs() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -619,7 +621,7 @@ export default function AboutUs() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8f9fa",
@@ -686,7 +688,7 @@ const styles = StyleSheet.create({
   statsTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     textAlign: "center",
     marginBottom: 20,
     paddingHorizontal: 20,
@@ -723,7 +725,7 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 22,
     fontWeight: "800",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginBottom: 4,
   },
   statLabel: {
@@ -765,7 +767,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   sectionText: {
     fontSize: 16,
@@ -841,7 +843,7 @@ const styles = StyleSheet.create({
   milestoneYear: {
     fontSize: 18,
     fontWeight: "800",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginBottom: 2,
   },
   milestoneTitle: {
@@ -906,4 +908,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 20,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

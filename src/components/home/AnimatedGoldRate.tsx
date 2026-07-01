@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useEffect, useRef } from "react";
 import {
   View,
@@ -27,6 +28,8 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
   goldRate14,
   updatedAt,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const opacityAnim = useRef(new Animated.Value(0.6)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -163,7 +166,7 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     width: "auto",
     marginVertical: 10,
@@ -287,6 +290,8 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "rgba(255,215,0,0.1)",
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default AnimatedGoldRate;

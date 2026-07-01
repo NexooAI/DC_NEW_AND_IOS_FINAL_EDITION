@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useEffect, useRef } from "react";
 import {
   View,
@@ -45,6 +46,8 @@ const Loader: React.FC<LoaderProps> = ({
   type = "default",
   style,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const {
     screenWidth,
     screenHeight,
@@ -320,7 +323,7 @@ const Loader: React.FC<LoaderProps> = ({
   return visible ? renderContent() : null;
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -371,6 +374,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 12,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default Loader;

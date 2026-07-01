@@ -1,4 +1,5 @@
 // components/LanguageSwitcher.tsx
+import { useAppTheme } from "@/store/global.store";
 import React, { useState } from "react";
 import { TouchableOpacity, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -7,6 +8,8 @@ import { theme } from "@/constants/theme";
 import LanguageSelector from "@/components/LanguageSelector";
 
 const LanguageSwitcher = () => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { locale, setLocale } = useTranslation();
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
 
@@ -32,7 +35,7 @@ const LanguageSwitcher = () => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
@@ -62,6 +65,8 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: "500",
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default LanguageSwitcher;

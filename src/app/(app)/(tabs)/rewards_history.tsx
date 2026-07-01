@@ -7,7 +7,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { rewardsAPI } from "@/services/api";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useEffect, useState, useCallback } from "react";
 import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";
@@ -15,6 +15,8 @@ import { responsiveUtils } from "@/utils/responsiveUtils";
 const { wp, hp, rf } = responsiveUtils;
 
 export default function RewardsHistoryScreen() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
     const router = useRouter();
     const { t } = useTranslation();
     const { user } = useGlobalStore();
@@ -130,11 +132,11 @@ export default function RewardsHistoryScreen() {
             <View style={styles.headerContainer}>
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/(app)/(tabs)/rewards")}>
-                        <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+                        <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
                     </TouchableOpacity>
 
                     <View style={styles.titleContainer}>
-                        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
+                        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.textDark}>
                             {t("rewardHistory") || "Reward History"}
                         </ResponsiveText>
                     </View>
@@ -172,7 +174,7 @@ export default function RewardsHistoryScreen() {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.primary}>
+                            <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.textDark}>
                                 {selectedItem?.type === 'referral' ? (t("rewardDetails") || "Reward Details") : (t("redemptionDetails") || "Redemption Details")}
                             </ResponsiveText>
                             <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
@@ -276,7 +278,7 @@ export default function RewardsHistoryScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "#F2E6D2",
@@ -439,4 +441,6 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         letterSpacing: 1,
     }
-});
+}) }
+
+var styles = getStyles(theme);;

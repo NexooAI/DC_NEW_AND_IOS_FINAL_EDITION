@@ -11,11 +11,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             return lower === 'ios' || lower === '--platform=ios' || lower === '-p=ios';
         }));
 
-    const bundleIdentifier = isIos ? "com.dcjewellers.dcjewellers" : "com.nexooai.dcjewellery";
-    const projectId = isIos ? "07310377-0452-4d15-8e38-d42462be6fd8" : "9af1745a-105c-44f9-9e53-a111bc6ed9ce";
+    const bundleIdentifier = isIos ? "com.dcjewellers.dcjewellers" : "com.nexooai.srithangathamarai";
+    const projectId = isIos ? "07310377-0452-4d15-8e38-d42462be6fd8" : "912daab2-d11c-42ff-9072-62ddfb4489c0";
     const owner = isIos ? "dcjewellers" : "sudhakarg";
 
-    const version = isIos ? "2.0.1" : "3.0.6";
+    const version = isIos ? "1.0.0" : "1.0.0";
 
     return {
         ...config,
@@ -44,7 +44,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         android: {
             package: bundleIdentifier,
             googleServicesFile: "./google-services.json",
-            versionCode: 11,
+            versionCode: 1,
 
             splash: {
                 image: "./assets/images/playstore-icon.png",
@@ -75,7 +75,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             splash: {
                 image: "./assets/images/logo_trans.png",
                 resizeMode: "contain",
-                backgroundColor: "#850111",
+                backgroundColor: "#0e1e38",
                 tabletImage: "./assets/images/logo_trans.png",
             },
             icon: "./assets/images/playstore-icon.png",

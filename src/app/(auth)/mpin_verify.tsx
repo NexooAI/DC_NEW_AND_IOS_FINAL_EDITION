@@ -23,7 +23,7 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import * as Crypto from "expo-crypto";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -294,6 +294,8 @@ const CustomModal = ({
 };
 
 export default function MpinVerify() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const [mpinPins, setMpinPins] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
@@ -1231,7 +1233,7 @@ export default function MpinVerify() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   backgroundImage: {
     flex: 1,
     resizeMode: "cover",
@@ -1309,22 +1311,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     textAlign: "center",
     fontSize: 24,
-    color: COLORS.black,
-    backgroundColor: COLORS.white,
+    color: theme.colors.textDark,
+    backgroundColor: theme.colors.background,
   },
   otpInputEmpty: {
     borderColor: "rgba(174, 28, 28, 0.2)",
-    backgroundColor: COLORS.white,
-    color: COLORS.black,
+    backgroundColor: theme.colors.background,
+    color: theme.colors.textDark,
   },
   otpInputFilled: {
     borderColor: theme.colors.secondary,
-    backgroundColor: COLORS.white,
-    color: COLORS.black,
+    backgroundColor: theme.colors.background,
+    color: theme.colors.textDark,
   },
   otpInputDisabled: {
-    borderColor: COLORS.grey,
-    backgroundColor: COLORS.lightGrey,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.backgroundSecondary,
     color: COLORS.textSecondary,
   },
   inputDot: {
@@ -1404,7 +1406,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.97)",
+    backgroundColor: theme.colors.background,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -1559,4 +1561,6 @@ const styles = StyleSheet.create({
     marginTop: 5,
     fontSize: 14,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

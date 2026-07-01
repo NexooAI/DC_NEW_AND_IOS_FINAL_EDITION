@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -40,6 +41,8 @@ const SchemeCard: React.FC<SchemeCardProps> = ({
   cGoldValue,
   onPayNow,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   return (
     <LinearGradient
       colors={[theme.colors.goldLight, theme.colors.goldDark]}
@@ -132,7 +135,7 @@ const SchemeCard: React.FC<SchemeCardProps> = ({
 
 export default SchemeCard;
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   cardContainer: {
     width: "95%",
     alignSelf: "center",
@@ -212,4 +215,6 @@ const styles = StyleSheet.create({
     color: theme.colors.white,
     fontWeight: "bold",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

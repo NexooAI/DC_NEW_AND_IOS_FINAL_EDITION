@@ -14,7 +14,7 @@ import { formatGoldWeight } from "@/utils/imageUtils";
 import { useTranslation } from "@/hooks/useTranslation";
 import { theme } from "@/constants/theme";
 import api from "@/services/api";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { logger } from "@/utils/logger";
 import CustomAlert from "@/components/Alert";
 
@@ -61,6 +61,8 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
   translations,
   autoExpand = false,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t, locale } = useTranslation();
   const { user } = useGlobalStore();
   const [isExpanded, setIsExpanded] = useState(autoExpand);
@@ -495,7 +497,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
           <View style={styles.paymentInfoRow}>
             <View style={styles.paymentInfoItem}>
               <View style={styles.paymentInfoIconContainer}>
-                <Ionicons name="person-outline" size={16} color={theme.colors.primary} />
+                <Ionicons name="person-outline" size={16} color={theme.colors.textDark} />
               </View>
               <View style={styles.paymentInfoContent}>
                 <Text style={styles.paymentInfoLabel}>
@@ -509,7 +511,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             <View style={styles.paymentInfoDivider} />
             <View style={styles.paymentInfoItem}>
               <View style={styles.paymentInfoIconContainer}>
-                <Ionicons name="card-outline" size={16} color={theme.colors.primary} />
+                <Ionicons name="card-outline" size={16} color={theme.colors.textDark} />
               </View>
               <View style={styles.paymentInfoContent}>
                 <Text style={styles.paymentInfoLabel}>
@@ -525,7 +527,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
           <View style={styles.paymentInfoRow}>
             <View style={styles.paymentInfoItem}>
               <View style={styles.paymentInfoIconContainer}>
-                <Ionicons name="time-outline" size={16} color={theme.colors.primary} />
+                <Ionicons name="time-outline" size={16} color={theme.colors.textDark} />
               </View>
               <View style={styles.paymentInfoContent}>
                 <Text style={styles.paymentInfoLabel}>
@@ -545,7 +547,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
               {item.savingType === "old_gold" || item.schemesData?.schemeType?.toLowerCase() === "weight" ? (
                 <>
                   <View style={styles.paymentInfoIconContainer}>
-                    <Ionicons name="scale-outline" size={16} color={theme.colors.primary} />
+                    <Ionicons name="scale-outline" size={16} color={theme.colors.textDark} />
                   </View>
                   <View style={styles.paymentInfoContent}>
                     <Text style={styles.paymentInfoLabel}>
@@ -559,7 +561,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
               ) : (
                 <>
                   <View style={styles.paymentInfoIconContainer}>
-                    <Ionicons name="checkmark-circle-outline" size={16} color={theme.colors.primary} />
+                    <Ionicons name="checkmark-circle-outline" size={16} color={theme.colors.textDark} />
                   </View>
                   <View style={styles.paymentInfoContent}>
                     <Text style={styles.paymentInfoLabel}>
@@ -655,7 +657,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                 <>
                   <View style={styles.enhancedInfoItem}>
                     <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="scale-outline" size={20} color={theme.colors.primary} />
+                      <Ionicons name="scale-outline" size={20} color={theme.colors.textDark} />
                     </View>
                     <Text style={styles.enhancedInfoLabel}>Gross Weight</Text>
                     <Text style={styles.enhancedInfoValue}>
@@ -664,7 +666,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                   </View>
                   <View style={styles.enhancedInfoItem}>
                     <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="ribbon-outline" size={20} color={theme.colors.primary} />
+                      <Ionicons name="ribbon-outline" size={20} color={theme.colors.textDark} />
                     </View>
                     <Text style={styles.enhancedInfoLabel}>Purity Carat</Text>
                     <Text style={styles.enhancedInfoValue}>
@@ -673,7 +675,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                   </View>
                   <View style={styles.enhancedInfoItem}>
                     <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
+                      <Ionicons name="time-outline" size={20} color={theme.colors.textDark} />
                     </View>
                     <Text style={styles.enhancedInfoLabel}>Maturity Date</Text>
                     <Text style={styles.enhancedInfoValue}>
@@ -685,7 +687,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                 <>
                   <View style={styles.enhancedInfoItem}>
                     <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="wallet-outline" size={20} color={theme.colors.primary} />
+                      <Ionicons name="wallet-outline" size={20} color={theme.colors.textDark} />
                     </View>
                     <Text style={styles.enhancedInfoLabel}>
                       {translations.totalInvestedLabel}
@@ -696,7 +698,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                   </View>
                   <View style={styles.enhancedInfoItem}>
                     <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
+                      <Ionicons name="time-outline" size={20} color={theme.colors.textDark} />
                     </View>
                     <Text style={styles.enhancedInfoLabel}>
                       {translations.maturityDateLabel}
@@ -707,7 +709,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                   </View>
                   <View style={styles.enhancedInfoItem}>
                     <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="cash-outline" size={20} color={theme.colors.primary} />
+                      <Ionicons name="cash-outline" size={20} color={theme.colors.textDark} />
                     </View>
                     <Text style={styles.enhancedInfoLabel}>
                       {translations.monthlyEMILabel}
@@ -832,7 +834,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   cardWrapper: {
     marginHorizontal: 16,
     marginVertical: 8,
@@ -871,7 +873,7 @@ const styles = StyleSheet.create({
   schemeTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginBottom: 8,
   },
   schemeSubtitleContainer: {
@@ -1177,7 +1179,7 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   progressStats: {
     flexDirection: "row",
@@ -1187,7 +1189,7 @@ const styles = StyleSheet.create({
   progressMonths: {
     fontSize: 14,
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   progressBar: {
     height: 8,
@@ -1223,6 +1225,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: theme.colors.secondary,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default EnhancedSchemeCard;

@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useRef, useEffect } from "react";
 import {
   View,
@@ -61,6 +62,8 @@ export default function StaticSchemesHorizontalScroll({
   onSchemePress,
   showViewAll = true,
 }: StaticSchemesHorizontalScrollProps) {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t, locale } = useTranslation();
   const [selectedScheme, setSelectedScheme] = useState<number | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -879,7 +882,7 @@ export default function StaticSchemesHorizontalScroll({
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     marginVertical: 20,
   },
@@ -1405,4 +1408,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-});
+}) }
+
+var styles = getStyles(theme);;

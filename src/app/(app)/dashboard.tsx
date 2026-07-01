@@ -26,7 +26,7 @@ import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 import { shadowUtils } from "@/utils/shadowUtils";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import api, { userAPI } from "@/services/api";
 import { theme } from "@/constants/theme";
 import LanguageSelector from "@/components/LanguageSelector";
@@ -43,6 +43,8 @@ const CARD = "#3B1F14";
 let hasShownPopup = false;
 
 export default function Dashboard() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const { t } = useTranslation();
   const { user, setChatOpen } = useGlobalStore();
@@ -579,7 +581,7 @@ export default function Dashboard() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -781,4 +783,6 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

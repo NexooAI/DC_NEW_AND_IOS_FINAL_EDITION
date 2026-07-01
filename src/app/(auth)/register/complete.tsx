@@ -18,7 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import api from "@/services/api";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 
 import { logger } from "@/utils/logger";
 const { width } = Dimensions.get("window");
@@ -45,6 +45,8 @@ const PinInput = ({ value, isActive, onPress, index }: PinInputProps) => {
 };
 
 export default function CompleteRegistration() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { mobile, name, email, referral_code, branch_id } = useLocalSearchParams();
   const router = useRouter();
   const [mpin, setMpin] = useState(["", "", "", ""]);
@@ -299,7 +301,7 @@ export default function CompleteRegistration() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   backgroundImage: {
     flex: 1,
     resizeMode: "cover",
@@ -461,4 +463,6 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 5,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

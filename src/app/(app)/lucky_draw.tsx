@@ -21,7 +21,7 @@ import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 import { shadowUtils } from "@/utils/shadowUtils";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { luckyDrawAPI } from "@/services/api";
 
 const { wp, hp, rf } = responsiveUtils;
@@ -343,6 +343,8 @@ const LuckyDrawCard = ({
 // --- Main Component ---
 
 export default function LuckyDraw() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const { t } = useTranslation();
   const user = useGlobalStore((state) => state.user);
@@ -750,7 +752,7 @@ export default function LuckyDraw() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.quaternary,
@@ -1189,4 +1191,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   }
-});
+}) }
+
+var styles = getStyles(theme);;

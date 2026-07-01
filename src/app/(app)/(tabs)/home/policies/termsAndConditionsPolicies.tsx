@@ -16,13 +16,15 @@ import { useRouter, Stack } from "expo-router";
 import AppLayoutWrapper from "@/components/AppLayoutWrapper";
 import LanguageSelector from "@/components/LanguageSelector";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import api from "@/services/api";
 import { theme } from "@/constants/theme";
 
 const { width } = Dimensions.get("window");
 
 export default function TermsAndConditions() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t, locale } = useTranslation();
   const router = useRouter();
   const { language } = useGlobalStore();
@@ -95,7 +97,7 @@ export default function TermsAndConditions() {
         colors={[theme.colors.primary, theme.colors.support_container[1]]}
         style={styles.loadingGradient}
       >
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.secondary} />
       </LinearGradient>
     </View>
   );
@@ -124,7 +126,7 @@ export default function TermsAndConditions() {
         options={{
           headerRight: () => (
             <TouchableOpacity onPress={() => setIsLanguageSelectorVisible(true)} style={{ marginRight: 16 }}>
-              <Ionicons name="language" size={24} color={theme.colors.primary} />
+              <Ionicons name="language" size={24} color={theme.colors.textDark} />
             </TouchableOpacity>
           ),
         }}
@@ -166,7 +168,7 @@ export default function TermsAndConditions() {
           {getPolicyField("description") ? (
             <View style={[styles.card, { marginTop: 10 }]}>
               <View style={styles.cardHeader}>
-                <Ionicons name="document-text-outline" size={24} color={theme.colors.primary} />
+                <Ionicons name="document-text-outline" size={24} color={theme.colors.textDark} />
                 <Text style={styles.cardTitle}>
                   {getPolicyField("title") || translations.defaultTitle}
                 </Text>
@@ -180,7 +182,7 @@ export default function TermsAndConditions() {
               {/* Main Commitment Card - Overlaps Hero */}
               <View style={[styles.card, styles.introCard]}>
                 <View style={styles.cardHeader}>
-                  <Ionicons name="shield-checkmark" size={24} color={theme.colors.primary} />
+                  <Ionicons name="shield-checkmark" size={24} color={theme.colors.textDark} />
                   <Text style={styles.cardTitle}>
                     {t("ourCommitmentToYou")}
                   </Text>
@@ -208,7 +210,7 @@ export default function TermsAndConditions() {
               {/* User Responsibilities Section */}
               <View style={styles.card}>
                 <View style={styles.cardHeader}>
-                  <Ionicons name="person-outline" size={22} color={theme.colors.primary} />
+                  <Ionicons name="person-outline" size={22} color={theme.colors.textDark} />
                   <Text style={styles.cardTitle}>
                     {t("userResponsibilities")}
                   </Text>
@@ -257,10 +259,10 @@ export default function TermsAndConditions() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   heroSection: {
     paddingTop: 20,
@@ -288,14 +290,14 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 22,
     fontWeight: "800",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     textAlign: "center",
     marginBottom: 4,
     letterSpacing: 0.5,
   },
   heroSubtitle: {
     fontSize: 14,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     textAlign: "center",
     fontWeight: "500",
   },
@@ -309,7 +311,7 @@ const styles = StyleSheet.create({
   },
   // New Card Styles
   card: {
-    backgroundColor: "white",
+    backgroundColor: theme.colors.background,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -327,12 +329,12 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginLeft: 10,
   },
   cardText: {
     fontSize: 14,
-    color: "#4A4A4A",
+    color: theme.colors.textDark,
     lineHeight: 22,
     letterSpacing: 0.2,
   },
@@ -349,13 +351,13 @@ const styles = StyleSheet.create({
   contactTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginTop: 10,
     marginBottom: 6,
   },
   contactText: {
     fontSize: 13,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     textAlign: "center",
     lineHeight: 18,
   },
@@ -363,7 +365,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8f9fa",
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   loadingGradient: {
     padding: 30,
@@ -374,7 +376,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8f9fa",
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   errorGradient: {
     padding: 30,
@@ -408,4 +410,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

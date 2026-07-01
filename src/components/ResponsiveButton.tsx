@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React from "react";
 import {
   TouchableOpacity,
@@ -41,6 +42,7 @@ const ResponsiveButton: React.FC<ResponsiveButtonProps> = ({
   style,
   ...props
 }) => {
+  const theme = useAppTheme();
   const {
     getResponsivePadding,
     getResponsiveFontSize,

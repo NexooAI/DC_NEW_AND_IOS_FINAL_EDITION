@@ -22,7 +22,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { Picker } from "@react-native-picker/picker";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
 import api from "@/services/api";
@@ -59,6 +59,8 @@ interface Branch {
 }
 
 export default function JoinSavings() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const { params } = useRoute();
   const { schemeId, step: stepParam, amount: amountParam, weight: weightParam, calculatedAmount: calculatedAmountParam, calculatedWeight: calculatedWeightParam } = useLocalSearchParams();
@@ -2718,7 +2720,7 @@ export default function JoinSavings() {
   //         <Text style={styles.headerTitle}>{translations.loadingScheme}</Text>
   //       </View>
   //       <View style={styles.loadingContainer}>
-  //         <ActivityIndicator size="large" color={theme.colors.primary} />
+  //         <ActivityIndicator size="large" color={theme.colors.secondary} />
   //         <Text style={styles.loadingText}>{translations.loadingSchemeDetails}</Text>
   //       </View>
   //     </SafeAreaView>
@@ -2818,7 +2820,7 @@ export default function JoinSavings() {
         {renderGoldRateArea()}
         {isKycLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ActivityIndicator size="large" color={theme.colors.secondary} />
             <Text>{translations.loadingKycStatus}</Text>
           </View>
         ) : (
@@ -2954,7 +2956,7 @@ const pickerSelectStylesModern = StyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   safeAreaContainer: {
     flex: 1,
     backgroundColor: "#fff",
@@ -3062,7 +3064,7 @@ const styles = StyleSheet.create({
   progressBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   progressBadgeTextActive: {
     color: theme.colors.white,
@@ -3071,13 +3073,13 @@ const styles = StyleSheet.create({
   progressStepLabel: {
     fontSize: 11,
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     textAlign: "center",
     lineHeight: 14,
     flex: 1,
   },
   progressStepLabelActive: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: "700",
     fontSize: 12,
   },
@@ -3129,7 +3131,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginBottom: 8,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     textAlign: "left",
   },
   input: {
@@ -3206,7 +3208,7 @@ const styles = StyleSheet.create({
   // sectionTitle: {
   //   fontSize: 18,
   //   fontWeight: "bold",
-  //   color: theme.colors.primary,
+  //   color: theme.colors.textDark,
   //   marginBottom: 8,
   // },
   footer: {
@@ -3293,7 +3295,7 @@ const styles = StyleSheet.create({
   amountText: {
     fontSize: 18,
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   noAmountText: {
     fontSize: 16,
@@ -3327,7 +3329,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginTop: 12,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   selectedSchemeTypeText: {
     color: "#fff",
@@ -3394,7 +3396,7 @@ const styles = StyleSheet.create({
   amountGridText: {
     fontSize: 14,
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     textAlign: "center",
   },
   selectedAmountGridText: {
@@ -3442,7 +3444,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginTop: 12,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   selectedFrequencyText: {
     color: "#fff",
@@ -3503,7 +3505,7 @@ const styles = StyleSheet.create({
   quickAmountText: {
     fontSize: 13,
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   selectedQuickAmountText: {
     color: "#fff",
@@ -3599,7 +3601,7 @@ const styles = StyleSheet.create({
   progressTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   goldRateCard: {
     flexDirection: "row",
@@ -3641,7 +3643,7 @@ const styles = StyleSheet.create({
   goldRateValue: {
     fontSize: 15,
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   selectedAmountBadge: {
     backgroundColor: theme.colors.primary,
@@ -3723,7 +3725,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginBottom: 8,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     textAlign: "center",
   },
   goldValueContainer: {
@@ -3756,7 +3758,7 @@ const styles = StyleSheet.create({
     padding: 0,
     minWidth: 100,
     textAlign: "center",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   goldSymbol: {
     fontSize: 16,
@@ -3792,7 +3794,7 @@ const styles = StyleSheet.create({
   summaryCardTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginLeft: 8,
   },
   summaryRowModern: {
@@ -4485,4 +4487,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginLeft: 8,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

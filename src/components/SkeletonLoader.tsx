@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useEffect, useRef } from "react";
 import {
   View,
@@ -103,6 +104,8 @@ const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
   isLoading = true,
   children,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const shimmerAnim = useRef(new Animated.Value(-1)).current;
 
   useEffect(() => {
@@ -577,7 +580,7 @@ export const SkeletonHomePage: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   skeleton: {
     overflow: "hidden",
     position: "relative",
@@ -882,7 +885,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 // Skeleton Savings Card (for My Schemes page)
 export const SkeletonSavingsCard: React.FC<{ style?: ViewStyle }> = ({

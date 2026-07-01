@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import useGlobalStore from '@/store/global.store';
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { theme } from '@/constants/theme';
 import { COLORS } from '@/constants/colors';
 import ResponsiveText from '@/components/ResponsiveText';
@@ -71,6 +71,8 @@ const extractBookingId = (responseData: any) => {
 };
 
 export default function JoinAdvGold() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const { user } = useGlobalStore();
   const params = useLocalSearchParams();
@@ -377,9 +379,9 @@ export default function JoinAdvGold() {
           router.replace('/(tabs)/home');
           router.replace('/(app)/gold_advance');
         }} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
         </TouchableOpacity>
-        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
+        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.textDark}>
           Join Advance {metalType === 'SILVER' ? 'Silver' : 'Gold'}
         </ResponsiveText>
         <View style={{ width: 40 }} />
@@ -387,7 +389,7 @@ export default function JoinAdvGold() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Royal Title Section */}
         <View style={styles.titleContainer}>
-          <ResponsiveText variant="title" weight="bold" color={theme.colors.primary} align="center" style={styles.mainTitle}>
+          <ResponsiveText variant="title" weight="bold" color={theme.colors.textDark} align="center" style={styles.mainTitle}>
             Secure Your Future
           </ResponsiveText>
           <ResponsiveText variant="body" color="rgba(0,0,0,0.6)" align="center" style={styles.subtitle}>
@@ -400,9 +402,9 @@ export default function JoinAdvGold() {
         <View style={styles.cardContainer}>
           <View style={styles.cardHeader}>
             <View style={styles.iconCircle}>
-              <Ionicons name="pie-chart-outline" size={rf(18)} color={theme.colors.primary} />
+              <Ionicons name="pie-chart-outline" size={rf(18)} color={theme.colors.textDark} />
             </View>
-            <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.primary}>
+            <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.textDark}>
               Select Plan Percentage
             </ResponsiveText>
           </View>
@@ -438,9 +440,9 @@ export default function JoinAdvGold() {
         <View style={styles.cardContainer}>
           <View style={styles.cardHeader}>
             <View style={styles.iconCircle}>
-              <Ionicons name="scale-outline" size={rf(18)} color={theme.colors.primary} />
+              <Ionicons name="scale-outline" size={rf(18)} color={theme.colors.textDark} />
             </View>
-            <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.primary}>
+            <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.textDark}>
               {metalType === 'SILVER' ? 'Silver' : 'Gold'} Calculator
             </ResponsiveText>
           </View>
@@ -451,7 +453,7 @@ export default function JoinAdvGold() {
             </ResponsiveText>
             <View style={styles.weightControlRow}>
               <TouchableOpacity onPress={handleWeightDecrement} style={styles.controlButton}>
-                <Ionicons name="remove" size={rf(20)} color={theme.colors.primary} />
+                <Ionicons name="remove" size={rf(20)} color={theme.colors.textDark} />
               </TouchableOpacity>
 
               <View style={styles.weightInputWrapper}>
@@ -466,7 +468,7 @@ export default function JoinAdvGold() {
               </View>
 
               <TouchableOpacity onPress={handleWeightIncrement} style={styles.controlButton}>
-                <Ionicons name="add" size={rf(20)} color={theme.colors.primary} />
+                <Ionicons name="add" size={rf(20)} color={theme.colors.textDark} />
               </TouchableOpacity>
             </View>
 
@@ -481,7 +483,7 @@ export default function JoinAdvGold() {
             </ResponsiveText>
             <View style={styles.weightControlRow}>
               <TouchableOpacity onPress={handleAmountDecrement} style={styles.controlButton}>
-                <Ionicons name="remove" size={rf(20)} color={theme.colors.primary} />
+                <Ionicons name="remove" size={rf(20)} color={theme.colors.textDark} />
               </TouchableOpacity>
 
               <View style={styles.weightInputWrapper}>
@@ -496,7 +498,7 @@ export default function JoinAdvGold() {
               </View>
 
               <TouchableOpacity onPress={handleAmountIncrement} style={styles.controlButton}>
-                <Ionicons name="add" size={rf(20)} color={theme.colors.primary} />
+                <Ionicons name="add" size={rf(20)} color={theme.colors.textDark} />
               </TouchableOpacity>
             </View>
           </View>
@@ -621,7 +623,7 @@ export default function JoinAdvGold() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: QUATERNARY_COLOR,
@@ -924,4 +926,6 @@ const styles = StyleSheet.create({
     fontSize: rf(12),
     fontWeight: 'bold',
   },
-}); 
+}) }
+
+var styles = getStyles(theme);; 

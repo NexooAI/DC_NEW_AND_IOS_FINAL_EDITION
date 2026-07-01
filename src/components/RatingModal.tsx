@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
@@ -51,6 +52,8 @@ export default function RatingModal({
     onSubmitFeedback,
     appName = 'DC Jewellers',
 }: RatingModalProps) {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
     const { t } = useTranslation();
     const [rating, setRating] = useState(0);
     const [feedback, setFeedback] = useState('');
@@ -514,7 +517,7 @@ export const useRatingPrompt = () => {
     };
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
     overlay: {
         flex: 1,
         justifyContent: 'center',
@@ -632,5 +635,7 @@ const styles = StyleSheet.create({
         borderColor: '#E5E7EB',
         marginBottom: 20,
     },
-});
+}) }
+
+var styles = getStyles(theme);;
 

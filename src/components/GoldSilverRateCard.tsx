@@ -1,9 +1,10 @@
+import { theme } from "@/constants/theme";
+import { useAppTheme } from "@/store/global.store";
 import React from "react";
 import { View, Text, StyleSheet, Image, ImageSourcePropType, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
-import { theme } from "@/constants";
 
 interface RateData {
     goldRate: string | number;
@@ -24,6 +25,8 @@ const GoldSilverRateCard: React.FC<GoldSilverRateCardProps> = ({
     silverImage,
     onPress,
 }) => {
+  const theme = useAppTheme();
+  
     const { t } = useTranslation();
     const {
         screenWidth,

@@ -23,7 +23,7 @@ import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 import { shadowUtils } from "@/utils/shadowUtils";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import api, { ticketsAPI } from "@/services/api";
 import { theme } from "@/constants/theme";
 import DynamicSchemeCard from "@/components/DynamicSchemeCard";
@@ -68,6 +68,8 @@ const getSafeString = (textObj: any): string => {
 };
 
 export default function OldGoldScreen() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const params = useLocalSearchParams();
   const { t, locale } = useTranslation();
@@ -207,9 +209,9 @@ export default function OldGoldScreen() {
     <View style={[styles.header, { backgroundColor: theme.colors.quaternary }]}>
       <View style={styles.headerRow}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
         </TouchableOpacity>
-        <ResponsiveText color={theme.colors.primary} size="lg" weight="bold" style={styles.headerTitle}>
+        <ResponsiveText color={theme.colors.textDark} size="lg" weight="bold" style={styles.headerTitle}>
           {t("oldGoldScheme") || "Old Gold Scheme"}
         </ResponsiveText>
         <View style={{ width: 40 }} />
@@ -630,7 +632,7 @@ export default function OldGoldScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.quaternary,
@@ -834,4 +836,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 6,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

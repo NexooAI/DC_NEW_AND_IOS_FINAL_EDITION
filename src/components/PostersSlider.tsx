@@ -1,3 +1,5 @@
+import { theme } from "@/constants/theme";
+import { useAppTheme } from "@/store/global.store";
 import React, { useRef, useEffect, useState } from "react";
 import {
   View,
@@ -19,6 +21,8 @@ interface PostersSliderProps {
 }
 
 const PostersSlider: React.FC<PostersSliderProps> = ({ images = [] }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const { screenWidth, isTablet } = useResponsiveLayout();
@@ -118,7 +122,7 @@ const PostersSlider: React.FC<PostersSliderProps> = ({ images = [] }) => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     alignSelf: "center",
     marginVertical: 12,
@@ -161,6 +165,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.mediumGrey,
     opacity: 0.3,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default PostersSlider;

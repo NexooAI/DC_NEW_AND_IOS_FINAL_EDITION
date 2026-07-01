@@ -14,7 +14,7 @@ import { router } from "expo-router";
 import { useFirstLaunch } from "@/common/hooks/useFirstLaunch";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { theme } from "@/constants/theme";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import api from "@/services/api";
@@ -43,6 +43,8 @@ const staticSlides = [
 ];
 
 export default function Intro() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const { markAsLaunched } = useFirstLaunch();
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -245,7 +247,7 @@ export default function Intro() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.black,
@@ -306,4 +308,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

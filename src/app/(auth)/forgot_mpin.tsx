@@ -31,7 +31,7 @@ import Icon from "@expo/vector-icons/MaterialIcons";
 import { t } from "@/i18n";
 import { AppLocale } from "@/i18n";
 import apiClient from "@/services/api";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useOtpAutoFetch } from "@/hooks/useOtpAutoFetch";
 
 import { logger } from "@/utils/logger";
@@ -338,6 +338,8 @@ const MpinInput = ({
 };
 
 export default function ForgotMpin() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const [step, setStep] = useState<"verifyOtp" | "createMpin">("verifyOtp");
   const [mobileNumber, setMobileNumber] = useState("");
   const [otp, setOtp] = useState("");
@@ -1077,7 +1079,7 @@ export default function ForgotMpin() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   otpInputsWrapper: {
     position: "relative",
     width: "100%",
@@ -1453,4 +1455,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

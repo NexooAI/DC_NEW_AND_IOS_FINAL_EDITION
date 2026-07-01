@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from "react-native";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -13,6 +14,8 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   visible,
   onClose,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { locale, setLocale, supportedLocales, t } = useTranslation();
 
   const handleLanguageSelect = async (selectedLocale: string) => {
@@ -65,7 +68,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: theme.colors.overlayDark,
@@ -73,7 +76,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   container: {
-    backgroundColor: "white",
+    backgroundColor: theme.colors.background,
     borderRadius: 16,
     padding: 24,
     width: "80%",
@@ -83,7 +86,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginBottom: 8,
   },
   subtitle: {
@@ -105,8 +108,8 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
   },
   selectedLanguage: {
-    borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.bgPrimaryLight,
+    borderColor: theme.colors.secondary,
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   flag: {
     fontSize: 24,
@@ -116,15 +119,15 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: "500",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   selectedLanguageText: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: "600",
   },
   checkmark: {
     fontSize: 18,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: "bold",
   },
   cancelButton: {
@@ -136,9 +139,11 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 16,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: "600",
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default LanguageSelector;

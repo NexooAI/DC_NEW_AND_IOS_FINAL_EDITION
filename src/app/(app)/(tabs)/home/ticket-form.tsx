@@ -16,7 +16,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { theme } from "@/constants/theme";
 import { moderateScale } from "react-native-size-matters";
 import { LinearGradient } from "expo-linear-gradient";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import AppLayoutWrapper from "@/components/AppLayoutWrapper";
 import { useFocusEffect } from "@react-navigation/native";
 import FAQService, { TicketPayload } from "@/services/faqService";
@@ -30,6 +30,8 @@ interface TicketResponse {
 }
 
 export default function TicketFormScreen() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const collectionName = params.collectionName as string | undefined;
@@ -300,10 +302,10 @@ export default function TicketFormScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   header: {
     flexDirection: "row",
@@ -342,7 +344,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   formContainer: {
-    backgroundColor: "white",
+    backgroundColor: theme.colors.background,
     borderRadius: 15,
     padding: 20,
     shadowColor: "#000",
@@ -354,12 +356,12 @@ const styles = StyleSheet.create({
   formTitle: {
     fontSize: moderateScale(18),
     fontWeight: "bold",
-    color: "#333",
+    color: theme.colors.textDark,
     marginBottom: 10,
   },
   formDescription: {
     fontSize: moderateScale(14),
-    color: "#666",
+    color: theme.colors.textSecondary,
     lineHeight: 20,
     marginBottom: 20,
   },
@@ -369,17 +371,17 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: moderateScale(16),
     fontWeight: "600",
-    color: "#333",
+    color: theme.colors.textDark,
     marginBottom: 8,
   },
   textInput: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: theme.colors.border,
     borderRadius: 10,
     padding: 15,
     fontSize: moderateScale(14),
-    color: "#333",
-    backgroundColor: "#f9f9f9",
+    color: theme.colors.textDark,
+    backgroundColor: theme.colors.backgroundSecondary,
     minHeight: 120,
   },
   characterCount: {
@@ -389,7 +391,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   tipsContainer: {
-    backgroundColor: "#f0f8ff",
+    backgroundColor: theme.colors.backgroundSecondary,
     borderRadius: 10,
     padding: 15,
     marginBottom: 20,
@@ -397,12 +399,12 @@ const styles = StyleSheet.create({
   tipsTitle: {
     fontSize: moderateScale(14),
     fontWeight: "600",
-    color: "#333",
+    color: theme.colors.textDark,
     marginBottom: 8,
   },
   tipText: {
     fontSize: moderateScale(12),
-    color: "#666",
+    color: theme.colors.textSecondary,
     marginBottom: 4,
   },
   submitButton: {
@@ -446,7 +448,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   ticketInfoContainer: {
-    backgroundColor: "white",
+    backgroundColor: theme.colors.background,
     borderRadius: 15,
     padding: 20,
     alignItems: "center",
@@ -458,18 +460,18 @@ const styles = StyleSheet.create({
   },
   ticketIdLabel: {
     fontSize: moderateScale(14),
-    color: "#666",
+    color: theme.colors.textSecondary,
     marginBottom: 5,
   },
   ticketId: {
     fontSize: moderateScale(24),
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginBottom: 15,
   },
   ticketDescription: {
     fontSize: moderateScale(14),
-    color: "#666",
+    color: theme.colors.textSecondary,
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 20,
@@ -487,4 +489,6 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(16),
     fontWeight: "bold",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

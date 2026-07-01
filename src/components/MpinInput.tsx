@@ -1,3 +1,5 @@
+import { theme } from "@/constants/theme";
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useRef, useEffect } from "react";
 import { View, TextInput, StyleSheet, NativeSyntheticEvent, TextInputKeyPressEventData } from "react-native";
 
@@ -16,6 +18,8 @@ const MpinInput: React.FC<MpinInputProps> = ({
   inputStyle = {},
   containerStyle = {},
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const [pins, setPins] = useState(Array(length).fill(""));
   const inputRefs = useRef<TextInput[]>([]);
 
@@ -83,7 +87,7 @@ const MpinInput: React.FC<MpinInputProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -99,6 +103,8 @@ const styles = StyleSheet.create({
     color: "#000000",
     backgroundColor: "#ffffff",
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default MpinInput;

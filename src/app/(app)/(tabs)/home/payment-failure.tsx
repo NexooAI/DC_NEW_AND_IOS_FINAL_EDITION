@@ -20,7 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { logger } from "@/utils/logger";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 
@@ -29,6 +29,8 @@ const { wp, hp, rf, rp, rm, rb, getShadows } = responsiveUtils;
 const shadows = getShadows();
 
 export default function PaymentFailure() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const router = useRouter();
@@ -490,7 +492,7 @@ export default function PaymentFailure() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8f9ff",
@@ -704,4 +706,6 @@ const styles = StyleSheet.create({
     marginBottom: rp(16),
     textAlign: "center",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

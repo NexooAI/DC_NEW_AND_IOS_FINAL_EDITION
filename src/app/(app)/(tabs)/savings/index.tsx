@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState } from "react";
 import {
     View,
@@ -23,6 +24,8 @@ import JoinSchemesContent from "../home/schemes";
 const { width } = Dimensions.get("window");
 
 export default function SchemesHub() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
     const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams<{ tab?: string }>();
@@ -61,9 +64,9 @@ export default function SchemesHub() {
                             style={{ padding: 4 }}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                            <Ionicons name="arrow-back" size={24} color={theme.colors.primary || "#850111"} />
+                            <Ionicons name="arrow-back" size={24} color={theme.colors.textDark || "#850111"} />
                         </TouchableOpacity>
-                        <Text style={{ fontSize: 20, fontWeight: "700", color: theme.colors.primary || "#850111", flex: 1, textAlign: 'center' }}>
+                        <Text style={{ fontSize: 20, fontWeight: "700", color: theme.colors.textDark || "#850111", flex: 1, textAlign: 'center' }}>
                             {typeof t("schemes") === 'object' ? t("schemes.title") : t("schemes") || "Schemes"}
                         </Text>
                         <View style={{ width: 32 }} />
@@ -152,7 +155,7 @@ export default function SchemesHub() {
 
 
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
@@ -214,4 +217,6 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         width: width * 2,
     },
-});
+}) }
+
+var styles = getStyles(theme);;

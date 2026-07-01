@@ -23,7 +23,7 @@ import { COLORS } from '@/constants/colors';
 import ResponsiveText from '@/components/ResponsiveText';
 import { responsiveUtils } from '@/utils/responsiveUtils';
 import { advanceBookingAPI } from '@/services/api';
-import useGlobalStore from '@/store/global.store';
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { logAppEvent } from '@/services/appEventService';
 import { logger } from '@/utils/logger';
 import { saveFileToPublicDirectory } from '@/utils/fileUtils';
@@ -67,6 +67,8 @@ const formatDate = (value?: string) => {
 };
 
 export default function BookingHistory() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -365,13 +367,13 @@ export default function BookingHistory() {
           router.back();
           router.replace('/(app)/gold_advance');
         }} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
         </TouchableOpacity>
-        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
+        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.textDark}>
           {t("advanceBookingHistory")}
         </ResponsiveText>
         <TouchableOpacity onPress={handleRefresh} style={styles.backButton}>
-          <Ionicons name="refresh" size={22} color={theme.colors.primary} />
+          <Ionicons name="refresh" size={22} color={theme.colors.textDark} />
         </TouchableOpacity>
       </View>
 
@@ -389,7 +391,7 @@ export default function BookingHistory() {
 
       {loading ? (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color={theme.colors.secondary} />
           <Text style={styles.loaderText}>{t("loadingBookingsHistory")}</Text>
         </View>
       ) : (
@@ -418,7 +420,7 @@ export default function BookingHistory() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t("bookingDetails")}</Text>
               <TouchableOpacity onPress={() => setDetailModalVisible(false)} style={styles.closeButton}>
-                <Ionicons name="close-circle" size={32} color={theme.colors.primary} />
+                <Ionicons name="close-circle" size={32} color={theme.colors.textDark} />
               </TouchableOpacity>
             </View>
 
@@ -486,7 +488,7 @@ export default function BookingHistory() {
                     style={[styles.modalButton, styles.downloadBtn]}
                     onPress={() => handleDownloadBookingReceipt(selectedBooking)}
                   >
-                    <Ionicons name="download-outline" size={18} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                    <Ionicons name="download-outline" size={18} color={theme.colors.textDark} style={{ marginRight: 6 }} />
                     <Text style={styles.downloadBtnText}>Download</Text>
                   </TouchableOpacity>
 
@@ -517,7 +519,7 @@ export default function BookingHistory() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: QUATERNARY_COLOR,
@@ -549,7 +551,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   tabText: { fontSize: rf(13), color: 'rgba(0,0,0,0.5)', fontWeight: '600' },
-  activeTabText: { color: theme.colors.primary },
+  activeTabText: { color: theme.colors.textDark },
   activeIndicator: {
     position: 'absolute',
     bottom: 0,
@@ -668,7 +670,7 @@ const styles = StyleSheet.create({
     marginTop: hp(0.5),
   },
   remainingBalVal: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   progressSection: {
     marginTop: hp(1),
@@ -707,7 +709,7 @@ const styles = StyleSheet.create({
   },
   remarksText: {
     fontSize: rf(10),
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: '700',
     marginTop: hp(0.6),
   },
@@ -733,7 +735,7 @@ const styles = StyleSheet.create({
     marginBottom: hp(2),
   },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: hp(2) },
-  modalTitle: { fontSize: rf(21), fontWeight: '800', color: theme.colors.primary },
+  modalTitle: { fontSize: rf(21), fontWeight: '800', color: theme.colors.textDark },
   closeButton: { padding: 2 },
   detailScroll: { paddingBottom: hp(4) },
   detailCard: {
@@ -772,7 +774,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary,
   },
   downloadBtnText: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: '700',
     fontSize: rf(12),
   },
@@ -802,4 +804,6 @@ const styles = StyleSheet.create({
     fontSize: rf(12.5),
     letterSpacing: 0.5,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

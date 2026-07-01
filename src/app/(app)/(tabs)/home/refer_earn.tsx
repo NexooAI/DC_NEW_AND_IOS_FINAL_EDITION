@@ -19,15 +19,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Clipboard from "expo-clipboard";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme } from "@/store/global.store";
 import { useRouter } from "expo-router";
-import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { rewardsAPI } from "@/services/api";
 
 const { width } = Dimensions.get("window");
 
 export default function ReferCodeScreen() {
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
   const { t } = useTranslation();
   const { user } = useGlobalStore();
   const code = user?.referralCode || "DEFAULT123";
@@ -214,7 +215,7 @@ export default function ReferCodeScreen() {
         <View style={styles.timelineRow}>
           <View style={styles.timelineItem}>
             <View style={styles.timelineIconContainer}>
-              <Ionicons name="gift-outline" size={24} color="#850111" />
+              <Ionicons name="gift-outline" size={24} color={theme.colors.textDark} />
             </View>
             <Text style={styles.timelineText}>{t("refer_earn_invite_friends") || "Invite Your Friends"}</Text>
           </View>
@@ -225,7 +226,7 @@ export default function ReferCodeScreen() {
 
           <View style={styles.timelineItem}>
             <View style={styles.timelineIconContainer}>
-              <Ionicons name="person-add-outline" size={24} color="#850111" />
+              <Ionicons name="person-add-outline" size={24} color={theme.colors.textDark} />
             </View>
             <Text style={styles.timelineText}>{t("refer_earn_friends_join") || "Friends Join & Pay First Payment"}</Text>
           </View>
@@ -236,7 +237,7 @@ export default function ReferCodeScreen() {
 
           <View style={styles.timelineItem}>
             <View style={styles.timelineIconContainer}>
-              <Ionicons name="star-outline" size={24} color="#850111" />
+              <Ionicons name="star-outline" size={24} color={theme.colors.textDark} />
             </View>
             <Text style={styles.timelineText}>{t("refer_earn_you_earn") || "You Earn Rewards & Points!"}</Text>
           </View>
@@ -252,8 +253,8 @@ export default function ReferCodeScreen() {
           marginHorizontal: 4,
           marginBottom: 24,
           borderRadius: 20,
-          backgroundColor: '#fff',
-          shadowColor: '#000',
+          backgroundColor: theme.colors.white,
+          shadowColor: theme.colors.black,
           shadowOffset: { width: 0, height: 6 },
           shadowOpacity: 0.1,
           shadowRadius: 10,
@@ -274,18 +275,18 @@ export default function ReferCodeScreen() {
             width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.7)',
             justifyContent: 'center', alignItems: 'center', marginBottom: 12
           }}>
-            <FontAwesome5 name="gift" size={28} color={theme.colors.primary} />
+            <FontAwesome5 name="gift" size={28} color={theme.colors.textDark} />
           </View>
-          <Text style={{ fontSize: 20, fontWeight: '800', color: theme.colors.primary }}>
+          <Text style={{ fontSize: 20, fontWeight: '800', color: theme.colors.textDark }}>
             {t("premium_reward_tiers") || "Premium Reward Tiers"}
           </Text>
-          <Text style={{ fontSize: 13, color: theme.colors.primary, opacity: 0.8, marginTop: 4, textAlign: 'center' }}>
+          <Text style={{ fontSize: 13, color: theme.colors.textDark, opacity: 0.8, marginTop: 4, textAlign: 'center' }}>
             {t("premium_reward_tiers_desc") || "Your rewards scale with your friend's first payment amount"}
           </Text>
         </LinearGradient>
 
         {/* Tiers Content */}
-        <View style={{ padding: 20, backgroundColor: '#fff' }}>
+        <View style={{ padding: 20, backgroundColor: theme.colors.white }}>
 
           {/* Tier 1 */}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
@@ -296,7 +297,7 @@ export default function ReferCodeScreen() {
               <FontAwesome5 name="coins" size={20} color="#d4af37" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, color: '#666', marginBottom: 2, fontWeight: '600' }}>
+              <Text style={{ fontSize: 13, color: theme.colors.textMediumGrey, marginBottom: 2, fontWeight: '600' }}>
                 {t("tier_1_amount") || "₹100 to ₹1,000"}
               </Text>
               <Text style={{ fontSize: 16, color: '#1a1a1a', fontWeight: '700' }}>
@@ -306,7 +307,7 @@ export default function ReferCodeScreen() {
           </View>
 
           {/* Divider */}
-          <View style={{ height: 1, backgroundColor: '#f0f0f0', marginLeft: 64, marginBottom: 20 }} />
+          <View style={{ height: 1, backgroundColor: theme.colors.backgroundSecondary, marginLeft: 64, marginBottom: 20 }} />
 
           {/* Tier 2 */}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
@@ -317,7 +318,7 @@ export default function ReferCodeScreen() {
               <FontAwesome5 name="coins" size={20} color="#d4af37" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, color: '#666', marginBottom: 2, fontWeight: '600' }}>
+              <Text style={{ fontSize: 13, color: theme.colors.textMediumGrey, marginBottom: 2, fontWeight: '600' }}>
                 {t("tier_2_amount") || "₹1,000 to ₹10,000"}
               </Text>
               <Text style={{ fontSize: 16, color: '#1a1a1a', fontWeight: '700' }}>
@@ -327,7 +328,7 @@ export default function ReferCodeScreen() {
           </View>
 
           {/* Divider */}
-          <View style={{ height: 1, backgroundColor: '#f0f0f0', marginLeft: 64, marginBottom: 20 }} />
+          <View style={{ height: 1, backgroundColor: theme.colors.backgroundSecondary, marginLeft: 64, marginBottom: 20 }} />
 
           {/* Tier 3 */}
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -338,7 +339,7 @@ export default function ReferCodeScreen() {
               <FontAwesome5 name="percentage" size={20} color="#d4af37" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, color: '#666', marginBottom: 2, fontWeight: '600' }}>
+              <Text style={{ fontSize: 13, color: theme.colors.textMediumGrey, marginBottom: 2, fontWeight: '600' }}>
                 {t("tier_3_amount") || "Above ₹10,000"}
               </Text>
               <Text style={{ fontSize: 16, color: '#1a1a1a', fontWeight: '700' }}>
@@ -355,7 +356,7 @@ export default function ReferCodeScreen() {
         <Text style={styles.codeLabel}>{t("refer_earn_your_code") || "Your Code:"}</Text>
         <Text style={styles.codeValue}>{code}</Text>
         <TouchableOpacity onPress={copyToClipboard} style={styles.copyIcon}>
-          <Ionicons name="copy-outline" size={20} color="#850111" />
+          <Ionicons name="copy-outline" size={20} color={theme.colors.textDark} />
         </TouchableOpacity>
       </View>
 
@@ -389,12 +390,12 @@ export default function ReferCodeScreen() {
 
         {loading ? (
           <View style={{ padding: 40, alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ActivityIndicator size="large" color={theme.colors.secondary} />
           </View>
         ) : history.length === 0 ? (
           <View style={{ padding: 40, alignItems: 'center', marginTop: 30 }}>
             <Ionicons name="people-outline" size={64} color="#ccc" style={{ marginBottom: 12 }} />
-            <Text style={{ fontSize: 16, color: '#888', fontWeight: '600' }}>
+            <Text style={{ fontSize: 16, color: theme.colors.textLightGrey, fontWeight: '600' }}>
               {t("no_referrals_yet") || "No Referrals Yet"}
             </Text>
             <Text style={{ fontSize: 13, color: '#aaa', marginTop: 4, textAlign: 'center', paddingHorizontal: 20 }}>
@@ -465,7 +466,7 @@ export default function ReferCodeScreen() {
         </TouchableOpacity>
       </View> */}
 
-      <View style={[styles.tabsContainer, { backgroundColor: '#fff', zIndex: 10 }]}>
+      <View style={[styles.tabsContainer, { backgroundColor: theme.colors.white, zIndex: 10 }]}>
         {[
           t("refer_earn_tab_refer") || "Refer & Earn",
           t("refer_earn_tab_referrals") || "My Referrals",
@@ -519,105 +520,105 @@ export default function ReferCodeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+const getStyles = (theme: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0', backgroundColor: '#fff',
+    borderBottomColor: theme.colors.border, backgroundColor: theme.colors.background,
     marginTop: Platform.OS === 'android' ? 30 : 0
   },
   backButton: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: theme.colors.textDarkGrey },
   historyButton: { padding: 4 },
-  historyText: { fontSize: 14, color: '#850111', fontWeight: '600' },
-  tabsContainer: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#e0e0e0', paddingHorizontal: 16 },
+  historyText: { fontSize: 14, color: theme.colors.secondary, fontWeight: '600' },
+  tabsContainer: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: theme.colors.borderLight, paddingHorizontal: 16, backgroundColor: theme.colors.background },
   tabItem: { flex: 1, alignItems: 'center', paddingVertical: 16, position: 'relative' },
   tabItemActive: {},
-  tabText: { fontSize: 13, color: '#888', fontWeight: '500' },
-  tabTextActive: { color: '#004B40', fontWeight: '700' }, // Dark green for active tab
-  tabIndicator: { position: 'absolute', bottom: -1, left: 0, right: 0, height: 3, backgroundColor: '#004B40', borderTopLeftRadius: 3, borderTopRightRadius: 3 },
-  scrollView: { flex: 1, backgroundColor: "#fafafa" },
+  tabText: { fontSize: 13, color: theme.colors.textLightGrey, fontWeight: '500' },
+  tabTextActive: { color: theme.colors.secondary, fontWeight: '700' },
+  tabIndicator: { position: 'absolute', bottom: -1, left: 0, right: 0, height: 3, backgroundColor: theme.colors.secondary, borderTopLeftRadius: 3, borderTopRightRadius: 3 },
+  scrollView: { flex: 1, backgroundColor: theme.colors.backgroundSecondary },
   scrollContent: { paddingBottom: 20 },
   referContent: { padding: 16, paddingTop: 8 },
 
   carouselScroll: { width: width - 32, borderRadius: 16 },
   heroBanner: {
     width: width - 32,
-    backgroundColor: '#FFF2CC',
+    backgroundColor: theme.colors.backgroundTertiary,
     borderRadius: 16,
     padding: 24,
     paddingBottom: 40,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.3)',
+    borderColor: theme.colors.border,
   },
-  heroSubtitle: { fontSize: 12, fontWeight: '700', color: '#444', letterSpacing: 1.5, marginBottom: 12, textTransform: 'uppercase' },
-  heroTitle: { fontSize: 20, fontWeight: '800', color: '#333', textAlign: 'center', lineHeight: 28 },
+  heroSubtitle: { fontSize: 12, fontWeight: '700', color: theme.colors.textGrey, letterSpacing: 1.5, marginBottom: 12, textTransform: 'uppercase' },
+  heroTitle: { fontSize: 20, fontWeight: '800', color: theme.colors.textDarkGrey, textAlign: 'center', lineHeight: 28 },
   paginationContainer: { flexDirection: 'row', justifyContent: 'center', marginTop: -20, marginBottom: 15, zIndex: 10 },
   paginationDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(0,0,0,0.1)', marginHorizontal: 4 },
-  paginationDotActive: { backgroundColor: '#850111', width: 20 },
+  paginationDotActive: { backgroundColor: theme.colors.secondary, width: 20 },
 
-  howItWorksCard: { backgroundColor: '#fff', borderRadius: 16, padding: 20, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  howItWorksCard: { backgroundColor: theme.colors.white, borderRadius: 16, padding: 20, marginBottom: 24, shadowColor: theme.colors.black, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   timelineRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   timelineItem: { flex: 1, alignItems: 'center' },
-  timelineIconContainer: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#FFF8F0', justifyContent: 'center', alignItems: 'center', marginBottom: 8, borderWidth: 1, borderColor: '#FFE4C4' },
-  timelineText: { fontSize: 11, textAlign: 'center', color: '#555', lineHeight: 16, fontWeight: '500' },
+  timelineIconContainer: { width: 50, height: 50, borderRadius: 25, backgroundColor: theme.colors.backgroundSecondary, justifyContent: 'center', alignItems: 'center', marginBottom: 8, borderWidth: 1, borderColor: theme.colors.borderLight },
+  timelineText: { fontSize: 11, textAlign: 'center', color: theme.colors.textMediumGrey, lineHeight: 16, fontWeight: '500' },
   arrowContainer: { paddingTop: 15 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#333', marginBottom: 16, marginLeft: 4 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: theme.colors.textDarkGrey, marginBottom: 16, marginLeft: 4 },
   rewardsList: { gap: 12, marginBottom: 24 },
-  rewardCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#f0f0f0', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
-  rewardIconWrapper: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFBE6', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
-  rewardText: { flex: 1, fontSize: 14, color: '#444', lineHeight: 20 },
-  boldText: { fontWeight: '700', color: '#000' },
-  codeContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', paddingVertical: 16, paddingHorizontal: 20, borderRadius: 12, borderWidth: 1, borderColor: '#e0e0e0', borderStyle: 'dashed', alignSelf: 'center', minWidth: '70%' },
-  codeLabel: { fontSize: 14, color: '#666', marginRight: 8 },
-  codeValue: { fontSize: 20, fontWeight: '800', color: '#850111', letterSpacing: 2, marginRight: 12 },
+  rewardCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.white, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: theme.colors.borderLight, shadowColor: theme.colors.black, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
+  rewardIconWrapper: { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.colors.backgroundTertiary, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  rewardText: { flex: 1, fontSize: 14, color: theme.colors.textMediumGrey, lineHeight: 20 },
+  boldText: { fontWeight: '700', color: theme.colors.textDarkGrey },
+  codeContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.white, paddingVertical: 16, paddingHorizontal: 20, borderRadius: 12, borderWidth: 1, borderColor: theme.colors.borderLight, borderStyle: 'dashed', alignSelf: 'center', minWidth: '70%' },
+  codeLabel: { fontSize: 14, color: theme.colors.textMediumGrey, marginRight: 8 },
+  codeValue: { fontSize: 20, fontWeight: '800', color: theme.colors.secondary, letterSpacing: 2, marginRight: 12 },
   copyIcon: { padding: 4 },
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', flexDirection: 'row', padding: 16, paddingBottom: Platform.OS === 'ios' ? 32 : 16, borderTopWidth: 1, borderTopColor: '#f0f0f0', shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 10 },
+  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: theme.colors.background, flexDirection: 'row', padding: 16, paddingBottom: Platform.OS === 'ios' ? 32 : 16, borderTopWidth: 1, borderTopColor: theme.colors.border, shadowColor: theme.colors.black, shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 10 },
   whatsappButton: { flex: 1, flexDirection: 'row', backgroundColor: '#004B40', justifyContent: 'center', alignItems: 'center', paddingVertical: 14, borderRadius: 12, marginRight: 12 },
-  whatsappButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  whatsappButtonText: { color: theme.colors.white, fontSize: 15, fontWeight: '700' },
   shareButton: { width: 50, height: 50, borderWidth: 1, borderColor: '#004B40', borderRadius: 12, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F0F9F8' },
 
-  faqContainer: { padding: 16, backgroundColor: '#fafafa' },
-  totalEarningsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFDF5', padding: 20, borderRadius: 12, marginBottom: 24, borderWidth: 1, borderColor: '#F5E6B3' },
-  earningsLabel: { fontSize: 14, color: '#666', marginBottom: 4 },
+  faqContainer: { padding: 16, backgroundColor: theme.colors.backgroundSecondary },
+  totalEarningsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.backgroundTertiary, padding: 20, borderRadius: 12, marginBottom: 24, borderWidth: 1, borderColor: theme.colors.border },
+  earningsLabel: { fontSize: 14, color: theme.colors.textMediumGrey, marginBottom: 4 },
   earningsValueRow: { flexDirection: 'row', alignItems: 'center' },
-  earningsValue: { fontSize: 24, fontWeight: '800', color: '#004B40', marginLeft: 8 },
+  earningsValue: { fontSize: 24, fontWeight: '800', color: theme.colors.secondary, marginLeft: 8 },
   redeemButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#004B40',
+    backgroundColor: theme.colors.secondary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    shadowColor: '#000',
+    shadowColor: theme.colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
   },
   redeemButtonText: {
-    color: '#fff',
+    color: theme.colors.textDark,
     fontSize: 14,
     fontWeight: '700',
   },
-  faqItem: { backgroundColor: '#fff', borderRadius: 12, marginBottom: 12, padding: 16, borderWidth: 1, borderColor: '#eaeaea', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 2, elevation: 1 },
+  faqItem: { backgroundColor: theme.colors.white, borderRadius: 12, marginBottom: 12, padding: 16, borderWidth: 1, borderColor: theme.colors.border, shadowColor: theme.colors.black, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 2, elevation: 1 },
   faqHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  faqQuestion: { fontSize: 15, fontWeight: '700', color: '#333', flex: 1, paddingRight: 16 },
-  faqAnswer: { fontSize: 14, color: '#666', marginTop: 12, lineHeight: 22, borderTopWidth: 1, borderTopColor: '#f0f0f0', paddingTop: 12 },
+  faqQuestion: { fontSize: 15, fontWeight: '700', color: theme.colors.textDarkGrey, flex: 1, paddingRight: 16 },
+  faqAnswer: { fontSize: 14, color: theme.colors.textMediumGrey, marginTop: 12, lineHeight: 22, borderTopWidth: 1, borderTopColor: theme.colors.border, paddingTop: 12 },
 
   referralItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#eef2f5',
-    shadowColor: "#000",
+    borderColor: theme.colors.border,
+    shadowColor: theme.colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 4,
@@ -627,7 +628,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0, 75, 64, 0.05)',
+    backgroundColor: theme.colors.backgroundSecondary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -635,17 +636,17 @@ const styles = StyleSheet.create({
   referralName: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: theme.colors.textDarkGrey,
     marginBottom: 2,
   },
   referralMobile: {
     fontSize: 12,
-    color: '#666',
+    color: theme.colors.textMediumGrey,
     marginBottom: 4,
   },
   referralDate: {
     fontSize: 10,
-    color: '#999',
+    color: theme.colors.textLightGrey,
   },
   referralPointsContainer: {
     alignItems: 'flex-end',
@@ -657,6 +658,6 @@ const styles = StyleSheet.create({
   },
   referralPointsLabel: {
     fontSize: 10,
-    color: '#666',
+    color: theme.colors.textMediumGrey,
   },
 });

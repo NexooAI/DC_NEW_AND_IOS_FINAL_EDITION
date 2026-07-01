@@ -21,13 +21,15 @@ import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useRouter, useFocusEffect, useNavigation } from "expo-router";
 import { rewardsAPI, investmentAPI } from "@/services/api";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useEffect } from "react";
 
 
 const DISABLE_REDEMPTION_FORM = true; // Set to false to restore original redemption modal flow
 
 export default function RewardsScreen() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const router = useRouter();
@@ -350,7 +352,7 @@ export default function RewardsScreen() {
                             style={styles.referCardGradient}
                         >
                             <View style={styles.referIconContainer}>
-                                <Ionicons name="people" size={28} color={theme.colors.primary} />
+                                <Ionicons name="people" size={28} color={theme.colors.textDark} />
                             </View>
                             <View style={styles.referContent}>
                                 <Text style={styles.referTitle}>{t("referAndEarn") || "Refer & Earn"}</Text>
@@ -372,7 +374,7 @@ export default function RewardsScreen() {
                         {/* Step 1 */}
                         <View style={styles.stepCardItem}>
                             <View style={styles.stepIconContainer}>
-                                <Ionicons name="options-outline" size={24} color={theme.colors.primary} />
+                                <Ionicons name="options-outline" size={24} color={theme.colors.textDark} />
                             </View>
                             <View style={styles.stepContent}>
                                 <Text style={styles.stepTitle}>{t("chooseHowToRedeem") || "Choose How to Redeem"}</Text>
@@ -385,7 +387,7 @@ export default function RewardsScreen() {
                         {/* Step 2 */}
                         <View style={styles.stepCardItem}>
                             <View style={styles.stepIconContainer}>
-                                <Ionicons name="push-outline" size={24} color={theme.colors.primary} />
+                                <Ionicons name="push-outline" size={24} color={theme.colors.textDark} />
                             </View>
                             <View style={styles.stepContent}>
                                 <Text style={styles.stepTitle}>{t("submitYourRequest") || "Submit Your Request"}</Text>
@@ -398,7 +400,7 @@ export default function RewardsScreen() {
                         {/* Step 3 */}
                         <View style={styles.stepCardItem}>
                             <View style={styles.stepIconContainer}>
-                                <Ionicons name="storefront-outline" size={24} color={theme.colors.primary} />
+                                <Ionicons name="storefront-outline" size={24} color={theme.colors.textDark} />
                             </View>
                             <View style={styles.stepContent}>
                                 <Text style={styles.stepTitle}>{t("visitStoreRedeem") || "Visit the Store & Redeem"}</Text>
@@ -487,7 +489,7 @@ export default function RewardsScreen() {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <Ionicons name="storefront-outline" size={48} color={theme.colors.primary} />
+                            <Ionicons name="storefront-outline" size={48} color={theme.colors.textDark} />
                             <Text style={styles.modalTitle}>{t("visitBranchToRedeemTitle") || "Visit Branch to Redeem"}</Text>
                         </View>
                         <Text style={styles.modalDescription}>
@@ -520,7 +522,7 @@ export default function RewardsScreen() {
                 <View style={styles.modalOverlay}>
                     <View style={[styles.modalContent, { maxWidth: 360 }]}>
                         <View style={styles.modalHeader}>
-                            <Ionicons name="gift" size={40} color={theme.colors.primary} />
+                            <Ionicons name="gift" size={40} color={theme.colors.textDark} />
                             <Text style={[styles.modalTitle, { fontSize: 20, marginTop: 8 }]}>
                                 {t("redeemPoints") || "Redeem Points"}
                             </Text>
@@ -629,7 +631,7 @@ export default function RewardsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "#F2E6D2",
@@ -1034,6 +1036,8 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
     methodTextActive: {
-        color: theme.colors.primary,
+        color: theme.colors.textDark,
     },
-});
+}) }
+
+var styles = getStyles(theme);;

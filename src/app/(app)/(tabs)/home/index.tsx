@@ -44,7 +44,7 @@ import FlashOffer from "@/components/FlashOffer";
 import YouTubeVideo from "@/components/YouTubeVideo";
 import SupportContactCard from "@/components/SupportContactCard";
 import SocialMediaCard from "@/components/SocialMediaCard";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import api, { offersAPI } from "@/services/api";
 import NetInfo from "@react-native-community/netinfo";
 import { ScaledSheet, moderateScale } from "react-native-size-matters";
@@ -330,7 +330,7 @@ const collectionStyles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
@@ -563,6 +563,8 @@ import GoldSilverRateCard from "@/components/GoldSilverRateCard";
 
 
 export default function Home() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   // State
   const { language, user, debugState, setLanguage } = useGlobalStore();
@@ -2685,7 +2687,7 @@ export default function Home() {
                 <Ionicons
                   name="person-circle"
                   size={40}
-                  color={theme.colors.primary}
+                  color={theme.colors.textDark}
                 />
               )}
             </TouchableOpacity>
@@ -2694,7 +2696,7 @@ export default function Home() {
                 variant="caption"
                 size="xs"
                 weight="normal"
-                color={theme.colors.primary}
+                color={theme.colors.textSecondary}
                 allowWrap={false}
                 maxLines={1}
                 adjustsFontSizeToFit={true}
@@ -2707,7 +2709,7 @@ export default function Home() {
                 variant="body"
                 size="md"
                 weight="semibold"
-                color={theme.colors.primary}
+                color={theme.colors.textDark}
                 allowWrap={false}
                 maxLines={1}
                 adjustsFontSizeToFit={true}
@@ -2720,7 +2722,7 @@ export default function Home() {
                 variant="caption"
                 size="xs"
                 weight="normal"
-                color={theme.colors.primary}
+                color={theme.colors.textSecondary}
                 allowWrap={false}
                 maxLines={1}
                 adjustsFontSizeToFit={true}
@@ -2744,7 +2746,7 @@ export default function Home() {
                 <Ionicons
                   name="language"
                   size={24}
-                  color={theme.colors.primary}
+                  color={theme.colors.textDark}
                 />
                 {/* <Text style={styles.languageIconText}>
                   {language === "en" ? "தமிழ்" : "EN"}
@@ -2761,7 +2763,7 @@ export default function Home() {
               <Ionicons
                 name="notifications-outline"
                 size={24}
-                color={theme.colors.primary}
+                color={theme.colors.textDark}
               />
               {unreadCount > 0 && (
                 <View style={styles.notificationBadge}>
@@ -2926,7 +2928,7 @@ export default function Home() {
                 <>
                   <View style={[styles.statusHeader, { justifyContent: 'space-between', alignItems: 'center' }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Ionicons name="ribbon-outline" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+                      <Ionicons name="ribbon-outline" size={20} color={theme.colors.secondary} style={{ marginRight: 8 }} />
                       <Text style={styles.statusHeaderText}>
                         {t("ourSchemes")}
                       </Text>
@@ -2936,10 +2938,10 @@ export default function Home() {
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                       activeOpacity={0.7}
                     >
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: theme.colors.primary }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: theme.colors.textDark }}>
                         {t("viewAll") || "View All"}
                       </Text>
-                      <Ionicons name="chevron-forward" size={14} color={theme.colors.primary} />
+                      <Ionicons name="chevron-forward" size={14} color={theme.colors.secondary} />
                     </TouchableOpacity>
                   </View>
                   <DynamicSchemeCard
@@ -3190,12 +3192,12 @@ export default function Home() {
                         </LinearGradient>
                       </Animated.View>
 
-                      <Ionicons name="chevron-forward" size={deviceScale(16)} color={theme.colors.primary} style={{ opacity: 0.8 }} />
+                      <Ionicons name="chevron-forward" size={deviceScale(16)} color={theme.colors.textDark} style={{ opacity: 0.8 }} />
                     </View>
 
                     <View>
                       <Text style={{
-                        color: theme.colors.primary,
+                        color: theme.colors.textDark,
                         fontSize: moderateScale(14),
                         fontWeight: "800",
                         letterSpacing: 0.3,
@@ -3205,7 +3207,7 @@ export default function Home() {
                       </Text>
                       <Text
                         style={{
-                          color: theme.colors.primary,
+                          color: theme.colors.textDark,
                           fontSize: moderateScale(10),
                           fontWeight: "500",
                           opacity: 0.85,
@@ -3821,7 +3823,7 @@ export default function Home() {
               onPress={() => setShowFloatingOffer(false)}
               activeOpacity={0.7}
             >
-              <Ionicons name="close-circle" size={24} color={theme.colors.primary} />
+              <Ionicons name="close-circle" size={24} color={theme.colors.textDark} />
             </TouchableOpacity>
           </View>
         )}
@@ -3889,19 +3891,19 @@ export default function Home() {
                         {t("termsAndConditions") || "Terms & Conditions"}
                       </Text>
                       <View style={styles.offerModalTermItem}>
-                        <Ionicons name="checkmark-circle" size={16} color={theme.colors.primary} />
+                        <Ionicons name="checkmark-circle" size={16} color={theme.colors.textDark} />
                         <Text style={styles.offerModalTermText}>
                           Offer is valid on selected jewellery collections.
                         </Text>
                       </View>
                       <View style={styles.offerModalTermItem}>
-                        <Ionicons name="checkmark-circle" size={16} color={theme.colors.primary} />
+                        <Ionicons name="checkmark-circle" size={16} color={theme.colors.textDark} />
                         <Text style={styles.offerModalTermText}>
                           Cannot be combined with any other schemes or discount offers.
                         </Text>
                       </View>
                       <View style={styles.offerModalTermItem}>
-                        <Ionicons name="checkmark-circle" size={16} color={theme.colors.primary} />
+                        <Ionicons name="checkmark-circle" size={16} color={theme.colors.textDark} />
                         <Text style={styles.offerModalTermText}>
                           Please present this offer popup at the billing counter to claim.
                         </Text>
@@ -3934,7 +3936,7 @@ export default function Home() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   fullHeightBackground: {
     flex: 1,
     width: "100%",
@@ -4022,7 +4024,7 @@ const styles = StyleSheet.create({
   languageIconText: {
     fontSize: rf(12, { minSize: 10, maxSize: 14 }),
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginLeft: 2,
   },
   notificationBadge: {
@@ -4134,7 +4136,7 @@ const styles = StyleSheet.create({
     marginRight: spacing.xs,
   },
   aboutSchemesButtonText: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: "600",
     fontSize: rf(15, { minSize: 13, maxSize: 17 }),
     letterSpacing: 0.2,
@@ -4203,7 +4205,7 @@ const styles = StyleSheet.create({
   statusHeaderText: {
     fontSize: rf(18, { minSize: 16, maxSize: 20 }),
     fontWeight: "800",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     textTransform: "uppercase",
     letterSpacing: 1.5,
     textAlign: "left",
@@ -4232,7 +4234,7 @@ const styles = StyleSheet.create({
   sectionHeaderText: {
     fontSize: moderateScale(18),
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     textTransform: "uppercase",
     letterSpacing: 1.2,
   },
@@ -4259,7 +4261,7 @@ const styles = StyleSheet.create({
   collectionHeaderTitle: {
     fontSize: rf(18),
     fontWeight: '700',
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
@@ -4874,7 +4876,7 @@ const styles = StyleSheet.create({
   schemeInfoSectionTitle: {
     fontSize: rf(18, { minSize: 16, maxSize: 20 }),
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginBottom: rp(12),
   },
   schemeInfoSectionText: {
@@ -5031,7 +5033,7 @@ const styles = StyleSheet.create({
   quickJoinModalTitle: {
     fontSize: rf(20, { minSize: 18, maxSize: 22 }),
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   quickJoinModalCloseButton: {
     padding: rp(8),
@@ -5048,7 +5050,7 @@ const styles = StyleSheet.create({
   quickJoinInputLabel: {
     fontSize: rf(14, { minSize: 12, maxSize: 16 }),
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginBottom: rp(8),
   },
   quickJoinInput: {
@@ -5086,12 +5088,12 @@ const styles = StyleSheet.create({
   quickJoinGoldWeightLabel: {
     fontSize: rf(14, { minSize: 12, maxSize: 16 }),
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   quickJoinGoldWeightValue: {
     fontSize: rf(18, { minSize: 16, maxSize: 20 }),
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   quickJoinModalFooter: {
     paddingHorizontal: rp(24),
@@ -5143,7 +5145,7 @@ const styles = StyleSheet.create({
   quickJoinQuickAmountsLabel: {
     fontSize: rf(14, { minSize: 12, maxSize: 16 }),
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginBottom: rp(8),
   },
   quickJoinQuickAmountsRow: {
@@ -5166,7 +5168,7 @@ const styles = StyleSheet.create({
   quickJoinQuickAmountButtonText: {
     fontSize: rf(14, { minSize: 12, maxSize: 16 }),
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   quickJoinQuickAmountButtonTextActive: {
     color: COLORS.white,
@@ -5336,7 +5338,9 @@ const styles = StyleSheet.create({
     color: "#666",
     lineHeight: 18,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 // Skeleton loading styles
 const skeletonStyles = StyleSheet.create({
   rateCardContainer: {
@@ -5447,7 +5451,7 @@ const styles2 = StyleSheet.create({
   },
   amountHintText: {
     fontSize: 12,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginLeft: 4,
   },
   amountHeader: {
@@ -5458,7 +5462,7 @@ const styles2 = StyleSheet.create({
   },
   limitText: {
     fontSize: 12,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: '600',
   },
   inputContainer: {
@@ -5562,7 +5566,7 @@ const styles2 = StyleSheet.create({
     textAlign: 'center',
   },
   quickAmountTextActive: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: '600',
   },
   footer: {

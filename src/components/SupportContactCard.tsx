@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useRef } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -71,6 +72,8 @@ const CompactContactButton: React.FC<{
 };
 
 const SupportContactCard = () => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const {
     deviceScale,
     getResponsiveFontSize,
@@ -163,7 +166,7 @@ const SupportContactCard = () => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   cardWrapper: {
     paddingHorizontal: moderateScale(16),
     paddingVertical: moderateScale(8),
@@ -239,6 +242,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     flex: 1,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default SupportContactCard;

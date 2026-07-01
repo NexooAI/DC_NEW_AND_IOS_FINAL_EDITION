@@ -12,6 +12,7 @@ import {
   UIManager,
   ScrollView,
   StatusBar,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,7 +23,7 @@ import COLORS from '@/constants/colors';
 import ResponsiveText from '@/components/ResponsiveText';
 import { responsiveUtils } from '@/utils/responsiveUtils';
 import FAQService from '@/services/faqService';
-import useGlobalStore from '@/store/global.store';
+import useGlobalStore, { getAppConfig, useAppTheme } from '@/store/global.store';
 import { useTranslation } from '@/hooks/useTranslation';
 
 // Enable LayoutAnimation for Android (only if not on the New Architecture / Fabric)
@@ -69,7 +70,38 @@ const formatDate = (value?: string) => {
 };
 
 export default function TicketsScreen() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
+  const handleBack = useCallback(() => {
+    const hasDashboard = getAppConfig().constants.enableDashboard;
+    if (!hasDashboard) {
+      router.replace("/(app)/(tabs)/home");
+    } else {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/(app)/dashboard");
+      }
+    }
+  }, [router]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        handleBack();
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress
+      );
+
+      return () => subscription.remove();
+    }, [handleBack])
+  );
+
   const { t } = useTranslation();
   const { user } = useGlobalStore();
   const [activeTab, setActiveTab] = useState<'all' | 'resolved'>('all');
@@ -141,8 +173,8 @@ export default function TicketsScreen() {
       default:
         return {
           label: t('open') || 'Open',
-          color: theme.colors.primary || '#850111',
-          backgroundColor: 'rgba(133,1,17,0.1)',
+          color: theme.colors.textDark || '#0e1e38',
+          backgroundColor: 'rgba(14,30,56,0.1)',
         };
     }
   };
@@ -155,10 +187,10 @@ export default function TicketsScreen() {
         <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
 
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
           </TouchableOpacity>
-          <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
+          <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.textDark}>
             {t('ticketsAndEnquiries') || 'Tickets & Enquiries'}
           </ResponsiveText>
           <View style={{ width: 40 }} />
@@ -243,14 +275,14 @@ export default function TicketsScreen() {
       <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
         </TouchableOpacity>
-        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
+        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.textDark}>
           {t('ticketsAndEnquiries') || 'Tickets & Enquiries'}
         </ResponsiveText>
         <TouchableOpacity onPress={handleRefresh} style={styles.backButton}>
-          <Ionicons name="refresh" size={22} color={theme.colors.primary} />
+          <Ionicons name="refresh" size={22} color={theme.colors.textDark} />
         </TouchableOpacity>
       </View>
 
@@ -283,7 +315,7 @@ export default function TicketsScreen() {
 
       {loading ? (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color={theme.colors.secondary} />
           <Text style={styles.loaderText}>{t('pleaseWait') || 'Loading tickets...'}</Text>
         </View>
       ) : (
@@ -321,7 +353,7 @@ export default function TicketsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: QUATERNARY_COLOR,
@@ -347,13 +379,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   loginButton: {
-    backgroundColor: theme.colors.primary || '#850111',
+    backgroundColor: theme.colors.primary || '#0e1e38',
     paddingHorizontal: wp(8),
     paddingVertical: hp(1.5),
     borderRadius: 8,
   },
   loginButtonText: {
-    color: '#ffffff',
+    color: theme.colors.white,
     fontSize: rf(13),
     fontWeight: 'bold',
   },
@@ -369,20 +401,20 @@ const styles = StyleSheet.create({
   tab: { flex: 1, paddingVertical: hp(1.5), alignItems: 'center', position: 'relative' },
   activeTab: {
     backgroundColor: COLORS.white || '#ffffff',
-    shadowColor: '#000',
+    shadowColor: theme.colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   tabText: { fontSize: rf(13), color: 'rgba(0,0,0,0.5)', fontWeight: '600' },
-  activeTabText: { color: theme.colors.primary || '#850111' },
+  activeTabText: { color: theme.colors.textDark || '#0e1e38' },
   activeIndicator: {
     position: 'absolute',
     bottom: 0,
     width: '30%',
     height: 3,
-    backgroundColor: theme.colors.primary || '#850111',
+    backgroundColor: theme.colors.secondary || '#0e1e38',
     borderTopLeftRadius: 3,
     borderTopRightRadius: 3,
   },
@@ -395,7 +427,7 @@ const styles = StyleSheet.create({
     padding: wp(4),
     marginBottom: hp(1.5),
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5 },
+      ios: { shadowColor: theme.colors.black, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5 },
       android: { elevation: 2 },
     }),
   },
@@ -496,8 +528,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 4 },
+      ios: { shadowColor: theme.colors.black, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 4 },
       android: { elevation: 6 },
     }),
   },
 });
+
+let styles = getStyles(theme);

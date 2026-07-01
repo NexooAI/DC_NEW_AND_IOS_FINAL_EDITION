@@ -10,6 +10,7 @@ import {
   Platform,
   Linking,
   Animated,
+  Switch,
 } from "react-native";
 import { DrawerContentScrollView } from "@react-navigation/drawer";
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -18,8 +19,7 @@ import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { LinearGradient } from 'expo-linear-gradient';
 
-import useGlobalStore from "@/store/global.store";
-import { theme } from "@/constants/theme";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getFullImageUrl } from "@/utils/imageUtils";
 
@@ -46,6 +46,8 @@ const DrawerMenuItem = ({
   delay = 0,
   iconColor,
 }: DrawerMenuItemProps) => {
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -116,23 +118,31 @@ const DrawerMenuItem = ({
   );
 };
 
-const SectionHeader = ({ title }: { title: string }) => (
-  <View style={styles.sectionHeaderContainer}>
-    <Text style={styles.sectionHeaderText}>{title}</Text>
-    <View style={styles.sectionDivider} />
-  </View>
-);
-
-const SocialIcon = ({ name, url, color }: { name: any, url: string, color: string }) => (
-  <TouchableOpacity
-    style={styles.socialIconBtn}
-    onPress={() => Linking.openURL(url).catch(err => console.error("Couldn't load page", err))}
-  >
-    <View style={[styles.socialIconContainer, { backgroundColor: color + '15' }]}>
-      <FontAwesome5 name={name} size={18} color={color} />
+const SectionHeader = ({ title }: { title: string }) => {
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
+  return (
+    <View style={styles.sectionHeaderContainer}>
+      <Text style={styles.sectionHeaderText}>{title}</Text>
+      <View style={styles.sectionDivider} />
     </View>
-  </TouchableOpacity>
-);
+  );
+};
+
+const SocialIcon = ({ name, url, color }: { name: any, url: string, color: string }) => {
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
+  return (
+    <TouchableOpacity
+      style={styles.socialIconBtn}
+      onPress={() => Linking.openURL(url).catch(err => console.error("Couldn't load page", err))}
+    >
+      <View style={[styles.socialIconContainer, { backgroundColor: color + '15' }]}>
+        <FontAwesome5 name={name} size={18} color={color} />
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 interface CustomDrawerContentProps {
   navigation: {
@@ -141,10 +151,12 @@ interface CustomDrawerContentProps {
 }
 
 export function CustomDrawerContent(props: CustomDrawerContentProps) {
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
   const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
-  const { logout, user } = useGlobalStore();
+  const { logout, user, themeMode, toggleThemeMode } = useGlobalStore();
   const [isNavigating, setIsNavigating] = useState(false);
   const [imageError, setImageError] = useState(false);
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -355,7 +367,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
             disabled={isNavigating}
             isActive={isRouteActive("/tickets")}
             delay={175}
-            iconColor="#850111" // Primary Brand Red
+            iconColor={theme.colors.primary} // Primary Brand color
           />
 
           {/* Support Section */}
@@ -443,7 +455,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
         </View>
 
         <View style={styles.versionContainer}>
-          <Text style={styles.companyName}>DC JEWELLERS</Text>
+          <Text style={styles.companyName}>{theme.constants.customerName.toUpperCase()}</Text>
           <Text style={styles.versionText}>v{version}</Text>
         </View>
       </View>
@@ -451,10 +463,10 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white || '#fff',
   },
   headerContainer: {
     minHeight: 120,
@@ -486,9 +498,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.3)',
     overflow: 'hidden',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white || '#fff',
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: theme.colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -505,7 +517,7 @@ const styles = StyleSheet.create({
   avatarInitials: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: theme.colors.secondary || '#ffffff',
   },
   rewardsBadge: {
     flexDirection: 'row',
@@ -537,7 +549,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '800', // Extra bold for premium feel
-    color: '#fff',
+    color: '#ffffff',
     marginBottom: 4,
     letterSpacing: 0.5,
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
@@ -616,10 +628,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeIconContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white || '#fff',
   },
   logoutIconContainer: {
     backgroundColor: '#FFE5E5',
+  },
+  darkModeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    marginBottom: 2,
+  },
+  darkModeLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginLeft: 4,
+  },
+  darkModeText: {
+    fontSize: 14,
+    color: theme.colors.textDarkGrey,
+    fontWeight: '500',
   },
   menuItemText: {
     flex: 1,
@@ -657,7 +689,7 @@ const styles = StyleSheet.create({
   footer: {
     borderTopWidth: 1,
     borderTopColor: theme.colors.borderLight,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white || '#fff',
     paddingBottom: Platform.OS === 'ios' ? 10 : 5,
   },
   logoutContainer: {

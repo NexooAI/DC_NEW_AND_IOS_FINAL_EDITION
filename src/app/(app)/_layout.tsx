@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import { Text, Platform } from "react-native";
 import CustomDrawerContent from "@/common/components/navigation/DrawerContent";
 import { Drawer } from "expo-router/drawer";
@@ -17,6 +18,7 @@ import { useAppVisibility } from "@/hooks/useAppVisibility";
 };
 
 export default function AppLayout() {
+  const theme = useAppTheme();
   const { isVisible } = useAppVisibility();
   const segments = useSegments();
 

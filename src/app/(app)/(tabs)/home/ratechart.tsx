@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useEffect, useMemo } from "react";
 import {
     View,
@@ -40,6 +41,8 @@ type RateType = "gold" | "silver";
 type DateFilter = "all" | "thisWeek" | "thisMonth" | "lastMonth" | "last3Months" | "last6Months";
 
 export default function RateChart() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
     const { t } = useTranslation();
     const navigation = useNavigation();
     const router = useRouter();
@@ -60,7 +63,7 @@ export default function RateChart() {
                         onPress={() => router.replace("/(app)/(tabs)/profile")}
                         style={{ marginLeft: Platform.OS === 'ios' ? 10 : 0, paddingRight: 15 }}
                     >
-                        <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+                        <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
                     </TouchableOpacity>
                 ),
             });
@@ -205,7 +208,7 @@ export default function RateChart() {
                 return `rgba(192, 192, 192, ${opacity})`; // Silver color
             }
         },
-        labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+        labelColor: (opacity = 1) => theme.colors.textDark,
         style: {
             borderRadius: 16,
         },
@@ -248,7 +251,7 @@ export default function RateChart() {
         return (
             <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                    <ActivityIndicator size="large" color={theme.colors.secondary} />
                     <Text style={styles.loadingText}>{t("rateChart_loadingRates")}</Text>
                 </View>
             </SafeAreaView>
@@ -438,7 +441,7 @@ export default function RateChart() {
     );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
@@ -712,5 +715,7 @@ const styles = StyleSheet.create({
     statusTextInactive: {
         color: theme.colors.error,
     },
-});
+}) }
+
+var styles = getStyles(theme);;
 

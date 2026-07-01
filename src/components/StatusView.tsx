@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { logger } from "@/utils/logger";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import FAQService from "@/services/faqService";
 
 interface StatusViewProps {
@@ -36,6 +36,8 @@ const STATUS_DURATION = 5000; // 5 seconds per status (snappier feel)
 
 const StatusView: React.FC<StatusViewProps> = React.memo(
   ({ collections, isVisible, initialCollectionIndex, onClose, onEnquire }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
     const { t } = useTranslation();
     const [currentCollection, setCurrentCollection] = useState(
       collections[initialCollectionIndex]
@@ -585,7 +587,7 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
 
 StatusView.displayName = "StatusView";
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
@@ -814,6 +816,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default StatusView;

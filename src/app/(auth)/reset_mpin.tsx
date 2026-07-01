@@ -18,12 +18,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { theme } from "@/constants/theme";
 import MpinInput from "@/components/MpinInput";
 import api from "@/services/api";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 
 const { width, height } = Dimensions.get("window");
 
 export default function ResetMpin() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const { user } = useGlobalStore();
   const { t } = useTranslation();
@@ -196,7 +198,7 @@ export default function ResetMpin() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   backgroundImage: {
     flex: 1,
     resizeMode: "cover",
@@ -323,4 +325,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#ffffff",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

@@ -27,7 +27,7 @@ import { COLORS } from '@/constants/colors';
 import ResponsiveText from '@/components/ResponsiveText';
 import { responsiveUtils } from '@/utils/responsiveUtils';
 import apiClient, { billsAPI } from '@/services/api';
-import useGlobalStore from '@/store/global.store';
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { logAppEvent } from '@/services/appEventService';
 import { saveFileToPublicDirectory } from '@/utils/fileUtils';
 
@@ -118,7 +118,7 @@ const getStatusMeta = (status: BillStatus) => {
       return {
         label: 'Partial',
         icon: 'receipt-outline' as const,
-        color: theme.colors.primary,
+        color: theme.colors.textDark,
         backgroundColor: 'rgba(133,1,17,0.1)',
       };
     default:
@@ -162,6 +162,8 @@ const getApiErrorMessage = (error: any) => {
 };
 
 export default function BillPayment() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const { user } = useGlobalStore();
   const [activeTab, setActiveTab] = useState<'all' | 'closed'>('all');
@@ -471,7 +473,7 @@ export default function BillPayment() {
         </View>
 
         <View style={styles.billAction}>
-          <Text style={[styles.billAmount, { color: canPayBill(item) ? theme.colors.primary : statusMeta.color }]}>
+          <Text style={[styles.billAmount, { color: canPayBill(item) ? theme.colors.textDark : statusMeta.color }]}>
             {formatCurrency(item.pendingAmount)}
           </Text>
           {canPayBill(item) ? (
@@ -507,13 +509,13 @@ export default function BillPayment() {
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
         </TouchableOpacity>
-        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
+        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.textDark}>
           My Bills
         </ResponsiveText>
         <TouchableOpacity onPress={handleRefresh} style={styles.backButton}>
-          <Ionicons name="refresh" size={22} color={theme.colors.primary} />
+          <Ionicons name="refresh" size={22} color={theme.colors.textDark} />
         </TouchableOpacity>
       </View>
 
@@ -530,7 +532,7 @@ export default function BillPayment() {
 
       {loading ? (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color={theme.colors.secondary} />
           <Text style={styles.loaderText}>Loading bills...</Text>
         </View>
       ) : (
@@ -558,7 +560,7 @@ export default function BillPayment() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Bill Details</Text>
               <TouchableOpacity onPress={() => setDetailModalVisible(false)} style={styles.closeButton}>
-                <Ionicons name="close-circle" size={32} color={theme.colors.primary} />
+                <Ionicons name="close-circle" size={32} color={theme.colors.textDark} />
               </TouchableOpacity>
             </View>
 
@@ -597,7 +599,7 @@ export default function BillPayment() {
                     style={styles.termsLinkRow}
                     onPress={fetchBillPaymentTerms}
                   >
-                    <Ionicons name="document-text-outline" size={16} color={theme.colors.primary} />
+                    <Ionicons name="document-text-outline" size={16} color={theme.colors.textDark} />
                     <Text style={styles.termsLinkText}>View Bill Payment Terms & Conditions</Text>
                   </TouchableOpacity>
                 )}
@@ -634,7 +636,7 @@ export default function BillPayment() {
                       style={[styles.modalButton, styles.downloadBtn]}
                       onPress={() => handleDownloadBillReceipt(selectedBill)}
                     >
-                      <Ionicons name="download-outline" size={18} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                      <Ionicons name="download-outline" size={18} color={theme.colors.textDark} style={{ marginRight: 6 }} />
                       <Text style={styles.downloadBtnText}>Download</Text>
                     </TouchableOpacity>
 
@@ -670,7 +672,7 @@ export default function BillPayment() {
                 onPress={closeTermsModal}
                 style={styles.closeButton}
               >
-                <Ionicons name="close-circle" size={32} color={theme.colors.primary} />
+                <Ionicons name="close-circle" size={32} color={theme.colors.textDark} />
               </TouchableOpacity>
             </View>
             <ScrollView
@@ -679,7 +681,7 @@ export default function BillPayment() {
               showsVerticalScrollIndicator={true}
             >
               {termsLoading ? (
-                <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginVertical: 20 }} />
+                <ActivityIndicator size="small" color={theme.colors.secondary} style={{ marginVertical: 20 }} />
               ) : (
                 <Text style={{ fontSize: rf(12), color: '#333', lineHeight: rf(18) }}>
                   {termsContent}
@@ -693,7 +695,7 @@ export default function BillPayment() {
       <Modal visible={!!payingBillId} animationType="fade" transparent>
         <View style={styles.processingOverlay}>
           <View style={styles.processingCard}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ActivityIndicator size="large" color={theme.colors.secondary} />
             <Text style={styles.processingTitle}>Payment Processing</Text>
             <Text style={styles.processingMessage}>{processingMessage || 'Please wait...'}</Text>
           </View>
@@ -703,7 +705,7 @@ export default function BillPayment() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: QUATERNARY_COLOR,
@@ -735,7 +737,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   tabText: { fontSize: rf(13), color: 'rgba(0,0,0,0.5)', fontWeight: '600' },
-  activeTabText: { color: theme.colors.primary },
+  activeTabText: { color: theme.colors.textDark },
   activeIndicator: {
     position: 'absolute',
     bottom: 0,
@@ -816,7 +818,7 @@ const styles = StyleSheet.create({
     marginBottom: hp(2),
   },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: hp(2) },
-  modalTitle: { fontSize: rf(21), fontWeight: '800', color: theme.colors.primary },
+  modalTitle: { fontSize: rf(21), fontWeight: '800', color: theme.colors.textDark },
   closeButton: { padding: 2 },
   detailScroll: { paddingBottom: hp(4) },
   detailCard: {
@@ -834,7 +836,7 @@ const styles = StyleSheet.create({
   amountLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: hp(0.9) },
   amountLabel: { fontSize: rf(14), color: '#555', fontWeight: '600' },
   amountValue: { fontSize: rf(16), color: '#222', fontWeight: '800' },
-  pendingAmount: { color: theme.colors.primary, fontSize: rf(18) },
+  pendingAmount: { color: theme.colors.textDark, fontSize: rf(18) },
   modalPayButton: {
     borderRadius: 12,
     overflow: 'hidden',
@@ -892,7 +894,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary,
   },
   downloadBtnText: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: '700',
     fontSize: rf(12),
   },
@@ -914,8 +916,10 @@ const styles = StyleSheet.create({
   },
   termsLinkText: {
     fontSize: rf(12),
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
-});
+}) }
+
+var styles = getStyles(theme);;

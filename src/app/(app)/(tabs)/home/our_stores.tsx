@@ -26,7 +26,7 @@ import AppLayoutWrapper from "@/components/AppLayoutWrapper";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useFocusEffect } from "@react-navigation/native";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { LinearGradient } from "expo-linear-gradient";
 import api from "@/services/api";
 import { fetchBranchesWithCache } from "@/utils/apiCache";
@@ -67,6 +67,8 @@ if (Platform.OS === "web") {
 }
 
 const StoreLocator = () => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const router = useRouter();
   const mapRef = useRef<any>(null);
@@ -249,7 +251,7 @@ const StoreLocator = () => {
             </MapView>
           ) : (
             <View style={[styles.map, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#111' }]}>
-              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <ActivityIndicator size="large" color={theme.colors.secondary} />
             </View>
           )}
         </View>
@@ -289,7 +291,7 @@ const StoreLocator = () => {
                         size={20}
                         color={isSelected ? theme.colors.primary : "#777"}
                       />
-                      <Text style={[styles.cardTitleText, isSelected && { color: theme.colors.primary }]} numberOfLines={1}>
+                      <Text style={[styles.cardTitleText, isSelected && { color: theme.colors.textDark }]} numberOfLines={1}>
                         {store.name}
                       </Text>
                     </View>
@@ -323,7 +325,7 @@ const StoreLocator = () => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.quaternary,
@@ -396,12 +398,12 @@ const styles = StyleSheet.create({
   cardTitleText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2d3748",
+    color: theme.colors.textDark,
     flex: 1,
   },
   cardAddressText: {
     fontSize: 13,
-    color: "#4a5568",
+    color: theme.colors.textSecondary,
     lineHeight: 18,
     height: 36,
     marginBottom: 8,
@@ -414,7 +416,7 @@ const styles = StyleSheet.create({
   },
   cardPhoneText: {
     fontSize: 12,
-    color: "#718096",
+    color: theme.colors.textSecondary,
   },
   cardDirectionsBtn: {
     flexDirection: "row",
@@ -430,6 +432,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default StoreLocator;

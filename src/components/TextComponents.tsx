@@ -1,3 +1,5 @@
+import { theme } from "@/constants/theme";
+import { useAppTheme } from "@/store/global.store";
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import ResponsiveText from "./ResponsiveText";

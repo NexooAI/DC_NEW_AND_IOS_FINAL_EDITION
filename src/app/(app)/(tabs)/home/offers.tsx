@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -25,6 +26,8 @@ import { logger } from "@/utils/logger";
 const { width, height } = Dimensions.get("window");
 
 export default function Offers() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const router = useRouter();
   const [offersList, setOffersList] = useState<any[]>([]);
@@ -94,7 +97,7 @@ export default function Offers() {
         {/* Loading State */}
         {isLoading && !refreshing ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ActivityIndicator size="large" color={theme.colors.secondary} />
             <Text style={styles.loadingText}>Loading latest offers...</Text>
           </View>
         ) : offersList.length === 0 ? (
@@ -272,7 +275,7 @@ export default function Offers() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F9F9F9",
@@ -307,7 +310,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: "#666",
+    color: theme.colors.textSecondary,
   },
   emptyContainer: {
     alignItems: "center",
@@ -347,12 +350,12 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#333",
+    color: theme.colors.textDark,
     marginBottom: 6,
   },
   cardDescription: {
     fontSize: 14,
-    color: "#666",
+    color: theme.colors.textSecondary,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -373,7 +376,7 @@ const styles = StyleSheet.create({
   },
   validityBadgeText: {
     fontSize: 12,
-    color: "#666",
+    color: theme.colors.textSecondary,
     fontWeight: "500",
   },
   discountBadgeInline: {
@@ -396,7 +399,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   claimButtonText: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: "600",
     marginRight: 4,
   },
@@ -434,7 +437,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#333",
+    color: theme.colors.textDark,
   },
   closeButton: {
     padding: 8,
@@ -466,7 +469,7 @@ const styles = StyleSheet.create({
   modalDescription: {
     fontSize: 16,
     lineHeight: 24,
-    color: "#333",
+    color: theme.colors.textDark,
     marginBottom: 20,
   },
   validUntilContainer: {
@@ -480,7 +483,7 @@ const styles = StyleSheet.create({
   validUntilText: {
     marginLeft: 8,
     fontSize: 14,
-    color: "#666",
+    color: theme.colors.textSecondary,
     fontWeight: "600",
   },
   termsContainer: {
@@ -489,7 +492,7 @@ const styles = StyleSheet.create({
   termsTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: theme.colors.textDark,
     marginBottom: 12,
   },
   termItem: {
@@ -500,7 +503,7 @@ const styles = StyleSheet.create({
   },
   termText: {
     fontSize: 14,
-    color: "#666",
+    color: theme.colors.textSecondary,
     lineHeight: 20,
     flex: 1,
   },
@@ -523,4 +526,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginRight: 8,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

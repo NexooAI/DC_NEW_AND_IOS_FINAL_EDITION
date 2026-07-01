@@ -25,7 +25,7 @@ import {
 import { useFocusEffect, useRouter } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
 import PhoneInput from "@/components/PhoneInputs";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import api from "@/services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
@@ -597,6 +597,8 @@ const SimpleLanguageSwitcher = () => {
 };
 
 export default function Login() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   // State for mobile number and OTP
   const [mobile, setMobile] = useState("");
   const [loading, setLoading] = useState(false);
@@ -1699,7 +1701,7 @@ export default function Login() {
 }
 
 // Modal Styles
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.6)",
@@ -1899,4 +1901,6 @@ const styles = StyleSheet.create({
   debugActionButtonTextDisabled: {
     color: "#999999",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

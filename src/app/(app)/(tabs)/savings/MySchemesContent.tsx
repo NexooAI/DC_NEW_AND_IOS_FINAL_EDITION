@@ -29,7 +29,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient"; // For gradient background
 // AppHeader is now handled by the layout wrapper
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import api from "@/services/api";
 import { moderateScale } from "react-native-size-matters";
 import { theme } from "@/constants/theme";
@@ -110,6 +110,8 @@ interface InvestmentResponse {
 }
 
 export default function MySchemesContent({ isNested = false }: { isNested?: boolean }) {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
 
   const router = useRouter();
@@ -967,7 +969,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
   // Render loading state when no user
   const renderLoadingState = () => (
     <SafeAreaView className="flex-1 justify-center items-center bg-white">
-      <ActivityIndicator size="large" color={theme.colors.primary} />
+      <ActivityIndicator size="large" color={theme.colors.secondary} />
     </SafeAreaView>
   );
 
@@ -1054,7 +1056,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   sectionHeaderContainer: {
     paddingHorizontal: 16,
     paddingTop: 16,
@@ -1066,7 +1068,7 @@ const styles = StyleSheet.create({
   sectionHeaderTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     letterSpacing: 0.5,
   },
   sectionHeaderLine: {
@@ -1938,4 +1940,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     overflow: 'hidden',
   },
-});
+}) }
+
+var styles = getStyles(theme);;

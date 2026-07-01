@@ -1,3 +1,4 @@
+import { theme } from "@/constants/theme";
 import React, { useState, useEffect, useCallback } from "react";
 import { View, StyleSheet } from "react-native";
 import {
@@ -6,7 +7,7 @@ import {
   useDrawerAuthState,
 } from "@/hooks/useDrawerScreen";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import Loader from "@/components/Loader";
 import ResponsiveText from "@/components/ResponsiveText";
 import ResponsiveButton from "@/components/ResponsiveButton";
@@ -42,6 +43,8 @@ export default function DrawerScreenTemplate({
   loginPromptMessage,
   onRetry,
 }: DrawerScreenTemplateProps) {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   // ALL HOOKS CALLED AT TOP LEVEL - No exceptions
   const { t } = useDrawerScreen({
     title,
@@ -173,7 +176,7 @@ export default function DrawerScreenTemplate({
   return <View style={styles.container}>{children}</View>;
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background.primary,
@@ -206,4 +209,6 @@ const styles = StyleSheet.create({
   loginButton: {
     marginTop: 20,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

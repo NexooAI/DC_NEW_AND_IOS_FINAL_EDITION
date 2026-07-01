@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useEffect, useRef } from "react";
 import {
   View,
@@ -25,6 +26,8 @@ const EnhancedLoader: React.FC<EnhancedLoaderProps> = ({
   size = "medium",
   overlay = true,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -384,7 +387,7 @@ const EnhancedLoader: React.FC<EnhancedLoaderProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
@@ -509,6 +512,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderRadius: 1000,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default EnhancedLoader;

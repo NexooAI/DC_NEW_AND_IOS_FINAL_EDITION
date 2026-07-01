@@ -48,7 +48,7 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bill Receipt - DC Jewellers</title>
+        <title>Bill Receipt - Sri Thanga Thamarai</title>
         <style>
             body {
                 font-family: 'Times New Roman', serif;

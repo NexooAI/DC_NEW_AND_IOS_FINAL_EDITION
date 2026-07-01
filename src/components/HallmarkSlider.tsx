@@ -1,3 +1,5 @@
+import { theme } from "@/constants/theme";
+import { useAppTheme } from "@/store/global.store";
 import React, { useRef, useEffect, useState } from "react";
 import {
   View,
@@ -21,6 +23,8 @@ interface HallmarkSliderProps {
 }
 
 const HallmarkSlider: React.FC<HallmarkSliderProps> = () => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -109,7 +113,7 @@ const HallmarkSlider: React.FC<HallmarkSliderProps> = () => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   hallmarkContainer: {
     width: "100%",
     paddingHorizontal: 10,
@@ -180,6 +184,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.mediumGrey,
     opacity: 0.3,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default HallmarkSlider;

@@ -1,3 +1,5 @@
+import { theme } from "@/constants/theme";
+import { useAppTheme } from "@/store/global.store";
 import React, { useEffect, useRef, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -164,6 +166,8 @@ const SocialMediaCard = ({
   socialMediaUrls?: any;
   videos?: any[];
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const cardScaleAnim = useRef(new Animated.Value(0.8)).current;
   const headerGlowAnim = useRef(new Animated.Value(0)).current;
 
@@ -318,7 +322,7 @@ const SocialMediaCard = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   cardWrapper: {
     paddingHorizontal: moderateScale(16),
     paddingVertical: moderateScale(8), // Reduced from 10 to match Support card
@@ -449,6 +453,8 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.7)",
     fontSize: moderateScale(11),
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default SocialMediaCard;

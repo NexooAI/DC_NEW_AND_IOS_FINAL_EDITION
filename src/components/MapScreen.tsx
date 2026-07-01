@@ -1,3 +1,5 @@
+import { theme } from "@/constants/theme";
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -43,6 +45,8 @@ const locations: LocationData[] = [
 ];
 
 export default function MapScreen() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const insets = useSafeAreaInsets();
   const snapPoints = React.useMemo(() => ["25%", "50%"], []);
   const [userLocation, setUserLocation] = useState<{
@@ -197,7 +201,7 @@ export default function MapScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -284,4 +288,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 10,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

@@ -1,3 +1,4 @@
+import { theme } from "@/constants/theme";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -21,12 +22,11 @@ import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "@/constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 import ResponsiveButton from "@/components/ResponsiveButton";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { registerStyles } from "../../_styles/registerStyles";
-import { theme } from "@/constants";
 
 const { width } = Dimensions.get("window");
 
@@ -101,6 +101,8 @@ const MpinInput = ({
 };
 
 export default function MpinSetup() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { name, email, mobile, referral_code, branch_id } = useLocalSearchParams();
   const router = useRouter();
   const { t } = useTranslation();
@@ -293,7 +295,7 @@ export default function MpinSetup() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: { flex: 1 },
   backgroundImage: { flex: 1, resizeMode: "cover" },
   gradient: { flex: 1 },
@@ -314,7 +316,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: COLORS.primary,
+    color: theme.colors.textDark,
     flex: 1,
     textAlign: "center",
   },
@@ -330,13 +332,13 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 22,
     fontWeight: "bold",
-    color: COLORS.primary,
+    color: theme.colors.textDark,
     marginBottom: 6,
     textAlign: "center",
   },
   pageSubtitle: {
     fontSize: 14,
-    color: COLORS.primary,
+    color: theme.colors.textDark,
     marginBottom: 20,
     textAlign: "center",
     opacity: 0.8,
@@ -344,7 +346,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: COLORS.primary,
+    color: theme.colors.textDark,
     marginTop: 10,
     marginBottom: 8,
     textAlign: "center",
@@ -365,11 +367,11 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: COLORS.primary,
-    color: COLORS.primary,
+    borderColor: theme.colors.border,
+    color: theme.colors.textDark,
     fontSize: 20,
     textAlign: "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   eyeButton: {
     padding: 8,
@@ -401,7 +403,7 @@ const styles = StyleSheet.create({
     minWidth: 100,
   },
   actionButtonText: {
-    color: COLORS.primary,
+    color: theme.colors.textDark,
     fontSize: 14,
     fontWeight: "600",
     marginLeft: 6,
@@ -409,4 +411,6 @@ const styles = StyleSheet.create({
   submitButton: {
     marginTop: 0,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

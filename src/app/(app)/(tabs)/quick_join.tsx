@@ -16,7 +16,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from '@/hooks/useTranslation';
-import useGlobalStore from '@/store/global.store';
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { theme } from '@/constants/theme';
 import { COLORS } from '@/constants/colors';
 import api from '@/services/api';
@@ -31,7 +31,7 @@ import { formatGoldWeight } from '@/utils/imageUtils';
 import { logger } from '@/utils/logger';
 
 // Reuse styles from home/index.tsx (styles2)
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   },
   limitText: {
     fontSize: 12,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: '600',
   },
   currencySymbol: {
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   quickAmountTextActive: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: '600',
   },
   footer: {
@@ -286,9 +286,13 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: '600',
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default function QuickJoinScreen() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const { t } = useTranslation();
   const { user, storePaymentSession } = useGlobalStore();
@@ -526,7 +530,7 @@ export default function QuickJoinScreen() {
   if (loading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.secondary} />
       </View>
     );
   }

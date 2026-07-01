@@ -21,7 +21,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Dropdown } from "react-native-element-dropdown";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import api from "@/services/api";
 import { theme } from "@/constants/theme";
 import { LinearGradient } from "expo-linear-gradient";
@@ -88,6 +88,8 @@ interface FormDatePickerProps {
 }
 
 export default function KycForm() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const { from } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
@@ -705,7 +707,7 @@ export default function KycForm() {
               onPress={handleBack}
               style={styles.backButton}
             >
-              <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+              <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
             </TouchableOpacity>
             <View style={styles.headerInfo}>
               <Text style={styles.headerTitle}>{t("kycDetails")}</Text>
@@ -1168,7 +1170,7 @@ export default function KycForm() {
 
 
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.quaternary || "#F2E6D2",
@@ -1206,11 +1208,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginTop: 2,
   },
   scrollView: {
@@ -1498,4 +1500,6 @@ const styles = StyleSheet.create({
     zIndex: 100,
     elevation: 10,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

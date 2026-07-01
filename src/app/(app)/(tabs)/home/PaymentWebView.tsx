@@ -8,7 +8,7 @@ import NetInfo from "@react-native-community/netinfo";
 import { hp } from "@/utils/responsiveUtils";
 import { theme } from "@/constants/theme";
 import apiClient from "@/services/api";
-import useGlobalStore from '@/store/global.store';
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { logAppEvent } from "@/services/appEventService";
 
 // import { safeNavigateBack } from "@/utils/navigationUtils";
@@ -28,6 +28,8 @@ const safeParseJSON = (jsonString: any, fallback: any = {}) => {
 };
 
 export default function PaymentWebView() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const router = useRouter();
@@ -499,7 +501,7 @@ export default function PaymentWebView() {
           {/* Loading overlay when verifying */}
           {isVerifyingPayment && (
             <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <ActivityIndicator size="large" color={theme.colors.secondary} />
               <Text style={styles.loadingText}>Verifying payment status...</Text>
               <Text style={{ marginTop: 8, fontSize: 13, color: "#999", textAlign: "center" }}>
                 Please do not close the app or press back
@@ -542,7 +544,7 @@ export default function PaymentWebView() {
                 startInLoadingState={true}
                 renderLoading={() => (
                   <View style={styles.webViewLoading}>
-                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                    <ActivityIndicator size="large" color={theme.colors.secondary} />
                     <Text style={styles.webViewLoadingText}>Loading secure payment gateway...</Text>
                   </View>
                 )}
@@ -760,7 +762,7 @@ export default function PaymentWebView() {
                 startInLoadingState={true}
                 renderLoading={() => (
                   <View style={styles.webViewLoading}>
-                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                    <ActivityIndicator size="large" color={theme.colors.secondary} />
                     <Text style={styles.webViewLoadingText}>Loading secure payment gateway...</Text>
                   </View>
                 )}
@@ -1008,7 +1010,7 @@ export default function PaymentWebView() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.quaternary || '#F2E6D2',
@@ -1033,13 +1035,13 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: "500",
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   placeholder: {
     width: 60,
@@ -1165,4 +1167,6 @@ const styles = StyleSheet.create({
     color: "#555",
     fontWeight: "500",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

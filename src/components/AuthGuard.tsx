@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import * as SecureStore from "expo-secure-store";
 import { theme } from "@/constants/theme";
 import { COLORS } from "src/constants/colors";
@@ -16,6 +16,8 @@ export default function AuthGuard({
   children,
   requireMpinVerification = true,
 }: AuthGuardProps) {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const { isLoggedIn, user, logout } = useGlobalStore();
   const [isChecking, setIsChecking] = useState(true);
@@ -173,7 +175,7 @@ export default function AuthGuard({
   return <>{children}</>;
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -186,4 +188,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

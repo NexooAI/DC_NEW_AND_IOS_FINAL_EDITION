@@ -18,7 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 // AppHeader is now handled by the layout wrapper
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useLocalSearchParams as useSearchParams } from "expo-router";
 import { theme } from "@/constants/theme";
 import api from "@/services/api";
@@ -47,6 +47,7 @@ const dummyData: SchemeData = {
 };
 
 export default function KnowProduct() {
+  const theme = useAppTheme();
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -120,7 +121,7 @@ export default function KnowProduct() {
         className="flex-1 justify-center items-center bg-white"
         style={{ paddingTop: insets.top }}
       >
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.secondary} />
       </SafeAreaView>
     );
   }
@@ -154,7 +155,7 @@ export default function KnowProduct() {
               <View className="bg-white/80 p-4 rounded-xl">
                 <Text
                   className="text-2xl font-bold"
-                  style={{ color: theme.colors.primary }}
+                  style={{ color: theme.colors.textDark }}
                 >
                   {translations.schemeTitle}
                 </Text>
@@ -168,7 +169,7 @@ export default function KnowProduct() {
             <View className="px-6 my-4">
               <Text
                 className="text-xl font-bold mb-2"
-                style={{ color: theme.colors.primary }}
+                style={{ color: theme.colors.textDark }}
               >
                 Description
               </Text>

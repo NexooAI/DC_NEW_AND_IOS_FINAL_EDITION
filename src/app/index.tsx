@@ -9,7 +9,7 @@ import {
 import { Image } from "react-native";
 import { useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
@@ -19,6 +19,8 @@ import { useFirstLaunch } from "@/common/hooks/useFirstLaunch";
 
 import { logger } from "@/utils/logger";
 export default function AuthGuard() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const { login, isLoggedIn, user } = useGlobalStore();
   const { isFirstLaunch } = useFirstLaunch();
@@ -300,7 +302,7 @@ export default function AuthGuard() {
   return null;
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   backgroundImage: {
     flex: 1,
     resizeMode: "cover",
@@ -328,4 +330,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     opacity: 0.9,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

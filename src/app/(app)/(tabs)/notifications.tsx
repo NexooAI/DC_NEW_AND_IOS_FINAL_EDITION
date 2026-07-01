@@ -26,7 +26,7 @@ import { moderateScale } from "react-native-size-matters";
 // AppHeader is now handled by the layout wrapper
 import { theme } from "@/constants/theme";
 import { userAPI } from "@/services/api";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 
 import { logger } from '@/utils/logger';
@@ -252,7 +252,7 @@ const NotificationItem = React.memo(
                   marginBottom: 10,
                 }}
               >
-                <Text style={{ fontSize: 10, color: theme.colors.primary, fontWeight: "bold" }}>NEW</Text>
+                <Text style={{ fontSize: 10, color: theme.colors.textDark, fontWeight: "bold" }}>NEW</Text>
               </View>
             )}
 
@@ -340,7 +340,7 @@ const NotificationSection = React.memo(
         style={{
           fontSize: 13,
           fontWeight: "700",
-          color: theme.colors.primary,
+          color: theme.colors.textDark,
           marginBottom: 10,
           paddingHorizontal: 4,
           textTransform: "uppercase",
@@ -475,6 +475,7 @@ const NotificationModal = ({
 
 // Main Component
 export default function NotificationsScreen() {
+  const theme = useAppTheme();
   const router = useRouter();
   const { user } = useGlobalStore();
   const { refreshCount } = useUnreadNotifications();
@@ -761,13 +762,13 @@ export default function NotificationsScreen() {
           paddingVertical: 12,
         }}>
           <TouchableOpacity onPress={() => router.push("/(app)/(tabs)/home")} style={{ padding: 8, marginLeft: -8 }}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.primary || "#850111"} />
+            <Ionicons name="arrow-back" size={24} color={theme.colors.textDark || "#850111"} />
           </TouchableOpacity>
 
           <Text style={{
             fontSize: moderateScale(18),
             fontWeight: "700",
-            color: theme.colors.primary,
+            color: theme.colors.textDark,
             textAlign: 'center',
             flex: 1,
           }}>
@@ -825,7 +826,7 @@ export default function NotificationsScreen() {
                 paddingVertical: 60,
               }}
             >
-              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <ActivityIndicator size="large" color={theme.colors.secondary} />
               <Text style={{ marginTop: 16, fontSize: 16, color: "#666" }}>
                 Loading notifications...
               </Text>
@@ -919,7 +920,7 @@ export default function NotificationsScreen() {
                   justifyContent: 'center',
                   marginBottom: 24,
                 }}>
-                  <Ionicons name="notifications-outline" size={60} color={theme.colors.primary} style={{ opacity: 0.5 }} />
+                  <Ionicons name="notifications-outline" size={60} color={theme.colors.textDark} style={{ opacity: 0.5 }} />
                 </View>
                 <Text
                   style={{

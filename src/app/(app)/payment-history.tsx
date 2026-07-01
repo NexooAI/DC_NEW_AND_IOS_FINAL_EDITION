@@ -21,7 +21,7 @@ import { theme } from '@/constants/theme';
 import COLORS from '@/constants/colors';
 import ResponsiveText from '@/components/ResponsiveText';
 import { responsiveUtils } from '@/utils/responsiveUtils';
-import useGlobalStore from '@/store/global.store';
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useTranslation } from '@/hooks/useTranslation';
 import apiWithLoader from '@/services/apiWithLoader';
 
@@ -77,6 +77,8 @@ const formatDateTime = (value?: string) => {
 };
 
 export default function PaymentHistoryScreen() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const { t } = useTranslation();
   const { user } = useGlobalStore();
@@ -213,7 +215,7 @@ export default function PaymentHistoryScreen() {
     if (loadingMore) {
       return (
         <View style={styles.footerLoader}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
+          <ActivityIndicator size="small" color={theme.colors.secondary} />
         </View>
       );
     }
@@ -272,9 +274,9 @@ export default function PaymentHistoryScreen() {
 
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+            <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
           </TouchableOpacity>
-          <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
+          <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.textDark}>
             {t('paymentHistory') || 'Payment History'}
           </ResponsiveText>
           <View style={{ width: 40 }} />
@@ -370,19 +372,19 @@ export default function PaymentHistoryScreen() {
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
         </TouchableOpacity>
-        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
+        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.textDark}>
           {t('paymentHistory') || 'Payment History'}
         </ResponsiveText>
         <TouchableOpacity onPress={handleRefresh} style={styles.backButton}>
-          <Ionicons name="refresh" size={22} color={theme.colors.primary} />
+          <Ionicons name="refresh" size={22} color={theme.colors.textDark} />
         </TouchableOpacity>
       </View>
 
       {loading ? (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color={theme.colors.secondary} />
           <Text style={styles.loaderText}>{t('loadingHistory') || 'Loading payment history...'}</Text>
         </View>
       ) : (
@@ -417,7 +419,7 @@ export default function PaymentHistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: QUATERNARY_COLOR,
@@ -438,7 +440,7 @@ const styles = StyleSheet.create({
   },
   guestText: {
     fontSize: rf(14),
-    color: 'rgba(0,0,0,0.6)',
+    color: theme.colors.textSecondary,
     marginVertical: hp(2),
     textAlign: 'center',
   },
@@ -455,9 +457,9 @@ const styles = StyleSheet.create({
   },
   listContent: { paddingHorizontal: wp(5), paddingVertical: hp(1.5), paddingBottom: hp(8) },
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loaderText: { marginTop: hp(1.5), color: 'rgba(0,0,0,0.55)', fontSize: rf(12) },
+  loaderText: { marginTop: hp(1.5), color: theme.colors.textSecondary, fontSize: rf(12) },
   card: {
-    backgroundColor: COLORS.white || '#ffffff',
+    backgroundColor: theme.colors.background,
     borderRadius: 14,
     padding: wp(4),
     marginBottom: hp(1.5),
@@ -484,7 +486,7 @@ const styles = StyleSheet.create({
   schemeTypeText: {
     fontSize: rf(9),
     fontWeight: '600',
-    color: 'rgba(0,0,0,0.4)',
+    color: theme.colors.textSecondary,
     marginTop: hp(0.2),
   },
   statusBadge: {
@@ -506,10 +508,10 @@ const styles = StyleSheet.create({
   amountText: {
     fontSize: rf(18),
     fontWeight: 'bold',
-    color: theme.colors.primary || '#850111',
+    color: theme.colors.textDark || '#850111',
   },
   paymentMethodBadge: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: theme.colors.backgroundSecondary,
     paddingHorizontal: wp(2),
     paddingVertical: hp(0.4),
     borderRadius: 5,
@@ -517,7 +519,7 @@ const styles = StyleSheet.create({
   paymentMethodText: {
     fontSize: rf(10),
     fontWeight: '700',
-    color: 'rgba(0,0,0,0.55)',
+    color: theme.colors.textSecondary,
   },
   row: {
     flexDirection: 'row',
@@ -526,22 +528,22 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: rf(11),
-    color: 'rgba(0,0,0,0.45)',
+    color: theme.colors.textSecondary,
   },
   value: {
     fontSize: rf(11),
     fontWeight: '600',
-    color: 'rgba(0,0,0,0.7)',
+    color: theme.colors.textDark,
   },
   valueCopyable: {
     fontSize: rf(11),
     fontWeight: '600',
-    color: 'rgba(0,0,0,0.7)',
+    color: theme.colors.textDark,
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(0,0,0,0.06)',
+    backgroundColor: theme.colors.borderLight,
     marginVertical: hp(1),
   },
   manualBadgeContainer: {
@@ -573,24 +575,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: wp(4),
     paddingVertical: hp(1),
     borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.04)',
+    backgroundColor: theme.colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
+    borderColor: theme.colors.borderLight,
   },
   activeFilterChip: {
-    backgroundColor: theme.colors.primary || '#850111',
-    borderColor: theme.colors.primary || '#850111',
+    backgroundColor: theme.colors.secondary,
+    borderColor: theme.colors.secondary,
   },
   filterChipText: {
     fontSize: rf(12),
-    color: 'rgba(0,0,0,0.6)',
+    color: theme.colors.textSecondary,
     fontWeight: '600',
   },
   activeFilterChipText: {
-    color: '#ffffff',
+    color: theme.colors.textDark,
   },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: hp(12) },
-  emptyText: { fontSize: rf(13), color: 'rgba(0,0,0,0.35)', marginTop: hp(2), textAlign: 'center' },
+  emptyText: { fontSize: rf(13), color: theme.colors.textSecondary, marginTop: hp(2), textAlign: 'center' },
   footerLoader: {
     paddingVertical: hp(2),
     justifyContent: 'center',
@@ -607,8 +609,10 @@ const styles = StyleSheet.create({
     marginVertical: hp(2),
   },
   loadMoreButtonText: {
-    color: theme.colors.primary || '#850111',
+    color: theme.colors.textDark || '#850111',
     fontSize: rf(13),
     fontWeight: 'bold',
   },
-});
+}) }
+
+var styles = getStyles(theme);;

@@ -16,7 +16,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { BackHandler, InteractionManager } from "react-native";
 import Slider from "@react-native-community/slider";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { theme } from "@/constants/theme";
@@ -99,6 +99,8 @@ const extractBookingId = (responseData: any) => {
 };
 
 export default function PaymentNewOverView() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const paymentType = params.paymentType?.toString() || '';
@@ -1776,7 +1778,7 @@ export default function PaymentNewOverView() {
                 onPress={() => setShowTermsModal(false)}
                 style={styles.closeButton}
               >
-                <Ionicons name="close" size={24} color={theme.colors.primary} />
+                <Ionicons name="close" size={24} color={theme.colors.textDark} />
               </TouchableOpacity>
             </View>
             <ScrollView
@@ -1838,7 +1840,7 @@ export default function PaymentNewOverView() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8f9ff",
@@ -1949,7 +1951,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginLeft: 8,
     flex: 1,
   },
@@ -2021,7 +2023,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   termsLink: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     textDecorationLine: "underline",
   },
   payButtonDisabled: {
@@ -2068,7 +2070,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   closeButton: {
     padding: 4,
@@ -2407,7 +2409,7 @@ const styles = StyleSheet.create({
   schemeMainValueText: {
     fontSize: 28,
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   sliderContainer: {
     paddingHorizontal: 20,
@@ -2567,4 +2569,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
     borderRadius: 3,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

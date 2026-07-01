@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -29,6 +30,8 @@ const FlashBanner: React.FC<FlashBannerProps> = React.memo(
     onClose,
     imageSource = images.banners.flashBanner,
   }) => {
+    const theme = useAppTheme();
+    styles = getStyles(theme);
     const [visible, setVisible] = useState(true);
     const [imageError, setImageError] = useState(false);
     const {
@@ -102,7 +105,7 @@ const FlashBanner: React.FC<FlashBannerProps> = React.memo(
 
 FlashBanner.displayName = "FlashBanner";
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   closeButton: {
     position: "absolute",
     top: 40,
@@ -119,6 +122,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginVertical: 10,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default FlashBanner;

@@ -25,7 +25,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { theme } from "@/constants/theme";
 import { moderateScale } from "react-native-size-matters";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { ticketsAPI } from "@/services/api";
 import { useRouter } from "expo-router";
 
@@ -50,6 +50,8 @@ const TICKET_SUBJECTS = [
 ];
 
 const FloatingChatButton = () => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const router = useRouter();
   const [isChatVisible, setIsChatVisible] = useState(false);
@@ -577,7 +579,7 @@ const FloatingChatButton = () => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   fabContainer: {
     position: "absolute",
     bottom: Platform.OS === "ios" ? 100 : 90,
@@ -1045,6 +1047,8 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(13),
     fontWeight: "700",
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default FloatingChatButton;

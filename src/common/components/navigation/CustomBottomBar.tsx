@@ -10,7 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useSegments } from "expo-router";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { LinearGradient } from "expo-linear-gradient";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
@@ -27,6 +27,8 @@ type Tab = {
 };
 
 export default function CustomBottomBar(props: BottomTabBarProps) {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const router = useRouter();
   const segments = useSegments();
@@ -250,7 +252,7 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     position: "absolute",
     left: 0,
@@ -327,4 +329,6 @@ const styles = StyleSheet.create({
     marginLeft: "auto",
     marginRight: "auto",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

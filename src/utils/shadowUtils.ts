@@ -1,3 +1,4 @@
+import { theme } from "@/constants/theme";
 import { Platform } from 'react-native';
 import { responsiveUtils } from './responsiveUtils';
 
@@ -25,42 +26,42 @@ export const SHADOW_PRESETS = {
         elevation: 0,
     },
     tiny: {
-        shadowColor: '#000',
+        shadowColor: theme.colors.black,
         shadowOffset: { width: 0, height: rp(1) },
         shadowOpacity: 0.05,
         shadowRadius: rp(1),
         elevation: rp(1),
     },
     small: {
-        shadowColor: '#000',
+        shadowColor: theme.colors.black,
         shadowOffset: { width: 0, height: rp(1) },
         shadowOpacity: 0.1,
         shadowRadius: rp(2),
         elevation: rp(2),
     },
     medium: {
-        shadowColor: '#000',
+        shadowColor: theme.colors.black,
         shadowOffset: { width: 0, height: rp(2) },
         shadowOpacity: 0.15,
         shadowRadius: rp(4),
         elevation: rp(4),
     },
     large: {
-        shadowColor: '#000',
+        shadowColor: theme.colors.black,
         shadowOffset: { width: 0, height: rp(4) },
         shadowOpacity: 0.2,
         shadowRadius: rp(8),
         elevation: rp(8),
     },
     xlarge: {
-        shadowColor: '#000',
+        shadowColor: theme.colors.black,
         shadowOffset: { width: 0, height: rp(6) },
         shadowOpacity: 0.25,
         shadowRadius: rp(12),
         elevation: rp(12),
     },
     xxlarge: {
-        shadowColor: '#000',
+        shadowColor: theme.colors.black,
         shadowOffset: { width: 0, height: rp(8) },
         shadowOpacity: 0.3,
         shadowRadius: rp(16),

@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, useFocusEffect } from "expo-router";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "src/constants/colors";
@@ -28,6 +28,8 @@ const { wp, hp, rf } = responsiveUtils;
 const QUATERNARY_COLOR = theme.colors.quaternary || "#F2E6D2";
 
 export default function GoldAdvanceScreen() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const { t } = useTranslation();
   const { user } = useGlobalStore();
@@ -346,15 +348,15 @@ export default function GoldAdvanceScreen() {
               router.replace('/(app)/dashboard');
             }
           }} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+            <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
           </TouchableOpacity>
-          <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
+          <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.textDark}>
             {t("goldAdvance")}
           </ResponsiveText>
           <View style={{ width: 40 }} />
         </View>
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color={theme.colors.secondary} />
         </View>
       </SafeAreaView>
     );
@@ -379,20 +381,20 @@ export default function GoldAdvanceScreen() {
             router.replace('/(app)/dashboard');
           }
         }} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
         </TouchableOpacity>
-        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
+        <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.textDark}>
           {t("goldAdvance")}
         </ResponsiveText>
         <TouchableOpacity onPress={() => router.push('/(app)/(tabs)/home/BookingHistory')} style={styles.historyButton}>
-          <Ionicons name="time-outline" size={18} color={theme.colors.primary} />
+          <Ionicons name="time-outline" size={18} color={theme.colors.textDark} />
           <Text style={styles.historyText}>{getCustomTranslation("viewHistory", t("history"))}</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <View style={styles.titleContainer}>
-          <ResponsiveText variant="title" weight="bold" color={theme.colors.primary} align="center" style={styles.mainTitle}>
+          <ResponsiveText variant="title" weight="bold" color={theme.colors.textDark} align="center" style={styles.mainTitle}>
             {t("secureTodaysRate")}
           </ResponsiveText>
           <ResponsiveText variant="body" color="rgba(0,0,0,0.6)" align="center" style={styles.subtitle}>
@@ -552,11 +554,11 @@ export default function GoldAdvanceScreen() {
         {userBookings.length > 0 && (
           <View style={styles.activeBookingsContainer}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: hp(1.5), marginTop: hp(1) }}>
-              <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.primary} style={styles.activeBookingsTitle}>
+              <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.textDark} style={styles.activeBookingsTitle}>
                 {getCustomTranslation("myActiveBookings", "My Active Bookings")}
               </ResponsiveText>
               <TouchableOpacity onPress={() => router.push('/(app)/(tabs)/home/BookingHistory')}>
-                <Text style={{ color: theme.colors.primary, fontSize: rf(11.5), fontWeight: "bold" }}>
+                <Text style={{ color: theme.colors.textDark, fontSize: rf(11.5), fontWeight: "bold" }}>
                   {getCustomTranslation("viewAll", "View All")}
                 </Text>
               </TouchableOpacity>
@@ -623,7 +625,7 @@ export default function GoldAdvanceScreen() {
                     </Text>
                     <View style={styles.viewDetailsBtn}>
                       <Text style={styles.viewDetailsText}>{getCustomTranslation("viewDetails", "View Details")}</Text>
-                      <Ionicons name="arrow-forward" size={14} color={theme.colors.primary} />
+                      <Ionicons name="arrow-forward" size={14} color={theme.colors.textDark} />
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -702,7 +704,7 @@ export default function GoldAdvanceScreen() {
 
                     <Text style={styles.bottomSheetSectionTitle}>{t("termsAndConditions")}</Text>
                     {termsLoading ? (
-                      <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginVertical: 20 }} />
+                      <ActivityIndicator size="small" color={theme.colors.secondary} style={{ marginVertical: 20 }} />
                     ) : (
                       <Text style={styles.bottomSheetTermsText}>{termsContent}</Text>
                     )}
@@ -820,7 +822,7 @@ export default function GoldAdvanceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: QUATERNARY_COLOR,
@@ -850,7 +852,7 @@ const styles = StyleSheet.create({
   historyText: {
     fontSize: rf(11),
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginLeft: 4,
   },
   scrollView: {
@@ -867,7 +869,7 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: rf(24),
     marginBottom: hp(1),
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   subtitle: {
     fontSize: rf(12),
@@ -1109,7 +1111,7 @@ const styles = StyleSheet.create({
   },
   boldDetail: {
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   enquiryModalBody: {
     padding: wp(5),
@@ -1243,7 +1245,7 @@ const styles = StyleSheet.create({
   bottomSheetSectionTitle: {
     fontSize: rf(14),
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginTop: hp(1.5),
     marginBottom: hp(0.8),
   },
@@ -1307,7 +1309,7 @@ const styles = StyleSheet.create({
   activeBookingsTitle: {
     fontSize: rf(15),
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   activeBookingCard: {
     backgroundColor: COLORS.white,
@@ -1404,7 +1406,7 @@ const styles = StyleSheet.create({
   },
   viewDetailsText: {
     fontSize: rf(11),
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: "bold",
   },
   percentageSelectorContainer: {
@@ -1442,10 +1444,12 @@ const styles = StyleSheet.create({
   percentTabText: {
     fontSize: rf(12),
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   percentTabTextActive: {
     color: COLORS.white,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 

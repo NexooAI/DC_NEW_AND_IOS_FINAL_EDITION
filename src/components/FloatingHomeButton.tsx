@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useEffect, useRef, useState } from "react";
 import {
   TouchableOpacity,
@@ -19,6 +20,8 @@ interface FloatingHomeButtonProps {
 export default function FloatingHomeButton({
   onPress,
 }: FloatingHomeButtonProps) {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const pathname = usePathname();
   const current = pathname.split("/").pop() || "home";
@@ -119,7 +122,7 @@ export default function FloatingHomeButton({
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     position: "absolute",
     bottom: Platform.OS === "ios" ? 180 : 160, // Position above chat button
@@ -149,4 +152,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: theme.colors.borderWhiteLight,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

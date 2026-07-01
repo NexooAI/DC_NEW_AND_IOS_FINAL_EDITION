@@ -25,7 +25,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import api, { paymentAPI } from "@/services/api";
 import { initiatePayment, initializeSocket } from "@/utils/paymentUtils";
 import { saveFileToPublicDirectory } from "@/utils/fileUtils";
@@ -108,6 +108,8 @@ interface DetailRowProps {
 
 
 const SavingsDetail = () => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const router = useRouter();
   const navigation = useNavigation();
@@ -984,7 +986,7 @@ const SavingsDetail = () => {
                   <View style={styles.transactionFooter}>
                     <Text style={styles.transactionId}>ID: {txn.transactionId}</Text>
                     <TouchableOpacity onPress={() => setSelectedTransaction(txn)} style={styles.receiptButton}>
-                      <Ionicons name="download-outline" size={16} color={theme.colors.primary} />
+                      <Ionicons name="download-outline" size={16} color={theme.colors.textDark} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1003,7 +1005,7 @@ const SavingsDetail = () => {
         {/* Header */}
         <View style={[styles.header, { paddingTop: Platform.OS === 'android' ? top + 10 : top - 60 }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.primary || "#850111"} />
+            <Ionicons name="arrow-back" size={24} color={theme.colors.textDark || "#850111"} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{translations.schemeDetails}</Text>
           <View style={{ width: 40 }} />
@@ -1139,7 +1141,7 @@ const SavingsDetail = () => {
                   style={[styles.modalButton, styles.downloadBtn]}
                   onPress={() => handleDownloadReceipt(selectedTransaction, inversement)}
                 >
-                  <Ionicons name="download-outline" size={18} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                  <Ionicons name="download-outline" size={18} color={theme.colors.textDark} style={{ marginRight: 6 }} />
                   <Text style={styles.downloadBtnText}>Download</Text>
                 </TouchableOpacity>
 
@@ -1160,7 +1162,7 @@ const SavingsDetail = () => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8F9FA",
@@ -1180,7 +1182,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   backButton: {
     padding: 8,
@@ -1311,7 +1313,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   viewAllText: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -1629,7 +1631,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary,
   },
   downloadBtnText: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: '700',
     fontSize: 14,
   },
@@ -1657,6 +1659,8 @@ const styles = StyleSheet.create({
     color: '#999',
     fontSize: 14,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default SavingsDetail;

@@ -27,7 +27,7 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 import { theme } from "@/constants/theme";
 import api from "@/services/api";
@@ -174,6 +174,8 @@ const getTranslatedText = (
 };
 
 export default function SchemeList({ isNested = false }: { isNested?: boolean }) {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { schemeId, schemeType, mode } = useLocalSearchParams();
   const [activeTab, setActiveTab] = useState<string>("");
   const [schemes, setSchemes] = useState<Scheme[]>([]);
@@ -1361,7 +1363,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
@@ -2121,4 +2123,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-});
+}) }
+
+var styles = getStyles(theme);;

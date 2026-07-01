@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NotificationTester from '@/components/NotificationTester';
@@ -7,6 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@/constants/theme';
 
 export default function TestNotificationsScreen() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
     return (
         <SafeAreaView style={styles.container}>
             {/* Header */}
@@ -15,7 +18,7 @@ export default function TestNotificationsScreen() {
                     style={styles.backButton}
                     onPress={() => router.back()}
                 >
-                    <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+                    <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Notification Tester</Text>
                 <View style={styles.placeholder} />
@@ -27,7 +30,7 @@ export default function TestNotificationsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f5f5f5',
@@ -53,5 +56,7 @@ const styles = StyleSheet.create({
     placeholder: {
         width: 40,
     },
-});
+}) }
+
+var styles = getStyles(theme);;
 
