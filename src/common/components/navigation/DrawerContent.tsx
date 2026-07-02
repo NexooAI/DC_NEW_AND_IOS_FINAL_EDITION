@@ -36,6 +36,8 @@ interface DrawerMenuItemProps {
   iconColor?: string;
 }
 
+const withOpacity = (color: string, opacityHex: string) => `${color}${opacityHex}`;
+
 const DrawerMenuItem = ({
   label,
   iconName,
@@ -85,7 +87,7 @@ const DrawerMenuItem = ({
           isLogout && styles.logoutIconContainer,
           isActive && styles.activeIconContainer,
           // Add subtle background tint based on icon color for non-active items
-          (!isActive && !isLogout && iconColor) ? { backgroundColor: iconColor + '10' } : {}
+          (!isActive && !isLogout && iconColor) ? { backgroundColor: withOpacity(iconColor, '10') } : {}
         ]}>
           <Ionicons
             name={iconName}
@@ -137,7 +139,7 @@ const SocialIcon = ({ name, url, color }: { name: any, url: string, color: strin
       style={styles.socialIconBtn}
       onPress={() => Linking.openURL(url).catch(err => console.error("Couldn't load page", err))}
     >
-      <View style={[styles.socialIconContainer, { backgroundColor: color + '15' }]}>
+      <View style={[styles.socialIconContainer, { backgroundColor: withOpacity(color, '15') }]}>
         <FontAwesome5 name={name} size={18} color={color} />
       </View>
     </TouchableOpacity>
@@ -253,17 +255,17 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
     {
       name: "whatsapp",
       url: `https://wa.me/${theme.constants.whatsapp?.replace(/\s/g, "") || theme.constants.mobile?.replace(/\s/g, "")}`,
-      color: "#25D366"
+      color: theme.colors.success
     },
     {
       name: "youtube",
       url: theme.youtubeUrl || "https://youtube.com",
-      color: "#FF0000"
+      color: theme.colors.error
     },
     {
       name: "globe",
       url: theme.constants.website,
-      color: "#4285F4"
+      color: theme.colors.info
     },
     {
       name: "phone-alt",
@@ -309,7 +311,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                 </Text>
                 {user?.email && (
                   <View style={styles.emailContainer}>
-                    <Ionicons name="mail-outline" size={10} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
+                    <Ionicons name="mail-outline" size={10} color={theme.colors.whiteOverlayLight} style={{ marginRight: 4 }} />
                     <Text style={styles.userEmail} numberOfLines={1}>
                       {user.email}
                     </Text>
@@ -349,7 +351,6 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
             disabled={isNavigating}
             isActive={isRouteActive("/(tabs)/profile")}
             delay={100}
-            iconColor="#4285F4" // Google Blue
           /> */}
           <DrawerMenuItem
             label={t("referAndEarn")}
@@ -358,7 +359,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
             disabled={isNavigating}
             isActive={isRouteActive("/(tabs)/home/refer_earn")}
             delay={150}
-            iconColor="#F4B400" // Google Yellow/Gold
+            iconColor={theme.colors.secondary}
           />
           <DrawerMenuItem
             label={t("ticketsAndEnquiries") || "Tickets & Enquiries"}
@@ -379,7 +380,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
             disabled={isNavigating}
             isActive={isRouteActive("/(tabs)/home/offers")}
             delay={190}
-            iconColor="#EA4335" // Red
+            iconColor={theme.colors.error}
           />
           <DrawerMenuItem
             label={t("ourStores")}
@@ -388,7 +389,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
             disabled={isNavigating}
             isActive={isRouteActive("/(tabs)/home/our_stores")}
             delay={200}
-            iconColor="#EA4335" // Google Red (or Branded Primary)
+            iconColor={theme.colors.error}
           />
           <DrawerMenuItem
             label={t("contactUs")}
@@ -397,7 +398,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
             disabled={isNavigating}
             isActive={isRouteActive("/(tabs)/home/contact_us")}
             delay={250}
-            iconColor="#0F9D58" // Google Green
+            iconColor={theme.colors.success}
           />
           <DrawerMenuItem
             label={t("faqAndHelp")}
@@ -406,7 +407,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
             disabled={isNavigating}
             isActive={isRouteActive("/(tabs)/home/faq")}
             delay={300}
-            iconColor="#FB8C00" // Orange
+            iconColor={theme.colors.warning}
           />
 
           {/* Legal Section */}
@@ -418,7 +419,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
             disabled={isNavigating}
             isActive={isRouteActive("/(tabs)/home/policies/privacyPolicy")}
             delay={350}
-            iconColor="#607D8B" // Blue Grey
+            iconColor={theme.colors.info}
           />
           <DrawerMenuItem
             label={t("termsAndConditions")}
@@ -427,7 +428,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
             disabled={isNavigating}
             isActive={isRouteActive("/(tabs)/home/policies/termsAndConditionsPolicies")}
             delay={400}
-            iconColor="#607D8B" // Blue Grey
+            iconColor={theme.colors.info}
           />
 
           {/* Account Section */}
@@ -466,7 +467,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
 const getStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.white || '#fff',
+    backgroundColor: theme.colors.background,
   },
   headerContainer: {
     minHeight: 120,
@@ -496,11 +497,11 @@ const getStyles = (theme: any) => StyleSheet.create({
     height: 48,
     borderRadius: 24,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: theme.colors.whiteOverlayLight,
     overflow: 'hidden',
-    backgroundColor: theme.colors.white || '#fff',
+    backgroundColor: theme.colors.surfaceElevated,
     elevation: 4,
-    shadowColor: theme.colors.black,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -517,7 +518,7 @@ const getStyles = (theme: any) => StyleSheet.create({
   avatarInitials: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: theme.colors.secondary || '#ffffff',
+    color: theme.colors.secondary,
   },
   rewardsBadge: {
     flexDirection: 'row',
@@ -527,7 +528,7 @@ const getStyles = (theme: any) => StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: theme.colors.whiteOverlayVeryLight,
   },
   rewardsText: {
     fontSize: 10,
@@ -542,17 +543,17 @@ const getStyles = (theme: any) => StyleSheet.create({
   },
   greetingText: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.9)',
+    color: theme.colors.textPrimary,
     marginBottom: 2,
     fontWeight: '500',
   },
   userName: {
     fontSize: 16,
     fontWeight: '800', // Extra bold for premium feel
-    color: '#ffffff',
+    color: theme.colors.textPrimary,
     marginBottom: 4,
     letterSpacing: 0.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowColor: theme.colors.overlayLight,
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
@@ -562,7 +563,7 @@ const getStyles = (theme: any) => StyleSheet.create({
   },
   userEmail: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.8)',
+    color: theme.colors.whiteOverlayLight,
   },
   decorativeCircle: {
     position: 'absolute',
@@ -571,7 +572,7 @@ const getStyles = (theme: any) => StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: theme.colors.whiteOverlayVeryLight,
   },
   decorativeCircleSmall: {
     position: 'absolute',
@@ -580,7 +581,7 @@ const getStyles = (theme: any) => StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: theme.colors.whiteOverlayVeryLight,
   },
   scrollContent: {
     paddingTop: 8,
@@ -614,10 +615,10 @@ const getStyles = (theme: any) => StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 12,
     marginBottom: 2,
-    backgroundColor: 'transparent', // Default
+    backgroundColor: theme.colors.transparent,
   },
   activeMenuItem: {
-    backgroundColor: theme.colors.secondary + '20', // Pale Gold/Yellow (20% opacity)
+    backgroundColor: withOpacity(theme.colors.secondary, '20'),
   },
   iconContainer: {
     width: 30,
@@ -628,10 +629,10 @@ const getStyles = (theme: any) => StyleSheet.create({
     alignItems: 'center',
   },
   activeIconContainer: {
-    backgroundColor: theme.colors.white || '#fff',
+    backgroundColor: theme.colors.surfaceElevated,
   },
   logoutIconContainer: {
-    backgroundColor: '#FFE5E5',
+    backgroundColor: theme.colors.errorLight,
   },
   darkModeRow: {
     flexDirection: 'row',
@@ -689,7 +690,7 @@ const getStyles = (theme: any) => StyleSheet.create({
   footer: {
     borderTopWidth: 1,
     borderTopColor: theme.colors.borderLight,
-    backgroundColor: theme.colors.white || '#fff',
+    backgroundColor: theme.colors.background,
     paddingBottom: Platform.OS === 'ios' ? 10 : 5,
   },
   logoutContainer: {

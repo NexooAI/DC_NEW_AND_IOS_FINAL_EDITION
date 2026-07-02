@@ -1,4 +1,3 @@
-import { theme } from "@/constants/theme";
 import { useAppTheme } from "@/store/global.store";
 import React, { useState, useRef, useEffect } from "react";
 import { View, TextInput, StyleSheet, NativeSyntheticEvent, TextInputKeyPressEventData } from "react-native";
@@ -97,14 +96,14 @@ function getStyles(theme: any) { return StyleSheet.create({
     width: 50,
     height: 50,
     borderWidth: 1,
-    borderColor: "#ffffff",
+    borderColor: theme.colors.border,
     borderRadius: 8,
     fontSize: 24,
-    color: "#000000",
-    backgroundColor: theme.colors.white,
+    color: theme.colors.textDark,
+    backgroundColor: theme.colors.surfaceElevated,
   },
 }) }
 
-var styles = getStyles(theme);;
+var styles: any;
 
 export default MpinInput;

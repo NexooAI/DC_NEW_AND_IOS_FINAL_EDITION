@@ -1,4 +1,85 @@
-const lightPalette = {
+const withAlpha = (hex, alpha) => {
+  const normalized = hex.replace("#", "");
+  const value = normalized.length === 3
+    ? normalized.split("").map((char) => char + char).join("")
+    : normalized;
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const createThemeColors = (basePalette, overrides = {}) => {
+  const colors = {
+    ...basePalette,
+    ...overrides,
+  };
+
+  const isDarkSurface = colors.background === "#121212";
+  const textOnPrimary = colors.textPrimary;
+  const textOnAccent = isDarkSurface ? "#0b162c" : "#0b162c";
+  const surface = colors.background;
+  const surfaceElevated = colors.backgroundSecondary;
+  const surfaceMuted = colors.backgroundTertiary;
+  const inverseSurface = isDarkSurface ? "#f8fafc" : "#0b162c";
+  const inverseText = isDarkSurface ? "#0b162c" : "#ffffff";
+
+  return {
+    ...colors,
+    backgroundQuaternary: colors.backgroundQuaternary || colors.quaternary,
+    backgroundQuinary: colors.backgroundQuinary || colors.backgroundTertiary,
+    surface,
+    surfaceElevated,
+    surfaceMuted,
+    surfaceInverse: inverseSurface,
+    textOnPrimary,
+    textOnSecondary: textOnAccent,
+    textOnAccent,
+    textDisabled: colors.textDisabled || colors.textLightGrey,
+    iconPrimary: colors.iconPrimary || colors.primary,
+    iconSecondary: colors.iconSecondary || colors.secondary,
+    iconMuted: colors.iconMuted || colors.textGrey,
+    silver: colors.silver || colors.textLightGrey,
+    gold: colors.gold || colors.secondary,
+    goldLight: colors.goldLight || colors.backgroundTertiary,
+    textBrown: colors.textBrown || colors.textSecondary,
+    textDarkBrown: colors.textDarkBrown || colors.textDark,
+    cardBackgroundLight: colors.cardBackgroundLight || surfaceElevated,
+    borderWhite: colors.borderWhite || colors.borderLight,
+    successLight: colors.successLight || withAlpha(colors.success, isDarkSurface ? 0.18 : 0.12),
+    successDark: colors.successDark || colors.success,
+    errorLight: colors.errorLight || withAlpha(colors.error, isDarkSurface ? 0.18 : 0.12),
+    errorDark: colors.errorDark || colors.error,
+    warningLight: colors.warningLight || withAlpha(colors.warning, isDarkSurface ? 0.2 : 0.14),
+    infoLight: colors.infoLight || withAlpha(colors.info, isDarkSurface ? 0.18 : 0.12),
+    statusActive: colors.statusActive || colors.success,
+    statusInactive: colors.statusInactive || colors.error,
+    statusPending: colors.statusPending || colors.warning,
+    statusCompleted: colors.statusCompleted || colors.success,
+    overlay: colors.overlay || withAlpha("#000000", isDarkSurface ? 0.7 : 0.5),
+    overlayLight: colors.overlayLight || withAlpha("#000000", isDarkSurface ? 0.45 : 0.2),
+    overlayMedium: colors.overlayMedium || withAlpha("#000000", isDarkSurface ? 0.55 : 0.3),
+    blackOverlay: colors.blackOverlay || withAlpha("#000000", 0.5),
+    blackOverlayLight: colors.blackOverlayLight || withAlpha("#000000", 0.2),
+    whiteOverlay: colors.whiteOverlay || withAlpha("#ffffff", isDarkSurface ? 0.12 : 0.9),
+    whiteOverlayLight: colors.whiteOverlayLight || withAlpha("#ffffff", isDarkSurface ? 0.1 : 0.7),
+    whiteOverlayVeryLight: colors.whiteOverlayVeryLight || withAlpha("#ffffff", 0.1),
+    shadow: colors.shadow || withAlpha("#000000", isDarkSurface ? 0.55 : 0.16),
+    buttonPrimary: colors.buttonPrimary || colors.primary,
+    buttonPrimaryText: colors.buttonPrimaryText || textOnPrimary,
+    buttonSecondary: colors.buttonSecondary || colors.secondary,
+    buttonSecondaryText: colors.buttonSecondaryText || textOnAccent,
+    buttonDisabled: colors.buttonDisabled || colors.backgroundTertiary,
+    buttonDisabledText: colors.buttonDisabledText || colors.textDisabled,
+    buttonPressed: colors.buttonPressed || colors.secondary,
+    buttonPressedText: colors.buttonPressedText || textOnAccent,
+    outlineButtonText: colors.outlineButtonText || colors.primary,
+    outlineButtonBorder: colors.outlineButtonBorder || colors.primary,
+    inverseText,
+  };
+};
+
+const lightPalette = createThemeColors({
   primary: "#0b162c",
   secondary: "#d4af37",
   tertiary: "#F2B8C6",
@@ -54,9 +135,9 @@ const lightPalette = {
     formTextDark: "#1e293b",
     buttonOrange: "#f97316",
   }
-};
+});
 
-const darkPalette = {
+const darkPalette = createThemeColors({
   primary: "#0b162c",
   secondary: "#ffd700",
   tertiary: "#F2B8C6",
@@ -81,8 +162,8 @@ const darkPalette = {
   info: "#60a5fa",
   border: "#2d3748",
   borderLight: "#3f485a",
-  white: "#1e1e1e",
-  black: "#ffffff",
+  white: "#ffffff",
+  black: "#000000",
   transparent: "transparent",
   gradientPrimary: ["#0b162c", "#1e293b", "#ffd700"],
   gradientPrimaryDark: ["#121212", "#1e1e1e", "#2a2a2a"],
@@ -112,7 +193,7 @@ const darkPalette = {
     formTextDark: "#f8fafc",
     buttonOrange: "#f97316",
   }
-};
+});
 
 const theme = {
   get colors() {
@@ -124,10 +205,7 @@ const theme = {
       const basePalette = themeMode === 'dark' ? darkPalette : lightPalette;
       
       if (appConfig && appConfig.colors) {
-        return {
-          ...basePalette,
-          ...appConfig.colors,
-        };
+        return createThemeColors(basePalette, appConfig.colors);
       }
       return basePalette;
     } catch (e) {
@@ -135,42 +213,41 @@ const theme = {
     }
   },
 
-  // Standardized button configuration
-  button: {
-    // Default button colors
-    background: "#FFD700", // Gold background as requested
-    text: "#000000", // Black text for contrast
+  get button() {
+    const colors = this.colors;
 
-    // Button variants
-    primary: {
-      background: "#1a2a39",
-      text: "#ffffff",
-    },
-    secondary: {
-      background: "#ffc90c",
-      text: "#000000",
-    },
-    success: {
-      background: "#4CAF50",
-      text: "#ffffff",
-    },
-    error: {
-      background: "#ff4444",
-      text: "#ffffff",
-    },
-    warning: {
-      background: "#FF9800",
-      text: "#ffffff",
-    },
-    outline: {
-      background: "transparent",
-      text: "#0e1e38",
-      border: "#0e1e38",
-    },
-    ghost: {
-      background: "transparent",
-      text: "#0e1e38",
-    },
+    return {
+      background: colors.buttonSecondary,
+      text: colors.buttonSecondaryText,
+      primary: {
+        background: colors.buttonPrimary,
+        text: colors.buttonPrimaryText,
+      },
+      secondary: {
+        background: colors.buttonSecondary,
+        text: colors.buttonSecondaryText,
+      },
+      success: {
+        background: colors.success,
+        text: colors.textLight,
+      },
+      error: {
+        background: colors.error,
+        text: colors.textLight,
+      },
+      warning: {
+        background: colors.warning,
+        text: colors.textOnAccent,
+      },
+      outline: {
+        background: colors.transparent,
+        text: colors.outlineButtonText,
+        border: colors.outlineButtonBorder,
+      },
+      ghost: {
+        background: colors.transparent,
+        text: colors.outlineButtonText,
+      },
 
     // Button sizes
     small: {
@@ -189,15 +266,15 @@ const theme = {
       fontSize: 16,
     },
 
-    // Button states
-    disabled: {
-      background: "#cccccc",
-      text: "#666666",
-    },
-    pressed: {
-      background: "#B8860B", // Darker gold when pressed
-      text: "#000000",
-    },
+      disabled: {
+        background: colors.buttonDisabled,
+        text: colors.buttonDisabledText,
+      },
+      pressed: {
+        background: colors.buttonPressed,
+        text: colors.buttonPressedText,
+      },
+    };
   },
 
   // Comprehensive images object with semantic keys
@@ -353,4 +430,4 @@ const theme = {
   youtubeUrl: "https://youtu.be/8RAhdn5b9Bw",
 };
 
-module.exports = { theme, lightPalette, darkPalette };
+module.exports = { theme, lightPalette, darkPalette, createThemeColors };

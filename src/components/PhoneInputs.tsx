@@ -1,4 +1,3 @@
-import { theme } from "@/constants/theme";
 import { useAppTheme } from "@/store/global.store";
 import React, { useState } from "react";
 import {
@@ -78,7 +77,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
         </View>
         <TextInput
           placeholder={t("enterMobileNumber")}
-          placeholderTextColor="rgba(0, 0, 0, 0.5)"
+          placeholderTextColor={theme.colors.textGrey}
           value={value}
           onChangeText={validateMobile}
           onBlur={handleBlur}
@@ -121,13 +120,13 @@ function getStyles(theme: any) { return StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: 12,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.1)",
+    borderColor: theme.colors.border,
     height: 50,
-    shadowColor: "#000",
+    shadowColor: theme.colors.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -137,23 +136,23 @@ function getStyles(theme: any) { return StyleSheet.create({
     elevation: 3,
   },
   errorContainer: {
-    backgroundColor: theme.colors.white,
-    borderColor: "#ff4444",
+    backgroundColor: theme.colors.surfaceElevated,
+    borderColor: theme.colors.error,
     borderWidth: 2,
   },
   countryCodeBox: {
-    backgroundColor: "rgba(255, 215, 0, 0.1)",
+    backgroundColor: theme.colors.goldLight,
     paddingHorizontal: 16,
     paddingVertical: 0,
     borderRightWidth: 1,
-    borderRightColor: "rgba(0, 0, 0, 0.1)",
+    borderRightColor: theme.colors.border,
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
     minWidth: 50,
   },
   countryCodeText: {
-    color: "#000000",
+    color: theme.colors.textDark,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -163,8 +162,8 @@ function getStyles(theme: any) { return StyleSheet.create({
     paddingVertical: 0,
     fontSize: 16,
     height: 50,
-    backgroundColor: theme.colors.white,
-    color: "#000000",
+    backgroundColor: theme.colors.surfaceElevated,
+    color: theme.colors.textDark,
     fontWeight: "500",
     textAlignVertical: "center",
     includeFontPadding: false,
@@ -174,8 +173,8 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginBottom: 0,
   },
   inputError: {
-    backgroundColor: theme.colors.white,
-    color: "#000000",
+    backgroundColor: theme.colors.surfaceElevated,
+    color: theme.colors.textDark,
   },
   counterText: {
     textAlign: "right",
@@ -186,8 +185,8 @@ function getStyles(theme: any) { return StyleSheet.create({
     fontWeight: "500",
   },
   errorText: {
-    color: "#ff4444",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    color: theme.colors.error,
+    backgroundColor: theme.colors.errorLight,
     fontSize: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -198,6 +197,6 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
 }) }
 
-var styles = getStyles(theme);;
+var styles: any;
 
 export default PhoneInput;

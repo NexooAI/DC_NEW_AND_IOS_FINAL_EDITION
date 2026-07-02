@@ -1,7 +1,7 @@
 // src/constants/colors.js
 // Centralized, dynamically-evaluated color definitions for the entire app
 
-import { theme, lightPalette, darkPalette } from './theme';
+import { theme, lightPalette, darkPalette, createThemeColors } from './theme';
 
 // Helper to get active colors safely without React hooks
 const getActiveColors = () => {
@@ -14,10 +14,7 @@ const getActiveColors = () => {
     const basePalette = themeMode === 'dark' ? darkPalette : lightPalette;
     
     if (appConfig && appConfig.colors) {
-      return {
-        ...basePalette,
-        ...appConfig.colors,
-      };
+      return createThemeColors(basePalette, appConfig.colors);
     }
     return basePalette;
   } catch (e) {
@@ -46,7 +43,7 @@ export const PRIMARY_COLORS = {
   get primary() { return getActiveColors().primary; },
   get secondary() { return getActiveColors().secondary; },
   get gold() { return getActiveColors().gold || getActiveColors().secondary; },
-  get silver() { return getActiveColors().silver || "#C0C0C0"; },
+  get silver() { return getActiveColors().silver; },
 };
 
 export const TEXT_COLORS = {
@@ -58,8 +55,8 @@ export const TEXT_COLORS = {
   get darkGrey() { return getActiveColors().textDarkGrey; },
   get mediumGrey() { return getActiveColors().textMediumGrey; },
   get lightGrey() { return getActiveColors().textLightGrey; },
-  get brown() { return getActiveColors().textBrown || "#8b5a2b"; },
-  get darkBrown() { return getActiveColors().textDarkBrown || "#3E2723"; },
+  get brown() { return getActiveColors().textBrown; },
+  get darkBrown() { return getActiveColors().textDarkBrown; },
   get success() { return getActiveColors().textSuccess; },
   get error() { return getActiveColors().textError; },
   get warning() { return getActiveColors().textWarning; },
@@ -78,21 +75,21 @@ export const BACKGROUND_COLORS = {
   get card() { return getActiveColors().background; },
   get cardMedium() { return getActiveColors().backgroundSecondary; },
   get cardDark() { return getActiveColors().backgroundTertiary; },
-  get muted() { return getActiveColors().lightGrey || "#e5e7eb"; },
-  get overlay() { return getActiveColors().blackOverlay || 'rgba(0,0,0,0.5)'; },
-  get overlayLight() { return getActiveColors().blackOverlayLight || 'rgba(0,0,0,0.2)'; },
-  get overlayMedium() { return 'rgba(0,0,0,0.3)'; },
+  get muted() { return getActiveColors().backgroundTertiary; },
+  get overlay() { return getActiveColors().overlay; },
+  get overlayLight() { return getActiveColors().overlayLight; },
+  get overlayMedium() { return getActiveColors().overlayMedium; },
 };
 
 export const STATUS_COLORS = {
   get success() { return getActiveColors().success; },
-  get successLight() { return getActiveColors().successLight || "#e8f5e9"; },
-  get successDark() { return getActiveColors().successDark || "#2e7d32"; },
+  get successLight() { return getActiveColors().successLight; },
+  get successDark() { return getActiveColors().successDark; },
   get error() { return getActiveColors().error; },
-  get errorLight() { return getActiveColors().errorLight || "#ffebee"; },
-  get errorDark() { return getActiveColors().errorDark || "#c62828"; },
+  get errorLight() { return getActiveColors().errorLight; },
+  get errorDark() { return getActiveColors().errorDark; },
   get warning() { return getActiveColors().warning; },
-  get warningLight() { return getActiveColors().warningLight || "#fff8e1"; },
+  get warningLight() { return getActiveColors().warningLight; },
   get info() { return getActiveColors().info; },
   get active() { return getActiveColors().statusActive || getActiveColors().success; },
   get inactive() { return getActiveColors().statusInactive || getActiveColors().error; },
@@ -154,7 +151,7 @@ export const COMPONENT_COLORS = {
     get white() { return getActiveColors().white; },
     get black() { return getActiveColors().black; },
     get grey() { return getActiveColors().textGrey; },
-    get brown() { return getActiveColors().brown || "#8b5a2b"; },
+    get brown() { return getActiveColors().textBrown; },
   },
 };
 
@@ -179,32 +176,32 @@ export const COMMON_COLORS = {
 
 export const RED_COLORS = {
   get primary() { return getActiveColors().error; },
-  get light() { return "#ffebee"; },
-  get dark() { return "#c62828"; },
-  get darker() { return "#b71c1c"; },
-  get burgundy() { return "#800020"; },
-  get burgundyLight() { return "#9a1f40"; },
-  get burgundyDark() { return "#5c061b"; },
+  get light() { return getActiveColors().errorLight; },
+  get dark() { return getActiveColors().errorDark; },
+  get darker() { return getActiveColors().error; },
+  get burgundy() { return getActiveColors().primary; },
+  get burgundyLight() { return getActiveColors().backgroundTertiary; },
+  get burgundyDark() { return getActiveColors().primary; },
 };
 
 export const BLUE_COLORS = {
   get primary() { return getActiveColors().info; },
-  get dark() { return "#1565c0"; },
-  get darker() { return "#0d47a1"; },
-  get darkest() { return "#0a2540"; },
+  get dark() { return getActiveColors().info; },
+  get darker() { return getActiveColors().primary; },
+  get darkest() { return getActiveColors().primary; },
 };
 
 export const GREEN_COLORS = {
   get primary() { return getActiveColors().success; },
-  get light() { return "#e8f5e9"; },
+  get light() { return getActiveColors().successLight; },
   get success() { return getActiveColors().success; },
 };
 
 export const BROWN_COLORS = {
-  get primary() { return "#8b5a2b"; },
-  get light() { return "#d2b48c"; },
-  get dark() { return "#3e2723"; },
-  get tan() { return "#b58d3d"; },
+  get primary() { return getActiveColors().textBrown; },
+  get light() { return getActiveColors().goldLight; },
+  get dark() { return getActiveColors().textDarkBrown; },
+  get tan() { return getActiveColors().secondary; },
 };
 
 export const SUPPORT_COLORS = {
@@ -224,7 +221,7 @@ export const COLORS = {
   get primary() { return getActiveColors().primary; },
   get secondary() { return getActiveColors().secondary; },
   get gold() { return getActiveColors().gold || getActiveColors().secondary; },
-  get silver() { return getActiveColors().silver || "#C0C0C0"; },
+  get silver() { return getActiveColors().silver; },
 
   // Text
   get textPrimary() { return getActiveColors().textPrimary; },
@@ -235,8 +232,8 @@ export const COLORS = {
   get textDarkGrey() { return getActiveColors().textDarkGrey; },
   get textMediumGrey() { return getActiveColors().textMediumGrey; },
   get textLightGrey() { return getActiveColors().textLightGrey; },
-  get textBrown() { return getActiveColors().textBrown || "#8b5a2b"; },
-  get textDarkBrown() { return getActiveColors().textDarkBrown || "#3E2723"; },
+  get textBrown() { return getActiveColors().textBrown; },
+  get textDarkBrown() { return getActiveColors().textDarkBrown; },
   get textSuccess() { return getActiveColors().textSuccess; },
   get textError() { return getActiveColors().textError; },
   get textWarning() { return getActiveColors().textWarning; },
@@ -252,10 +249,10 @@ export const COLORS = {
       get card() { return getActiveColors().background; },
       get cardMedium() { return getActiveColors().backgroundSecondary; },
       get cardDark() { return getActiveColors().backgroundTertiary; },
-      get muted() { return getActiveColors().lightGrey || "#e5e7eb"; },
-      get overlay() { return getActiveColors().blackOverlay || 'rgba(0,0,0,0.5)'; },
-      get overlayLight() { return getActiveColors().blackOverlayLight || 'rgba(0,0,0,0.2)'; },
-      get overlayMedium() { return 'rgba(0,0,0,0.3)'; },
+      get muted() { return getActiveColors().backgroundTertiary; },
+      get overlay() { return getActiveColors().overlay; },
+      get overlayLight() { return getActiveColors().overlayLight; },
+      get overlayMedium() { return getActiveColors().overlayMedium; },
     };
   },
 
@@ -269,8 +266,8 @@ export const COLORS = {
       get darkGrey() { return getActiveColors().textDarkGrey; },
       get mediumGrey() { return getActiveColors().textMediumGrey; },
       get lightGrey() { return getActiveColors().textLightGrey; },
-      get brown() { return getActiveColors().textBrown || "#8b5a2b"; },
-      get darkBrown() { return getActiveColors().textDarkBrown || "#3E2723"; },
+      get brown() { return getActiveColors().textBrown; },
+      get darkBrown() { return getActiveColors().textDarkBrown; },
       get success() { return getActiveColors().textSuccess; },
       get error() { return getActiveColors().textError; },
       get warning() { return getActiveColors().textWarning; },
@@ -333,19 +330,19 @@ export const COLORS = {
   get borderWhiteLight() { return getActiveColors().borderLight; },
   get borderWhite() { return getActiveColors().borderWhite || getActiveColors().borderLight; },
   get green() { return getActiveColors().success; },
-  get greenLight() { return "#e8f5e9"; },
-  get goldLight() { return getActiveColors().goldLight || "#fffbe6"; },
+  get greenLight() { return getActiveColors().successLight; },
+  get goldLight() { return getActiveColors().goldLight; },
   get blue() { return getActiveColors().info; },
-  get cardBackgroundLight() { return getActiveColors().cardBackgroundLight || '#fffbe6'; },
+  get cardBackgroundLight() { return getActiveColors().cardBackgroundLight; },
   get cardBackgroundMedium() { return getActiveColors().backgroundSecondary; },
-  get brownLight() { return "#d2b48c"; },
-  get brownOverlay() { return 'rgba(139, 69, 19, 0.3)'; },
-  get blackOverlay() { return 'rgba(0,0,0,0.5)'; },
-  get whiteOverlay() { return 'rgba(255,255,255,0.9)'; },
-  get textDarkBrown() { return '#2C1810'; },
-  get whiteOverlayLight() { return 'rgba(255, 255, 255, 0.7)'; },
-  get whiteOverlayVeryLight() { return 'rgba(255, 255, 255, 0.1)'; },
-  get blackOverlayLight() { return 'rgba(0, 0, 0, 0.2)'; },
+  get brownLight() { return getActiveColors().goldLight; },
+  get brownOverlay() { return getActiveColors().warningLight; },
+  get blackOverlay() { return getActiveColors().blackOverlay; },
+  get whiteOverlay() { return getActiveColors().whiteOverlay; },
+  get textDarkBrown() { return getActiveColors().textDarkBrown; },
+  get whiteOverlayLight() { return getActiveColors().whiteOverlayLight; },
+  get whiteOverlayVeryLight() { return getActiveColors().whiteOverlayVeryLight; },
+  get blackOverlayLight() { return getActiveColors().blackOverlayLight; },
 };
 
 export default COLORS;

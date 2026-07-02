@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
-import { theme } from "@/constants/theme";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 
 interface EnhancedLoaderProps {
@@ -267,7 +266,7 @@ const EnhancedLoader: React.FC<EnhancedLoaderProps> = ({
           ]}
         >
           <LinearGradient
-            colors={["#2a5a8d", "#2a5a8d"]}
+            colors={theme.colors.gradientBlue}
             style={styles.ringGradient}
           />
         </Animated.View>
@@ -463,7 +462,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     color: theme.colors.secondary,
     marginBottom: 8,
     textAlign: "center",
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
+    textShadowColor: theme.colors.overlay,
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
@@ -474,7 +473,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     letterSpacing: 2,
     marginBottom: 15,
     textAlign: "center",
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowColor: theme.colors.overlayMedium,
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
@@ -509,11 +508,11 @@ function getStyles(theme: any) { return StyleSheet.create({
     position: "absolute",
     width: "100%",
     height: "100%",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: theme.colors.whiteOverlayVeryLight,
     borderRadius: 1000,
   },
 }) }
 
-var styles = getStyles(theme);;
+var styles: any;
 
 export default EnhancedLoader;

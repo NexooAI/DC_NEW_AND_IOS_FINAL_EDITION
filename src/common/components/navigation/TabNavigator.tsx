@@ -2,8 +2,6 @@ import { useAppTheme } from "@/store/global.store";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StyleSheet } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
-import { theme } from "@/constants/theme";
-import { COLORS } from "src/constants/colors";
 
 const Tab = createBottomTabNavigator();
 
@@ -17,11 +15,11 @@ const TabNavigator = () => {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: "gray",
+        tabBarInactiveTintColor: theme.colors.textGrey,
         tabBarStyle: {
           height: 80,
           paddingTop: 8,
-          backgroundColor: COLORS.white,
+          backgroundColor: theme.colors.surfaceElevated,
         },
       }}
     >
@@ -46,7 +44,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
 }) }
 
-var styles = getStyles(theme);;
+var styles: any;
 
 export default TabNavigator;
 

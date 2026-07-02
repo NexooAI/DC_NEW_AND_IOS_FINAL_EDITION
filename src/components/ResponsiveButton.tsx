@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import ResponsiveText from "./ResponsiveText";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
-import { theme } from "@/constants/theme";
 
 interface ResponsiveButtonProps extends TouchableOpacityProps {
   title: string;
@@ -58,47 +57,49 @@ const ResponsiveButton: React.FC<ResponsiveButtonProps> = ({
       return { backgroundColor, textColor };
     }
 
+    const buttonTheme = theme.button;
+
     switch (variant) {
       case "primary":
         return {
-          backgroundColor: theme.colors.primary, // Golden color
-          textColor: theme.colors.secondary,
+          backgroundColor: buttonTheme.primary.background,
+          textColor: buttonTheme.primary.text,
         };
       case "secondary":
         return {
-          backgroundColor: theme.colors.secondary,
-          textColor: theme.colors.primary,
+          backgroundColor: buttonTheme.secondary.background,
+          textColor: buttonTheme.secondary.text,
         };
       case "outline":
         return {
-          backgroundColor: "transparent",
-          textColor: theme.colors.primary,
-          borderColor: theme.colors.primary,
+          backgroundColor: buttonTheme.outline.background,
+          textColor: buttonTheme.outline.text,
+          borderColor: buttonTheme.outline.border,
         };
       case "ghost":
         return {
-          backgroundColor: "transparent",
-          textColor: theme.colors.primary,
+          backgroundColor: buttonTheme.ghost.background,
+          textColor: buttonTheme.ghost.text,
         };
       case "success":
         return {
-          backgroundColor: theme.colors.success,
-          textColor: "#fff",
+          backgroundColor: buttonTheme.success.background,
+          textColor: buttonTheme.success.text,
         };
       case "error":
         return {
-          backgroundColor: theme.colors.error,
-          textColor: "#fff",
+          backgroundColor: buttonTheme.error.background,
+          textColor: buttonTheme.error.text,
         };
       case "warning":
         return {
-          backgroundColor: theme.colors.warning,
-          textColor: "#fff",
+          backgroundColor: buttonTheme.warning.background,
+          textColor: buttonTheme.warning.text,
         };
       default:
         return {
-          backgroundColor: "#FFD700", // Golden color
-          textColor: "#1a2a39",
+          backgroundColor: buttonTheme.secondary.background,
+          textColor: buttonTheme.secondary.text,
         };
     }
   };

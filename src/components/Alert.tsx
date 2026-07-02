@@ -7,7 +7,6 @@ import {
   Modal,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import {
@@ -16,7 +15,6 @@ import {
   Platform,
   Alert as RNAlert,
 } from "react-native";
-import { theme } from "@/constants/theme";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 
 type AlertProps = {
@@ -334,18 +332,18 @@ const CustomAlert = ({
 function getStyles(theme: any) { return StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: theme.colors.overlay,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 16, // Add horizontal padding for very small screens
   },
   container: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: 20,
     padding: 20,
     margin: 20,
     // Remove fixed width constraints - now handled dynamically
-    shadowColor: theme.colors.black,
+    shadowColor: theme.colors.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -401,14 +399,14 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   copyButton: {
     flex: 1,
-    backgroundColor: "#FFD700", // Golden color
+    backgroundColor: theme.button.secondary.background,
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 8,
     alignItems: "center",
   },
   copyButtonText: {
-    color: "#1a2a39", // Dark blue-gray
+    color: theme.button.secondary.text,
     fontWeight: "600",
     fontSize: 14,
   },
@@ -423,13 +421,13 @@ function getStyles(theme: any) { return StyleSheet.create({
     // flex, padding, and minHeight are now handled dynamically
   },
   defaultButton: {
-    backgroundColor: "#FFD700", // Golden color
+    backgroundColor: theme.button.primary.background,
   },
   destructiveButton: {
     backgroundColor: theme.colors.error,
   },
   cancelButton: {
-    backgroundColor: theme.colors.backgroundSecondary, // Light gray
+    backgroundColor: theme.colors.surfaceMuted,
   },
   buttonText: {
     fontSize: 16,
@@ -437,16 +435,16 @@ function getStyles(theme: any) { return StyleSheet.create({
     textAlign: "center",
   },
   defaultButtonText: {
-    color: "#1a2a39", // Dark blue-gray
+    color: theme.button.primary.text,
   },
   destructiveButtonText: {
-    color: theme.colors.white,
+    color: theme.colors.textLight,
   },
   cancelButtonText: {
-    color: "#1a2a39", // Dark blue-gray
+    color: theme.colors.textDark,
   },
 }) }
 
-var styles = getStyles(theme);;
+var styles: any;
 
 export default CustomAlert;

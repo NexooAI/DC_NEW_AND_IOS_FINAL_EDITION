@@ -11,6 +11,7 @@ import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { BlurView } from "expo-blur";
+import CustomBottomBar from "@/common/components/navigation/CustomBottomBar";
 
 export default function TabsLayout() {
   const theme = useAppTheme();
@@ -30,8 +31,10 @@ export default function TabsLayout() {
     <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
       <NavigationErrorBoundary>
         <Tabs
+          tabBar={(props) => <CustomBottomBar {...props} />}
           screenOptions={{
             headerShown: true,
+            /*
             tabBarActiveTintColor: "#FFD700", // Gold color for active tabs
             tabBarInactiveTintColor: "#cbd5e1", // Light silver/grey for inactive tabs
             tabBarBackground: () => (
@@ -54,6 +57,10 @@ export default function TabsLayout() {
               shadowRadius: 6,
               paddingBottom: Platform.OS === 'ios' ? 12 : 8,
               paddingTop: 8,
+              display: isTabVisible ? 'flex' : 'none',
+            },
+            */
+            tabBarStyle: {
               display: isTabVisible ? 'flex' : 'none',
             },
             headerStyle: {
@@ -95,7 +102,7 @@ export default function TabsLayout() {
                   <Ionicons
                     name={isActive ? "home" : "home-outline"}
                     size={size}
-                    color={isActive ? "#FFD700" : color}
+                    color={isActive ? color : (focused ? "#cbd5e1" : color)}
                   />
                 );
               },
@@ -146,7 +153,7 @@ export default function TabsLayout() {
                 <Ionicons
                   name={focused ? "grid" : "grid-outline"}
                   size={size}
-                  color={focused ? "#FFD700" : color}
+                  color={color}
                 />
               ),
               tabBarLabel: t("dashboard") || "Dashboard",
@@ -212,7 +219,7 @@ export default function TabsLayout() {
                   <Ionicons
                     name={focused ? "gift" : "gift-outline"}
                     size={size}
-                    color={focused ? "#FFD700" : color}
+                    color={color}
                   />
                 );
               },

@@ -526,7 +526,7 @@ const useGlobalStore = create<GlobalStore>()(
 export default useGlobalStore;
 
 // Dynamic configuration helper (non-reactive)
-import { theme, lightPalette, darkPalette } from '@/constants/theme';
+import { theme, lightPalette, darkPalette, createThemeColors } from '@/constants/theme';
 import { useMemo } from 'react';
 
 export const getAppConfig = () => {
@@ -535,12 +535,10 @@ export const getAppConfig = () => {
   const basePalette = themeMode === 'dark' ? darkPalette : lightPalette;
   
   if (storeConfig) {
+    const colors = createThemeColors(basePalette, storeConfig.colors);
     return {
       ...theme,
-      colors: {
-        ...basePalette,
-        ...storeConfig.colors,
-      },
+      colors,
       constants: {
         ...theme.constants,
         ...storeConfig.brand,
@@ -556,7 +554,7 @@ export const getAppConfig = () => {
   }
   return {
     ...theme,
-    colors: basePalette,
+    colors: createThemeColors(basePalette),
   };
 };
 
@@ -570,10 +568,7 @@ export const useAppTheme = () => {
     if (appConfig) {
       return {
         ...theme,
-        colors: {
-          ...basePalette,
-          ...appConfig.colors,
-        },
+        colors: createThemeColors(basePalette, appConfig.colors),
         constants: {
           ...theme.constants,
           ...appConfig.brand,
@@ -589,7 +584,7 @@ export const useAppTheme = () => {
     }
     return {
       ...theme,
-      colors: basePalette,
+      colors: createThemeColors(basePalette),
     };
   }, [appConfig, themeMode]);
 };
