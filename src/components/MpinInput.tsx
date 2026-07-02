@@ -101,7 +101,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     borderRadius: 8,
     fontSize: 24,
     color: "#000000",
-    backgroundColor: "#ffffff",
+    backgroundColor: theme.colors.white,
   },
 }) }
 

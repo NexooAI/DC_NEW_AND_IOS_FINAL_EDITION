@@ -639,7 +639,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#FFF', // or #FFD700 for gold
+    backgroundColor: theme.colors.white, // or #FFD700 for gold
     borderRadius: 2,
   },
   headerRow: {
@@ -747,7 +747,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     zIndex: 9999,
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 24,
     padding: 24,
     width: "100%",

@@ -1112,7 +1112,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 0,
     width: "100%",
     height: "100%",
@@ -1131,7 +1131,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -1280,7 +1280,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     paddingBottom: Platform.OS === "ios" ? 34 : 20, // Account for home indicator on iOS
     borderTopWidth: 1,
     borderTopColor: "#f0f0f0",
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
   },
   modalFooterButtons: {
     flexDirection: "row",
@@ -1365,7 +1365,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     textAlign: "center",
   },
   branchCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,

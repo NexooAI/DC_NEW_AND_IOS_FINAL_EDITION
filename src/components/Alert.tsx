@@ -429,7 +429,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     backgroundColor: theme.colors.error,
   },
   cancelButton: {
-    backgroundColor: "#f5f5f5", // Light gray
+    backgroundColor: theme.colors.backgroundSecondary, // Light gray
   },
   buttonText: {
     fontSize: 16,

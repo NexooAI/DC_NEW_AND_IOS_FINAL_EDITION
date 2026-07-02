@@ -901,7 +901,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginBottom: hp(2.5),
     borderWidth: 1.5,
     borderColor: "rgba(212, 175, 55, 0.22)", // Premium soft gold border
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.colors.white,
     ...shadowUtils.SHADOW_PRESETS.medium,
   },
   cardWon: {

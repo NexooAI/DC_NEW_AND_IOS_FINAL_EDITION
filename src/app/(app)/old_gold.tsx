@@ -142,8 +142,12 @@ export default function OldGoldScreen() {
       if (response.data && response.data.success) {
         setDeposits(response.data.data || []);
       }
-    } catch (error) {
-      console.error("Error fetching old gold deposits:", error);
+    } catch (error: any) {
+      if (error?.response?.status === 404) {
+        console.log("ℹ️ Old gold deposits endpoint not found (404), skipping.");
+      } else {
+        console.error("Error fetching old gold deposits:", error);
+      }
     } finally {
       setLoading(false);
     }

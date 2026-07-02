@@ -1,13 +1,26 @@
 import { StyleSheet, Platform, Dimensions } from "react-native";
-import { theme } from "@/constants/theme";
+import COLORS from "@/constants/colors";
 
-// Get screen dimensions for responsive design
+// Helper to get active colors safely
+const getActiveColors = () => {
+  try {
+    const useGlobalStore = require('@/store/global.store').default;
+    return useGlobalStore.getState()?.appConfig?.colors || require('@/constants/colors').default;
+  } catch (e) {
+    return require('@/constants/colors').default;
+  }
+};
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 const isSmallScreen = screenHeight < 700;
 const isMediumScreen = screenHeight >= 700 && screenHeight < 800;
 const isLargeScreen = screenHeight >= 800;
 
-export const registerStyles = StyleSheet.create({
+
+
+// Get screen dimensions for responsive design
+
+
+const rawRegisterStyles = (themeColors: any) => ({
   backgroundImage: {
     position: 'absolute',
     top: 0,
@@ -18,7 +31,7 @@ export const registerStyles = StyleSheet.create({
   },
   darkOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: theme.colors.transparent, // Adjust opacity as needed
+    backgroundColor: themeColors.transparent, // Adjust opacity as needed
     zIndex: 0,
   },
   gradient: {
@@ -55,12 +68,12 @@ export const registerStyles = StyleSheet.create({
     maxWidth: Math.min(400, screenWidth * 0.9),
     alignSelf: "center",
     borderWidth: 1,
-    borderColor: theme.colors.borderWhiteLight,
+    borderColor: (themeColors.borderLight || "#ccc"),
     marginBottom: Math.min(8, screenWidth * 0.02),
     overflow: "hidden",
     ...Platform.select({
       ios: {
-        shadowColor: theme.colors.shadowBlack,
+        shadowColor: (themeColors.black || "#000"),
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 6,
@@ -68,7 +81,7 @@ export const registerStyles = StyleSheet.create({
       },
       android: {
         elevation: 6,
-        shadowColor: theme.colors.shadowBlack,
+        shadowColor: (themeColors.black || "#000"),
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 6,
@@ -85,7 +98,7 @@ export const registerStyles = StyleSheet.create({
     justifyContent: "center",
   },
   pageTitle: {
-    color: theme.colors.primary,
+    color: themeColors.primary,
     fontSize: Math.min(24, screenWidth * 0.06),
     fontWeight: "bold",
     marginBottom: Math.min(4, screenWidth * 0.02),
@@ -94,7 +107,7 @@ export const registerStyles = StyleSheet.create({
     paddingHorizontal: Math.min(20, screenWidth * 0.05),
   },
   subtitle: {
-    color: theme.colors.primary,
+    color: themeColors.primary,
     fontSize: Math.min(18, screenWidth * 0.045),
     marginBottom: Math.min(10, screenWidth * 0.05),
     textAlign: "center",
@@ -119,7 +132,7 @@ export const registerStyles = StyleSheet.create({
     alignSelf: "center",
     ...Platform.select({
       ios: {
-        shadowColor: theme.colors.shadowBlack,
+        shadowColor: (themeColors.black || "#000"),
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -138,7 +151,7 @@ export const registerStyles = StyleSheet.create({
     opacity: 0.6,
   },
   loginButtonText: {
-    color: theme.colors.primary,
+    color: themeColors.primary,
     fontSize: Math.min(20, screenWidth * 0.05),
     fontWeight: "bold",
     textAlign: "center",
@@ -153,7 +166,7 @@ export const registerStyles = StyleSheet.create({
     minHeight: 220, // Ensures enough space for small screens
   },
   otpTitle: {
-    color: theme.colors.primary,
+    color: themeColors.primary,
     fontSize: isSmallScreen ? 20 : isMediumScreen ? 22 : 24,
     fontWeight: "bold",
     marginBottom: 5,
@@ -161,7 +174,7 @@ export const registerStyles = StyleSheet.create({
     lineHeight: isSmallScreen ? 24 : isMediumScreen ? 26 : 28,
   },
   otpSentText: {
-    color: theme.colors.primary,
+    color: themeColors.primary,
     fontSize: isSmallScreen ? 14 : isMediumScreen ? 15 : 16,
     marginBottom: 10,
     opacity: 0.8,
@@ -204,11 +217,11 @@ export const registerStyles = StyleSheet.create({
     width: Math.min(48, screenWidth * 0.12),
     height: Math.min(48, screenWidth * 0.12),
     borderWidth: 1,
-    borderColor: theme.colors.bgBlackLight,
+    borderColor: (themeColors.border || "#000"),
     borderRadius: Math.min(10, screenWidth * 0.025),
-    color: theme.colors.black,
+    color: themeColors.black,
     fontSize: Math.min(22, screenWidth * 0.055),
-    backgroundColor: theme.colors.white,
+    backgroundColor: themeColors.white,
     textAlign: 'center',
     marginHorizontal: Math.min(4, screenWidth * 0.01), // Responsive margin
     fontWeight: '600',
@@ -226,7 +239,7 @@ export const registerStyles = StyleSheet.create({
     marginTop: 15,
   },
   timerText: {
-    color: theme.colors.primary,
+    color: themeColors.primary,
     marginLeft: 8,
     fontSize: isSmallScreen ? 14 : isMediumScreen ? 15 : 16,
     opacity: 0.8,
@@ -247,7 +260,7 @@ export const registerStyles = StyleSheet.create({
     alignItems: "center",
   },
   resendText: {
-    color: theme.colors.primary,
+    color: themeColors.primary,
     fontSize: isSmallScreen ? 14 : isMediumScreen ? 15 : 16,
     fontWeight: "bold",
     textDecorationLine: "underline",
@@ -261,14 +274,14 @@ export const registerStyles = StyleSheet.create({
     marginTop: 20,
   },
   registerText: {
-    color: theme.colors.primary,
+    color: themeColors.primary,
     fontSize: isSmallScreen ? 14 : isMediumScreen ? 15 : 16,
     opacity: 0.8,
     textAlign: "center",
     lineHeight: isSmallScreen ? 18 : isMediumScreen ? 20 : 22,
   },
   registerLink: {
-    color: theme.colors.primary,
+    color: themeColors.primary,
     fontSize: isSmallScreen ? 14 : isMediumScreen ? 15 : 16,
     fontWeight: "bold",
     textDecorationLine: "underline",
@@ -281,14 +294,14 @@ export const registerStyles = StyleSheet.create({
     top: Platform.OS === "ios" ? 50 : 30,
     left: 20,
     right: 20,
-    backgroundColor: theme.colors.bgErrorMedium,
+    backgroundColor: (themeColors.error || "#ff4d4f"),
     borderRadius: 12,
     padding: 15,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     zIndex: 1000,
-    shadowColor: theme.colors.shadowBlack,
+    shadowColor: (themeColors.black || "#000"),
     shadowOffset: {
       width: 0,
       height: 2,
@@ -303,7 +316,7 @@ export const registerStyles = StyleSheet.create({
     alignItems: "center",
   },
   errorMessage: {
-    color: theme.colors.white,
+    color: themeColors.white,
     fontSize: 16,
     marginLeft: 10,
     flex: 1,
@@ -317,7 +330,7 @@ export const registerStyles = StyleSheet.create({
     marginBottom: 10,
   },
   poweredByText: {
-    color: theme.colors.primary,
+    color: themeColors.primary,
     fontSize: 14,
     opacity: 0.7,
     letterSpacing: 1,
@@ -341,19 +354,19 @@ export const registerStyles = StyleSheet.create({
     marginTop: 20,
   },
   footerText: {
-    color: theme.colors.white,
+    color: themeColors.white,
     fontSize: 16,
     opacity: 0.8,
   },
   footerLink: {
-    color: theme.colors.link,
+    color: themeColors.link,
     fontSize: 16,
     fontWeight: "bold",
     textDecorationLine: "underline",
     marginLeft: 4,
   },
   errorText: {
-    color: theme.colors.textError,
+    color: themeColors.textError,
     fontSize: isSmallScreen ? 11 : isMediumScreen ? 12 : 13,
     marginTop: 4,
     marginLeft: 4,
@@ -373,15 +386,15 @@ export const registerStyles = StyleSheet.create({
     width: 60,
     height: 60,
     borderWidth: 2,
-    borderColor: theme.colors.borderWhiteLight,
+    borderColor: (themeColors.borderLight || "#ccc"),
     borderRadius: 15,
-    backgroundColor: theme.colors.bgWhiteVeryHeavy,
-    color: theme.colors.black,
+    backgroundColor: (themeColors.backgroundSecondary || "#fff"),
+    color: themeColors.black,
     fontSize: 28,
     fontWeight: "bold",
     textAlign: "center",
     marginVertical: 8,
-    shadowColor: theme.colors.shadowBlack,
+    shadowColor: (themeColors.black || "#000"),
     shadowOffset: {
       width: 0,
       height: 2,
@@ -391,13 +404,13 @@ export const registerStyles = StyleSheet.create({
     elevation: 3,
   },
   mpinInputEmpty: {
-    borderColor: theme.colors.borderWhiteLight,
-    backgroundColor: theme.colors.bgWhiteVeryHeavy,
+    borderColor: (themeColors.borderLight || "#ccc"),
+    backgroundColor: (themeColors.backgroundSecondary || "#fff"),
   },
   mpinInputFilled: {
-    borderColor: theme.colors.gold,
-    backgroundColor: theme.colors.white,
-    shadowColor: theme.colors.shadowGold,
+    borderColor: themeColors.gold,
+    backgroundColor: themeColors.white,
+    shadowColor: (themeColors.secondary || "#ffd700"),
     shadowOffset: {
       width: 0,
       height: 0,
@@ -414,18 +427,18 @@ export const registerStyles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: theme.colors.black,
+    backgroundColor: themeColors.black,
   },
   errorContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.colors.bgErrorLight,
+    backgroundColor: (themeColors.backgroundSecondary || "#ffebee"),
     padding: 10,
     borderRadius: 8,
     marginBottom: 20,
   },
   label: {
-    color: theme.colors.white,
+    color: themeColors.white,
     fontSize: 14,
     marginBottom: 8,
     alignSelf: "center",
@@ -438,7 +451,7 @@ export const registerStyles = StyleSheet.create({
     alignSelf: "center",
   },
   eyeText: {
-    color: theme.colors.secondary,
+    color: themeColors.secondary,
     marginLeft: 10,
     fontSize: 16,
   },
@@ -450,7 +463,7 @@ export const registerStyles = StyleSheet.create({
     marginTop: 20,
     ...Platform.select({
       ios: {
-        shadowColor: theme.colors.shadowBlack,
+        shadowColor: (themeColors.black || "#000"),
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -464,7 +477,7 @@ export const registerStyles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: theme.colors.textDark,
+    color: themeColors.textDark,
     fontSize: isSmallScreen ? 16 : isMediumScreen ? 17 : 18,
     fontWeight: "bold",
     textAlign: "center",
@@ -485,7 +498,7 @@ export const registerStyles = StyleSheet.create({
     flexWrap: "wrap",
   },
   backButtonText: {
-    color: theme.colors.primary,
+    color: themeColors.primary,
     fontSize: isSmallScreen ? 14 : isMediumScreen ? 15 : 16,
     marginLeft: 8,
     fontWeight: "500",
@@ -495,11 +508,10 @@ export const registerStyles = StyleSheet.create({
     lineHeight: isSmallScreen ? 18 : isMediumScreen ? 20 : 22,
   },
 
-});
-// You'll need to update your registerStyles.ts file with the new styles or add them here.
+}); // You'll need to update your registerStyles.ts file with the new styles or add them here.
 // For demonstration, I'm adding them directly.
 // Ensure your existing registerStyles are merged with these new ones.
-export const newRegisterStyles = StyleSheet.create({
+const rawNewRegisterStyles = (themeColors: any) => ({
   // Add or modify these styles in your _styles/registerStyles.ts file
   mobileInputTopRight: {
     alignSelf: 'flex-end', // Aligns the PhoneInput to the right
@@ -510,21 +522,21 @@ export const newRegisterStyles = StyleSheet.create({
     top: 20, // Adjust top position
     right: 20, // Adjust right position
     zIndex: 5, // Bring it to front
-    backgroundColor: theme.colors.overlayDark, // Optional: Add a background
+    backgroundColor: (themeColors.blackOverlay || "rgba(0,0,0,0.5)"), // Optional: Add a background
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   textInput: {
     height: 50,
-    backgroundColor: theme.colors.bgWhiteLight,
+    backgroundColor: (themeColors.backgroundSecondary || "#f5f5f5"),
     borderRadius: 10,
     paddingHorizontal: 20,
     fontSize: 16,
-    color: theme.colors.white,
+    color: themeColors.white,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: typeof theme.colors.border === 'string' ? theme.colors.border : '#ccc',
+    borderColor: typeof (themeColors.border || "#ccc") === 'string' ? (themeColors.border || "#ccc") : '#ccc',
   },
   additionalDetailsContainer: {
     width: "100%",
@@ -547,12 +559,12 @@ export const newRegisterStyles = StyleSheet.create({
     width: 50,
     height: 50,
     borderWidth: 1,
-    borderColor: typeof theme.colors.border === 'string' ? theme.colors.border : '#ccc',
+    borderColor: typeof (themeColors.border || "#ccc") === 'string' ? (themeColors.border || "#ccc") : '#ccc',
     borderRadius: 10,
     textAlign: 'center',
     fontSize: 24,
-    color: theme.colors.white,
-    backgroundColor: theme.colors.bgWhiteLight,
+    color: themeColors.white,
+    backgroundColor: (themeColors.backgroundSecondary || "#f5f5f5"),
   },
   eyeButton: {
     padding: 10,
@@ -587,7 +599,7 @@ export const newRegisterStyles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
   },
   modalContainer: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: themeColors.white,
     overflow: "hidden",
   },
   modalHeader: {
@@ -613,3 +625,19 @@ export const newRegisterStyles = StyleSheet.create({
   },
 
 });
+// Proxy wrappers to make the styles dynamic and responsive to themeMode changes
+export const registerStyles = new Proxy({}, {
+  get(target, prop) {
+    const colors = getActiveColors();
+    const styles = rawRegisterStyles(colors);
+    return (styles as any)[prop];
+  }
+}) as any;
+
+export const newRegisterStyles = new Proxy({}, {
+  get(target, prop) {
+    const colors = getActiveColors();
+    const styles = rawNewRegisterStyles(colors);
+    return (styles as any)[prop];
+  }
+}) as any;

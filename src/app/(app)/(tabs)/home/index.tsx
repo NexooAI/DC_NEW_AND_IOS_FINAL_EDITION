@@ -1047,8 +1047,12 @@ export default function Home() {
           activeOldGoldCount = activeOldGold.length;
           activeOldGoldWeight = activeOldGold.reduce((sum: number, dep: any) => sum + (parseFloat(dep.netGoldWeight || dep.net_gold_weight || "0") || 0), 0);
         }
-      } catch (err) {
-        logger.error("Error fetching old gold deposits in fetchInvestmentData:", err);
+      } catch (err: any) {
+        if (err?.response?.status === 404) {
+          logger.log("ℹ️ Old gold deposits endpoint not found (404), skipping.");
+        } else {
+          logger.error("Error fetching old gold deposits in fetchInvestmentData:", err);
+        }
       }
 
       setActiveSchemesCount((investments.length || 0) + activeOldGoldCount);
@@ -1620,7 +1624,8 @@ export default function Home() {
     if (params.redirectOnClose === "schemes") {
       router.push("/(app)/(tabs)/home/schemes");
     } else if (params.redirectOnClose === "dashboard") {
-      router.push("/(app)/dashboard");
+      const hasDashboard = getAppConfig().constants.enableDashboard;
+      router.push(hasDashboard ? "/(app)/dashboard" : "/(app)/(tabs)/home");
     }
   }, [selectedCollection, params.redirectOnClose]);
 
@@ -2850,6 +2855,7 @@ export default function Home() {
                     goldRate={homeData.data.currentRates.gold_rate}
                     goldRate18={homeData?.data?.currentRates?.gold_rate_18}
                     goldRate14={homeData?.data?.currentRates?.gold_rate_14}
+                    silverRate={homeData?.data?.currentRates?.silver_rate}
                     updatedAt={homeData.data.currentRates.updated_at || ""}
                   />
                 </TouchableOpacity>
@@ -4594,7 +4600,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   // Chat Modal Styles
   chatModalContainer: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   chatHeader: {
     flexDirection: "row",
@@ -4622,7 +4628,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   chatContainer: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   messagesList: {
     flex: 1,
@@ -4928,7 +4934,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   tableRowOdd: {
-    backgroundColor: "#fafafa",
+    backgroundColor: theme.colors.background,
   },
   tableCell: {
     flex: 1,
@@ -5415,7 +5421,7 @@ const styles2 = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.backgroundSecondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -5468,7 +5474,7 @@ const styles2 = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
     borderColor: '#EFEFEF',
     borderRadius: 14,

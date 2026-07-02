@@ -37,7 +37,6 @@ if (
 }
 
 const { wp, hp, rf } = responsiveUtils;
-const QUATERNARY_COLOR = theme.colors.quaternary || '#F2E6D2';
 
 interface TicketItem {
   id: number | string;
@@ -182,8 +181,8 @@ export default function TicketsScreen() {
   if (!userId) {
     return (
       <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}>
-        <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
+        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.quaternary || '#F2E6D2' }]} />
         <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
 
         <View style={styles.header}>
@@ -270,8 +269,8 @@ export default function TicketsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.quaternary || '#F2E6D2' }]} />
       <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
 
       <View style={styles.header}>
@@ -356,7 +355,7 @@ export default function TicketsScreen() {
 const getStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: QUATERNARY_COLOR,
+    backgroundColor: theme.colors.quaternary || '#F2E6D2',
   },
   header: {
     flexDirection: 'row',

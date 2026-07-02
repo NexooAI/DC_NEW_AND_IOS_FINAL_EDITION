@@ -252,7 +252,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginTop: 2,
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: theme.colors.white,
     borderRadius: 20,
     padding: 24,
     marginHorizontal: 15,

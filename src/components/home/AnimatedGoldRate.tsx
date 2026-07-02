@@ -1,11 +1,12 @@
 import { useAppTheme } from "@/store/global.store";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Platform,
   Animated,
+  TouchableOpacity,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +20,7 @@ interface AnimatedGoldRateProps {
   goldRate: string;
   goldRate18?: string;
   goldRate14?: string;
+  silverRate?: string;
   updatedAt?: string;
 }
 
@@ -26,6 +28,7 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
   goldRate,
   goldRate18,
   goldRate14,
+  silverRate,
   updatedAt,
 }) => {
   const theme = useAppTheme();
@@ -33,6 +36,7 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
   const { t } = useTranslation();
   const opacityAnim = useRef(new Animated.Value(0.6)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const [showSilver, setShowSilver] = useState(false);
 
   useEffect(() => {
     // Pulse animation for the live dot
@@ -80,7 +84,7 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
     });
   };
 
-  const getRate = (rateVal: string | undefined, carat: number) => {
+  const getRate = (rateVal: string | undefined, carat: number, isSilverRate = false) => {
     if (rateVal) {
       const sanitized = rateVal.replace(/,/g, "");
       const parsed = parseFloat(sanitized);
@@ -88,11 +92,14 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
         return Math.round(parsed).toString();
       }
     }
+    if (isSilverRate) return "-";
     const parsedGold = parseFloat(goldRate.replace(/,/g, ""));
     if (isNaN(parsedGold) || parsedGold <= 0) return "-";
     const derived = Math.round(parsedGold * (carat / 22));
     return derived.toString();
   };
+
+  const hasSilver = !!silverRate && silverRate.trim() !== "";
 
   return (
     <View style={styles.container}>
@@ -106,7 +113,9 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
         <View style={styles.headerRow}>
           <View style={styles.goldLabelContainer}>
             <Ionicons name="flame" size={16} color="#FFD700" style={{ marginRight: 6 }} />
-            <Text style={styles.goldLabel}>{t("liveGoldRates") || "LIVE GOLD RATES"}</Text>
+            <Text style={styles.goldLabel}>
+              {showSilver ? (t("liveRates") || "LIVE RATES") : (t("liveGoldRates") || "LIVE GOLD RATES")}
+            </Text>
             <View style={styles.liveIndicator}>
               <Animated.View style={[styles.liveDot, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]} />
               <Text style={styles.liveText}>LIVE</Text>
@@ -122,11 +131,31 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
         {/* Separator */}
         <View style={styles.separator} />
 
+        {/* Segmented control for switching Gold / Silver rates, only shown if silver is available */}
+        {hasSilver && (
+          <View style={styles.toggleRow}>
+            <TouchableOpacity
+              style={[styles.toggleBtn, !showSilver && styles.toggleBtnActive]}
+              onPress={() => setShowSilver(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.toggleText, !showSilver && styles.toggleTextActive]}>GOLD</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleBtn, showSilver && styles.toggleBtnActive]}
+              onPress={() => setShowSilver(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.toggleText, showSilver && styles.toggleTextActive]}>SILVER</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Rates Grid */}
         <View style={styles.ratesGrid}>
-          {/* 22KT Column */}
+          {/* 22KT Column (Gold) */}
           <View style={styles.rateCol}>
-            <Text style={styles.caratLabel}>22KT</Text>
+            <Text style={styles.caratLabel}>22KT GOLD</Text>
             <View style={styles.priceContainer}>
               <Text style={styles.currency}>₹</Text>
               <Text style={styles.priceValue}>{getRate(goldRate, 22)}</Text>
@@ -136,27 +165,41 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
 
           <View style={styles.colDivider} />
 
-          {/* 18KT Column */}
-          <View style={styles.rateCol}>
-            <Text style={styles.caratLabel}>18KT</Text>
-            <View style={styles.priceContainer}>
-              <Text style={styles.currency}>₹</Text>
-              <Text style={styles.priceValue}>{getRate(goldRate18, 18)}</Text>
-              <Text style={styles.unit}>/g</Text>
-            </View>
-          </View>
+          {!showSilver ? (
+            <>
+              {/* 18KT Column */}
+              <View style={styles.rateCol}>
+                <Text style={styles.caratLabel}>18KT GOLD</Text>
+                <View style={styles.priceContainer}>
+                  <Text style={styles.currency}>₹</Text>
+                  <Text style={styles.priceValue}>{getRate(goldRate18, 18)}</Text>
+                  <Text style={styles.unit}>/g</Text>
+                </View>
+              </View>
 
-          <View style={styles.colDivider} />
+              <View style={styles.colDivider} />
 
-          {/* 14KT Column */}
-          <View style={styles.rateCol}>
-            <Text style={styles.caratLabel}>14KT</Text>
-            <View style={styles.priceContainer}>
-              <Text style={styles.currency}>₹</Text>
-              <Text style={styles.priceValue}>{getRate(goldRate14, 14)}</Text>
-              <Text style={styles.unit}>/g</Text>
+              {/* 14KT Column */}
+              <View style={styles.rateCol}>
+                <Text style={styles.caratLabel}>14KT GOLD</Text>
+                <View style={styles.priceContainer}>
+                  <Text style={styles.currency}>₹</Text>
+                  <Text style={styles.priceValue}>{getRate(goldRate14, 14)}</Text>
+                  <Text style={styles.unit}>/g</Text>
+                </View>
+              </View>
+            </>
+          ) : (
+            /* Silver Column */
+            <View style={styles.rateCol}>
+              <Text style={styles.caratLabel}>SILVER</Text>
+              <View style={styles.priceContainer}>
+                <Text style={styles.currency}>₹</Text>
+                <Text style={styles.priceValue}>{getRate(silverRate, 1, true)}</Text>
+                <Text style={styles.unit}>/g</Text>
+              </View>
             </View>
-          </View>
+          )}
         </View>
 
         {/* Decorative Gold Bottom Highlight Line */}
@@ -240,6 +283,33 @@ function getStyles(theme: any) { return StyleSheet.create({
     backgroundColor: "rgba(255, 215, 0, 0.15)",
     marginVertical: hp(0.5),
     marginBottom: hp(1.2),
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 10,
+    padding: 3,
+    marginBottom: hp(1.2),
+  },
+  toggleBtn: {
+    flex: 1,
+    paddingVertical: hp(0.8),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  toggleBtnActive: {
+    backgroundColor: '#FFD700',
+  },
+  toggleText: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: rf(10),
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  toggleTextActive: {
+    color: '#000000',
+    fontWeight: '800',
   },
   ratesGrid: {
     flexDirection: "row",

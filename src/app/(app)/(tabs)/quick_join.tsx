@@ -82,7 +82,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.backgroundSecondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -105,7 +105,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
     borderColor: '#EFEFEF',
     borderRadius: 14,

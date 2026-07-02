@@ -458,7 +458,7 @@ const NotificationModal = ({
               onPress={onClose}
               style={{
                 marginTop: 24,
-                backgroundColor: "#f5f5f5",
+                backgroundColor: theme.colors.backgroundSecondary,
                 paddingVertical: 14,
                 borderRadius: 12,
                 alignItems: "center"

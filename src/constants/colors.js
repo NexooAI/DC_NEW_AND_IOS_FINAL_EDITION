@@ -1,340 +1,351 @@
 // src/constants/colors.js
-// Centralized color definitions for the entire app
+// Centralized, dynamically-evaluated color definitions for the entire app
 
-// Import the theme to get the primary color
-import { theme } from './theme';
+import { theme, lightPalette, darkPalette } from './theme';
 
-// Primary brand colors
+// Helper to get active colors safely without React hooks
+const getActiveColors = () => {
+  try {
+    // Dynamic require to avoid circular dependency
+    const useGlobalStore = require('@/store/global.store').default;
+    const state = useGlobalStore.getState();
+    const appConfig = state?.appConfig;
+    const themeMode = state?.themeMode;
+    const basePalette = themeMode === 'dark' ? darkPalette : lightPalette;
+    
+    if (appConfig && appConfig.colors) {
+      return {
+        ...basePalette,
+        ...appConfig.colors,
+      };
+    }
+    return basePalette;
+  } catch (e) {
+    // Fallback if store is not initialized or during test runs
+    return lightPalette;
+  }
+};
+
+const getActiveTheme = () => {
+  try {
+    const useGlobalStore = require('@/store/global.store').default;
+    const appConfig = useGlobalStore.getState()?.appConfig;
+    if (appConfig) {
+      return {
+        ...theme,
+        ...appConfig,
+      };
+    }
+    return theme;
+  } catch (e) {
+    return theme;
+  }
+};
+
 export const PRIMARY_COLORS = {
-  primary: theme.colors.primary,
-  secondary: theme.colors.secondary,
-  gold: theme.colors.gold,
-  silver: theme.colors.silver,
+  get primary() { return getActiveColors().primary; },
+  get secondary() { return getActiveColors().secondary; },
+  get gold() { return getActiveColors().gold || getActiveColors().secondary; },
+  get silver() { return getActiveColors().silver || "#C0C0C0"; },
 };
 
-// Text colors
 export const TEXT_COLORS = {
-  primary: theme.colors.textPrimary,
-  secondary: theme.colors.textSecondary,
-  dark: theme.colors.textDark,
-  light: theme.colors.textLight,
-  grey: theme.colors.textGrey,
-  darkGrey: theme.colors.textDarkGrey,
-  mediumGrey: theme.colors.textMediumGrey,
-  lightGrey: theme.colors.textLightGrey,
-  brown: theme.colors.textBrown,
-  darkBrown: theme.colors.textDarkBrown,
-  success: theme.colors.textSuccess,
-  error: theme.colors.textError,
-  warning: theme.colors.textWarning,
-  muted: theme.colors.textGrey,
-  mutedDark: theme.colors.textDarkGrey,
-  mutedLight: theme.colors.textLightGrey,
-  mutedMedium: theme.colors.textMediumGrey,
+  get primary() { return getActiveColors().textPrimary; },
+  get secondary() { return getActiveColors().textSecondary; },
+  get dark() { return getActiveColors().textDark; },
+  get light() { return getActiveColors().textLight; },
+  get grey() { return getActiveColors().textGrey; },
+  get darkGrey() { return getActiveColors().textDarkGrey; },
+  get mediumGrey() { return getActiveColors().textMediumGrey; },
+  get lightGrey() { return getActiveColors().textLightGrey; },
+  get brown() { return getActiveColors().textBrown || "#8b5a2b"; },
+  get darkBrown() { return getActiveColors().textDarkBrown || "#3E2723"; },
+  get success() { return getActiveColors().textSuccess; },
+  get error() { return getActiveColors().textError; },
+  get warning() { return getActiveColors().textWarning; },
+  get muted() { return getActiveColors().textGrey; },
+  get mutedDark() { return getActiveColors().textDarkGrey; },
+  get mutedLight() { return getActiveColors().textLightGrey; },
+  get mutedMedium() { return getActiveColors().textMediumGrey; },
 };
 
-// Background colors
 export const BACKGROUND_COLORS = {
-  primary: theme.colors.background,
-  secondary: theme.colors.backgroundSecondary,
-  tertiary: theme.colors.backgroundTertiary,
-  quaternary: theme.colors.backgroundQuaternary,
-  quinary: theme.colors.backgroundQuinary,
-  card: theme.colors.background,
-  cardMedium: theme.colors.backgroundSecondary,
-  cardDark: theme.colors.backgroundTertiary,
-  muted: theme.colors.lightGrey,
-  overlay: theme.colors.blackOverlay || 'rgba(0,0,0,0.5)',
-  overlayLight: theme.colors.blackOverlayLight || 'rgba(0,0,0,0.2)',
-  overlayMedium: 'rgba(0,0,0,0.3)',
+  get primary() { return getActiveColors().background; },
+  get secondary() { return getActiveColors().backgroundSecondary; },
+  get tertiary() { return getActiveColors().backgroundTertiary; },
+  get quaternary() { return getActiveColors().backgroundQuaternary || getActiveColors().quaternary; },
+  get quinary() { return getActiveColors().backgroundQuinary || getActiveColors().quaternary; },
+  get card() { return getActiveColors().background; },
+  get cardMedium() { return getActiveColors().backgroundSecondary; },
+  get cardDark() { return getActiveColors().backgroundTertiary; },
+  get muted() { return getActiveColors().lightGrey || "#e5e7eb"; },
+  get overlay() { return getActiveColors().blackOverlay || 'rgba(0,0,0,0.5)'; },
+  get overlayLight() { return getActiveColors().blackOverlayLight || 'rgba(0,0,0,0.2)'; },
+  get overlayMedium() { return 'rgba(0,0,0,0.3)'; },
 };
 
-// Status colors
 export const STATUS_COLORS = {
-  success: theme.colors.success,
-  successLight: theme.colors.successLight,
-  successDark: theme.colors.successDark,
-  error: theme.colors.error,
-  errorLight: theme.colors.errorLight,
-  errorDark: theme.colors.errorDark,
-  warning: theme.colors.warning,
-  warningLight: theme.colors.warningLight,
-  info: theme.colors.info,
-  active: theme.colors.statusActive,
-  inactive: theme.colors.statusInactive,
-  pending: theme.colors.statusPending,
-  completed: theme.colors.statusCompleted,
+  get success() { return getActiveColors().success; },
+  get successLight() { return getActiveColors().successLight || "#e8f5e9"; },
+  get successDark() { return getActiveColors().successDark || "#2e7d32"; },
+  get error() { return getActiveColors().error; },
+  get errorLight() { return getActiveColors().errorLight || "#ffebee"; },
+  get errorDark() { return getActiveColors().errorDark || "#c62828"; },
+  get warning() { return getActiveColors().warning; },
+  get warningLight() { return getActiveColors().warningLight || "#fff8e1"; },
+  get info() { return getActiveColors().info; },
+  get active() { return getActiveColors().statusActive || getActiveColors().success; },
+  get inactive() { return getActiveColors().statusInactive || getActiveColors().error; },
+  get pending() { return getActiveColors().statusPending || getActiveColors().warning; },
+  get completed() { return getActiveColors().statusCompleted || getActiveColors().success; },
 };
 
-// Border colors
 export const BORDER_COLORS = {
-  primary: theme.colors.border,
-  light: theme.colors.borderLight,
-  white: theme.colors.borderWhite,
-  gold: theme.colors.borderGold,
-  bottom: theme.colors.border,
-  left: theme.colors.border,
-  top: theme.colors.border,
+  get primary() { return getActiveColors().border; },
+  get light() { return getActiveColors().borderLight; },
+  get white() { return getActiveColors().borderWhite || getActiveColors().borderLight; },
+  get gold() { return getActiveColors().borderGold || getActiveColors().secondary; },
+  get bottom() { return getActiveColors().border; },
+  get left() { return getActiveColors().border; },
+  get top() { return getActiveColors().border; },
 };
 
-// Shadow colors
 export const SHADOW_COLORS = {
-  black: theme.colors.black,
-  gold: theme.colors.gold,
-  primary: theme.colors.primary,
-  success: theme.colors.success,
+  get black() { return getActiveColors().black; },
+  get gold() { return getActiveColors().gold || getActiveColors().secondary; },
+  get primary() { return getActiveColors().primary; },
+  get success() { return getActiveColors().success; },
 };
 
-// Component-specific colors
 export const COMPONENT_COLORS = {
   tab: {
-    inactive: theme.colors.grey,
-    active: theme.colors.primary,
-    background: theme.colors.background,
-    backgroundLight: theme.colors.backgroundSecondary,
-    backgroundMedium: theme.colors.backgroundTertiary,
-    backgroundHeavy: theme.colors.backgroundQuaternary,
+    get inactive() { return getActiveColors().textGrey; },
+    get active() { return getActiveColors().primary; },
+    get background() { return getActiveColors().background; },
+    get backgroundLight() { return getActiveColors().backgroundSecondary; },
+    get backgroundMedium() { return getActiveColors().backgroundTertiary; },
+    get backgroundHeavy() { return getActiveColors().quaternary; },
   },
   button: {
-    primary: theme.colors.primary,
-    secondary: theme.colors.secondary,
-    success: theme.colors.success,
-    error: theme.colors.error,
-    warning: theme.colors.warning,
-    white: theme.colors.white,
-    black: theme.colors.black,
-    transparent: theme.colors.transparent,
+    get primary() { return getActiveColors().primary; },
+    get secondary() { return getActiveColors().secondary; },
+    get success() { return getActiveColors().success; },
+    get error() { return getActiveColors().error; },
+    get warning() { return getActiveColors().warning; },
+    get white() { return getActiveColors().white; },
+    get black() { return getActiveColors().black; },
+    get transparent() { return getActiveColors().transparent; },
   },
   card: {
-    background: theme.colors.background,
-    backgroundLight: theme.colors.backgroundSecondary,
-    backgroundMedium: theme.colors.backgroundTertiary,
-    backgroundDark: theme.colors.backgroundQuaternary,
-    border: theme.colors.border,
-    borderLight: theme.colors.borderLight,
+    get background() { return getActiveColors().background; },
+    get backgroundLight() { return getActiveColors().backgroundSecondary; },
+    get backgroundMedium() { return getActiveColors().backgroundTertiary; },
+    get backgroundDark() { return getActiveColors().quaternary; },
+    get border() { return getActiveColors().border; },
+    get borderLight() { return getActiveColors().borderLight; },
   },
   icon: {
-    primary: theme.colors.primary,
-    secondary: theme.colors.secondary,
-    success: theme.colors.success,
-    error: theme.colors.error,
-    warning: theme.colors.warning,
-    info: theme.colors.info,
-    white: theme.colors.white,
-    black: theme.colors.black,
-    grey: theme.colors.grey,
-    brown: theme.colors.brown,
+    get primary() { return getActiveColors().primary; },
+    get secondary() { return getActiveColors().secondary; },
+    get success() { return getActiveColors().success; },
+    get error() { return getActiveColors().error; },
+    get warning() { return getActiveColors().warning; },
+    get info() { return getActiveColors().info; },
+    get white() { return getActiveColors().white; },
+    get black() { return getActiveColors().black; },
+    get grey() { return getActiveColors().textGrey; },
+    get brown() { return getActiveColors().brown || "#8b5a2b"; },
   },
 };
 
-// Gradient colors
 export const GRADIENT_COLORS = {
-  primary: theme.colors.gradientPrimary,
-  primaryDark: theme.colors.gradientPrimaryDark,
-  success: theme.colors.gradientSuccess,
-  gold: theme.colors.gradientGold,
-  red: theme.colors.gradientRed,
-  blue: theme.colors.gradientBlue,
-  silver: theme.colors.gradientSilver,
+  get primary() { return getActiveColors().gradientPrimary; },
+  get primaryDark() { return getActiveColors().gradientPrimaryDark; },
+  get success() { return getActiveColors().gradientSuccess; },
+  get gold() { return getActiveColors().gradientGold; },
+  get red() { return getActiveColors().gradientRed; },
+  get blue() { return getActiveColors().gradientBlue; },
+  get silver() { return getActiveColors().gradientSilver; },
 };
 
-// Common colors
 export const COMMON_COLORS = {
-  white: theme.colors.white,
-  black: theme.colors.black,
-  transparent: theme.colors.transparent,
-  grey: theme.colors.grey,
-  lightGrey: theme.colors.lightGrey,
-  darkGrey: theme.colors.darkGrey,
+  get white() { return getActiveColors().white; },
+  get black() { return getActiveColors().black; },
+  get transparent() { return getActiveColors().transparent; },
+  get grey() { return getActiveColors().textGrey; },
+  get lightGrey() { return getActiveColors().textLightGrey; },
+  get darkGrey() { return getActiveColors().textDarkGrey; },
 };
 
-// Red colors
 export const RED_COLORS = {
-  primary: theme.colors.red,
-  light: theme.colors.redLight,
-  dark: theme.colors.redDark,
-  darker: theme.colors.redDarker,
-  burgundy: theme.colors.redBurgundy,
-  burgundyLight: theme.colors.redBurgundyLight,
-  burgundyDark: theme.colors.redBurgundyDark,
+  get primary() { return getActiveColors().error; },
+  get light() { return "#ffebee"; },
+  get dark() { return "#c62828"; },
+  get darker() { return "#b71c1c"; },
+  get burgundy() { return "#800020"; },
+  get burgundyLight() { return "#9a1f40"; },
+  get burgundyDark() { return "#5c061b"; },
 };
 
-// Blue colors
 export const BLUE_COLORS = {
-  primary: theme.colors.blue,
-  dark: theme.colors.blueDark,
-  darker: theme.colors.blueDarker,
-  darkest: theme.colors.blueDarkest,
+  get primary() { return getActiveColors().info; },
+  get dark() { return "#1565c0"; },
+  get darker() { return "#0d47a1"; },
+  get darkest() { return "#0a2540"; },
 };
 
-// Green colors
 export const GREEN_COLORS = {
-  primary: theme.colors.green,
-  light: theme.colors.greenLight,
-  success: theme.colors.greenSuccess,
+  get primary() { return getActiveColors().success; },
+  get light() { return "#e8f5e9"; },
+  get success() { return getActiveColors().success; },
 };
 
-// Brown colors
 export const BROWN_COLORS = {
-  primary: theme.colors.brown,
-  light: theme.colors.brownLight,
-  dark: theme.colors.brownDark,
-  tan: theme.colors.tan,
+  get primary() { return "#8b5a2b"; },
+  get light() { return "#d2b48c"; },
+  get dark() { return "#3e2723"; },
+  get tan() { return "#b58d3d"; },
 };
 
-// Support colors
-export const SUPPORT_COLORS = theme.colors.support_container || ["#721c0b", "#c42101", "#fc320a"];
+export const SUPPORT_COLORS = {
+  get [0]() { return getActiveColors().gradientPrimary[0]; },
+  get [1]() { return getActiveColors().gradientPrimary[1]; },
+  get [2]() { return getActiveColors().gradientPrimary[2]; },
+};
 
-// Status bar colors
 export const STATUS_BAR_COLORS = {
-  primary: theme.colors.primary,
-  light: theme.colors.white,
-  dark: theme.colors.black,
+  get primary() { return getActiveColors().primary; },
+  get light() { return getActiveColors().white; },
+  get dark() { return getActiveColors().black; },
 };
 
-// Export all colors as a single object for convenience
 export const COLORS = {
-  // Primary colors
-  ...PRIMARY_COLORS,
+  // Direct getters for all properties
+  get primary() { return getActiveColors().primary; },
+  get secondary() { return getActiveColors().secondary; },
+  get gold() { return getActiveColors().gold || getActiveColors().secondary; },
+  get silver() { return getActiveColors().silver || "#C0C0C0"; },
 
-  // Text colors
-  ...TEXT_COLORS,
+  // Text
+  get textPrimary() { return getActiveColors().textPrimary; },
+  get textSecondary() { return getActiveColors().textSecondary; },
+  get textDark() { return getActiveColors().textDark; },
+  get textLight() { return getActiveColors().textLight; },
+  get textGrey() { return getActiveColors().textGrey; },
+  get textDarkGrey() { return getActiveColors().textDarkGrey; },
+  get textMediumGrey() { return getActiveColors().textMediumGrey; },
+  get textLightGrey() { return getActiveColors().textLightGrey; },
+  get textBrown() { return getActiveColors().textBrown || "#8b5a2b"; },
+  get textDarkBrown() { return getActiveColors().textDarkBrown || "#3E2723"; },
+  get textSuccess() { return getActiveColors().textSuccess; },
+  get textError() { return getActiveColors().textError; },
+  get textWarning() { return getActiveColors().textWarning; },
 
-  // Background colors
-  ...BACKGROUND_COLORS,
-
-  // Status colors
-  ...STATUS_COLORS,
-
-  // Border colors
-  ...BORDER_COLORS,
-
-  // Shadow colors
-  ...SHADOW_COLORS,
-
-  // Component colors
-  ...COMPONENT_COLORS,
-
-  // Gradient colors
-  ...GRADIENT_COLORS,
-
-  // Common colors
-  ...COMMON_COLORS,
-
-  // Red colors
-  ...RED_COLORS,
-
-  // Blue colors
-  ...BLUE_COLORS,
-
-  // Green colors
-  ...GREEN_COLORS,
-
-  // Brown colors
-  ...BROWN_COLORS,
-
-  // Support colors
-  support: SUPPORT_COLORS,
-
-  // Status bar colors
-  statusBar: STATUS_BAR_COLORS,
-
-  // Additional direct color access
-  red: theme.colors.red,
-  borderWhiteLight: theme.colors.borderWhiteLight || theme.colors.borderLight,
-  borderWhite: theme.colors.borderWhite,
-  textDark: theme.colors.textDark,
-  green: GREEN_COLORS.primary,
-  greenLight: GREEN_COLORS.light,
-  goldLight: theme.colors.goldLight,
-  blue: BLUE_COLORS.primary,
-  cardBackgroundLight: theme.colors.cardBackgroundLight || '#fffbe6',
-  cardBackgroundMedium: theme.colors.cardBackgroundMedium || theme.colors.backgroundSecondary,
-  brownLight: BROWN_COLORS.light,
-
-  // Additional overlay colors
-  brownOverlay: 'rgba(139, 69, 19, 0.3)',
-  blackOverlay: 'rgba(0,0,0,0.5)',
-  whiteOverlay: 'rgba(255,255,255,0.9)',
-
-  // Additional text colors
-  textDarkBrown: '#2C1810',
-
-  // Additional overlay colors for different opacity levels
-  whiteOverlayLight: 'rgba(255, 255, 255, 0.7)',
-  whiteOverlayVeryLight: 'rgba(255, 255, 255, 0.1)',
-  blackOverlayLight: 'rgba(0, 0, 0, 0.2)',
-
-  // Organized access to nested properties for backward compatibility
-  background: {
-    primary: theme.colors.background,
-    secondary: theme.colors.backgroundSecondary,
-    tertiary: theme.colors.backgroundTertiary,
-    quaternary: theme.colors.backgroundQuaternary,
-    quinary: theme.colors.backgroundQuinary,
-    card: theme.colors.background,
-    cardMedium: theme.colors.backgroundSecondary,
-    cardDark: theme.colors.backgroundTertiary,
-    muted: theme.colors.lightGrey,
-    overlay: theme.colors.blackOverlay || 'rgba(0,0,0,0.5)',
-    overlayLight: theme.colors.blackOverlayLight || 'rgba(0,0,0,0.2)',
-    overlayMedium: 'rgba(0,0,0,0.3)',
+  // Backgrounds
+  get background() {
+    return {
+      get primary() { return getActiveColors().background; },
+      get secondary() { return getActiveColors().backgroundSecondary; },
+      get tertiary() { return getActiveColors().backgroundTertiary; },
+      get quaternary() { return getActiveColors().backgroundQuaternary || getActiveColors().quaternary; },
+      get quinary() { return getActiveColors().backgroundQuinary || getActiveColors().quaternary; },
+      get card() { return getActiveColors().background; },
+      get cardMedium() { return getActiveColors().backgroundSecondary; },
+      get cardDark() { return getActiveColors().backgroundTertiary; },
+      get muted() { return getActiveColors().lightGrey || "#e5e7eb"; },
+      get overlay() { return getActiveColors().blackOverlay || 'rgba(0,0,0,0.5)'; },
+      get overlayLight() { return getActiveColors().blackOverlayLight || 'rgba(0,0,0,0.2)'; },
+      get overlayMedium() { return 'rgba(0,0,0,0.3)'; },
+    };
   },
 
-  text: {
-    primary: theme.colors.textPrimary,
-    secondary: theme.colors.textSecondary,
-    dark: theme.colors.textDark,
-    light: theme.colors.textLight,
-    grey: theme.colors.textGrey,
-    darkGrey: theme.colors.textDarkGrey,
-    mediumGrey: theme.colors.textMediumGrey,
-    lightGrey: theme.colors.textLightGrey,
-    brown: theme.colors.textBrown,
-    darkBrown: theme.colors.textDarkBrown,
-    success: theme.colors.textSuccess,
-    error: theme.colors.textError,
-    warning: theme.colors.textWarning,
-    muted: theme.colors.textGrey,
-    mutedDark: theme.colors.textDarkGrey,
-    mutedLight: theme.colors.textLightGrey,
-    mutedMedium: theme.colors.textMediumGrey,
+  get text() {
+    return {
+      get primary() { return getActiveColors().textPrimary; },
+      get secondary() { return getActiveColors().textSecondary; },
+      get dark() { return getActiveColors().textDark; },
+      get light() { return getActiveColors().textLight; },
+      get grey() { return getActiveColors().textGrey; },
+      get darkGrey() { return getActiveColors().textDarkGrey; },
+      get mediumGrey() { return getActiveColors().textMediumGrey; },
+      get lightGrey() { return getActiveColors().textLightGrey; },
+      get brown() { return getActiveColors().textBrown || "#8b5a2b"; },
+      get darkBrown() { return getActiveColors().textDarkBrown || "#3E2723"; },
+      get success() { return getActiveColors().textSuccess; },
+      get error() { return getActiveColors().textError; },
+      get warning() { return getActiveColors().textWarning; },
+      get muted() { return getActiveColors().textGrey; },
+      get mutedDark() { return getActiveColors().textDarkGrey; },
+      get mutedLight() { return getActiveColors().textLightGrey; },
+      get mutedMedium() { return getActiveColors().textMediumGrey; },
+    };
   },
 
-  border: {
-    primary: theme.colors.border,
-    light: theme.colors.borderLight,
-    white: theme.colors.borderWhite,
-    gold: theme.colors.borderGold,
-    bottom: theme.colors.border,
-    left: theme.colors.border,
-    top: theme.colors.border,
+  get border() {
+    return {
+      get primary() { return getActiveColors().border; },
+      get light() { return getActiveColors().borderLight; },
+      get white() { return getActiveColors().borderWhite || getActiveColors().borderLight; },
+      get gold() { return getActiveColors().borderGold || getActiveColors().secondary; },
+      get bottom() { return getActiveColors().border; },
+      get left() { return getActiveColors().border; },
+      get top() { return getActiveColors().border; },
+    };
   },
 
-  shadow: {
-    black: theme.colors.black,
-    gold: theme.colors.gold,
-    primary: theme.colors.primary,
-    success: theme.colors.success,
+  get shadow() {
+    return {
+      get black() { return getActiveColors().black; },
+      get gold() { return getActiveColors().gold || getActiveColors().secondary; },
+      get primary() { return getActiveColors().primary; },
+      get success() { return getActiveColors().success; },
+    };
   },
 
-  status: {
-    active: theme.colors.statusActive,
-    inactive: theme.colors.statusInactive,
-    pending: theme.colors.statusPending,
-    completed: theme.colors.statusCompleted,
+  get status() {
+    return {
+      get active() { return getActiveColors().statusActive || getActiveColors().success; },
+      get inactive() { return getActiveColors().statusInactive || getActiveColors().error; },
+      get pending() { return getActiveColors().statusPending || getActiveColors().warning; },
+      get completed() { return getActiveColors().statusCompleted || getActiveColors().success; },
+    };
   },
 
-  gradients: {
-    primary: theme.colors.gradientPrimary,
-    primaryDark: theme.colors.gradientPrimaryDark,
-    success: theme.colors.gradientSuccess,
-    gold: theme.colors.gradientGold,
-    red: theme.colors.gradientRed,
-    blue: theme.colors.gradientBlue,
-    silver: theme.colors.gradientSilver,
+  get gradients() {
+    return {
+      get primary() { return getActiveColors().gradientPrimary; },
+      get primaryDark() { return getActiveColors().gradientPrimaryDark; },
+      get success() { return getActiveColors().gradientSuccess; },
+      get gold() { return getActiveColors().gradientGold; },
+      get red() { return getActiveColors().gradientRed; },
+      get blue() { return getActiveColors().gradientBlue; },
+      get silver() { return getActiveColors().gradientSilver; },
+    };
   },
+
+  // Flat values
+  get white() { return getActiveColors().white; },
+  get black() { return getActiveColors().black; },
+  get transparent() { return getActiveColors().transparent; },
+  get grey() { return getActiveColors().textGrey; },
+  get lightGrey() { return getActiveColors().textLightGrey; },
+  get darkGrey() { return getActiveColors().textDarkGrey; },
+  get borderWhiteLight() { return getActiveColors().borderLight; },
+  get borderWhite() { return getActiveColors().borderWhite || getActiveColors().borderLight; },
+  get green() { return getActiveColors().success; },
+  get greenLight() { return "#e8f5e9"; },
+  get goldLight() { return getActiveColors().goldLight || "#fffbe6"; },
+  get blue() { return getActiveColors().info; },
+  get cardBackgroundLight() { return getActiveColors().cardBackgroundLight || '#fffbe6'; },
+  get cardBackgroundMedium() { return getActiveColors().backgroundSecondary; },
+  get brownLight() { return "#d2b48c"; },
+  get brownOverlay() { return 'rgba(139, 69, 19, 0.3)'; },
+  get blackOverlay() { return 'rgba(0,0,0,0.5)'; },
+  get whiteOverlay() { return 'rgba(255,255,255,0.9)'; },
+  get textDarkBrown() { return '#2C1810'; },
+  get whiteOverlayLight() { return 'rgba(255, 255, 255, 0.7)'; },
+  get whiteOverlayVeryLight() { return 'rgba(255, 255, 255, 0.1)'; },
+  get blackOverlayLight() { return 'rgba(0, 0, 0, 0.2)'; },
 };
 
-// Default export for easy importing
 export default COLORS;

@@ -857,7 +857,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#FFF",
+    backgroundColor: theme.colors.white,
   },
   staticPattern: {
     flex: 1,

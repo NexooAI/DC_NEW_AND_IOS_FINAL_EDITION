@@ -2038,7 +2038,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     width: '48%', // 2 columns
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.colors.background,
     padding: 10,
     borderRadius: 12,
     borderWidth: 1,
@@ -2107,10 +2107,10 @@ function getStyles(theme: any) { return StyleSheet.create({
     paddingHorizontal: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#F5F5F5',
-    backgroundColor: '#FFF',
+    backgroundColor: theme.colors.white,
   },
   tableRowAlt: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.colors.background,
   },
   tableRefinedCell: {
     flex: 1,

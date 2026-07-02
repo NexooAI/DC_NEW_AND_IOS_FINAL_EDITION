@@ -119,7 +119,7 @@ const StoreLocator = () => {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={{ flex: 1, backgroundColor: "#fff" }}
+      style={{ flex: 1, backgroundColor: theme.colors.white }}
     >
       <SafeAreaView style={{ flex: 1 }}>
         {/* Animated Header */}

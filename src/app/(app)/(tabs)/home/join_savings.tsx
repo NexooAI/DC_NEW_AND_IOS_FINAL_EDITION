@@ -2897,7 +2897,7 @@ export default function JoinSavings() {
 }
 const pickerSelectStyles = StyleSheet.create({
   inputIOS: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderColor: "#CCCCCC",
     borderWidth: 1,
     borderRadius: 8,
@@ -2922,7 +2922,7 @@ const pickerSelectStyles = StyleSheet.create({
 
 const pickerSelectStylesModern = StyleSheet.create({
   inputIOS: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderColor: theme.colors.primary,
     borderWidth: 1.5,
     borderRadius: 12,
@@ -2940,7 +2940,7 @@ const pickerSelectStylesModern = StyleSheet.create({
     borderColor: theme.colors.primary,
     borderRadius: 12,
     color: "#333",
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     paddingRight: 40,
   },
   iconContainer: {
@@ -2959,11 +2959,11 @@ const pickerSelectStylesModern = StyleSheet.create({
 function getStyles(theme: any) { return StyleSheet.create({
   safeAreaContainer: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
   },
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
   },
   header: {
     flexDirection: "row",
@@ -3216,7 +3216,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     paddingHorizontal: 12,
     borderTopWidth: 1,
     borderTopColor: "#e5e5e5",
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     position: "absolute",
     left: 0,
     right: 0,
@@ -3232,7 +3232,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     paddingBottom: 1,
     borderTopWidth: 1,
     borderTopColor: "#e5e5e5",
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     marginTop: 1,
     marginBottom: 1,
   },
@@ -3309,7 +3309,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginTop: 16,
   },
   schemeTypeCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     padding: 20,
     borderWidth: 1,
@@ -3344,7 +3344,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     color: "#fff",
   },
   flexiAmountContainer: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     padding: 24,
     marginTop: 16,
@@ -3380,7 +3380,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   amountGridItem: {
     width: "31%",
     aspectRatio: 2,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     marginBottom: 12,
     justifyContent: "center",
@@ -3424,7 +3424,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginTop: 16,
   },
   frequencyCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     padding: 20,
     borderWidth: 1,
@@ -3461,7 +3461,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   quickAmountContainer: {
     marginTop: 24,
     marginBottom: 16,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     padding: 16,
     shadowColor: "#000",
@@ -3694,7 +3694,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     alignSelf: "center",
   },
   // goldCard: {
-  //   backgroundColor: "#FFF",
+  //   backgroundColor: theme.colors.white,
   //   borderRadius: 16,
   //   padding: 20,
   //   borderWidth: 1,
@@ -3733,7 +3733,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: "#FFF",
+    backgroundColor: theme.colors.white,
     borderRadius: 8,
     padding: 10,
     minWidth: 140,
@@ -3745,7 +3745,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    backgroundColor: "#FFF",
+    backgroundColor: theme.colors.white,
     borderRadius: 8,
     padding: 10,
     minWidth: 140,
@@ -3893,7 +3893,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginBottom: 16,
   },
   readOnlyInput: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: theme.colors.backgroundSecondary,
     borderColor: "#e0e0e0",
     color: "#666",
   },
@@ -3902,7 +3902,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     color: "#666",
   },
   accountDetailsCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -3948,12 +3948,12 @@ function getStyles(theme: any) { return StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    backgroundColor: "#fafafa",
+    backgroundColor: theme.colors.background,
     color: "#333",
   },
   modernInputActive: {
     borderColor: theme.colors.primary,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
   },
   modernInputError: {
     borderColor: "#dc2626",
@@ -3977,7 +3977,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     borderRadius: 6,
     borderWidth: 2,
     borderColor: "#d0d0d0",
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
@@ -4168,7 +4168,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     justifyContent: 'center',
   },
   inputCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: theme.colors.white,
     borderRadius: width < 350 ? 8 : 12,
     padding: width < 350 ? 6 : width < 400 ? 8 : 10,
     shadowColor: '#000',
@@ -4401,7 +4401,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   arrowIcon: {
     padding: 10,
-    backgroundColor: '#FFF',
+    backgroundColor: theme.colors.white,
     borderRadius: 20,
     borderWidth: 2,
     borderColor: '#FFD700',

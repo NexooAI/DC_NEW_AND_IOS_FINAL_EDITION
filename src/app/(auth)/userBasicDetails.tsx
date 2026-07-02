@@ -2469,7 +2469,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     alignItems: "center",
   },
   otpModalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white || "#fff",
     borderRadius: getResponsiveSize(16, 18),
     padding: getResponsiveSize(16, 20),
     width: getResponsiveSize(320, 380),

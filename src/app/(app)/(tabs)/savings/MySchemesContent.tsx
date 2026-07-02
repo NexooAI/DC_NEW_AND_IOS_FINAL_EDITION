@@ -487,8 +487,12 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
             };
           });
         }
-      } catch (err) {
-        logger.error("Error fetching old gold deposits in fetchUserData:", err);
+      } catch (err: any) {
+        if (err?.response?.status === 404) {
+          logger.log("ℹ️ Old gold deposits endpoint not found (404), skipping.");
+        } else {
+          logger.error("Error fetching old gold deposits in fetchUserData:", err);
+        }
       }
 
       setSavings([...transformedSavings, ...oldGoldDeposits]);

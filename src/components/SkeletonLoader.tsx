@@ -602,7 +602,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     width: "100%",
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     overflow: "hidden",
     shadowColor: "#000",
@@ -629,7 +629,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 12,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     marginBottom: 8,
   },
@@ -643,7 +643,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginLeft: 12,
   },
   rateCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     padding: 16,
     shadowColor: "#000",
@@ -664,7 +664,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     alignItems: "flex-start",
   },
   schemeCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 20,
     overflow: "hidden",
     shadowColor: "#000",

@@ -626,7 +626,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   chatModalContainer: {
     height: "85%",
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: 'hidden',
@@ -784,7 +784,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
@@ -853,7 +853,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     width: 160,
     height: 70,
     padding: 10,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     marginRight: 10,
     borderWidth: 1,
@@ -954,7 +954,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginTop: 12,
   },
   readOnlyInput: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.backgroundSecondary,
     borderWidth: 1,
     borderColor: '#eee',
     borderRadius: 8,
@@ -973,7 +973,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 8,
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
   },
   subjectText: {
     fontSize: 14,
@@ -990,7 +990,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     fontSize: 14,
     color: '#333',
     textAlignVertical: 'top',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
   },
   ticketLoading: {
     alignItems: 'center',

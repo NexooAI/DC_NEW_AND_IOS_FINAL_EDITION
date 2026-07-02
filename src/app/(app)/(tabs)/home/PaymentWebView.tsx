@@ -518,7 +518,7 @@ export default function PaymentWebView() {
               <View style={styles.placeholder} />
             </View>
 
-            <View style={{ flex: 1, backgroundColor: "#fff" }}>
+            <View style={{ flex: 1, backgroundColor: theme.colors.white }}>
               {/* Connection Status Banner */}
               {(!isConnected || isReconnecting) && (
                 <View style={[
@@ -1053,7 +1053,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     padding: 24,
     marginHorizontal: 32,
@@ -1159,7 +1159,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
   },
   webViewLoadingText: {
     marginTop: 12,

@@ -648,7 +648,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   gridContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.colors.background,
     borderRadius: 10,
     padding: wp(3),
     marginBottom: hp(1.5),

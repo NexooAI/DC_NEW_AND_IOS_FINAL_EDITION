@@ -166,7 +166,8 @@ export default function MpinSetup() {
           usertype: data.user.userType,
         });
 
-        router.replace("/(app)/dashboard");
+        const destination = getAppConfig().constants.enableDashboard ? "/(app)/dashboard" : "/(app)/(tabs)/home";
+        router.replace(destination);
       }
     } catch (error: any) {
       Alert.alert(

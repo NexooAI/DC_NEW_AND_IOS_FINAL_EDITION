@@ -60,10 +60,16 @@ export default function Dashboard() {
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupData, setPopupData] = useState<any>(null);
 
+  const hasDashboard = getAppConfig().constants.enableDashboard;
+
   useEffect(() => {
+    if (!hasDashboard) {
+      router.replace("/(app)/(tabs)/home");
+      return;
+    }
     loadData();
     fetchActivePopup();
-  }, []);
+  }, [hasDashboard, router]);
 
   const fetchActivePopup = async () => {
     if (hasShownPopup) return;
@@ -262,6 +268,10 @@ export default function Dashboard() {
       onPress: () => router.push("/(app)/(tabs)/home"),
     },
   ];
+
+  if (!hasDashboard) {
+    return null;
+  }
 
   return (
     <View
@@ -669,7 +679,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   divider: {
     width: 1,
     height: 12,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     marginHorizontal: 12,
   },
 

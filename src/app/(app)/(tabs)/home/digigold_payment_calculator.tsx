@@ -1371,7 +1371,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     toggleContainer: {
         marginBottom: 16,
         padding: 12,
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.white,
         borderRadius: 12,
         ...Platform.select({
             ios: {
@@ -1393,7 +1393,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     },
     toggleWrapper: {
         flexDirection: "row",
-        backgroundColor: "#f5f5f5",
+        backgroundColor: theme.colors.backgroundSecondary,
         borderRadius: 8,
         padding: 4,
     },
@@ -1637,7 +1637,7 @@ function getStyles(theme: any) { return StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.white,
         ...Platform.select({
             ios: {
                 shadowColor: "#000",
@@ -1723,7 +1723,7 @@ function getStyles(theme: any) { return StyleSheet.create({
         fontStyle: "italic",
         paddingHorizontal: 8,
         paddingVertical: 6,
-        backgroundColor: "#F5F5F5",
+        backgroundColor: theme.colors.backgroundSecondary,
         borderRadius: 8,
     },
     limitTextError: {
@@ -1785,7 +1785,7 @@ function getStyles(theme: any) { return StyleSheet.create({
         letterSpacing: 0.3,
     },
     inputField: {
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.white,
         borderRadius: 14,
         paddingHorizontal: 12,
         paddingVertical: 14,

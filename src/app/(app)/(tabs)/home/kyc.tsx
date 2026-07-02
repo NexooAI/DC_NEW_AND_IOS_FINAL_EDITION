@@ -1292,11 +1292,11 @@ function getStyles(theme: any) { return StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.colors.white,
     color: "#333",
   },
   disabledInput: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: theme.colors.backgroundSecondary,
     color: "#666",
   },
   pincodeContainer: {
@@ -1387,7 +1387,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     height: 56,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.colors.white,
   },
   dateInput: {
     flex: 1,
@@ -1418,7 +1418,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   dropdown: {
     height: 55,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderColor: "#E0E0E0",
     borderWidth: 1,
     borderRadius: 12,

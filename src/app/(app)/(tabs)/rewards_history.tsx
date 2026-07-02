@@ -324,7 +324,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     transactionCard: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.white,
         borderRadius: 16,
         padding: 16,
         marginBottom: 12,
@@ -383,7 +383,7 @@ function getStyles(theme: any) { return StyleSheet.create({
         justifyContent: "flex-end",
     },
     modalContent: {
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.white,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         padding: 24,

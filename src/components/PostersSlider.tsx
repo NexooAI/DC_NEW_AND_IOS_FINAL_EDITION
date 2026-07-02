@@ -131,7 +131,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     alignItems: "center",
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },

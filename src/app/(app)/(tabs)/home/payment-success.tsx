@@ -609,7 +609,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   detailsCard: {
     width: "100%",
-    backgroundColor: "#ffffff",
+    backgroundColor: theme.colors.white,
     borderRadius: rb(24),
     padding: rp(20), // Reduced padding
     marginBottom: rp(20), // Reduced margin
@@ -705,7 +705,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     shadowRadius: 10,
   },
   buttonHome: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderWidth: 1,
     borderColor: "#e5e5e5",
     elevation: 2,

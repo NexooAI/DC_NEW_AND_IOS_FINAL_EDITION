@@ -20,6 +20,7 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const segments = useSegments();
   const router = useRouter();
+  const hasDashboard = getAppConfig().constants.enableDashboard;
 
   // Check if we're on the schemes page
   const fullPath = segments.join("/");
@@ -137,6 +138,7 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="dashboard_tab"
             options={{
+              href: hasDashboard ? undefined : null,
               title: t("dashboard") || "Dashboard",
               // Hide header because this is a fake tab
               headerShown: false,
@@ -152,7 +154,9 @@ export default function TabsLayout() {
             listeners={() => ({
               tabPress: (e) => {
                 e.preventDefault();
-                router.push("/(app)/dashboard");
+                if (hasDashboard) {
+                  router.push("/(app)/dashboard");
+                }
               },
             })}
           />

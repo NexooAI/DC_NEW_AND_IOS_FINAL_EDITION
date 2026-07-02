@@ -268,7 +268,7 @@ export default function NotificationTester() {
 function getStyles(theme: any) { return StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: theme.colors.backgroundSecondary,
     },
     content: {
         padding: 16,

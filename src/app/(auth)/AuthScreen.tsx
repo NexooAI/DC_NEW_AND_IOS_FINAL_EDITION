@@ -114,6 +114,7 @@ export default function AuthScreen({ navigation }: { navigation: any }) {
           <TextInput
             style={styles.input}
             placeholder="Enter MPIN"
+            placeholderTextColor={COLORS.text.grey}
             secureTextEntry
             keyboardType="numeric"
             value={mpin}
@@ -129,6 +130,7 @@ export default function AuthScreen({ navigation }: { navigation: any }) {
           <TextInput
             style={styles.input}
             placeholder="Enter MPIN"
+            placeholderTextColor={COLORS.text.grey}
             secureTextEntry
             keyboardType="numeric"
             value={enteredMpin}
@@ -170,6 +172,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginVertical: 10,
     textAlign: "center",
     fontSize: 18,
+    color: COLORS.textSecondary,
   },
   button: {
     backgroundColor: COLORS.info,

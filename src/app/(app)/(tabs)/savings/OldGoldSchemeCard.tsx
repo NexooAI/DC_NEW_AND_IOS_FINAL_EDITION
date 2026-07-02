@@ -663,7 +663,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   documentRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF",
+    backgroundColor: theme.colors.white,
     borderWidth: 1,
     borderColor: "rgba(212, 175, 55, 0.2)",
     borderRadius: 8,

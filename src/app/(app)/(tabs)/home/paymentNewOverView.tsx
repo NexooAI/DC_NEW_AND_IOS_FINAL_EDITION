@@ -1929,7 +1929,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     fontWeight: "600",
   },
   detailsCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     padding: 20,
     marginBottom: 0,
@@ -1986,7 +1986,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     right: 0,
     padding: 16,
     paddingBottom: 20, // Reduced padding since we moved the footer up
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderTopWidth: 1,
     borderTopColor: "#e5e5e5",
     shadowColor: "#000",
@@ -2048,7 +2048,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     width: "90%",
     height: "70%",
@@ -2130,7 +2130,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     opacity: 0.4,
   },
   userDetailsCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 20,
     padding: 24,
     marginBottom: 20,
@@ -2159,7 +2159,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     fontWeight: "600",
   },
   schemeDetailsCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 20,
     padding: 24,
     marginBottom: 20,
@@ -2188,7 +2188,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     fontWeight: "600",
   },
   termsCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -2231,7 +2231,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderTopWidth: 1,
     borderTopColor: "#e5e5e5",
     shadowColor: "#000",
@@ -2280,7 +2280,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     letterSpacing: 0.5,
   },
   exitModalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     padding: 24,
     margin: 20,
@@ -2338,7 +2338,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     fontWeight: "600",
   },
   schemeCalculationCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 20,
     padding: 0,
     marginBottom: 16,

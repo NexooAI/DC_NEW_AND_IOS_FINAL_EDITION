@@ -720,16 +720,18 @@ export default function MpinVerify() {
                     } catch (err) {
                       logger.error("Error setting hasDeclinedBiometrics:", err);
                     }
-                    router.replace("/(app)/dashboard");
+                    const destination = getAppConfig().constants.enableDashboard ? "/(app)/dashboard" : "/(app)/(tabs)/home";
+                    router.replace(destination);
                   }
                 },
                 {
                   text: t("yes") || "Yes",
                   onPress: async () => {
                     const success = await enableBiometrics(enteredMpin);
+                    const destination = getAppConfig().constants.enableDashboard ? "/(app)/dashboard" : "/(app)/(tabs)/home";
                     if (success) {
                       Alert.alert(t("success"), t("biometricsEnabled") || "Biometrics enabled successfully", [
-                        { text: "OK", onPress: () => router.replace("/(app)/dashboard") }
+                        { text: "OK", onPress: () => router.replace(destination) }
                       ]);
                     } else {
                       try {
@@ -737,7 +739,7 @@ export default function MpinVerify() {
                       } catch (err) {
                         logger.error("Error setting hasDeclinedBiometrics after failure:", err);
                       }
-                      router.replace("/(app)/dashboard");
+                      router.replace(destination);
                     }
                   }
                 }
@@ -745,7 +747,8 @@ export default function MpinVerify() {
               { cancelable: false }
             );
           } else {
-            router.replace("/(app)/dashboard");
+            const destination = getAppConfig().constants.enableDashboard ? "/(app)/dashboard" : "/(app)/(tabs)/home";
+            router.replace(destination);
           }
         } catch (storageError) {
           logger.error("Error storing authentication data:", storageError);

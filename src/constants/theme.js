@@ -115,7 +115,25 @@ const darkPalette = {
 };
 
 const theme = {
-  colors: lightPalette,
+  get colors() {
+    try {
+      const useGlobalStore = require('@/store/global.store').default;
+      const state = useGlobalStore.getState();
+      const appConfig = state?.appConfig;
+      const themeMode = state?.themeMode;
+      const basePalette = themeMode === 'dark' ? darkPalette : lightPalette;
+      
+      if (appConfig && appConfig.colors) {
+        return {
+          ...basePalette,
+          ...appConfig.colors,
+        };
+      }
+      return basePalette;
+    } catch (e) {
+      return lightPalette;
+    }
+  },
 
   // Standardized button configuration
   button: {

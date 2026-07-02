@@ -647,7 +647,7 @@ function getStyles(theme: any) { return StyleSheet.create({
         padding: 20,
     },
     modalContent: {
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.white,
         borderRadius: 24,
         padding: 24,
         width: "100%",
@@ -727,7 +727,7 @@ function getStyles(theme: any) { return StyleSheet.create({
         position: "absolute",
         width: "200%",
         height: 40,
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.white,
     },
     headerContainer: {
         backgroundColor: "transparent",
@@ -829,7 +829,7 @@ function getStyles(theme: any) { return StyleSheet.create({
         fontWeight: "800",
     },
     stepsCard: {
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.white,
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
         borderBottomLeftRadius: 10,
@@ -954,7 +954,7 @@ function getStyles(theme: any) { return StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.white,
         paddingHorizontal: 20,
         paddingTop: 16,
         paddingBottom: Platform.OS === "ios" ? 34 : 20,
@@ -1023,7 +1023,7 @@ function getStyles(theme: any) { return StyleSheet.create({
         borderColor: "#ccc",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.white,
     },
     methodButtonActive: {
         borderColor: theme.colors.primary,

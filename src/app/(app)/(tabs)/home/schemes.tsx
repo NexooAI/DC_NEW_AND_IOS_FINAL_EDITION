@@ -1396,7 +1396,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     color: 'rgba(255,255,255,0.9)',
   },
   tabsWrapper: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
@@ -1493,7 +1493,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   iosCardHeader: {
     padding: 20,
-    backgroundColor: '#fff', // Or a very light gradient if preferred
+    backgroundColor: theme.colors.white, // Or a very light gradient if preferred
     borderBottomWidth: 1,
     borderBottomColor: '#f2f2f7',
   },
@@ -1705,7 +1705,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
     marginBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -1820,7 +1820,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     paddingVertical: 16,
   },
   shimmerCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
     borderRadius: 20,
     marginBottom: 20,
     overflow: 'hidden',
@@ -1859,7 +1859,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContentModern: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     overflow: "hidden",
@@ -1997,7 +1997,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#F1F3F5',
-    backgroundColor: '#FFF',
+    backgroundColor: theme.colors.white,
   },
   tableRefinedHeader: {
     flexDirection: 'row',
@@ -2022,7 +2022,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     borderBottomColor: '#F1F3F5',
   },
   tableRowAlt: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.colors.background,
   },
   tableRefinedCell: {
     flex: 1,
@@ -2031,7 +2031,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     fontWeight: '600',
   },
   stickyModalHeader: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
     paddingHorizontal: 20,
     paddingTop: 15,
     paddingBottom: 15,
@@ -2080,7 +2080,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     letterSpacing: 0.5,
   },
   branchCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,

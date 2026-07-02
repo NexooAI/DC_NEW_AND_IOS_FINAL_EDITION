@@ -345,7 +345,8 @@ export default function GoldAdvanceScreen() {
             if (router.canGoBack()) {
               router.back();
             } else {
-              router.replace('/(app)/dashboard');
+              const hasDashboard = getAppConfig().constants.enableDashboard;
+              router.replace(hasDashboard ? '/(app)/dashboard' : '/(app)/(tabs)/home');
             }
           }} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
@@ -378,7 +379,8 @@ export default function GoldAdvanceScreen() {
           if (router.canGoBack()) {
             router.back();
           } else {
-            router.replace('/(app)/dashboard');
+            const hasDashboard = getAppConfig().constants.enableDashboard;
+            router.replace(hasDashboard ? '/(app)/dashboard' : '/(app)/(tabs)/home');
           }
         }} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
@@ -1131,7 +1133,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     paddingVertical: 8,
     fontSize: rf(11.5),
     color: theme.colors.textDark,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
   },
   textArea: {
     height: hp(10),
@@ -1269,7 +1271,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     padding: wp(5),
     borderTopWidth: 1,
     borderTopColor: "#e5e5e5",
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
   },
   checkboxRow: {
     flexDirection: "row",

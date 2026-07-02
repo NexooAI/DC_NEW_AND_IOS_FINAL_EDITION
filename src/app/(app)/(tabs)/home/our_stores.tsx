@@ -50,7 +50,7 @@ if (Platform.OS === "web") {
       style={{
         width: "100%",
         height: 300,
-        backgroundColor: "#eee",
+        backgroundColor: theme.colors.backgroundSecondary,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

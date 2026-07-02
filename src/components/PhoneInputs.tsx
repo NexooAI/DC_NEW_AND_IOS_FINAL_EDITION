@@ -121,7 +121,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     overflow: "hidden",
     borderWidth: 1,
@@ -137,7 +137,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     elevation: 3,
   },
   errorContainer: {
-    backgroundColor: "#ffffff",
+    backgroundColor: theme.colors.white,
     borderColor: "#ff4444",
     borderWidth: 2,
   },
@@ -163,7 +163,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     paddingVertical: 0,
     fontSize: 16,
     height: 50,
-    backgroundColor: "#ffffff",
+    backgroundColor: theme.colors.white,
     color: "#000000",
     fontWeight: "500",
     textAlignVertical: "center",
@@ -174,7 +174,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginBottom: 0,
   },
   inputError: {
-    backgroundColor: "#ffffff",
+    backgroundColor: theme.colors.white,
     color: "#000000",
   },
   counterText: {

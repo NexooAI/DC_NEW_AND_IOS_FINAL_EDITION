@@ -456,14 +456,14 @@ function getStyles(theme: any) { return StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: "rgba(255, 255, 255, 0.3)",
-    backgroundColor: "#ffffff",
+    backgroundColor: theme.colors.white,
     justifyContent: "center",
     alignItems: "center",
     color: "#000000",
   },
   pinBoxActive: {
     borderColor: "#ffc90c",
-    backgroundColor: "#ffffff",
+    backgroundColor: theme.colors.white,
   },
   pinDot: {
     width: 12,

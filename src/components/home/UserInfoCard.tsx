@@ -302,7 +302,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     position: "absolute",
     bottom: 0,
     right: 0,
-    backgroundColor: "#FFF",
+    backgroundColor: theme.colors.white,
     borderRadius: 10,
     overflow: "hidden",
   },
