@@ -1,4 +1,5 @@
 import { theme } from "@/constants/theme";
+import { APP_CONFIG } from "@/constants";
 import { useAppTheme } from "@/store/global.store";
 import React, { useRef, useState } from "react";
 import {
@@ -63,7 +64,7 @@ if (Platform.OS === "web") {
 const stores = [
   {
     id: 1,
-    name: "DC Jewellers ",
+    name: APP_CONFIG.appName,
     latitude: 8.427828080550306,
     longitude: 78.02855977120382,
     address:

@@ -4,6 +4,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import Constants from 'expo-constants';
 import AppLayoutWrapper from '@/components/AppLayoutWrapper';
 import { theme } from '@/constants/theme';
+import { APP_CONFIG } from '@/constants';
 
 interface DrawerContentLayoutProps {
   children: React.ReactNode;
@@ -39,7 +40,7 @@ const DrawerContentLayout: React.FC<DrawerContentLayoutProps> = ({
         <View style={styles.footer}>
           <Text style={styles.versionText}>v{version}</Text>
           <Text style={styles.copyrightText}>
-             DC Jewellers. All rights reserved.
+             {APP_CONFIG.copyright}
           </Text>
         </View>
       </View>

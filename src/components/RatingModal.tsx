@@ -21,6 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from '@/hooks/useTranslation';
 import { logger } from '@/utils/logger';
 import Constants from 'expo-constants';
+import { APP_CONFIG } from '@/constants';
 
 // Safely import StoreReview
 let StoreReview: any;
@@ -43,14 +44,14 @@ interface RatingModalProps {
 }
 
 const RATING_STORAGE_KEY = 'app_rating_data';
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.nexooai.dcjewellery&hl=en_IN';
-const APP_STORE_URL = 'https://apps.apple.com/us/app/dc-jewellers-gold-diamonds/id6755081937'; // Replace with your App Store ID
+const PLAY_STORE_URL = APP_CONFIG.playStoreUrl;
+const APP_STORE_URL = APP_CONFIG.appStoreUrl; // Replace with your App Store ID
 
 export default function RatingModal({
     visible,
     onClose,
     onSubmitFeedback,
-    appName = 'DC Jewellers',
+    appName = APP_CONFIG.appName,
 }: RatingModalProps) {
   const theme = useAppTheme();
   styles = getStyles(theme);

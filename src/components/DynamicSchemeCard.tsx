@@ -26,6 +26,7 @@ import { useAppVisibility } from "@/hooks/useAppVisibility";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { responsiveUtils } from "@/utils/responsiveUtils";
+import { APP_CONFIG } from "@/constants";
 
 const { width: screenWidth } = Dimensions.get("window");
 console.log('DynamicSchemeCard', useAppVisibility);
@@ -1176,7 +1177,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
             <View style={styles.modernSection}>
               <Text style={styles.modernSectionTitle}>{t("termsAndConditions") || "Terms & Conditions"}</Text>
               <Text style={styles.modernDescription}>
-                {t("termsAndConditionsDiscription") || "Welcome to DC Jewellers..."}
+                {t("termsAndConditionsDiscription") || `Welcome to ${APP_CONFIG.appName}...`}
               </Text>
             </View>
           )}

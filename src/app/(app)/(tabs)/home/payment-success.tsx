@@ -18,6 +18,7 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
+import { APP_CONFIG } from "@/constants";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { logger } from "@/utils/logger";
@@ -551,7 +552,7 @@ export default function PaymentSuccess() {
       <RatingModal
         visible={showRating}
         onClose={hideRating}
-        appName="DC Jewellers"
+        appName={APP_CONFIG.appName}
       />
     </SafeAreaView>
   );

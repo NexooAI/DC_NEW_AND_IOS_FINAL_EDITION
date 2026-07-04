@@ -118,7 +118,7 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
             </Text>
             <View style={styles.liveIndicator}>
               <Animated.View style={[styles.liveDot, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]} />
-              <Text style={styles.liveText}>LIVE</Text>
+              <Text style={styles.liveText}>{t("live")?.toUpperCase() || "LIVE"}</Text>
             </View>
           </View>
           {updatedAt && (
@@ -139,14 +139,14 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
               onPress={() => setShowSilver(false)}
               activeOpacity={0.8}
             >
-              <Text style={[styles.toggleText, !showSilver && styles.toggleTextActive]}>GOLD</Text>
+              <Text style={[styles.toggleText, !showSilver && styles.toggleTextActive]}>{t("gold")?.toUpperCase() || "GOLD"}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.toggleBtn, showSilver && styles.toggleBtnActive]}
               onPress={() => setShowSilver(true)}
               activeOpacity={0.8}
             >
-              <Text style={[styles.toggleText, showSilver && styles.toggleTextActive]}>SILVER</Text>
+              <Text style={[styles.toggleText, showSilver && styles.toggleTextActive]}>{t("silver")?.toUpperCase() || "SILVER"}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -155,7 +155,7 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
         <View style={styles.ratesGrid}>
           {/* 22KT Column (Gold) */}
           <View style={styles.rateCol}>
-            <Text style={styles.caratLabel}>22KT GOLD</Text>
+            <Text style={styles.caratLabel}>22KT {t("gold")?.toUpperCase() || "GOLD"}</Text>
             <View style={styles.priceContainer}>
               <Text style={styles.currency}>₹</Text>
               <Text style={styles.priceValue}>{getRate(goldRate, 22)}</Text>
@@ -169,7 +169,7 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
             <>
               {/* 18KT Column */}
               <View style={styles.rateCol}>
-                <Text style={styles.caratLabel}>18KT GOLD</Text>
+                <Text style={styles.caratLabel}>18KT {t("gold")?.toUpperCase() || "GOLD"}</Text>
                 <View style={styles.priceContainer}>
                   <Text style={styles.currency}>₹</Text>
                   <Text style={styles.priceValue}>{getRate(goldRate18, 18)}</Text>
@@ -181,7 +181,7 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
 
               {/* 14KT Column */}
               <View style={styles.rateCol}>
-                <Text style={styles.caratLabel}>14KT GOLD</Text>
+                <Text style={styles.caratLabel}>14KT {t("gold")?.toUpperCase() || "GOLD"}</Text>
                 <View style={styles.priceContainer}>
                   <Text style={styles.currency}>₹</Text>
                   <Text style={styles.priceValue}>{getRate(goldRate14, 14)}</Text>
@@ -192,7 +192,7 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
           ) : (
             /* Silver Column */
             <View style={styles.rateCol}>
-              <Text style={styles.caratLabel}>SILVER</Text>
+              <Text style={styles.caratLabel}>{t("silver")?.toUpperCase() || "SILVER"}</Text>
               <View style={styles.priceContainer}>
                 <Text style={styles.currency}>₹</Text>
                 <Text style={styles.priceValue}>{getRate(silverRate, 1, true)}</Text>

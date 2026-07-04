@@ -1,3 +1,5 @@
+const { themeConfig } = require('./theme.config');
+
 const withAlpha = (hex, alpha) => {
   const normalized = hex.replace("#", "");
   const value = normalized.length === 3
@@ -203,7 +205,7 @@ const theme = {
       const appConfig = state?.appConfig;
       const themeMode = state?.themeMode;
       const basePalette = themeMode === 'dark' ? darkPalette : lightPalette;
-      
+
       if (appConfig && appConfig.colors) {
         return createThemeColors(basePalette, appConfig.colors);
       }
@@ -249,22 +251,22 @@ const theme = {
         text: colors.outlineButtonText,
       },
 
-    // Button sizes
-    small: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      fontSize: 12,
-    },
-    medium: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      fontSize: 14,
-    },
-    large: {
-      paddingHorizontal: 20,
-      paddingVertical: 12,
-      fontSize: 16,
-    },
+      // Button sizes
+      small: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        fontSize: 12,
+      },
+      medium: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        fontSize: 14,
+      },
+      large: {
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        fontSize: 16,
+      },
 
       disabled: {
         background: colors.buttonDisabled,
@@ -414,20 +416,19 @@ const theme = {
   },
 
   constants: {
-    customerName: "Sri Thanga Thamarai",
-    address: "2/59, Pacharisikara Street, Khansa Mettu Street, Madurai - 625001",
-    mobile: "+919876543210",
-    whatsapp: "+919876543210",
-    email: "info@sttjewellers.com",
-    website: "https://srithangathamarai.com",
-    latitude: 9.9175,
-    longitude: 78.1192,
-    foundationYear: 1995,
-    enableDashboard: false,
+    customerName: themeConfig.customerName || "Sri Thanga Thamarai",
+    address: themeConfig.address || "2/59, Pacharisikara Street, Khansa Mettu Street, Madurai - 625001",
+    mobile: themeConfig.mobile || "+919876543210",
+    whatsapp: themeConfig.whatsapp || "+919876543210",
+    email: themeConfig.email || "info@sttjewellers.com",
+    website: themeConfig.website || "https://srithangathamarai.com",
+    latitude: themeConfig.latitude || 9.9175,
+    longitude: themeConfig.longitude || 78.1192,
+    foundationYear: themeConfig.foundationYear || 1995,
+    enableDashboard: themeConfig.enableDashboard !== undefined ? themeConfig.enableDashboard : false,
   },
-  baseUrl: "https://api.prod.dcjewellers.org",
-  // baseUrl: "https://nexooai.ramcarmotor.com",
-  youtubeUrl: "https://youtu.be/8RAhdn5b9Bw",
+  baseUrl: themeConfig.baseUrl || "https://api.srithangathamarai.com",
+  youtubeUrl: themeConfig.youtubeUrl || "https://youtu.be/8RAhdn5b9Bw",
 };
 
 module.exports = { theme, lightPalette, darkPalette, createThemeColors };

@@ -24,6 +24,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, Stack } from "expo-router";
 import AppLayoutWrapper from "@/components/AppLayoutWrapper";
 import { theme } from "@/constants/theme";
+import { APP_CONFIG } from "@/constants";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useFocusEffect } from "@react-navigation/native";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
@@ -125,7 +126,7 @@ const StoreLocator = () => {
 
         return {
           id: branch.id,
-          name: branch.branch_name || "DC Jewellers",
+          name: branch.branch_name || APP_CONFIG.appName,
           latitude: lat,
           longitude: lng,
           address: branch.address || "",

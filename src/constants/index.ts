@@ -10,3 +10,7 @@ export { theme } from './theme';
 
 // Export color types
 export * from './colors.d';
+
+// Export App Config
+export * from './appConfig';
+
