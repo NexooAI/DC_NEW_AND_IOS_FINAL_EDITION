@@ -30,6 +30,7 @@ import apiClient, { billsAPI } from '@/services/api';
 import useGlobalStore from '@/store/global.store';
 import { logAppEvent } from '@/services/appEventService';
 import { saveFileToPublicDirectory } from '@/utils/fileUtils';
+import { formatDate } from '@/utils/dateTimeUtils';
 
 const { wp, hp, rf } = responsiveUtils;
 const QUATERNARY_COLOR = theme.colors.quaternary || '#F2E6D2';
@@ -68,16 +69,7 @@ const toAmount = (value: unknown) => {
 
 const formatCurrency = (value: number) => `₹${value.toLocaleString('en-IN')}`;
 
-const formatDate = (value?: string) => {
-  if (!value) return 'N/A';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-};
+// formatDate imported from dateTimeUtils
 
 const getBillId = (bill: BillApiItem) => bill.id ?? bill.billId ?? bill.bill_id;
 

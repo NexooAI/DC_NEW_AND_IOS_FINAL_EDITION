@@ -12,6 +12,7 @@ interface PaymentSocketProps {
   onPaymentFailure?: (data: any) => void;
   onPaymentError?: (error: any) => void;
   onPaymentExpired?: () => void;
+  onStopPolling?: () => void; // Called when socket reconnects so polling can be cancelled
   parsedUserDetails: any;
   router: ReturnType<typeof useRouter>;
   orderId?: string;
@@ -25,6 +26,7 @@ export const usePaymentSocket = ({
   onPaymentFailure,
   onPaymentError,
   onPaymentExpired,
+  onStopPolling,
   parsedUserDetails,
   router,
   orderId,
@@ -34,6 +36,19 @@ export const usePaymentSocket = ({
 }: PaymentSocketProps) => {
   const socketRef = useRef<Socket | null>(null);
   const isPaymentCompleted = useRef(false);
+
+  // Keep latest callbacks in refs so the socket effect never needs to re-run
+  // when only callbacks change (avoids creating duplicate socket connections).
+  const onPaymentSuccessRef = useRef(onPaymentSuccess);
+  const onPaymentFailureRef = useRef(onPaymentFailure);
+  const onPaymentErrorRef = useRef(onPaymentError);
+  const onPaymentExpiredRef = useRef(onPaymentExpired);
+  const onStopPollingRef = useRef(onStopPolling);
+  useEffect(() => { onPaymentSuccessRef.current = onPaymentSuccess; }, [onPaymentSuccess]);
+  useEffect(() => { onPaymentFailureRef.current = onPaymentFailure; }, [onPaymentFailure]);
+  useEffect(() => { onPaymentErrorRef.current = onPaymentError; }, [onPaymentError]);
+  useEffect(() => { onPaymentExpiredRef.current = onPaymentExpired; }, [onPaymentExpired]);
+  useEffect(() => { onStopPollingRef.current = onStopPolling; }, [onStopPolling]);
 
 
   useEffect(() => {
@@ -57,6 +72,12 @@ export const usePaymentSocket = ({
       console.log("Current orderId:", currentOrderId);
       console.log("parsedUserDetails?.orderId:", parsedUserDetails?.orderId);
       console.log("parsedUserDetails", parsedUserDetails);
+
+      // If polling was started as a fallback, stop it now that socket is back
+      if (onStopPollingRef.current) {
+        console.log("🛑 Socket reconnected — stopping fallback polling");
+        onStopPollingRef.current();
+      }
 
       if (currentOrderId) {
         console.log("🎯 Emitting joinOrderRoom for orderId:", currentOrderId);
@@ -96,7 +117,7 @@ export const usePaymentSocket = ({
       console.error("Socket connection error:", error);
       console.error("Error message:", error.message);
       console.error("Error stack:", error.stack);
-      onPaymentError?.({
+      onPaymentErrorRef.current?.({
         error: "Connection Error",
         message: "Failed to connect to payment server",
       });
@@ -106,14 +127,23 @@ export const usePaymentSocket = ({
       console.log("=== SOCKET DISCONNECT ===");
       console.log("Socket disconnected. Reason:", reason);
       console.log("isPaymentCompleted:", isPaymentCompleted.current);
-      if (!isPaymentCompleted.current) {
-        console.log("⚠️ Payment not completed, showing error");
-        onPaymentError?.({
+
+      // 'io client disconnect' is EXPECTED when the user switches to a UPI/bank app
+      // (app goes to background). Socket.io auto-reconnects, so we only start the
+      // polling fallback for server-side or transport disconnects.
+      const isExpectedClientDisconnect =
+        reason === "io client disconnect" || reason === "io server disconnect";
+
+      if (!isPaymentCompleted.current && !isExpectedClientDisconnect) {
+        console.log("⚠️ Payment not completed, unexpected disconnect — starting polling fallback");
+        onPaymentErrorRef.current?.({
           error: "Disconnected",
           message: "Lost connection to payment server",
         });
-      } else {
+      } else if (isPaymentCompleted.current) {
         console.log("✅ Payment completed, disconnect is expected");
+      } else {
+        console.log("ℹ️ Client-initiated disconnect (e.g. UPI app switch). Socket will auto-reconnect.");
       }
     });
 
@@ -139,9 +169,9 @@ export const usePaymentSocket = ({
           console.log('Payment charged successfully');
           isPaymentCompleted.current = true;
 
-          if (onPaymentSuccess) {
+          if (onPaymentSuccessRef.current) {
             console.log("[usePaymentSocket] Invoking onPaymentSuccess callback");
-            onPaymentSuccess(data);
+            onPaymentSuccessRef.current(data);
           } else if (router) {
             try {
               console.log("[usePaymentSocket] Routing to payment-success");
@@ -178,9 +208,9 @@ export const usePaymentSocket = ({
           console.log('Payment not charged');
           isPaymentCompleted.current = true;
 
-          if (onPaymentFailure) {
+          if (onPaymentFailureRef.current) {
             console.log("[usePaymentSocket] Invoking onPaymentFailure callback");
-            onPaymentFailure(data);
+            onPaymentFailureRef.current(data);
           } else if (router) {
             console.log("[usePaymentSocket] Routing to payment-failure");
             router.replace({
@@ -196,6 +226,7 @@ export const usePaymentSocket = ({
                 type: type,
                 userId: parsedUserDetails?.userId || parsedUserDetails?.id || "",
                 investmentId: parsedUserDetails?.investmentId || "",
+                paymentMethod: data?.paymentResponse?.payment_method_type || data?.paymentResponse?.payment_method || "",
               }
             });
           }
@@ -261,7 +292,9 @@ export const usePaymentSocket = ({
       }
       appStateSubscription.remove();
     };
-  }, [parsedUserDetails, router, onPaymentSuccess, onPaymentFailure, onPaymentError, onPaymentExpired, orderId]);
+  // Only re-run when stable primitive values change (orderId, type, amount, bookingId).
+  // Callbacks are accessed via refs, so they never trigger a re-run and no duplicate sockets are created.
+  }, [orderId, type, amount, bookingId]);
 
   const handleCancel = () => {
     if (socketRef.current && socketRef.current.connected) {

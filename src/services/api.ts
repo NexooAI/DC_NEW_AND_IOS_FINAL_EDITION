@@ -12,6 +12,7 @@ import useGlobalStore from '@/store/global.store';
 import * as FileSystem from 'expo-file-system/legacy';
 
 import { logger } from '@/utils/logger';
+import { getSystemTimezone } from '@/utils/dateTimeUtils';
 // ============================================================================
 // API LOGGER CLASS
 // ============================================================================
@@ -406,6 +407,7 @@ apiClient.interceptors.request.use(
     // Add client platform header
     config.headers = config.headers || new axios.AxiosHeaders();
     config.headers['x-client-platform'] = Platform.OS;
+    config.headers['X-Timezone'] = getSystemTimezone();
 
     // Add authentication token
     try {

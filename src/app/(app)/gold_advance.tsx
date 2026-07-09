@@ -23,6 +23,7 @@ import { theme } from "@/constants/theme";
 import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 import api, { advanceBookingAPI } from "@/services/api";
+import { fetchPolicyWithCache } from "@/utils/apiCache";
 
 const { wp, hp, rf } = responsiveUtils;
 const QUATERNARY_COLOR = theme.colors.quaternary || "#F2E6D2";
@@ -220,9 +221,8 @@ export default function GoldAdvanceScreen() {
   const fetchAdvanceBookingTerms = async () => {
     try {
       setTermsLoading(true);
-      const response = await api.get('/policies/type/advance_booking_terms');
-      if (response.data && response.data.success && response.data.data) {
-        const policy = response.data.data;
+      const policy = await fetchPolicyWithCache('advance_booking_terms');
+      if (policy) {
         const appLanguage = useGlobalStore.getState().language || "en";
         const targetKey = `description_${appLanguage}`;
         let selectedTerms = policy[targetKey] || "";

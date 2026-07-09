@@ -21,9 +21,9 @@ import { theme } from '@/constants/theme';
 import COLORS from '@/constants/colors';
 import ResponsiveText from '@/components/ResponsiveText';
 import { responsiveUtils } from '@/utils/responsiveUtils';
-import useGlobalStore from '@/store/global.store';
 import { useTranslation } from '@/hooks/useTranslation';
 import apiWithLoader from '@/services/apiWithLoader';
+import { formatDateTime } from '@/utils/dateTimeUtils';
 
 // Enable LayoutAnimation for Android (only if not on the New Architecture / Fabric)
 const isNewArch = (global as any).RN$Fabric || (global as any).nativeFabricUIManager;
@@ -62,19 +62,7 @@ interface TransactionItem {
   schemeType?: string | null;
 }
 
-const formatDateTime = (value?: string) => {
-  if (!value) return 'N/A';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
-};
+// formatDateTime imported from dateTimeUtils
 
 export default function PaymentHistoryScreen() {
   const router = useRouter();

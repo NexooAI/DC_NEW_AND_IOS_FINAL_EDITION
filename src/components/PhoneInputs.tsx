@@ -50,13 +50,11 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
 
     if (!value) {
       setError(t("pleaseEnterMobile"));
-      Alert.alert(t("error"), t("pleaseEnterMobile"));
       return;
     }
 
     if (value.length !== 10) {
       setError(t("validMobileNumber"));
-      Alert.alert(t("error"), t("validMobileNumber"));
       return;
     }
 

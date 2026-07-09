@@ -143,12 +143,20 @@ const ResponsiveButton: React.FC<ResponsiveButtonProps> = ({
     ...(loading ? { opacity: 0.8 } : {}),
   };
 
+  // Convert fixed height in styles to minHeight to prevent clipping on wrapped text
+  const flatStyle = StyleSheet.flatten(style) || {};
+  const cleanedStyle: ViewStyle = { ...flatStyle };
+  if (cleanedStyle.height !== undefined && typeof cleanedStyle.height === 'number') {
+    cleanedStyle.minHeight = cleanedStyle.height;
+    delete cleanedStyle.height;
+  }
+
   // Use larger text sizes for buttons to ensure readability
   const textSize = size === "sm" ? "md" : size === "md" ? "lg" : "xl";
 
   return (
     <TouchableOpacity
-      style={[buttonStyle, style]}
+      style={[buttonStyle, cleanedStyle]}
       disabled={disabled || loading}
       activeOpacity={0.8}
       {...props}
@@ -160,12 +168,12 @@ const ResponsiveButton: React.FC<ResponsiveButtonProps> = ({
         color={textColor || colors.textColor}
         align="center"
         allowWrap={true}
-        maxLines={2}
-        truncateMode="double"
+        maxLines={3}
         style={{
           fontSize: textSize === "md" ? 12 : textSize === "lg" ? 14 : 16,
           textAlign: "center",
           flexShrink: 1,
+          paddingVertical: 4, // Give some breathing room when text wraps
         }}
       >
         {loading ? "Loading..." : title}

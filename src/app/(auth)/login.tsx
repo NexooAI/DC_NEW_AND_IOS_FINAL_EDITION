@@ -1188,9 +1188,10 @@ export default function Login() {
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
               >
-                <View
-                  style={[
-                    registerStyles.logoContainer,
+                <Pressable onPress={Keyboard.dismiss} style={{ flex: 1, width: "100%" }}>
+                  <View
+                    style={[
+                      registerStyles.logoContainer,
                     {
                       paddingTop: spacing.md,
                       marginBottom: 0,
@@ -1657,7 +1658,8 @@ export default function Login() {
                   )}
                 </View>
               </View>
-            </ScrollView>
+            </Pressable>
+          </ScrollView>
           </KeyboardAvoidingView>
           {/* <View style={registerStyles.poweredByContainer}>
             <Text style={registerStyles.poweredByText}>

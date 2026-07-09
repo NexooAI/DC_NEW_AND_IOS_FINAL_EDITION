@@ -30,19 +30,22 @@ import useGlobalStore from "@/store/global.store";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 
 import { logger } from '@/utils/logger';
+import { convertUTCToLocal, formatDate as globalFormatDate } from '@/utils/dateTimeUtils';
 // Utility function to format date
 const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
+  const date = convertUTCToLocal(dateString);
   const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const nowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffTime = nowStart.getTime() - dateStart.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 1) {
-    return "Yesterday";
-  } else if (diffDays === 0) {
+  if (diffDays === 0) {
     return "Today";
+  } else if (diffDays === 1) {
+    return "Yesterday";
   } else {
-    return date.toLocaleDateString("en-US", {
+    return globalFormatDate(date, {
       month: "short",
       day: "numeric",
       year: "numeric",

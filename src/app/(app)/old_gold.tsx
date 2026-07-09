@@ -24,6 +24,7 @@ import { responsiveUtils } from "@/utils/responsiveUtils";
 import { shadowUtils } from "@/utils/shadowUtils";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
+import { formatDate } from "@/utils/dateTimeUtils";
 import api, { ticketsAPI } from "@/services/api";
 import { theme } from "@/constants/theme";
 import DynamicSchemeCard from "@/components/DynamicSchemeCard";
@@ -354,7 +355,7 @@ export default function OldGoldScreen() {
                     {t("depositDate") || "Deposit Date"}
                   </ResponsiveText>
                   <ResponsiveText color="#FFF" size="sm">
-                    {new Date(dep.depositDate).toLocaleDateString("en-IN")}
+                    {formatDate(dep.depositDate)}
                   </ResponsiveText>
                 </View>
                 <View style={styles.infoCol}>
@@ -362,7 +363,7 @@ export default function OldGoldScreen() {
                     {t("maturityDate") || "Maturity Date"}
                   </ResponsiveText>
                   <ResponsiveText color="#FFF" size="sm">
-                    {new Date(dep.maturityDate).toLocaleDateString("en-IN")}
+                    {formatDate(dep.maturityDate)}
                   </ResponsiveText>
                 </View>
                 <View style={styles.infoCol}>

@@ -22,8 +22,9 @@ import COLORS from '@/constants/colors';
 import ResponsiveText from '@/components/ResponsiveText';
 import { responsiveUtils } from '@/utils/responsiveUtils';
 import FAQService from '@/services/faqService';
-import useGlobalStore from '@/store/global.store';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatDate } from '@/utils/dateTimeUtils';
+import useGlobalStore from '@/store/global.store';
 
 // Enable LayoutAnimation for Android (only if not on the New Architecture / Fabric)
 const isNewArch = (global as any).RN$Fabric || (global as any).nativeFabricUIManager;
@@ -57,16 +58,7 @@ interface TicketItem {
   updated_at?: string;
 }
 
-const formatDate = (value?: string) => {
-  if (!value) return 'N/A';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-};
+// formatDate imported from dateTimeUtils
 
 export default function TicketsScreen() {
   const router = useRouter();

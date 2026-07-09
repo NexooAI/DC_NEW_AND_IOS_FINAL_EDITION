@@ -39,6 +39,18 @@ export default function PaymentFailure() {
   const userId = Array.isArray(params.userId) ? params.userId[0] : (params.userId || user?.id?.toString() || "");
   const investmentId = Array.isArray(params.investmentId) ? params.investmentId[0] : (params.investmentId || "");
 
+  const paymentMethod = (Array.isArray(params.paymentMethod) ? params.paymentMethod[0] : params.paymentMethod) || "";
+  const errorMessage = (Array.isArray(params.message) ? params.message[0] : (params.message || t("paymentFailedMessage"))) || "";
+
+  // Show UPI Collect warning box only if the transaction/error indicates a UPI-related payment
+  const showUpiNotice = 
+    paymentMethod.toUpperCase().includes("UPI") ||
+    paymentMethod.toUpperCase().includes("COLLECT") ||
+    errorMessage.toUpperCase().includes("UPI") ||
+    errorMessage.toUpperCase().includes("VPA") ||
+    errorMessage.toUpperCase().includes("COLLECT") ||
+    errorMessage.toUpperCase().includes("NPCI");
+
   useEffect(() => {
     if (isBillPayment && userId) {
       const fetchBills = async () => {
@@ -324,12 +336,14 @@ export default function PaymentFailure() {
         </Text>
 
         {/* UPI Notice Box */}
-        <View style={styles.upiNoticeBox}>
-          <Ionicons name="warning" size={18} color="#c53030" style={{ marginRight: 8 }} />
-          <Text style={styles.upiNoticeText}>
-            {t("npciUpiNotice")}
-          </Text>
-        </View>
+        {showUpiNotice && (
+          <View style={styles.upiNoticeBox}>
+            <Ionicons name="warning" size={18} color="#c53030" style={{ marginRight: 8 }} />
+            <Text style={styles.upiNoticeText}>
+              {t("npciUpiNotice")}
+            </Text>
+          </View>
+        )}
 
         <View style={styles.detailsCard}>
           <Text style={styles.detailsTitle}>{t("paymentDetails")}</Text>

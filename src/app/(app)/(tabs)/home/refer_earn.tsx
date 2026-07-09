@@ -435,13 +435,23 @@ export default function ReferCodeScreen() {
                   </Text>
                 </View>
                 <View style={styles.referralPointsContainer}>
+                  <View style={[
+                    styles.statusBadge,
+                    { backgroundColor: isReferral ? "rgba(76, 175, 80, 0.12)" : "rgba(244, 67, 54, 0.12)" }
+                  ]}>
+                    <Text style={[
+                      styles.statusBadgeText,
+                      { color: isReferral ? "#4CAF50" : "#F44336" }
+                    ]}>
+                      {isReferral ? "Added" : "Deducted"}
+                    </Text>
+                  </View>
                   <Text style={[
                     styles.referralPoints,
-                    { color: isReferral ? "#4CAF50" : "#F44336" }
+                    { color: isReferral ? "#4CAF50" : "#F44336", marginTop: 4 }
                   ]}>
-                    {isReferral ? `+${item.points || item.reward_earned || 0}` : `-${item.points || 0}`}
+                    {isReferral ? `+${item.points || item.reward_earned || 0}` : `-${item.points || 0}`} Pts
                   </Text>
-                  <Text style={styles.referralPointsLabel}>{t("points") || "Pts"}</Text>
                 </View>
               </View>
             );
@@ -658,5 +668,17 @@ const styles = StyleSheet.create({
   referralPointsLabel: {
     fontSize: 10,
     color: '#666',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
 });

@@ -18,6 +18,7 @@ import { theme } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useNavigation, useRouter, useLocalSearchParams } from "expo-router";
+import { convertUTCToLocal, formatDate } from "@/utils/dateTimeUtils";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -106,7 +107,7 @@ export default function RateChart() {
             if (response.data && response.data.data) {
                 // Sort by created_at descending (newest first)
                 const sortedData = [...response.data.data].sort((a, b) =>
-                    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                    convertUTCToLocal(b.created_at).getTime() - convertUTCToLocal(a.created_at).getTime()
                 );
                 setRatesData(sortedData);
             }
@@ -146,7 +147,7 @@ export default function RateChart() {
         }
 
         return ratesData.filter((item) => {
-            const itemDate = new Date(item.created_at);
+            const itemDate = convertUTCToLocal(item.created_at);
             return itemDate >= filterDate;
         });
     }, [ratesData, selectedDateFilter]);
@@ -170,7 +171,7 @@ export default function RateChart() {
         const monthAbbreviations = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
         const labels = sortedForChart.map((item) => {
-            const date = new Date(item.created_at);
+            const date = convertUTCToLocal(item.created_at);
             const day = date.getDate();
             const month = monthAbbreviations[date.getMonth()];
             return `${day}-${month}`;
@@ -391,18 +392,13 @@ export default function RateChart() {
                             <Text style={[styles.tableHeaderText, styles.tableStatusColumn]}>{t("rateChart_statusHeader")}</Text>
                         </View>
                         {filteredData.slice(0, 10).map((item) => {
-                            const date = new Date(item.created_at);
                             const rate = selectedRateType === "gold"
                                 ? parseFloat(item.gold_rate)
                                 : parseFloat(item.silver_rate);
                             return (
                                 <View key={item.id} style={styles.tableRow}>
                                     <Text style={[styles.tableCell, styles.tableDateColumn]}>
-                                        {date.toLocaleDateString("en-IN", {
-                                            day: "2-digit",
-                                            month: "short",
-                                            year: "numeric",
-                                        })}
+                                        {formatDate(item.created_at)}
                                     </Text>
                                     <Text style={[styles.tableCell, styles.tableRateColumn]}>
                                         ₹{rate.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

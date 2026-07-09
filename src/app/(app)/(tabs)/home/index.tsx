@@ -1114,8 +1114,14 @@ export default function Home() {
         }
 
         isRefreshing ? setRefreshing(true) : setIsLoading(true);
-        // Skip global loader - we use skeleton loader instead
-        const response = await api.get(`/home?userId=${userId}`, { skipLoading: true } as any);
+        // Fetch home dashboard data and dynamic offers in parallel
+        const [response, offersResponse] = await Promise.all([
+          api.get(`/home?userId=${userId}`, { skipLoading: true } as any),
+          offersAPI.getOffers().catch(err => {
+            logger.error("Error fetching offers in parallel:", err);
+            return null;
+          })
+        ]);
 
         if (response.data.success) {
           const data = response.data.data;
@@ -1123,23 +1129,18 @@ export default function Home() {
 
           setHomeData(response.data);
 
-          // Fetch dynamic offers for the floating widget
-          try {
-            const offersResponse = await offersAPI.getOffers();
-            if (offersResponse.data && offersResponse.data.success) {
-              const fetchedOffers = offersResponse.data.data || [];
-              const activeOnly = fetchedOffers.filter((o: any) => o.status === 'active');
-              setActiveOffers(activeOnly);
-              if (activeOnly.length > 0) {
-                setLatestOffer(activeOnly[0]);
-                setShowFloatingOffer(true);
-              } else {
-                setLatestOffer(null);
-                setShowFloatingOffer(false);
-              }
+          // Process pre-fetched offers data
+          if (offersResponse?.data?.success) {
+            const fetchedOffers = offersResponse.data.data || [];
+            const activeOnly = fetchedOffers.filter((o: any) => o.status === 'active');
+            setActiveOffers(activeOnly);
+            if (activeOnly.length > 0) {
+              setLatestOffer(activeOnly[0]);
+              setShowFloatingOffer(true);
+            } else {
+              setLatestOffer(null);
+              setShowFloatingOffer(false);
             }
-          } catch (offerErr) {
-            logger.error("Error fetching offers in fetchHomeData:", offerErr);
           }
 
           // Populate investments calculations directly from pre-fetched list
@@ -1357,51 +1358,45 @@ export default function Home() {
     }, [fetchHomeData, fetchSchemesData, refetchVisibility])
   );
 
-  // Handle back button press with confirmation
+  // Consolidate duplicate Android Back Handler event listeners (rating prompt & exit confirmation)
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        // Show confirmation alert
-        Alert.alert(
-          t("exitApp") || "Exit App",
-          t("exitConfirmation") || "Are you sure you want to exit?",
-          [
-            {
-              text: t("cancel") || "Cancel",
-              style: "cancel",
-              onPress: () => {
-                // Do nothing, stay on the page
-              },
-            },
-            {
-              text: t("exitApp") || "Exit",
-              style: "destructive",
-              onPress: () => {
-                // Exit the app
-                if (Platform.OS === "android") {
-                  BackHandler.exitApp();
-                } else {
-                  // For iOS, you might want to use a different approach
-                  // or just allow navigation
-                }
-              },
-            },
-          ],
-          { cancelable: true }
-        );
-        // Return true to prevent default back behavior
-        return true;
+        checkAndShowRating().then((showed) => {
+          if (!showed) {
+            // Show exit confirmation dialog if rating modal is not triggered
+            Alert.alert(
+              t("exitApp") || "Exit App",
+              t("exitConfirmation") || "Are you sure you want to exit?",
+              [
+                {
+                  text: t("cancel") || "Cancel",
+                  style: "cancel",
+                  onPress: () => {},
+                },
+                {
+                  text: t("exitApp") || "Exit",
+                  style: "destructive",
+                  onPress: () => {
+                    if (Platform.OS === "android") {
+                      BackHandler.exitApp();
+                    }
+                  },
+                },
+              ],
+              { cancelable: true }
+            );
+          }
+        });
+        return true; // Block default native back behavior
       };
 
-      // Add event listener
       const backHandler = BackHandler.addEventListener(
         "hardwareBackPress",
         onBackPress
       );
-
-      // Cleanup function
       return () => backHandler.remove();
-    }, [t])
+    }, [t, checkAndShowRating])
   );
 
   // Load cached home data on initial mount
@@ -1511,26 +1506,7 @@ export default function Home() {
     incrementLaunchCount();
   }, []);
 
-  // Intercept back button to prompt for rating before leaving the app
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        checkAndShowRating().then((showed) => {
-          if (!showed) {
-            // If the rating modal wasn't triggered (already rated, prompted today, or count < 5), exit the app
-            BackHandler.exitApp();
-          }
-        });
-        return true; // Block default exit behavior
-      };
-
-      const subscription = BackHandler.addEventListener(
-        "hardwareBackPress",
-        onBackPress
-      );
-      return () => subscription.remove();
-    }, [checkAndShowRating])
-  );
+  // Note: Back button intercepts for ratings prompt are now consolidated in the useFocusEffect above.
 
   // Monitor flash-news endpoint for continuous calls
   useEffect(() => {
@@ -3930,9 +3906,77 @@ export default function Home() {
         visible={languageSelectorVisible}
         onClose={() => setLanguageSelectorVisible(false)}
       />
+      {/* Floating Countdown Pill for Minimized Lucky Draw */}
+      <MinimizedLuckyDrawPill />
     </AuthGuard>
   );
 }
+
+// Floating Countdown Pill Component
+const MinimizedLuckyDrawPill = () => {
+  const router = useRouter();
+  const activeDrawCountdown = useGlobalStore((state) => state.activeDrawCountdown);
+  const setActiveDrawCountdown = useGlobalStore((state) => state.setActiveDrawCountdown);
+  const [timeLeftStr, setTimeLeftStr] = useState("");
+
+  useEffect(() => {
+    if (!activeDrawCountdown) return;
+
+    const calculateTime = () => {
+      const diff = new Date(activeDrawCountdown.endDate).getTime() - Date.now();
+      if (diff <= 0) {
+        setTimeLeftStr("00:00");
+        return;
+      }
+      const mins = Math.floor((diff / 1000 / 60) % 60);
+      const secs = Math.floor((diff / 1000) % 60);
+      const format = (n: number) => (n < 10 ? `0${n}` : n);
+      setTimeLeftStr(`${format(mins)}:${format(secs)}`);
+    };
+
+    calculateTime();
+    const interval = setInterval(calculateTime, 1000);
+    return () => clearInterval(interval);
+  }, [activeDrawCountdown]);
+
+  if (!activeDrawCountdown) return null;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={() => {
+        router.push(`/(app)/lucky_draw?drawId=${activeDrawCountdown.id}`);
+      }}
+      style={styles.floatingPill}
+    >
+      <LinearGradient
+        colors={["#850111", "#4A0010"]}
+        style={styles.floatingPillGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <Ionicons name="time" size={16} color="#FFD700" style={{ marginRight: 6 }} />
+        <View style={{ marginRight: 8 }}>
+          <Text style={styles.floatingPillTitle} numberOfLines={1}>
+            {activeDrawCountdown.title}
+          </Text>
+          <Text style={styles.floatingPillTime}>
+            Live in: {timeLeftStr}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={(e) => {
+            e.stopPropagation();
+            setActiveDrawCountdown(null);
+          }}
+          style={styles.floatingPillClose}
+        >
+          <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.7)" />
+        </TouchableOpacity>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+};
 
 const styles = StyleSheet.create({
   fullHeightBackground: {
@@ -5335,6 +5379,43 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#666",
     lineHeight: 18,
+  },
+  floatingPill: {
+    position: "absolute",
+    bottom: Platform.OS === "ios" ? 100 : 80,
+    right: 16,
+    zIndex: 9999,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "#D4AF37",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
+    maxWidth: 200,
+  },
+  floatingPillGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+  },
+  floatingPillTitle: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "bold",
+    maxWidth: 110,
+  },
+  floatingPillTime: {
+    color: "#FFD700",
+    fontSize: 11,
+    fontWeight: "bold",
+    marginTop: 1,
+  },
+  floatingPillClose: {
+    paddingLeft: 4,
   },
 });
 // Skeleton loading styles

@@ -33,6 +33,7 @@ import useGlobalStore from "@/store/global.store";
 import api from "@/services/api";
 import { moderateScale } from "react-native-size-matters";
 import { theme } from "@/constants/theme";
+import { formatDate } from "@/utils/dateTimeUtils";
 import AuthGuard from "@/components/AuthGuard";
 import { formatGoldWeight } from "@/utils/imageUtils";
 import EnhancedSchemeCard from "./EnhancedSchemeCard";
@@ -166,19 +167,14 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
     setLoading(true);
     setError(null);
     try {
-      //logger.log("=== FETCHING SAVINGS LIST ===");
-      const response = await api.get(`investments/user_investments/${user.id}`, { skipLoading: true } as any);
-      // Fetch rewards data
-      let rewardsResponse: any = null;
-      try {
-        rewardsResponse = await api.post(`/payments/rewards-list?userId=${user.id}`, {}, { skipLoading: true } as any);
-        logger.log("Rewards data:", rewardsResponse);
-      } catch (rewardsApiError: any) {
-        // Log error but don't fail the entire fetch if rewards API fails
-        logger.warn("Error fetching rewards API:", rewardsApiError);
-        rewardsResponse = null;
-      }
-      // Defensive: log and check response structure
+      // Fetch both investments and rewards in parallel to avoid sequential blocking
+      const [response, rewardsResponse] = await Promise.all([
+        api.get(`investments/user_investments/${user.id}`, { skipLoading: true } as any),
+        api.post(`/payments/rewards-list?userId=${user.id}`, {}, { skipLoading: true } as any).catch(err => {
+          logger.warn("Error fetching rewards API:", err);
+          return null;
+        })
+      ]);
 
 
       // Improved error handling: check for backend error
@@ -298,7 +294,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
 
           // Parse dates with error handling
           const doj = item.start_date
-            ? new Date(item.start_date).toLocaleDateString("en-US", {
+            ? formatDate(item.start_date, {
               month: "short",
               day: "numeric",
               year: "numeric",
@@ -306,7 +302,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
             : "N/A";
 
           const dom = item.end_date
-            ? new Date(item.end_date).toLocaleDateString("en-US", {
+            ? formatDate(item.end_date, {
               month: "short",
               day: "numeric",
               year: "numeric",
@@ -428,7 +424,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
         if (ogResponse.data && ogResponse.data.success && Array.isArray(ogResponse.data.data)) {
           oldGoldDeposits = ogResponse.data.data.map((dep: any) => {
             const doj = dep.depositDate
-              ? new Date(dep.depositDate).toLocaleDateString("en-US", {
+              ? formatDate(dep.depositDate, {
                 month: "short",
                 day: "numeric",
                 year: "numeric",
@@ -436,7 +432,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
               : "N/A";
 
             const dom = dep.maturityDate
-              ? new Date(dep.maturityDate).toLocaleDateString("en-US", {
+              ? formatDate(dep.maturityDate, {
                 month: "short",
                 day: "numeric",
                 year: "numeric",

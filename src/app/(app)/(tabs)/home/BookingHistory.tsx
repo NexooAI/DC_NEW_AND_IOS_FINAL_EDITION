@@ -28,6 +28,7 @@ import { logAppEvent } from '@/services/appEventService';
 import { logger } from '@/utils/logger';
 import { saveFileToPublicDirectory } from '@/utils/fileUtils';
 import * as FileSystem from 'expo-file-system/legacy';
+import { formatDate, convertUTCToLocal } from '@/utils/dateTimeUtils';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 import * as WebBrowser from 'expo-web-browser';
@@ -55,16 +56,7 @@ const formatCurrency = (value: number | string) => {
   return `₹${num.toLocaleString('en-IN')}`;
 };
 
-const formatDate = (value?: string) => {
-  if (!value) return 'N/A';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-};
+// formatDate imported from dateTimeUtils
 
 export default function BookingHistory() {
   const router = useRouter();
@@ -242,7 +234,7 @@ export default function BookingHistory() {
     const now = new Date();
     return bookings.filter((item) => {
       const isCompleted = item.status === 'COMPLETED';
-      const isExpired = new Date(item.expiryDate) < now;
+      const isExpired = convertUTCToLocal(item.expiryDate) < now;
       const isClosed = isCompleted || isExpired;
       return activeTab === 'closed' ? isClosed : !isClosed;
     });
@@ -250,8 +242,8 @@ export default function BookingHistory() {
 
   const renderBookingCard = ({ item }: { item: BookingItem }) => {
     const now = new Date();
-    const expiry = new Date(item.expiryDate);
-    const created = new Date(item.createdAt);
+    const expiry = convertUTCToLocal(item.expiryDate);
+    const created = convertUTCToLocal(item.createdAt);
 
     // Days calculation
     const totalTime = expiry.getTime() - created.getTime();

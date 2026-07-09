@@ -13,6 +13,8 @@ import {
   TextInput,
   NativeSyntheticEvent,
   TextInputKeyPressEventData,
+  Keyboard,
+  Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -190,102 +192,95 @@ export default function MpinSetup() {
             behavior={undefined}
             style={styles.keyboardAvoidingView}
           >
-            {/* Header with Back Button */}
-            {/* <View style={styles.header}>
-              <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-              </TouchableOpacity>
-              <Text style={styles.headerTitle}>{t("setMpinTitle")}</Text>
-              <View style={styles.headerSpacer} />
-            </View> */}
+            <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
+              <View style={styles.mainContent}>
+                {/* <Image
+                  source={require("../../../assets/images/logo_trans.png")}
+                  style={styles.logo}
+                  resizeMode="contain"
+                /> */}
 
-            <View style={styles.mainContent}>
-              {/* <Image
-                source={require("../../../assets/images/logo_trans.png")}
-                style={styles.logo}
-                resizeMode="contain"
-              /> */}
+                <Text style={styles.pageTitle}>{t("setMpinTitle")}</Text>
+                <Text style={styles.pageSubtitle}>{t("setMpinSubtitle")}</Text>
 
-              <Text style={styles.pageTitle}>{t("setMpinTitle")}</Text>
-              <Text style={styles.pageSubtitle}>{t("setMpinSubtitle")}</Text>
-
-              <Text style={styles.sectionLabel}>{t("createMpinLabel")}</Text>
-              <View style={styles.mpinSection}>
-                <MpinInput
-                  onComplete={setMpin}
-                  showValues={showMpin}
-                  resetTrigger={resetTrigger}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowMpin(!showMpin)}
-                  style={styles.eyeButton}
-                >
-                  <Ionicons
-                    name={showMpin ? "eye-off" : "eye"}
-                    size={20}
-                    color={COLORS.primary}
+                <Text style={styles.sectionLabel}>{t("createMpinLabel")}</Text>
+                <View style={styles.mpinSection}>
+                  <MpinInput
+                    onComplete={setMpin}
+                    showValues={showMpin}
+                    resetTrigger={resetTrigger}
                   />
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.sectionLabel}>{t("confirmMpinLabel")}</Text>
-              <View style={styles.mpinSection}>
-                <MpinInput
-                  onComplete={setConfirmMpin}
-                  showValues={showConfirmMpin}
-                  resetTrigger={resetTrigger}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowConfirmMpin(!showConfirmMpin)}
-                  style={styles.eyeButton}
-                >
-                  <Ionicons
-                    name={showConfirmMpin ? "eye-off" : "eye"}
-                    size={20}
-                    color={COLORS.primary}
-                  />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.buttonContainer}>
-                <ResponsiveButton
-                  title={loading ? t("processing") : t("setMpinButton")}
-                  variant="primary"
-                  size="lg"
-                  fullWidth={true}
-                  loading={loading}
-                  disabled={
-                    mpin.length !== 4 ||
-                    confirmMpin.length !== 4 ||
-                    mpin !== confirmMpin
-                  }
-                  onPress={handleSubmit}
-                  style={styles.submitButton}
-                />
-
-                <View style={styles.actionButtonsContainer}>
                   <TouchableOpacity
-                    onPress={handleReset}
-                    style={styles.actionButton}
-                  >
-                    <Ionicons name="refresh" size={20} color={COLORS.primary} />
-                    <Text style={styles.actionButtonText}>{t("reset")}</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={handleBack}
-                    style={styles.actionButton}
+                    onPress={() => setShowMpin(!showMpin)}
+                    style={styles.eyeButton}
                   >
                     <Ionicons
-                      name="arrow-back"
+                      name={showMpin ? "eye-off" : "eye"}
                       size={20}
                       color={COLORS.primary}
                     />
-                    <Text style={styles.actionButtonText}>{t("back")}</Text>
                   </TouchableOpacity>
                 </View>
+
+                <Text style={styles.sectionLabel}>{t("confirmMpinLabel")}</Text>
+                <View style={styles.mpinSection}>
+                  <MpinInput
+                    onComplete={setConfirmMpin}
+                    showValues={showConfirmMpin}
+                    resetTrigger={resetTrigger}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmMpin(!showConfirmMpin)}
+                    style={styles.eyeButton}
+                  >
+                    <Ionicons
+                      name={showConfirmMpin ? "eye-off" : "eye"}
+                      size={20}
+                      color={COLORS.primary}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.buttonContainer}>
+                  <ResponsiveButton
+                    title={loading ? t("processing") : t("setMpinButton")}
+                    variant="primary"
+                    size="lg"
+                    fullWidth={true}
+                    loading={loading}
+                    disabled={
+                      mpin.length !== 4 ||
+                      confirmMpin.length !== 4 ||
+                      mpin !== confirmMpin
+                    }
+                    onPress={handleSubmit}
+                    style={styles.submitButton}
+                  />
+
+                  <View style={styles.actionButtonsContainer}>
+                    <TouchableOpacity
+                      onPress={handleReset}
+                      style={styles.actionButton}
+                    >
+                      <Ionicons name="refresh" size={20} color={COLORS.primary} />
+                      <Text style={styles.actionButtonText}>{t("reset")}</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={handleBack}
+                      style={styles.actionButton}
+                    >
+                      <Ionicons
+                        name="arrow-back"
+                        size={20}
+                        color={COLORS.primary}
+                      />
+                      <Text style={styles.actionButtonText}>{t("back")}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
-            </View>
+            </Pressable>
           </KeyboardAvoidingView>
         </LinearGradient>
       </ImageBackground>

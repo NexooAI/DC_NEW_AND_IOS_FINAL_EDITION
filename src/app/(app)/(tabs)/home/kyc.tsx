@@ -29,6 +29,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { t } from "@/i18n";
 
 import { logger } from "@/utils/logger";
+import { formatDate as globalFormatDate } from "@/utils/dateTimeUtils";
 const idTypes = [
   { name: "Aadhar", value: "aadhar" },
   { name: "PAN", value: "pan" },
@@ -201,7 +202,7 @@ export default function KycForm() {
             state: kycData.state || "",
             country: kycData.country || "India",
             pincode: kycData.pincode || "",
-            dob: new Date(kycData.dob).toLocaleDateString("en-GB", {
+            dob: globalFormatDate(kycData.dob, {
               day: "2-digit",
               month: "2-digit",
               year: "numeric",
@@ -351,7 +352,7 @@ export default function KycForm() {
     };
 
     const formatDate = (date: Date): string => {
-      return date.toLocaleDateString("en-GB", {
+      return globalFormatDate(date, {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",

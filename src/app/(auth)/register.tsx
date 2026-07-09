@@ -13,6 +13,8 @@ import {
   Alert,
   Linking,
   ScrollView,
+  Keyboard,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter, useLocalSearchParams } from "expo-router";
@@ -27,6 +29,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import LanguageSelector from "@/components/LanguageSelector";
 import { AppLocale } from "@/i18n";
 import useGlobalStore from "@/store/global.store";
+import * as Clipboard from "expo-clipboard";
 
 import { logger } from "@/utils/logger";
 const OTP_RESEND_LIMIT = 3;
@@ -123,6 +126,7 @@ export default function Register() {
   const [showOtp, setShowOtp] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showError, setShowError] = useState(false);
+  const [clipboardOtp, setClipboardOtp] = useState("");
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -336,6 +340,29 @@ export default function Register() {
     };
   }, []);
 
+  // Check clipboard for OTP when OTP screen is active
+  useEffect(() => {
+    const checkClipboardForOtp = async () => {
+      if (otpSent) {
+        try {
+          const content = await Clipboard.getStringAsync();
+          const cleanContent = content.trim();
+          if (/^\d{4}$/.test(cleanContent)) {
+            setClipboardOtp(cleanContent);
+          } else {
+            setClipboardOtp("");
+          }
+        } catch (err) {
+          logger.error("Error reading clipboard:", err);
+        }
+      } else {
+        setClipboardOtp("");
+      }
+    };
+
+    checkClipboardForOtp();
+  }, [otpSent]);
+
   const handleBackButton = () => {
     if (otpSent) {
       // If OTP fields are showing, hide them and go back to mobile input
@@ -379,167 +406,205 @@ export default function Register() {
               contentContainerStyle={registerStyles.scrollViewContent}
               keyboardShouldPersistTaps="handled"
             >
-              <View style={{ height: Platform.OS === 'ios' ? 100 : 80 }} />
+              <Pressable onPress={Keyboard.dismiss} style={{ flex: 1, width: "100%" }}>
+                <View style={{ height: Platform.OS === 'ios' ? 100 : 80 }} />
 
-              <View style={registerStyles.formContainer}>
-                <View style={registerStyles.cardContainer}>
-                  {/* Base fog layer */}
-                  <LinearGradient
-                    colors={[
-                      "rgba(6, 2, 2, 0.78)",
-                      "rgba(34, 0, 0, 0.35)",
-                      "rgba(31, 3, 3, 0.54)",
-                    ]}
-                    style={StyleSheet.absoluteFill}
-                  />
-                  {/* Top fog highlight */}
-                  <LinearGradient
-                    colors={["rgba(10, 2, 2, 0.38)", "rgba(76, 63, 63, 0.74)"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 0.5 }}
-                    style={StyleSheet.absoluteFill}
-                  />
-                  {/* Bottom fog highlight */}
-                  <LinearGradient
-                    colors={["rgba(0, 0, 0, 0.44)", "rgba(0, 0, 0, 0.28)"]}
-                    start={{ x: 0, y: 0.5 }}
-                    end={{ x: 0, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                  />
-                  {/* Content */}
-                  <View style={registerStyles.cardContent}>
-                    <Text style={registerStyles.pageTitle}>
-                      {t("createAccount")}
-                    </Text>
-                    <Text style={registerStyles.subtitle}>
-                      {t("joinUsToStartYourJourney")}
-                    </Text>
+                <View style={registerStyles.formContainer}>
+                  <View style={registerStyles.cardContainer}>
+                    {/* Base fog layer */}
+                    <LinearGradient
+                      colors={[
+                        "rgba(6, 2, 2, 0.78)",
+                        "rgba(34, 0, 0, 0.35)",
+                        "rgba(31, 3, 3, 0.54)",
+                      ]}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    {/* Top fog highlight */}
+                    <LinearGradient
+                      colors={["rgba(10, 2, 2, 0.38)", "rgba(76, 63, 63, 0.74)"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 0, y: 0.5 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    {/* Bottom fog highlight */}
+                    <LinearGradient
+                      colors={["rgba(0, 0, 0, 0.44)", "rgba(0, 0, 0, 0.28)"]}
+                      start={{ x: 0, y: 0.5 }}
+                      end={{ x: 0, y: 1 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    {/* Content */}
+                    <View style={registerStyles.cardContent}>
+                      <Text style={registerStyles.pageTitle}>
+                        {t("createAccount")}
+                      </Text>
+                      <Text style={registerStyles.subtitle}>
+                        {t("joinUsToStartYourJourney")}
+                      </Text>
 
-                    {!otpSent ? (
-                      <>
-                        <View style={registerStyles.inputContainer}>
-                          <PhoneInput
-                            value={mobile}
-                            onChangeText={setMobile}
-                            loading={loading}
-                          />
-                        </View>
-                        <TouchableOpacity
-                          style={[
-                            registerStyles.loginButton,
-                            loading && registerStyles.loginButtonDisabled,
-                          ]}
-                          onPress={handleGetOtp}
-                          disabled={loading}
-                        >
-                          <LinearGradient
-                            colors={[COLORS.secondary, COLORS.gold]}
-                            style={registerStyles.gradientButton}
-                          >
-                            <Text style={registerStyles.loginButtonText}>
-                              {loading ? t("sending") : t("getOtp")}
-                            </Text>
-                          </LinearGradient>
-                        </TouchableOpacity>
-                        <View style={registerStyles.footer}>
-                          <Text style={registerStyles.footerText}>
-                            {t("alreadyHaveAccount")}{" "}
-                          </Text>
-                          <TouchableOpacity
-                            onPress={() => router.push("/login")}
-                          >
-                            <Text style={registerStyles.footerLink}>
-                              {t("login")}
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      </>
-                    ) : (
-                      <View style={registerStyles.otpContainer}>
-                        <Text style={registerStyles.otpTitle}>
-                          {t("enterOtp")}
-                        </Text>
-                        <Text style={registerStyles.otpSentText}>
-                          {t("otpSentTo")}{" "}
-                          {mobile.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")}
-                        </Text>
-
-                        <View style={registerStyles.otpInputsWrapper}>
-                          <View style={registerStyles.otpInputsContainer}>
-                            {pins.map((pin, index) => (
-                              <TextInput
-                                key={index}
-                                ref={inputRefs[index]}
-                                style={registerStyles.otpInput}
-                                keyboardType="numeric"
-                                maxLength={1}
-                                value={pin}
-                                onChangeText={(text) =>
-                                  handlePinChange(text, index)
-                                }
-                                onKeyPress={(e) => handleKeyPress(e, index)}
-                                secureTextEntry={!showOtp}
-                                textContentType="oneTimeCode"
-                                autoComplete="sms-otp"
-                              />
-                            ))}
+                      {!otpSent ? (
+                        <>
+                          <View style={registerStyles.inputContainer}>
+                            <PhoneInput
+                              value={mobile}
+                              onChangeText={setMobile}
+                              loading={loading}
+                            />
                           </View>
                           <TouchableOpacity
-                            onPress={() => setShowOtp((prev) => !prev)}
-                            style={registerStyles.eyeButton}
+                            style={[
+                              registerStyles.loginButton,
+                              loading && registerStyles.loginButtonDisabled,
+                            ]}
+                            onPress={handleGetOtp}
+                            disabled={loading}
                           >
-                            <Feather
-                              name={showOtp ? "eye-off" : "eye"}
-                              size={24}
+                            <LinearGradient
+                              colors={[COLORS.secondary, COLORS.gold]}
+                              style={registerStyles.gradientButton}
+                            >
+                              <Text style={registerStyles.loginButtonText}>
+                                {loading ? t("sending") : t("getOtp")}
+                              </Text>
+                            </LinearGradient>
+                          </TouchableOpacity>
+                          <View style={registerStyles.footer}>
+                            <Text style={registerStyles.footerText}>
+                              {t("alreadyHaveAccount")}{" "}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={() => router.push("/login")}
+                            >
+                              <Text style={registerStyles.footerLink}>
+                                {t("login")}
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        </>
+                      ) : (
+                        <View style={registerStyles.otpContainer}>
+                          <Text style={registerStyles.otpTitle}>
+                            {t("enterOtp")}
+                          </Text>
+                          <Text style={registerStyles.otpSentText}>
+                            {t("otpSentTo")}{" "}
+                            {mobile.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")}
+                          </Text>
+
+                          <View style={registerStyles.otpInputsWrapper}>
+                            <View style={registerStyles.otpInputsContainer}>
+                              {pins.map((pin, index) => (
+                                <TextInput
+                                  key={index}
+                                  ref={inputRefs[index]}
+                                  style={registerStyles.otpInput}
+                                  keyboardType="numeric"
+                                  maxLength={1}
+                                  value={pin}
+                                  onChangeText={(text) =>
+                                    handlePinChange(text, index)
+                                  }
+                                  onKeyPress={(e) => handleKeyPress(e, index)}
+                                  secureTextEntry={!showOtp}
+                                  textContentType="oneTimeCode"
+                                  autoComplete="sms-otp"
+                                />
+                              ))}
+                            </View>
+                            <TouchableOpacity
+                              onPress={() => setShowOtp((prev) => !prev)}
+                              style={registerStyles.eyeButton}
+                            >
+                              <Feather
+                                name={showOtp ? "eye-off" : "eye"}
+                                size={24}
+                                color={theme.colors.white}
+                              />
+                            </TouchableOpacity>
+                          </View>
+
+                          {clipboardOtp ? (
+                            <TouchableOpacity
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor: "rgba(255, 215, 0, 0.15)",
+                                paddingVertical: 6,
+                                paddingHorizontal: 12,
+                                borderRadius: 8,
+                                borderWidth: 1,
+                                borderColor: "rgba(255, 215, 0, 0.35)",
+                                marginTop: 12,
+                                marginBottom: 4,
+                                alignSelf: "center",
+                              }}
+                              onPress={() => {
+                                const digits = clipboardOtp.split("");
+                                setPins(digits);
+                                setClipboardOtp(""); // Clear hint after pasting
+                              }}
+                            >
+                              <Ionicons name="clipboard-outline" size={16} color={theme.colors.secondary} />
+                              <Text
+                                style={{
+                                  fontSize: 13,
+                                  color: "#b8860b",
+                                  marginLeft: 6,
+                                  fontWeight: "600",
+                                }}
+                              >
+                                Tap to paste OTP: {clipboardOtp}
+                              </Text>
+                            </TouchableOpacity>
+                          ) : null}
+
+                          <View style={registerStyles.timerContainer}>
+                            <Ionicons
+                              name="time-outline"
+                              size={20}
                               color={theme.colors.white}
                             />
-                          </TouchableOpacity>
-                        </View>
+                            <Text style={registerStyles.timerText}>
+                              {t("resendIn")} {timer}s
+                            </Text>
+                          </View>
 
-                        <View style={registerStyles.timerContainer}>
-                          <Ionicons
-                            name="time-outline"
-                            size={20}
-                            color={theme.colors.white}
-                          />
-                          <Text style={registerStyles.timerText}>
-                            {t("resendIn")} {timer}s
-                          </Text>
-                        </View>
+                          {timer === 0 && resendCount > 0 && (
+                            <TouchableOpacity
+                              onPress={handleResendOtp}
+                              style={registerStyles.resendButton}
+                            >
+                              <Text style={registerStyles.resendText}>
+                                {t("resendOTP")} ({resendCount} {t("left")})
+                              </Text>
+                            </TouchableOpacity>
+                          )}
 
-                        {timer === 0 && resendCount > 0 && (
                           <TouchableOpacity
-                            onPress={handleResendOtp}
-                            style={registerStyles.resendButton}
+                            style={[
+                              registerStyles.loginButton,
+                              loading && registerStyles.loginButtonDisabled,
+                            ]}
+                            onPress={handleVerifyOtp}
+                            disabled={loading || pins.includes("")}
                           >
-                            <Text style={registerStyles.resendText}>
-                              {t("resendOTP")} ({resendCount} {t("left")})
-                            </Text>
+                            <LinearGradient
+                              colors={[COLORS.secondary, COLORS.gold]}
+                              style={registerStyles.gradientButton}
+                            >
+                              <Text style={registerStyles.loginButtonText}>
+                                {loading ? t("verifying") : t("verifyOtp")}
+                              </Text>
+                            </LinearGradient>
                           </TouchableOpacity>
-                        )}
-
-                        <TouchableOpacity
-                          style={[
-                            registerStyles.loginButton,
-                            loading && registerStyles.loginButtonDisabled,
-                          ]}
-                          onPress={handleVerifyOtp}
-                          disabled={loading || pins.includes("")}
-                        >
-                          <LinearGradient
-                            colors={[COLORS.secondary, COLORS.gold]}
-                            style={registerStyles.gradientButton}
-                          >
-                            <Text style={registerStyles.loginButtonText}>
-                              {loading ? t("verifying") : t("verifyOtp")}
-                            </Text>
-                          </LinearGradient>
-                        </TouchableOpacity>
-                      </View>
-                    )}
+                        </View>
+                      )}
+                    </View>
                   </View>
                 </View>
-              </View>
+              </Pressable>
             </ScrollView>
           </KeyboardAvoidingView>
           <View style={registerStyles.poweredByContainer}>

@@ -179,6 +179,16 @@ interface GlobalStore {
   unreadNotificationsCount: number;
   setUnreadNotificationsCount: (count: number) => void;
 
+  // Active Lucky Draw Countdown
+  activeDrawCountdown: {
+    id: string;
+    title: string;
+    prize: string;
+    description: string;
+    endDate: string;
+  } | null;
+  setActiveDrawCountdown: (draw: any | null) => void;
+
   // Debug function
   debugState: () => GlobalStore;
 }
@@ -489,6 +499,10 @@ const useGlobalStore = create<GlobalStore>()(
       // Unread Notifications Count
       unreadNotificationsCount: 0,
       setUnreadNotificationsCount: (count: number) => set({ unreadNotificationsCount: count }),
+
+      // Active Lucky Draw Countdown
+      activeDrawCountdown: null,
+      setActiveDrawCountdown: (draw) => set({ activeDrawCountdown: draw }),
 
       // Debug function to check current state
       debugState: () => {

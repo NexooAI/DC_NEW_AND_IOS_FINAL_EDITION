@@ -39,6 +39,8 @@ export default function PaymentWebView() {
   const urlBlockedAlertShown = useRef(false);
   const webViewRef = useRef<any>(null);
   const wasDisconnectedRef = useRef(false);
+  // Forward reference so the socket hook can call stopStatusPolling before it is defined.
+  const stopPollingRef = useRef<() => void>(() => {});
 
   const { user } = useGlobalStore();
 
@@ -73,6 +75,7 @@ export default function PaymentWebView() {
   }, []);
 
   const { socket, handleCancel } = usePaymentSocket({
+    onStopPolling: () => stopPollingRef.current(),
     onPaymentSuccess: (data) => {
       setIsVerifyingPayment(true);
       // Disconnect socket before navigation
@@ -146,6 +149,7 @@ export default function PaymentWebView() {
           type: type,
           userId: params.userId as string || user?.id || "",
           investmentId: String(investmentId),
+          paymentMethod: data?.paymentResponse?.payment_method_type || data?.paymentResponse?.payment_method || "",
         },
       });
     },
@@ -255,7 +259,7 @@ export default function PaymentWebView() {
     pollingIntervalRef.current = setInterval(async () => {
       try {
         console.log(`[Polling Fallback] Fetching status from server for orderId: ${orderIdValue}`);
-        const response = await apiClient.get(`/payments/status/${orderIdValue}`);
+        const response = await apiClient.get(`/payments/status/${orderIdValue}?t=${Date.now()}`);
         const data = response.data;
 
         console.log("[Polling Fallback] Status check response:", JSON.stringify(data));
@@ -272,7 +276,7 @@ export default function PaymentWebView() {
               if (socket && socket.connected) socket.disconnect();
               router.replace(successTarget);
             }
-          } else if (status === "failed" || status === "cancelled" || status === "Expired") {
+          } else if (status === "failed" || status === "failure" || status === "cancelled" || status === "Expired") {
             console.log("[Polling Fallback] Payment unsuccessful. Stopping poll and routing to failure.");
             stopStatusPolling();
             
@@ -295,7 +299,12 @@ export default function PaymentWebView() {
       pollingIntervalRef.current = null;
       console.log("[Polling Fallback] Polling interval cleared.");
     }
+    setIsVerifyingPayment(false);
   };
+
+  // Keep the forward ref up to date so the socket hook can always call the latest version.
+  stopPollingRef.current = stopStatusPolling;
+
 
   useEffect(() => {
     return () => {

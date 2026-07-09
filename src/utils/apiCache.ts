@@ -1,6 +1,7 @@
 import api from '@/services/api';
 import useGlobalStore from '@/store/global.store';
 import { logger } from '@/utils/logger';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Cache configuration
@@ -276,5 +277,57 @@ export const clearBranchesCache = () => {
 export const clearAboutPageCache = () => {
   const store = useGlobalStore.getState();
   store.clearCachedAboutPage();
+};
+
+/**
+ * Fetch policies with caching (T&C, Privacy Policy, Advance Booking Terms, etc.)
+ * @param type - The policy type (e.g. 'advance_booking_terms', 'our_policy', 'privacy_policy')
+ * @param forceRefresh - If true, bypass cache and fetch fresh data
+ * @returns Promise with policy data
+ */
+export const fetchPolicyWithCache = async (type: string, forceRefresh: boolean = false) => {
+  const cacheKey = `@policy_cache_${type}`;
+  const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+  if (!forceRefresh) {
+    try {
+      const cached = await AsyncStorage.getItem(cacheKey);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        const age = Date.now() - timestamp;
+        if (age < maxAge) {
+          logger.log(`📦 [Cache] Using cached policy: ${type}`, { age });
+          return data;
+        }
+      }
+    } catch (cacheErr) {
+      logger.error(`Error reading policy cache for ${type}:`, cacheErr);
+    }
+  }
+
+  try {
+    logger.log(`📡 [API] Fetching policy from API: ${type}...`);
+    const response = await api.get(`/policies/type/${type}`);
+    if (response?.data?.data) {
+      const cacheData = {
+        data: response.data.data,
+        timestamp: Date.now()
+      };
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      logger.log(`✅ [API] Policy fetched and cached: ${type}`);
+      return response.data.data;
+    }
+  } catch (error) {
+    logger.error(`❌ [API] Error fetching policy ${type}:`, error);
+    // Fallback: try to return stale cache if available
+    try {
+      const cached = await AsyncStorage.getItem(cacheKey);
+      if (cached) {
+        logger.warn(`⚠️ [API] Using stale cached policy for ${type} as fallback`);
+        return JSON.parse(cached).data;
+      }
+    } catch (e) {}
+    throw error;
+  }
 };
 

@@ -18,6 +18,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Modal,
+  Pressable,
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -942,7 +943,7 @@ export default function MpinVerify() {
           behavior={undefined}
           style={styles.container}
         >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
             <View style={styles.container}>
               <View style={styles.logoContainer}>
                 <Image
@@ -1185,7 +1186,7 @@ export default function MpinVerify() {
                 </View>
               </View>
             </View>
-          </TouchableWithoutFeedback>
+          </Pressable>
         </KeyboardAvoidingView>
       </LinearGradient>
       <SimpleLanguageSwitcher />

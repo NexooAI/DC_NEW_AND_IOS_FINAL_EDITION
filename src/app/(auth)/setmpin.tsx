@@ -14,6 +14,8 @@ import {
   Animated,
   NativeSyntheticEvent,
   TextInputKeyPressEventData,
+  Keyboard,
+  Pressable,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
@@ -260,128 +262,130 @@ export default function SetMpinPage() {
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.container}
         >
-          <View style={styles.formContainer}>
-            <View style={styles.cardContainer}>
-              <Text style={styles.pageTitle}>{t("setMpinTitle")}</Text>
-              <Text style={styles.subtitle}>{t("setMpinSubtitle")}</Text>
-              {/* MPIN Input Boxes */}
-              <Text style={styles.label}>{t("createMpinLabel")}</Text>
-              <View style={styles.pinContainer}>
-                {mpin.map((digit, index) => (
-                  <PinInput
-                    key={index}
-                    value={digit}
-                    isActive={activeInput === "mpin" && activeIndex === index}
-                    onPress={() => {
-                      setActiveInput("mpin");
-                      setActiveIndex(index);
-                      mpinRefs[index].current?.focus();
-                    }}
-                    index={index}
-                    secureTextEntry={!showPin}
-                    onChange={(val, idx) => handlePinChange(val, idx, "mpin")}
-                    inputRef={mpinRefs[index]}
-                  />
-                ))}
-              </View>
-              <Text style={styles.label}>{t("confirmMpinLabel")}</Text>
-              <View style={styles.pinContainer}>
-                {confirmMpin.map((digit, index) => (
-                  <PinInput
-                    key={index}
-                    value={digit}
-                    isActive={
-                      activeInput === "confirm" && activeIndex === index
-                    }
-                    onPress={() => {
-                      setActiveInput("confirm");
-                      setActiveIndex(index);
-                      confirmRefs[index].current?.focus();
-                    }}
-                    index={index}
-                    secureTextEntry={!showPin}
-                    onChange={(val, idx) =>
-                      handlePinChange(val, idx, "confirm")
-                    }
-                    inputRef={confirmRefs[index]}
-                  />
-                ))}
-              </View>
-              {/* Show/Hide Toggle */}
-              <TouchableOpacity
-                style={styles.eyeToggle}
-                onPress={() => setShowPin(!showPin)}
-              >
-                <Ionicons
-                  name={showPin ? "eye-off" : "eye"}
-                  size={24}
-                  color={theme.colors.secondary}
-                />
-                <Text style={styles.eyeText}>
-                  {showPin ? t("hideMpinLabel") : t("showMpinLabel")}
-                </Text>
-              </TouchableOpacity>
-              {matchError && (
-                <View style={styles.errorContainer}>
-                  <Ionicons name="alert-circle" size={20} color={COLORS.red} />
-                  <Text style={styles.errorText}>{t("mpinMismatchError")}</Text>
+          <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
+            <View style={styles.formContainer}>
+              <View style={styles.cardContainer}>
+                <Text style={styles.pageTitle}>{t("setMpinTitle")}</Text>
+                <Text style={styles.subtitle}>{t("setMpinSubtitle")}</Text>
+                {/* MPIN Input Boxes */}
+                <Text style={styles.label}>{t("createMpinLabel")}</Text>
+                <View style={styles.pinContainer}>
+                  {mpin.map((digit, index) => (
+                    <PinInput
+                      key={index}
+                      value={digit}
+                      isActive={activeInput === "mpin" && activeIndex === index}
+                      onPress={() => {
+                        setActiveInput("mpin");
+                        setActiveIndex(index);
+                        mpinRefs[index].current?.focus();
+                      }}
+                      index={index}
+                      secureTextEntry={!showPin}
+                      onChange={(val, idx) => handlePinChange(val, idx, "mpin")}
+                      inputRef={mpinRefs[index]}
+                    />
+                  ))}
                 </View>
-              )}
-              {/* Submit Button */}
-              <TouchableOpacity
-                style={[
-                  styles.submitButton,
-                  (loading || !mpinValid || !confirmValid || matchError) &&
-                    styles.submitButtonDisabled,
-                ]}
-                onPress={handleSubmit}
-                disabled={loading || !mpinValid || !confirmValid || matchError}
-              >
-                <LinearGradient
-                  colors={[COLORS.secondary, COLORS.gold]}
-                  style={styles.gradientButton}
+                <Text style={styles.label}>{t("confirmMpinLabel")}</Text>
+                <View style={styles.pinContainer}>
+                  {confirmMpin.map((digit, index) => (
+                    <PinInput
+                      key={index}
+                      value={digit}
+                      isActive={
+                        activeInput === "confirm" && activeIndex === index
+                      }
+                      onPress={() => {
+                        setActiveInput("confirm");
+                        setActiveIndex(index);
+                        confirmRefs[index].current?.focus();
+                      }}
+                      index={index}
+                      secureTextEntry={!showPin}
+                      onChange={(val, idx) =>
+                        handlePinChange(val, idx, "confirm")
+                      }
+                      inputRef={confirmRefs[index]}
+                    />
+                  ))}
+                </View>
+                {/* Show/Hide Toggle */}
+                <TouchableOpacity
+                  style={styles.eyeToggle}
+                  onPress={() => setShowPin(!showPin)}
                 >
-                  <View style={styles.buttonContent}>
-                    {loading ? (
-                      <>
-                        <Ionicons
-                          name="hourglass"
-                          size={20}
-                          color={theme.colors.textDark}
-                        />
-                        <Text style={styles.submitButtonText}>
-                          {t("processing")}
-                        </Text>
-                      </>
-                    ) : (
-                      <>
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={20}
-                          color={theme.colors.textDark}
-                        />
-                        <Text style={styles.submitButtonText}>
-                          {t("setMpinButton")}
-                        </Text>
-                      </>
-                    )}
+                  <Ionicons
+                    name={showPin ? "eye-off" : "eye"}
+                    size={24}
+                    color={theme.colors.secondary}
+                  />
+                  <Text style={styles.eyeText}>
+                    {showPin ? t("hideMpinLabel") : t("showMpinLabel")}
+                  </Text>
+                </TouchableOpacity>
+                {matchError && (
+                  <View style={styles.errorContainer}>
+                    <Ionicons name="alert-circle" size={20} color={COLORS.red} />
+                    <Text style={styles.errorText}>{t("mpinMismatchError")}</Text>
                   </View>
-                </LinearGradient>
-              </TouchableOpacity>
-              {/* Back Button */}
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => router.back()}
-              >
-                <Ionicons
-                  name="arrow-back"
-                  size={20}
-                  color={theme.colors.white}
-                />
-                <Text style={styles.backButtonText}>{t("backButton")}</Text>
-              </TouchableOpacity>
+                )}
+                {/* Submit Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    (loading || !mpinValid || !confirmValid || matchError) &&
+                      styles.submitButtonDisabled,
+                  ]}
+                  onPress={handleSubmit}
+                  disabled={loading || !mpinValid || !confirmValid || matchError}
+                >
+                  <LinearGradient
+                    colors={[COLORS.secondary, COLORS.gold]}
+                    style={styles.gradientButton}
+                  >
+                    <View style={styles.buttonContent}>
+                      {loading ? (
+                        <>
+                          <Ionicons
+                            name="hourglass"
+                            size={20}
+                            color={theme.colors.textDark}
+                          />
+                          <Text style={styles.submitButtonText}>
+                            {t("processing")}
+                          </Text>
+                        </>
+                      ) : (
+                        <>
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={20}
+                            color={theme.colors.textDark}
+                          />
+                          <Text style={styles.submitButtonText}>
+                            {t("setMpinButton")}
+                          </Text>
+                        </>
+                      )}
+                    </View>
+                  </LinearGradient>
+                </TouchableOpacity>
+                {/* Back Button */}
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={() => router.back()}
+                >
+                  <Ionicons
+                    name="arrow-back"
+                    size={20}
+                    color={theme.colors.white}
+                  />
+                  <Text style={styles.backButtonText}>{t("backButton")}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </Pressable>
         </KeyboardAvoidingView>
       </View>
     </View>

@@ -11,6 +11,7 @@ import useGlobalStore from "@/store/global.store";
 import { useEffect, useState, useCallback } from "react";
 import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";
+import { formatDate, formatTime, convertUTCToLocal } from "@/utils/dateTimeUtils";
 
 const { wp, hp, rf } = responsiveUtils;
 
@@ -22,6 +23,10 @@ export default function RewardsHistoryScreen() {
     const [loading, setLoading] = useState(false);
     const [selectedItem, setSelectedItem] = useState<any>(null);
     const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+
+    // Filters and pagination states
+    const [filter, setFilter] = useState<"all" | "added" | "deducted">("all");
+    const [visibleCount, setVisibleCount] = useState(10);
 
     const fetchTransactions = useCallback(async () => {
         if (!user?.id) return;
@@ -64,6 +69,11 @@ export default function RewardsHistoryScreen() {
         return () => backHandler.remove();
     }, [router]);
 
+    // Reset pagination when filter changes
+    useEffect(() => {
+        setVisibleCount(10);
+    }, [filter]);
+
     const handleItemPress = (item: any) => {
         setSelectedItem(item);
         setDetailsModalVisible(true);
@@ -72,18 +82,8 @@ export default function RewardsHistoryScreen() {
     const renderTransactionItem = ({ item }: { item: any }) => {
         const isReferral = item.type === "referral";
 
-        // Manual date formatting instead of moment
-        const dateObj = new Date(item.created_at);
-        const formattedDate = dateObj.toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-        });
-        const formattedTime = dateObj.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
+        const formattedDate = formatDate(item.created_at);
+        const formattedTime = formatTime(item.created_at);
 
         const formattedStatus = item.status ? (t("status_" + item.status) || (item.status.charAt(0).toUpperCase() + item.status.slice(1))) : "";
 
@@ -112,17 +112,120 @@ export default function RewardsHistoryScreen() {
                     </Text>
                 </View>
                 <View style={styles.transactionPointsContainer}>
+                    <View style={[
+                        styles.statusBadge,
+                        { backgroundColor: isReferral ? "rgba(76, 175, 80, 0.12)" : "rgba(244, 67, 54, 0.12)" }
+                    ]}>
+                        <Text style={[
+                            styles.statusBadgeText,
+                            { color: isReferral ? "#4CAF50" : "#F44336" }
+                        ]}>
+                            {isReferral ? "Added" : "Deducted"}
+                        </Text>
+                    </View>
                     <Text style={[
                         styles.transactionPoints,
-                        { color: isReferral ? "#4CAF50" : "#F44336" }
+                        { color: isReferral ? "#4CAF50" : "#F44336", marginTop: 4 }
                     ]}>
-                        {isReferral ? `+${item.points}` : `-${item.points}`}
+                        {isReferral ? `+${item.points}` : `-${item.points}`} Pts
                     </Text>
-                    <Text style={styles.pointsLabel}>{t("points") || "Pts"}</Text>
                 </View>
             </TouchableOpacity>
         );
     };
+
+    const renderSectionHeader = (title: string) => {
+        return (
+            <View style={styles.sectionHeaderContainer}>
+                <Text style={styles.sectionHeaderTitle}>{title}</Text>
+                <View style={styles.sectionHeaderLine} />
+            </View>
+        );
+    };
+
+    const renderItem = ({ item }: { item: any }) => {
+        if (item.isHeader) {
+            return renderSectionHeader(item.title);
+        }
+        return renderTransactionItem({ item });
+    };
+
+    const renderFooter = () => {
+        if (filteredTransactions.length <= visibleCount) return null;
+        return (
+            <TouchableOpacity
+                style={styles.loadMoreBtn}
+                onPress={() => setVisibleCount(prev => prev + 10)}
+                activeOpacity={0.8}
+            >
+                <Text style={styles.loadMoreText}>
+                    {t("loadMore") || "LOAD MORE"}
+                </Text>
+            </TouchableOpacity>
+        );
+    };
+
+    // Filter transactions
+    const filteredTransactions = transactions.filter(t => {
+        if (filter === "all") return true;
+        if (filter === "added") return t.type === "referral";
+        if (filter === "deducted") return t.type !== "referral";
+        return true;
+    });
+
+    // Sort descending
+    const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+        return convertUTCToLocal(b.created_at).getTime() - convertUTCToLocal(a.created_at).getTime();
+    });
+
+    // Slice to current visible count
+    const paginatedTransactions = sortedTransactions.slice(0, visibleCount);
+
+    // Grouping logic for "Recently Active" (last 7 days) and chronological years
+    const getGroupedData = () => {
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+        const recentlyActive: any[] = [];
+        const groupedByYear: Record<string, any[]> = {};
+
+        const currentYear = new Date().getFullYear().toString();
+
+        paginatedTransactions.forEach(t => {
+            const date = convertUTCToLocal(t.created_at);
+            const year = date.getFullYear().toString();
+            // All transactions from the current year (2026) are grouped under "Recently Active"
+            if (year === currentYear) {
+                recentlyActive.push(t);
+            } else {
+                if (!groupedByYear[year]) {
+                    groupedByYear[year] = [];
+                }
+                groupedByYear[year].push(t);
+            }
+        });
+
+        const sections: { title: string; data: any[] }[] = [];
+        if (recentlyActive.length > 0) {
+            sections.push({ title: t("recentlyActive") || "Recently Active", data: recentlyActive });
+        }
+
+        const years = Object.keys(groupedByYear).sort((a, b) => b.localeCompare(a));
+        years.forEach(year => {
+            sections.push({ title: year, data: groupedByYear[year] });
+        });
+
+        return sections;
+    };
+
+    const sections = getGroupedData();
+    const flatListData: any[] = [];
+    sections.forEach(sec => {
+        flatListData.push({ isHeader: true, title: sec.title });
+        sec.data.forEach(item => {
+            flatListData.push({ isHeader: false, ...item });
+        });
+    });
 
     return (
         <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}>
@@ -143,16 +246,70 @@ export default function RewardsHistoryScreen() {
                 </View>
             </View>
 
+            {/* Filter Buttons Segment Container */}
+            <View style={styles.filterWrapper}>
+                <View style={styles.filterContainer}>
+                    <TouchableOpacity
+                        style={[
+                            styles.filterButton,
+                            filter === "all" && styles.filterButtonActive
+                        ]}
+                        onPress={() => setFilter("all")}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={[
+                            styles.filterText,
+                            filter === "all" && styles.filterTextActive
+                        ]}>
+                            {t("filterAll") || "All"}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[
+                            styles.filterButton,
+                            filter === "added" && styles.filterButtonActive
+                        ]}
+                        onPress={() => setFilter("added")}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={[
+                            styles.filterText,
+                            filter === "added" && styles.filterTextActive
+                        ]}>
+                            {t("filterAdded") || "Added"}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[
+                            styles.filterButton,
+                            filter === "deducted" && styles.filterButtonActive
+                        ]}
+                        onPress={() => setFilter("deducted")}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={[
+                            styles.filterText,
+                            filter === "deducted" && styles.filterTextActive
+                        ]}>
+                            {t("filterDeducted") || "Deducted"}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
             <View style={styles.contentContainer}>
-                {transactions.length > 0 ? (
+                {flatListData.length > 0 ? (
                     <FlatList
-                        data={transactions}
-                        keyExtractor={(item, index) => `${item.type}_${item.id}_${index}`}
-                        renderItem={renderTransactionItem}
+                        data={flatListData}
+                        keyExtractor={(item, index) => item.isHeader ? `header_${item.title}_${index}` : `${item.type}_${item.id}_${index}`}
+                        renderItem={renderItem}
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
                         refreshing={loading}
                         onRefresh={fetchTransactions}
+                        ListFooterComponent={renderFooter}
                     />
                 ) : (
                     <View style={styles.emptyContainer}>
@@ -197,7 +354,7 @@ export default function RewardsHistoryScreen() {
                                         <View style={styles.detailRow}>
                                             <Text style={styles.detailLabel}>{t("joinedDate") || "Joined Date"}</Text>
                                             <Text style={styles.detailValue}>
-                                                {new Date(selectedItem.created_at).toLocaleDateString('en-IN', {
+                                                {formatDate(selectedItem.created_at, {
                                                     day: '2-digit', month: 'long', year: 'numeric'
                                                 })}
                                             </Text>
@@ -218,7 +375,7 @@ export default function RewardsHistoryScreen() {
                                         <View style={styles.detailRow}>
                                             <Text style={styles.detailLabel}>{t("transactionDate") || "Transaction Date"}</Text>
                                             <Text style={styles.detailValue}>
-                                                {new Date(selectedItem.created_at).toLocaleDateString('en-IN', {
+                                                {formatDate(selectedItem.created_at, {
                                                     day: '2-digit', month: 'long', year: 'numeric'
                                                 })}
                                             </Text>
@@ -311,12 +468,83 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         color: "#1a1a1a",
     },
+    filterWrapper: {
+        paddingHorizontal: 16,
+        marginVertical: 12,
+    },
+    filterContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+    },
+    filterButton: {
+        paddingVertical: 6,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        backgroundColor: "#160507", // Deep black-burgundy
+        borderWidth: 1,
+        borderColor: "rgba(212, 175, 55, 0.25)",
+    },
+    filterButtonActive: {
+        backgroundColor: "#FFD700", // Gold active background
+        borderColor: "#D4AF37",
+    },
+    filterText: {
+        fontSize: 12,
+        fontWeight: "700",
+        color: "#E5A93C", // Soft gold inactive text
+    },
+    filterTextActive: {
+        color: "#160507", // Dark black-burgundy active text
+    },
+    sectionHeaderContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 16,
+        marginBottom: 10,
+        paddingHorizontal: 4,
+    },
+    sectionHeaderTitle: {
+        fontSize: 14,
+        fontWeight: "800",
+        color: theme.colors.primary, // Burgundy
+        letterSpacing: 1.2,
+        textTransform: "uppercase",
+    },
+    sectionHeaderLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: "rgba(133, 1, 17, 0.15)", // Muted burgundy line
+        marginLeft: 12,
+    },
+    loadMoreBtn: {
+        backgroundColor: "#fff",
+        borderRadius: 12,
+        paddingVertical: 12,
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: 12,
+        marginBottom: 24,
+        borderWidth: 1,
+        borderColor: "rgba(133, 1, 17, 0.15)",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    loadMoreText: {
+        color: theme.colors.primary,
+        fontWeight: "bold",
+        fontSize: 12,
+        letterSpacing: 1,
+    },
     contentContainer: {
         flex: 1,
         paddingHorizontal: 16,
     },
     listContent: {
-        paddingTop: 20,
+        paddingTop: 10,
         paddingBottom: 40,
     },
     transactionCard: {
@@ -438,5 +666,17 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: "bold",
         letterSpacing: 1,
-    }
+    },
+    statusBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    statusBadgeText: {
+        fontSize: 9,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+    },
 });

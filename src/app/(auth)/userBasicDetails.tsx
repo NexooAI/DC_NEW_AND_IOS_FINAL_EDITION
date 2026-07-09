@@ -116,6 +116,7 @@ export default function BasicDetailsForm() {
   const [otpSentFromModal, setOtpSentFromModal] = useState(false);
   const [autoOtpSending, setAutoOtpSending] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [clipboardOtp, setClipboardOtp] = useState("");
 
   // Branch Selection states
   const [branches, setBranches] = useState<any[]>([]);
@@ -625,6 +626,29 @@ export default function BasicDetailsForm() {
     };
   }, [referralValidationTimeout]);
 
+  // Check clipboard for OTP when popup is shown
+  useEffect(() => {
+    const checkClipboardForOtp = async () => {
+      if (otpModalVisible) {
+        try {
+          const content = await Clipboard.getStringAsync();
+          const cleanContent = content.trim();
+          if (/^\d{4}$/.test(cleanContent)) {
+            setClipboardOtp(cleanContent);
+          } else {
+            setClipboardOtp("");
+          }
+        } catch (err) {
+          logger.error("Error reading clipboard:", err);
+        }
+      } else {
+        setClipboardOtp("");
+      }
+    };
+
+    checkClipboardForOtp();
+  }, [otpModalVisible]);
+
   // Update form validity when fields change
   useEffect(() => {
     checkForm();
@@ -782,6 +806,7 @@ export default function BasicDetailsForm() {
 
   // OTP verification logic
   const handleVerifyOtp = async () => {
+    Keyboard.dismiss();
     if (otp.length !== 4) {
       Alert.alert(t("invalidOtp"), t("pleaseEnter4DigitOtp"));
       return;
@@ -898,7 +923,7 @@ export default function BasicDetailsForm() {
                   >
                     {t("mobileNumberRequired")}
                   </ResponsiveText>
-                  <View style={styles.inputWithIcon}>
+                  <View style={[styles.inputWithIcon, mobileError ? { borderColor: "#d32f2f", borderWidth: 1.5 } : null]}>
                     <Ionicons
                       name="call"
                       size={20}
@@ -1082,7 +1107,7 @@ export default function BasicDetailsForm() {
                   >
                     {t("nameRequired")}
                   </ResponsiveText>
-                  <View style={styles.inputWithIcon}>
+                  <View style={[styles.inputWithIcon, nameError ? { borderColor: "#d32f2f", borderWidth: 1.5 } : null]}>
                     <Ionicons
                       name="person-outline"
                       size={20}
@@ -1134,7 +1159,7 @@ export default function BasicDetailsForm() {
                   >
                     {t("emailRequired")}
                   </ResponsiveText>
-                  <View style={styles.inputWithIcon}>
+                  <View style={[styles.inputWithIcon, emailError ? { borderColor: "#d32f2f", borderWidth: 1.5 } : null]}>
                     <Ionicons
                       name="mail-outline"
                       size={20}
@@ -1189,7 +1214,11 @@ export default function BasicDetailsForm() {
                   >
                     Select Branch *
                   </ResponsiveText>
-                  <View style={[styles.inputWithIcon, isBranchDisabled && { backgroundColor: "rgba(240, 240, 240, 0.2)", borderColor: "rgba(180, 180, 180, 0.3)" }]}>
+                  <View style={[
+                    styles.inputWithIcon,
+                    branchError ? { borderColor: "#d32f2f", borderWidth: 1.5 } : null,
+                    isBranchDisabled && { backgroundColor: "rgba(240, 240, 240, 0.2)", borderColor: "rgba(180, 180, 180, 0.3)" }
+                  ]}>
                     <Ionicons
                       name="business-outline"
                       size={20}
@@ -1620,8 +1649,14 @@ export default function BasicDetailsForm() {
           setOtpSentFromModal(false);
         }}
       >
-        <View style={styles.otpModalOverlay}>
-          <View style={styles.otpModalContent}>
+        <Pressable 
+          style={styles.otpModalOverlay} 
+          onPress={() => Keyboard.dismiss()}
+        >
+          <Pressable 
+            style={styles.otpModalContent}
+            onPress={(e) => e.stopPropagation()}
+          >
             <ResponsiveText
               variant="title"
               size="md"
@@ -1685,6 +1720,28 @@ export default function BasicDetailsForm() {
                   textContentType="oneTimeCode"
                   autoComplete="sms-otp"
                 />
+
+                {clipboardOtp ? (
+                  <TouchableOpacity
+                    style={styles.clipboardHintContainer}
+                    onPress={() => {
+                      setOtp(clipboardOtp);
+                      setClipboardOtp(""); // Clear hint after pasting
+                    }}
+                  >
+                    <Ionicons name="clipboard-outline" size={16} color={theme.colors.secondary} />
+                    <ResponsiveText
+                      variant="body"
+                      size="xs"
+                      weight="semibold"
+                      color="#b8860b"
+                      align="center"
+                      style={styles.clipboardHintText}
+                    >
+                      Tap to paste OTP: {clipboardOtp}
+                    </ResponsiveText>
+                  </TouchableOpacity>
+                ) : null}
 
                 <TouchableOpacity
                   style={[
@@ -1821,8 +1878,8 @@ export default function BasicDetailsForm() {
                 </TouchableOpacity>
               )}
             </View>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
       {/* OTP Error Modal */}
       <Modal
@@ -2789,5 +2846,23 @@ const styles = StyleSheet.create({
     marginLeft: Math.min(8, width * 0.02),
     opacity: 0.9,
     flex: 1,
+  },
+  clipboardHintContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 215, 0, 0.15)",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 215, 0, 0.35)",
+    marginTop: 8,
+    marginBottom: 8,
+    alignSelf: "center",
+  },
+  clipboardHintText: {
+    color: "#b8860b",
+    marginLeft: 6,
   },
 });

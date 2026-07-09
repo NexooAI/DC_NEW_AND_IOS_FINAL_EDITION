@@ -33,6 +33,7 @@ import { moderateScale } from "react-native-size-matters";
 import SupportContactCard from "@/components/SupportContactCard";
 import CustomAlert from "@/components/Alert";
 import Icon from "react-native-vector-icons/AntDesign";
+import { formatDate, formatDateTime, convertUTCToLocal } from "@/utils/dateTimeUtils";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Clipboard from "expo-clipboard";
@@ -167,7 +168,7 @@ const SavingsDetail = () => {
         return s === "SUCCESS" || s === "ACTIVE" || s === "COMPLETED";
       })
       .sort((a, b) => {
-        return new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime();
+        return convertUTCToLocal(a.paymentDate).getTime() - convertUTCToLocal(b.paymentDate).getTime();
       });
   }, [paymentHistrory]);
 
@@ -798,7 +799,7 @@ const SavingsDetail = () => {
               <View style={{ flex: 1 }}>
                 <Text style={styles.gridLabel}>Next Due Date</Text>
                 <Text style={styles.gridValue} numberOfLines={1}>
-                  {new Date(params.dueDate).toLocaleDateString("en-GB", {
+                  {formatDate(params.dueDate, {
                     day: "2-digit",
                     month: "short",
                     year: "numeric",
@@ -958,7 +959,7 @@ const SavingsDetail = () => {
                   <View style={styles.transactionHeader}>
                     <View>
                       <Text style={styles.transactionDate}>
-                        {new Date(txn.paymentDate).toLocaleDateString("en-GB", {
+                        {formatDate(txn.paymentDate, {
                           day: "2-digit",
                           month: "short",
                           year: "numeric",
@@ -1086,7 +1087,7 @@ const SavingsDetail = () => {
                 <View style={styles.receiptRow}>
                   <Text style={styles.receiptLabel}>Date</Text>
                   <Text style={styles.receiptValue}>
-                    {new Date(selectedTransaction.paymentDate).toLocaleDateString("en-GB", {
+                    {formatDateTime(selectedTransaction.paymentDate, {
                       day: "2-digit",
                       month: "short",
                       year: "numeric",

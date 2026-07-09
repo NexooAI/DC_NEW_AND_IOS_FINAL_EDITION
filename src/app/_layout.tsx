@@ -1,3 +1,4 @@
+import "@/services/networkInterceptor";
 import Constants from "expo-constants";
 import { Stack, useNavigation, useRouter, usePathname } from "expo-router";
 import { useFirstLaunch } from "@/common/hooks/useFirstLaunch";
