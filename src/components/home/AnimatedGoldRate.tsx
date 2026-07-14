@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { responsiveUtils } from "@/utils/responsiveUtils";
+import { convertUTCToLocal } from "@/utils/dateTimeUtils";
 
 const { rf, wp, rp, hp } = responsiveUtils;
 
@@ -67,7 +68,7 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
 
   const formatDateToIndian = (isoString: string | undefined) => {
     if (!isoString) return "-";
-    const date = new Date(isoString);
+    const date = convertUTCToLocal(isoString);
     return date.toLocaleString("en-IN", {
       day: "2-digit",
       month: "short",
@@ -103,11 +104,7 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
         <View style={styles.headerRow}>
           <View style={styles.goldLabelContainer}>
             <Ionicons name="flame" size={16} color="#FFD700" style={{ marginRight: 6 }} />
-            <Text style={styles.goldLabel}>{t("liveGoldRates") || "LIVE GOLD RATES"}</Text>
-            <View style={styles.liveIndicator}>
-              <Animated.View style={[styles.liveDot, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]} />
-              <Text style={styles.liveText}>LIVE</Text>
-            </View>
+            <Text style={styles.goldLabel}>{t("goldRate") || "GOLD RATES"}</Text>
           </View>
           {updatedAt && (
             <Text style={styles.updatedText}>

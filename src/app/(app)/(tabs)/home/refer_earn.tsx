@@ -39,12 +39,13 @@ export default function ReferCodeScreen() {
   const [walletBalance, setWalletBalance] = useState(0);
   const [walletTotalEarned, setWalletTotalEarned] = useState(0);
   const [history, setHistory] = useState<any[]>([]);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const fetchReferrals = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
     try {
-      const response = await rewardsAPI.getMyReferrals(user.id);
+      const response = await rewardsAPI.getMyReferrals(user.id, true);
       if (response.data.success && Array.isArray(response.data.data)) {
         setReferrals(response.data.data);
       }
@@ -69,7 +70,7 @@ export default function ReferCodeScreen() {
   }, [fetchReferrals]);
 
   const totalEarnings = useMemo(() => {
-    return referrals.reduce((sum, item) => sum + (item.reward_earned || 0), 0);
+    return referrals.reduce((sum, item) => sum + (item.total_earned || 0), 0);
   }, [referrals]);
 
   // Animation value for tab transitions
@@ -106,7 +107,7 @@ export default function ReferCodeScreen() {
   const onShareWhatsapp = () => {
     const url = `whatsapp://send?text=${encodeURIComponent(shareMessage)}`;
     Linking.openURL(url).catch(() => {
-      Alert.alert(t("error") || "Error", "Make sure WhatsApp is installed on your device");
+      Alert.alert(t("error") || "Error", t("whatsappNotInstalled") || "Make sure WhatsApp is installed on your device");
     });
   };
 
@@ -129,7 +130,7 @@ export default function ReferCodeScreen() {
 
   const banners = [
     { title: t("refer_earn_banner_1") || "Share the Wealth with Friends" },
-    { title: t("refer_earn_banner_2") || "Invite your friends and earn up to 250 points on their first payment." },
+    // { title: t("refer_earn_banner_2") || "Invite your friends and earn up to 250 points on their first payment." },
     { title: t("refer_earn_banner_3") || "Grow together and enjoy exclusive referral bonuses." }
   ];
 
@@ -379,7 +380,7 @@ export default function ReferCodeScreen() {
           </View>
           <TouchableOpacity
             style={styles.redeemButton}
-            onPress={() => router.push("/(tabs)/rewards")}
+            onPress={() => router.push("/(app)/(tabs)/rewards")}
             activeOpacity={0.8}
           >
             <Ionicons name="gift-outline" size={16} color="#fff" style={{ marginRight: 6 }} />
@@ -391,7 +392,7 @@ export default function ReferCodeScreen() {
           <View style={{ padding: 40, alignItems: 'center' }}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
           </View>
-        ) : history.length === 0 ? (
+        ) : referrals.length === 0 ? (
           <View style={{ padding: 40, alignItems: 'center', marginTop: 30 }}>
             <Ionicons name="people-outline" size={64} color="#ccc" style={{ marginBottom: 12 }} />
             <Text style={{ fontSize: 16, color: '#888', fontWeight: '600' }}>
@@ -402,57 +403,87 @@ export default function ReferCodeScreen() {
             </Text>
           </View>
         ) : (
-          history.map((item, index) => {
-            const isReferral = item.type === "referral";
-            const dateObj = new Date(item.created_at || item.joined_at);
+          referrals.map((item) => {
+            const isExpanded = expandedId === item.id;
+            const dateObj = new Date(item.joined_at);
             const formattedDate = dateObj.toLocaleDateString('en-IN', {
               day: '2-digit',
               month: 'short',
               year: 'numeric'
             });
-            
+
             return (
-              <View key={`${item.type}_${item.id || index}`} style={styles.referralItem}>
-                <View style={[
-                  styles.referralIcon,
-                  !isReferral && { backgroundColor: 'rgba(244, 67, 54, 0.05)' }
-                ]}>
-                  <Ionicons 
-                    name={isReferral ? "person" : "gift"} 
-                    size={20} 
-                    color={isReferral ? "#004B40" : "#F44336"} 
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.referralName}>
-                    {isReferral ? item.description : (t("points_redeemed") || "Points Redeemed")}
-                  </Text>
-                  <Text style={styles.referralMobile}>
-                    {isReferral ? (item.mobile_number || "") : item.description}
-                  </Text>
-                  <Text style={styles.referralDate}>
-                    {formattedDate} {item.status ? `• ${t("status_" + item.status) || item.status}` : ""}
-                  </Text>
-                </View>
-                <View style={styles.referralPointsContainer}>
-                  <View style={[
-                    styles.statusBadge,
-                    { backgroundColor: isReferral ? "rgba(76, 175, 80, 0.12)" : "rgba(244, 67, 54, 0.12)" }
-                  ]}>
-                    <Text style={[
-                      styles.statusBadgeText,
-                      { color: isReferral ? "#4CAF50" : "#F44336" }
-                    ]}>
-                      {isReferral ? "Added" : "Deducted"}
+              <View key={item.id} style={styles.referralCardGroup}>
+                <TouchableOpacity
+                  style={styles.referralItem}
+                  onPress={() => setExpandedId(isExpanded ? null : item.id)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.referralIcon}>
+                    <Ionicons
+                      name="person"
+                      size={20}
+                      color="#004B40"
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.referralName}>{item.name}</Text>
+                    <Text style={styles.referralMobile}>{item.mobile_number || ""}</Text>
+                    <Text style={styles.referralDate}>
+                      {t("joined") || "Joined"}: {formattedDate}
                     </Text>
                   </View>
-                  <Text style={[
-                    styles.referralPoints,
-                    { color: isReferral ? "#4CAF50" : "#F44336", marginTop: 4 }
-                  ]}>
-                    {isReferral ? `+${item.points || item.reward_earned || 0}` : `-${item.points || 0}`} Pts
-                  </Text>
-                </View>
+                  <View style={{ alignItems: 'center', flexDirection: 'row' }}>
+                    <Text style={styles.referralPointsGrouped}>
+                      +{item.total_earned || 0} Pts
+                    </Text>
+                    <Ionicons
+                      name={isExpanded ? "chevron-up" : "chevron-down"}
+                      size={18}
+                      color="#666"
+                      style={{ marginLeft: 8 }}
+                    />
+                  </View>
+                </TouchableOpacity>
+
+                {isExpanded && (
+                  <View style={styles.expandedRewardsContainer}>
+                    {item.rewards && item.rewards.length > 0 ? (
+                      item.rewards.map((reward: any, rIdx: number) => {
+                        const rewardDate = new Date(reward.created_at).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        });
+                        const isInstall = reward.status === 'credited';
+
+                        return (
+                          <View key={rIdx} style={styles.rewardDetailRow}>
+                            <Ionicons
+                              name={isInstall ? "download-outline" : "stats-chart-outline"}
+                              size={16}
+                              color={isInstall ? "#E5A93C" : "#004B40"}
+                              style={{ marginRight: 8 }}
+                            />
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.rewardDetailTitle}>
+                                {isInstall ? (t("install_reward") || "App Install Reward") : (t("investment_reward") || "Investment Reward")}
+                              </Text>
+                              <Text style={styles.rewardDetailDate}>{rewardDate}</Text>
+                            </View>
+                            <Text style={styles.rewardDetailPoints}>
+                              +{reward.points} Pts
+                            </Text>
+                          </View>
+                        );
+                      })
+                    ) : (
+                      <Text style={styles.noRewardsText}>
+                        {t("no_rewards_earned_yet") || "No rewards earned from this referral yet"}
+                      </Text>
+                    )}
+                  </View>
+                )}
               </View>
             );
           })
@@ -618,12 +649,9 @@ const styles = StyleSheet.create({
   faqQuestion: { fontSize: 15, fontWeight: '700', color: '#333', flex: 1, paddingRight: 16 },
   faqAnswer: { fontSize: 14, color: '#666', marginTop: 12, lineHeight: 22, borderTopWidth: 1, borderTopColor: '#f0f0f0', paddingTop: 12 },
 
-  referralItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  referralCardGroup: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#eef2f5',
@@ -632,6 +660,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.03,
     shadowRadius: 4,
     elevation: 1,
+    overflow: 'hidden'
+  },
+  referralItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 16,
   },
   referralIcon: {
     width: 40,
@@ -657,17 +692,45 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#999',
   },
-  referralPointsContainer: {
-    alignItems: 'flex-end',
-  },
-  referralPoints: {
-    fontSize: 16,
+  referralPointsGrouped: {
+    fontSize: 15,
     fontWeight: '800',
-    color: '#4CAF50',
+    color: '#004B40',
   },
-  referralPointsLabel: {
+  expandedRewardsContainer: {
+    backgroundColor: '#FAFAFA',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8
+  },
+  rewardDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  rewardDetailTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
+  rewardDetailDate: {
     fontSize: 10,
-    color: '#666',
+    color: '#999',
+    marginTop: 2,
+  },
+  rewardDetailPoints: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#004B40',
+  },
+  noRewardsText: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+    paddingVertical: 4,
+    fontStyle: 'italic',
   },
   statusBadge: {
     paddingHorizontal: 8,

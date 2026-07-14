@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, Modal, BackHandler, StatusBar } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Platform, Modal, BackHandler, StatusBar, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -25,7 +25,7 @@ export default function RewardsHistoryScreen() {
     const [detailsModalVisible, setDetailsModalVisible] = useState(false);
 
     // Filters and pagination states
-    const [filter, setFilter] = useState<"all" | "added" | "deducted">("all");
+    const [filter, setFilter] = useState<"all" | "referral_install" | "referral_investment" | "lucky_draw" | "redemption">("all");
     const [visibleCount, setVisibleCount] = useState(10);
 
     const fetchTransactions = useCallback(async () => {
@@ -33,7 +33,7 @@ export default function RewardsHistoryScreen() {
 
         setLoading(true);
         try {
-            const response = await rewardsAPI.getWalletInfo(user.id);
+            const response = await rewardsAPI.getWalletInfo(user.id, filter);
             if (response.data.success && response.data.data && Array.isArray(response.data.data.history)) {
                 setTransactions(response.data.data.history);
             }
@@ -42,7 +42,7 @@ export default function RewardsHistoryScreen() {
         } finally {
             setLoading(false);
         }
-    }, [user?.id]);
+    }, [user?.id, filter]);
 
     useFocusEffect(
         useCallback(() => {
@@ -54,6 +54,10 @@ export default function RewardsHistoryScreen() {
             fetchTransactions();
         }, [fetchTransactions])
     );
+
+    useEffect(() => {
+        fetchTransactions();
+    }, [filter, fetchTransactions]);
 
     useEffect(() => {
         const handleBackPress = () => {
@@ -80,12 +84,23 @@ export default function RewardsHistoryScreen() {
     };
 
     const renderTransactionItem = ({ item }: { item: any }) => {
-        const isReferral = item.type === "referral";
+        const isAddition = item.type === "referral" || item.type === "lucky_draw";
+        const isLuckyDraw = item.type === "lucky_draw";
 
         const formattedDate = formatDate(item.created_at);
         const formattedTime = formatTime(item.created_at);
 
         const formattedStatus = item.status ? (t("status_" + item.status) || (item.status.charAt(0).toUpperCase() + item.status.slice(1))) : "";
+
+        let iconName = "arrow-down-circle";
+        let iconColor = "#4CAF50";
+        if (item.type === "lucky_draw") {
+            iconName = "trophy";
+            iconColor = "#FFD700"; // Gold
+        } else if (item.type === "redemption") {
+            iconName = "arrow-up-circle";
+            iconColor = "#F44336";
+        }
 
         return (
             <TouchableOpacity
@@ -95,17 +110,17 @@ export default function RewardsHistoryScreen() {
             >
                 <View style={styles.transactionIconContainer}>
                     <Ionicons
-                        name={isReferral ? "arrow-down-circle" : "arrow-up-circle"}
+                        name={iconName as any}
                         size={32}
-                        color={isReferral ? "#4CAF50" : "#F44336"}
+                        color={iconColor}
                     />
                 </View>
                 <View style={styles.transactionDetails}>
                     <Text style={styles.transactionTitle}>
-                        {isReferral ? item.description : (t("points_redeemed") || "Points Redeemed")}
+                        {item.type === "referral" ? item.description : isLuckyDraw ? item.description : (t("points_redeemed") || "Points Redeemed")}
                     </Text>
                     <Text style={styles.transactionSubtitle}>
-                        {isReferral ? (item.mobile_number || "") : item.description}
+                        {item.type === "referral" ? (item.mobile_number || "") : isLuckyDraw ? (t("lucky_draw_points") || "Lucky Draw Reward") : item.description}
                     </Text>
                     <Text style={styles.transactionDate}>
                         {formattedDate} • {formattedTime} {formattedStatus ? `• ${formattedStatus}` : ""}
@@ -114,20 +129,20 @@ export default function RewardsHistoryScreen() {
                 <View style={styles.transactionPointsContainer}>
                     <View style={[
                         styles.statusBadge,
-                        { backgroundColor: isReferral ? "rgba(76, 175, 80, 0.12)" : "rgba(244, 67, 54, 0.12)" }
+                        { backgroundColor: isAddition ? "rgba(76, 175, 80, 0.12)" : "rgba(244, 67, 54, 0.12)" }
                     ]}>
                         <Text style={[
                             styles.statusBadgeText,
-                            { color: isReferral ? "#4CAF50" : "#F44336" }
+                            { color: isAddition ? "#4CAF50" : "#F44336" }
                         ]}>
-                            {isReferral ? "Added" : "Deducted"}
+                            {isAddition ? "Added" : "Deducted"}
                         </Text>
                     </View>
                     <Text style={[
                         styles.transactionPoints,
-                        { color: isReferral ? "#4CAF50" : "#F44336", marginTop: 4 }
+                        { color: isAddition ? "#4CAF50" : "#F44336", marginTop: 4 }
                     ]}>
-                        {isReferral ? `+${item.points}` : `-${item.points}`} Pts
+                        {isAddition ? `+${item.points}` : `-${item.points}`} Pts
                     </Text>
                 </View>
             </TouchableOpacity>
@@ -165,13 +180,8 @@ export default function RewardsHistoryScreen() {
         );
     };
 
-    // Filter transactions
-    const filteredTransactions = transactions.filter(t => {
-        if (filter === "all") return true;
-        if (filter === "added") return t.type === "referral";
-        if (filter === "deducted") return t.type !== "referral";
-        return true;
-    });
+    // Filter transactions (since we fetch filtered list from backend, we just return true)
+    const filteredTransactions = transactions;
 
     // Sort descending
     const sortedTransactions = [...filteredTransactions].sort((a, b) => {
@@ -184,19 +194,17 @@ export default function RewardsHistoryScreen() {
     // Grouping logic for "Recently Active" (last 7 days) and chronological years
     const getGroupedData = () => {
         const now = new Date();
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-        const recentlyActive: any[] = [];
         const groupedByYear: Record<string, any[]> = {};
-
         const currentYear = new Date().getFullYear().toString();
 
         paginatedTransactions.forEach(t => {
             const date = convertUTCToLocal(t.created_at);
             const year = date.getFullYear().toString();
-            // All transactions from the current year (2026) are grouped under "Recently Active"
             if (year === currentYear) {
-                recentlyActive.push(t);
+                if (!groupedByYear[currentYear]) {
+                    groupedByYear[currentYear] = [];
+                }
+                groupedByYear[currentYear].push(t);
             } else {
                 if (!groupedByYear[year]) {
                     groupedByYear[year] = [];
@@ -206,11 +214,11 @@ export default function RewardsHistoryScreen() {
         });
 
         const sections: { title: string; data: any[] }[] = [];
-        if (recentlyActive.length > 0) {
-            sections.push({ title: t("recentlyActive") || "Recently Active", data: recentlyActive });
+        if (groupedByYear[currentYear] && groupedByYear[currentYear].length > 0) {
+            sections.push({ title: t("recentlyActive") || "Recently Active", data: groupedByYear[currentYear] });
         }
 
-        const years = Object.keys(groupedByYear).sort((a, b) => b.localeCompare(a));
+        const years = Object.keys(groupedByYear).filter(y => y !== currentYear).sort((a, b) => b.localeCompare(a));
         years.forEach(year => {
             sections.push({ title: year, data: groupedByYear[year] });
         });
@@ -235,20 +243,20 @@ export default function RewardsHistoryScreen() {
                     <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/(app)/(tabs)/rewards")}>
                         <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
                     </TouchableOpacity>
-
+ 
                     <View style={styles.titleContainer}>
                         <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
                             {t("rewardHistory") || "Reward History"}
                         </ResponsiveText>
                     </View>
-
+ 
                     <View style={styles.headerRightPlaceholder} />
                 </View>
             </View>
-
+ 
             {/* Filter Buttons Segment Container */}
             <View style={styles.filterWrapper}>
-                <View style={styles.filterContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterContainer}>
                     <TouchableOpacity
                         style={[
                             styles.filterButton,
@@ -268,37 +276,69 @@ export default function RewardsHistoryScreen() {
                     <TouchableOpacity
                         style={[
                             styles.filterButton,
-                            filter === "added" && styles.filterButtonActive
+                            filter === "referral_install" && styles.filterButtonActive
                         ]}
-                        onPress={() => setFilter("added")}
+                        onPress={() => setFilter("referral_install")}
                         activeOpacity={0.8}
                     >
                         <Text style={[
                             styles.filterText,
-                            filter === "added" && styles.filterTextActive
+                            filter === "referral_install" && styles.filterTextActive
                         ]}>
-                            {t("filterAdded") || "Added"}
+                            {t("filterInstall") || "Install"}
                         </Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={[
                             styles.filterButton,
-                            filter === "deducted" && styles.filterButtonActive
+                            filter === "referral_investment" && styles.filterButtonActive
                         ]}
-                        onPress={() => setFilter("deducted")}
+                        onPress={() => setFilter("referral_investment")}
                         activeOpacity={0.8}
                     >
                         <Text style={[
                             styles.filterText,
-                            filter === "deducted" && styles.filterTextActive
+                            filter === "referral_investment" && styles.filterTextActive
                         ]}>
-                            {t("filterDeducted") || "Deducted"}
+                            {t("filterInvestment") || "Investment"}
                         </Text>
                     </TouchableOpacity>
-                </View>
-            </View>
 
+                    <TouchableOpacity
+                        style={[
+                            styles.filterButton,
+                            filter === "lucky_draw" && styles.filterButtonActive
+                        ]}
+                        onPress={() => setFilter("lucky_draw")}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={[
+                            styles.filterText,
+                            filter === "lucky_draw" && styles.filterTextActive
+                        ]}>
+                            {t("filterLuckyDraw") || "Lucky Draw"}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[
+                            styles.filterButton,
+                            filter === "redemption" && styles.filterButtonActive
+                        ]}
+                        onPress={() => setFilter("redemption")}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={[
+                            styles.filterText,
+                            filter === "redemption" && styles.filterTextActive
+                        ]}>
+                            {t("filterRedeemed") || "Redeemed"}
+                        </Text>
+                    </TouchableOpacity>
+                </ScrollView>
+            </View>
+ 
             <View style={styles.contentContainer}>
                 {flatListData.length > 0 ? (
                     <FlatList
@@ -318,7 +358,7 @@ export default function RewardsHistoryScreen() {
                     </View>
                 )}
             </View>
-
+ 
             {/* Reward Detail Modal */}
             <Modal
                 visible={detailsModalVisible}
@@ -330,16 +370,16 @@ export default function RewardsHistoryScreen() {
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
                             <ResponsiveText variant="title" size="sm" weight="bold" color={theme.colors.primary}>
-                                {selectedItem?.type === 'referral' ? (t("rewardDetails") || "Reward Details") : (t("redemptionDetails") || "Redemption Details")}
+                                {selectedItem?.type === 'referral' ? (t("rewardDetails") || "Reward Details") : selectedItem?.type === 'lucky_draw' ? (t("luckyDrawDetails") || "Lucky Draw Details") : (t("redemptionDetails") || "Redemption Details")}
                             </ResponsiveText>
                             <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
                                 <Ionicons name="close-circle" size={28} color="#ccc" />
                             </TouchableOpacity>
                         </View>
-
+ 
                         {selectedItem && (
                             <View style={styles.modalBody}>
-                                {selectedItem.type === 'referral' ? (
+                                {selectedItem.type === 'referral' && (
                                     <>
                                         <View style={styles.detailRow}>
                                             <Text style={styles.detailLabel}>{t("customerName") || "Customer Name"}</Text>
@@ -360,7 +400,30 @@ export default function RewardsHistoryScreen() {
                                             </Text>
                                         </View>
                                     </>
-                                ) : (
+                                )}
+                                {selectedItem.type === 'lucky_draw' && (
+                                    <>
+                                        <View style={styles.detailRow}>
+                                            <Text style={styles.detailLabel}>{t("rewardSource") || "Reward Source"}</Text>
+                                            <Text style={styles.detailValue}>{t("lucky_draw") || "Lucky Draw"}</Text>
+                                        </View>
+                                        <View style={styles.detailDivider} />
+                                        <View style={styles.detailRow}>
+                                            <Text style={styles.detailLabel}>{t("details") || "Details"}</Text>
+                                            <Text style={styles.detailValue}>{selectedItem.description}</Text>
+                                        </View>
+                                        <View style={styles.detailDivider} />
+                                        <View style={styles.detailRow}>
+                                            <Text style={styles.detailLabel}>{t("winDate") || "Win Date"}</Text>
+                                            <Text style={styles.detailValue}>
+                                                {formatDate(selectedItem.created_at, {
+                                                    day: '2-digit', month: 'long', year: 'numeric'
+                                                })}
+                                            </Text>
+                                        </View>
+                                    </>
+                                )}
+                                {selectedItem.type === 'redemption' && (
                                     <>
                                         <View style={styles.detailRow}>
                                             <Text style={styles.detailLabel}>{t("transactionType") || "Transaction Type"}</Text>
@@ -385,17 +448,17 @@ export default function RewardsHistoryScreen() {
                                 <View style={styles.detailDivider} />
                                 <View style={styles.detailRow}>
                                     <Text style={styles.detailLabel}>
-                                        {selectedItem.type === 'referral' ? (t("pointsEarned") || "Points Earned") : (t("pointsRedeemed") || "Points Redeemed")}
+                                        {isAddition ? (t("pointsEarned") || "Points Earned") : (t("pointsRedeemed") || "Points Redeemed")}
                                     </Text>
                                     <View style={[
                                         styles.pointsBadge,
-                                        { backgroundColor: selectedItem.type === 'referral' ? "rgba(76,175,80,0.1)" : "rgba(244,67,54,0.1)" }
+                                        { backgroundColor: isAddition ? "rgba(76,175,80,0.1)" : "rgba(244,67,54,0.1)" }
                                     ]}>
                                         <Text style={[
                                             styles.pointsBadgeText,
-                                            { color: selectedItem.type === 'referral' ? "#4CAF50" : "#F44336" }
+                                            { color: isAddition ? "#4CAF50" : "#F44336" }
                                         ]}>
-                                            {selectedItem.type === 'referral' ? `+${selectedItem.points}` : `-${selectedItem.points}`} {t("points") || "Pts"}
+                                            {isAddition ? `+${selectedItem.points}` : `-${selectedItem.points}`} {t("points") || "Pts"}
                                         </Text>
                                     </View>
                                 </View>
@@ -404,7 +467,7 @@ export default function RewardsHistoryScreen() {
                                     <Text style={styles.detailLabel}>{t("statusLabel") || "Status"}</Text>
                                     <Text style={[
                                         styles.detailValue,
-                                        { color: selectedItem.status === 'completed' || selectedItem.status === 'credited' ? "#4CAF50" : selectedItem.status === 'rejected' ? "#F44336" : "#FF9800" }
+                                        { color: selectedItem.status === 'completed' || selectedItem.status === 'credited' || selectedItem.status === 'credited_investment' ? "#4CAF50" : selectedItem.status === 'rejected' ? "#F44336" : "#FF9800" }
                                     ]}>
                                         {selectedItem.status ? (t("status_" + selectedItem.status) || (selectedItem.status.charAt(0).toUpperCase() + selectedItem.status.slice(1))) : ""}
                                     </Text>
@@ -413,11 +476,11 @@ export default function RewardsHistoryScreen() {
                                 <View style={styles.detailRow}>
                                     <Text style={styles.detailLabel}>{t("referenceId") || "Reference ID"}</Text>
                                     <Text style={styles.detailValue}>
-                                        {selectedItem.type === 'referral' ? '#REF-' : '#RED-'}
+                                        {isLuckyDraw ? '#LDW-' : selectedItem.type === 'referral' ? '#REF-' : '#RED-'}
                                         {selectedItem.id ? selectedItem.id.toString().padStart(4, '0') : "0000"}
                                     </Text>
                                 </View>
-
+ 
                                 <TouchableOpacity
                                     style={styles.closeBtn}
                                     onPress={() => setDetailsModalVisible(false)}

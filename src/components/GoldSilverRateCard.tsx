@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { theme } from "@/constants";
+import { convertUTCToLocal } from "@/utils/dateTimeUtils";
 
 interface RateData {
     goldRate: string | number;
@@ -63,7 +64,7 @@ const GoldSilverRateCard: React.FC<GoldSilverRateCardProps> = ({
     const formatDateToIndian = (isoString: string | undefined): string => {
         if (!isoString) return "";
         try {
-            const date = new Date(isoString);
+            const date = convertUTCToLocal(isoString);
             return date.toLocaleString("en-IN", {
                 day: "2-digit",
                 month: "2-digit",

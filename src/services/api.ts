@@ -788,11 +788,11 @@ export const billsAPI = {
 
 // Rewards APIs
 export const rewardsAPI = {
-  getMyReferrals: async (userId: string | number) => {
-    return apiClient.get(`/rewards/my-referrals?userId=${userId}`);
+  getMyReferrals: async (userId: string | number, grouped?: boolean) => {
+    return apiClient.get(`/rewards/my-referrals?userId=${userId}${grouped ? '&grouped=true' : ''}`);
   },
-  getWalletInfo: async (userId: string | number) => {
-    return apiClient.get(`/rewards/wallet?userId=${userId}`);
+  getWalletInfo: async (userId: string | number, filter?: string) => {
+    return apiClient.get(`/rewards/wallet?userId=${userId}${filter ? `&filter=${filter}` : ''}`);
   },
   redeemPoints: async (payload: { points: number; payment_method: string; payment_details: string; userId?: number | string }) => {
     return apiClient.post('/rewards/redeem', payload);
