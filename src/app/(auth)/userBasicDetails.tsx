@@ -16,6 +16,9 @@ import {
   ScrollView,
   Keyboard,
   TouchableWithoutFeedback,
+  StatusBar,
+  Linking,
+  AppState,
 } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
@@ -30,6 +33,7 @@ import { fetchBranchesWithCache } from "@/utils/apiCache";
 import RNPickerSelect from "react-native-picker-select";
 import ResponsiveText from "@/components/ResponsiveText";
 import ResponsiveButton from "@/components/ResponsiveButton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { logger } from "@/utils/logger";
 const { width, height } = Dimensions.get("window");
@@ -117,12 +121,50 @@ export default function BasicDetailsForm() {
   const [autoOtpSending, setAutoOtpSending] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [clipboardOtp, setClipboardOtp] = useState("");
+  const [pins, setPins] = useState(["", "", "", ""]);
+  const inputRefs = [
+    useRef<TextInput>(null),
+    useRef<TextInput>(null),
+    useRef<TextInput>(null),
+    useRef<TextInput>(null),
+  ];
+
+  const handlePinChange = (text: string, index: number) => {
+    const newPins = [...pins];
+    newPins[index] = text.replace(/[^0-9]/g, "");
+    setPins(newPins);
+    setOtp(newPins.join(""));
+
+    if (text.length === 1 && index < 3) {
+      inputRefs[index + 1].current?.focus();
+    }
+  };
+
+  const handleKeyPress = ({ nativeEvent }: any, index: number) => {
+    if (nativeEvent.key === "Backspace" && pins[index] === "" && index > 0) {
+      inputRefs[index - 1].current?.focus();
+      const newPins = [...pins];
+      newPins[index - 1] = "";
+      setPins(newPins);
+      setOtp(newPins.join(""));
+    }
+  };
+
+  const handleBack = () => {
+    if (otpModalVisible) {
+      setOtpModalVisible(false);
+      setOtpSentFromModal(false);
+    } else {
+      router.back();
+    }
+  };
 
   // Branch Selection states
   const [branches, setBranches] = useState<any[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   const [branchError, setBranchError] = useState("");
   const [isBranchDisabled, setIsBranchDisabled] = useState(false);
+  const [branchModalVisible, setBranchModalVisible] = useState(false);
 
   // Helper function to get next timer duration
   const getNextTimerDuration = (currentCount: number) => {
@@ -247,17 +289,61 @@ export default function BasicDetailsForm() {
       setReferralValidating(false);
       setOtpPromptShown(false); // Reset OTP prompt state
       setHasCheckedClipboard(false);
+      setBranchError("");
 
-      const urlCode = emp_code || employee_code || referral_code || empCode || code;
+      const searchParams = { mobile, emp_code, employee_code, referral_code, empCode, code };
+      // Try to parse direct referral code
+      let urlCode = emp_code || employee_code || referral_code || empCode || code;
+
+      // Fallback 1: Parse nested link parameter (common for iOS Universal/Dynamic Links)
+      if (!urlCode) {
+        for (const key of Object.keys(searchParams)) {
+          const value = (searchParams as any)[key];
+          if (
+            typeof value === "string" &&
+            (value.includes("http://") || value.includes("https://") || value.includes("://"))
+          ) {
+            const match = value.match(/[?&](code|emp_code|employee_code|referral_code|empCode)=([^&]+)/i);
+            if (match && match[2]) {
+              urlCode = match[2];
+              logger.log("🔍 Found nested referral code in URL parameter:", key, urlCode);
+              break;
+            }
+          }
+        }
+      }
+
+      // Fallback 2: Check AsyncStorage for cached referral codes from app cold start deep links
+      const checkPendingReferral = async () => {
+        try {
+          const pendingCode = await AsyncStorage.getItem("pendingReferralCode");
+          if (pendingCode) {
+            logger.log("🔍 Found pending referral code in AsyncStorage:", pendingCode);
+            await AsyncStorage.removeItem("pendingReferralCode"); // Clear to prevent reuse
+            if (!urlCode) {
+              setReferralCode(pendingCode);
+              setReferralValidated(false);
+              setReferralValidationMessage("");
+              setReferralValidating(true);
+              validateReferralCodeWithAPI(pendingCode);
+            }
+          }
+        } catch (err) {
+          logger.error("Error reading pending referral code from AsyncStorage:", err);
+        }
+      };
+
       if (urlCode) {
         const codeStr = Array.isArray(urlCode) ? urlCode[0] : urlCode;
         logger.log("🔍 Pre-filling referral code from URL params:", codeStr);
-        const upperCode = codeStr.toUpperCase().trim();
-        setReferralCode(upperCode);
+        const cleanCode = codeStr.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().trim();
+        setReferralCode(cleanCode);
         setReferralValidated(false);
         setReferralValidationMessage("");
         setReferralValidating(true);
-        validateReferralCodeWithAPI(upperCode);
+        validateReferralCodeWithAPI(cleanCode);
+      } else {
+        checkPendingReferral();
       }
     }, [emp_code, employee_code, referral_code, empCode, code])
   );
@@ -410,31 +496,69 @@ export default function BasicDetailsForm() {
     return formValid;
   };
 
-  const handleSubmit = () => {
-    if (!otpVerified) {
-      // Validate mobile number first
-      const isMobileValid = validateMobile(mobileInput);
-      if (!isMobileValid) return;
+  const getFormValidationErrorSummary = () => {
+    const errors = [];
+    if (!mobileInput.trim()) {
+      errors.push("• Mobile number is required");
+    } else if (!/^\d{10}$/.test(mobileInput.trim())) {
+      errors.push("• Mobile number must be 10 digits");
+    }
 
-      // Show enhanced OTP modal instead of alert
-      setOtpModalVisible(true);
-      // Auto-trigger OTP send when modal opens via useEffect
+    if (!name.trim()) {
+      errors.push("• Full Name is required");
+    } else if (name.trim().length < 2) {
+      errors.push("• Name must be at least 2 characters");
+    }
 
+    if (!email.trim()) {
+      errors.push("• Email address is required");
+    } else if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+      errors.push("• Invalid email address format");
+    }
+
+    if (!selectedBranchId) {
+      errors.push("• Home Branch selection is required");
+    }
+
+    if (referralCode && referralCode.length > 0 && referralCode.length < 6) {
+      errors.push("• Referral code must be 6 characters");
+    }
+
+    return errors.join("\n");
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      const validationSummary = getFormValidationErrorSummary();
+      Alert.alert(
+        t("requiredFieldsMissing") || "Required Fields Missing",
+        (t("pleaseCompleteTheFollowingDetailsToProceed") || "Please complete the following details to proceed:\n\n") + validationSummary,
+        [{ text: "OK" }]
+      );
       return;
     }
-    if (validateForm()) {
-      // Navigate to MPIN page with user data as params
-      router.push({
-        pathname: "/(auth)/mpin",
-        params: {
-          name,
-          email,
-          mobile: mobileInput,
-          referral_code: referralCode.trim(),
-          branch_id: selectedBranchId ? String(selectedBranchId) : "",
-        },
-      });
+
+    if (!otpVerified) {
+      setLoading(true);
+      const isSent = await handleGetOtp();
+      setLoading(false);
+      if (isSent) {
+        setOtpModalVisible(true);
+      }
+      return;
     }
+
+    // Navigate to MPIN page with user data as params
+    router.push({
+      pathname: "/(auth)/mpin",
+      params: {
+        name,
+        email,
+        mobile: mobileInput,
+        referral_code: referralCode,
+        branch_id: selectedBranchId ? String(selectedBranchId) : "",
+      },
+    });
   };
 
   const validateReferralCodeWithAPI = async (code: string) => {
@@ -560,25 +684,38 @@ export default function BasicDetailsForm() {
           const content = await Clipboard.getStringAsync();
           const cleanCode = content.trim().toUpperCase();
 
-          // Verify code format (6-digit alphanumeric)
+          // Verify code format (6-digit alphanumeric) or parse from a URL
+          let parsedCode = "";
           if (/^[A-Z0-9]{6}$/.test(cleanCode)) {
-            logger.log("🔍 Auto-detected referral code from clipboard:", cleanCode);
-            setReferralCode(cleanCode);
+            parsedCode = cleanCode;
+          } else {
+            const regex = /[?&](code|emp_code|employee_code|referral_code|empCode)=([^&]+)/i;
+            const match = content.match(regex);
+            if (match && match[2]) {
+              const extracted = match[2].replace(/[^a-zA-Z0-9]/g, "").toUpperCase().trim();
+              if (extracted.length === 6) {
+                parsedCode = extracted;
+              }
+            }
+          }
+
+          if (parsedCode) {
+            logger.log("🔍 Auto-detected referral code from clipboard:", parsedCode);
+            setReferralCode(parsedCode);
             setHasCheckedClipboard(true);
 
             // Validate the code immediately
-            validateReferralCodeWithAPI(cleanCode);
+            validateReferralCodeWithAPI(parsedCode);
 
             Alert.alert(
               t("success") || "Success",
-              (t("referralCodeAppliedFromClipboard") || "Referral code {code} applied from clipboard!").replace("{code}", cleanCode)
+              (t("referralCodeAppliedFromClipboard") || "Referral code {code} applied from clipboard!").replace("{code}", parsedCode)
             );
           }
         }
       } catch (err) {
         logger.error("Error checking clipboard for referral code:", err);
       }
-      setHasCheckedClipboard(true);
     };
 
     // Delay slightly to ensure component is fully rendered and focus effect has cleared states
@@ -586,7 +723,17 @@ export default function BasicDetailsForm() {
       checkClipboard();
     }, 600);
 
-    return () => clearTimeout(timer);
+    // Watch AppState transition to active (solving iOS key-and-focused restriction)
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active") {
+        checkClipboard();
+      }
+    });
+
+    return () => {
+      clearTimeout(timer);
+      subscription.remove();
+    };
   }, [hasCheckedClipboard, otpVerified]);
 
   // Timer effect for resend with progressive timing
@@ -599,23 +746,7 @@ export default function BasicDetailsForm() {
   }, [otpModalVisible, resendTimer]);
 
   // Auto-trigger OTP when modal opens
-  useEffect(() => {
-    if (
-      otpModalVisible &&
-      !otpSentFromModal &&
-      !otpVerified &&
-      !autoOtpSending
-    ) {
-      // Small delay to ensure modal is fully visible before sending OTP
-      const timer = setTimeout(() => {
-        setAutoOtpSending(true);
-        setOtpSentFromModal(true);
-        handleGetOtp();
-      }, 300);
 
-      return () => clearTimeout(timer);
-    }
-  }, [otpModalVisible, otpSentFromModal, otpVerified, autoOtpSending]);
 
   // Cleanup referral validation timeout on unmount
   useEffect(() => {
@@ -698,7 +829,7 @@ export default function BasicDetailsForm() {
       if (response.ok) {
         setOtpModalVisible(true);
         setOtpSentFromModal(true); // Prevent auto-trigger loop
-        setResendTimer(0); // No initial timer for first OTP send
+        setResendTimer(30); // Initial 30 seconds timer for first OTP send
         setResendCount(0);
         setAutoOtpSent(false); // Reset auto flag after successful OTP send
         setAutoOtpLoading(false); // Reset loading flag
@@ -716,7 +847,7 @@ export default function BasicDetailsForm() {
   };
 
   // Open OTP modal and reset timer/count
-  const handleGetOtp = async () => {
+  const handleGetOtp = async (): Promise<boolean> => {
     logger.log("🔍 handleGetOtp called");
     logger.log("🔍 mobileInput:", mobileInput);
     logger.log("🔍 mobileStr:", mobileStr);
@@ -730,7 +861,7 @@ export default function BasicDetailsForm() {
       setOtpErrorMessage("Invalid mobile number");
       setOtpErrorModalVisible(true);
       setAutoOtpLoading(false);
-      return;
+      return false;
     }
 
     try {
@@ -743,22 +874,38 @@ export default function BasicDetailsForm() {
       });
       const data = await response.json();
       if (response.ok) {
-        setOtpModalVisible(true);
         setOtpSentFromModal(true); // Prevent auto-trigger loop
-        setResendTimer(0); // No initial timer for first OTP send
+        setResendTimer(30); // Initial 30 seconds timer for first OTP send
         setResendCount(0);
         setAutoOtpSent(false); // Reset auto flag after successful OTP send
         setAutoOtpLoading(false); // Reset loading flag
         setAutoOtpSending(false); // Reset auto sending flag
+        return true;
       } else {
-        setOtpErrorMessage(data?.error || t("failedToSendOtp"));
-        setOtpErrorModalVisible(true);
+        const errorMsg = data?.error || data?.message || t("failedToSendOtp");
+        if (
+          errorMsg.toLowerCase().includes("already registered") ||
+          errorMsg.toLowerCase().includes("already exists") ||
+          errorMsg.toLowerCase().includes("account exists")
+        ) {
+          Alert.alert(
+            t("accountExists") || "Account Exists",
+            t("accountExistsMessage") || "This mobile number is already registered. Please login.",
+            [
+              { text: t("login") || "Login", onPress: () => router.replace({ pathname: "/(auth)/login", params: { mobile: mobileToUse } }) },
+              { text: t("cancel") || "Cancel", style: "cancel" },
+            ]
+          );
+        } else {
+          Alert.alert(t("error") || "Error", errorMsg);
+        }
         setAutoOtpLoading(false); // Reset loading flag on error
+        return false;
       }
     } catch (err) {
-      setOtpErrorMessage(t("failedToSendOtp"));
-      setOtpErrorModalVisible(true);
+      Alert.alert(t("error") || "Error", t("failedToSendOtp"));
       setAutoOtpLoading(false); // Reset loading flag on error
+      return false;
     }
   };
 
@@ -832,9 +979,35 @@ export default function BasicDetailsForm() {
         data.message &&
         data.message.toLowerCase().includes("otp verified successfully")
       ) {
-        setOtpVerified(true);
-        // setOtpModalVisible(false); // Keep modal open to show success state
         setOtpVerifying(false);
+        // Automatically clear system clipboard to clean up copied referral codes
+        try {
+          await Clipboard.setStringAsync("");
+        } catch (clipErr) {
+          logger.error("Error clearing clipboard:", clipErr);
+        }
+        // Show a verification successful popup and navigate to set mpin page on OK press
+        Alert.alert(
+          t("success") || "Success",
+          t("otpVerifiedSuccessfully") || "OTP verified successfully!",
+          [
+            {
+              text: t("ok") || "OK",
+              onPress: () => {
+                router.push({
+                  pathname: "/(auth)/mpin",
+                  params: {
+                    name,
+                    email,
+                    mobile: mobileInput || mobileStr,
+                    referral_code: referralCode,
+                    branch_id: selectedBranchId ? String(selectedBranchId) : "",
+                  },
+                });
+              }
+            }
+          ]
+        );
       } else {
         // OTP verification failed
         Alert.alert(t("error"), data.error || t("invalidOtpOrOtpExpired"));
@@ -859,14 +1032,15 @@ export default function BasicDetailsForm() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: theme.colors.primary,
+          backgroundColor: theme.colors.quaternary,
         },
       ]}
     >
       <LinearGradient
-        colors={[theme.colors.primary, theme.colors.quaternary, theme.colors.quaternary]}
+        colors={[theme.colors.quaternary, theme.colors.quaternary]}
         style={styles.gradient}
       >
+        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary} />
         {showError && (
           <ErrorAlert message={errorMessage} onClose={hideErrorAlert} />
         )}
@@ -875,91 +1049,116 @@ export default function BasicDetailsForm() {
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.container}
-            keyboardVerticalOffset={
-              Platform.OS === "ios"
-                ? getResponsiveHeight(20, 30)
-                : getResponsiveHeight(20, 30)
-            }
+            keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
           >
-            <View style={styles.mainContent}>
-              <View style={styles.formContainer}>
-                <View style={{ height: Platform.OS === 'ios' ? 80 : 60 }} />
+            <ScrollView
+              contentContainerStyle={{ flexGrow: 1 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.mainContent}>
+                <View style={styles.formContainer}>
+                  {/* Header Back Button */}
+                  <TouchableOpacity
+                    style={{
+                      position: 'absolute',
+                      top: Platform.OS === 'ios' ? 20 : 10,
+                      left: 15,
+                      zIndex: 10,
+                      padding: 8,
+                      borderRadius: 20,
+                      backgroundColor: 'rgba(0, 0, 0, 0.03)'
+                    }}
+                    onPress={handleBack}
+                  >
+                    <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+                  </TouchableOpacity>
+                  <View style={{ height: Platform.OS === 'ios' ? 60 : 45 }} />
 
-                {/* Page Title and Subtitle */}
-                <View style={styles.titleContainer}>
-                  <ResponsiveText
-                    variant="title"
-                    size="lg"
-                    weight="bold"
-                    color={theme.colors.primary}
-                    align="center"
-                    truncateMode="double"
-                    style={styles.pageTitle}
-                  >
-                    {t("createYourAccount")}
-                  </ResponsiveText>
-                  <ResponsiveText
-                    variant="subtitle"
-                    size="md"
-                    color="#ffffff"
-                    align="center"
-                    truncateMode="double"
-                    style={styles.subtitle}
-                  >
-                    {t("enterYourDetailsToGetStarted")}
-                  </ResponsiveText>
-                </View>
-
-                {/* Mobile Number (Editable) */}
-                <View style={styles.inputContainer}>
-                  <ResponsiveText
-                    variant="label"
-                    size="sm"
-                    weight="semibold"
-                    color="#ffffff"
-                    align="left"
-                    truncateMode="single"
-                    style={styles.inputLabel}
-                  >
-                    {t("mobileNumberRequired")}
-                  </ResponsiveText>
-                  <View style={[styles.inputWithIcon, mobileError ? { borderColor: "#d32f2f", borderWidth: 1.5 } : null]}>
-                    <Ionicons
-                      name="call"
-                      size={20}
-                      color={theme.colors.secondary}
-                      style={styles.inputIconLeft}
-                    />
-                    <TextInput
-                      style={[styles.newInput, otpVerified && { opacity: 0.6 }]}
-                      placeholder={t("enterYourMobileNumber")}
-                      placeholderTextColor="rgba(10, 1, 1, 0.6)"
-                      value={mobileInput}
-                      onChangeText={(text) => {
-                        if (!otpVerified) {
-                          setMobileInput(
-                            text.replace(/[^0-9]/g, "").slice(0, 10)
-                          );
-                          validateMobile(
-                            text.replace(/[^0-9]/g, "").slice(0, 10)
-                          );
-                        }
-                      }}
-                      keyboardType="number-pad"
-                      maxLength={10}
-                      editable={!otpVerified}
-                      numberOfLines={1}
-                    />
-                    {otpVerified && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={20}
-                        color="#4CAF50"
-                        style={styles.inputIconRight}
-                      />
-                    )}
+                  {/* Page Title and Subtitle */}
+                  <View style={styles.titleContainer}>
+                    <ResponsiveText
+                      variant="title"
+                      size="lg"
+                      weight="bold"
+                      color={theme.colors.primary}
+                      align="center"
+                      truncateMode="double"
+                      style={styles.pageTitle}
+                    >
+                      {otpModalVisible ? (otpVerified ? (t("otpVerificationSuccessful") || "Verification Successful") : t("otpVerificationRequired")) : t("createYourAccount")}
+                    </ResponsiveText>
+                    <ResponsiveText
+                      variant="subtitle"
+                      size="md"
+                      color="#ffffff"
+                      align="center"
+                      truncateMode="double"
+                      style={styles.subtitle}
+                    >
+                      {otpModalVisible ? (
+                        otpVerified
+                          ? t("otpHasBeenVerifiedSuccessfully")
+                          : autoOtpSending
+                            ? t("sendingOtpToYourMobileNumber")
+                            : otpSentFromModal
+                              ? t("otpHasBeenAutomaticallySent")
+                              : t("pleaseVerifyYourMobileNumber")
+                      ) : t("enterYourDetailsToGetStarted")}
+                    </ResponsiveText>
                   </View>
-                  {/* {mobileError ? (
+
+                  <View style={otpModalVisible ? { display: "none" } : { width: "100%" }}>
+                    {/* Mobile Number (Editable) */}
+                    <View style={styles.inputContainer}>
+                    <ResponsiveText
+                      variant="label"
+                      size="sm"
+                      weight="semibold"
+                      color={theme.colors.primary}
+                      align="left"
+                      truncateMode="single"
+                      style={styles.inputLabel}
+                    >
+                      {t("mobileNumberRequired") || "Mobile Number *"}
+                    </ResponsiveText>
+                    <View style={[styles.inputWithIcon, mobileError ? { borderColor: "#d32f2f", borderWidth: 1.5 } : null]}>
+                      <Ionicons
+                        name="call"
+                        size={20}
+                        color={theme.colors.secondary}
+                        style={styles.inputIconLeft}
+                      />
+                      <TextInput
+                        style={[styles.newInput, otpVerified && { opacity: 0.6 }]}
+                        placeholder={t("enterYourMobileNumber")}
+                        placeholderTextColor="rgba(10, 1, 1, 0.6)"
+                        value={mobileInput}
+                        onChangeText={(text) => {
+                          if (!otpVerified) {
+                            setMobileInput(
+                              text.replace(/[^0-9]/g, "").slice(0, 10)
+                            );
+                            validateMobile(
+                              text.replace(/[^0-9]/g, "").slice(0, 10)
+                            );
+                          }
+                        }}
+                        keyboardType="number-pad"
+                        maxLength={10}
+                        editable={!otpVerified}
+                        numberOfLines={1}
+                      />
+                      {otpVerified && (
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={20}
+                          color="#4CAF50"
+                          style={styles.inputIconRight}
+                        />
+                      )}
+                    </View>
+                    {/* {mobileError ? (
                     <Text style={styles.newErrorText}>{mobileError}</Text>
                   ) : autoOtpSent && mobileStr && mobileStr.length === 10 ? (
                     <View style={styles.autoOtpContainer}>
@@ -1028,8 +1227,8 @@ export default function BasicDetailsForm() {
                       </TouchableOpacity>
                     </View>
                   ) : null} */}
-                  {/* Get OTP Button - Hidden as per requirement */}
-                  {/* {otpVerified ? (
+                    {/* Get OTP Button - Hidden as per requirement */}
+                    {/* {otpVerified ? (
                     <TouchableOpacity
                       style={styles.resetLinkButton}
                       onPress={() => {
@@ -1092,450 +1291,335 @@ export default function BasicDetailsForm() {
                       </ResponsiveText>
                     </TouchableOpacity>
                   )} */}
-                </View>
-
-                {/* Full Name */}
-                <View style={styles.inputContainer}>
-                  <ResponsiveText
-                    variant="label"
-                    size="sm"
-                    weight="semibold"
-                    color="#ffffff"
-                    align="left"
-                    truncateMode="single"
-                    style={styles.inputLabel}
-                  >
-                    {t("nameRequired")}
-                  </ResponsiveText>
-                  <View style={[styles.inputWithIcon, nameError ? { borderColor: "#d32f2f", borderWidth: 1.5 } : null]}>
-                    <Ionicons
-                      name="person-outline"
-                      size={20}
-                      color={theme.colors.secondary}
-                      style={styles.inputIconLeft}
-                    />
-                    <TextInput
-                      style={styles.newInput}
-                      placeholder={t("enterYourFullName")}
-                      placeholderTextColor="rgba(10, 1, 1, 0.6)"
-                      value={name}
-                      onChangeText={(text) => {
-                        setName(text);
-                        validateName(text);
-                      }}
-                      autoCapitalize="words"
-                      returnKeyType="next"
-                      blurOnSubmit={false}
-                      onSubmitEditing={() => {
-                        // Focus next input (email)
-                        emailInputRef.current?.focus();
-                      }}
-                    />
                   </View>
-                  {nameError ? (
-                    <ResponsiveText
-                      variant="caption"
-                      size="xs"
-                      color="#d32f2f"
-                      align="left"
-                      truncateMode="double"
-                      style={styles.newErrorText}
-                    >
-                      {nameError}
-                    </ResponsiveText>
-                  ) : null}
-                </View>
 
-                {/* Email */}
-                <View style={styles.inputContainer}>
-                  <ResponsiveText
-                    variant="label"
-                    size="sm"
-                    weight="semibold"
-                    color="#ffffff"
-                    align="left"
-                    truncateMode="single"
-                    style={styles.inputLabel}
-                  >
-                    {t("emailRequired")}
-                  </ResponsiveText>
-                  <View style={[styles.inputWithIcon, emailError ? { borderColor: "#d32f2f", borderWidth: 1.5 } : null]}>
-                    <Ionicons
-                      name="mail-outline"
-                      size={20}
-                      color={theme.colors.secondary}
-                      style={styles.inputIconLeft}
-                    />
-                    <TextInput
-                      ref={emailInputRef}
-                      style={styles.newInput}
-                      placeholder={t("enterYourEmailAddress")}
-                      placeholderTextColor="rgba(10, 1, 1, 0.6)"
-                      value={email}
-                      onChangeText={(text) => {
-                        setEmail(text);
-                        validateEmail(text);
-                      }}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      returnKeyType="next"
-                      blurOnSubmit={false}
-                      onSubmitEditing={() => {
-                        // Focus referral input
-                        referralInputRef.current?.focus();
-                      }}
-                    />
-                  </View>
-                  {emailError ? (
+                  {/* Full Name */}
+                  <View style={styles.inputContainer}>
                     <ResponsiveText
-                      variant="caption"
-                      size="xs"
-                      color="#d32f2f"
+                      variant="label"
+                      size="sm"
+                      weight="semibold"
+                      color={theme.colors.primary}
                       align="left"
-                      truncateMode="double"
-                      style={styles.newErrorText}
+                      truncateMode="single"
+                      style={styles.inputLabel}
                     >
-                      {emailError}
+                      {t("nameRequired") || "Full Name *"}
                     </ResponsiveText>
-                  ) : null}
-                </View>
-
-                {/* Branch Selection */}
-                <View style={styles.inputContainer}>
-                  <ResponsiveText
-                    variant="label"
-                    size="sm"
-                    weight="semibold"
-                    color="#ffffff"
-                    align="left"
-                    truncateMode="single"
-                    style={styles.inputLabel}
-                  >
-                    Select Branch *
-                  </ResponsiveText>
-                  <View style={[
-                    styles.inputWithIcon,
-                    branchError ? { borderColor: "#d32f2f", borderWidth: 1.5 } : null,
-                    isBranchDisabled && { backgroundColor: "rgba(240, 240, 240, 0.2)", borderColor: "rgba(180, 180, 180, 0.3)" }
-                  ]}>
-                    <Ionicons
-                      name="business-outline"
-                      size={20}
-                      color={theme.colors.secondary}
-                      style={styles.inputIconLeft}
-                    />
-                    <View style={{ flex: 1, justifyContent: 'center' }}>
-                      {isBranchDisabled && branches.length > 0 ? (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 30 }}>
-                          <Text style={{
-                            color: "rgba(0, 0, 0, 0.4)",
-                            fontSize: getResponsiveSize(14, 16),
-                            paddingVertical: 10,
-                          }}>
-                            {(() => {
-                              const b = branches.find((br) => Number(br.id) === Number(selectedBranchId));
-                              return b ? b.branch_name : "Home Branch";
-                            })()}
-                          </Text>
-                          <View style={{ position: 'absolute', right: 0, top: Platform.OS === 'ios' ? 8 : 10 }}>
-                            <Ionicons
-                              name="chevron-down"
-                              size={20}
-                              color={theme.colors.secondary}
-                            />
-                          </View>
-                        </View>
-                      ) : (
-                        <RNPickerSelect
-                          onValueChange={(value) => {
-                            if (branches.length > 0) {
-                              setSelectedBranchId(value ? Number(value) : null);
-                              validateBranch(value ? Number(value) : null);
-                            }
-                          }}
-                          placeholder={
-                            branches.length === 0
-                              ? { label: "No branches available", value: null, color: '#d32f2f' }
-                              : { label: "Select your home branch", value: null }
-                          }
-                          value={selectedBranchId}
-                          disabled={isBranchDisabled || branches.length === 0}
-                          items={
-                            branches.length === 0
-                              ? []
-                              : branches.map((b) => ({
-                                  label: b.branch_name,
-                                  value: b.id,
-                                }))
-                          }
-                          style={{
-                            viewContainer: {
-                              flex: 1,
-                              justifyContent: 'center',
-                              width: '100%',
-                            },
-                            inputIOS: {
-                              color: isBranchDisabled 
-                                ? "rgba(0, 0, 0, 0.4)" 
-                                : branches.length === 0 
-                                  ? "#d32f2f" 
-                                  : theme.colors.black,
-                              fontSize: getResponsiveSize(14, 16),
-                              paddingVertical: 10,
-                              paddingHorizontal: 0,
-                              minHeight: getResponsiveHeight(38, 42),
-                              width: "100%",
-                              paddingRight: 30,
-                            },
-                            inputAndroid: {
-                              color: isBranchDisabled 
-                                ? "rgba(0, 0, 0, 0.4)" 
-                                : branches.length === 0 
-                                  ? "#d32f2f" 
-                                  : theme.colors.black,
-                              fontSize: getResponsiveSize(14, 16),
-                              paddingVertical: 10,
-                              paddingHorizontal: 0,
-                              minHeight: getResponsiveHeight(38, 42),
-                              width: "100%",
-                              paddingRight: 30,
-                            },
-                            iconContainer: {
-                              top: Platform.OS === 'ios' ? 8 : 10,
-                              right: 0,
-                            },
-                            placeholder: { 
-                              color: branches.length === 0 ? "#d32f2f" : "rgba(10, 1, 1, 0.6)", 
-                              fontSize: 16 
-                            }
-                          }}
-                          useNativeAndroidPickerStyle={false}
-                          Icon={() => (
-                            <Ionicons
-                              name="chevron-down"
-                              size={20}
-                              color={branches.length === 0 ? "#d32f2f" : theme.colors.secondary}
-                            />
-                          )}
-                        />
-                      )}
-                    </View>
-                  </View>
-                  {branchError ? (
-                    <ResponsiveText
-                      variant="caption"
-                      size="xs"
-                      color="#d32f2f"
-                      align="left"
-                      truncateMode="double"
-                      style={styles.newErrorText}
-                    >
-                      {branchError}
-                    </ResponsiveText>
-                  ) : null}
-                  {isBranchDisabled && referralValidated && (
-                    <View style={styles.successContainer}>
+                    <View style={[styles.inputWithIcon, nameError ? { borderColor: "#d32f2f", borderWidth: 1.5 } : null]}>
                       <Ionicons
-                        name="checkmark-circle"
-                        size={16}
-                        color="#4CAF50"
+                        name="person-outline"
+                        size={20}
+                        color={theme.colors.secondary}
+                        style={styles.inputIconLeft}
                       />
-                      <ResponsiveText
-                        variant="caption"
-                        size="xs"
-                        color="#4CAF50"
-                        align="left"
-                        truncateMode="single"
-                        style={styles.successText}
-                      >
-                        Auto-selected based on referral agent branch
-                      </ResponsiveText>
+                      <TextInput
+                        style={styles.newInput}
+                        placeholder={t("enterYourFullName")}
+                        placeholderTextColor="rgba(10, 1, 1, 0.6)"
+                        value={name}
+                        onChangeText={(text) => {
+                          setName(text);
+                          validateName(text);
+                        }}
+                        autoCapitalize="words"
+                        returnKeyType="next"
+                        blurOnSubmit={false}
+                        onSubmitEditing={() => {
+                          // Focus next input (email)
+                          emailInputRef.current?.focus();
+                        }}
+                      />
                     </View>
-                  )}
-                </View>
+                  </View>
 
-                {/* Referral Code */}
-                <View style={styles.inputContainer}>
-                  <ResponsiveText
-                    variant="label"
-                    size="sm"
-                    weight="semibold"
-                    color="#ffffff"
-                    align="left"
-                    truncateMode="single"
-                    style={styles.inputLabel}
-                  >
-                    {t("referralByOptional")}
-                  </ResponsiveText>
-                  <View style={styles.inputWithIcon}>
-                    <Ionicons
-                      name="gift-outline"
-                      size={20}
-                      color={theme.colors.secondary}
-                      style={styles.inputIconLeft}
-                    />
-                    <TextInput
-                      ref={referralInputRef}
-                      style={styles.newInput}
-                      placeholder={t("alphanumericCharacters")}
-                      placeholderTextColor="rgba(10, 1, 1, 0.6)"
-                      value={referralCode}
-                      onChangeText={handleReferralCodeChange}
-                      keyboardType="default"
-                      autoCapitalize="characters"
-                      maxLength={6}
-                      onFocus={() => handleInputFocus(referralInputRef)}
-                      onLayout={() => {
-                        // Input layout handled by KeyboardAvoidingView
-                      }}
-                    />
-                    {/* Validation status icon */}
-                    {(referralValidating || referralValidated) && (
-                      <View style={styles.validationIconContainer}>
-                        {referralValidating && (
-                          <Ionicons
-                            name="hourglass-outline"
-                            size={16}
-                            color="#FFA500"
-                          />
-                        )}
-                        {referralValidated && (
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={16}
-                            color="#4CAF50"
-                          />
-                        )}
+                  {/* Email */}
+                  <View style={styles.inputContainer}>
+                    <ResponsiveText
+                      variant="label"
+                      size="sm"
+                      weight="semibold"
+                      color={theme.colors.primary}
+                      align="left"
+                      truncateMode="single"
+                      style={styles.inputLabel}
+                    >
+                      {t("emailRequired") || "Email Address *"}
+                    </ResponsiveText>
+                    <View style={[styles.inputWithIcon, emailError ? { borderColor: "#d32f2f", borderWidth: 1.5 } : null]}>
+                      <Ionicons
+                        name="mail-outline"
+                        size={20}
+                        color={theme.colors.secondary}
+                        style={styles.inputIconLeft}
+                      />
+                      <TextInput
+                        ref={emailInputRef}
+                        style={styles.newInput}
+                        placeholder={t("enterYourEmailAddress")}
+                        placeholderTextColor="rgba(10, 1, 1, 0.6)"
+                        value={email}
+                        onChangeText={(text) => {
+                          setEmail(text);
+                          validateEmail(text);
+                        }}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        returnKeyType="next"
+                        blurOnSubmit={false}
+                        onSubmitEditing={() => {
+                          // Focus referral input
+                          referralInputRef.current?.focus();
+                        }}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Branch Selection */}
+                  <View style={styles.inputContainer}>
+                    <ResponsiveText
+                      variant="label"
+                      size="sm"
+                      weight="semibold"
+                      color={theme.colors.primary}
+                      align="left"
+                      truncateMode="single"
+                      style={styles.inputLabel}
+                    >
+                      Select Branch *
+                    </ResponsiveText>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      disabled={isBranchDisabled || branches.length === 0}
+                      onPress={() => setBranchModalVisible(true)}
+                      style={[
+                        styles.inputWithIcon,
+                        branchError ? { borderColor: "#d32f2f", borderWidth: 1.5 } : null,
+                        isBranchDisabled && { backgroundColor: "rgba(240, 240, 240, 0.2)", borderColor: "rgba(180, 180, 180, 0.3)" }
+                      ]}
+                    >
+                      <Ionicons
+                        name="business-outline"
+                        size={20}
+                        color={theme.colors.secondary}
+                        style={styles.inputIconLeft}
+                      />
+                      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 10 }}>
+                        <Text style={{
+                          color: isBranchDisabled
+                            ? "rgba(0, 0, 0, 0.4)"
+                            : selectedBranchId
+                              ? theme.colors.black
+                              : branches.length === 0
+                                ? "#d32f2f"
+                                : "rgba(10, 1, 1, 0.6)",
+                          fontSize: getResponsiveSize(14, 16),
+                        }}>
+                          {(() => {
+                            if (branches.length === 0) return "No branches available";
+                            const b = branches.find((br) => Number(br.id) === Number(selectedBranchId));
+                            return b ? b.branch_name : "Please Select Branch";
+                          })()}
+                        </Text>
+                        <Ionicons
+                          name="chevron-down"
+                          size={20}
+                          color={branches.length === 0 ? "#d32f2f" : theme.colors.secondary}
+                        />
                       </View>
-                    )}
-                    {/* Error icon for invalid referral code */}
-                    {!referralValidating &&
-                      !referralValidated &&
-                      referralCode.length === 6 &&
-                      referralError && (
-                        <View style={styles.validationIconContainer}>
-                          <Ionicons
-                            name="close-circle"
-                            size={16}
-                            color="#ff4444"
-                          />
-                        </View>
-                      )}
-                    {/* Clear button for referral code */}
-                    {referralCode.length > 0 && (
-                      <TouchableOpacity
-                        style={styles.clearButton}
-                        onPress={clearReferralCode}
-                        activeOpacity={0.7}
-                      >
+                    </TouchableOpacity>
+                    {isBranchDisabled && referralValidated && (
+                      <View style={styles.successContainer}>
                         <Ionicons
-                          name="close-circle"
-                          size={getResponsiveSize(18, 20)}
-                          color="#ff4444"
-                        />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  {referralError ? (
-                    <ResponsiveText
-                      variant="caption"
-                      size="xs"
-                      color="#d32f2f"
-                      align="left"
-                      truncateMode="double"
-                      style={styles.newErrorText}
-                    >
-                      {referralError}
-                    </ResponsiveText>
-                  ) : null}
-                  {referralValidating && (
-                    <View style={styles.validatingContainer}>
-                      <Ionicons
-                        name="hourglass-outline"
-                        size={16}
-                        color="#FFA500"
-                      />
-                      <ResponsiveText
-                        variant="caption"
-                        size="xs"
-                        color="#FFA500"
-                        align="left"
-                        truncateMode="single"
-                        style={styles.validatingText}
-                      >
-                        {t("validatingReferralCode")}
-                      </ResponsiveText>
-                    </View>
-                  )}
-                  {referralValidated && referralValidationMessage && (
-                    <View style={styles.successContainer}>
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={16}
-                        color="#4CAF50"
-                      />
-                      <ResponsiveText
-                        variant="caption"
-                        size="xs"
-                        color="#4CAF50"
-                        align="left"
-                        truncateMode="single"
-                        style={styles.successText}
-                      >
-                        {referralValidationMessage}
-                      </ResponsiveText>
-                    </View>
-                  )}
-                  {!referralValidating &&
-                    !referralValidated &&
-                    referralCode.length === 6 &&
-                    !referralError && (
-                      <View style={styles.infoContainer}>
-                        <Ionicons
-                          name="information-circle"
+                          name="checkmark-circle"
                           size={16}
-                          color="#007AFF"
+                          color="#4CAF50"
                         />
                         <ResponsiveText
                           variant="caption"
                           size="xs"
-                          color="#007AFF"
+                          color="#4CAF50"
                           align="left"
-                          truncateMode="double"
-                          style={styles.referralInfoText}
+                          truncateMode="single"
+                          style={styles.successText}
                         >
-                          {t("referralCodeEnteredValidationPending")}
+                          Auto-selected based on referral agent branch
                         </ResponsiveText>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Referral Code */}
+                  <View style={styles.inputContainer}>
+                    <ResponsiveText
+                      variant="label"
+                      size="sm"
+                      weight="semibold"
+                      color={theme.colors.primary}
+                      align="left"
+                      truncateMode="single"
+                      style={styles.inputLabel}
+                    >
+                      {t("referralByOptional")}
+                    </ResponsiveText>
+                    <View style={styles.inputWithIcon}>
+                      <Ionicons
+                        name="gift-outline"
+                        size={20}
+                        color={theme.colors.secondary}
+                        style={styles.inputIconLeft}
+                      />
+                      <TextInput
+                        ref={referralInputRef}
+                        style={styles.newInput}
+                        placeholder={t("alphanumericCharacters")}
+                        placeholderTextColor="rgba(10, 1, 1, 0.6)"
+                        value={referralCode}
+                        onChangeText={handleReferralCodeChange}
+                        keyboardType="default"
+                        autoCapitalize="characters"
+                        maxLength={6}
+                        onFocus={() => handleInputFocus(referralInputRef)}
+                        onLayout={() => {
+                          // Input layout handled by KeyboardAvoidingView
+                        }}
+                      />
+                      {/* Validation status icon */}
+                      {(referralValidating || referralValidated) && (
+                        <View style={styles.validationIconContainer}>
+                          {referralValidating && (
+                            <Ionicons
+                              name="hourglass-outline"
+                              size={16}
+                              color="#FFA500"
+                            />
+                          )}
+                          {referralValidated && (
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={16}
+                              color="#4CAF50"
+                            />
+                          )}
+                        </View>
+                      )}
+                      {/* Error icon for invalid referral code */}
+                      {!referralValidating &&
+                        !referralValidated &&
+                        referralCode.length === 6 &&
+                        referralError && (
+                          <View style={styles.validationIconContainer}>
+                            <Ionicons
+                              name="close-circle"
+                              size={16}
+                              color="#ff4444"
+                            />
+                          </View>
+                        )}
+                      {/* Clear button for referral code */}
+                      {referralCode.length > 0 && (
                         <TouchableOpacity
-                          style={{ marginLeft: getResponsiveSize(8, 10) }}
-                          onPress={() =>
-                            validateReferralCodeWithAPI(referralCode)
-                          }
+                          style={styles.clearButton}
+                          onPress={clearReferralCode}
+                          activeOpacity={0.7}
                         >
+                          <Ionicons
+                            name="close-circle"
+                            size={getResponsiveSize(18, 20)}
+                            color="#ff4444"
+                          />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    {referralValidating && (
+                      <View style={styles.validatingContainer}>
+                        <Ionicons
+                          name="hourglass-outline"
+                          size={16}
+                          color="#FFA500"
+                        />
+                        <ResponsiveText
+                          variant="caption"
+                          size="xs"
+                          color="#FFA500"
+                          align="left"
+                          truncateMode="single"
+                          style={styles.validatingText}
+                        >
+                          {t("validatingReferralCode")}
+                        </ResponsiveText>
+                      </View>
+                    )}
+                    {referralValidated && referralValidationMessage && (
+                      <View style={styles.successContainer}>
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={16}
+                          color="#4CAF50"
+                        />
+                        <ResponsiveText
+                          variant="caption"
+                          size="xs"
+                          color="#4CAF50"
+                          align="left"
+                          truncateMode="single"
+                          style={styles.successText}
+                        >
+                          {referralValidationMessage}
+                        </ResponsiveText>
+                      </View>
+                    )}
+                    {!referralValidating &&
+                      !referralValidated &&
+                      referralCode.length === 6 &&
+                      !referralError && (
+                        <View style={styles.infoContainer}>
+                          <Ionicons
+                            name="information-circle"
+                            size={16}
+                            color="#007AFF"
+                          />
                           <ResponsiveText
                             variant="caption"
                             size="xs"
-                            weight="medium"
                             color="#007AFF"
                             align="left"
-                            truncateMode="single"
-                            style={[
-                              styles.referralInfoText,
-                              {
-                                textDecorationLine: "underline",
-                              },
-                            ]}
+                            truncateMode="double"
+                            style={styles.referralInfoText}
                           >
-                            {t("retry")}
+                            {t("referralCodeEnteredValidationPending")}
                           </ResponsiveText>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                </View>
+                          <TouchableOpacity
+                            style={{ marginLeft: getResponsiveSize(8, 10) }}
+                            onPress={() =>
+                              validateReferralCodeWithAPI(referralCode)
+                            }
+                          >
+                            <ResponsiveText
+                              variant="caption"
+                              size="xs"
+                              weight="medium"
+                              color="#007AFF"
+                              align="left"
+                              truncateMode="single"
+                              style={[
+                                styles.referralInfoText,
+                                {
+                                  textDecorationLine: "underline",
+                                },
+                              ]}
+                            >
+                              {t("retry")}
+                            </ResponsiveText>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                  </View>
 
-                {/* Form Validation Summary */}
-                {/* <View style={styles.validationSummary}>
+                  {/* Form Validation Summary */}
+                  {/* <View style={styles.validationSummary}>
                 <Text style={styles.validationTitle}>Form Status:</Text>
                 <View style={styles.validationItems}>
                   <View style={styles.validationItem}>
@@ -1593,294 +1677,237 @@ export default function BasicDetailsForm() {
                 </View>
               </View> */}
 
-                {/* Submit Button */}
-                <ResponsiveButton
-                  title={
-                    loading
-                      ? t("processing")
-                      : !isFormValid
-                        ? t("completeRequiredFields")
-                        : t("continueToMpinSetup")
-                  }
-                  variant="secondary"
-                  size="lg"
-                  fullWidth={true}
-                  loading={loading}
-                  disabled={loading || !isFormValid}
-                  onPress={handleSubmit}
-                  style={[
-                    styles.loginButton,
-                    loading && styles.loginButtonDisabled,
-                    !isFormValid && styles.loginButtonDisabled,
-                  ]}
-                />
+                  {/* Submit Button */}
+                  <ResponsiveButton
+                    title={
+                      loading
+                        ? t("processing")
+                        : t("continueToMpinSetup") || "Continue to MPIN Setup"
+                    }
+                    variant="secondary"
+                    size="md"
+                    fullWidth={true}
+                    loading={loading}
+                    disabled={loading}
+                    onPress={handleSubmit}
+                    style={[
+                      styles.loginButton,
+                      loading && styles.loginButtonDisabled,
+                      { height: 42, minHeight: 42, borderRadius: 21 },
+                    ]}
+                  />
 
-                {/* Login Link at the Bottom */}
-                <TouchableOpacity
-                  style={styles.loginLinkContainer}
-                  onPress={() => router.replace({ pathname: "/(auth)/login" })}
-                >
-                  <Text style={styles.loginLinkText}>
-                    {t("alreadyHaveAccount")}{" "}
-                    <Text
-                      style={{
-                        textDecorationLine: "underline",
-                        color: theme.colors.secondary,
-                        fontWeight: "bold",
+                  {/* Login Link at the Bottom */}
+                  <TouchableOpacity
+                    style={styles.loginLinkContainer}
+                    onPress={() => router.replace({ pathname: "/(auth)/login" })}
+                  >
+                    <Text style={styles.loginLinkText}>
+                      {t("alreadyHaveAccount")}{" "}
+                      <Text
+                        style={{
+                          textDecorationLine: "underline",
+                          color: theme.colors.primary,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {t("login")}
+                      </Text>
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Inline OTP Section */}
+                <View style={!otpModalVisible ? { display: "none" } : { width: "100%" }}>
+                  {!otpVerified && (
+                    <View style={styles.mobileDisplayContainer}>
+                      <ResponsiveText
+                        variant="body"
+                        size="sm"
+                        color={theme.colors.textDark}
+                        align="left"
+                        truncateMode="single"
+                        inRow={true}
+                        style={styles.mobileDisplayText}
+                      >
+                        {t("mobile")}:{" "}
+                        {(mobileInput || mobileStr)?.replace(
+                          /(\d{3})(\d{3})(\d{4})/,
+                          "$1-$2-$3"
+                        )}
+                      </ResponsiveText>
+                    </View>
+                  )}
+
+                  {!otpVerified && (
+                    <View style={styles.otpInputsContainer}>
+                      {pins.map((pin, index) => (
+                        <TextInput
+                          key={index}
+                          ref={inputRefs[index]}
+                          style={styles.otpBox}
+                          keyboardType="numeric"
+                          maxLength={1}
+                          value={pin}
+                          onChangeText={(text) => handlePinChange(text, index)}
+                          onKeyPress={(e) => handleKeyPress(e, index)}
+                          secureTextEntry={false}
+                          textContentType="oneTimeCode"
+                          autoComplete="sms-otp"
+                        />
+                      ))}
+                    </View>
+                  )}
+
+                  {otpVerified && (
+                    <View style={{ marginVertical: 20, alignItems: 'center' }}>
+                      <Ionicons name="checkmark-circle" size={54} color="#2e7d32" />
+                    </View>
+                  )}
+
+                  {!otpVerified && clipboardOtp ? (
+                    <TouchableOpacity
+                      style={styles.clipboardHintContainer}
+                      onPress={() => {
+                        setOtp(clipboardOtp);
+                        setClipboardOtp(""); // Clear hint after pasting
                       }}
                     >
-                      {t("login")}
-                    </Text>
-                  </Text>
-                </TouchableOpacity>
+                      <Ionicons name="clipboard-outline" size={16} color={theme.colors.primary} />
+                      <ResponsiveText
+                        variant="body"
+                        size="xs"
+                        weight="semibold"
+                        color="#b8860b"
+                        align="center"
+                        style={styles.clipboardHintText}
+                      >
+                        Tap to paste OTP: {clipboardOtp}
+                      </ResponsiveText>
+                    </TouchableOpacity>
+                  ) : null}
+
+                  {!otpVerified && (
+                    <TouchableOpacity
+                      style={[
+                        styles.verifyOtpButton,
+                        (otp.length !== 4 || otpVerifying || autoOtpSending) &&
+                        styles.getOtpButtonDisabled,
+                        { width: '100%', marginTop: 20 }
+                      ]}
+                      onPress={handleVerifyOtp}
+                      disabled={otp.length !== 4 || otpVerifying || autoOtpSending}
+                    >
+                      <ResponsiveText
+                        variant="button"
+                        size="md"
+                        weight="bold"
+                        color="#fff"
+                        align="center"
+                        truncateMode="single"
+                        style={styles.getOtpButtonText}
+                      >
+                        {otpVerifying
+                          ? t("verifying")
+                          : autoOtpSending
+                            ? t("sendingOtp")
+                            : t("verifyOtp")}
+                      </ResponsiveText>
+                    </TouchableOpacity>
+                  )}
+
+                  {!otpVerified && (
+                    <View style={[styles.resendRow, { marginTop: 15 }]}>
+                      <ResponsiveText
+                        variant="body"
+                        size="xs"
+                        color="#444"
+                        align="left"
+                        truncateMode="single"
+                        style={styles.resendText}
+                      >
+                        {t("didntReceiveOtp")}{" "}
+                      </ResponsiveText>
+                      <Pressable
+                        onPress={handleResendOtp}
+                        disabled={
+                          resendTimer > 0 ||
+                          resendCount >= resendLimit ||
+                          resendLoading
+                        }
+                      >
+                        <ResponsiveText
+                          variant="body"
+                          size="xs"
+                          weight="bold"
+                          color={(resendTimer > 0 ||
+                            resendCount >= resendLimit ||
+                            resendLoading) ? "#aaa" : theme.colors.primary}
+                          align="left"
+                          truncateMode="double"
+                          style={[
+                            styles.resendLink,
+                            (resendTimer > 0 ||
+                              resendCount >= resendLimit ||
+                              resendLoading) &&
+                            styles.resendLinkDisabled,
+                          ]}
+                        >
+                          {resendLoading
+                            ? t("sending")
+                            : resendTimer > 0
+                              ? t("resendIn").replace("{seconds}", resendTimer.toString())
+                              : resendCount >= resendLimit
+                                ? t("resendLimitReached")
+                                : t("resendOtpWithWait").replace("{seconds}", getNextTimerDuration(resendCount).toString())}
+                        </ResponsiveText>
+                      </Pressable>
+                    </View>
+                  )}
+
+                  {!otpVerified && (
+                    <TouchableOpacity
+                      style={[styles.cancelLinkButton, { alignSelf: 'center', marginTop: 15 }]}
+                      onPress={() => {
+                        setOtpModalVisible(false);
+                        setOtpSentFromModal(false);
+                      }}
+                    >
+                      <Text style={[styles.cancelLinkText, { color: theme.colors.primary, fontWeight: 'bold' }]}>{t("cancel")}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
-            </View>
+              </View>
+            </ScrollView>
           </KeyboardAvoidingView>
         </TouchableWithoutFeedback>
+        {!isKeyboardVisible && (
+          <TouchableOpacity
+            onPress={() => Linking.openURL(theme.constants.providerUrl)}
+            style={{
+              alignItems: "center",
+              justifyContent: "center",
+              position: "absolute",
+              bottom: getResponsiveHeight(10, 20),
+              left: 0,
+              right: 0,
+              zIndex: 10,
+            }}
+          >
+            <Text style={{
+              fontSize: 12,
+              color: "rgba(0, 0, 0, 0.4)",
+              fontWeight: "500",
+              textDecorationLine: "underline",
+            }}>
+              Powered by {theme.constants.providerName}
+            </Text>
+          </TouchableOpacity>
+        )}
       </LinearGradient>
 
-      {/* OTP Modal */}
-      <Modal
-        visible={otpModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
-          setOtpModalVisible(false);
-          setOtpSentFromModal(false);
-        }}
-      >
-        <Pressable 
-          style={styles.otpModalOverlay} 
-          onPress={() => Keyboard.dismiss()}
-        >
-          <Pressable 
-            style={styles.otpModalContent}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <ResponsiveText
-              variant="title"
-              size="md"
-              weight="bold"
-              color={theme.colors.secondary}
-              align="center"
-              truncateMode="double"
-              style={styles.otpModalTitle}
-            >
-              {t("otpVerificationRequired")}
-            </ResponsiveText>
-            <ResponsiveText
-              variant="body"
-              size="sm"
-              color="#333"
-              align="center"
-              truncateMode="triple"
-              maxLines={3}
-              style={styles.otpModalSubtitle}
-            >
-              {otpVerified
-                ? t("otpHasBeenVerifiedSuccessfully")
-                : autoOtpSending
-                  ? t("sendingOtpToYourMobileNumber")
-                  : otpSentFromModal
-                    ? t("otpHasBeenAutomaticallySent")
-                    : t("pleaseVerifyYourMobileNumber")}
-            </ResponsiveText>
 
-            {!otpVerified && (
-              <>
-                <View style={styles.mobileDisplayContainer}>
-                  <ResponsiveText
-                    variant="body"
-                    size="sm"
-                    color={theme.colors.textDark}
-                    align="left"
-                    truncateMode="single"
-                    inRow={true}
-                    style={styles.mobileDisplayText}
-                  >
-                    {t("mobile")}:{" "}
-                    {(mobileInput || mobileStr)?.replace(
-                      /(\d{3})(\d{3})(\d{4})/,
-                      "$1-$2-$3"
-                    )}
-                  </ResponsiveText>
-                </View>
-
-                <TextInput
-                  style={styles.otpInput}
-                  value={otp}
-                  onChangeText={(text) =>
-                    setOtp(text.replace(/[^0-9]/g, "").slice(0, 4))
-                  }
-                  keyboardType="number-pad"
-                  maxLength={4}
-                  placeholder="----"
-                  placeholderTextColor="#aaa"
-                  editable={!otpVerifying && !autoOtpSending}
-                  textContentType="oneTimeCode"
-                  autoComplete="sms-otp"
-                />
-
-                {clipboardOtp ? (
-                  <TouchableOpacity
-                    style={styles.clipboardHintContainer}
-                    onPress={() => {
-                      setOtp(clipboardOtp);
-                      setClipboardOtp(""); // Clear hint after pasting
-                    }}
-                  >
-                    <Ionicons name="clipboard-outline" size={16} color={theme.colors.secondary} />
-                    <ResponsiveText
-                      variant="body"
-                      size="xs"
-                      weight="semibold"
-                      color="#b8860b"
-                      align="center"
-                      style={styles.clipboardHintText}
-                    >
-                      Tap to paste OTP: {clipboardOtp}
-                    </ResponsiveText>
-                  </TouchableOpacity>
-                ) : null}
-
-                <TouchableOpacity
-                  style={[
-                    styles.verifyOtpButton,
-                    (otp.length !== 4 || otpVerifying || autoOtpSending) &&
-                    styles.getOtpButtonDisabled,
-                  ]}
-                  onPress={handleVerifyOtp}
-                  disabled={otp.length !== 4 || otpVerifying || autoOtpSending}
-                >
-                  <ResponsiveText
-                    variant="button"
-                    size="md"
-                    weight="bold"
-                    color="#fff"
-                    align="center"
-                    truncateMode="single"
-                    style={styles.getOtpButtonText}
-                  >
-                    {otpVerifying
-                      ? t("verifying")
-                      : autoOtpSending
-                        ? t("sendingOtp")
-                        : t("verifyOtp")}
-                  </ResponsiveText>
-                </TouchableOpacity>
-
-                <View style={styles.resendRow}>
-                  <ResponsiveText
-                    variant="body"
-                    size="xs"
-                    color="#444"
-                    align="left"
-                    truncateMode="single"
-                    style={styles.resendText}
-                  >
-                    {t("didntReceiveOtp")}
-                  </ResponsiveText>
-                  <Pressable
-                    onPress={handleResendOtp}
-                    disabled={
-                      resendTimer > 0 ||
-                      resendCount >= resendLimit ||
-                      resendLoading
-                    }
-                  >
-                    <ResponsiveText
-                      variant="body"
-                      size="xs"
-                      weight="bold"
-                      color={(resendTimer > 0 ||
-                        resendCount >= resendLimit ||
-                        resendLoading) ? "#aaa" : theme.colors.secondary}
-                      align="left"
-                      truncateMode="double"
-                      style={[
-                        styles.resendLink,
-                        (resendTimer > 0 ||
-                          resendCount >= resendLimit ||
-                          resendLoading) &&
-                        styles.resendLinkDisabled,
-                      ]}
-                    >
-                      {resendLoading
-                        ? t("sending")
-                        : resendTimer > 0
-                          ? t("resendIn").replace("{seconds}", resendTimer.toString())
-                          : resendCount >= resendLimit
-                            ? t("resendLimitReached")
-                            : t("resendOtpWithWait").replace("{seconds}", getNextTimerDuration(resendCount).toString())}
-                    </ResponsiveText>
-                  </Pressable>
-                </View>
-
-                {/* <TouchableOpacity
-                  style={[styles.getOtpButton, { backgroundColor: '#007AFF', marginTop: 16 }]}
-                  onPress={() => {
-                    setOtpSentFromModal(true);
-                    handleGetOtp();
-                  }}
-                  disabled={!mobileInput && !mobileStr}
-                >
-                  <Text style={styles.getOtpButtonText}>Get OTP</Text>
-                </TouchableOpacity> */}
-              </>
-            )}
-
-            <View style={styles.modalButtonRow}>
-              <TouchableOpacity
-                style={styles.cancelLinkButton}
-                onPress={() => {
-                  setOtpModalVisible(false);
-                  setOtpSentFromModal(false);
-                }}
-              >
-                <ResponsiveText
-                  variant="body"
-                  size="md"
-                  weight="medium"
-                  color={theme.colors.secondary}
-                  align="center"
-                  truncateMode="single"
-                  style={styles.cancelLinkText}
-                >
-                  {t("cancel")}
-                </ResponsiveText>
-              </TouchableOpacity>
-
-              {otpVerified && (
-                <TouchableOpacity
-                  style={[
-                    styles.modalButton,
-                    { backgroundColor: theme.colors.primary },
-                  ]}
-                  onPress={() => {
-                    setOtpModalVisible(false);
-                    handleSubmit();
-                  }}
-                >
-                  <ResponsiveText
-                    variant="button"
-                    size="md"
-                    weight="bold"
-                    color={theme.colors.white}
-                    align="center"
-                    allowWrap={false}
-                    maxLines={1}
-                    adjustsFontSizeToFit={true}
-                    minimumFontScale={0.8}
-                    style={styles.modalButtonText}
-                  >
-                    Continue
-                  </ResponsiveText>
-                </TouchableOpacity>
-              )}
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
       {/* OTP Error Modal */}
       <Modal
         visible={otpErrorModalVisible}
@@ -2112,6 +2139,67 @@ export default function BasicDetailsForm() {
           </View>
         </View>
       </Modal>
+      {/* Branch Selection Modal */}
+      <Modal
+        visible={branchModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setBranchModalVisible(false)}
+      >
+        <View style={styles.otpModalOverlay}>
+          <View style={[styles.otpModalContent, { maxHeight: height * 0.7, padding: 24 }]}>
+            {/* Header */}
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%", borderBottomWidth: 1, borderBottomColor: "#f0f0f0", paddingBottom: 12, marginBottom: 12 }}>
+              <ResponsiveText variant="title" size="md" weight="bold" color="#1a1a1a">
+                {t("selectBranch") || "Select Branch"}
+              </ResponsiveText>
+              <TouchableOpacity onPress={() => setBranchModalVisible(false)} style={{ padding: 4 }}>
+                <Ionicons name="close" size={24} color="#1a1a1a" />
+              </TouchableOpacity>
+            </View>
+
+            {/* List of Branches */}
+            <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }}>
+              {branches.map((b) => {
+                const isSelected = Number(b.id) === Number(selectedBranchId);
+                return (
+                  <TouchableOpacity
+                    key={b.id}
+                    onPress={() => {
+                      setSelectedBranchId(Number(b.id));
+                      validateBranch(Number(b.id));
+                      setBranchModalVisible(false);
+                    }}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      paddingVertical: 14,
+                      paddingHorizontal: 16,
+                      borderRadius: 12,
+                      backgroundColor: isSelected ? "rgba(133, 1, 17, 0.05)" : "transparent",
+                      borderWidth: 1,
+                      borderColor: isSelected ? theme.colors.primary : "transparent",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Text style={{
+                      fontSize: 16,
+                      fontWeight: isSelected ? "700" : "500",
+                      color: isSelected ? theme.colors.primary : "#1a1a1a",
+                    }}>
+                      {b.branch_name}
+                    </Text>
+                    {isSelected && (
+                      <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -2183,7 +2271,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   pageTitle: {
-    color: theme.colors.quaternary,
+    color: theme.colors.primary,
     fontSize: getResponsiveSize(28, 32),
     fontWeight: "bold",
     marginBottom: getResponsiveHeight(8, 12),
@@ -2568,7 +2656,7 @@ const styles = StyleSheet.create({
     minHeight: Math.min(44, width * 0.11),
   },
   verifyOtpButton: {
-    backgroundColor: theme.colors.secondary,
+    backgroundColor: theme.colors.primary,
     paddingVertical: Math.min(12, width * 0.03),
     paddingHorizontal: Math.min(20, width * 0.05),
     borderRadius: Math.min(12, width * 0.03),
@@ -2592,7 +2680,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   resendLink: {
-    color: theme.colors.secondary,
+    color: theme.colors.primary,
     fontWeight: "bold",
     fontSize: Math.min(14, width * 0.035),
     textDecorationLine: "underline",
@@ -2864,5 +2952,25 @@ const styles = StyleSheet.create({
   clipboardHintText: {
     color: "#b8860b",
     marginLeft: 6,
+  },
+  otpInputsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignSelf: "center",
+    width: "70%",
+    marginBottom: Math.min(16, width * 0.04),
+    marginTop: 15,
+  },
+  otpBox: {
+    width: Math.min(48, width * 0.12),
+    height: Math.min(52, width * 0.13),
+    borderWidth: 1.5,
+    borderColor: theme.colors.secondary,
+    borderRadius: 8,
+    textAlign: "center",
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#222",
+    backgroundColor: "rgba(0, 0, 0, 0.02)",
   },
 });

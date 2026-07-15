@@ -55,7 +55,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
     } = data;
 
     const statusText = status || "Success";
-    
+
     // Get weight directly or fall back to 0
     let weight = Number(goldWeight || 0);
 
@@ -168,7 +168,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
     <table class="details-table">
         <tr>
             <th>Transaction ID</th>
-            <td>DCJ-${transactionId}</td>
+            <td>${transactionId}</td>
         </tr>
         <tr>
             <th>Payment ID</th>

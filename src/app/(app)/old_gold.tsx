@@ -84,6 +84,10 @@ export default function OldGoldScreen() {
   useEffect(() => {
     if (params.tab === "schemes") {
       setActiveTab("schemes");
+    } else if (params.tab === "enquiry") {
+      setActiveTab("enquiry");
+    } else if (params.tab === "deposits") {
+      setActiveTab("deposits");
     }
     if (params.schemeId) {
       setExpandedSchemeId(Number(params.schemeId));

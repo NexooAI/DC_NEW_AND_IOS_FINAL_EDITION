@@ -37,6 +37,7 @@ import { logger } from "@/utils/logger";
 const { width, height } = Dimensions.get("window");
 import * as Haptics from "expo-haptics";
 import { COLORS } from "@/constants/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface Chit {
   CHITID: number | null | undefined;
@@ -183,6 +184,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
   const router = useRouter();
   const { language } = useGlobalStore();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const [branchModalVisible, setBranchModalVisible] = useState(false);
   const [selectedBranches, setSelectedBranches] = useState<any[]>([]);
@@ -1013,13 +1015,30 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
           <View style={styles.cardActionRow}>
              <TouchableOpacity
-              onPress={() => showDetailModal(item)}
+              onPress={() => {
+                const planTypeId = item.SCHEME_PLAN_TYPE_ID || item.scheme_plan_type_id;
+                if (planTypeId === 4) {
+                  router.push({
+                    pathname: "/(app)/old_gold",
+                    params: { tab: "enquiry" }
+                  });
+                } else {
+                  showDetailModal(item);
+                }
+              }}
               style={styles.knowMoreButtonClean}
             >
               <Text style={styles.knowMoreButtonTextClean}>
-                {t("knowMore") || "Know More"}
+                {(item.SCHEME_PLAN_TYPE_ID === 4 || item.scheme_plan_type_id === 4)
+                  ? (language === "ta" ? "விசாரிக்க" : language === "te" ? "విచారణ" : language === "hi" ? "पूछताछ" : language === "mal" ? "അന്വേഷണം" : "Enquiry Now")
+                  : (t("joinThisSchemes") || "Join Now")
+                }
               </Text>
-              <Ionicons name="arrow-forward-circle" size={24} color="#FFD700" />
+              <Ionicons 
+                name={(item.SCHEME_PLAN_TYPE_ID === 4 || item.scheme_plan_type_id === 4) ? "call" : "arrow-forward-circle"} 
+                size={24} 
+                color="#FFD700" 
+              />
             </TouchableOpacity>
           </View>
         </LinearGradient>
@@ -1044,23 +1063,20 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
       <Stack.Screen options={{ headerShown: false }} />
       {/* Header */}
       {!isNested && (
-        <LinearGradient
-          colors={["#667eea", "#764ba2"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.headerGradient}
+        <View
+          style={[styles.headerGradient, { backgroundColor: theme.colors.quaternary || '#F2E6D2', paddingTop: insets.top + 10 }]}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                 <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
-                  <Ionicons name="arrow-back" size={28} color="#fff" />
+                  <Ionicons name="arrow-back" size={28} color={theme.colors.primary || "#850111"} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { marginBottom: 0 }]} numberOfLines={1} adjustsFontSizeToFit>
+                <Text style={[styles.headerTitle, { color: theme.colors.primary || "#850111", marginBottom: 0 }]} numberOfLines={1} adjustsFontSizeToFit>
                   {t("schemes.explore") || "Explore Schemes"}
                 </Text>
               </View>
-              <Text style={styles.headerSubtitle} numberOfLines={1}>
+              <Text style={[styles.headerSubtitle, { color: "rgba(133, 1, 17, 0.7)" }]} numberOfLines={1}>
                 {t("schemes.subtitle") || "Find the perfect gold savings plan for you"}
               </Text>
             </View>
@@ -1068,13 +1084,13 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
             {/* Savings Home Button */}
             <TouchableOpacity
               onPress={() => router.push('/(app)/(tabs)/home')}
-              style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}
+              style={{ backgroundColor: 'rgba(133, 1, 17, 0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}
             >
-              <Ionicons name="home" size={16} color="#fff" style={{ marginRight: 4 }} />
-              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Home</Text>
+              <Ionicons name="home" size={16} color={theme.colors.primary || "#850111"} style={{ marginRight: 4 }} />
+              <Text style={{ color: theme.colors.primary || "#850111", fontSize: 12, fontWeight: '600' }}>Home</Text>
             </TouchableOpacity>
           </View>
-        </LinearGradient>
+        </View>
       )}
 
       <View style={[
@@ -1167,7 +1183,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
       <Modal
         visible={isDetailModalVisible}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={closeDetailModal}
       >
         <View style={styles.modalOverlay}>
@@ -1177,38 +1193,6 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                     <Ionicons name="close" size={20} color="#000" />
                  </View>
              </TouchableOpacity>
-
-            <View style={styles.stickyModalHeader}>
-              <TouchableOpacity
-                onPress={() => {
-                  if (selectedScheme) {
-                    closeDetailModal();
-                    if (selectedScheme.SCHEME_PLAN_TYPE_ID === 4) {
-                      setSelectedBranches(selectedScheme.branch || []);
-                      setBranchModalVisible(true);
-                    } else {
-                      handleJoinScheme(selectedScheme);
-                    }
-                  }
-                }}
-                style={[styles.modalJoinNowButton, { marginRight: 45, height: 50 }]}
-              >
-                <LinearGradient
-                  colors={['#FFD700', '#DAA520']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.modalJoinButtonGradient}
-                >
-                  <Ionicons name={selectedScheme?.SCHEME_PLAN_TYPE_ID === 4 ? "call" : "add-circle"} size={22} color="#000" />
-                  <Text style={styles.modalJoinButtonText}>
-                    {selectedScheme?.SCHEME_PLAN_TYPE_ID === 4 
-                      ? getEnquiryButtonText(language)
-                      : (t("joinThisScheme") || "JOIN THIS SCHEME")
-                    }
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
 
             <ScrollView 
                 style={styles.modalScroll}
@@ -1275,10 +1259,45 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                     </View>
                   )}
                   
-                  <View style={{ height: 100 }} />
+                  <View style={{ height: 40 }} />
                 </>
               )}
             </ScrollView>
+
+            <View style={styles.stickyModalFooter}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (selectedScheme) {
+                    closeDetailModal();
+                    const planTypeId = selectedScheme.SCHEME_PLAN_TYPE_ID || selectedScheme.scheme_plan_type_id;
+                    if (planTypeId === 4) {
+                      router.push({
+                        pathname: "/(app)/old_gold",
+                        params: { tab: "enquiry" }
+                      });
+                    } else {
+                      handleJoinScheme(selectedScheme);
+                    }
+                  }
+                }}
+                style={styles.modalJoinNowButton}
+              >
+                <LinearGradient
+                  colors={['#FFD700', '#DAA520']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.modalJoinButtonGradient}
+                >
+                  <Ionicons name={(selectedScheme?.SCHEME_PLAN_TYPE_ID === 4 || selectedScheme?.scheme_plan_type_id === 4) ? "call" : "add-circle"} size={22} color="#000" />
+                  <Text style={styles.modalJoinButtonText}>
+                    {(selectedScheme?.SCHEME_PLAN_TYPE_ID === 4 || selectedScheme?.scheme_plan_type_id === 4)
+                      ? getEnquiryButtonText(language)
+                      : (t("joinThisScheme") || "JOIN THIS SCHEME")
+                    }
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1287,7 +1306,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
       <Modal
         visible={branchModalVisible}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setBranchModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
@@ -1367,7 +1386,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   headerGradient: {
-    paddingTop: Platform.OS === 'ios' ? 12 : 30,
     paddingBottom: 20,
     paddingHorizontal: 20,
     // Removed borderBottomLeftRadius and borderBottomRightRadius to remain flat
@@ -1854,14 +1872,15 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContentModern: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderRadius: 24,
     overflow: "hidden",
-    height: '85%',
+    width: '90%',
+    height: '75%',
   },
   floatingCloseButton: {
     position: 'absolute',
@@ -2028,16 +2047,16 @@ const styles = StyleSheet.create({
     color: '#495057',
     fontWeight: '600',
   },
-  stickyModalHeader: {
+  stickyModalFooter: {
     backgroundColor: '#fff',
     paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F3F5',
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F3F5',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     zIndex: 10,
   },
   modalCancelButton: {
@@ -2054,7 +2073,7 @@ const styles = StyleSheet.create({
     color: '#ADB5BD',
   },
   modalJoinNowButton: {
-    flex: 2.5,
+    width: "100%",
     borderRadius: 16,
     overflow: 'hidden',
     elevation: 8,
@@ -2064,11 +2083,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   modalJoinButtonGradient: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 14,
     gap: 10,
   },
   modalJoinButtonText: {

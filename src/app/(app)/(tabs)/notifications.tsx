@@ -740,10 +740,9 @@ export default function NotificationsScreen() {
     <SafeAreaView 
       style={{ 
         flex: 1, 
-        backgroundColor: "#F8F9FA",
-        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0
+        backgroundColor: theme.colors.quaternary || '#F2E6D2',
       }} 
-      edges={['right', 'bottom', 'left']}
+      edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}
     >
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
       {/* Header Container */}

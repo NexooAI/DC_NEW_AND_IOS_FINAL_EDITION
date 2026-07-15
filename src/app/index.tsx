@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { COLORS } from "src/constants/colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { useFirstLaunch } from "@/common/hooks/useFirstLaunch";
+import apiClient from "@/services/api";
 
 import { logger } from "@/utils/logger";
 export default function AuthGuard() {
@@ -122,8 +123,36 @@ export default function AuthGuard() {
 
       // Check if user is already logged in from global state
       if (isLoggedIn && user) {
-        logger.log("✅ User already logged in, redirecting to dashboard");
+        logger.log("✅ User already logged in, checking redirect destination");
         setAuthStatus("navigating");
+        const cache = useGlobalStore.getState().getCachedVisibility();
+        if (cache && cache.data) {
+          if (cache.data.showDashboardAfterLogin === 0) {
+            logger.log("✅ Config dictates redirecting to home page");
+            router.replace("/(app)/(tabs)/home");
+            return;
+          }
+        } else {
+          try {
+            let token = await SecureStore.getItemAsync("authToken") || await SecureStore.getItemAsync("token") || await SecureStore.getItemAsync("accessToken");
+            if (token) {
+              logger.log("📡 Fetching visibility config in AuthGuard...");
+              const visResponse = await apiClient.get('/app-visible', {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              if (visResponse.data) {
+                useGlobalStore.getState().setCachedVisibility(visResponse.data);
+                if (visResponse.data.showDashboardAfterLogin === 0) {
+                  logger.log("✅ Config dictates redirecting to home page (freshly fetched)");
+                  router.replace("/(app)/(tabs)/home");
+                  return;
+                }
+              }
+            }
+          } catch (e) {
+            logger.error("Error fetching visibility config in AuthGuard:", e);
+          }
+        }
         router.replace("/(app)/dashboard");
         return;
       }

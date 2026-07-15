@@ -436,12 +436,33 @@ const SavingsDetail = () => {
 
     setIsLoading(true);
 
-    let payload = {
-      userId: user.id,
-      investmentId: params.id,
-    };
-
     try {
+      // Verify KYC status before proceeding to pay
+      const kycResponse = await api.get(`/kyc/status/${user.id}`);
+      const isKycCompleted = kycResponse.data && (kycResponse.data.kyc_status === "Completed" || kycResponse.data.data);
+      if (!isKycCompleted) {
+        setIsLoading(false);
+        Alert.alert(
+          t("kycRequired") || 'KYC Required',
+          t("kycNotCompleted") || 'Please complete your KYC details to continue with this payment.',
+          [
+            { text: t("cancel") || 'Cancel', style: 'cancel' },
+            {
+              text: t("completeKyc") || 'Complete KYC',
+              onPress: () => {
+                router.push('/home/kyc');
+              }
+            }
+          ]
+        );
+        return;
+      }
+
+      let payload = {
+        userId: user.id,
+        investmentId: params.id,
+      };
+
       let responce = await api.post("investments/check-payment", payload);
 
       if (responce?.data?.success === false) {
@@ -594,12 +615,33 @@ const SavingsDetail = () => {
 
     setIsLoading(true);
 
-    let payload = {
-      userId: user.id,
-      investmentId: params.id,
-    };
-
     try {
+      // Verify KYC status before proceeding to pay
+      const kycResponse = await api.get(`/kyc/status/${user.id}`);
+      const isKycCompleted = kycResponse.data && (kycResponse.data.kyc_status === "Completed" || kycResponse.data.data);
+      if (!isKycCompleted) {
+        setIsLoading(false);
+        Alert.alert(
+          t("kycRequired") || 'KYC Required',
+          t("kycNotCompleted") || 'Please complete your KYC details to continue with this payment.',
+          [
+            { text: t("cancel") || 'Cancel', style: 'cancel' },
+            {
+              text: t("completeKyc") || 'Complete KYC',
+              onPress: () => {
+                router.push('/home/kyc');
+              }
+            }
+          ]
+        );
+        return;
+      }
+
+      let payload = {
+        userId: user.id,
+        investmentId: params.id,
+      };
+
       let responce = await api.post("investments/check-payment", payload);
       logger.log(responce.data);
       if (responce?.data?.success === false) {
@@ -797,13 +839,15 @@ const SavingsDetail = () => {
                 <Ionicons name="time" size={20} color="#00838F" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.gridLabel}>Next Due Date</Text>
+                <Text style={styles.gridLabel}>{t("nextDueDate") || "Next Due Date"}</Text>
                 <Text style={styles.gridValue} numberOfLines={1}>
-                  {formatDate(params.dueDate, {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
+                  {params.dueDate === "Pay Anytime"
+                    ? (t("payAnytime") || "Pay Anytime")
+                    : formatDate(params.dueDate, {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
                 </Text>
               </View>
             </View>
@@ -821,13 +865,13 @@ const SavingsDetail = () => {
           </View>
 
           {/* Account Number */}
-          <View style={styles.gridItem}>
+          <View style={[styles.gridItem, { width: '100%' }]}>
             <View style={[styles.gridIcon, { backgroundColor: '#F3E5F5' }]}>
               <Ionicons name="bookmark" size={20} color="#7B1FA2" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.gridLabel}>{translations.accountNo}</Text>
-              <Text style={styles.gridValue} numberOfLines={1}>DCJ-{params.accNo}</Text>
+              <Text style={styles.gridValue} numberOfLines={1}>{params.accNo}</Text>
             </View>
           </View>
 
@@ -1076,7 +1120,7 @@ const SavingsDetail = () => {
               <View style={styles.modalBody}>
                 <View style={styles.receiptRow}>
                   <Text style={styles.receiptLabel}>Transaction ID</Text>
-                  <Text style={styles.receiptValue}>DCJ-{selectedTransaction.transactionId}</Text>
+                  <Text style={styles.receiptValue}>{selectedTransaction.transactionId}</Text>
                 </View>
                 {selectedTransaction.monthNumber && (
                   <View style={styles.receiptRow}>

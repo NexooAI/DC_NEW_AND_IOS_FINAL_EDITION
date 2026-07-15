@@ -48,8 +48,9 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
       return;
     }
 
+    // Do not show required error on blur if input is empty (UX enhancement)
     if (!value) {
-      setError(t("pleaseEnterMobile"));
+      setError("");
       return;
     }
 

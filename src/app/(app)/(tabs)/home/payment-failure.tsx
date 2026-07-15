@@ -71,18 +71,7 @@ export default function PaymentFailure() {
       setTabVisibility(false);
       
       const onBackPress = () => {
-        if (isBillPayment) {
-          router.replace("/(app)/bill_payment");
-        } else if (type === "booking" || type === "advance_booking") {
-          router.replace("/(tabs)/home/BookingHistory");
-        } else if (type === "scheme" && investmentId && investmentId !== "0" && investmentId !== "undefined") {
-          router.replace({
-            pathname: "/(tabs)/savings/SavingsDetail",
-            params: { investmentId }
-          });
-        } else {
-          router.replace("/(tabs)/home");
-        }
+        router.replace("/(tabs)/home");
         return true;
       };
 
@@ -168,18 +157,7 @@ export default function PaymentFailure() {
       duration: 300,
       useNativeDriver: true,
     }).start(() => {
-      if (isBillPayment) {
-        router.replace("/(app)/bill_payment");
-      } else if (type === "booking" || type === "advance_booking") {
-        router.replace("/(tabs)/home/BookingHistory");
-      } else if (type === "scheme" && investmentId && investmentId !== "0" && investmentId !== "undefined") {
-        router.replace({
-          pathname: "/(tabs)/savings/SavingsDetail",
-          params: { investmentId }
-        });
-      } else {
-        router.replace("/(tabs)/home");
-      }
+      router.replace("/(tabs)/home");
     });
   };
 
@@ -462,11 +440,11 @@ export default function PaymentFailure() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, styles.buttonHalf, styles.buttonHome]}
-                onPress={() => router.replace("/(app)/gold_advance")}
+                onPress={handleHomePress}
                 activeOpacity={0.9}
               >
-                <Ionicons name="arrow-back" size={rp(20)} color={theme.colors.textDark} />
-                <Text style={[styles.buttonText, styles.buttonTextHome]}>{(t("goBack") || "GO BACK").toUpperCase()}</Text>
+                <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
+                <Text style={[styles.buttonText, styles.buttonTextHome]}>{(t("home") || "GO TO HOME").toUpperCase()}</Text>
               </TouchableOpacity>
             </>
           ) : (
@@ -485,14 +463,12 @@ export default function PaymentFailure() {
                 activeOpacity={0.9}
               >
                 <Ionicons 
-                  name={investmentId && investmentId !== "0" && investmentId !== "undefined" ? "wallet" : "home"} 
+                  name="home" 
                   size={rp(20)} 
                   color={theme.colors.textDark} 
                 />
                 <Text style={[styles.buttonText, styles.buttonTextHome]}>
-                  {investmentId && investmentId !== "0" && investmentId !== "undefined"
-                    ? (t("backToSavings") || "BACK TO SAVINGS")
-                    : t("home")}
+                  {t("home")}
                 </Text>
               </TouchableOpacity>
             </>

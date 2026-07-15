@@ -373,7 +373,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
     if (onEnquirePress) {
       onEnquirePress(scheme);
     } else {
-      router.push("/(app)/old_gold?tab=schemes");
+      router.push("/(app)/old_gold?tab=enquiry");
     }
   };
 

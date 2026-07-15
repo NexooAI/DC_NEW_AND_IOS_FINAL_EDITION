@@ -61,7 +61,7 @@ export default function Dashboard() {
   useEffect(() => {
     loadData();
     fetchActivePopup();
-  }, []);
+  }, [user]);
 
   const fetchActivePopup = async () => {
     if (hasShownPopup) return;
@@ -199,7 +199,7 @@ export default function Dashboard() {
 
   const cards = [
     {
-      title: t("newSchemes") || "New Schemes",
+      title: t("joinSchemes") || "Join Schemes",
       icon: "briefcase-outline",
       iconType: "ionicons",
       onPress: () => router.push("/(app)/(tabs)/home/schemes"),
@@ -248,7 +248,7 @@ export default function Dashboard() {
       onPress: () => router.push("/(app)/lucky_draw"),
     },
     {
-      title: t("oldGoldScheme") || "Old Gold Scheme",
+      title: t("oldGoldScheme") || "Old Gold Deposit Scheme",
       icon: "gold",
       iconType: "material",
       onPress: () => router.push("/(app)/old_gold"),
@@ -433,31 +433,31 @@ export default function Dashboard() {
                     activeOpacity={0.8}
                   >
                     {/* Premium Wave/Curve Design Accents */}
-                  <View style={styles.cardDecor1} pointerEvents="none" />
-                  <View style={styles.cardDecor2} pointerEvents="none" />
+                    <View style={styles.cardDecor1} pointerEvents="none" />
+                    <View style={styles.cardDecor2} pointerEvents="none" />
 
-                  {item.iconType === "material" ? (
-                    <MaterialCommunityIcons
-                      name={item.icon as any}
-                      size={rf(24)}
-                      color={GOLD}
-                    />
-                  ) : (
-                    <Ionicons
-                      name={item.icon as any}
-                      size={rf(24)}
-                      color={GOLD}
-                    />
-                  )}
+                    {item.iconType === "material" ? (
+                      <MaterialCommunityIcons
+                        name={item.icon as any}
+                        size={rf(24)}
+                        color={GOLD}
+                      />
+                    ) : (
+                      <Ionicons
+                        name={item.icon as any}
+                        size={rf(24)}
+                        color={GOLD}
+                      />
+                    )}
 
-                  <ResponsiveText
-                    style={styles.cardText}
-                    color="#fff"
-                    size="sm"
-                    weight="bold"
-                  >
-                    {item.title}
-                  </ResponsiveText>
+                    <ResponsiveText
+                      style={styles.cardText}
+                      color="#fff"
+                      size="sm"
+                      weight="bold"
+                    >
+                      {item.title}
+                    </ResponsiveText>
                   </TouchableOpacity>
                 );
               })}

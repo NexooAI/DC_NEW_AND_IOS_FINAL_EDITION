@@ -22,6 +22,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 import useGlobalStore from "@/store/global.store";
 import { Picker } from "@react-native-picker/picker";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
@@ -66,6 +67,9 @@ export default function JoinSavings() {
   const { language, user } = useGlobalStore();
   const { keyboardVisible } = useKeyboardVisibility();
   const insets = useSafeAreaInsets();
+  const { isVisible } = useAppVisibility();
+  const bypassToPayment = isVisible("bypassToPayment");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // State for scheme data loaded from AsyncStorage
   const [schemeData, setSchemeData] = useState<any>(null);
@@ -2173,6 +2177,175 @@ export default function JoinSavings() {
         return;
       }
 
+      if (bypassToPayment) {
+        if (!user) {
+          setKycModalData({
+            title: "Error",
+            message: "Please log in again.",
+            type: "error",
+            buttons: [{ text: "OK", onPress: () => { }, style: "default" }],
+          });
+          setKycModalVisible(true);
+          return;
+        }
+
+        const finalName = user?.name || "Default Account";
+        let finalBranch = user?.branch_id ? String(user.branch_id) : "";
+        if (!finalBranch && branch.length > 0) {
+          finalBranch = String(branch[0].id);
+        }
+
+        setFormData(prev => ({
+          ...prev,
+          accountname: finalName,
+          associated_branch: finalBranch,
+          amount: String(currentAmount)
+        }));
+
+        setIsSubmitting(true);
+
+        const payload = {
+          userId: user.id,
+          schemeId: Number(schemeId),
+          chitId: selectedChit ? selectedChit.CHITID : null,
+          accountName: finalName,
+          associated_branch: finalBranch,
+          payment_frequency_id: selectedChit && selectedChit.PAYMENT_FREQUENCY_ID,
+        };
+
+        logger.log("Quick Join: Submitting investment", payload);
+
+        api
+          .post("/investments", payload)
+          .then((data: any) => {
+            try {
+              logger.log('Investment API response:', data);
+
+              if (!data || (!data.data && !data.data?.data)) {
+                throw new Error("Invalid API response structure");
+              }
+
+              const { storePaymentSession } = useGlobalStore.getState();
+              const accountNo = data.data?.data?.accountNo || data.data?.accountNo || data.accountNo || null;
+              const investmentId = data.data?.data?.id || data.data?.id || data.id || null;
+
+              if (!accountNo || !investmentId) {
+                logger.crash(new Error("Missing critical payment data"), {
+                  data,
+                  accountNo,
+                  investmentId,
+                  payload,
+                });
+                throw new Error("Missing account number or investment ID in response");
+              }
+
+              const paymentSessionData = {
+                amount: Number(currentAmount),
+                userDetails: {
+                  accountname: finalName,
+                  accNo: accountNo,
+                  associated_branch: finalBranch,
+                  name: finalName,
+                  mobile: String(user?.mobile || ""),
+                  email: user?.email || "",
+                  userId: user?.id || "",
+                  investmentId: investmentId,
+                  schemeId: Number(schemeId),
+                  schemeType: schemeType,
+                  paymentFrequency: selectedChit ? selectedChit.PAYMENT_FREQUENCY : "",
+                  chitId: selectedChit ? selectedChit.CHITID : null,
+                  isRetryAttempt: false,
+                  source: "join_savings",
+                },
+                timestamp: new Date().toISOString(),
+              };
+
+              storePaymentSession(paymentSessionData);
+              logger.log('Payment session stored in global store from join_savings', paymentSessionData);
+
+              const apiData = data.data?.data || {};
+              const sanitizedApiData: any = {};
+              const allowedFields = ['accountNo', 'accNo', 'id', 'userId', 'schemeId', 'chitId'];
+              allowedFields.forEach(field => {
+                if (apiData[field] !== undefined && apiData[field] !== null) {
+                  sanitizedApiData[field] = apiData[field];
+                }
+              });
+
+              const userDetailsObject = {
+                accountname: finalName,
+                accNo: accountNo,
+                associated_branch: finalBranch,
+                name: finalName,
+                mobile: String(user?.mobile || ""),
+                email: user?.email || "",
+                userId: user?.id || "",
+                investmentId: investmentId,
+                schemeId: Number(schemeId),
+                schemeType: schemeType,
+                schemeName: parsedData?.name || "",
+                paymentFrequency: selectedChit?.PAYMENT_FREQUENCY || "",
+                chitId: selectedChit?.CHITID || null,
+                ...sanitizedApiData,
+              };
+
+              let userDetailsString = JSON.stringify(userDetailsObject);
+              const maxSize = 1500;
+              if (userDetailsString.length > maxSize) {
+                const minimalUserDetails = {
+                  accountname: finalName,
+                  accNo: accountNo,
+                  associated_branch: finalBranch,
+                  userId: user?.id || "",
+                  investmentId: investmentId,
+                  schemeId: Number(schemeId),
+                  schemeType: schemeType,
+                  paymentFrequency: selectedChit?.PAYMENT_FREQUENCY || "",
+                  chitId: selectedChit?.CHITID || null,
+                };
+                userDetailsString = JSON.stringify(minimalUserDetails);
+              }
+
+              const navigationParams = {
+                pathname: "/(tabs)/home/paymentNewOverView",
+                params: {
+                  amount: String(currentAmount),
+                  schemeName: parsedData?.name || "",
+                  schemeId: String(parsedData?.schemeId || schemeId || ""),
+                  chitId: selectedChit?.CHITID ? String(selectedChit.CHITID) : "",
+                  paymentFrequency: selectedChit?.PAYMENT_FREQUENCY || "",
+                  schemeType: schemeType || "",
+                  savinsTypes: parsedData?.savingType || "amount",
+                  userDetails: userDetailsString,
+                },
+              };
+
+              if (isNavigatingRef.current) {
+                setIsSubmitting(false);
+                return;
+              }
+              isNavigatingRef.current = true;
+
+              InteractionManager.runAfterInteractions(() => {
+                setIsSubmitting(false);
+                router.push(navigationParams);
+              });
+            } catch (err: any) {
+              setIsSubmitting(false);
+              logger.error("Error processing Quick Join response:", err);
+              CustomAlert.alert("Error", err.message || "Failed to process payment session");
+            }
+          })
+          .catch((err: any) => {
+            setIsSubmitting(false);
+            const errMsg = err.response?.data?.message || err.message || "Failed to join scheme";
+            logger.error("Quick Join submission error:", err);
+            CustomAlert.alert("Submission Error", errMsg);
+          });
+
+        return;
+      }
+
       setStep(2);
       return;
     }
@@ -2838,12 +3011,14 @@ export default function JoinSavings() {
             {keyboardVisible && (
               <View style={styles.footerKeyboard}>
                 <ResponsiveButton
-                  title={step === 2 ? translations.confirmAndJoin : translations.next}
+                  title={step === 2 || bypassToPayment ? translations.confirmAndJoin : translations.next}
                   variant="primary"
                   size="lg"
                   fullWidth={true}
                   onPress={handleNext}
                   style={styles.button}
+                  loading={isSubmitting}
+                  disabled={isSubmitting}
                 />
               </View>
             )}
@@ -2862,12 +3037,14 @@ export default function JoinSavings() {
             ]}
           >
             <ResponsiveButton
-              title={step === 2 ? translations.confirmAndJoin : translations.next}
+              title={step === 2 || bypassToPayment ? translations.confirmAndJoin : translations.next}
               variant="primary"
               size="lg"
               fullWidth={true}
               onPress={handleNext}
               style={styles.button}
+              loading={isSubmitting}
+              disabled={isSubmitting}
             />
           </View>
         )}

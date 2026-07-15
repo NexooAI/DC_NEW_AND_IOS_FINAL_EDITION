@@ -29,11 +29,11 @@ export default function TabsLayout() {
         <Tabs
           screenOptions={{
             headerShown: true,
-            tabBarActiveTintColor: "#FFD700", // Gold color for active tabs
-            tabBarInactiveTintColor: "#cbd5e1", // Light silver/grey for inactive tabs
+            tabBarActiveTintColor: theme.colors.primary || "#850111", // Primary active color
+            tabBarInactiveTintColor: "#666", // Inactive grey
             tabBarBackground: () => (
               <BlurView
-                tint="dark"
+                tint="light"
                 intensity={85}
                 style={StyleSheet.absoluteFill}
               />
@@ -41,13 +41,13 @@ export default function TabsLayout() {
             tabBarStyle: {
               height: 60,
               overflow: 'hidden',
-              backgroundColor: 'rgba(26, 2, 4, 0.90)', // Dark black-maroon base
+              backgroundColor: 'rgba(255, 255, 255, 0.85)', // Light translucent base
               borderTopWidth: 1.5,
-              borderTopColor: 'rgba(218, 165, 32, 0.25)', // Glowing gold top border line
+              borderTopColor: 'rgba(0, 0, 0, 0.1)', // Light border line
               elevation: 10,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: -3 },
-              shadowOpacity: 0.15,
+              shadowOpacity: 0.08,
               shadowRadius: 6,
               paddingBottom: Platform.OS === 'ios' ? 12 : 8,
               paddingTop: 8,
@@ -92,7 +92,7 @@ export default function TabsLayout() {
                   <Ionicons
                     name={isActive ? "home" : "home-outline"}
                     size={size}
-                    color={isActive ? "#FFD700" : color}
+                    color={isActive ? color : (focused ? "#666" : color)}
                   />
                 );
               },
@@ -141,8 +141,8 @@ export default function TabsLayout() {
               tabBarIcon: ({ color, size, focused }) => (
                 <Ionicons
                   name={focused ? "grid" : "grid-outline"}
-                  size={size}
-                  color={focused ? "#FFD700" : color}
+                  size={size + 4}
+                  color={color}
                 />
               ),
               tabBarLabel: t("dashboard") || "Dashboard",
@@ -206,7 +206,7 @@ export default function TabsLayout() {
                   <Ionicons
                     name={focused ? "gift" : "gift-outline"}
                     size={size}
-                    color={focused ? "#FFD700" : color}
+                    color={color}
                   />
                 );
               },

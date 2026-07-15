@@ -166,6 +166,21 @@ export default function MpinSetup() {
           usertype: data.user.userType,
         });
 
+        try {
+          const visResponse = await api.get('/app-visible', {
+            headers: { Authorization: `Bearer ${data.token}` }
+          });
+          if (visResponse.data) {
+            useGlobalStore.getState().setCachedVisibility(visResponse.data);
+            if (visResponse.data.showDashboardAfterLogin === 0) {
+              router.replace("/(app)/(tabs)/home");
+              return;
+            }
+          }
+        } catch (visError) {
+          console.error("Error fetching visibility config in mpin.tsx:", visError);
+        }
+
         router.replace("/(app)/dashboard");
       }
     } catch (error: any) {

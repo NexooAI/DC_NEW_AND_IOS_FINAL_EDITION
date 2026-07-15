@@ -136,7 +136,7 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
         <table class="details-table">
             <tr>
                 <th>Bill Reference ID</th>
-                <td>#DCJ-B-ID-${billId}</td>
+                <td># ${billId}</td>
             </tr>
             <tr>
                 <th>Bill Number</th>
@@ -180,8 +180,8 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
             </div>
             <div class="footer-bottom">
                 <p>Date: ${new Date().toLocaleDateString("en-GB", {
-            day: "2-digit", month: "short", year: "numeric"
-        })}</p>
+        day: "2-digit", month: "short", year: "numeric"
+    })}</p>
                 <p class="signature">Authorized Signatory<br/>${theme.constants.customerName}</p>
             </div>
         </div>

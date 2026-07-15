@@ -168,7 +168,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
                 {translations.accountNumberLabel || "Account Number"}
               </Text>
               <Text style={styles.paymentInfoValue}>
-                DCJ-OG-{item.id}
+                {item.id}
               </Text>
             </View>
           </View>

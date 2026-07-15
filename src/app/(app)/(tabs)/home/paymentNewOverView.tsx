@@ -677,7 +677,7 @@ export default function PaymentNewOverView() {
       if (response && response.data && response.data.success && response.data.data) {
         const policy = response.data.data;
         let selectedTerms = "";
-        
+
         // Match language with robust progressive fallback
         const targetKey = `description_${language}`;
         selectedTerms = policy[targetKey] || "";
@@ -1631,7 +1631,7 @@ export default function PaymentNewOverView() {
               <View style={styles.schemeDetailsRow}>
                 <Text style={styles.schemeDetailLabel}>{t("accountNo")}:</Text>
                 <Text style={styles.schemeDetailValue}>
-                  {params.accNo ? `DCJ-${params.accNo}` : (userDetails?.accNo || "N/A")}
+                  {params.accNo ? `${params.accNo}` : (userDetails?.accNo || "N/A")}
                 </Text>
               </View>
 

@@ -101,6 +101,7 @@ interface InvestmentResponse {
   amount: string;
   paymentFrequency: string;
   dueDate?: string;
+  nextDueDateText?: string;
   rewards?: Array<{
     id: number;
     amount: number;
@@ -413,7 +414,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
             transactions: [],
             paymentFrequency: item.paymentFrequency || "Monthly",
             rewards: item.rewards || [],
-            dueDate: item.dueDate || "",
+            dueDate: item.nextDueDateText || item.dueDate || "",
           };
         });
 

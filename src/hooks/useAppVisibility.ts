@@ -25,6 +25,9 @@ export interface AppVisibilityData {
     showTranslate: number;
     showYoutube: number;
     showSchemsPage: number;
+    bypassToPayment: number;
+    shortKyc: number;
+    showDashboardAfterLogin?: number;
     updated_at: string;
 }
 
@@ -80,7 +83,8 @@ export function useAppVisibility() {
             // Default core components to true if visibleData is not loaded yet
             const defaultVisible: Array<keyof Omit<AppVisibilityData, 'id' | 'updated_at'>> = [
                 'showGoldRate', 'showPoster', 'showFlashnews', 'showCustomerCard',
-                'showSchemes', 'showSocialMedia', 'showSupportCard', 'showHallmark'
+                'showSchemes', 'showSocialMedia', 'showSupportCard', 'showHallmark',
+                'showDashboardAfterLogin'
             ];
             return defaultVisible.includes(componentName);
         }

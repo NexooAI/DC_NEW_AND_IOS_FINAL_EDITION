@@ -141,7 +141,7 @@ export const generateBookingReceiptHTML = (data: BookingReceiptData): string => 
         <table class="details-table">
             <tr>
                 <th>Booking ID</th>
-                <td>#DCJ-B-${bookingId}</td>
+                <td># ${bookingId}</td>
             </tr>
             <tr>
                 <th>Gold Weight</th>
@@ -190,8 +190,8 @@ export const generateBookingReceiptHTML = (data: BookingReceiptData): string => 
             </div>
             <div class="footer-bottom">
                 <p>Date: ${new Date().toLocaleDateString("en-GB", {
-            day: "2-digit", month: "short", year: "numeric"
-        })}</p>
+        day: "2-digit", month: "short", year: "numeric"
+    })}</p>
                 <p class="signature">Authorized Signatory<br/>${theme.constants.customerName}</p>
             </div>
         </div>

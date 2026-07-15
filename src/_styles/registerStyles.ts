@@ -203,8 +203,8 @@ export const registerStyles = StyleSheet.create({
   otpInput: {
     width: Math.min(48, screenWidth * 0.12),
     height: Math.min(48, screenWidth * 0.12),
-    borderWidth: 1,
-    borderColor: theme.colors.bgBlackLight,
+    borderWidth: 1.5,
+    borderColor: "rgba(133, 1, 17, 0.15)",
     borderRadius: Math.min(10, screenWidth * 0.025),
     color: theme.colors.black,
     fontSize: Math.min(22, screenWidth * 0.055),
@@ -212,6 +212,12 @@ export const registerStyles = StyleSheet.create({
     textAlign: 'center',
     marginHorizontal: Math.min(4, screenWidth * 0.01), // Responsive margin
     fontWeight: '600',
+    // 3D Shadow properties
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
   eyeButton: {
     position: "absolute",

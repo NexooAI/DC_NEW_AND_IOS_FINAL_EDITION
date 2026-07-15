@@ -11,6 +11,7 @@ import {
   StatusBar,
   View,
 } from "react-native";
+import * as Linking from "expo-linking";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../global.css";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -162,6 +163,49 @@ export default function RootLayout() {
 
     initLanguage();
   }, [setLanguage]);
+
+  const currentDeepLinkUrl = Linking.useURL();
+
+  // Deep link listener to capture and cache referral code across app cold starts/redirects
+  useEffect(() => {
+    if (!currentDeepLinkUrl) return;
+    logger.log("🔗 [_layout] Expo Linking useURL detected URL:", currentDeepLinkUrl);
+    
+    const parseAndSaveReferralCode = async (urlStr: string) => {
+      try {
+        let referralCode: string | null = null;
+        const regex = /[?&](code|emp_code|employee_code|referral_code|empCode)=([^&]+)/i;
+        
+        // Try direct matching
+        const match = urlStr.match(regex);
+        if (match && match[2]) {
+          referralCode = match[2];
+        } else {
+          // Check for nested link query parameter (e.g. Firebase Dynamic Links)
+          const nestedUrlMatch = urlStr.match(/[?&]link=([^&]+)/i);
+          if (nestedUrlMatch && nestedUrlMatch[1]) {
+            const decodedNestedUrl = decodeURIComponent(nestedUrlMatch[1]);
+            const nestedMatch = decodedNestedUrl.match(regex);
+            if (nestedMatch && nestedMatch[2]) {
+              referralCode = nestedMatch[2];
+            }
+          }
+        }
+
+        if (referralCode) {
+          const cleanCode = referralCode.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().trim();
+          if (cleanCode && cleanCode.length === 6) {
+            logger.log("✅ [_layout] Saved pending referral code to AsyncStorage:", cleanCode);
+            await AsyncStorage.setItem("pendingReferralCode", cleanCode);
+          }
+        }
+      } catch (error) {
+        logger.error("❌ [_layout] Error parsing deep link URL:", error);
+      }
+    };
+
+    parseAndSaveReferralCode(currentDeepLinkUrl);
+  }, [currentDeepLinkUrl]);
 
   useEffect(() => {
     if (isExpoGo) {

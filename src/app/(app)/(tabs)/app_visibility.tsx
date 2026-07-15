@@ -36,6 +36,8 @@ interface AppVisibilityData {
   showTranslate: number;
   showYoutube: number;
   showSchemsPage: number;
+  bypassToPayment: number;
+  shortKyc: number;
   updated_at: string;
 }
 

@@ -435,59 +435,70 @@ export default function PaymentWebView() {
     };
   }, [socket]);
 
+  const parseIntentUrl = (url: string): string => {
+    try {
+      const match = url.match(/intent:\/\/([^#]+)#Intent;(.+)/);
+      if (!match) return url;
+
+      const path = match[1];
+      const params = match[2].split(";");
+      let scheme = "upi";
+
+      params.forEach((param) => {
+        if (param.startsWith("scheme=")) {
+          scheme = param.split("=")[1];
+        }
+      });
+
+      return `${scheme}://${path}`;
+    } catch (e) {
+      console.error("Error parsing intent URL:", e);
+      return url;
+    }
+  };
+
   // Handle WebView requests
   const handleShouldStartLoadWithRequest = (request: any) => {
     const { url } = request;
     console.log("WebView attempting to load:", url);
+    const lowerUrl = url.toLowerCase();
 
-    // Allow standard web schemes
+    // Allow standard web schemes to load within the webview
     if (
-      url.startsWith("http://") ||
-      url.startsWith("https://") ||
-      url.startsWith("about:blank") ||
-      url.startsWith("about:srcdoc") ||
-      url.startsWith("data:")
+      lowerUrl.startsWith("http://") ||
+      lowerUrl.startsWith("https://") ||
+      lowerUrl.startsWith("about:") ||
+      lowerUrl.startsWith("data:") ||
+      lowerUrl.startsWith("javascript:")
     ) {
       return true;
     }
 
-    // Only intercept known custom / UPI schemes
-    const customSchemes = ['upi:', 'tez:', 'phonepe:', 'paytm:', 'gpay:', 'bhim:', 'intent:'];
-    const isCustomScheme = customSchemes.some(scheme => url.toLowerCase().startsWith(scheme));
-
-    if (!isCustomScheme) {
-      // Allow other internal/web schemes to load within the webview
-      return true;
+    // Intercept custom scheme/intent URLs (e.g. upi, phonepe, gpay, intent, bank apps)
+    let targetUrl = url;
+    if (lowerUrl.startsWith("intent:")) {
+      targetUrl = parseIntentUrl(url);
+      console.log("Parsed intent URL to standard scheme:", targetUrl);
     }
 
-    // Handle special schemes (tez://, upi://, phonepe://, etc.)
-    // We try to open them in the respective app
-    Linking.canOpenURL(url)
+    Linking.canOpenURL(targetUrl)
       .then((supported) => {
         if (supported) {
-          return Linking.openURL(url);
+          return Linking.openURL(targetUrl);
         } else {
-          // Even if canOpenURL returns false (due to visibility queries issues on Android 11+),
-          // we should still TRY to open it, as it might just work if the app is installed.
-          // This serves as a fail-safe.
-          console.log("canOpenURL returned false, but attempting to open anyway:", url);
-          return Linking.openURL(url).catch((err) => {
+          console.log("canOpenURL returned false, attempting forced open anyway:", targetUrl);
+          return Linking.openURL(targetUrl).catch((err) => {
             console.log("Failed to open URL forcibly:", err);
-            // If it really fails, THEN show the alert
             Alert.alert(
-              "Payment App Not Found", 
+              "Payment App Not Found",
               "Could not open the selected payment app. Please install it or try another method.",
               [{ text: "OK", onPress: () => {} }]
             );
-            // Throw to prevent the next catch block from thinking it succeeded? 
-            // Actually catching it here is enough.
           });
         }
       })
       .catch((err) => {
-          console.error("An error occurred handling the URL:", err);
-          // Only show generic error if we haven't already shown specific one
-          // (Logic simplified above to handle openURL failure directly)
+        console.error("An error occurred handling the URL:", err);
       });
 
     return false;

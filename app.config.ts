@@ -24,7 +24,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         version: version,
         orientation: "portrait",
         userInterfaceStyle: "automatic",
-        scheme: "acme",
+        scheme: "dcjewellers",
         jsEngine: "hermes",
 
         icon: "./assets/images/playstore-icon.png",
@@ -80,6 +80,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             },
             icon: "./assets/images/playstore-icon.png",
             bundleIdentifier: bundleIdentifier,
+            associatedDomains: [
+                "applinks:api.prod.dcjewellers.org",
+                "applinks:dcjewellers.org",
+                "applinks:dcjewellers.page.link"
+            ],
             googleServicesFile: "./GoogleService-Info.plist",
             buildNumber: "1",
             jsEngine: "hermes",

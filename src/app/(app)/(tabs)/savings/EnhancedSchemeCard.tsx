@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Animated,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -248,6 +249,27 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
     }
 
     try {
+      // Verify KYC status before proceeding to pay
+      const kycResponse = await api.get(`/kyc/status/${user.id}`);
+      const isKycCompleted = kycResponse.data && (kycResponse.data.kyc_status === "Completed" || kycResponse.data.data);
+      if (!isKycCompleted) {
+        setIsLoading(false);
+        Alert.alert(
+          t("kycRequired") || 'KYC Required',
+          t("kycNotCompleted") || 'Please complete your KYC details to continue with this payment.',
+          [
+            { text: t("cancel") || 'Cancel', style: 'cancel' },
+            {
+              text: t("completeKyc") || 'Complete KYC',
+              onPress: () => {
+                router.push('/home/kyc');
+              }
+            }
+          ]
+        );
+        return;
+      }
+
       // Call API to check payment and get investment details
       const payload = {
         userId: user.id,
@@ -516,7 +538,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                   {translations.accountNumberLabel}
                 </Text>
                 <Text style={styles.paymentInfoValue}>
-                  DCJ-{item.accNo}
+                  {item.accNo}
                 </Text>
               </View>
             </View>

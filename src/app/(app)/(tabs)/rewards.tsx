@@ -13,6 +13,8 @@ import {
     TextInput,
     Alert,
     ScrollView,
+    Share,
+    Linking,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -33,6 +35,27 @@ export default function RewardsScreen() {
     const router = useRouter();
     const navigation = useNavigation();
     const { user } = useGlobalStore();
+
+    const code = user?.referralCode || "DEFAULT123";
+    const shareMessage = (t("refer_earn_share_message") || "Use my referral code {code} to sign up and earn rewards! Click here to download the app: https://dcjewellers.org/refer?code={code}").replace(/{code}/g, code);
+
+    const onShare = async () => {
+        try {
+            await Share.share({
+                title: "Refer & Earn",
+                message: shareMessage,
+            });
+        } catch (error: any) {
+            Alert.alert(t("error") || "Error", error.message);
+        }
+    };
+
+    const onShareWhatsapp = () => {
+        const url = `whatsapp://send?text=${encodeURIComponent(shareMessage)}`;
+        Linking.openURL(url).catch(() => {
+            Alert.alert(t("error") || "Error", t("whatsappNotInstalled") || "WhatsApp is not installed on your device");
+        });
+    };
     const [totalPoints, setTotalPoints] = useState(0);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -407,32 +430,68 @@ export default function RewardsScreen() {
                                 </Text>
                             </View>
                         </View>
+
+                        {/* Action buttons inside the card */}
+                        <View style={{ marginTop: 24, gap: 12 }}>
+                            {/* Redeem Points Button */}
+                            <TouchableOpacity
+                                style={{
+                                    width: "100%",
+                                    height: 48,
+                                    borderRadius: 12,
+                                    overflow: "hidden",
+                                }}
+                                activeOpacity={0.9}
+                                onPress={handleRedeemPress}
+                                disabled={loading}
+                            >
+                                <LinearGradient
+                                    colors={[theme.colors.primary, "#002b24"]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={{
+                                        flex: 1,
+                                        flexDirection: "row",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    {loading ? (
+                                        <ActivityIndicator size="small" color="#fff" />
+                                    ) : (
+                                        <>
+                                            <Text style={{ color: "#fff", fontSize: 16, fontWeight: "bold" }}>
+                                                {t("redeemPoints") || "Redeem Points"}
+                                            </Text>
+                                            <Ionicons name="arrow-forward" size={16} color="#FFD700" style={{ marginLeft: 6 }} />
+                                        </>
+                                    )}
+                                </LinearGradient>
+                            </TouchableOpacity>
+
+                        </View>
                     </View>
                 </View>
 
             </ScrollView>
 
-            {/* Floating Action Button */}
-            <View style={styles.bottomBar}>
+            {/* Fixed Share Button at Bottom */}
+            <View style={styles.fixedShareFooter}>
                 <TouchableOpacity
-                    style={styles.redeemButton}
-                    activeOpacity={0.9}
-                    onPress={handleRedeemPress}
-                    disabled={loading}
+                    style={styles.fixedShareButton}
+                    activeOpacity={0.85}
+                    onPress={onShare}
                 >
                     <LinearGradient
-                        colors={[theme.colors.primary, "#002b24"]}
+                        colors={['#FFD700', '#FF8C00']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
-                        style={styles.redeemGradient}
+                        style={styles.fixedShareGradient}
                     >
-                        {loading ? (
-                            <ActivityIndicator color="#fff" />
-                        ) : (
-                            <Text style={styles.redeemButtonText}>{t("redeemPoints") || "Redeem Points"}</Text>
-                        )}
-                        <Ionicons name="sparkles" size={16} color="#FFD700" style={{ position: "absolute", top: 10, left: 20 }} />
-                        <Ionicons name="sparkles" size={24} color="#FFD700" style={{ position: "absolute", bottom: 10, right: 20 }} />
+                        <Ionicons name="share-social" size={20} color="#000" />
+                        <Text style={styles.fixedShareText}>
+                            {t("shareReferralCode") || "Share Referral Code"}
+                        </Text>
                     </LinearGradient>
                 </TouchableOpacity>
             </View>
@@ -635,7 +694,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#F2E6D2",
     },
     scrollContent: {
-        paddingBottom: 150,
+        paddingBottom: 220,
     },
     modalOverlay: {
         flex: 1,
@@ -979,6 +1038,22 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         letterSpacing: 0.5,
     },
+    sharePointsButton: {
+        paddingVertical: 18,
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "row",
+        borderWidth: 2,
+        borderColor: theme.colors.primary,
+        borderRadius: 16,
+        backgroundColor: "#fff",
+    },
+    sharePointsButtonText: {
+        color: theme.colors.primary,
+        fontSize: 18,
+        fontWeight: "700",
+        letterSpacing: 0.5,
+    },
     pointsInput: {
         width: "100%",
         height: 50,
@@ -1035,5 +1110,41 @@ const styles = StyleSheet.create({
     },
     methodTextActive: {
         color: theme.colors.primary,
+    },
+    fixedShareFooter: {
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        paddingBottom: Platform.OS === "ios" ? 34 : 16,
+        borderTopWidth: 1,
+        borderTopColor: "rgba(0, 0, 0, 0.05)",
+    },
+    fixedShareButton: {
+        width: "100%",
+        height: 52,
+        borderRadius: 16,
+        overflow: "hidden",
+        shadowColor: "#FF8C00",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 6,
+        elevation: 8,
+    },
+    fixedShareGradient: {
+        flex: 1,
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 8,
+    },
+    fixedShareText: {
+        color: "#000",
+        fontSize: 16,
+        fontWeight: "800",
+        letterSpacing: 0.5,
     },
 });

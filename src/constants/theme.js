@@ -594,6 +594,8 @@ const theme = {
     website: "https://www.dcjewellers.org",
     latitude: 8.427828080550306,
     longitude: 78.02855977120382,
+    providerName: "Agni",
+    providerUrl: "https://agni.com",
   },
   baseUrl: "https://api.prod.dcjewellers.org",
   // baseUrl: "https://nexooai.ramcarmotor.com",
