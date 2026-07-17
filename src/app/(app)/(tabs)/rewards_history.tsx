@@ -24,6 +24,9 @@ export default function RewardsHistoryScreen() {
     const [selectedItem, setSelectedItem] = useState<any>(null);
     const [detailsModalVisible, setDetailsModalVisible] = useState(false);
 
+    const isAddition = selectedItem?.type === 'referral' || selectedItem?.type === 'lucky_draw';
+    const isLuckyDraw = selectedItem?.type === 'lucky_draw';
+
     // Filters and pagination states
     const [filter, setFilter] = useState<"all" | "referral_install" | "referral_investment" | "lucky_draw" | "redemption">("all");
     const [visibleCount, setVisibleCount] = useState(10);

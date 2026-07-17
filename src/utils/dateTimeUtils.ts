@@ -77,7 +77,13 @@ export function formatDate(
   const localDate = convertUTCToLocal(date);
   if (isNaN(localDate.getTime())) {
     // If the input date was already a formatted string that failed to parse (e.g., DD/MM/YYYY), return it
-    if (typeof date === 'string') return date;
+    if (typeof date === 'string') {
+      const lower = date.toLowerCase();
+      if (lower.includes('invalid') || lower.includes('null') || lower.includes('undefined')) {
+        return 'N/A';
+      }
+      return date;
+    }
     return 'N/A';
   }
 
@@ -105,7 +111,13 @@ export function formatDateTime(
   if (date === null || date === undefined) return 'N/A';
   const localDate = convertUTCToLocal(date);
   if (isNaN(localDate.getTime())) {
-    if (typeof date === 'string') return date;
+    if (typeof date === 'string') {
+      const lower = date.toLowerCase();
+      if (lower.includes('invalid') || lower.includes('null') || lower.includes('undefined')) {
+        return 'N/A';
+      }
+      return date;
+    }
     return 'N/A';
   }
 

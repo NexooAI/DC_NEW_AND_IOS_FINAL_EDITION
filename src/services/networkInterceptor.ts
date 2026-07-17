@@ -11,14 +11,14 @@ if (global.fetch) {
     }
     
     // Normalize and add X-Timezone header
-    let headers: HeadersInit = {};
+    let headers: any = {};
     if (init.headers) {
       if (init.headers instanceof Headers) {
         headers = new Headers(init.headers);
         headers.set('X-Timezone', timezone);
       } else if (Array.isArray(init.headers)) {
         headers = [...init.headers];
-        const hasTimezone = headers.some(([key]) => key.toLowerCase() === 'x-timezone');
+        const hasTimezone = headers.some(([key]: any) => key.toLowerCase() === 'x-timezone');
         if (!hasTimezone) {
           headers.push(['X-Timezone', timezone]);
         }

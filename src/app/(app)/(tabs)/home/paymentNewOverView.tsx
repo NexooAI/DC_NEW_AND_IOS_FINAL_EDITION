@@ -18,7 +18,7 @@ import Slider from "@react-native-community/slider";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useRouter, useFocusEffect, Stack } from "expo-router";
 import { theme } from "@/constants/theme";
 import api from "@/services/api";
 import paymentService from "../../../../services/payment.service";
@@ -1231,6 +1231,7 @@ export default function PaymentNewOverView() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ title: t("paymentProcess") || "Payment Process" }} />
       {/* Session Timer Banner */}
       <View style={styles.timerBanner}>
         <Ionicons name="time-outline" size={18} color="#d97706" />

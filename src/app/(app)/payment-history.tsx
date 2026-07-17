@@ -24,6 +24,7 @@ import { responsiveUtils } from '@/utils/responsiveUtils';
 import { useTranslation } from '@/hooks/useTranslation';
 import apiWithLoader from '@/services/apiWithLoader';
 import { formatDateTime } from '@/utils/dateTimeUtils';
+import useGlobalStore from "@/store/global.store";
 
 // Enable LayoutAnimation for Android (only if not on the New Architecture / Fabric)
 const isNewArch = (global as any).RN$Fabric || (global as any).nativeFabricUIManager;

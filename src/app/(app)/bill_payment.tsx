@@ -502,7 +502,7 @@ export default function BillPayment() {
           <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
         <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
-          My Bills
+          {t("myBills") || "My Bills"}
         </ResponsiveText>
         <TouchableOpacity onPress={handleRefresh} style={styles.backButton}>
           <Ionicons name="refresh" size={22} color={theme.colors.primary} />
@@ -511,11 +511,11 @@ export default function BillPayment() {
 
       <View style={styles.tabContainer}>
         <TouchableOpacity style={[styles.tab, activeTab === 'all' && styles.activeTab]} onPress={() => setActiveTab('all')}>
-          <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>All Bills</Text>
+          <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>{t("allBills") || "All Bills"}</Text>
           {activeTab === 'all' && <View style={styles.activeIndicator} />}
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tab, activeTab === 'closed' && styles.activeTab]} onPress={() => setActiveTab('closed')}>
-          <Text style={[styles.tabText, activeTab === 'closed' && styles.activeTabText]}>Paid / Expired</Text>
+          <Text style={[styles.tabText, activeTab === 'closed' && styles.activeTabText]}>{t("paidExpired") || "Paid / Expired"}</Text>
           {activeTab === 'closed' && <View style={styles.activeIndicator} />}
         </TouchableOpacity>
       </View>
@@ -536,7 +536,7 @@ export default function BillPayment() {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="receipt-outline" size={rf(50)} color="rgba(0,0,0,0.14)" />
-              <Text style={styles.emptyText}>No bills found.</Text>
+              <Text style={styles.emptyText}>{t("noBillsFound") || "No bills found."}</Text>
             </View>
           }
         />

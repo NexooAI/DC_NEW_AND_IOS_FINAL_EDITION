@@ -532,7 +532,14 @@ const BannerCard: React.FC<BannerCardProps> = ({ item, router }) => {
           activeOpacity={0.85}
           accessibilityLabel={t("aboutSchemes")}
         >
-          <Text style={styles.aboutSchemesButtonText}>{t("aboutSchemes")}</Text>
+          <Text
+            style={styles.aboutSchemesButtonText}
+            numberOfLines={1}
+            adjustsFontSizeToFit={true}
+            minimumFontScale={0.75}
+          >
+            {t("aboutSchemes")}
+          </Text>
         </TouchableOpacity>
         <Animated.View
           style={{ flex: 1, transform: [{ scale: joinNowScale }] }}
@@ -547,7 +554,14 @@ const BannerCard: React.FC<BannerCardProps> = ({ item, router }) => {
               "Tap to join the scheme. This button is highlighted for your attention."
             }
           >
-            <Text style={styles.joinNowButtonText}>{t("joinNow")}</Text>
+            <Text
+              style={styles.joinNowButtonText}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.75}
+            >
+              {t("joinNow")}
+            </Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -1765,7 +1779,18 @@ export default function Home() {
       return "";
     }
     if (typeof textObj === "string") {
-      return textObj.trim() || "";
+      const trimmed = textObj.trim();
+      const key = trimmed
+        .replace(/[^a-zA-Z0-9 ]/g, "")
+        .split(" ")
+        .filter(Boolean)
+        .map((word, i) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1))
+        .join("");
+      const translated = t(key);
+      if (translated && translated !== key && !translated.includes("missing")) {
+        return translated;
+      }
+      return trimmed;
     }
     if (typeof textObj === "number") {
       return isNaN(textObj) ? "" : String(textObj);
@@ -1975,11 +2000,11 @@ export default function Home() {
     if (kycStatus === false) {
       // Show KYC alert
       Alert.alert(
-        "KYC Required",
-        "KYC not completed please complete",
+        t("kycRequiredAlertBox") || "KYC Required",
+        t("kycCompletedClickHere") || "KYC completed click here to complete",
         [
           {
-            text: "Cancel",
+            text: t("cancel") || "Cancel",
             style: "cancel",
             onPress: () => {
               // Clear selectedScheme when canceling
@@ -1987,7 +2012,7 @@ export default function Home() {
             },
           },
           {
-            text: "Update",
+            text: t("update") || "Update",
             onPress: () => {
               // Keep selectedScheme for when user returns from KYC page
               router.push("/(app)/(tabs)/home/kyc");
@@ -2019,18 +2044,18 @@ export default function Home() {
       setTimeout(() => {
         if (kycStatus === false) {
           Alert.alert(
-            "KYC Required",
-            "KYC not completed please complete",
+            t("kycRequiredAlertBox") || "KYC Required",
+            t("kycCompletedClickHere") || "KYC completed click here to complete",
             [
               {
-                text: "Cancel",
+                text: t("cancel") || "Cancel",
                 style: "cancel",
                 onPress: () => {
                   setSelectedScheme(null);
                 },
               },
               {
-                text: "Update",
+                text: t("update") || "Update",
                 onPress: () => router.push("/(app)/(tabs)/home/kyc"),
               },
             ]
@@ -2803,7 +2828,7 @@ export default function Home() {
                     <View style={styles.kycBannerContent}>
                       <Ionicons name="alert-circle" size={24} color={COLORS.white} />
                       <Text style={styles.kycBannerText}>
-                        KYC not Completed click here to complete
+                        {t("kycNotCompletedClick") || "KYC not Completed click here to complete"}
                       </Text>
                       <Ionicons name="chevron-forward" size={20} color={COLORS.white} />
                     </View>
@@ -2935,7 +2960,18 @@ export default function Home() {
                               return "";
                             }
                             if (typeof textObj === "string") {
-                              return textObj.trim() || "";
+                              const trimmed = textObj.trim();
+                              const key = trimmed
+                                .replace(/[^a-zA-Z0-9 ]/g, "")
+                                .split(" ")
+                                .filter(Boolean)
+                                .map((word, i) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1))
+                                .join("");
+                              const translated = t(key);
+                              if (translated && translated !== key && !translated.includes("missing")) {
+                                return translated;
+                              }
+                              return trimmed;
                             }
                             if (typeof textObj === "number") {
                               return isNaN(textObj) ? "" : String(textObj);

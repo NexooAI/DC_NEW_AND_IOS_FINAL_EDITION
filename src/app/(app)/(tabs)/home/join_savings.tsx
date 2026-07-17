@@ -16,11 +16,12 @@ import {
   ImageBackground,
   Image,
   InteractionManager,
+  Alert,
 } from "react-native";
 import { useKeyboardVisibility } from "@/hooks/useKeyboardVisibility";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import useGlobalStore from "@/store/global.store";
@@ -494,12 +495,12 @@ export default function JoinSavings() {
               };
 
               setKycModalData({
-                title: "KYC Required",
-                message: "Please complete your KYC details to continue. Redirecting to KYC page in 2 seconds...",
+                title: t("kycRequiredAlertBox") || "KYC Required",
+                message: t("kycRedirectMessage") || "Please complete your KYC details to continue. Redirecting to KYC page in 2 seconds...",
                 type: "error",
                 buttons: [
                   {
-                    text: "Go to KYC Now",
+                    text: t("goToKycNow") || "Go to KYC Now",
                     onPress: navigateToKyc,
                     style: "default"
                   }
@@ -999,7 +1000,7 @@ export default function JoinSavings() {
         </Animated.View>
         <View style={styles.goldRateContent}>
           <Text style={styles.goldRateLabel}>
-            Today's Gold Rate: <Text style={styles.goldRateValue}>
+            {t("todaysGoldRate") || "Today's Gold Rate"}: <Text style={styles.goldRateValue}>
               ₹{goldRate.toLocaleString("en-IN")}/gram
             </Text>
           </Text>
@@ -1089,7 +1090,7 @@ export default function JoinSavings() {
                       isLocked ? styles.progressStepLabelLocked : undefined,
                     ]}
                   >
-                    {num === 1 ? "Amount" : "Details & Summary"}
+                    {num === 1 ? (t("amount") || "Amount") : (t("detailsSummary") || "Details & Summary")}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -1483,7 +1484,7 @@ export default function JoinSavings() {
                 </View>
 
                 <View style={styles.cardFooter}>
-                  <Text style={styles.hintText}>Tap to edit amount</Text>
+                  <Text style={styles.hintText}>{t("tapToEditAmount") || "Tap to edit amount"}</Text>
                 </View>
               </View>
 
@@ -2157,17 +2158,17 @@ export default function JoinSavings() {
 
       if (kycStatus !== "Completed") {
         setKycModalData({
-          title: "KYC Required",
-          message: "Complete KYC to continue?",
+          title: t("kycRequiredAlertBox") || "KYC Required",
+          message: t("completeKycToContinue") || "Please complete your KYC details to continue.",
           type: "error",
           buttons: [
             {
-              text: "Cancel",
+              text: t("cancel") || "Cancel",
               onPress: () => { },
               style: "cancel",
             },
             {
-              text: "Complete",
+              text: t("complete") || "Complete",
               onPress: () => router.push("/(tabs)/home/kyc"),
               style: "default",
             },
@@ -2333,14 +2334,14 @@ export default function JoinSavings() {
             } catch (err: any) {
               setIsSubmitting(false);
               logger.error("Error processing Quick Join response:", err);
-              CustomAlert.alert("Error", err.message || "Failed to process payment session");
+              Alert.alert("Error", err.message || "Failed to process payment session");
             }
           })
           .catch((err: any) => {
             setIsSubmitting(false);
             const errMsg = err.response?.data?.message || err.message || "Failed to join scheme";
             logger.error("Quick Join submission error:", err);
-            CustomAlert.alert("Submission Error", errMsg);
+            Alert.alert("Submission Error", errMsg);
           });
 
         return;
@@ -2931,6 +2932,7 @@ export default function JoinSavings() {
       style={styles.safeAreaContainer}
       edges={["left", "right"]}
     >
+      <Stack.Screen options={{ title: t("joinSchemes") || "Join Schemes" }} />
       <View style={styles.container}>
         {/* <View style={styles.header}>
           <TouchableOpacity

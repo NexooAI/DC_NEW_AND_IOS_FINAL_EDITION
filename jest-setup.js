@@ -126,7 +126,9 @@ const mockStoreState = {
     debugState: jest.fn(() => ({})),
 };
 
-const mockUseGlobalStore = jest.fn(() => mockStoreState);
+const mockUseGlobalStore = jest.fn((selector) => {
+    return selector ? selector(mockStoreState) : mockStoreState;
+});
 mockUseGlobalStore.getState = jest.fn(() => mockStoreState);
 
 jest.mock('@/store/global.store', () => {

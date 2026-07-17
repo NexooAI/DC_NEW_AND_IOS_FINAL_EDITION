@@ -27,6 +27,25 @@ const safeParseJSON = (jsonString: any, fallback: any = {}) => {
   }
 };
 
+const INJECTED_JS = `
+  (function() {
+    window.open = function(url, target, features) {
+      if (url) {
+        window.location.href = url;
+        return window;
+      }
+      return null;
+    };
+    document.addEventListener('submit', function(e) {
+      var form = e.target;
+      if (form && form.target === '_blank') {
+        form.target = '_self';
+      }
+    }, true);
+  })();
+  true;
+`;
+
 export default function PaymentWebView() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
@@ -39,6 +58,7 @@ export default function PaymentWebView() {
   const urlBlockedAlertShown = useRef(false);
   const webViewRef = useRef<any>(null);
   const wasDisconnectedRef = useRef(false);
+  const hasLoadedRealUrl = useRef(false);
   // Forward reference so the socket hook can call stopStatusPolling before it is defined.
   const stopPollingRef = useRef<() => void>(() => {});
 
@@ -248,6 +268,7 @@ export default function PaymentWebView() {
   });
 
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTransitioningRef = useRef<boolean>(false);
 
   const startStatusPolling = (orderIdValue: string, successTarget: any, failureTarget: any) => {
@@ -291,6 +312,34 @@ export default function PaymentWebView() {
         console.error("[Polling Fallback] Error checking payment status:", error);
       }
     }, 2000);
+
+    // Timeout after 45 seconds to prevent infinite loading if payment status is stuck
+    pollingTimeoutRef.current = setTimeout(() => {
+      console.log("[Polling Fallback] Status check timed out after 45 seconds.");
+      stopStatusPolling();
+      
+      if (!isTransitioningRef.current) {
+        isTransitioningRef.current = true;
+        if (socket && socket.connected) socket.disconnect();
+        
+        const userDetails = safeParseJSON(params.userDetails);
+        const investmentId = userDetails?.investmentId || params.investmentId || "";
+        
+        router.replace({
+          pathname: "/(tabs)/home/payment-failure",
+          params: {
+            message: "Payment verification timed out. If money was debited, it will be updated in 24-48 hours.",
+            orderId: orderIdValue,
+            txnId: "",
+            amount: params.amount as string || "",
+            status: "PENDING_TIMEOUT",
+            type: type,
+            userId: params.userId as string || user?.id || "",
+            investmentId: String(investmentId),
+          },
+        });
+      }
+    }, 45000);
   };
 
   const stopStatusPolling = () => {
@@ -298,6 +347,11 @@ export default function PaymentWebView() {
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
       console.log("[Polling Fallback] Polling interval cleared.");
+    }
+    if (pollingTimeoutRef.current) {
+      clearTimeout(pollingTimeoutRef.current);
+      pollingTimeoutRef.current = null;
+      console.log("[Polling Fallback] Polling timeout cleared.");
     }
     setIsVerifyingPayment(false);
   };
@@ -521,9 +575,16 @@ export default function PaymentWebView() {
             <View style={styles.loadingOverlay}>
               <ActivityIndicator size="large" color={theme.colors.primary} />
               <Text style={styles.loadingText}>Verifying payment status...</Text>
-              <Text style={{ marginTop: 8, fontSize: 13, color: "#999", textAlign: "center" }}>
+              <Text style={{ marginTop: 8, fontSize: 13, color: "#999", textAlign: "center", paddingHorizontal: 32 }}>
                 Please do not close the app or press back
               </Text>
+              <TouchableOpacity
+                style={styles.cancelOverlayButton}
+                activeOpacity={0.8}
+                onPress={handleCancelPayment}
+              >
+                <Text style={styles.cancelOverlayButtonText}>Cancel Verification</Text>
+              </TouchableOpacity>
             </View>
           )}
           <View style={styles.safeAreaContainer}>
@@ -559,7 +620,9 @@ export default function PaymentWebView() {
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
                 originWhitelist={["*"]}
+                userAgent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
                 startInLoadingState={true}
+                injectedJavaScriptBeforeContentLoaded={INJECTED_JS}
                 renderLoading={() => (
                   <View style={styles.webViewLoading}>
                     <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -592,45 +655,7 @@ export default function PaymentWebView() {
                     canGoBack: navState.canGoBack,
                   });
 
-                  // Check for about:blank URL blocking scenario
-                  if (
-                    navState.url === "about:blank" &&
-                    !navState.title &&
-                    !navState.loading &&
-                    !urlBlockedAlertShown.current
-                  ) {
-                    urlBlockedAlertShown.current = true;
-
-                    // Disconnect socket
-                    if (socket && socket.connected) {
-                      socket.disconnect();
-                    }
-
-                    // Show alert about URL blocking
-                    Alert.alert(
-                      "URL Blocked",
-                      "The payment URL has been blocked. Please check with customer service for assistance.",
-                      [
-                        {
-                          text: "OK",
-                          onPress: () => {
-                            // Navigate to payment failure page
-                            router.replace({
-                              pathname: "/(tabs)/home/payment-failure",
-                              params: {
-                                message: "Payment URL blocked. Please contact customer service.",
-                                orderId: params.orderId as string,
-                                txnId: "",
-                                amount: params.amount as string,
-                                status: "blocked",
-                              },
-                            });
-                          },
-                        },
-                      ]
-                    );
-                    return;
-                  }
+                  // Handled about:blank checking dynamically
 
                   const currentUrl = navState.url.toLowerCase();
                   
@@ -777,7 +802,9 @@ export default function PaymentWebView() {
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
                 originWhitelist={["*"]}
+                userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
                 startInLoadingState={true}
+                injectedJavaScriptBeforeContentLoaded={INJECTED_JS}
                 renderLoading={() => (
                   <View style={styles.webViewLoading}>
                     <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -787,14 +814,10 @@ export default function PaymentWebView() {
                 allowsInlineMediaPlayback={true}
                 sharedCookiesEnabled={true}
                 thirdPartyCookiesEnabled={true}
-                setSupportMultipleWindows={true}
+                setSupportMultipleWindows={false}
                 onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
-                onOpenWindow={(event) => {
-                  console.log("OPEN WINDOW:", event.nativeEvent);
-                }}
                 allowsBackForwardNavigationGestures={true}
                 allowsLinkPreview={false}
-                userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Safari/604.1"
                 cacheEnabled={true}
                 incognito={false}
                 onLoadStart={() => {
@@ -811,45 +834,7 @@ export default function PaymentWebView() {
                     canGoBack: navState.canGoBack,
                   });
 
-                  // Check for about:blank URL blocking scenario
-                  if (
-                    navState.url === "about:blank" &&
-                    !navState.title &&
-                    !navState.loading &&
-                    !urlBlockedAlertShown.current
-                  ) {
-                    urlBlockedAlertShown.current = true;
-
-                    // Disconnect socket
-                    if (socket && socket.connected) {
-                      socket.disconnect();
-                    }
-
-                    // Show alert about URL blocking
-                    Alert.alert(
-                      "URL Blocked",
-                      "The payment URL has been blocked. Please check with customer service for assistance.",
-                      [
-                        {
-                          text: "OK",
-                          onPress: () => {
-                            // Navigate to payment failure page
-                            router.replace({
-                              pathname: "/(tabs)/home/payment-failure",
-                              params: {
-                                message: "Payment URL blocked. Please contact customer service.",
-                                orderId: params.orderId as string,
-                                txnId: "",
-                                amount: params.amount as string,
-                                status: "blocked",
-                              },
-                            });
-                          },
-                        },
-                      ]
-                    );
-                    return;
-                  }
+                  // Handled about:blank checking dynamically
 
                   const currentUrl = navState.url.toLowerCase();
                   
@@ -1184,5 +1169,21 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#555",
     fontWeight: "500",
+  },
+  cancelOverlayButton: {
+    marginTop: 32,
+    minHeight: 48,
+    width: "60%",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e53e3e",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(229, 62, 62, 0.05)",
+  },
+  cancelOverlayButtonText: {
+    color: "#e53e3e",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });

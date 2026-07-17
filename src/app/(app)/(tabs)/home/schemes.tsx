@@ -119,7 +119,18 @@ const getTranslatedText = (
   }
 
   if (typeof textObj === "string") {
-    return textObj.trim() || "";
+    const trimmed = textObj.trim();
+    const key = trimmed
+      .replace(/[^a-zA-Z0-9 ]/g, "")
+      .split(" ")
+      .filter(Boolean)
+      .map((word, i) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1))
+      .join("");
+    const translated = t(key);
+    if (translated && translated !== key && !translated.includes("missing")) {
+      return translated;
+    }
+    return trimmed;
   }
 
   if (typeof textObj === "number") {
@@ -1120,7 +1131,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         ) : availableTabs.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="wallet-outline" size={80} color="#ccc" />
-            <Text style={styles.emptyStateTitle}>No Schemes Available</Text>
+            <Text style={styles.emptyStateTitle}>{t("noSchemesAvailable") || "No Schemes Available"}</Text>
             <Text style={styles.emptyStateText}>
               Check back later for new savings opportunities
             </Text>

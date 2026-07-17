@@ -518,16 +518,16 @@ export default function KycForm() {
       // so they shouldn't trigger an error. If lookup failed, they're typed manually.
       const value = formData[field as keyof FormData];
       if (typeof value === "string" && !value.trim()) {
-        newErrors[field] = "This field is required";
+        newErrors[field] = t("thisFieldIsRequired") || "This field is required";
       }
     });
 
     // Validate nominee consistency: if one is filled, both must be filled
     if (formData.nominee_name.trim() && !formData.nominee_relationship.trim()) {
-      newErrors.nominee_relationship = "Please select a relationship";
+      newErrors.nominee_relationship = t("pleaseSelectRelationship") || "Please select a relationship";
     }
     if (!formData.nominee_name.trim() && formData.nominee_relationship.trim()) {
-      newErrors.nominee_name = "Please enter nominee name";
+      newErrors.nominee_name = t("pleaseEnterNomineeName") || "Please enter nominee name";
     }
 
     // Validate Date of Birth (DD/MM/YYYY)
@@ -535,7 +535,7 @@ export default function KycForm() {
       formData.dob &&
       !/^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/.test(formData.dob)
     ) {
-      newErrors.dob = "Date of Birth must be in DD/MM/YYYY format";
+      newErrors.dob = t("dobFormatError") || "Date of Birth must be in DD/MM/YYYY format";
     }
 
     // Validate age - must be 18 or older
@@ -555,16 +555,16 @@ export default function KycForm() {
             : age;
 
         if (actualAge < 18) {
-          newErrors.dob = "You must be at least 18 years old to proceed";
+          newErrors.dob = t("ageLimitError") || "You must be at least 18 years old to proceed";
         }
       } catch (error) {
-        newErrors.dob = "Invalid date format";
+        newErrors.dob = t("invalidDateFormat") || "Invalid date format";
       }
     }
 
     // Validate Pincode (must be 6 digits)
     if (!isShortKyc && formData.pincode && !/^\d{6}$/.test(formData.pincode)) {
-      newErrors.pincode = "Pincode must be 6 digits";
+      newErrors.pincode = t("pincodeLengthError") || "Pincode must be 6 digits";
     }
 
     // Validate ID Number based on Address Proof Type
@@ -694,20 +694,20 @@ export default function KycForm() {
             }
           }
         } else {
-          Alert.alert("Error", "KYC submission failed. Please try again.");
+          Alert.alert(t("error") || "Error", t("kycSubmissionFailed") || "KYC submission failed. Please try again.");
         }
       } catch (error: any) {
         logger.error("KYC Submission Error:", error);
         if (isMountedRef.current) {
           const errorMessage =
             error.response?.data?.message ||
-            "An error occurred. Please try again.";
-          Alert.alert("Error", errorMessage);
+            t("errorOccurred") || "An error occurred. Please try again.";
+          Alert.alert(t("error") || "Error", errorMessage);
         }
       }
     } else {
       if (isMountedRef.current) {
-        Alert.alert("Error", "Please fix the errors in the form.");
+        Alert.alert(t("error") || "Error", t("pleaseFixTheErrorInTheForm") || "Please fix the errors in the form.");
       }
     }
   };
@@ -751,7 +751,7 @@ export default function KycForm() {
             <View style={styles.headerInfo}>
               <Text style={styles.headerTitle}>{t("kycDetails")}</Text>
               <Text style={styles.headerSubtitle}>
-                Update your personal details
+                {t("updateYourPersonalDetails") || "Update your personal details"}
               </Text>
             </View>
             <View style={styles.headerRightPlaceholder} />
@@ -912,6 +912,11 @@ export default function KycForm() {
                     {errors.pincode && (
                       <Text style={styles.errorText}>{errors.pincode}</Text>
                     )}
+                    <TouchableOpacity onPress={() => setPincodeLookupFailed(true)} style={{ marginTop: 4 }}>
+                      <Text style={{ color: "#1976d2", fontSize: 12, fontWeight: "500" }}>
+                        {t("pincodeNotWorking") || "Pincode not working properly? Click here to enter manually"}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
 
                   {/* City (Only show if pincode lookup succeeded or explicitly entered) */}
@@ -1099,7 +1104,7 @@ export default function KycForm() {
                 style={styles.gradientButton}
               >
                 <Text style={styles.submitButtonText}>
-                  {kycId ? "Update KYC" : "Submit KYC"}
+                  {kycId ? (t("updateKyc") || "Update KYC") : (t("submitKyc") || "Submit KYC")}
                 </Text>
                 <Ionicons
                   name="arrow-forward"

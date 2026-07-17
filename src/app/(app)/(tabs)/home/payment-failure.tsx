@@ -9,30 +9,43 @@ import {
   BackHandler,
   InteractionManager,
   Alert,
-  ToastAndroid,
   Platform,
   Linking,
-  ScrollView
+  ScrollView,
+  StatusBar
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
 import { logger } from "@/utils/logger";
 import { responsiveUtils } from "@/utils/responsiveUtils";
+import { LinearGradient } from "expo-linear-gradient";
 
-// Responsive constants
 const { wp, hp, rf, rp, rm, rb, getShadows } = responsiveUtils;
 const shadows = getShadows();
+
+// Jagged border that cuts into the white card using the background color
+const JaggedBorder = () => {
+  const triangles = Array.from({ length: 45 });
+  return (
+    <View style={styles.jaggedContainer}>
+      {triangles.map((_, i) => (
+        <View key={i} style={styles.triangle} />
+      ))}
+    </View>
+  );
+};
 
 export default function PaymentFailure() {
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const router = useRouter();
   const { user, setTabVisibility } = useGlobalStore();
+  const insets = useSafeAreaInsets();
 
   const type = (Array.isArray(params.type) ? params.type[0] : params.type) || "";
   const isBillPayment = type === "bill";
@@ -42,7 +55,9 @@ export default function PaymentFailure() {
   const paymentMethod = (Array.isArray(params.paymentMethod) ? params.paymentMethod[0] : params.paymentMethod) || "";
   const errorMessage = (Array.isArray(params.message) ? params.message[0] : (params.message || t("paymentFailedMessage"))) || "";
 
-  // Show UPI Collect warning box only if the transaction/error indicates a UPI-related payment
+  const [copiedTxn, setCopiedTxn] = useState(false);
+  const [copiedOrder, setCopiedOrder] = useState(false);
+
   const showUpiNotice = 
     paymentMethod.toUpperCase().includes("UPI") ||
     paymentMethod.toUpperCase().includes("COLLECT") ||
@@ -84,7 +99,6 @@ export default function PaymentFailure() {
     }, [setTabVisibility, router, isBillPayment, type, investmentId])
   );
 
-  // Log payment failure data when component mounts
   useEffect(() => {
     const logData = {
       timestamp: new Date().toISOString(),
@@ -97,53 +111,48 @@ export default function PaymentFailure() {
     };
 
     logger.log("📋 PAYMENT FAILURE PAGE - Received Params:", logData);
-
-    // Also save to persistent storage (survives crashes)
     logger.payment("PAYMENT FAILURE PAGE - Params Received", logData);
   }, []);
 
   const [fadeAnim] = useState(new Animated.Value(0));
-  const [scaleAnim] = useState(new Animated.Value(0.8));
+  const [scaleAnim] = useState(new Animated.Value(0.95));
   const [pulseAnim] = useState(new Animated.Value(1));
   const [iconAnim] = useState(new Animated.Value(0));
 
-
   useEffect(() => {
-    // Initial animation sequence
     Animated.sequence([
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 600,
+          duration: 400,
           easing: Easing.out(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.spring(scaleAnim, {
           toValue: 1,
-          friction: 7,
+          friction: 8,
           useNativeDriver: true,
         }),
       ]),
       Animated.timing(iconAnim, {
         toValue: 1,
-        duration: 400,
-        easing: Easing.out(Easing.back(1.5)),
+        duration: 300,
+        easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
     ]).start();
 
-    // Infinite pulse animation
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.1,
-          duration: 1000,
+          toValue: 1.05,
+          duration: 800,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 1000,
+          duration: 800,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
@@ -154,20 +163,22 @@ export default function PaymentFailure() {
   const handleHomePress = () => {
     Animated.timing(fadeAnim, {
       toValue: 0,
-      duration: 300,
+      duration: 250,
       useNativeDriver: true,
     }).start(() => {
       router.replace("/(tabs)/home");
     });
   };
 
-  const handleCopy = async (text: string, label: string) => {
+  const handleCopy = async (text: string, type: "txn" | "order") => {
     if (!text) return;
     await Clipboard.setStringAsync(text);
-    if (Platform.OS === 'android') {
-      ToastAndroid.show(`${label} Copied`, ToastAndroid.SHORT);
+    if (type === "txn") {
+      setCopiedTxn(true);
+      setTimeout(() => setCopiedTxn(false), 2000);
     } else {
-      Alert.alert("Copied", `${label} copied to clipboard`);
+      setCopiedOrder(true);
+      setTimeout(() => setCopiedOrder(false), 2000);
     }
   };
 
@@ -190,25 +201,21 @@ export default function PaymentFailure() {
   const handleRetry = () => {
     Animated.timing(fadeAnim, {
       toValue: 0,
-      duration: 300,
+      duration: 250,
       useNativeDriver: true,
     }).start(() => {
       try {
-        // Get payment session from global store
         const paymentSession = useGlobalStore.getState().getCurrentPaymentSession();
 
         if (paymentSession?.userDetails) {
           logger.log("Retrying payment - using payment session from global store");
 
-          // Prepare userDetails for navigation (exclude orderId for retry)
           const userDetailsForNav = {
             ...paymentSession.userDetails,
             amount: paymentSession.amount || params.amount,
-            // Remove orderId as we'll get a new one
             orderId: undefined,
           };
 
-          // Prepare navigation params with fallbacks
           const navigationParams: any = {
             pathname: "/(tabs)/home/paymentNewOverView",
             params: {
@@ -217,8 +224,7 @@ export default function PaymentFailure() {
             },
           };
 
-          // Add optional params only if they exist
-          const userDetails = paymentSession.userDetails as any; // Type assertion for additional fields
+          const userDetails = paymentSession.userDetails as any;
 
           if (userDetails.schemeId) {
             navigationParams.params.schemeId = String(userDetails.schemeId);
@@ -252,7 +258,6 @@ export default function PaymentFailure() {
           }
           navigationParams.params.source = userDetails.source || "payment_retry";
 
-          // Use InteractionManager to ensure UI is ready before navigation
           InteractionManager.runAfterInteractions(() => {
             try {
               router.replace(navigationParams);
@@ -262,22 +267,20 @@ export default function PaymentFailure() {
               });
             } catch (navError) {
               logger.error("Error navigating to paymentNewOverView:", navError);
-              // Fallback: try to go back
               router.back();
             }
           });
         } else {
-          // No payment session found, try to navigate back to payment overview
           logger.warn("No payment session found for retry, navigating back");
           router.back();
         }
       } catch (error) {
         logger.error("Error in handleRetry:", error);
-        // Fallback: navigate back
         router.back();
       }
     });
   };
+
   const iconScale = iconAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 1],
@@ -285,195 +288,238 @@ export default function PaymentFailure() {
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom", "left", "right"]}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f8f9ff" />
+      
+      <ScrollView 
+        style={{ flex: 1, width: "100%" }}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 20 }]} 
+        showsVerticalScrollIndicator={false}
+        alwaysBounceVertical={false}
+      >
         <Animated.View
           style={[
             styles.content,
             { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
           ]}
         >
-        <View style={styles.iconContainer}>
-          <Animated.View
-            style={[styles.iconWrapper, { transform: [{ scale: pulseAnim }] }]}
-          >
-            <Animated.View
-              style={[styles.iconInner, { transform: [{ scale: iconScale }] }]}
+          {/* Main Ticket Receipt */}
+          <View style={styles.ticketCard}>
+            
+            {/* Ticket Header (Red Gradient) */}
+            <LinearGradient
+              colors={["#7F1D1D", "#DC2626"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.ticketHeader}
             >
-              <Ionicons
-                name="close-circle"
-                size={rp(80)}
-                color={theme.colors.error}
-              />
-            </Animated.View>
-          </Animated.View>
-        </View>
+              <View style={styles.iconContainer}>
+                <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                  <Animated.View style={{ transform: [{ scale: iconScale }] }}>
+                    <View style={styles.failureIconWrapper}>
+                      <Ionicons name="close-sharp" size={rp(28)} color="#DC2626" />
+                    </View>
+                  </Animated.View>
+                </Animated.View>
+              </View>
 
-        <Text style={styles.title}>{t("paymentFailed")}</Text>
-        <Text style={styles.message}>
-          {Array.isArray(params.message) ? params.message[0] : (params.message || t("paymentFailedMessage"))}
-        </Text>
+              <Text style={styles.title}>{t("paymentFailed") || "Payment Failed"}</Text>
+              <Text style={styles.message}>
+                {(Array.isArray(params.message) ? params.message[0] : params.message) || "The transaction was declined by the bank."}
+              </Text>
 
-        {/* UPI Notice Box */}
-        {showUpiNotice && (
-          <View style={styles.upiNoticeBox}>
-            <Ionicons name="warning" size={18} color="#c53030" style={{ marginRight: 8 }} />
-            <Text style={styles.upiNoticeText}>
-              {t("npciUpiNotice")}
-            </Text>
-          </View>
-        )}
+              {/* UPI Notice Box (Within Ticket Header) */}
+              {showUpiNotice && (
+                <View style={styles.upiNoticeBox}>
+                  <Ionicons name="warning-outline" size={18} color="#ffffff" style={{ marginRight: 8 }} />
+                  <Text style={styles.upiNoticeText}>
+                    {t("npciUpiNotice") || "UPI transactions might take up to 24-48 hours to update if debited."}
+                  </Text>
+                </View>
+              )}
 
-        <View style={styles.detailsCard}>
-          <Text style={styles.detailsTitle}>{t("paymentDetails")}</Text>
-
-          <View style={styles.detailRow}>
-            <View style={styles.detailIcon}>
-              <Ionicons
-                name="receipt-outline"
-                size={rp(20)}
-                color={theme.colors.error}
-              />
-            </View>
-            <View style={styles.detailTextContainer}>
-              <Text style={styles.detailLabel}>{t("transactionId")}</Text>
-              <TouchableOpacity 
-                style={styles.copyRow} 
-                onPress={() => handleCopy(Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || ""), t("transactionId"))}
-              >
-                <Text style={styles.detailValue}>
-                  {Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || "N/A")}
-                </Text>
-                <Ionicons name="copy-outline" size={16} color={theme.colors.error} style={{ marginLeft: 8 }} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.detailRow}>
-            <View style={styles.detailIcon}>
-              <Ionicons
-                name="document-text-outline"
-                size={rp(20)}
-                color={theme.colors.error}
-              />
-            </View>
-            <View style={styles.detailTextContainer}>
-              <Text style={styles.detailLabel}>{t("orderId")}</Text>
-              <TouchableOpacity 
-                style={styles.copyRow} 
-                onPress={() => handleCopy(Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || ""), t("orderId"))}
-              >
-                <Text style={styles.detailValue}>
-                  {Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || "N/A")}
-                </Text>
-                <Ionicons name="copy-outline" size={16} color={theme.colors.error} style={{ marginLeft: 8 }} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.detailRow}>
-            <View style={styles.detailIcon}>
-              <Ionicons
-                name="wallet-outline"
-                size={rp(20)}
-                color={theme.colors.error}
-              />
-            </View>
-            <View style={styles.detailTextContainer}>
-              <Text style={styles.detailLabel}>{t("amount")}</Text>
-              <Text style={[styles.detailValue, styles.amountValue]}>
+              <Text style={styles.amountLabel}>{t("amount").toUpperCase()}</Text>
+              <Text style={styles.amountValue}>
                 {new Intl.NumberFormat("en-IN", {
                   style: "currency",
                   currency: "INR",
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
                 }).format(Number(Array.isArray(params.amount) ? params.amount[0] : params.amount) || 0)}
               </Text>
+            </LinearGradient>
+
+            {/* Ticket Divider with notches */}
+            <View style={styles.ticketDivider}>
+              <View style={styles.ticketDividerLeft} />
+              <View style={styles.dashedLineContainer}>
+                {Array.from({ length: 28 }).map((_, i) => (
+                  <View key={i} style={styles.dashedSegment} />
+                ))}
+              </View>
+              <View style={styles.ticketDividerRight} />
+            </View>
+
+            {/* Ticket Body (Transaction Details) */}
+            <View style={styles.ticketBody}>
+              <Text style={styles.detailsTitle}>{t("paymentDetails")}</Text>
+
+              <View style={styles.infoList}>
+                
+                {/* Customer Name */}
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>{t("customerName") || "Customer Name"}</Text>
+                  <Text style={styles.infoValue} numberOfLines={1}>
+                    {user?.name || "Customer"}
+                  </Text>
+                </View>
+
+                {/* Transaction ID with Copy Micro-Interaction */}
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>{t("transactionId")}</Text>
+                  <TouchableOpacity 
+                    activeOpacity={0.7}
+                    style={styles.valueCopyRow}
+                    onPress={() => handleCopy((Array.isArray(params.txnId) ? params.txnId[0] : params.txnId) || (Array.isArray(params.orderId) ? params.orderId[0] : params.orderId) || "", "txn")}
+                  >
+                    <Text style={styles.infoValueCopy} numberOfLines={1}>
+                      {(Array.isArray(params.txnId) ? params.txnId[0] : params.txnId) || (Array.isArray(params.orderId) ? params.orderId[0] : params.orderId) || "N/A"}
+                    </Text>
+                    <View style={[styles.copyIconWrapper, copiedTxn && styles.copyIconSuccess]}>
+                      <Ionicons 
+                        name={copiedTxn ? "checkmark-sharp" : "copy-outline"} 
+                        size={14} 
+                        color={copiedTxn ? "#fff" : theme.colors.error} 
+                      />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Order ID with Copy Micro-Interaction */}
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>{t("orderId")}</Text>
+                  <TouchableOpacity 
+                    activeOpacity={0.7}
+                    style={styles.valueCopyRow}
+                    onPress={() => handleCopy(Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || ""), "order")}
+                  >
+                    <Text style={styles.infoValueCopy} numberOfLines={1}>
+                      {Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || "N/A")}
+                    </Text>
+                    <View style={[styles.copyIconWrapper, copiedOrder && styles.copyIconSuccess]}>
+                      <Ionicons 
+                        name={copiedOrder ? "checkmark-sharp" : "copy-outline"} 
+                        size={14} 
+                        color={copiedOrder ? "#fff" : theme.colors.error} 
+                      />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Payment Method */}
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>{t("paymentMethod") || "Payment Method"}</Text>
+                  <Text style={styles.infoValue}>
+                    {(Array.isArray(params.paymentMethod) ? params.paymentMethod[0] : params.paymentMethod) || "UPI/Card"}
+                  </Text>
+                </View>
+
+                {/* Status Code */}
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>{t("statusLabel") || "Status"}</Text>
+                  <Text style={[styles.infoValue, { color: theme.colors.error, fontWeight: "700" }]}>
+                    {(Array.isArray(params.status) ? params.status[0] : params.status) || "FAILED"}
+                  </Text>
+                </View>
+
+                {/* Date & Time */}
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>{t("paymentDate") || "Date & Time"}</Text>
+                  <Text style={styles.infoValue}>
+                    {new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Jagged edge bottom border */}
+            <JaggedBorder />
+          </View>
+
+          {/* Action Buttons Container */}
+          <View style={styles.actionsContainer}>
+            {/* WhatsApp/Call Support */}
+            <TouchableOpacity
+              style={styles.supportButton}
+              onPress={handleSupportPress}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="logo-whatsapp" size={20} color="#fff" />
+              <Text style={styles.supportButtonText}>{t("contactSupport") || "Contact Support"}</Text>
+            </TouchableOpacity>
+
+            <View style={styles.buttonRow}>
+              {isBillPayment ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={() => router.replace("/(app)/bill_payment")}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="receipt-outline" size={20} color={theme.colors.textDark} />
+                    <Text style={styles.secondaryButtonText}>{(t("backToBills") || "Bills").toUpperCase()}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={handleHomePress}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="home-outline" size={20} color={theme.colors.textDark} />
+                    <Text style={styles.secondaryButtonText}>{t("home").toUpperCase()}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (type === "booking" || type === "advance_booking") ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={() => router.replace("/(tabs)/home/BookingHistory")}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="time-outline" size={20} color={theme.colors.textDark} />
+                    <Text style={styles.secondaryButtonText}>{(t("bookingHistory") || "History").toUpperCase()}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={handleHomePress}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="home-outline" size={20} color={theme.colors.textDark} />
+                    <Text style={styles.secondaryButtonText}>{t("home").toUpperCase()}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={handleHomePress}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="home-outline" size={20} color={theme.colors.textDark} />
+                    <Text style={styles.secondaryButtonText}>{t("home")}</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={styles.primaryButton}
+                    onPress={handleRetry}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="refresh-outline" size={20} color="#fff" />
+                    <Text style={styles.primaryButtonText}>{t("retry")}</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
-        </View>
 
-        {/* WhatsApp/Call Support Button */}
-        <TouchableOpacity
-          style={styles.supportButton}
-          onPress={handleSupportPress}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="logo-whatsapp" size={20} color="#fff" />
-          <Text style={styles.supportButtonText}>{t("contactSupport")}</Text>
-        </TouchableOpacity>
-
-
-
-        <View style={styles.buttonRow}>
-          {isBillPayment ? (
-            <>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonHalf, styles.buttonRetry]}
-                onPress={() => router.replace("/(app)/bill_payment")}
-                activeOpacity={0.9}
-              >
-                <Ionicons name="receipt-outline" size={rp(20)} color="#fff" />
-                <Text style={styles.buttonText}>{(t("backToBills") || "BACK TO BILLS").toUpperCase()}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonHalf, styles.buttonHome]}
-                onPress={handleHomePress}
-                activeOpacity={0.9}
-              >
-                <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
-                <Text style={[styles.buttonText, styles.buttonTextHome]}>{(t("home") || "GO TO HOME").toUpperCase()}</Text>
-              </TouchableOpacity>
-            </>
-          ) : (type === "booking" || type === "advance_booking") ? (
-            <>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonHalf, styles.buttonRetry]}
-                onPress={() => router.replace("/(tabs)/home/BookingHistory")}
-                activeOpacity={0.9}
-              >
-                <Ionicons name="time" size={rp(20)} color="#fff" />
-                <Text style={styles.buttonText}>{(t("bookingHistory") || "BOOKING HISTORY").toUpperCase()}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonHalf, styles.buttonHome]}
-                onPress={handleHomePress}
-                activeOpacity={0.9}
-              >
-                <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
-                <Text style={[styles.buttonText, styles.buttonTextHome]}>{(t("home") || "GO TO HOME").toUpperCase()}</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonHalf, styles.buttonRetry]}
-                onPress={handleRetry}
-                activeOpacity={0.9}
-              >
-                <Ionicons name="refresh" size={rp(20)} color="#fff" />
-                <Text style={styles.buttonText}>{t("retry")}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonHalf, styles.buttonHome]}
-                onPress={handleHomePress}
-                activeOpacity={0.9}
-              >
-                <Ionicons 
-                  name="home" 
-                  size={rp(20)} 
-                  color={theme.colors.textDark} 
-                />
-                <Text style={[styles.buttonText, styles.buttonTextHome]}>
-                  {t("home")}
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
         </Animated.View>
       </ScrollView>
     </SafeAreaView>
@@ -487,211 +533,295 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "flex-start",
+    paddingVertical: 12,
   },
   content: {
-    padding: rp(16),
-    alignItems: "center",
-    justifyContent: "center",
     width: "100%",
-    paddingVertical: rp(20),
+    paddingHorizontal: 16,
+    alignItems: "center",
+  },
+  ticketCard: {
+    width: "100%",
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: rb(24),
+    borderTopRightRadius: rb(24),
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    shadowColor: "rgba(0, 0, 0, 0.08)",
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.8,
+    shadowRadius: 32,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.03)",
+    overflow: "visible",
+    marginBottom: 12,
+    paddingBottom: 10, // Padding to prevent contents from touching jagged border cuts
+  },
+  ticketHeader: {
+    alignItems: "center",
+    paddingTop: 16,
+    paddingBottom: 16,
+    paddingHorizontal: wp(5),
+    borderTopLeftRadius: rb(24),
+    borderTopRightRadius: rb(24),
+    overflow: "hidden",
   },
   iconContainer: {
-    marginBottom: rp(10), // Reduced margin
+    marginBottom: 8,
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 1,
   },
-  iconWrapper: {
-    width: rp(80), // Reduced size
-    height: rp(80),
-    borderRadius: rp(40),
-    backgroundColor: "#ffebee",
+  failureIconWrapper: {
+    width: rp(56),
+    height: rp(56),
+    borderRadius: rb(28),
+    backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: rp(12),
-  },
-  iconInner: {
-    alignItems: "center",
-    justifyContent: "center",
+    shadowColor: "rgba(0,0,0,0.1)",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
   title: {
-    fontSize: rf(22, { minSize: 20, maxSize: 26 }),
+    fontSize: rf(18, { minSize: 16, maxSize: 22 }),
     fontWeight: "800",
-    color: theme.colors.error,
-    marginBottom: rp(8), // Reduced
+    color: "#ffffff",
+    marginBottom: 4,
     textAlign: "center",
     fontFamily: "Inter_700Bold",
   },
   message: {
-    fontSize: rf(15, { minSize: 13, maxSize: 17 }),
-    color: "#616161",
+    fontSize: rf(13, { minSize: 11, maxSize: 15 }),
+    color: "rgba(255, 255, 255, 0.8)",
     textAlign: "center",
-    marginBottom: rp(20), // Reduced
-    lineHeight: rp(22),
-    maxWidth: "90%",
+    marginBottom: 10,
+    lineHeight: rp(18),
+    maxWidth: "85%",
     fontFamily: "Inter_400Regular",
-  },
-  detailsCard: {
-    width: "100%",
-    backgroundColor: "#ffffff",
-    borderRadius: rb(24),
-    padding: rp(20), // Reduced
-    marginBottom: rp(20), // Reduced
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 10,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.04)",
-  },
-  detailsTitle: {
-    fontSize: rf(18, { minSize: 16, maxSize: 20 }),
-    fontWeight: "700",
-    color: "#2d3748",
-    marginBottom: rp(16), // Reduced
-    fontFamily: "Inter_600SemiBold",
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: rp(12),
-  },
-  copyRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  detailIcon: {
-    width: rp(36),
-    height: rp(36),
-    borderRadius: rb(12),
-    backgroundColor: "#fde8e8",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: rp(16),
-  },
-  detailTextContainer: {
-    flex: 1,
-  },
-  detailLabel: {
-    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
-    color: "#718096",
-    marginBottom: rp(4),
-    fontFamily: "Inter_400Regular",
-  },
-  detailValue: {
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
-    color: "#1a202c",
-    fontWeight: "600",
-    fontFamily: "Inter_600SemiBold",
-  },
-  amountValue: {
-    color: theme.colors.error,
-    fontWeight: "700",
-    fontSize: rf(18, { minSize: 16, maxSize: 22 }),
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#edf2f7",
-    marginVertical: rp(4),
-  },
-  buttonContainer: {
-    width: "100%",
-    alignItems: "center",
-    marginBottom: rp(20),
-  },
-  buttonRow: {
-    flexDirection: "row",
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: rp(20),
-    gap: rp(16),
-  },
-  button: {
-    paddingVertical: rp(18),
-    paddingHorizontal: rp(24),
-    borderRadius: rb(16),
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    minHeight: rp(56),
-    ...shadows.small,
-  },
-  buttonHalf: {
-    flex: 1,
-  },
-  buttonRetry: {
-    backgroundColor: theme.colors.error,
-    elevation: 8,
-    shadowColor: theme.colors.error,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-  },
-  buttonHome: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#e5e5e5",
-    elevation: 2,
-  },
-  buttonText: {
-    color: "#ffffff",
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
-    fontWeight: "700",
-    fontFamily: "Inter_700Bold",
-    marginLeft: rp(8),
-  },
-  buttonTextHome: {
-    color: theme.colors.textDark,
   },
   upiNoticeBox: {
-    backgroundColor: "#fff5f5",
-    borderColor: "#feb2b2",
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    borderColor: "rgba(255, 255, 255, 0.2)",
     borderWidth: 1,
-    borderRadius: rb(16),
-    padding: rp(14),
+    borderRadius: rb(12),
+    padding: rp(8),
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: rp(16),
+    marginBottom: 10,
     width: "100%",
   },
   upiNoticeText: {
-    color: "#c53030",
-    fontSize: rf(13, { minSize: 11, maxSize: 15 }),
+    color: "#ffffff",
+    fontSize: rf(11, { minSize: 9, maxSize: 13 }),
     flex: 1,
-    lineHeight: rp(18),
+    lineHeight: rp(15),
+    fontFamily: "Inter_400Regular",
+  },
+  amountLabel: {
+    fontSize: rf(10, { minSize: 8, maxSize: 12 }),
+    color: "rgba(255, 255, 255, 0.6)",
+    letterSpacing: 1.2,
+    marginBottom: 2,
+    fontFamily: "Inter_600SemiBold",
+  },
+  amountValue: {
+    fontSize: rf(26, { minSize: 22, maxSize: 30 }),
+    fontWeight: "900",
+    color: "#ffffff",
+    fontFamily: "Inter_800ExtraBold",
+  },
+  ticketDivider: {
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    overflow: "hidden",
+    position: "relative",
+  },
+  ticketDividerLeft: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#f8f9ff",
+    position: "absolute",
+    left: -10,
+    zIndex: 2,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.03)",
+  },
+  ticketDividerRight: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#f8f9ff",
+    position: "absolute",
+    right: -10,
+    zIndex: 2,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.03)",
+  },
+  dashedLineContainer: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 15,
+  },
+  dashedSegment: {
+    width: 5,
+    height: 1.5,
+    backgroundColor: "#e2e8f0",
+  },
+  ticketBody: {
+    paddingTop: 12,
+    paddingBottom: 8,
+    paddingHorizontal: wp(6),
+  },
+  detailsTitle: {
+    fontSize: rf(15, { minSize: 13, maxSize: 17 }),
+    fontWeight: "700",
+    color: "#2d3748",
+    marginBottom: 10,
+    fontFamily: "Inter_600SemiBold",
+  },
+  infoList: {
+    gap: 10,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  infoLabel: {
+    fontSize: rf(13, { minSize: 11, maxSize: 15 }),
+    color: "#718096",
+    fontFamily: "Inter_400Regular",
+  },
+  infoValue: {
+    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+    color: "#1a202c",
+    fontWeight: "600",
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "right",
+    maxWidth: "60%",
+  },
+  valueCopyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    maxWidth: "65%",
+  },
+  infoValueCopy: {
+    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+    color: "#1a202c",
+    fontWeight: "600",
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "right",
+  },
+  copyIconWrapper: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#f0f4f8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  copyIconSuccess: {
+    backgroundColor: theme.colors.error,
+  },
+  actionsContainer: {
+    width: "100%",
+    gap: hp(1.5),
   },
   supportButton: {
     width: "100%",
-    minHeight: rp(56),
-    borderRadius: rb(16),
+    minHeight: rp(48),
+    borderRadius: rb(12),
     backgroundColor: "#25d366",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: rp(16),
-    paddingHorizontal: rp(20),
-    elevation: 4,
+    paddingHorizontal: wp(5),
     shadowColor: "#25d366",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowRadius: 8,
+    elevation: 4,
     gap: 8,
   },
   supportButtonText: {
     color: "#ffffff",
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+    fontSize: rf(15, { minSize: 13, maxSize: 17 }),
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
   },
-  countdownText: {
-    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
-    color: "#718096",
-    fontFamily: "Inter_400Regular",
-    marginBottom: rp(16),
-    textAlign: "center",
+  buttonRow: {
+    flexDirection: "row",
+    width: "100%",
+    gap: wp(4),
+  },
+  primaryButton: {
+    flex: 1,
+    minHeight: rp(48),
+    borderRadius: rb(12),
+    backgroundColor: theme.colors.error,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: theme.colors.error,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+    gap: 8,
+  },
+  primaryButtonText: {
+    color: "#fff",
+    fontSize: rf(15, { minSize: 13, maxSize: 17 }),
+    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
+  },
+  secondaryButton: {
+    flex: 1,
+    minHeight: rp(48),
+    borderRadius: rb(12),
+    backgroundColor: "#fff",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    gap: 8,
+  },
+  secondaryButtonText: {
+    color: theme.colors.textDark,
+    fontSize: rf(15, { minSize: 13, maxSize: 17 }),
+    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
+  },
+  jaggedContainer: {
+    position: "absolute",
+    bottom: -1,
+    left: 0,
+    right: 0,
+    height: 11,
+    flexDirection: "row",
+    overflow: "hidden",
+    zIndex: 10,
+  },
+  triangle: {
+    width: 0,
+    height: 0,
+    backgroundColor: "transparent",
+    borderStyle: "solid",
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderBottomWidth: 11,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderBottomColor: "#f8f9ff", // Triangle body is background color, biting into white card
   },
 });

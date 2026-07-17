@@ -1317,7 +1317,8 @@ export default function Login() {
                               align="center"
                               allowWrap={true}
                               maxLines={2}
-                              adjustsFontSizeToFit={false}
+                              adjustsFontSizeToFit={true}
+                              minimumFontScale={0.75}
                               style={[
                                 registerStyles.registerText,
                                 { fontSize: 16 },
@@ -1339,7 +1340,8 @@ export default function Login() {
                                 align="center"
                                 allowWrap={false}
                                 maxLines={1}
-                                adjustsFontSizeToFit={false}
+                                adjustsFontSizeToFit={true}
+                                minimumFontScale={0.75}
                                 style={[
                                   registerStyles.registerLink,
                                   { fontSize: 16 },

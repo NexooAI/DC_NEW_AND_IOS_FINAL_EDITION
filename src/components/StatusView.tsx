@@ -529,7 +529,7 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
                    </View>
                    
                    <Text style={styles.modalDescription}>
-                     Would you like to generate an enquiry ticket for this product?
+                     {t("generateTicketConfirm") || "Would you like to generate an enquiry ticket for this product?"}
                    </Text>
 
                    <View style={styles.enquiryDetailsContainer}>
@@ -559,7 +559,7 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
                            colors={[theme.colors.primary, "#002b24"]}
                            style={styles.modalButtonGradient}
                          >
-                           <Text style={styles.modalButtonText}>Generate Ticket</Text>
+                           <Text style={styles.modalButtonText}>{t("generateTicket") || "Generate Ticket"}</Text>
                          </LinearGradient>
                        </TouchableOpacity>
 

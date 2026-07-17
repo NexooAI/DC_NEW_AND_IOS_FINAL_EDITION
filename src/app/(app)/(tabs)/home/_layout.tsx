@@ -124,7 +124,7 @@ export default function HomeLayout() {
       <Stack.Screen
         name="payment-success"
         options={{
-          title: "Payment Success",
+          headerShown: false,
           headerBackVisible: false,
           gestureEnabled: false,
           headerLeft: () => null
@@ -133,7 +133,7 @@ export default function HomeLayout() {
       <Stack.Screen
         name="payment-failure"
         options={{
-          title: "Payment Failure",
+          headerShown: false,
           headerBackVisible: false,
           gestureEnabled: false,
           headerLeft: () => null

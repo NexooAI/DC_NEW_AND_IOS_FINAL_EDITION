@@ -72,6 +72,19 @@ describe('E2E Payment Flow: My Schemes -> Pay Now', () => {
                 message: "Payment check successful"
             }
         });
+
+        // Setup API Mock for KYC Status
+        (api.get as jest.Mock).mockImplementation((url) => {
+            if (url.includes('/kyc/status')) {
+                return Promise.resolve({
+                    data: {
+                        kyc_status: "Completed",
+                        data: true
+                    }
+                });
+            }
+            return Promise.resolve({ data: {} });
+        });
     });
 
     it('navigates to Payment Overview when "Pay Now" is clicked', async () => {

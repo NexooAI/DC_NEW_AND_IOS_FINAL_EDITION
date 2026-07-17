@@ -8,6 +8,7 @@ import useGlobalStore from '@/store/global.store';
 // Mock Dependencies
 jest.mock('expo-router', () => ({
   useRouter: jest.fn(),
+  useLocalSearchParams: jest.fn(() => ({})),
   useFocusEffect: (cb) => require('react').useEffect(cb, []),
 }));
 

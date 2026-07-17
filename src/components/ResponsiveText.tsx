@@ -14,6 +14,8 @@ interface ResponsiveTextProps extends TextProps {
   maxLines?: number;
   truncateMode?: "none" | "single" | "double" | "triple";
   inRow?: boolean; // For text in flexDirection: "row" layouts
+  adjustsFontSizeToFit?: boolean; // Auto-scale font down to fit the container bounds
+  minimumFontScale?: number;      // Minimum scale factor for auto-shrinking (e.g. 0.7)
 }
 
 const ResponsiveText: React.FC<ResponsiveTextProps> = ({

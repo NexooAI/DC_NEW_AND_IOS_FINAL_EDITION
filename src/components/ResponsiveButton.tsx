@@ -168,7 +168,9 @@ const ResponsiveButton: React.FC<ResponsiveButtonProps> = ({
         color={textColor || colors.textColor}
         align="center"
         allowWrap={true}
-        maxLines={3}
+        maxLines={2}
+        adjustsFontSizeToFit={true}
+        minimumFontScale={0.75}
         style={{
           fontSize: textSize === "md" ? 12 : textSize === "lg" ? 14 : 16,
           textAlign: "center",

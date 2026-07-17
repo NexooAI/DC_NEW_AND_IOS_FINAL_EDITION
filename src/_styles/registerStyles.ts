@@ -345,6 +345,7 @@ export const registerStyles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginTop: 20,
+    flexWrap: "wrap",
   },
   footerText: {
     color: theme.colors.white,

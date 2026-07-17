@@ -773,7 +773,7 @@ export default function NotificationsScreen() {
             textAlign: 'center',
             flex: 1,
           }}>
-            Notifications
+            {t("notification") || "Notifications"}
           </Text>
 
           <View style={{ width: 40, alignItems: "flex-end", justifyContent: "center" }}>
@@ -931,7 +931,7 @@ export default function NotificationsScreen() {
                     marginBottom: 8,
                   }}
                 >
-                  No New Notifications
+                  {t("noNewNotifications") || "No New Notifications"}
                 </Text>
                 <Text
                   style={{
@@ -942,7 +942,7 @@ export default function NotificationsScreen() {
                     lineHeight: 22,
                   }}
                 >
-                  You're all caught up! Check back later for updates on your gold investments.
+                  {t("allCaughtUp") || "You're all caught up! Check back later for updates on your gold investments."}
                 </Text>
               </View>
             )}
