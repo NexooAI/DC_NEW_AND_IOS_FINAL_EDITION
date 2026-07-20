@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { View, Modal, StyleSheet, Alert, Text, TouchableOpacity, ActivityIndicator, Platform, StatusBar, Linking } from "react-native";
 import { WebView } from "react-native-webview";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -13,8 +13,6 @@ import { logAppEvent } from "@/services/appEventService";
 
 // import { safeNavigateBack } from "@/utils/navigationUtils";
 // import your socket library here if needed
-
-let errorTimeout: NodeJS.Timeout | null = null;
 
 const safeParseJSON = (jsonString: any, fallback: any = {}) => {
   if (!jsonString) return fallback;
@@ -75,6 +73,8 @@ export default function PaymentWebView() {
   const maturityDate = (params.maturityDate || "") as string;
   const joiningDate = (params.joiningDate || "") as string;
 
+  const webViewSource = useMemo(() => ({ uri: url }), [url]);
+
   // Debug logging
   console.log("PaymentWebView params:", {
     url,
@@ -94,14 +94,12 @@ export default function PaymentWebView() {
     });
   }, []);
 
-  const { socket, handleCancel } = usePaymentSocket({
+  const { socket, handleCancel, disconnect } = usePaymentSocket({
     onStopPolling: () => stopPollingRef.current(),
     onPaymentSuccess: (data) => {
       setIsVerifyingPayment(true);
       // Disconnect socket before navigation
-      if (socket && socket.connected) {
-        socket.disconnect();
-      }
+      disconnect();
       stopStatusPolling();
 
       logAppEvent('PAYMENT_WEBVIEW_SUCCESS', {
@@ -137,9 +135,7 @@ export default function PaymentWebView() {
     onPaymentFailure: (data) => {
       setIsVerifyingPayment(true);
       // Disconnect socket before navigation
-      if (socket && socket.connected) {
-        socket.disconnect();
-      }
+      disconnect();
       stopStatusPolling();
 
       logAppEvent('PAYMENT_WEBVIEW_FAILURE', {
@@ -233,9 +229,7 @@ export default function PaymentWebView() {
     },
     onPaymentExpired: () => {
       // Disconnect socket before navigation
-      if (socket && socket.connected) {
-        socket.disconnect();
-      }
+      disconnect();
       stopStatusPolling();
       Alert.alert(
         "Payment Expired",
@@ -294,7 +288,7 @@ export default function PaymentWebView() {
             
             if (!isTransitioningRef.current) {
               isTransitioningRef.current = true;
-              if (socket && socket.connected) socket.disconnect();
+              disconnect();
               router.replace(successTarget);
             }
           } else if (status === "failed" || status === "failure" || status === "cancelled" || status === "Expired") {
@@ -303,7 +297,7 @@ export default function PaymentWebView() {
             
             if (!isTransitioningRef.current) {
               isTransitioningRef.current = true;
-              if (socket && socket.connected) socket.disconnect();
+              disconnect();
               router.replace(failureTarget);
             }
           }
@@ -320,7 +314,7 @@ export default function PaymentWebView() {
       
       if (!isTransitioningRef.current) {
         isTransitioningRef.current = true;
-        if (socket && socket.connected) socket.disconnect();
+        disconnect();
         
         const userDetails = safeParseJSON(params.userDetails);
         const investmentId = userDetails?.investmentId || params.investmentId || "";
@@ -404,10 +398,8 @@ export default function PaymentWebView() {
     });
 
     // Disconnect socket
-    if (socket && socket.connected) {
-      console.log("Disconnecting socket...");
-      socket.disconnect();
-    }
+    console.log("Disconnecting socket...");
+    disconnect();
 
     // Small delay to ensure socket disconnection completes, then navigate to payment failure page
     setTimeout(() => {
@@ -439,17 +431,22 @@ export default function PaymentWebView() {
     setShowExitModal(false);
   };
 
+  const isConnectedRef = useRef(true);
+
   // Monitor network connection status
   useEffect(() => {
     // Check initial network state
     NetInfo.fetch().then(state => {
-      setIsConnected(state.isConnected === true);
+      const connected = state.isConnected === true;
+      isConnectedRef.current = connected;
+      setIsConnected(connected);
     });
 
     // Subscribe to network state changes
     const unsubscribe = NetInfo.addEventListener(state => {
       const connected = state.isConnected === true;
-      const wasConnected = isConnected;
+      const wasConnected = isConnectedRef.current;
+      isConnectedRef.current = connected;
       setIsConnected(connected);
 
       if (!connected) {
@@ -457,8 +454,8 @@ export default function PaymentWebView() {
         wasDisconnectedRef.current = true;
       } else {
         // When connection is restored
-        if (wasDisconnectedRef.current && wasConnected === false) {
-          console.log("✅ [WebView] Connection restored, reloading WebView");
+        if (wasDisconnectedRef.current && wasConnected === false && !hasLoadedRealUrl.current) {
+          console.log("✅ [WebView] Connection restored, reloading WebView since it was not fully loaded");
           // Reload WebView when connection is restored
           setTimeout(() => {
             if (webViewRef.current) {
@@ -468,6 +465,8 @@ export default function PaymentWebView() {
             wasDisconnectedRef.current = false;
           }, 1000); // Small delay to ensure connection is stable
         } else {
+          console.log("ℹ️ [WebView] Connection restored but page was already loaded. Not reloading to preserve transacting state.");
+          wasDisconnectedRef.current = false;
           setTimeout(() => {
             setIsReconnecting(false);
           }, 2000);
@@ -478,16 +477,14 @@ export default function PaymentWebView() {
     return () => {
       unsubscribe();
     };
-  }, [isConnected]);
+  }, []);
 
   // Cleanup socket on component unmount
   useEffect(() => {
     return () => {
-      if (socket && socket.connected) {
-        socket.disconnect();
-      }
+      disconnect();
     };
-  }, [socket]);
+  }, [disconnect]);
 
   const parseIntentUrl = (url: string): string => {
     try {
@@ -615,7 +612,7 @@ export default function PaymentWebView() {
             {Platform.OS === 'android' ? (
               <WebView
                 ref={webViewRef}
-                source={{ uri: url }}
+                source={webViewSource}
                 style={{ flex: 1 }}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
@@ -646,6 +643,7 @@ export default function PaymentWebView() {
                 }}
                 onLoadEnd={() => {
                   console.log("WebView finished loading");
+                  hasLoadedRealUrl.current = true;
                 }}
                 onNavigationStateChange={(navState) => {
                   console.log("Payment Navigation State:", {
@@ -666,9 +664,7 @@ export default function PaymentWebView() {
                   if (isExplicitCancel || isExplicitFailure) {
                     console.log(`[DEBUG Payment Flow] WebView reached explicit cancel/failure page (${isExplicitCancel ? 'Cancel' : 'Failure'}). Routing to failure screen...`);
                     stopStatusPolling();
-                    if (socket && socket.connected) {
-                      socket.disconnect();
-                    }
+                    disconnect();
                     
                     if (!isTransitioningRef.current) {
                       isTransitioningRef.current = true;
@@ -797,7 +793,7 @@ export default function PaymentWebView() {
             ) : (
               <WebView
                 ref={webViewRef}
-                source={{ uri: url }}
+                source={webViewSource}
                 style={{ flex: 1 }}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
@@ -825,6 +821,7 @@ export default function PaymentWebView() {
                 }}
                 onLoadEnd={() => {
                   console.log("WebView finished loading");
+                  hasLoadedRealUrl.current = true;
                 }}
                 onNavigationStateChange={(navState) => {
                   console.log("Payment Navigation State:", {
@@ -845,9 +842,7 @@ export default function PaymentWebView() {
                   if (isExplicitCancel || isExplicitFailure) {
                     console.log(`[DEBUG Payment Flow] WebView reached explicit cancel/failure page (${isExplicitCancel ? 'Cancel' : 'Failure'}). Routing to failure screen...`);
                     stopStatusPolling();
-                    if (socket && socket.connected) {
-                      socket.disconnect();
-                    }
+                    disconnect();
                     
                     if (!isTransitioningRef.current) {
                       isTransitioningRef.current = true;

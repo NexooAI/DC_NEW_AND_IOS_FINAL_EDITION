@@ -120,6 +120,7 @@ export default function PaymentNewOverView() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [isMounted, setIsMounted] = useState(true); // Track component mount state
   const isNavigatingRef = useRef(false); // Prevent multiple simultaneous navigations
+  const isProcessingRef = useRef(false);
   const isMountedRef = useRef(true); // More reliable mount tracking for async operations
   // Check for Flexi type using both paymentFrequency and schemeType parameters
   const hybridStatus = useMemo(() => {
@@ -279,8 +280,14 @@ export default function PaymentNewOverView() {
       isMountedRef.current = false;
       setIsMounted(false);
       isNavigatingRef.current = false;
+      isProcessingRef.current = false;
     };
   }, []);
+
+  // Sync isProcessing state to ref for synchronous double-tap prevention
+  useEffect(() => {
+    isProcessingRef.current = isProcessing;
+  }, [isProcessing]);
 
   // Handle hardware back button press
   useFocusEffect(
@@ -789,7 +796,8 @@ export default function PaymentNewOverView() {
 
   const handlePayment = async () => {
     // Immediate UX feedback and guards
-    if (isProcessing) return;
+    if (isProcessing || isProcessingRef.current) return;
+    isProcessingRef.current = true;
     if (!currentAmount || currentAmount <= 0) {
       if (isMountedRef.current) {
         Alert.alert(

@@ -15,6 +15,7 @@ import {
   TextInputKeyPressEventData,
   Keyboard,
   Pressable,
+  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -195,6 +196,7 @@ export default function MpinSetup() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary} />
       <ImageBackground
         source={require("../../../assets/images/bg_login.jpg")}
         style={styles.backgroundImage}

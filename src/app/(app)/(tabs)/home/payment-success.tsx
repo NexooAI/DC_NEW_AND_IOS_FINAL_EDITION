@@ -518,14 +518,14 @@ export default function PaymentSuccess() {
                 </View>
 
                 {/* Transaction ID with Copy Micro-Interaction */}
-                <View style={styles.infoRow}>
+                <View style={styles.infoRowStacked}>
                   <Text style={styles.infoLabel}>{t("transactionId")}</Text>
                   <TouchableOpacity 
                     activeOpacity={0.7}
-                    style={styles.valueCopyRow}
+                    style={styles.valueCopyRowStacked}
                     onPress={() => handleCopy((Array.isArray(params.txnId) ? params.txnId[0] : params.txnId) || fetchedTransactionId || (Array.isArray(params.orderId) ? params.orderId[0] : params.orderId) || "", "txn")}
                   >
-                    <Text style={styles.infoValueCopy} numberOfLines={1}>
+                    <Text style={styles.infoValueCopyStacked}>
                       {(Array.isArray(params.txnId) ? params.txnId[0] : params.txnId) || fetchedTransactionId || (Array.isArray(params.orderId) ? params.orderId[0] : params.orderId) || "N/A"}
                     </Text>
                     <View style={[styles.copyIconWrapper, copiedTxn && styles.copyIconSuccess]}>
@@ -539,14 +539,14 @@ export default function PaymentSuccess() {
                 </View>
 
                 {/* Order ID with Copy Micro-Interaction */}
-                <View style={styles.infoRow}>
+                <View style={styles.infoRowStacked}>
                   <Text style={styles.infoLabel}>{t("orderId")}</Text>
                   <TouchableOpacity 
                     activeOpacity={0.7}
-                    style={styles.valueCopyRow}
+                    style={styles.valueCopyRowStacked}
                     onPress={() => handleCopy(Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || ""), "order")}
                   >
-                    <Text style={styles.infoValueCopy} numberOfLines={1}>
+                    <Text style={styles.infoValueCopyStacked}>
                       {Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || "N/A")}
                     </Text>
                     <View style={[styles.copyIconWrapper, copiedOrder && styles.copyIconSuccess]}>
@@ -603,7 +603,7 @@ export default function PaymentSuccess() {
                 ) : (
                   <>
                     <Ionicons name="share-social-outline" size={20} color="#fff" />
-                    <Text style={styles.primaryShareText}>{t("shareReceipt")}</Text>
+                    <Text style={styles.primaryShareText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.7}>{t("shareReceipt")}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -614,7 +614,7 @@ export default function PaymentSuccess() {
                 style={styles.primaryShareButton}
                 onPress={() => router.replace("/(app)/bill_payment")}
               >
-                <Text style={styles.primaryShareText}>{(t("backToBills") || "BACK TO BILLS").toUpperCase()}</Text>
+                <Text style={styles.primaryShareText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.7}>{(t("backToBills") || "BACK TO BILLS").toUpperCase()}</Text>
               </TouchableOpacity>
             ) : (type === "booking" || type === "advance_booking") ? (
               <View style={styles.dualButtons}>
@@ -623,14 +623,14 @@ export default function PaymentSuccess() {
                   onPress={() => router.replace("/(tabs)/home/BookingHistory")}
                 >
                   <Ionicons name="time-outline" size={20} color="#fff" />
-                  <Text style={styles.primaryShareText}>{(t("showAdvanceHistory") || "SHOW ADVANCE HISTORY").toUpperCase()}</Text>
+                  <Text style={styles.primaryShareText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.7}>{(t("showAdvanceHistory") || "SHOW ADVANCE HISTORY").toUpperCase()}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.secondaryHomeButton}
                   onPress={() => router.replace("/(tabs)/home")}
                 >
                   <Ionicons name="home-outline" size={20} color={theme.colors.textDark} />
-                  <Text style={styles.secondaryHomeText}>{(t("backToHome") || "BACK TO HOME").toUpperCase()}</Text>
+                  <Text style={styles.secondaryHomeText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.7}>{(t("backToHome") || "BACK TO HOME").toUpperCase()}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -641,7 +641,7 @@ export default function PaymentSuccess() {
                   activeOpacity={0.8}
                 >
                   <Ionicons name="home-outline" size={20} color={theme.colors.textDark} />
-                  <Text style={styles.secondaryButtonText}>{t("home")}</Text>
+                  <Text style={styles.secondaryButtonText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.7}>{t("home")}</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity
@@ -650,7 +650,7 @@ export default function PaymentSuccess() {
                   activeOpacity={0.8}
                 >
                   <Ionicons name="wallet-outline" size={20} color="#fff" />
-                  <Text style={styles.primaryButtonText}>{t("savings")}</Text>
+                  <Text style={styles.primaryButtonText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.7}>{t("savings")}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "flex-start",
+    justifyContent: "center",
     paddingVertical: 12,
   },
   content: {
@@ -889,6 +889,7 @@ const styles = StyleSheet.create({
     fontSize: rf(15, { minSize: 13, maxSize: 17 }),
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
+    flexShrink: 1,
   },
   dualButtons: {
     width: "100%",
@@ -911,6 +912,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
     marginLeft: 8,
+    flexShrink: 1,
   },
   buttonRow: {
     flexDirection: "row",
@@ -937,6 +939,7 @@ const styles = StyleSheet.create({
     fontSize: rf(15, { minSize: 13, maxSize: 17 }),
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
+    flexShrink: 1,
   },
   secondaryButton: {
     flex: 1,
@@ -955,6 +958,7 @@ const styles = StyleSheet.create({
     fontSize: rf(15, { minSize: 13, maxSize: 17 }),
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
+    flexShrink: 1,
   },
   jaggedContainer: {
     position: "absolute",
@@ -977,5 +981,28 @@ const styles = StyleSheet.create({
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
     borderBottomColor: "#f8f9ff", // Triangle body is background color, biting into white card
+  },
+  infoRowStacked: {
+    flexDirection: "column",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+    gap: 4,
+    width: "100%",
+  },
+  valueCopyRowStacked: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    alignSelf: "flex-end",
+    gap: 8,
+    width: "100%",
+  },
+  infoValueCopyStacked: {
+    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+    color: "#1a202c",
+    fontWeight: "600",
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "right",
+    flexShrink: 1,
   },
 });

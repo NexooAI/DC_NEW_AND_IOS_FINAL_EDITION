@@ -28,6 +28,35 @@ export interface AppVisibilityData {
     bypassToPayment: number;
     shortKyc: number;
     showDashboardAfterLogin?: number;
+    showReferral?: number;
+    showLuckyDraw?: number;
+    showGoldAdvance?: number;
+    showBillPayment?: number;
+    showOldGold?: number;
+    // Bottom Tabs
+    showTabHome?: number;
+    showTabSavings?: number;
+    showTabQuickJoin?: number;
+    showTabRewards?: number;
+    showTabProfile?: number;
+    // Side Menu Drawer
+    showSideReferEarn?: number;
+    showSideTickets?: number;
+    showSideOffers?: number;
+    showSideStores?: number;
+    showSideContactUs?: number;
+    showSideFaq?: number;
+    showSidePrivacy?: number;
+    showSideTerms?: number;
+    // Profile Settings
+    showProfileKyc?: number;
+    showProfileMpin?: number;
+    showProfileBiometrics?: number;
+    showProfileLanguage?: number;
+    showProfileRateChart?: number;
+    showProfileRateUs?: number;
+    showProfilePaymentHistory?: number;
+    showProfileDeleteAccount?: number;
     updated_at: string;
 }
 
@@ -84,12 +113,21 @@ export function useAppVisibility() {
             const defaultVisible: Array<keyof Omit<AppVisibilityData, 'id' | 'updated_at'>> = [
                 'showGoldRate', 'showPoster', 'showFlashnews', 'showCustomerCard',
                 'showSchemes', 'showSocialMedia', 'showSupportCard', 'showHallmark',
-                'showDashboardAfterLogin'
+                'showDashboardAfterLogin', 'showReferral', 'showLuckyDraw', 'showGoldAdvance', 'showBillPayment', 'showOldGold',
+                'showTabHome', 'showTabSavings', 'showTabRewards', 'showTabProfile',
+                'showSideReferEarn', 'showSideTickets', 'showSideOffers', 'showSideStores', 'showSideContactUs', 'showSideFaq', 'showSidePrivacy', 'showSideTerms',
+                'showProfileKyc', 'showProfileMpin', 'showProfileBiometrics', 'showProfileLanguage', 'showProfileRateChart', 'showProfileRateUs', 'showProfilePaymentHistory', 'showProfileDeleteAccount'
             ];
             return defaultVisible.includes(componentName);
         }
-        // Ensure gold rate component defaults to true unless explicitly disabled (0)
-        if (componentName === 'showGoldRate') {
+        // Ensure menu components and core modules default to true unless explicitly disabled (0)
+        const defaultTrueKeys = [
+            'showGoldRate', 'showReferral', 'showLuckyDraw', 'showGoldAdvance', 'showBillPayment', 'showOldGold',
+            'showTabHome', 'showTabSavings', 'showTabRewards', 'showTabProfile',
+            'showSideReferEarn', 'showSideTickets', 'showSideOffers', 'showSideStores', 'showSideContactUs', 'showSideFaq', 'showSidePrivacy', 'showSideTerms',
+            'showProfileKyc', 'showProfileMpin', 'showProfileBiometrics', 'showProfileLanguage', 'showProfileRateChart', 'showProfileRateUs', 'showProfilePaymentHistory', 'showProfileDeleteAccount'
+        ];
+        if (defaultTrueKeys.includes(componentName)) {
             return visibleData[componentName] !== 0;
         }
         return visibleData[componentName] === 1;

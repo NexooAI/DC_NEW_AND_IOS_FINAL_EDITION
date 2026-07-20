@@ -1,4 +1,4 @@
-import { theme } from '@/constants/theme';
+import { APP_CONFIG } from '@/constants';
 
 import { logger } from '@/utils/logger';
 /**
@@ -16,7 +16,7 @@ export const getFullImageUrl = (path: string): string => {
     return path;
   }
   // Remove trailing slash from baseUrl and leading slash from path
-  const fullUrl = `${theme.baseUrl.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+  const fullUrl = `${APP_CONFIG.urls.baseUrl.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
   logger.log("🔗 getFullImageUrl: Generated URL:", fullUrl, "from path:", path);
   return fullUrl;
 };

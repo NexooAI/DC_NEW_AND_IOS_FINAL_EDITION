@@ -138,8 +138,6 @@ export default function ResetMpin() {
                 length={4}
                 onComplete={handleNewMpinComplete}
                 secureTextEntry={!showMpin}
-                inputStyle={styles.mpinInput}
-                containerStyle={styles.mpinContainer}
               />
             </View>
 
@@ -150,8 +148,6 @@ export default function ResetMpin() {
                 length={4}
                 onComplete={handleConfirmMpinComplete}
                 secureTextEntry={!showMpin}
-                inputStyle={styles.mpinInput}
-                containerStyle={styles.mpinContainer}
               />
             </View>
 

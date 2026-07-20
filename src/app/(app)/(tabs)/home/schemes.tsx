@@ -29,6 +29,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import useGlobalStore from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
+import { t as globalT } from "@/i18n";
 import { theme } from "@/constants/theme";
 import api from "@/services/api";
 import { LinearGradient } from "expo-linear-gradient";
@@ -126,7 +127,7 @@ const getTranslatedText = (
       .filter(Boolean)
       .map((word, i) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1))
       .join("");
-    const translated = t(key);
+    const translated = globalT(key);
     if (translated && translated !== key && !translated.includes("missing")) {
       return translated;
     }
@@ -229,6 +230,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
   const [userSelectedTab, setUserSelectedTab] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showShimmer, setShowShimmer] = useState(false);
+  const [showGoToTop, setShowGoToTop] = useState(false);
 
   const getAvailableTabTypes = useCallback(
     (schemesData: Scheme[]): string[] => {
@@ -1075,29 +1077,24 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
       {/* Header */}
       {!isNested && (
         <View
-          style={[styles.headerGradient, { backgroundColor: theme.colors.quaternary || '#F2E6D2', paddingTop: insets.top + 10 }]}
+          style={[styles.headerGradient, { backgroundColor: theme.colors.quaternary || '#F2E6D2', paddingTop: Platform.OS === 'ios' ? 12 : insets.top + 6, paddingBottom: 10 }]}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
-                  <Ionicons name="arrow-back" size={28} color={theme.colors.primary || "#850111"} />
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.colors.primary || "#850111", marginBottom: 0 }]} numberOfLines={1} adjustsFontSizeToFit>
-                  {t("schemes.explore") || "Explore Schemes"}
-                </Text>
-              </View>
-              <Text style={[styles.headerSubtitle, { color: "rgba(133, 1, 17, 0.7)" }]} numberOfLines={1}>
-                {t("schemes.subtitle") || "Find the perfect gold savings plan for you"}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
+              <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12, width: 36, height: 36, justifyContent: 'center', alignItems: 'center' }}>
+                <Ionicons name="arrow-back" size={24} color={theme.colors.primary || "#850111"} />
+              </TouchableOpacity>
+              <Text style={[styles.headerTitle, { color: theme.colors.primary || "#850111", marginBottom: 0, fontSize: 20, fontWeight: '700' }]} numberOfLines={1} adjustsFontSizeToFit>
+                {t("schemes.explore") || "Explore Schemes"}
               </Text>
             </View>
 
             {/* Savings Home Button */}
             <TouchableOpacity
               onPress={() => router.push('/(app)/(tabs)/home')}
-              style={{ backgroundColor: 'rgba(133, 1, 17, 0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}
+              style={{ backgroundColor: 'rgba(133, 1, 17, 0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, flexDirection: 'row', alignItems: 'center' }}
             >
-              <Ionicons name="home" size={16} color={theme.colors.primary || "#850111"} style={{ marginRight: 4 }} />
+              <Ionicons name="home" size={14} color={theme.colors.primary || "#850111"} style={{ marginRight: 4 }} />
               <Text style={{ color: theme.colors.primary || "#850111", fontSize: 12, fontWeight: '600' }}>Home</Text>
             </TouchableOpacity>
           </View>
@@ -1156,6 +1153,15 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
             }
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
+            onScroll={(event) => {
+              const offsetY = event.nativeEvent.contentOffset.y;
+              if (offsetY > 300) {
+                if (!showGoToTop) setShowGoToTop(true);
+              } else {
+                if (showGoToTop) setShowGoToTop(false);
+              }
+            }}
+            scrollEventThrottle={16}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -1180,7 +1186,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         )}
       </View>
 
-      {schemes.length > 0 && !loading && (
+      {showGoToTop && schemes.length > 0 && !loading && (
         <TouchableOpacity
           style={styles.fab}
           onPress={() => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   View,
   StyleSheet,
@@ -12,7 +12,17 @@ import {
   Modal,
   RefreshControl,
   Linking,
+  Pressable,
+  Image,
+  Text,
 } from "react-native";
+import Svg, { Line, Path, Circle } from "react-native-svg";
+import AnimatedReanimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withRepeat,
+} from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -25,7 +35,6 @@ import { shadowUtils } from "@/utils/shadowUtils";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
 import { luckyDrawAPI } from "@/services/api";
-import { useRef, useMemo } from "react";
 import { formatDate, convertUTCToLocal } from "@/utils/dateTimeUtils";
 
 const { wp, hp, rf } = responsiveUtils;
@@ -133,7 +142,270 @@ const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
   );
 };
 
-const LuckyDrawCard = ({
+const GoldOrnamentLeft = () => (
+  <Svg width="40" height="80" viewBox="0 0 40 80" style={{ position: "absolute", left: -5, top: 12, opacity: 0.85 }}>
+    <Path
+      d="M0,0 Q18,20 8,40 T28,80 M8,10 Q28,25 18,45 T38,75"
+      fill="none"
+      stroke="#D4AF37"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+    />
+    <Circle cx="8" cy="15" r="3" fill="#FFF9C4" />
+    <Circle cx="12" cy="35" r="4.5" fill="#D4AF37" />
+    <Circle cx="22" cy="60" r="3" fill="#B8860B" />
+  </Svg>
+);
+
+const GoldOrnamentRight = () => (
+  <Svg width="40" height="80" viewBox="0 0 40 80" style={{ position: "absolute", right: -5, top: 12, opacity: 0.85 }}>
+    <Path
+      d="M40,0 Q22,20 32,40 T12,80 M32,10 Q12,25 22,45 T2,75"
+      fill="none"
+      stroke="#D4AF37"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+    />
+    <Circle cx="32" cy="15" r="3" fill="#FFF9C4" />
+    <Circle cx="28" cy="35" r="4.5" fill="#D4AF37" />
+    <Circle cx="18" cy="60" r="3" fill="#B8860B" />
+  </Svg>
+);
+
+const TicketDetailPopup = ({
+  ticket,
+  visible,
+  onClose,
+  onAction
+}: {
+  ticket: LuckyDrawItem;
+  visible: boolean;
+  onClose: () => void;
+  onAction: (item: LuckyDrawItem) => void;
+}) => {
+  const { t } = useTranslation();
+  const isCompleted = ticket.status === "completed";
+  const isUpcoming = ticket.status === "upcoming";
+  const userWon = ticket.userWon;
+
+  // Animation progress for spring scale and unfolding height
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    if (visible) {
+      progress.value = withTiming(1, { duration: 500 });
+    } else {
+      progress.value = 0;
+    }
+  }, [visible]);
+
+  const animatedContainerStyle = useAnimatedStyle(() => {
+    // Height unfolds from 140 to 390 (completed has winner list) or 310 (active/upcoming)
+    const heightLimit = isCompleted ? 390 : 310;
+    const currentHeight = 140 + progress.value * (heightLimit - 140);
+    return {
+      height: currentHeight,
+      transform: [
+        { scale: 0.94 + progress.value * 0.06 }
+      ]
+    };
+  });
+
+  const animatedContentStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+  }));
+
+  // Status Action Button
+  let statusText = "Coming Soon";
+  if (!isUpcoming && !isCompleted) {
+    statusText = ticket.ticketNumber ? "Enter Live" : "Join Draw";
+  } else if (isCompleted) {
+    statusText = userWon ? "Claim Prize" : "Done";
+  }
+
+  const handleActionButtonPress = () => {
+    if (isCompleted && !userWon) {
+      onClose();
+    } else {
+      onAction(ticket);
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <Pressable style={styles.modalOverlay} onPress={onClose}>
+        <Pressable style={{ width: "92%" }}>
+          <AnimatedReanimated.View
+            style={[
+              styles.popupTicketContainer,
+              animatedContainerStyle,
+              userWon && styles.cardWon,
+              isCompleted && styles.cardCompleted
+            ]}
+          >
+            {/* Expanded Ticket Body */}
+            <View style={{ flex: 1, flexDirection: "row", position: "relative" }}>
+              {/* Left Side (70%) */}
+              <LinearGradient
+                colors={["#5B0015", "#3D000E"]}
+                style={styles.popupTicketLeft}
+              >
+                {/* Status Badge */}
+                <View style={[
+                  styles.statusRibbon,
+                  isUpcoming && styles.statusRibbonUpcoming,
+                  isCompleted && styles.statusRibbonCompleted,
+                ]}>
+                  <ResponsiveText color="#FFFFFF" size="xxs" weight="bold">
+                    {isUpcoming ? "UPCOMING" : (isCompleted ? "COMPLETED" : "LIVE")}
+                  </ResponsiveText>
+                </View>
+
+                {/* Details */}
+                <View style={{ marginTop: 28, flex: 1 }}>
+                  <ResponsiveText color="#FFFFFF" size="sm" weight="bold" style={styles.cardTitle} numberOfLines={1}>
+                    {ticket.title}
+                  </ResponsiveText>
+                  <ResponsiveText color="#D4AF37" size="md" weight="bold" style={styles.prizeText} numberOfLines={1}>
+                    {ticket.prize}
+                  </ResponsiveText>
+                  
+                  {/* Collapsible/Expandable detailed description */}
+                  <AnimatedReanimated.View style={[{ marginTop: 6, flex: 1 }, animatedContentStyle]}>
+                    <ResponsiveText color="rgba(255,255,255,0.72)" size="xs" style={{ lineHeight: 17, marginBottom: 8 }} numberOfLines={3}>
+                      {ticket.description}
+                    </ResponsiveText>
+                    
+                    {!isCompleted && (
+                      <ResponsiveText color="#D4AF37" size="xxs" style={{ lineHeight: 14 }}>
+                        {t("luckyDrawInfo")}
+                      </ResponsiveText>
+                    )}
+
+                    {/* Completed Draw Winner details */}
+                    {isCompleted && ticket.winners && ticket.winners.length > 0 && (
+                      <View style={{ marginTop: 6, borderTopWidth: 0.5, borderTopColor: "rgba(212,175,55,0.2)", paddingTop: 6 }}>
+                        <ResponsiveText color="#D4AF37" size="xxs" weight="bold" style={{ marginBottom: 4 }}>
+                          {t("luckyDrawWinnersList") || "Winners List"}
+                        </ResponsiveText>
+                        <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 95 }}>
+                          {ticket.winners.slice(0, 3).map((winner: any, idx: number) => {
+                            const isCurrentUser = winner.user_id === ticket.currentUserId;
+                            return (
+                              <View key={idx} style={{ flexDirection: "row", alignItems: "center", marginBottom: 3 }}>
+                                <Ionicons name="ribbon" size={12} color="#D4AF37" />
+                                <ResponsiveText color="#FFFFFF" size="xxs" style={{ marginLeft: 4, flex: 1 }}>
+                                  {winner.user_name || winner.userName} {isCurrentUser && `(You)`}
+                                </ResponsiveText>
+                                <ResponsiveText color="#D4AF37" size="xxs" weight="bold">
+                                  Rank {winner.prize_rank}
+                                </ResponsiveText>
+                              </View>
+                            );
+                          })}
+                        </ScrollView>
+                      </View>
+                    )}
+                  </AnimatedReanimated.View>
+                </View>
+
+                {/* Footer details */}
+                <View style={styles.ticketLeftFooter}>
+                  <View style={styles.participantInfo}>
+                    <Ionicons name="people-outline" size={13} color="rgba(255,255,255,0.5)" />
+                    <ResponsiveText color="rgba(255,255,255,0.5)" size="xxs" style={{ marginLeft: 4 }}>
+                      {t("luckyDrawParticipated").replace("{count}", ticket.participants.toLocaleString())}
+                    </ResponsiveText>
+                  </View>
+                  <ResponsiveText color="rgba(255,255,255,0.6)" size="xxs" weight="semibold">
+                    {isUpcoming ? (ticket.startDate ? `Starts ${formatDate(ticket.startDate)}` : "Upcoming") : formatDate(ticket.endDate)}
+                  </ResponsiveText>
+                </View>
+              </LinearGradient>
+
+              {/* Vertical Perforated divider */}
+              <View style={styles.perforatedDivider}>
+                <Svg height="100%" width="2">
+                  <Line
+                    x1="1"
+                    y1="0"
+                    x2="1"
+                    y2="100%"
+                    stroke="rgba(212, 175, 55, 0.38)"
+                    strokeWidth="2"
+                    strokeDasharray="4, 4"
+                  />
+                </Svg>
+              </View>
+
+              {/* Right Side (30%) */}
+              <LinearGradient
+                colors={["#FFF9C4", "#D4AF37", "#B8860B"]}
+                style={styles.popupTicketRight}
+              >
+                <MaterialCommunityIcons name="ticket-confirmation" size={32} color="#5B0015" style={{ marginBottom: 6 }} />
+                
+                <ResponsiveText color="#5B0015" size="xxs" weight="bold" style={{ marginBottom: 12 }}>
+                  {ticket.ticketNumber ? `#${ticket.ticketNumber}` : `#000${ticket.id}`}
+                </ResponsiveText>
+
+                <TouchableOpacity
+                  style={[
+                    styles.statusButton,
+                    isUpcoming && styles.statusButtonUpcoming,
+                    isCompleted && styles.statusButtonCompleted,
+                  ]}
+                  onPress={handleActionButtonPress}
+                  activeOpacity={0.8}
+                >
+                  <ResponsiveText
+                    color={isUpcoming || isCompleted ? "#FFFFFF" : "#5B0015"}
+                    size="xxs"
+                    weight="bold"
+                    style={{ textAlign: "center" }}
+                    numberOfLines={1}
+                  >
+                    {statusText}
+                  </ResponsiveText>
+                </TouchableOpacity>
+              </LinearGradient>
+
+              {/* Semicircle notches at the divider */}
+              <View style={[styles.notch, styles.notchTop]} />
+              <View style={[styles.notch, styles.notchBottom]} />
+            </View>
+          </AnimatedReanimated.View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+};
+
+const CornerBracket = ({ type }: { type: "TL" | "TR" | "BL" | "BR" }) => {
+  let pathD = "";
+  if (type === "TL") pathD = "M0,6 L0,0 L6,0 M0,3 L3,0";
+  if (type === "TR") pathD = "M6,6 L6,0 L0,0 M6,3 L3,0";
+  if (type === "BL") pathD = "M0,0 L0,6 L6,6 M0,3 L3,6";
+  if (type === "BR") pathD = "M6,0 L6,6 L0,6 M6,3 L3,6";
+
+  return (
+    <Svg width="8" height="8" viewBox="0 0 6 6">
+      <Path
+        d={pathD}
+        fill="none"
+        stroke="rgba(212, 175, 55, 0.48)"
+        strokeWidth="1"
+      />
+    </Svg>
+  );
+};
+
+const LuckyTicketCard = ({
   item,
   onPress,
   isRevealed,
@@ -148,6 +420,53 @@ const LuckyDrawCard = ({
   const isCompleted = item.status === "completed";
   const isUpcoming = item.status === "upcoming";
   const userWon = item.userWon;
+
+  // Reanimated values for appearing Fade Up
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(30);
+
+  // Reanimated value for press scale animation
+  const scale = useSharedValue(1);
+
+  // Reanimated value for shimmer on gold ticket area
+  const shimmerTranslateX = useSharedValue(-120);
+
+  useEffect(() => {
+    // Fade Up animation on mount
+    opacity.value = withTiming(1, { duration: 600 });
+    translateY.value = withTiming(0, { duration: 600 });
+
+    // Shimmer animation loop running every 8 seconds (8000ms)
+    // The shine swipe takes 1500ms, then waits 6500ms before repeating.
+    const startShine = () => {
+      shimmerTranslateX.value = -120;
+      shimmerTranslateX.value = withTiming(180, { duration: 1500 });
+    };
+
+    startShine();
+    const interval = setInterval(startShine, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const animatedContainerStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [
+      { translateY: translateY.value },
+      { scale: scale.value }
+    ],
+  }));
+
+  const animatedShimmerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: shimmerTranslateX.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withTiming(0.97, { duration: 75 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withTiming(1, { duration: 75 });
+  };
 
   // Local animated scratch effect values
   const [foilOpacity] = useState(new Animated.Value(1));
@@ -172,181 +491,171 @@ const LuckyDrawCard = ({
 
   const isWonAndUnrevealed = isCompleted && userWon && !isRevealed;
 
-  // Premium dark-mode gradients based on draw status
-  const cardGradientColors = isUpcoming
-    ? ["#0B132B", "#1C2541", "#1C2541"] // Midnight deep blue/indigo gradient
-    : userWon
-      ? ["#332001", "#593902", "#734C03"] // Luxurious metallic gold/dark bronze gradient
-      : isCompleted
-        ? ["#181818", "#242424", "#121212"] // Dark carbon/slate black gradient
-        : ["#2C0006", "#4A0010", "#6D0017"]; // Rich deep burgundy gradient
+  // Status Button Action Text
+  let statusText = "Coming Soon";
+  if (!isUpcoming && !isCompleted) {
+    statusText = item.ticketNumber ? "Enter" : "Join Draw";
+  } else if (isCompleted) {
+    statusText = "View Result";
+  }
+
+  // Determine floating prize image
+  const goldCoinImg = require("@assets/images/luxury_gold_coin.png");
+  const diamondCoinImg = require("@assets/images/diamond_coin_badge.png");
+  const digiGoldImg = require("@assets/images/luxury_gold_ring.png");
+
+  let prizeImgSrc = goldCoinImg;
+  if (item.prize.toLowerCase().includes("point") || item.prize.toLowerCase().includes("test")) {
+    prizeImgSrc = diamondCoinImg;
+  } else if (item.prize.toLowerCase().includes("ring") || item.prize.toLowerCase().includes("jewel") || item.prize.toLowerCase().includes("necklace")) {
+    prizeImgSrc = digiGoldImg;
+  }
+
+  // Define pressable component type
+  const AnimatedPressable = AnimatedReanimated.createAnimatedComponent(Pressable);
 
   return (
-    <TouchableOpacity
-      activeOpacity={isUpcoming ? 1 : 0.9}
-      style={[
-        styles.card, 
-        userWon && styles.cardWon, 
-        isCompleted && styles.cardCompleted,
-        isUpcoming && { opacity: 0.82 }
-      ]}
+    <AnimatedPressable
       onPress={isUpcoming ? undefined : (isWonAndUnrevealed ? handleScratch : onPress)}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={[
+        styles.ticketContainer,
+        animatedContainerStyle,
+        userWon && styles.cardWon,
+        isCompleted && styles.cardCompleted,
+      ]}
     >
+      {/* LEFT SIDE (72%): Maroon luxury theme background */}
       <LinearGradient
-        colors={cardGradientColors as any}
-        style={styles.cardGradient}
+        colors={["#7A0019", "#4A2417"]}
+        style={styles.ticketLeft}
       >
-        <View style={styles.cardHeader}>
-          <View style={[
-            styles.badge,
-            (isCompleted || isUpcoming) && { backgroundColor: "rgba(255,255,255,0.15)", borderColor: "rgba(255,255,255,0.2)" },
-            userWon && { backgroundColor: luckyDrawColors.goldPremium, borderColor: "#D4AF37" }
-          ]}>
-            {userWon || (!isCompleted && !isUpcoming) ? (
-              <LinearGradient
-                colors={userWon ? ["#FFF9C4", "#D4AF37", "#B8860B"] : ["#FFD700", "#B8860B"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={StyleSheet.absoluteFillObject}
-              />
-            ) : null}
-            <ResponsiveText color={userWon || (!isCompleted && !isUpcoming) ? "#1C0003" : "#fff"} size="xs" weight="bold">
-              {userWon
-                ? t("luckyDrawYouWonBadge") || "YOU WON! 🎉"
-                : isCompleted
-                  ? t("luckyDrawCompleted") || "Completed"
-                  : isUpcoming
-                    ? t("luckyDrawUpcoming") || "Upcoming"
-                    : t("luckyDrawLive")}
-            </ResponsiveText>
-          </View>
-          {isCompleted ? (
-            <ResponsiveText color="rgba(255, 255, 255, 0.6)" size="xs" weight="bold">
-              {formatDate(item.endDate)}
-            </ResponsiveText>
-          ) : isUpcoming ? (
-            <ResponsiveText color="rgba(255, 255, 255, 0.6)" size="xs" weight="bold">
-              {item.startDate ? `Starts ${formatDate(item.startDate)}` : "Coming Soon"}
-            </ResponsiveText>
-          ) : (
-            <CountdownTimer targetDate={item.endDate} />
-          )}
+        {/* Corner Brackets for premium embossed look */}
+        <View style={{ position: "absolute", top: 8, left: 8 }}><CornerBracket type="TL" /></View>
+        <View style={{ position: "absolute", top: 8, right: 8 }}><CornerBracket type="TR" /></View>
+        <View style={{ position: "absolute", bottom: 8, left: 8 }}><CornerBracket type="BL" /></View>
+        <View style={{ position: "absolute", bottom: 8, right: 8 }}><CornerBracket type="BR" /></View>
+
+        {/* Slanted Status Ribbon (Upcoming / Live / Completed) */}
+        <View style={[
+          styles.statusRibbonSlanted,
+          isUpcoming && styles.statusRibbonUpcomingSlanted,
+          isCompleted && styles.statusRibbonCompletedSlanted,
+        ]}>
+          <Ionicons name="time" size={10} color="#7A0019" style={{ marginRight: 3, transform: [{ skewX: "18deg" }] }} />
+          <Text style={[styles.ribbonText, { transform: [{ skewX: "18deg" }] }]}>
+            {isUpcoming ? "UPCOMING" : (isCompleted ? "COMPLETED" : "LIVE")}
+          </Text>
         </View>
 
-        <View style={styles.cardBody}>
-          <View style={styles.textSection}>
-            <ResponsiveText color="#FFFFFF" size="md" weight="bold" style={styles.cardTitle}>
-              {item.title}
-            </ResponsiveText>
-            <ResponsiveText color="#FFD700" size="lg" weight="bold" style={styles.prizeText}>
-              {item.prize}
-            </ResponsiveText>
-            <ResponsiveText color="rgba(255, 255, 255, 0.7)" size="xs" style={styles.descText} numberOfLines={2}>
-              {item.description}
-            </ResponsiveText>
-
-            {item.ticketNumber ? (
-              <View style={styles.ticketBadge}>
-                <MaterialCommunityIcons name="ticket-confirmation" size={14} color="#FFD700" />
-                <ResponsiveText color="#FFD700" size="xs" weight="bold" style={{ marginLeft: 6 }}>
-                  {t("luckyDrawDrawNo").replace("{no}", item.ticketNumber)}
-                </ResponsiveText>
-              </View>
-            ) : isUpcoming ? (
-              <View style={[styles.ticketBadge, { backgroundColor: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.1)" }]}>
-                <MaterialCommunityIcons name="clock-outline" size={14} color="rgba(255,255,255,0.4)" />
-                <ResponsiveText color="rgba(255,255,255,0.4)" size="xs" weight="bold" style={{ marginLeft: 6 }}>
-                  Goes live on {item.startDate ? formatDate(item.startDate) : "release"}
-                </ResponsiveText>
-              </View>
-            ) : (
-              !isCompleted && (
-                <View style={[styles.ticketBadge, { backgroundColor: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.15)" }]}>
-                  <MaterialCommunityIcons name="alert-circle-outline" size={14} color="rgba(255,255,255,0.5)" />
-                  <ResponsiveText color="rgba(255,255,255,0.5)" size="xs" weight="bold" style={{ marginLeft: 6 }}>
-                    {t("youAreNotRegistered") || "Not Registered"}
-                  </ResponsiveText>
-                </View>
-              )
-            )}
+        {/* Draw details */}
+        <View style={styles.ticketLeftContent}>
+          <Text style={styles.drawNameText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.8}>
+            {item.title}
+          </Text>
+          <View style={styles.prizeRowInline}>
+            <Ionicons name="star" size={14} color="#D4AF37" style={{ marginRight: 4 }} />
+            <Text style={styles.prizeNameText} numberOfLines={1}>
+              Win: {item.prize}
+            </Text>
           </View>
-
-          <View style={[styles.imageSection, userWon && { backgroundColor: "rgba(255,215,0,0.15)", borderColor: "rgba(255,215,0,0.3)" }]}>
-            <LinearGradient
-              colors={userWon ? ["rgba(255,215,0,0.3)", "transparent"] : ["rgba(255,201,12,0.3)", "transparent"]}
-              style={styles.imageOverlay}
-            />
-            <MaterialCommunityIcons
-              name={isUpcoming ? "lock-outline" : (userWon ? "trophy-outline" : "trophy-award")}
-              size={rf(44)}
-              color={isUpcoming ? "rgba(255,255,255,0.3)" : (userWon ? "#FFD700" : luckyDrawColors.goldPremium)}
-            />
-          </View>
+          <Text style={styles.descriptionText} numberOfLines={1}>
+            Join and win exciting rewards!
+          </Text>
         </View>
 
-        {isCompleted && item.winners && item.winners.length > 0 && (
-          <View style={styles.winnersContainer}>
-            <ResponsiveText color="#FFD700" size="xs" weight="bold" style={styles.winnersTitle}>
-              {t("luckyDrawWinnersList")}
-            </ResponsiveText>
-            {item.winners.map((winner: any, idx: number) => {
-              const isCurrentUser = winner.user_id === item.currentUserId;
-              return (
-                <View key={idx} style={[styles.winnerRow, isCurrentUser && styles.winnerRowCurrentUser]}>
-                  <Ionicons name="ribbon" size={14} color={isCurrentUser ? "#FFD700" : "#D4AF37"} />
-                  <ResponsiveText color="#FFFFFF" size="xs" style={{ marginLeft: 6, flex: 1 }} weight={isCurrentUser ? "bold" : "normal"}>
-                    {winner.user_name || winner.userName} {isCurrentUser && `(You - ${t("luckyDrawCongratulations") || "Won!"})`}
-                  </ResponsiveText>
-                  <ResponsiveText color="#FFD700" size="xs" weight="bold">
-                    Rank {winner.prize_rank}
-                  </ResponsiveText>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
-        <View style={styles.cardFooter}>
-          <View style={styles.participantInfo}>
-            <Ionicons name="people-outline" size={14} color="rgba(255,255,255,0.5)" />
-            <ResponsiveText color="rgba(255,255,255,0.5)" size="xs" style={{ marginLeft: 4 }}>
-              {t("luckyDrawParticipated").replace("{count}", item.participants.toLocaleString())}
-            </ResponsiveText>
-          </View>
-
-          {isUpcoming ? (
-            <View style={[styles.entryButton, { opacity: 0.7 }]}>
-              <LinearGradient
-                colors={["#4B5563", "#374151"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.entryButtonGradient}
-              >
-                <ResponsiveText color="rgba(255,255,255,0.5)" size="xs" weight="bold">
-                  Coming Soon
-                </ResponsiveText>
-              </LinearGradient>
+        {/* Footer: Start Date + Participant Count in Columns */}
+        <View style={styles.ticketLeftFooter}>
+          <View style={styles.footerCol}>
+            <Ionicons name="calendar-outline" size={14} color="#D4AF37" />
+            <View style={{ marginLeft: 5 }}>
+              <Text style={styles.footerLabelText}>
+                {isUpcoming ? "Starts on" : "Ends on"}
+              </Text>
+              <Text style={styles.footerValueText}>
+                {formatDate(isUpcoming ? (item.startDate || item.endDate) : item.endDate)}
+              </Text>
             </View>
-          ) : !isCompleted && (
-            <TouchableOpacity style={styles.entryButton} onPress={onPress}>
-              <LinearGradient
-                colors={item.ticketNumber
-                  ? ["#2E7D32", "#1B5E20"]
-                  : ["#FFD700", "#D4AF37", "#B8860B"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.entryButtonGradient}
-              >
-                <ResponsiveText color={item.ticketNumber ? "#fff" : "#1C0003"} size="xs" weight="bold">
-                  {item.ticketNumber
-                    ? t("registered") || "Registered"
-                    : t("luckyDrawHowToParticipate") || "How to Participate"}
-                </ResponsiveText>
-              </LinearGradient>
-            </TouchableOpacity>
-          )}
+          </View>
+          <View style={styles.footerColDivider} />
+          <View style={styles.footerCol}>
+            <Ionicons name="people-outline" size={14} color="#D4AF37" />
+            <View style={{ marginLeft: 5 }}>
+              <Text style={styles.footerLabelText}>
+                Participants
+              </Text>
+              <Text style={styles.footerValueText}>
+                {item.participants.toLocaleString()}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Floating Prize Image */}
+        <View style={styles.prizeImageContainerCard}>
+          <Image source={prizeImgSrc} style={styles.prizeImageCard} resizeMode="contain" />
         </View>
       </LinearGradient>
+
+      {/* VERTICAL DIVIDER: Perforated line using SVG */}
+      <View style={styles.perforatedDivider}>
+        <Svg height="100%" width="2">
+          <Line
+            x1="1"
+            y1="0"
+            x2="1"
+            y2="100%"
+            stroke="rgba(212, 175, 55, 0.38)"
+            strokeWidth="2"
+            strokeDasharray="4, 4"
+          />
+        </Svg>
+      </View>
+
+      {/* RIGHT SIDE (28%): Gold colored ticket area */}
+      <LinearGradient
+        colors={["#FFE082", "#FFF9C4", "#D4AF37", "#AA7C11", "#D4AF37", "#F5D36C", "#FFF9C4"]}
+        style={styles.ticketRight}
+      >
+        {/* Shimmer animation view */}
+        <AnimatedReanimated.View style={[StyleSheet.absoluteFill, animatedShimmerStyle, { width: 90 }]}>
+          <LinearGradient
+            colors={["transparent", "rgba(255, 255, 255, 0.5)", "transparent"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFillObject}
+          />
+        </AnimatedReanimated.View>
+
+        {/* Circular Ticket Badge in center */}
+        <View style={styles.ticketIconCircle}>
+          <MaterialCommunityIcons name="ticket-confirmation" size={18} color="#FFF8E8" />
+        </View>
+        
+        <Text style={styles.ticketLabel}>
+          Ticket
+        </Text>
+        <Text
+          style={styles.stubTicketId}
+          numberOfLines={1}
+          adjustsFontSizeToFit={true}
+          minimumFontScale={0.7}
+        >
+          {item.ticketNumber ? `Ticket #${item.ticketNumber}` : `Ticket #${item.id}`}
+        </Text>
+
+        {/* Action / Status Button */}
+        <View style={styles.stubStatusButtonMaroon}>
+          <Text style={styles.stubStatusButtonText} numberOfLines={1}>
+            {statusText}
+          </Text>
+        </View>
+      </LinearGradient>
+
+      {/* Semicircle Notches on Left and Right center edges */}
+      <View style={[styles.notch, styles.notchLeftCenter]} />
+      <View style={[styles.notch, styles.notchRightCenter]} />
 
       {/* Interactive Golden Scratch Foil Overlay */}
       {isWonAndUnrevealed && (
@@ -357,7 +666,7 @@ const LuckyDrawCard = ({
             opacity: foilOpacity,
             transform: [{ scale: foilScale }],
             backgroundColor: "#B8860B",
-            borderRadius: 24,
+            borderRadius: 16,
             overflow: "hidden"
           }
         ]}>
@@ -383,8 +692,12 @@ const LuckyDrawCard = ({
           </TouchableOpacity>
         </Animated.View>
       )}
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
+};
+
+const LuckyDrawCard = (props: any) => {
+  return <LuckyTicketCard {...props} />;
 };
 
 // Sub-component for the radial timer pulsing rings
@@ -573,7 +886,7 @@ const LiveSpinningScreen = ({
 }) => {
   const [spinningName, setSpinningName] = useState("Selecting...");
   const [spinningTicket, setSpinningTicket] = useState("----");
-  
+
   const mockNames = ["Ramesh Kumar", "Sita Devi", "Anil Sharma", "Deepak Gupta", "Asha Nair", "Vijay Singh", "Latha Rao", "Karan Johar", "Sunita Patil", "Rajesh V"];
 
   useEffect(() => {
@@ -589,16 +902,16 @@ const LiveSpinningScreen = ({
       setSpinningTicket(randomTicket);
 
       if (elapsed > 4000) {
-        const winnerName = draw.userWon 
-          ? "You" 
+        const winnerName = draw.userWon
+          ? "You"
           : (draw.winners?.[0]?.user_name || draw.winners?.[0]?.userName || "Rajesh Kumar");
         const winnerTicket = draw.userWon
           ? draw.ticketNumber
           : (draw.winners?.[0]?.ticket_number || "#4982");
-        
+
         setSpinningName(winnerName);
         setSpinningTicket(winnerTicket);
-        
+
         setTimeout(() => {
           onFinishedSpinning(winnerName, winnerTicket);
         }, 1500);
@@ -680,6 +993,7 @@ export default function LuckyDraw() {
   // Non-winner Detail Modal states
   const [nonWinnerVisible, setNonWinnerVisible] = useState(false);
   const [nonWinnerItem, setNonWinnerItem] = useState<LuckyDrawItem | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<LuckyDrawItem | null>(null);
 
   // Pull-to-refresh state
   const [refreshing, setRefreshing] = useState(false);
@@ -687,6 +1001,14 @@ export default function LuckyDraw() {
   // Animated values
   const [scaleAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(0));
+
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Load revealed scratchcards on mount
   useEffect(() => {
@@ -728,7 +1050,7 @@ export default function LuckyDraw() {
 
   const shareToWhatsApp = () => {
     if (!celebrationItem) return;
-    
+
     const userName = user?.name || "Customer";
     const userId = user?.id || (user as any)?.userId || "N/A";
     const ticketNo = celebrationItem.ticketNumber || "N/A";
@@ -783,7 +1105,7 @@ export default function LuckyDraw() {
 
   const fetchLuckyDraws = async (showInitialLoader = true) => {
     try {
-      if (showInitialLoader) {
+      if (showInitialLoader && isMountedRef.current) {
         setLoading(true);
       }
       const response = await luckyDrawAPI.getLuckyDraws();
@@ -811,40 +1133,46 @@ export default function LuckyDraw() {
           };
         });
 
-        // Extract a real recent winner from the completed lucky draws sorted by date descending
-        const completedDraws = response.data.data
-          .filter((d: any) => d.status === "completed" && d.winners && d.winners.length > 0)
-          .sort((a: any, b: any) => {
-            const dateA = convertUTCToLocal(a.draw_datetime || a.end_date).getTime();
-            const dateB = convertUTCToLocal(b.draw_datetime || b.end_date).getTime();
-            return dateB - dateA;
-          });
-        const completedDraw = completedDraws[0];
-        if (completedDraw) {
-          const firstWinner = completedDraw.winners.find((w: any) => w.prize_rank === 1) || completedDraw.winners[0];
-          const firstPrize = completedDraw.prizes?.find((p: any) => p.prize_rank === 1) || completedDraw.prizes?.[0];
-          const prizeStr = firstPrize
-            ? `${firstPrize.description || firstPrize.prize_value}`
-            : "Special Prize";
-          const winnerName = firstWinner.user_name || firstWinner.userName || "Customer";
-          setRecentWinner(`${t("luckyDrawRecentWinnerLabel") || "Recent Winner"}: ${winnerName} won ${prizeStr}`);
-        } else {
-          setRecentWinner("");
-        }
+        if (isMountedRef.current) {
+          // Extract a real recent winner from the completed lucky draws sorted by date descending
+          const completedDraws = response.data.data
+            .filter((d: any) => d.status === "completed" && d.winners && d.winners.length > 0)
+            .sort((a: any, b: any) => {
+              const dateA = convertUTCToLocal(a.draw_datetime || a.end_date).getTime();
+              const dateB = convertUTCToLocal(b.draw_datetime || b.end_date).getTime();
+              return dateB - dateA;
+            });
+          const completedDraw = completedDraws[0];
+          if (completedDraw) {
+            const firstWinner = completedDraw.winners.find((w: any) => w.prize_rank === 1) || completedDraw.winners[0];
+            const firstPrize = completedDraw.prizes?.find((p: any) => p.prize_rank === 1) || completedDraw.prizes?.[0];
+            const prizeStr = firstPrize
+              ? `${firstPrize.description || firstPrize.prize_value}`
+              : "Special Prize";
+            const winnerName = firstWinner.user_name || firstWinner.userName || "Customer";
+            setRecentWinner(`${t("luckyDrawRecentWinnerLabel") || "Recent Winner"}: ${winnerName} won ${prizeStr}`);
+          } else {
+            setRecentWinner("");
+          }
 
-        // Filter list based on tab
-        if (activeTab === "active") {
-          setLuckyDraws(list.filter((item: any) => item.status !== "completed"));
-        } else {
-          setLuckyDraws(list.filter((item: any) => item.status === "completed"));
+          // Filter list based on tab
+          if (activeTab === "active") {
+            setLuckyDraws(list.filter((item: any) => item.status !== "completed"));
+          } else {
+            setLuckyDraws(list.filter((item: any) => item.status === "completed"));
+          }
         }
       }
     } catch (error) {
       console.error("Error fetching lucky draws:", error);
-      Alert.alert(t("error"), t("failedToFetchData"));
+      if (isMountedRef.current) {
+        Alert.alert(t("error"), t("failedToFetchData"));
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   };
 
@@ -1051,6 +1379,8 @@ export default function LuckyDraw() {
               colors={["#850111", "#4A0010"]}
               style={styles.bannerGradient}
             >
+              <GoldOrnamentLeft />
+              <GoldOrnamentRight />
               <View style={styles.bannerContent}>
                 <ResponsiveText color="#FFD700" size="xl" weight="bold" style={styles.bannerTitle}>
                   {t("luckyDrawBannerTitle")}
@@ -1115,7 +1445,7 @@ export default function LuckyDraw() {
                         <LuckyDrawCard
                           key={item.id}
                           item={item}
-                          onPress={() => handleParticipatePress(item)}
+                          onPress={() => setSelectedTicket(item)}
                           isRevealed={revealedDraws[item.id]}
                           onReveal={() => handleReveal(item)}
                         />
@@ -1135,7 +1465,7 @@ export default function LuckyDraw() {
                         <LuckyDrawCard
                           key={item.id}
                           item={item}
-                          onPress={() => handleParticipatePress(item)}
+                          onPress={() => setSelectedTicket(item)}
                           isRevealed={revealedDraws[item.id]}
                           onReveal={() => handleReveal(item)}
                         />
@@ -1152,7 +1482,7 @@ export default function LuckyDraw() {
                 <LuckyDrawCard
                   key={item.id}
                   item={item}
-                  onPress={() => handleParticipatePress(item)}
+                  onPress={() => setSelectedTicket(item)}
                   isRevealed={revealedDraws[item.id]}
                   onReveal={() => handleReveal(item)}
                 />
@@ -1385,6 +1715,18 @@ export default function LuckyDraw() {
           <View style={{ height: hp(5) }} />
         </ScrollView>
       )}
+
+      {selectedTicket && (
+        <TicketDetailPopup
+          ticket={selectedTicket}
+          visible={selectedTicket !== null}
+          onClose={() => setSelectedTicket(null)}
+          onAction={(item) => {
+            setSelectedTicket(null);
+            handleParticipatePress(item);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -1531,30 +1873,322 @@ const styles = StyleSheet.create({
     marginBottom: hp(2),
     marginTop: hp(0.5),
   },
+  ticketContainer: {
+    width: "100%",
+    height: 170,
+    flexDirection: "row",
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "#D4AF37",
+    overflow: "visible",
+    marginBottom: 20,
+    backgroundColor: "#7A0019",
+    // Premium VIP shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  ticketLeft: {
+    flex: 0.72,
+    borderTopLeftRadius: 14,
+    borderBottomLeftRadius: 14,
+    overflow: "hidden",
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    justifyContent: "space-between",
+    position: "relative",
+  },
+  ticketLeftContent: {
+    flex: 1,
+    justifyContent: "center",
+    paddingRight: 56, // Keeps text from overlapping with prize image
+  },
+  ticketLeftFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 6,
+  },
+  statusRibbon: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    backgroundColor: "#D4AF37",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    zIndex: 10,
+  },
+  statusRibbonUpcoming: {
+    backgroundColor: "#7F7F7F",
+  },
+  statusRibbonCompleted: {
+    backgroundColor: "#B28530",
+  },
+  statusRibbonSlanted: {
+    position: "absolute",
+    top: 10,
+    left: -5,
+    backgroundColor: "#E6B800",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    transform: [{ skewX: "-18deg" }],
+    borderTopRightRadius: 4,
+    borderBottomRightRadius: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    zIndex: 10,
+    borderWidth: 0.5,
+    borderColor: "#B8860B",
+  },
+  statusRibbonUpcomingSlanted: {
+    backgroundColor: "#E6B800",
+  },
+  statusRibbonCompletedSlanted: {
+    backgroundColor: "#E2E8F0",
+  },
+  ribbonText: {
+    fontSize: 10,
+    fontWeight: "bold",
+    color: "#7A0019",
+  },
+  drawNameText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginBottom: 4,
+  },
+  prizeRowInline: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  prizeNameText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#D4AF37",
+  },
+  descriptionText: {
+    fontSize: 13,
+    color: "rgba(255, 255, 255, 0.72)",
+    marginBottom: 4,
+  },
+  footerCol: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  footerColDivider: {
+    width: 1,
+    height: "70%",
+    backgroundColor: "rgba(212, 175, 55, 0.22)",
+    marginHorizontal: wp(2),
+  },
+  footerLabelText: {
+    fontSize: 11,
+    color: "rgba(255, 255, 255, 0.4)",
+  },
+  footerValueText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#FFFFFF",
+  },
+  prizeImageContainerCard: {
+    position: "absolute",
+    right: 14,
+    top: 14,
+    width: 54,
+    height: 54,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderRadius: 27,
+    // Soft shadow for gold ornament/prize
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  prizeImageCard: {
+    width: "100%",
+    height: "100%",
+  },
+  ticketIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#7A0019",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: "rgba(212, 175, 55, 0.3)",
+  },
+  ticketLabel: {
+    fontSize: 10,
+    color: "#7A0019",
+    opacity: 0.8,
+    marginBottom: 2,
+    fontWeight: "600",
+  },
+  stubTicketId: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#7A0019",
+    marginBottom: 8,
+    textAlign: "center",
+    width: "90%",
+  },
+  stubStatusButtonMaroon: {
+    width: "92%",
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#7A0019",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(212, 175, 55, 0.3)",
+    marginTop: 2,
+  },
+  stubStatusButtonText: {
+    fontSize: 10,
+    fontWeight: "bold",
+    color: "#D4AF37",
+  },
+  notch: {
+    position: "absolute",
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "#FFF7E8", // Background color: #FFF7E8
+    zIndex: 99,
+  },
+  notchLeftCenter: {
+    left: -7,
+    top: "50%",
+    marginTop: -7,
+  },
+  notchRightCenter: {
+    right: -7,
+    top: "50%",
+    marginTop: -7,
+  },
+  bgIconContainer: {
+    position: "absolute",
+    right: -10,
+    bottom: -10,
+    opacity: 0.08,
+  },
+  perforatedDivider: {
+    width: 2,
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  ticketRight: {
+    flex: 0.30,
+    borderTopRightRadius: 14,
+    borderBottomRightRadius: 14,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 8,
+    position: "relative",
+  },
+  statusButton: {
+    width: "90%",
+    height: 28,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFF8E8",
+    borderWidth: 1,
+    borderColor: "#D4AF37",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  statusButtonUpcoming: {
+    backgroundColor: "#7F7F7F",
+    borderColor: "#7F7F7F",
+  },
+  statusButtonCompleted: {
+    backgroundColor: "#5B0015",
+    borderColor: "#5B0015",
+  },
+  notch: {
+    position: "absolute",
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: theme.colors.quaternary || "#F2E6D2",
+    zIndex: 99,
+  },
+  notchTop: {
+    left: "70%",
+    marginLeft: -10,
+    top: -10.5,
+  },
+  notchBottom: {
+    left: "70%",
+    marginLeft: -10,
+    bottom: -10.5,
+  },
+  popupTicketContainer: {
+    width: "100%",
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "#D4AF37",
+    overflow: "hidden",
+    backgroundColor: "#5B0015",
+    // Premium shadow
+    shadowColor: "#D4AF37",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  popupTicketLeft: {
+    flex: 0.70,
+    borderTopLeftRadius: 14,
+    borderBottomLeftRadius: 14,
+    padding: 12,
+    justifyContent: "space-between",
+    position: "relative",
+  },
+  popupTicketRight: {
+    flex: 0.30,
+    borderTopRightRadius: 14,
+    borderBottomRightRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 8,
+    position: "relative",
+  },
   card: {
     width: "100%",
     borderRadius: 24,
     overflow: "hidden",
     marginBottom: hp(2.5),
     borderWidth: 1.5,
-    borderColor: "rgba(212, 175, 55, 0.22)", // Premium soft gold border
-    ...shadowUtils.SHADOW_PRESETS.medium,
+    borderColor: "rgba(212, 175, 55, 0.22)",
   },
   cardWon: {
     borderWidth: 2,
-    borderColor: "#D4AF37", // Bright gold metallic border
+    borderColor: "#D4AF37",
     shadowColor: "#FFD700",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.28,
     shadowRadius: 12,
     elevation: 8,
   },
   cardCompleted: {
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
-    opacity: 0.85,
-    shadowOpacity: 0.03,
-    elevation: 1,
+    opacity: 0.88,
   },
   cardGradient: {
     padding: wp(5),

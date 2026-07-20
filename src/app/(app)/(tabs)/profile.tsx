@@ -17,6 +17,7 @@ import {
   Modal,
   KeyboardAvoidingView,
   Linking, // Added Linking
+  StatusBar,
 } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -29,6 +30,7 @@ import * as Sharing from 'expo-sharing';
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { theme } from "@/constants/theme";
+import { APP_CONFIG } from "@/constants";
 import { COLORS } from "@/constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -46,10 +48,12 @@ import { Switch } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ResponsiveText from "@/components/ResponsiveText";
 import { wp, hp, rf } from "@/utils/responsiveUtils";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 
 const ProfileScreen = () => {
   const { t } = useTranslation();
+  const { isVisible } = useAppVisibility();
   const { isLoggedIn, user, language, logout, setLanguage, updateUser } =
     useGlobalStore();
   const [editing, setEditing] = useState(false);
@@ -202,7 +206,7 @@ const ProfileScreen = () => {
       const responseData = uploadResponse.data;
 
       if (responseData.success && responseData.url) {
-        const fullImageUrl = `${theme.baseUrl}${responseData.url}`;
+        const fullImageUrl = `${APP_CONFIG.urls.baseUrl}${responseData.url}`;
         const userData = await AsyncStorage.getItem("userData");
         if (userData) {
           const parsedUser = JSON.parse(userData);
@@ -633,6 +637,7 @@ const ProfileScreen = () => {
 
   return (
     <AuthGuard>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || "#FFF8E8"} />
       <SafeAreaView style={styles.container} edges={["left", "right"]}>
         <KeyboardAvoidingView
           style={styles.keyboardAvoid}
@@ -859,34 +864,40 @@ const ProfileScreen = () => {
               <View style={styles.settingsCard}>
                 <Text style={styles.settingsTitle}>{t("settings") || "Settings"}</Text>
 
-                <TouchableOpacity style={styles.settingItem} onPress={handleChangeKYC}>
-                  <View style={[styles.settingIcon, { backgroundColor: '#E3F2FD' }]}>
-                    <Icon name="verified-user" size={24} color={theme.colors.primary} />
-                  </View>
-                  <View style={styles.settingContent}>
-                    <Text style={styles.settingText}>{t("changeKYC")}</Text>
-                    <Text style={styles.settingDesc}>{t("updateKycDesc") || "Update your KYC details"}</Text>
-                  </View>
-                  <Icon name="chevron-right" size={24} color="#9E9E9E" />
-                </TouchableOpacity>
+                 {isVisible("showProfileKyc") && (
+                  <>
+                    <TouchableOpacity style={styles.settingItem} onPress={handleChangeKYC}>
+                      <View style={[styles.settingIcon, { backgroundColor: '#E3F2FD' }]}>
+                        <Icon name="verified-user" size={24} color={theme.colors.primary} />
+                      </View>
+                      <View style={styles.settingContent}>
+                        <Text style={styles.settingText}>{t("changeKYC")}</Text>
+                        <Text style={styles.settingDesc}>{t("updateKycDesc") || "Update your KYC details"}</Text>
+                      </View>
+                      <Icon name="chevron-right" size={24} color="#9E9E9E" />
+                    </TouchableOpacity>
+                    <View style={styles.divider} />
+                  </>
+                )}
 
-                <View style={styles.divider} />
-
-                <TouchableOpacity style={styles.settingItem} onPress={handleChangeMPIN}>
-                  <View style={[styles.settingIcon, { backgroundColor: '#E8F5E9' }]}>
-                    <Icon name="lock" size={24} color="#4CAF50" />
-                  </View>
-                  <View style={styles.settingContent}>
-                    <Text style={styles.settingText}>{t("changeMPIN")}</Text>
-                    <Text style={styles.settingDesc}>{t("changeMpinDesc") || "Change your MPIN for security"}</Text>
-                  </View>
-                  <Icon name="chevron-right" size={24} color="#9E9E9E" />
-                </TouchableOpacity>
-
-                <View style={styles.divider} />
+                {isVisible("showProfileMpin") && (
+                  <>
+                    <TouchableOpacity style={styles.settingItem} onPress={handleChangeMPIN}>
+                      <View style={[styles.settingIcon, { backgroundColor: '#E8F5E9' }]}>
+                        <Icon name="lock" size={24} color="#4CAF50" />
+                      </View>
+                      <View style={styles.settingContent}>
+                        <Text style={styles.settingText}>{t("changeMPIN")}</Text>
+                        <Text style={styles.settingDesc}>{t("changeMpinDesc") || "Change your MPIN for security"}</Text>
+                      </View>
+                      <Icon name="chevron-right" size={24} color="#9E9E9E" />
+                    </TouchableOpacity>
+                    <View style={styles.divider} />
+                  </>
+                )}
 
                 {/* Biometric Toggle */}
-                {isSupported && isEnrolled && (
+                {isVisible("showProfileBiometrics") && isSupported && isEnrolled && (
                   <>
                     <View style={styles.settingItem}>
                       <View style={[styles.settingIcon, { backgroundColor: '#E0F7FA' }]}>
@@ -907,56 +918,64 @@ const ProfileScreen = () => {
                   </>
                 )}
 
-                <View style={styles.divider} />
+                {isVisible("showProfileLanguage") && (
+                  <>
+                    <TouchableOpacity style={styles.settingItem} onPress={toggleLanguage}>
+                      <View style={[styles.settingIcon, { backgroundColor: '#FFF3E0' }]}>
+                        <Icon name="language" size={24} color={theme.colors.primary} />
+                      </View>
+                      <View style={styles.settingContent}>
+                        <Text style={styles.settingText}>{t("language")}</Text>
+                        <Text style={styles.settingDesc}>
+                          {getLanguageName(language as any) || "English"}
+                        </Text>
+                      </View>
+                      <Text style={styles.languageBadge}>
+                        {language ? language.toUpperCase() : "EN"}
+                      </Text>
+                      <Icon name="chevron-right" size={24} color="#9E9E9E" />
+                    </TouchableOpacity>
+                    <View style={styles.divider} />
+                  </>
+                )}
 
-                <TouchableOpacity style={styles.settingItem} onPress={toggleLanguage}>
-                  <View style={[styles.settingIcon, { backgroundColor: '#FFF3E0' }]}>
-                    <Icon name="language" size={24} color={theme.colors.primary} />
-                  </View>
-                  <View style={styles.settingContent}>
-                    <Text style={styles.settingText}>{t("language")}</Text>
-                    <Text style={styles.settingDesc}>
-                      {getLanguageName(language as any) || "English"}
-                    </Text>
-                  </View>
-                  <Text style={styles.languageBadge}>
-                    {language ? language.toUpperCase() : "EN"}
-                  </Text>
-                  <Icon name="chevron-right" size={24} color="#9E9E9E" />
-                </TouchableOpacity>
-
-                <View style={styles.divider} />
-
-                <TouchableOpacity style={styles.settingItem} onPress={() => router.push({ pathname: "/home/ratechart", params: { from: "profile" } })}>
-                  <View style={[styles.settingIcon, { backgroundColor: '#FFF9C4' }]}>
-                    <Icon name="show-chart" size={24} color={theme.colors.secondary} />
-                  </View>
-                  <View style={styles.settingContent}>
-                    <Text style={styles.settingText}>{t("rateChart") || 'Rate Chart'}</Text>
-                    <Text style={styles.settingDesc}>{t("viewCurrentGoldAndDiamondRates") || 'View current gold and diamond rates'}</Text>
-                  </View>
-                  <Icon name="chevron-right" size={24} color="#9E9E9E" />
-                </TouchableOpacity>
-                <View style={styles.divider} />
+                {isVisible("showProfileRateChart") && (
+                  <>
+                    <TouchableOpacity style={styles.settingItem} onPress={() => router.push({ pathname: "/home/ratechart", params: { from: "profile" } })}>
+                      <View style={[styles.settingIcon, { backgroundColor: '#FFF9C4' }]}>
+                        <Icon name="show-chart" size={24} color={theme.colors.secondary} />
+                      </View>
+                      <View style={styles.settingContent}>
+                        <Text style={styles.settingText}>{t("rateChart") || 'Rate Chart'}</Text>
+                        <Text style={styles.settingDesc}>{t("viewCurrentGoldAndDiamondRates") || 'View current gold and diamond rates'}</Text>
+                      </View>
+                      <Icon name="chevron-right" size={24} color="#9E9E9E" />
+                    </TouchableOpacity>
+                    <View style={styles.divider} />
+                  </>
+                )}
 
                 {/* Rate Us Menu Item */}
-                <TouchableOpacity
-                  style={styles.settingItem}
-                  onPress={() => setShowRatingModal(true)}
-                >
-                  <View style={[styles.settingIcon, { backgroundColor: "#fff0f5" }]}>
-                    <Icon name="star-rate" size={24} color="#E91E63" />
-                  </View>
-                  <View style={styles.settingContent}>
-                    <Text style={styles.settingText}>{t("rateUs") || "Rate Us"}</Text>
-                    <Text style={styles.settingDesc}>
-                      {t("rateUsDesc") || "Rate our app on Play Store / App Store"}
-                    </Text>
-                  </View>
-                  <Icon name="chevron-right" size={24} color="#9E9E9E" />
-                </TouchableOpacity>
-
-                <View style={styles.divider} />
+                {isVisible("showProfileRateUs") && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.settingItem}
+                      onPress={() => setShowRatingModal(true)}
+                    >
+                      <View style={[styles.settingIcon, { backgroundColor: "#fff0f5" }]}>
+                        <Icon name="star-rate" size={24} color="#E91E63" />
+                      </View>
+                      <View style={styles.settingContent}>
+                        <Text style={styles.settingText}>{t("rateUs") || "Rate Us"}</Text>
+                        <Text style={styles.settingDesc}>
+                          {t("rateUsDesc") || "Rate our app on Play Store / App Store"}
+                        </Text>
+                      </View>
+                      <Icon name="chevron-right" size={24} color="#9E9E9E" />
+                    </TouchableOpacity>
+                    <View style={styles.divider} />
+                  </>
+                )}
 
                 {/* Share API Logs Button */}
                 {__DEV__ && (
@@ -986,45 +1005,50 @@ const ProfileScreen = () => {
                 )}
 
                 {/* Payment History Button */}
-                <TouchableOpacity
-                  style={styles.settingItem}
-                  onPress={() => router.push("/payment-history")}
-                >
-                  <View
-                    style={[styles.settingIcon, { backgroundColor: "#E8F5E9" }]}
-                  >
-                    <Icon name="history" size={24} color="#2E7D32" />
-                  </View>
-                  <View style={styles.settingContent}>
-                    <Text style={styles.settingText}>
-                      {t("paymentHistory") || "Payment History"}
-                    </Text>
-                    <Text style={styles.settingDesc}>
-                      {t("paymentHistoryDesc") || "View all your successful and failed payment attempts"}
-                    </Text>
-                  </View>
-                  <Icon name="chevron-right" size={24} color="#9E9E9E" />
-                </TouchableOpacity>
-
-                <View style={styles.divider} />
+                {isVisible("showProfilePaymentHistory") && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.settingItem}
+                      onPress={() => router.push({ pathname: "/payment-history", params: { from: "profile" } })}
+                    >
+                      <View
+                        style={[styles.settingIcon, { backgroundColor: "#E8F5E9" }]}
+                      >
+                        <Icon name="history" size={24} color="#2E7D32" />
+                      </View>
+                      <View style={styles.settingContent}>
+                        <Text style={styles.settingText}>
+                          {t("paymentHistory") || "Payment History"}
+                        </Text>
+                        <Text style={styles.settingDesc}>
+                          {t("paymentHistoryDesc") || "View all your successful and failed payment attempts"}
+                        </Text>
+                      </View>
+                      <Icon name="chevron-right" size={24} color="#9E9E9E" />
+                    </TouchableOpacity>
+                    <View style={styles.divider} />
+                  </>
+                )}
 
                 {/* Delete Account Button */}
-                <TouchableOpacity
-                  style={styles.settingItem}
-                  onPress={handleDeleteAccount}
-                >
-                  <View
-                    style={[styles.settingIcon, { backgroundColor: "#FFEBEE" }]}
+                {isVisible("showProfileDeleteAccount") && (
+                  <TouchableOpacity
+                    style={styles.settingItem}
+                    onPress={handleDeleteAccount}
                   >
-                    <Icon name="delete-forever" size={24} color="#D32F2F" />
-                  </View>
-                  <View style={styles.settingContent}>
-                    <Text style={[styles.settingText, { color: "#D32F2F" }]}>
-                      {t("deleteAccount")}
-                    </Text>
-                    <Text style={styles.settingDesc}>{t("deleteAccountDesc") || "Delete your account permanently"}</Text>
-                  </View>
-                </TouchableOpacity>
+                    <View
+                      style={[styles.settingIcon, { backgroundColor: "#FFEBEE" }]}
+                    >
+                      <Icon name="delete-forever" size={24} color="#D32F2F" />
+                    </View>
+                    <View style={styles.settingContent}>
+                      <Text style={[styles.settingText, { color: "#D32F2F" }]}>
+                        {t("deleteAccount")}
+                      </Text>
+                      <Text style={styles.settingDesc}>{t("deleteAccountDesc") || "Delete your account permanently"}</Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
               </View>
 
               {/* Logout Button */}

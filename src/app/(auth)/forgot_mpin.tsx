@@ -1173,15 +1173,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   card: {
-    backgroundColor: theme.colors.quaternary || "#F2E6D2",
-    borderRadius: 20,
-    padding: 24,
     width: "100%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5,
+    padding: 0,
     marginBottom: 20,
   },
   cardTitle: {

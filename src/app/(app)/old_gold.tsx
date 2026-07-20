@@ -211,7 +211,7 @@ export default function OldGoldScreen() {
   const renderHeader = () => (
     <View style={[styles.header, { backgroundColor: theme.colors.quaternary }]}>
       <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.navigate('/(app)/(tabs)/home')}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
         <ResponsiveText color={theme.colors.primary} size="lg" weight="bold" style={styles.headerTitle}>

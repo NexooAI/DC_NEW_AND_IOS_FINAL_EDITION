@@ -89,13 +89,86 @@ interface FormDatePickerProps {
   error?: string;
 }
 
+const formatDateToDDMMYYYY = (dateVal: string | Date | number | null | undefined): string => {
+  if (!dateVal) return "";
+  try {
+    const date = new Date(dateVal);
+    if (isNaN(date.getTime())) {
+      if (typeof dateVal === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(dateVal)) {
+        return dateVal;
+      }
+      return "";
+    }
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return "";
+  }
+};
+
 export default function KycForm() {
   const router = useRouter();
   const { from } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const { language, user } = useGlobalStore();
-  const { isVisible } = useAppVisibility();
-  const isShortKyc = false;
+  const { isVisible, visibleData } = useAppVisibility();
+  const isShortKyc = isVisible("shortKyc");
+
+  const [idTypesList, setIdTypesList] = useState(idTypes);
+
+  useEffect(() => {
+    let active = true;
+    const fetchIdTypes = async () => {
+      try {
+        logger.log("📡 [API] Fetching dynamic ID proof types...");
+        const response = await api.get("/config/kyc-doc-types");
+        if (!active) return;
+
+        let fetchedList = null;
+        if (response?.data?.data && Array.isArray(response.data.data)) {
+          fetchedList = response.data.data;
+        } else if (response?.data && Array.isArray(response.data)) {
+          fetchedList = response.data;
+        }
+
+        if (fetchedList && fetchedList.length > 0) {
+          const mapped = fetchedList.map((item: any) => ({
+            name: item.name || item.label || item.value,
+            value: item.value,
+          }));
+          setIdTypesList(mapped);
+          logger.log("✅ [API] Fetched ID proof types successfully:", mapped);
+          return;
+        }
+      } catch (err) {
+        logger.warn("⚠️ [API] Failed to fetch KYC proof types from /config/kyc-doc-types:", err);
+      }
+
+      try {
+        const docTypesFromVis = (visibleData as any)?.kycDocTypes || (visibleData as any)?.kyc_doc_types;
+        if (docTypesFromVis && Array.isArray(docTypesFromVis) && docTypesFromVis.length > 0) {
+          const mapped = docTypesFromVis.map((item: any) => ({
+            name: item.name || item.label || item.value,
+            value: item.value,
+          }));
+          setIdTypesList(mapped);
+          logger.log("✅ [Cache] Using ID proof types from visibility configuration:", mapped);
+          return;
+        }
+      } catch (err) {
+        logger.error("❌ Failed to parse doc types from visibility cache:", err);
+      }
+
+      logger.log("ℹ️ Using static fallback ID proof types");
+    };
+
+    fetchIdTypes();
+    return () => {
+      active = false;
+    };
+  }, [visibleData]);
 
   const [formData, setFormData] = useState<FormData>({
     doorno: "",
@@ -205,11 +278,7 @@ export default function KycForm() {
             state: kycData.state || "",
             country: kycData.country || "India",
             pincode: kycData.pincode || "",
-            dob: globalFormatDate(kycData.dob, {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            }),
+            dob: formatDateToDDMMYYYY(kycData.dob),
             addressprooftype: kycData.addressproof || "",
             idNumber: kycData.enternumber || "",
             nominee_name: kycData.nominee_name || "",
@@ -258,6 +327,7 @@ export default function KycForm() {
         const firstResult = postOffices[0];
         setFormData((prev) => ({
           ...prev,
+          city: postOffices.length === 1 ? (firstResult.Name || firstResult.Block || firstResult.District) : "",
           district: firstResult.District,
           state: firstResult.State,
           country: firstResult.Country || "India",
@@ -325,6 +395,15 @@ export default function KycForm() {
     }
   };
 
+  // Toggle manual/automatic address mode
+  const toggleMode = () => {
+    const newMode = !pincodeLookupFailed;
+    setPincodeLookupFailed(newMode);
+    if (!newMode && formData.pincode.length === 6) {
+      fetchPincodeData(formData.pincode);
+    }
+  };
+
   // Update the FormDatePicker component with proper types
   const FormDatePicker: React.FC<FormDatePickerProps> = ({
     label,
@@ -366,11 +445,10 @@ export default function KycForm() {
     };
 
     const formatDate = (date: Date): string => {
-      return globalFormatDate(date, {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
     };
 
     const handleTextChange = (text: string) => {
@@ -590,11 +668,11 @@ export default function KycForm() {
   // Update the getPlaceholderText function with proper typing
   const getPlaceholderText = (idType: string): string => {
     const placeholders: { [key: string]: string } = {
-      aadhar: "Enter your 12-digit Aadhar number",
-      pan: "Enter your PAN number (e.g., ABCDE1234F)",
-      voterid: "Enter your Voter ID number",
+      aadhar: t("kycAadhaarPlaceholder") || "Enter your 12-digit Aadhar number",
+      pan: t("kycPanPlaceholder") || "Enter your PAN number (e.g., ABCDE1234F)",
+      voterid: t("kycIdPlaceholderDefault") || "Enter your Voter ID number",
     };
-    return placeholders[idType] || "Enter your ID number";
+    return placeholders[idType] || t("kycIdPlaceholderDefault") || "Enter your ID number";
   };
 
   // Update the formatIdNumber function with proper typing
@@ -663,13 +741,24 @@ export default function KycForm() {
         }
 
         if (response.data?.data?.affectedRows > 0 || response.data?.data?.id) {
-          Alert.alert(
-            kycId ? "KYC Updated" : "KYC Submitted",
-            response.data?.message ||
-            (kycId
-              ? "Your KYC details have been updated successfully."
-              : "Your KYC details have been submitted successfully.")
-          );
+          const title = kycId 
+            ? (t("kycUpdatedTitle") || "KYC Updated") 
+            : (t("kycSubmittedTitle") || "KYC Submitted");
+
+          const responseMsg = response.data?.message;
+          let alertMsg = "";
+          if (responseMsg === "KYC record updated successfully") {
+            alertMsg = t("kycRecordUpdatedSuccess") || responseMsg;
+          } else if (responseMsg === "KYC record created successfully" || responseMsg === "KYC details submitted successfully") {
+            alertMsg = t("kycRecordSubmittedSuccess") || responseMsg;
+          } else {
+            alertMsg = responseMsg || 
+              (kycId
+                ? (t("kycUpdatedSuccess") || "Your KYC details have been updated successfully.")
+                : (t("kycSubmittedSuccess") || "Your KYC details have been submitted successfully."));
+          }
+
+          Alert.alert(title, alertMsg);
 
           // Safe navigation with error handling
           try {
@@ -782,16 +871,16 @@ export default function KycForm() {
 
             <View style={styles.formContent}>
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Date of Birth <Text style={{ color: "#FF3B30" }}>*</Text></Text>
+                <Text style={styles.label}>{t("dateOfBirth") || "Date of Birth"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
                 <FormDatePicker
-                  label="Date of Birth"
+                  label={t("dateOfBirth") || "Date of Birth"}
                   value={formData.dob}
                   onDateChange={(date) => handleChange("dob", date)}
                   error={errors.dob}
                 />
               </View>
               <View style={styles.formGroup}>
-                <Text style={styles.label}>ID Proof Type <Text style={{ color: "#FF3B30" }}>*</Text></Text>
+                <Text style={styles.label}>{t("idProofType") || "ID Proof Type"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
                 <Dropdown
                   style={[
                     styles.dropdown,
@@ -800,14 +889,14 @@ export default function KycForm() {
                   ]}
                   placeholderStyle={styles.placeholderStyle}
                   selectedTextStyle={styles.selectedTextStyle}
-                  data={idTypes.map((id) => ({
+                  data={idTypesList.map((id) => ({
                     label: id.name,
                     value: id.value,
                   }))}
                   maxHeight={300}
                   labelField="label"
                   valueField="value"
-                  placeholder="Select your ID proof"
+                              placeholder={t("kycSelectIdProof") || "Select your ID proof"}
                   value={formData.addressprooftype}
                   onFocus={() => setFocusedField("addressprooftype")}
                   onBlur={() => setFocusedField(null)}
@@ -823,7 +912,7 @@ export default function KycForm() {
                 )}
               </View>
               <View style={styles.formGroup}>
-                <Text style={styles.label}>ID Number <Text style={{ color: "#FF3B30" }}>*</Text></Text>
+                <Text style={styles.label}>{t("kycIdNumber") || "ID Number"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
                 <TextInput
                   style={styles.input}
                   placeholderTextColor="gray"
@@ -863,7 +952,7 @@ export default function KycForm() {
                 <Ionicons name="home-outline" size={24} color="#1976d2" />
                 <View style={styles.sectionHeaderTitleContainer}>
                   <Text style={[styles.sectionTitle, { color: "#1976d2" }]}>
-                    Address Details
+                    {t("kycAddressDetails") || "Address Details"}
                   </Text>
                 </View>
               </View>
@@ -873,10 +962,10 @@ export default function KycForm() {
               {isShortKyc ? (
                 /* Short KYC Address Form */
                 <View style={styles.formGroup}>
-                  <Text style={styles.label}>Full Address <Text style={{ color: "#FF3B30" }}>*</Text></Text>
+                  <Text style={styles.label}>{t("kycFullAddress") || "Full Address"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
                   <TextInput
                     style={[styles.input, { height: 100, textAlignVertical: 'top', paddingTop: 10 }]}
-                    placeholder="Enter your full address (Door No, Street, City, Pincode)"
+                    placeholder={t("kycFullAddressPlaceholder") || "Enter your full address (Door No, Street, City, Pincode)"}
                     placeholderTextColor="gray"
                     multiline={true}
                     numberOfLines={4}
@@ -892,11 +981,11 @@ export default function KycForm() {
                 <>
                   {/* Pincode */}
                   <View style={styles.formGroup}>
-                    <Text style={styles.label}>Pincode <Text style={{ color: "#FF3B30" }}>*</Text></Text>
+                    <Text style={styles.label}>{t("kycPincode") || "Pincode"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
                     <View style={styles.pincodeContainer}>
                       <TextInput
                         style={styles.input}
-                        placeholder="Enter your 6-digit pincode"
+                        placeholder={t("kycPincodePlaceholder") || "Enter your 6-digit pincode"}
                         placeholderTextColor="gray"
                         keyboardType="number-pad"
                         value={formData.pincode}
@@ -912,45 +1001,96 @@ export default function KycForm() {
                     {errors.pincode && (
                       <Text style={styles.errorText}>{errors.pincode}</Text>
                     )}
-                    <TouchableOpacity onPress={() => setPincodeLookupFailed(true)} style={{ marginTop: 4 }}>
-                      <Text style={{ color: "#1976d2", fontSize: 12, fontWeight: "500" }}>
-                        {t("pincodeNotWorking") || "Pincode not working properly? Click here to enter manually"}
+                    <TouchableOpacity 
+                      onPress={toggleMode} 
+                      style={{ 
+                        flexDirection: 'row', 
+                        alignItems: 'center', 
+                        justifyContent: 'flex-end', 
+                        alignSelf: 'flex-end',
+                        marginTop: 8,
+                        paddingVertical: 4,
+                        paddingHorizontal: 8,
+                        borderRadius: 4,
+                        backgroundColor: 'rgba(25, 118, 210, 0.08)'
+                      }}
+                    >
+                      <Text style={{ color: "#1976d2", fontSize: 12, fontWeight: "600", marginRight: 4 }}>
+                        {pincodeLookupFailed 
+                          ? (t("switchToAutomaticMode") || "Switch to Automatic Mode") 
+                          : (t("switchToManualMode") || "Switch to Manual Mode")
+                        }
                       </Text>
+                      <Ionicons 
+                        name={pincodeLookupFailed ? "refresh-circle-outline" : "create-outline"} 
+                        size={16} 
+                        color="#1976d2" 
+                      />
                     </TouchableOpacity>
                   </View>
 
                   {/* City (Only show if pincode lookup succeeded or explicitly entered) */}
                   {(!isLoadingPincode || pincodeLookupFailed) && (
                     <View style={styles.formGroup}>
-                      <Text style={styles.label}>City <Text style={{ color: "#FF3B30" }}>*</Text></Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          !pincodeLookupFailed && { opacity: 0.7, backgroundColor: "#f9f9f9" }
-                        ]}
-                        placeholder={
-                          pincodeLookupFailed
-                            ? "Enter your city"
-                            : "Enter pincode first to select city"
-                        }
-                        value={formData.city}
-                        editable={pincodeLookupFailed}
-                        onChangeText={(text) => handleChange("city", text)}
-                      />
+                      <Text style={styles.label}>{t("kycCity") || "City"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
+                      {!pincodeLookupFailed && pincodeData && pincodeData.length > 1 ? (
+                        <Dropdown
+                          style={[
+                            styles.dropdown,
+                            focusedField === "city" && styles.dropdownFocused,
+                          ]}
+                          placeholderStyle={styles.placeholderStyle}
+                          selectedTextStyle={styles.selectedTextStyle}
+                          data={pincodeData.map((po) => ({
+                            label: po.Name,
+                            value: po.Name,
+                          }))}
+                          maxHeight={300}
+                          labelField="label"
+                          valueField="value"
+                          placeholder={t("kycCityPlaceholder") || "Select your city"}
+                          value={formData.city}
+                          onFocus={() => setFocusedField("city")}
+                          onBlur={() => setFocusedField(null)}
+                          onChange={(item) => {
+                            handleCitySelection(item.value);
+                            setFocusedField(null);
+                          }}
+                        />
+                      ) : (
+                        <TextInput
+                          style={[
+                            styles.input,
+                            !pincodeLookupFailed && { opacity: 0.7, backgroundColor: "#f9f9f9" }
+                          ]}
+                          placeholder={
+                            pincodeLookupFailed
+                              ? (t("kycCityPlaceholder") || "Enter your city")
+                              : (t("kycCityEnterPincodeFirst") || "Enter pincode first to select city")
+                          }
+                          value={formData.city}
+                          editable={pincodeLookupFailed}
+                          onChangeText={(text) => handleChange("city", text)}
+                        />
+                      )}
                     </View>
                   )}
                   {errors.city && (
                     <Text style={styles.errorText}>{errors.city}</Text>
                   )}
 
-                  {/* District (Only show if pincode lookup failed or explicitly entered) */}
-                  {pincodeLookupFailed && (
+                  {/* District (Only show if pincode lookup succeeded or explicitly entered) */}
+                  {(!isLoadingPincode || pincodeLookupFailed) && (
                     <View style={styles.formGroup}>
-                      <Text style={styles.label}>District <Text style={{ color: "#FF3B30" }}>*</Text></Text>
+                      <Text style={styles.label}>{t("kycDistrict") || "District"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
                       <TextInput
-                        style={styles.input}
-                        placeholder="Enter your district"
+                        style={[
+                          styles.input,
+                          !pincodeLookupFailed && { opacity: 0.7, backgroundColor: "#f9f9f9" }
+                        ]}
+                        placeholder={t("kycDistrictPlaceholder") || "Enter your district"}
                         value={formData.district}
+                        editable={pincodeLookupFailed}
                         onChangeText={(text) => handleChange("district", text)}
                       />
                       {errors.district && (
@@ -959,14 +1099,18 @@ export default function KycForm() {
                     </View>
                   )}
 
-                  {/* State (Only show if pincode lookup failed or explicitly entered) */}
-                  {pincodeLookupFailed && (
+                  {/* State (Only show if pincode lookup succeeded or explicitly entered) */}
+                  {(!isLoadingPincode || pincodeLookupFailed) && (
                     <View style={styles.formGroup}>
-                      <Text style={styles.label}>State <Text style={{ color: "#FF3B30" }}>*</Text></Text>
+                      <Text style={styles.label}>{t("kycState") || "State"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
                       <TextInput
-                        style={styles.input}
-                        placeholder="Enter your state"
+                        style={[
+                          styles.input,
+                          !pincodeLookupFailed && { opacity: 0.7, backgroundColor: "#f9f9f9" }
+                        ]}
+                        placeholder={t("kycStatePlaceholder") || "Enter your state"}
                         value={formData.state}
+                        editable={pincodeLookupFailed}
                         onChangeText={(text) => handleChange("state", text)}
                       />
                       {errors.state && (
@@ -977,10 +1121,10 @@ export default function KycForm() {
 
                   {/* Door Number */}
                   <View style={styles.formGroup}>
-                    <Text style={styles.label}>Door No. <Text style={{ color: "#FF3B30" }}>*</Text></Text>
+                    <Text style={styles.label}>{t("kycDoorNo") || "Door No."} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="Enter your door number"
+                      placeholder={t("kycDoorNoPlaceholder") || "Enter your door number"}
                       value={formData.doorno}
                       placeholderTextColor="gray"
                       onChangeText={(text) => handleChange("doorno", text)}
@@ -992,10 +1136,10 @@ export default function KycForm() {
 
                   {/* Street */}
                   <View style={styles.formGroup}>
-                    <Text style={styles.label}>Street <Text style={{ color: "#FF3B30" }}>*</Text></Text>
+                    <Text style={styles.label}>{t("kycStreet") || "Street"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="Enter your street name"
+                      placeholder={t("kycStreetPlaceholder") || "Enter your street name"}
                       placeholderTextColor="gray"
                       value={formData.street}
                       onChangeText={(text) => handleChange("street", text)}
@@ -1007,10 +1151,10 @@ export default function KycForm() {
 
                   {/* Area */}
                   <View style={styles.formGroup}>
-                    <Text style={styles.label}>Area <Text style={{ color: "#FF3B30" }}>*</Text></Text>
+                    <Text style={styles.label}>{t("kycArea") || "Area"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="Enter your area/locality"
+                      placeholder={t("kycAreaPlaceholder") || "Enter your area/locality"}
                       placeholderTextColor="gray"
                       value={formData.area}
                       onChangeText={(text) => handleChange("area", text)}
@@ -1031,7 +1175,7 @@ export default function KycForm() {
                 <Ionicons name="people-outline" size={24} color="#388e3c" />
                 <View style={styles.sectionHeaderTitleContainer}>
                   <Text style={[styles.sectionTitle, { color: "#388e3c" }]}>
-                    Nominee Details (Optional)
+                    {t("kycNomineeDetails") || "Nominee Details (Optional)"}
                   </Text>
                 </View>
               </View>
@@ -1039,7 +1183,7 @@ export default function KycForm() {
 
             <View style={styles.formContent}>
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Nominee Relationship</Text>
+                <Text style={styles.label}>{t("kycNomineeRelationship") || "Nominee Relationship"}</Text>
                 <Dropdown
                   style={[
                     styles.dropdown,
@@ -1055,7 +1199,7 @@ export default function KycForm() {
                   maxHeight={300}
                   labelField="label"
                   valueField="value"
-                  placeholder="Select relationship"
+                  placeholder={t("kycSelectRelationship") || "Select relationship"}
                   value={formData.nominee_relationship}
                   onFocus={() => setFocusedField("nominee_relationship")}
                   onBlur={() => setFocusedField(null)}
@@ -1071,10 +1215,10 @@ export default function KycForm() {
                 )}
               </View>
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Nominee Name</Text>
+                <Text style={styles.label}>{t("kycNomineeName") || "Nominee Name"}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your nominee's full name"
+                  placeholder={t("kycNomineeNamePlaceholder") || "Enter your nominee's full name"}
                   placeholderTextColor="gray"
                   value={formData.nominee_name}
                   onChangeText={(text) =>

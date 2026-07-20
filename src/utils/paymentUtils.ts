@@ -2,12 +2,12 @@ import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 import apiService from "@/services/api";
 import io from "socket.io-client";
-import { theme } from "@/constants/theme";
+import { APP_CONFIG } from "@/constants";
 
 import { logger } from '@/utils/logger';
 // Socket initialization function
 export const initializeSocket = () => {
-  return io(theme.baseUrl, {
+  return io(APP_CONFIG.urls.baseUrl, {
     transports: ["websocket"],
   });
 };
@@ -216,122 +216,4 @@ export const updateInvestment = async (id: any, payload: any) => {
     logger.error("Error updating investment:", error);
     throw error;
   }
-};
-
-// Socket event handler for payment status updates
-export const setupPaymentStatusListener = (socket: any, parsedUserDetails: any, router: any, processedPaymentRef: any) => {
-  if (!socket) return () => { };
-
-  const handlePaymentStatusUpdate = async (data: any) => {
-    // Prevent processing the same event twice
-    if (processedPaymentRef.current) return;
-    processedPaymentRef.current = true;
-
-    const paymentSuccess = data.status === "success";
-
-    try {
-      if (paymentSuccess) {
-        // Validate required payment data
-        // if (!data?.paymentResponse?.txn_id || !data?.paymentResponse?.order_id) {
-        //   logger.error('Missing required payment data:', {
-        //     txnId: data?.paymentResponse?.txn_id,
-        //     orderId: data?.paymentResponse?.order_id,
-        //     amount: data?.paymentResponse?.amount
-        //   });
-        //   Alert.alert(
-        //     'Payment Error',
-        //     'Some payment details are missing. Please contact support.',
-        //     [{ text: 'OK', onPress: () => router.replace('/(tabs)/home') }]
-        //   );
-        //   return;
-        // }
-
-        // Payment API call
-        const paymentPayload = {
-          investmentId: parsedUserDetails.data?.data?.id,
-          paymentAmount: data?.paymentResponse?.amount,
-          userId: parsedUserDetails.data?.data?.userId,
-          paymentMethod: data?.paymentResponse?.payment_method_type,
-          schemeId: parsedUserDetails.data?.data?.schemeId,
-          transactionId: data?.paymentResponse?.txn_id,
-        };
-        const paymentResult = await postPayment(paymentPayload);
-
-        // Investment API call
-        const investmentPayload = {
-          userId: parsedUserDetails.data?.data?.userId,
-          schemeId: parsedUserDetails.data?.data?.schemeId,
-          chitId: parsedUserDetails.data?.data?.chitId,
-          accountName: parsedUserDetails.data?.data?.accountName,
-          accountNo: parsedUserDetails.data?.data?.accountNo,
-          paymentStatus: "PAID",
-          paymentAmount: data?.paymentResponse?.amount,
-        };
-        const investmentResult = await updateInvestment(
-          parsedUserDetails.data?.data?.id,
-          investmentPayload
-        );
-
-        // Log payment success data before navigation
-        // logger.log('Payment Success Data:', {
-        //   amount: data?.paymentResponse?.amount,
-        //   txnId: data?.paymentResponse?.txn_id,
-        //   orderId: data?.paymentResponse?.order_id,
-        //   timestamp: new Date().toISOString()
-        // });
-
-        router.push({
-          pathname: "/(tabs)/home/payment-success",
-          params: {
-            amount: data?.paymentResponse?.amount,
-            txnId: data?.paymentResponse?.txn_id,
-            orderId: data?.paymentResponse?.order_id
-          }
-        });
-      } else if (data.status === "failure") {
-        Alert.alert(
-          "Payment Failed",
-          data.message || "Payment could not be completed"
-        );
-        router.push({
-          pathname: "/(tabs)/home/PaymentFailure",
-          params: {},
-        });
-      }
-
-      // Call the Transaction API with paymentId set accordingly (only once)
-      const transactionPayload = {
-        userId: parsedUserDetails.data?.data?.userId,
-        investmentId: parsedUserDetails.data?.data?.id,
-        schemeId: parsedUserDetails.data?.data?.schemeId,
-        chitId: parsedUserDetails.data?.data?.chitId,
-        installment: 1,
-        accountNumber: parsedUserDetails.data?.data?.accountNo,
-        paymentId: paymentSuccess ? 1 : 0,
-        orderId: data?.orderId,
-        amount: data?.paymentResponse?.amount,
-        currency: data?.paymentResponse?.currency,
-        paymentMethod: data?.paymentResponse?.txn_detail?.txn_flow_type,
-        signature: "000",
-        paymentStatus:
-          data?.paymentResponse?.payment_gateway_response?.resp_code,
-        paymentDate: data?.paymentResponse?.date_created,
-        status: data?.paymentResponse?.status,
-        gatewayTransactionId: data?.paymentResponse?.txn_id,
-      };
-
-      const transactionResult = await postTransaction(transactionPayload);
-    } catch (error) {
-      logger.error("Error processing payment status update:", error);
-      Alert.alert(
-        "Error",
-        "An error occurred while processing the transaction."
-      );
-    }
-  };
-
-  socket.on("payment_status_update", handlePaymentStatusUpdate);
-  return () => {
-    socket.off("payment_status_update", handlePaymentStatusUpdate);
-  };
 };

@@ -16,6 +16,7 @@ import {
 import { Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
+import { APP_CONFIG } from "@/constants";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -351,7 +352,7 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
       if (typeof path === "string") {
         if (path.startsWith("http")) return { uri: path };
         return {
-          uri: `${theme.baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`,
+          uri: `${APP_CONFIG.urls.baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`,
         };
       }
       return undefined;

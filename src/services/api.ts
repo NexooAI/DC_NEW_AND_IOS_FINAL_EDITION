@@ -1,5 +1,5 @@
 // services/api.ts - Unified API Service
-import { theme } from '@/constants/theme';
+import { APP_CONFIG } from '@/constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig, AxiosInstance } from 'axios';
 import { router } from 'expo-router';
@@ -247,6 +247,29 @@ const isPublicEndpoint = (url: string | undefined): boolean => {
 // TOKEN MANAGEMENT
 // ============================================================================
 
+const decodeBase64 = (str: string): string => {
+  try {
+    // If global atob is available, use it (React Native has it in some configurations or debug mode)
+    if (typeof global.atob === 'function') {
+      return global.atob(str);
+    }
+    // Fallback base64 decoding logic for Hermes
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+    let output = '';
+    str = String(str).replace(/=+$/, '');
+    if (str.length % 4 === 1) {
+      return '';
+    }
+    for (let bc = 0, bs = 0, buffer, idx = 0; (buffer = str.charAt(idx++)); ~buffer && ((bs = bc % 4 ? bs * 64 + buffer : buffer), bc++ % 4) ? (output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6)))) : 0) {
+      buffer = chars.indexOf(buffer);
+    }
+    return output;
+  } catch (error) {
+    logger.error('Base64 decode failed:', error);
+    return '';
+  }
+};
+
 const checkTokenValidity = async () => {
   try {
     let token = await SecureStore.getItemAsync("token");
@@ -268,7 +291,12 @@ const checkTokenValidity = async () => {
     }
 
     try {
-      const tokenData = JSON.parse(atob(tokenParts[1]));
+      const decodedPayload = decodeBase64(tokenParts[1]);
+      if (!decodedPayload) {
+        logger.error("Base64 decode of token payload failed");
+        return null;
+      }
+      const tokenData = JSON.parse(decodedPayload);
       const expirationTime = tokenData.exp * 1000;
       const currentTime = Date.now();
       const timeUntilExpiry = expirationTime - currentTime;
@@ -291,10 +319,10 @@ const checkTokenValidity = async () => {
             const newAccessToken = response.data.accessToken;
             const newRefreshToken = response.data.refreshtoken;
 
-            await SecureStore.setItemAsync("token", newToken);
-            await SecureStore.setItemAsync("accessToken", newAccessToken);
-            await SecureStore.setItemAsync("refreshToken", newRefreshToken);
-            await SecureStore.setItemAsync("authToken", newToken);
+            await SecureStore.setItemAsync("token", newToken, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
+            await SecureStore.setItemAsync("accessToken", newAccessToken, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
+            await SecureStore.setItemAsync("refreshToken", newRefreshToken, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
+            await SecureStore.setItemAsync("authToken", newToken, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
 
             logger.log('✅ Token refreshed successfully');
             return newToken;
@@ -377,7 +405,7 @@ const handleLogout = async () => {
 const apiLogger = ApiLogger.getInstance();
 
 const apiClient: AxiosInstance = axios.create({
-  baseURL: theme.baseUrl,
+  baseURL: APP_CONFIG.urls.baseUrl,
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
@@ -412,16 +440,16 @@ apiClient.interceptors.request.use(
     // Add authentication token
     try {
       let token = await SecureStore.getItemAsync("token");
-      logger.log('🔑 Token from SecureStore (token):', token);
+      logger.log('🔑 Token from SecureStore (token):', token ? `${token.substring(0, 10)}...` : 'null');
 
       if (!token) {
         token = await SecureStore.getItemAsync("accessToken");
-        logger.log('🔑 Token from SecureStore (accessToken):', token);
+        logger.log('🔑 Token from SecureStore (accessToken):', token ? `${token.substring(0, 10)}...` : 'null');
       }
 
       if (!token) {
         token = await SecureStore.getItemAsync("authToken");
-        logger.log('🔑 Token from SecureStore (authToken):', token);
+        logger.log('🔑 Token from SecureStore (authToken):', token ? `${token.substring(0, 10)}...` : 'null');
       }
 
       if (token) {
@@ -510,10 +538,10 @@ apiClient.interceptors.response.use(
         const newRefreshToken = response.data.refreshtoken;
 
         // Store new tokens
-        await SecureStore.setItemAsync("token", newToken);
-        await SecureStore.setItemAsync("accessToken", newAccessToken);
-        await SecureStore.setItemAsync("refreshToken", newRefreshToken);
-        await SecureStore.setItemAsync("authToken", newToken);
+        await SecureStore.setItemAsync("token", newToken, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
+        await SecureStore.setItemAsync("accessToken", newAccessToken, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
+        await SecureStore.setItemAsync("refreshToken", newRefreshToken, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
+        await SecureStore.setItemAsync("authToken", newToken, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
 
         logger.log('✅ Token refreshed successfully, retrying original request');
 

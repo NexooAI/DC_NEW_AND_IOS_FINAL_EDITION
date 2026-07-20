@@ -64,7 +64,9 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
                 align-items: center;
                 margin-bottom: 15px;
                 padding: 10px 15px;
-                background: ${theme.colors.primary};
+                background-color: ${theme.colors.primary} !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
                 color: #fff;
             }
             .company-info { font-size: 12px; font-weight: bold; }

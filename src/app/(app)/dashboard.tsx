@@ -29,6 +29,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
 import api, { userAPI } from "@/services/api";
 import { theme } from "@/constants/theme";
+import { APP_CONFIG } from "@/constants";
 import LanguageSelector from "@/components/LanguageSelector";
 import { fetchGoldRatesWithCache } from "@/utils/apiCache";
 
@@ -149,7 +150,7 @@ export default function Dashboard() {
       null;
 
     if (photo && !photo.startsWith("http")) {
-      return `${theme.baseUrl}${photo.startsWith("/") ? "" : "/"}${photo}`;
+      return `${APP_CONFIG.urls.baseUrl}${photo.startsWith("/") ? "" : "/"}${photo}`;
     }
     return photo;
   };
@@ -158,7 +159,7 @@ export default function Dashboard() {
     if (!popupData) return null;
     const photo = popupData.image || popupData.image_url || popupData.url || null;
     if (photo && !photo.startsWith("http")) {
-      return `${theme.baseUrl}${photo.startsWith("/") ? "" : "/"}${photo}`;
+      return `${APP_CONFIG.urls.baseUrl}${photo.startsWith("/") ? "" : "/"}${photo}`;
     }
     return photo;
   };
@@ -484,7 +485,7 @@ export default function Dashboard() {
                     weight="bold"
                     style={{ marginLeft: 6 }}
                   >
-                    Chat
+                    {t("chat") || "Chat"}
                   </ResponsiveText>
                 </LinearGradient>
               </TouchableOpacity>

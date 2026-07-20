@@ -1247,19 +1247,21 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
           ) : (
             <View style={styles.modalFooter}>
               {/* Quick Join Button (Lightning) */}
-              <TouchableOpacity
-                style={styles.modalQuickJoinButton}
-                onPress={() => handleQuickJoinPress(selectedScheme)}
-              >
-                <LinearGradient
-                  colors={["#FFD700", "#FFA500"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.modalQuickJoinGradient}
+              {isVisible("showTabQuickJoin") && (
+                <TouchableOpacity
+                  style={styles.modalQuickJoinButton}
+                  onPress={() => handleQuickJoinPress(selectedScheme)}
                 >
-                  <Ionicons name="flash" size={20} color="#000" />
-                </LinearGradient>
-              </TouchableOpacity>
+                  <LinearGradient
+                    colors={["#FFD700", "#FFA500"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.modalQuickJoinGradient}
+                  >
+                    <Ionicons name="flash" size={20} color="#000" />
+                  </LinearGradient>
+                </TouchableOpacity>
+              )}
 
               {/* Join / Enquire Button */}
               <TouchableOpacity

@@ -520,10 +520,6 @@ const useGlobalStore = create<GlobalStore>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         language: state.language,
-        user: state.user,
-        // Persisting header config can lead to stale UI after restart; avoid persisting it
-        // Don't persist payment data for security
-        // paymentRetryData and currentPaymentSession will be lost on app restart
       })
     }
   )

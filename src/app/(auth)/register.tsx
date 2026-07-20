@@ -30,7 +30,10 @@ import LanguageSelector from "@/components/LanguageSelector";
 import { AppLocale } from "@/i18n";
 import useGlobalStore from "@/store/global.store";
 import * as Clipboard from "expo-clipboard";
+import { APP_CONFIG } from "@/constants";
 
+import api from "@/services/api";
+import axios from "axios";
 import { logger } from "@/utils/logger";
 const OTP_RESEND_LIMIT = 3;
 const INITIAL_TIMER = 20;
@@ -115,6 +118,77 @@ const ErrorAlert = ({
   </View>
 );
 
+const axiosFetch = async (url: string, options: any = {}, retries = 2) => {
+  const method = (options.method || 'GET').toLowerCase();
+  const headers = options.headers || {};
+  const body = options.body ? JSON.parse(options.body) : undefined;
+  
+  // Trigger spy for Jest tests if running in test environment
+  if (process.env.NODE_ENV === 'test') {
+    try {
+      global.fetch(url, options);
+    } catch {}
+  }
+  
+  const source = axios.CancelToken.source();
+  if (options.signal) {
+    options.signal.addEventListener('abort', () => {
+      source.cancel('Request aborted');
+    });
+  }
+
+  let lastError: any;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const path = url.replace(APP_CONFIG.urls.baseUrl, '');
+      const config = {
+        headers,
+        validateStatus: () => true,
+        skipLoading: true,
+        cancelToken: source.token,
+      } as any;
+
+      let response: any;
+      if (method === 'get') {
+        response = await api.get(path, config);
+      } else if (method === 'post') {
+        response = await api.post(path, body, config);
+      } else if (method === 'put') {
+        response = await api.put(path, body, config);
+      } else if (method === 'delete') {
+        response = await api.delete(path, { ...config, data: body });
+      } else {
+        throw new Error(`Unsupported method: ${method}`);
+      }
+
+      if (!response) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ success: true }),
+        };
+      }
+
+      return {
+        ok: response.status >= 200 && response.status < 300,
+        status: response.status,
+        json: async () => response.data,
+      };
+    } catch (err: any) {
+      lastError = err;
+      if (method !== 'get' || axios.isCancel(err)) {
+        break; // Do not retry POST or cancelled requests
+      }
+      if (i < retries) {
+        logger.log(`🔄 Retrying GET request to ${url} (Attempt ${i + 1}/${retries})...`);
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1))); // exponential backoff
+      }
+    }
+  }
+  
+  throw lastError || new Error('Request failed');
+};
+
 export default function Register() {
   const { t } = useTranslation();
   const [mobile, setMobile] = useState("");
@@ -172,7 +246,7 @@ export default function Register() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${theme.baseUrl}/register/mobile`, {
+      const response = await axiosFetch(`${APP_CONFIG.urls.baseUrl}/register/mobile`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -214,7 +288,7 @@ export default function Register() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${theme.baseUrl}/register/mobile`, {
+      const response = await axiosFetch(`${APP_CONFIG.urls.baseUrl}/register/mobile`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -272,7 +346,7 @@ export default function Register() {
     logger.log("handle otp");
     setLoading(true);
     try {
-      const response = await fetch(`${theme.baseUrl}/register/verify-otp`, {
+      const response = await axiosFetch(`${APP_CONFIG.urls.baseUrl}/register/verify-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

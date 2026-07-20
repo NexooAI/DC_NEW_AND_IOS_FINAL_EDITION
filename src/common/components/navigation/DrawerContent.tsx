@@ -22,6 +22,7 @@ import useGlobalStore from "@/store/global.store";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getFullImageUrl } from "@/utils/imageUtils";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 const { width } = Dimensions.get("window");
 
@@ -145,6 +146,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { logout, user } = useGlobalStore();
+  const { isVisible } = useAppVisibility();
   const [isNavigating, setIsNavigating] = useState(false);
   const [imageError, setImageError] = useState(false);
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -329,94 +331,107 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
       >
         <View style={styles.menuContainer}>
           {/* General Section */}
-          <SectionHeader title={t("general") || "General"} />
-          {/* <DrawerMenuItem
-            label={t("profile")}
-            iconName="person-outline"
-            onPress={() => handleNavigation("/(tabs)/profile")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/profile")}
-            delay={100}
-            iconColor="#4285F4" // Google Blue
-          /> */}
-          <DrawerMenuItem
-            label={t("referAndEarn")}
-            iconName="gift-outline"
-            onPress={() => handleNavigation("/(tabs)/home/refer_earn")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/home/refer_earn")}
-            delay={150}
-            iconColor="#F4B400" // Google Yellow/Gold
-          />
-          <DrawerMenuItem
-            label={t("ticketsAndEnquiries") || "Tickets & Enquiries"}
-            iconName="receipt-outline"
-            onPress={() => handleNavigation("/tickets")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/tickets")}
-            delay={175}
-            iconColor="#850111" // Primary Brand Red
-          />
+          {(isVisible("showSideReferEarn") || isVisible("showSideTickets")) && (
+            <SectionHeader title={t("general") || "General"} />
+          )}
+          {isVisible("showSideReferEarn") && (
+            <DrawerMenuItem
+              label={t("referAndEarn")}
+              iconName="gift-outline"
+              onPress={() => handleNavigation("/(tabs)/home/refer_earn")}
+              disabled={isNavigating}
+              isActive={isRouteActive("/(tabs)/home/refer_earn")}
+              delay={150}
+              iconColor="#F4B400" // Google Yellow/Gold
+            />
+          )}
+          {isVisible("showSideTickets") && (
+            <DrawerMenuItem
+              label={t("ticketsAndEnquiries") || "Tickets & Enquiries"}
+              iconName="receipt-outline"
+              onPress={() => handleNavigation("/tickets")}
+              disabled={isNavigating}
+              isActive={isRouteActive("/tickets")}
+              delay={175}
+              iconColor="#850111" // Primary Brand Red
+            />
+          )}
 
           {/* Support Section */}
-          <SectionHeader title={t("information") || "Information"} />
-          <DrawerMenuItem
-            label={t("offers") || "Our Offers"}
-            iconName="pricetag-outline"
-            onPress={() => handleNavigation("/(tabs)/home/offers")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/home/offers")}
-            delay={190}
-            iconColor="#EA4335" // Red
-          />
-          <DrawerMenuItem
-            label={t("ourStores")}
-            iconName="storefront-outline"
-            onPress={() => handleNavigation("/(tabs)/home/our_stores")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/home/our_stores")}
-            delay={200}
-            iconColor="#EA4335" // Google Red (or Branded Primary)
-          />
-          <DrawerMenuItem
-            label={t("contactUs")}
-            iconName="call-outline"
-            onPress={() => handleNavigation("/(tabs)/home/contact_us")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/home/contact_us")}
-            delay={250}
-            iconColor="#0F9D58" // Google Green
-          />
-          <DrawerMenuItem
-            label={t("faqAndHelp")}
-            iconName="help-circle-outline"
-            onPress={() => handleNavigation("/(tabs)/home/faq")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/home/faq")}
-            delay={300}
-            iconColor="#FB8C00" // Orange
-          />
+          {(isVisible("showSideOffers") || isVisible("showSideStores") || isVisible("showSideContactUs") || isVisible("showSideFaq")) && (
+            <SectionHeader title={t("information") || "Information"} />
+          )}
+          {isVisible("showSideOffers") && (
+            <DrawerMenuItem
+              label={t("offers") || "Our Offers"}
+              iconName="pricetag-outline"
+              onPress={() => handleNavigation("/(tabs)/home/offers")}
+              disabled={isNavigating}
+              isActive={isRouteActive("/(tabs)/home/offers")}
+              delay={190}
+              iconColor="#EA4335" // Red
+            />
+          )}
+          {isVisible("showSideStores") && (
+            <DrawerMenuItem
+              label={t("ourStores")}
+              iconName="storefront-outline"
+              onPress={() => handleNavigation("/(tabs)/home/our_stores")}
+              disabled={isNavigating}
+              isActive={isRouteActive("/(tabs)/home/our_stores")}
+              delay={200}
+              iconColor="#EA4335" // Google Red (or Branded Primary)
+            />
+          )}
+          {isVisible("showSideContactUs") && (
+            <DrawerMenuItem
+              label={t("contactUs")}
+              iconName="call-outline"
+              onPress={() => handleNavigation("/(tabs)/home/contact_us")}
+              disabled={isNavigating}
+              isActive={isRouteActive("/(tabs)/home/contact_us")}
+              delay={250}
+              iconColor="#0F9D58" // Google Green
+            />
+          )}
+          {isVisible("showSideFaq") && (
+            <DrawerMenuItem
+              label={t("faqAndHelp")}
+              iconName="help-circle-outline"
+              onPress={() => handleNavigation("/(tabs)/home/faq")}
+              disabled={isNavigating}
+              isActive={isRouteActive("/(tabs)/home/faq")}
+              delay={300}
+              iconColor="#FB8C00" // Orange
+            />
+          )}
 
           {/* Legal Section */}
-          <SectionHeader title={t("legal") || "Legal"} />
-          <DrawerMenuItem
-            label={t("privacyPolicy")}
-            iconName="lock-closed-outline"
-            onPress={() => handleNavigation("/(tabs)/home/policies/privacyPolicy")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/home/policies/privacyPolicy")}
-            delay={350}
-            iconColor="#607D8B" // Blue Grey
-          />
-          <DrawerMenuItem
-            label={t("termsAndConditions")}
-            iconName="document-text-outline"
-            onPress={() => handleNavigation("/(tabs)/home/policies/termsAndConditionsPolicies")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/home/policies/termsAndConditionsPolicies")}
-            delay={400}
-            iconColor="#607D8B" // Blue Grey
-          />
+          {(isVisible("showSidePrivacy") || isVisible("showSideTerms")) && (
+            <SectionHeader title={t("legal") || "Legal"} />
+          )}
+          {isVisible("showSidePrivacy") && (
+            <DrawerMenuItem
+              label={t("privacyPolicy")}
+              iconName="lock-closed-outline"
+              onPress={() => handleNavigation("/(tabs)/home/policies/privacyPolicy")}
+              disabled={isNavigating}
+              isActive={isRouteActive("/(tabs)/home/policies/privacyPolicy")}
+              delay={350}
+              iconColor="#607D8B" // Blue Grey
+            />
+          )}
+          {isVisible("showSideTerms") && (
+            <DrawerMenuItem
+              label={t("termsAndConditions")}
+              iconName="document-text-outline"
+              onPress={() => handleNavigation("/(tabs)/home/policies/termsAndConditionsPolicies")}
+              disabled={isNavigating}
+              isActive={isRouteActive("/(tabs)/home/policies/termsAndConditionsPolicies")}
+              delay={400}
+              iconColor="#607D8B" // Blue Grey
+            />
+          )}
 
           {/* Account Section */}
           <SectionHeader title={t("account") || "Account"} />

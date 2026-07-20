@@ -27,6 +27,7 @@ import GlobalLoadingProvider from "@/components/GlobalLoadingProvider";
 import { useForceUpdate } from "@/hooks/useForceUpdate";
 import ForceUpdateScreen from "@/components/ForceUpdateScreen";
 import { logger } from "@/utils/logger";
+import { fetchRemoteConfig } from "@/services/configService";
 
 interface NotificationData {
   type?: string;
@@ -115,7 +116,14 @@ export default function RootLayout() {
             router.push("/(app)/(tabs)/home/schemes");
             break;
           case "gold-rate":
-            router.push("/(app)/(tabs)/home/goldRate");
+          case "gold_rate":
+          case "rate":
+          case "ratechart":
+            router.push("/(app)/(tabs)/home/ratechart");
+            break;
+          case "lucky_draw":
+          case "luckydraw":
+            router.push("/(app)/lucky_draw");
             break;
           default:
             switch (notificationType) {
@@ -128,7 +136,11 @@ export default function RootLayout() {
                 break;
               case "rate":
               case "gold_rate":
-                router.push("/(app)/(tabs)/home/goldRate");
+                router.push("/(app)/(tabs)/home/ratechart");
+                break;
+              case "lucky_draw":
+              case "luckydraw":
+                router.push("/(app)/lucky_draw");
                 break;
               default:
                 router.push("/(app)/(tabs)/notifications");
@@ -318,6 +330,12 @@ export default function RootLayout() {
   useEffect(() => {
     const initializeUserData = async () => {
       try {
+        try {
+          await fetchRemoteConfig();
+        } catch (configErr) {
+          logger.error("Error fetching remote config:", configErr);
+        }
+
         const token = await SecureStore.getItemAsync("authToken");
         const storedUserData = await AsyncStorage.getItem("userData");
 

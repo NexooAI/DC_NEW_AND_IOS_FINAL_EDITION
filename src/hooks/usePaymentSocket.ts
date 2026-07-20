@@ -1,11 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useRouter } from "expo-router";
-import paymentService from "@/services/payment.service";
-import api from "@/services/api";
-import { Alert } from 'react-native';
-import { theme } from "@/constants/theme";
+import { APP_CONFIG } from "@/constants";
 import { AppState, AppStateStatus } from "react-native";
+import { logger } from "@/utils/logger";
 
 interface PaymentSocketProps {
   onPaymentSuccess?: (data: any) => void;
@@ -37,23 +35,32 @@ export const usePaymentSocket = ({
   const socketRef = useRef<Socket | null>(null);
   const isPaymentCompleted = useRef(false);
 
-  // Keep latest callbacks in refs so the socket effect never needs to re-run
-  // when only callbacks change (avoids creating duplicate socket connections).
+  // Keep latest callbacks and user details in refs so the socket effect never needs to re-run
+  // when only callbacks or user details change (avoids creating duplicate socket connections).
   const onPaymentSuccessRef = useRef(onPaymentSuccess);
   const onPaymentFailureRef = useRef(onPaymentFailure);
   const onPaymentErrorRef = useRef(onPaymentError);
   const onPaymentExpiredRef = useRef(onPaymentExpired);
   const onStopPollingRef = useRef(onStopPolling);
+  const parsedUserDetailsRef = useRef(parsedUserDetails);
+
   useEffect(() => { onPaymentSuccessRef.current = onPaymentSuccess; }, [onPaymentSuccess]);
   useEffect(() => { onPaymentFailureRef.current = onPaymentFailure; }, [onPaymentFailure]);
   useEffect(() => { onPaymentErrorRef.current = onPaymentError; }, [onPaymentError]);
   useEffect(() => { onPaymentExpiredRef.current = onPaymentExpired; }, [onPaymentExpired]);
   useEffect(() => { onStopPollingRef.current = onStopPolling; }, [onStopPolling]);
+  useEffect(() => { parsedUserDetailsRef.current = parsedUserDetails; }, [parsedUserDetails]);
 
+  const disconnect = useCallback(() => {
+    if (socketRef.current) {
+      console.log("🔌 [usePaymentSocket] Forcibly disconnecting socket");
+      socketRef.current.disconnect();
+    }
+  }, []);
 
   useEffect(() => {
     // Initialize socket connection
-    const socketInstance = io(theme.baseUrl, {
+    const socketInstance = io(APP_CONFIG.urls.baseUrl, {
       transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: 5,
@@ -64,14 +71,13 @@ export const usePaymentSocket = ({
 
     // Handle connection events
     socketInstance.on("connect", () => {
-      const currentOrderId = orderId || parsedUserDetails?.orderId;
+      const currentOrderId = orderId || parsedUserDetailsRef.current?.orderId;
       console.log("=== SOCKET CONNECTION DEBUG ===");
       console.log("✅ Socket connected successfully!");
       console.log("Socket ID:", socketInstance.id);
       console.log("Socket connected status:", socketInstance.connected);
       console.log("Current orderId:", currentOrderId);
-      console.log("parsedUserDetails?.orderId:", parsedUserDetails?.orderId);
-      console.log("parsedUserDetails", parsedUserDetails);
+      console.log("parsedUserDetailsRef.current?.orderId:", parsedUserDetailsRef.current?.orderId);
 
       // If polling was started as a fallback, stop it now that socket is back
       if (onStopPollingRef.current) {
@@ -87,16 +93,16 @@ export const usePaymentSocket = ({
         // Emit store_payment_metadata after successful connection
         const paymentMetadata = {
           orderId: currentOrderId,
-          userMobile: parsedUserDetails?.data?.data?.mobile || parsedUserDetails?.mobile || parsedUserDetails?.userMobile || "",
-          investmentId: (type === 'bill' || type === 'advance_booking' || type === 'booking') ? 0 : (parsedUserDetails?.data?.data?.id || parsedUserDetails?.id || parsedUserDetails?.investmentId || 0),
-          userId: parsedUserDetails?.data?.data?.userId || parsedUserDetails?.userId || parsedUserDetails?.id || 101,
-          schemeId: (type === 'bill' || type === 'advance_booking' || type === 'booking') ? 0 : (parsedUserDetails?.data?.data?.schemeId || parsedUserDetails?.schemeId || 0),
-          chitId: (type === 'bill' || type === 'advance_booking' || type === 'booking') ? 0 : (parsedUserDetails?.data?.data?.chitId || parsedUserDetails?.chitId || 0),
-          amount: amount || parsedUserDetails?.data?.data?.amount || parsedUserDetails?.amount || 0,
+          userMobile: parsedUserDetailsRef.current?.data?.data?.mobile || parsedUserDetailsRef.current?.mobile || parsedUserDetailsRef.current?.userMobile || "",
+          investmentId: (type === 'bill' || type === 'advance_booking' || type === 'booking') ? 0 : (parsedUserDetailsRef.current?.data?.data?.id || parsedUserDetailsRef.current?.id || parsedUserDetailsRef.current?.investmentId || 0),
+          userId: parsedUserDetailsRef.current?.data?.data?.userId || parsedUserDetailsRef.current?.userId || parsedUserDetailsRef.current?.id || 101,
+          schemeId: (type === 'bill' || type === 'advance_booking' || type === 'booking') ? 0 : (parsedUserDetailsRef.current?.data?.data?.schemeId || parsedUserDetailsRef.current?.schemeId || 0),
+          chitId: (type === 'bill' || type === 'advance_booking' || type === 'booking') ? 0 : (parsedUserDetailsRef.current?.data?.data?.chitId || parsedUserDetailsRef.current?.chitId || 0),
+          amount: amount || parsedUserDetailsRef.current?.data?.data?.amount || parsedUserDetailsRef.current?.amount || 0,
           isManual: "no",
           utr_reference_number: "",
-          accountNumber: parsedUserDetails?.data?.data?.accountNo || parsedUserDetails?.accountNo || parsedUserDetails?.accNo || parsedUserDetails?.accountNumber || "",
-          accountName: parsedUserDetails?.data?.data?.accountName || parsedUserDetails?.accountName || parsedUserDetails?.accountname || parsedUserDetails?.name || "",
+          accountNumber: parsedUserDetailsRef.current?.data?.data?.accountNo || parsedUserDetailsRef.current?.accountNo || parsedUserDetailsRef.current?.accNo || parsedUserDetailsRef.current?.accountNumber || "",
+          accountName: parsedUserDetailsRef.current?.data?.data?.accountName || parsedUserDetailsRef.current?.accountName || parsedUserDetailsRef.current?.accountname || parsedUserDetailsRef.current?.name || "",
           bookingId: bookingId || "",
           type: type === 'booking' ? 'advance_booking' : (type || 'scheme')
         };
@@ -108,7 +114,7 @@ export const usePaymentSocket = ({
         console.warn("⚠️ No orderId found on connect");
         console.log("Available orderId sources:");
         console.log("- orderId prop:", orderId);
-        console.log("- parsedUserDetails?.orderId:", parsedUserDetails?.orderId);
+        console.log("- parsedUserDetailsRef?.orderId:", parsedUserDetailsRef.current?.orderId);
       }
     });
 
@@ -116,7 +122,6 @@ export const usePaymentSocket = ({
       console.error("=== SOCKET CONNECTION ERROR ===");
       console.error("Socket connection error:", error);
       console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
       onPaymentErrorRef.current?.({
         error: "Connection Error",
         message: "Failed to connect to payment server",
@@ -151,6 +156,12 @@ export const usePaymentSocket = ({
     socketInstance.on("payment_status_update", async (data: any) => {
       console.log("Payment status update received:---------------->> ", data);
 
+      // Guard against processing status updates once the payment has already completed.
+      if (isPaymentCompleted.current) {
+        console.log("[usePaymentSocket] Payment already processed. Ignoring duplicate status update.");
+        return;
+      }
+
       // Check both the top-level status and the payment response status
       const isSuccess = data?.status === "success" ||
         data?.paymentResponse?.status === "CHARGED" ||
@@ -182,27 +193,30 @@ export const usePaymentSocket = ({
                   txnId: data?.paymentResponse?.txn_id || "",
                   orderId: data?.paymentResponse?.order_id || orderId || "",
                   message: data?.paymentResponse?.payment_gateway_response?.resp_message || 'Payment Successful',
-                  investmentId: parsedUserDetails?.investmentId,
-                  schemeType: parsedUserDetails?.schemeType,
-                  paymentFrequency: parsedUserDetails?.paymentFrequency,
+                  investmentId: parsedUserDetailsRef.current?.investmentId,
+                  schemeType: parsedUserDetailsRef.current?.schemeType,
+                  paymentFrequency: parsedUserDetailsRef.current?.paymentFrequency,
                   type: type,
-                  userId: parsedUserDetails?.userId || parsedUserDetails?.id || "",
+                  userId: parsedUserDetailsRef.current?.userId || parsedUserDetailsRef.current?.id || "",
                 }
               });
             } catch (error) {
               console.error("Error processing successful payment:", error);
-              onPaymentError?.({
+              onPaymentErrorRef.current?.({
                 error: "Payment Processing Error",
                 message: "Failed to process successful payment",
               });
             }
           }
 
-          if (socketInstance && socketInstance.connected) {
-            socketInstance.disconnect();
+          if (socketInstance) {
+            socketInstance.removeAllListeners();
+            if (socketInstance.connected) {
+              socketInstance.disconnect();
+            }
           }
         } else if (isPending) {
-          console.log('[usePaymentSocket] Payment is still pending (e.g. VBV verification). Waiting for final status...');
+          console.log('[usePaymentSocket] Payment is still pending (e.g. VBV verification). Waiting for VBV completion...');
           return; // Ignore and wait for next event
         } else {
           console.log('Payment not charged');
@@ -224,20 +238,23 @@ export const usePaymentSocket = ({
                 amount: data?.paymentResponse?.amount || amount || "",
                 status: data?.paymentResponse?.status || "FAILED",
                 type: type,
-                userId: parsedUserDetails?.userId || parsedUserDetails?.id || "",
-                investmentId: parsedUserDetails?.investmentId || "",
+                userId: parsedUserDetailsRef.current?.userId || parsedUserDetailsRef.current?.id || "",
+                investmentId: parsedUserDetailsRef.current?.investmentId || "",
                 paymentMethod: data?.paymentResponse?.payment_method_type || data?.paymentResponse?.payment_method || "",
               }
             });
           }
 
-          if (socketInstance && socketInstance.connected) {
-            socketInstance.disconnect();
+          if (socketInstance) {
+            socketInstance.removeAllListeners();
+            if (socketInstance.connected) {
+              socketInstance.disconnect();
+            }
           }
         }
       } catch (error) {
         console.error('Error in payment status update API sequence:', error);
-        onPaymentError?.({
+        onPaymentErrorRef.current?.({
           error: "API Error",
           message: "Failed to process payment status",
         });
@@ -248,7 +265,7 @@ export const usePaymentSocket = ({
       if (nextAppState === "active") {
         // App has come to the foreground
         const socketInstance = socketRef.current;
-        const currentOrderId = orderId || parsedUserDetails?.orderId;
+        const currentOrderId = orderId || parsedUserDetailsRef.current?.orderId;
         console.log("[AppState] App is active. Socket connected:", socketInstance?.connected, "OrderId:", currentOrderId);
         if (socketInstance && !socketInstance.connected) {
           console.log("[AppState] Socket not connected. Attempting to reconnect...");
@@ -261,16 +278,16 @@ export const usePaymentSocket = ({
           // Also emit store_payment_metadata when app becomes active
           const paymentMetadata = {
             orderId: currentOrderId,
-            userMobile: parsedUserDetails?.data?.data?.mobile || parsedUserDetails?.mobile || parsedUserDetails?.userMobile || "",
-            investmentId: (type === 'bill' || type === 'advance_booking' || type === 'booking') ? 0 : (parsedUserDetails?.data?.data?.id || parsedUserDetails?.id || parsedUserDetails?.investmentId || 0),
-            userId: parsedUserDetails?.data?.data?.userId || parsedUserDetails?.userId || parsedUserDetails?.id || 101,
-            schemeId: (type === 'bill' || type === 'advance_booking' || type === 'booking') ? 0 : (parsedUserDetails?.data?.data?.schemeId || parsedUserDetails?.schemeId || 0),
-            chitId: (type === 'bill' || type === 'advance_booking' || type === 'booking') ? 0 : (parsedUserDetails?.data?.data?.chitId || parsedUserDetails?.chitId || 0),
-            amount: amount || parsedUserDetails?.data?.data?.amount || parsedUserDetails?.amount || 0,
+            userMobile: parsedUserDetailsRef.current?.data?.data?.mobile || parsedUserDetailsRef.current?.mobile || parsedUserDetailsRef.current?.userMobile || "",
+            investmentId: (type === 'bill' || type === 'advance_booking' || type === 'booking') ? 0 : (parsedUserDetailsRef.current?.data?.data?.id || parsedUserDetailsRef.current?.id || parsedUserDetailsRef.current?.investmentId || 0),
+            userId: parsedUserDetailsRef.current?.data?.data?.userId || parsedUserDetailsRef.current?.userId || parsedUserDetailsRef.current?.id || 101,
+            schemeId: (type === 'bill' || type === 'advance_booking' || type === 'booking') ? 0 : (parsedUserDetailsRef.current?.data?.data?.schemeId || parsedUserDetailsRef.current?.schemeId || 0),
+            chitId: (type === 'bill' || type === 'advance_booking' || type === 'booking') ? 0 : (parsedUserDetailsRef.current?.data?.data?.chitId || parsedUserDetailsRef.current?.chitId || 0),
+            amount: amount || parsedUserDetailsRef.current?.data?.data?.amount || parsedUserDetailsRef.current?.amount || 0,
             isManual: "no",
             utr_reference_number: "",
-            accountNumber: parsedUserDetails?.data?.data?.accountNo || parsedUserDetails?.accountNo || parsedUserDetails?.accNo || parsedUserDetails?.accountNumber || "",
-            accountName: parsedUserDetails?.data?.data?.accountName || parsedUserDetails?.accountName || parsedUserDetails?.accountname || parsedUserDetails?.name || "",
+            accountNumber: parsedUserDetailsRef.current?.data?.data?.accountNo || parsedUserDetailsRef.current?.accountNo || parsedUserDetailsRef.current?.accNo || parsedUserDetailsRef.current?.accountNumber || "",
+            accountName: parsedUserDetailsRef.current?.data?.data?.accountName || parsedUserDetailsRef.current?.accountName || parsedUserDetailsRef.current?.accountname || parsedUserDetailsRef.current?.name || "",
             bookingId: bookingId || "",
             type: type === 'booking' ? 'advance_booking' : (type || 'scheme')
           };
@@ -285,26 +302,27 @@ export const usePaymentSocket = ({
 
     const appStateSubscription = AppState.addEventListener("change", handleAppStateChange);
 
-    // Cleanup on unmount
     return () => {
-      if (socketInstance && socketInstance.connected) {
-        socketInstance.disconnect();
+      if (socketInstance) {
+        socketInstance.removeAllListeners();
+        if (socketInstance.connected) {
+          socketInstance.disconnect();
+        }
       }
       appStateSubscription.remove();
     };
   // Only re-run when stable primitive values change (orderId, type, amount, bookingId).
-  // Callbacks are accessed via refs, so they never trigger a re-run and no duplicate sockets are created.
+  // Callbacks and userDetails are accessed via refs, so they never trigger a re-run.
   }, [orderId, type, amount, bookingId]);
 
   const handleCancel = () => {
-    if (socketRef.current && socketRef.current.connected) {
-      socketRef.current.disconnect();
-    }
+    disconnect();
     router.replace({ pathname: '/(tabs)/home/payment-failure', params: {} });
   };
 
   return {
     socket: socketRef.current,
     handleCancel,
+    disconnect,
   };
-}; 
+};

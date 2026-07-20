@@ -36,6 +36,35 @@ const addToErrorLog = (error: any, context?: any) => {
   }
 };
 
+// Helper to recursively redact sensitive fields from logs
+const sanitizeData = (data: any): any => {
+  if (data === null || data === undefined) return data;
+  if (typeof data !== 'object') return data;
+  
+  if (Array.isArray(data)) {
+    return data.map(sanitizeData);
+  }
+  
+  const sanitized: any = {};
+  const sensitiveKeys = [
+    'cvv', 'cvc', 'card_number', 'cardnumber', 'pan', 'card_expiry', 
+    'otp', 'password', 'pin', 'mpin', 'token', 'authtoken', 
+    'accesstoken', 'refreshtoken', 'secret', 'key', 'apikey', 'api_key'
+  ];
+  
+  for (const [key, value] of Object.entries(data)) {
+    const lowerKey = key.toLowerCase();
+    if (sensitiveKeys.some(k => lowerKey.includes(k))) {
+      sanitized[key] = '[REDACTED]';
+    } else if (typeof value === 'object') {
+      sanitized[key] = sanitizeData(value);
+    } else {
+      sanitized[key] = value;
+    }
+  }
+  return sanitized;
+};
+
 // Save log to persistent storage (async, non-blocking)
 const savePersistentLog = async (level: string, message: string, data?: any) => {
   try {
@@ -47,7 +76,7 @@ const savePersistentLog = async (level: string, message: string, data?: any) => 
       timestamp: new Date().toISOString(),
       level,
       message,
-      data: data ? safeStringify(data, 1000) : undefined,
+      data: data ? safeStringify(sanitizeData(data), 1000) : undefined,
     });
 
     // Keep only last N logs
@@ -114,7 +143,7 @@ const savePaymentLog = async (event: string, data?: any) => {
     logs.push({
       timestamp: new Date().toISOString(),
       event,
-      data: data ? safeStringify(data, 2000) : undefined,
+      data: data ? safeStringify(sanitizeData(data), 2000) : undefined,
     });
 
     // Keep only last N payment logs

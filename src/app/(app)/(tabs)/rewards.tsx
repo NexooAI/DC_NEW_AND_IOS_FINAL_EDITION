@@ -128,7 +128,7 @@ export default function RewardsScreen() {
                         style={styles.historyPillButton}
                         onPress={() => router.push("/(app)/(tabs)/rewards_history")}
                     >
-                        <Text style={styles.historyPillText}>History</Text>
+                        <Text style={styles.historyPillText}>{t("history") || "History"}</Text>
                         <Ionicons name="receipt-outline" size={16} color="white" />
                     </TouchableOpacity>
                 </View>
@@ -480,17 +480,17 @@ export default function RewardsScreen() {
                 <TouchableOpacity
                     style={styles.fixedShareButton}
                     activeOpacity={0.85}
-                    onPress={onShare}
+                    onPress={onShareWhatsapp}
                 >
                     <LinearGradient
-                        colors={['#FFD700', '#FF8C00']}
+                        colors={['#25D366', '#128C7E']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                         style={styles.fixedShareGradient}
                     >
-                        <Ionicons name="share-social" size={20} color="#000" />
+                        <Ionicons name="logo-whatsapp" size={20} color="#fff" />
                         <Text style={styles.fixedShareText}>
-                            {t("shareReferralCode") || "Share Referral Code"}
+                            {t("inviteFriendsOnWhatsApp") || "Invite friends on WhatsApp"}
                         </Text>
                     </LinearGradient>
                 </TouchableOpacity>
@@ -1128,7 +1128,7 @@ const styles = StyleSheet.create({
         height: 52,
         borderRadius: 16,
         overflow: "hidden",
-        shadowColor: "#FF8C00",
+        shadowColor: "#128C7E",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.25,
         shadowRadius: 6,
@@ -1142,7 +1142,7 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     fixedShareText: {
-        color: "#000",
+        color: "#fff",
         fontSize: 16,
         fontWeight: "800",
         letterSpacing: 0.5,

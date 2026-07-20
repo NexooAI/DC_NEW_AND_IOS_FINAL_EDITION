@@ -11,6 +11,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             return lower === 'ios' || lower === '--platform=ios' || lower === '-p=ios';
         }));
 
+    const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "";
     const bundleIdentifier = isIos ? "com.dcjewellers.dcjewellers" : "com.nexooai.dcjewellery";
     const projectId = isIos ? "07310377-0452-4d15-8e38-d42462be6fd8" : "9af1745a-105c-44f9-9e53-a111bc6ed9ce";
     const owner = isIos ? "dcjewellers" : "sudhakarg";
@@ -55,7 +56,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             // ✔ Google Maps API (IMPORTANT — must stay)
             config: {
                 googleMaps: {
-                    apiKey: "AIzaSyAkuOcNddEvozQR4D4yPdTrbwXCiPsuEFc",
+                    apiKey: mapsApiKey,
                 },
             },
             intentFilters: [
@@ -89,7 +90,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             buildNumber: "1",
             jsEngine: "hermes",
             config: {
-                googleMapsApiKey: "AIzaSyAkuOcNddEvozQR4D4yPdTrbwXCiPsuEFc",
+                googleMapsApiKey: mapsApiKey,
             },
             infoPlist: {
                 ITSAppUsesNonExemptEncryption: false,
@@ -99,27 +100,27 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                 NSPhotoLibraryAddUsageDescription: "This app needs permission to save images to your photo library so you can keep copies of receipts, order confirmations, or jewellery images for your records.",
                 NSFaceIDUsageDescription: "This app uses Face ID / Touch ID to securely authenticate you without entering your MPIN.",
                 "NSAppTransportSecurity": {
-                    "NSAllowsArbitraryLoads": true,
+                    "NSAllowsArbitraryLoads": false,
                     "NSAllowsArbitraryLoadsInWebContent": true,
                     "NSExceptionDomains": {
                         "smartgateway.hdfcuat.bank.in": {
-                            "NSExceptionAllowsInsecureHTTPLoads": true,
+                            "NSExceptionAllowsInsecureHTTPLoads": false,
                             "NSIncludesSubdomains": true
                         },
                         "hdfcbank.com": {
-                            "NSExceptionAllowsInsecureHTTPLoads": true,
+                            "NSExceptionAllowsInsecureHTTPLoads": false,
                             "NSIncludesSubdomains": true
                         },
                         "mastercard.com": {
-                            "NSExceptionAllowsInsecureHTTPLoads": true,
+                            "NSExceptionAllowsInsecureHTTPLoads": false,
                             "NSIncludesSubdomains": true
                         },
                         "visa.com": {
-                            "NSExceptionAllowsInsecureHTTPLoads": true,
+                            "NSExceptionAllowsInsecureHTTPLoads": false,
                             "NSIncludesSubdomains": true
                         },
                         "securecode.com": {
-                            "NSExceptionAllowsInsecureHTTPLoads": true,
+                            "NSExceptionAllowsInsecureHTTPLoads": false,
                             "NSIncludesSubdomains": true
                         }
                     }

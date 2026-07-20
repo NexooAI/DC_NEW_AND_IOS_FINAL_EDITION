@@ -16,6 +16,7 @@ import {
   TextInputKeyPressEventData,
   Keyboard,
   Pressable,
+  StatusBar,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
@@ -243,6 +244,7 @@ export default function SetMpinPage() {
                 },
               ]}
             >
+      <StatusBar barStyle="light-content" backgroundColor="#850111" />
       <View style={styles.gradient}>
         {showError && (
           <View style={styles.errorAlert}>

@@ -459,6 +459,7 @@ export default function JoinSavings() {
   // Fetch KYC status
   useFocusEffect(
     React.useCallback(() => {
+      isNavigatingRef.current = false;
       const fetchKycStatus = async () => {
         try {
           setIsKycLoading(true);
@@ -1999,7 +2000,7 @@ export default function JoinSavings() {
               {idProofExpanded && (
                 <View style={{ padding: 20, paddingTop: 12, gap: 12 }}>
                   <View style={styles.kycRow}>
-                    <Text style={styles.kycLabel}>Date of Birth</Text>
+                    <Text style={styles.kycLabel}>{t("dateOfBirth") || "Date of Birth"}</Text>
                     <Text style={styles.kycValue}>
                       {kycDetails.dob
                         ? new Date(kycDetails.dob).toLocaleDateString()
@@ -2007,7 +2008,7 @@ export default function JoinSavings() {
                     </Text>
                   </View>
                   <View style={styles.kycRow}>
-                    <Text style={styles.kycLabel}>ID Number</Text>
+                    <Text style={styles.kycLabel}>{t("kycIdNumber") || "ID Number"}</Text>
                     <Text style={styles.kycValue}>{kycDetails.enternumber}</Text>
                   </View>
                   {/* Nominee Card nested inside ID Proof */}

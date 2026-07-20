@@ -28,6 +28,7 @@ import { theme } from "@/constants/theme";
 import { userAPI } from "@/services/api";
 import useGlobalStore from "@/store/global.store";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
+import { useTranslation } from "@/hooks/useTranslation";
 
 import { logger } from '@/utils/logger';
 import { convertUTCToLocal, formatDate as globalFormatDate } from '@/utils/dateTimeUtils';
@@ -479,6 +480,7 @@ const NotificationModal = ({
 // Main Component
 export default function NotificationsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { user } = useGlobalStore();
   const { refreshCount } = useUnreadNotifications();
   const [notifications, setNotifications] = useState<Notification[]>([]);

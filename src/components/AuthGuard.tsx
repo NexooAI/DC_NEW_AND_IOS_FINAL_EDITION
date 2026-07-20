@@ -104,7 +104,20 @@ export default function AuthGuard({
         }
 
         try {
-          const payload = JSON.parse(atob(tokenParts[1]));
+          const decodeBase64 = (str: string): string => {
+            try {
+              const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+              let output = '';
+              str = String(str).replace(/=+$/, '');
+              for (let bc = 0, bs = 0, buffer, idx = 0; (buffer = str.charAt(idx++)); ~buffer && ((bs = bc % 4 ? bs * 64 + buffer : buffer), bc++ % 4) ? (output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6)))) : 0) {
+                buffer = chars.indexOf(buffer);
+              }
+              return output;
+            } catch {
+              return '';
+            }
+          };
+          const payload = JSON.parse(decodeBase64(tokenParts[1].replace(/-/g, "+").replace(/_/g, "/")));
           const currentTime = Date.now() / 1000;
 
           // Check if token is expired (with 5 minute buffer for better UX)

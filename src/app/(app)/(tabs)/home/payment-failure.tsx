@@ -40,11 +40,186 @@ const JaggedBorder = () => {
   );
 };
 
+interface DeclineDiagnosis {
+  reasonKey: string;
+  detailsKey: string;
+  resolutionKey: string;
+  icon: string;
+}
+
+const diagnoseDecline = (msg: string): DeclineDiagnosis | null => {
+  if (!msg) return null;
+  const normalized = msg.toLowerCase();
+
+  // 1. Restricted Card / Code 62
+  if (
+    normalized.includes("restricted card") || 
+    normalized.includes("restricted") || 
+    normalized.includes("code 62") || 
+    normalized.includes("code \"62\"") || 
+    normalized.includes("na-62") || 
+    normalized.includes("response 62") ||
+    /(\b62\b)/.test(normalized)
+  ) {
+    return {
+      reasonKey: "decline_restricted_reason",
+      detailsKey: "decline_restricted_details",
+      resolutionKey: "decline_restricted_resolution",
+      icon: "lock-closed-outline"
+    };
+  }
+
+  // 2. Insufficient Funds / Code 51
+  if (
+    normalized.includes("insufficient funds") || 
+    normalized.includes("insufficient balance") || 
+    normalized.includes("insufficient") || 
+    normalized.includes("code 51") || 
+    normalized.includes("na-51") ||
+    /(\b51\b)/.test(normalized)
+  ) {
+    return {
+      reasonKey: "decline_insufficient_reason",
+      detailsKey: "decline_insufficient_details",
+      resolutionKey: "decline_insufficient_resolution",
+      icon: "wallet-outline"
+    };
+  }
+
+  // 3. Do Not Honor / Code 05
+  if (
+    normalized.includes("do not honor") || 
+    normalized.includes("do_not_honor") || 
+    normalized.includes("code 05") || 
+    normalized.includes("na-05") ||
+    /(\b05\b)/.test(normalized)
+  ) {
+    return {
+      reasonKey: "decline_do_not_honor_reason",
+      detailsKey: "decline_do_not_honor_details",
+      resolutionKey: "decline_do_not_honor_resolution",
+      icon: "alert-circle-outline"
+    };
+  }
+
+  // 4. Expired Card / Code 54
+  if (
+    normalized.includes("expired") || 
+    normalized.includes("code 54") || 
+    normalized.includes("na-54") ||
+    /(\b54\b)/.test(normalized)
+  ) {
+    return {
+      reasonKey: "decline_expired_reason",
+      detailsKey: "decline_expired_details",
+      resolutionKey: "decline_expired_resolution",
+      icon: "calendar-outline"
+    };
+  }
+
+  // 5. Incorrect Details / CVV / Code 55 / 14
+  if (
+    normalized.includes("cvv") || 
+    normalized.includes("invalid pin") || 
+    normalized.includes("incorrect otp") || 
+    normalized.includes("code 55") || 
+    normalized.includes("code 14")
+  ) {
+    return {
+      reasonKey: "decline_incorrect_reason",
+      detailsKey: "decline_incorrect_details",
+      resolutionKey: "decline_incorrect_resolution",
+      icon: "keypad-outline"
+    };
+  }
+
+  // 6. Network/Timeout / Code 91 / 96
+  if (
+    normalized.includes("timeout") || 
+    normalized.includes("timed out") || 
+    normalized.includes("network") || 
+    normalized.includes("issuer unavailable") || 
+    normalized.includes("system error") ||
+    normalized.includes("code 91") ||
+    normalized.includes("code 96")
+  ) {
+    return {
+      reasonKey: "decline_timeout_reason",
+      detailsKey: "decline_timeout_details",
+      resolutionKey: "decline_timeout_resolution",
+      icon: "wifi-outline"
+    };
+  }
+
+  // 7. Net Banking: User Cancelled
+  if (
+    normalized.includes("user cancelled") || 
+    normalized.includes("cancelled by user") || 
+    normalized.includes("cancelled by customer") || 
+    normalized.includes("abandoned") || 
+    normalized.includes("transaction cancelled") ||
+    normalized.includes("cancel")
+  ) {
+    return {
+      reasonKey: "decline_cancelled_reason",
+      detailsKey: "decline_cancelled_details",
+      resolutionKey: "decline_cancelled_resolution",
+      icon: "close-circle-outline"
+    };
+  }
+
+  // 8. Net Banking: Authentication Failed
+  if (
+    normalized.includes("auth failed") || 
+    normalized.includes("authentication failed") || 
+    normalized.includes("invalid credentials") || 
+    normalized.includes("login failed") ||
+    normalized.includes("invalid customer")
+  ) {
+    return {
+      reasonKey: "decline_auth_failed_reason",
+      detailsKey: "decline_auth_failed_details",
+      resolutionKey: "decline_auth_failed_resolution",
+      icon: "key-outline"
+    };
+  }
+
+  // 9. Net Banking: Account Dormant
+  if (
+    normalized.includes("dormant") || 
+    normalized.includes("inactive account") || 
+    normalized.includes("account inactive")
+  ) {
+    return {
+      reasonKey: "decline_dormant_reason",
+      detailsKey: "decline_dormant_details",
+      resolutionKey: "decline_dormant_resolution",
+      icon: "ban-outline"
+    };
+  }
+
+  // 10. Amount Less Than Minimum Configured
+  if (
+    normalized.includes("amount less than") ||
+    normalized.includes("minimum amount configured") ||
+    normalized.includes("amount_less_than")
+  ) {
+    return {
+      reasonKey: "decline_min_amount_reason",
+      detailsKey: "decline_min_amount_details",
+      resolutionKey: "decline_min_amount_resolution",
+      icon: "alert-circle-outline"
+    };
+  }
+
+  return null;
+};
+
 export default function PaymentFailure() {
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const router = useRouter();
-  const { user, setTabVisibility } = useGlobalStore();
+  const { user, setTabVisibility, language } = useGlobalStore();
   const insets = useSafeAreaInsets();
 
   const type = (Array.isArray(params.type) ? params.type[0] : params.type) || "";
@@ -54,6 +229,12 @@ export default function PaymentFailure() {
 
   const paymentMethod = (Array.isArray(params.paymentMethod) ? params.paymentMethod[0] : params.paymentMethod) || "";
   const errorMessage = (Array.isArray(params.message) ? params.message[0] : (params.message || t("paymentFailedMessage"))) || "";
+  const diagnosis = diagnoseDecline(errorMessage);
+
+  const localizedReason = diagnosis ? (t(diagnosis.reasonKey as any) || "") : "";
+  const localizedDetails = diagnosis ? (t(diagnosis.detailsKey as any) || "") : "";
+  const localizedResolution = diagnosis ? (t(diagnosis.resolutionKey as any) || "") : "";
+  const localizedRecommendedTitle = t("decline_recommended_action") || "Recommended Action:";
 
   const [copiedTxn, setCopiedTxn] = useState(false);
   const [copiedOrder, setCopiedOrder] = useState(false);
@@ -374,14 +555,14 @@ export default function PaymentFailure() {
                 </View>
 
                 {/* Transaction ID with Copy Micro-Interaction */}
-                <View style={styles.infoRow}>
+                <View style={styles.infoRowStacked}>
                   <Text style={styles.infoLabel}>{t("transactionId")}</Text>
                   <TouchableOpacity 
                     activeOpacity={0.7}
-                    style={styles.valueCopyRow}
+                    style={styles.valueCopyRowStacked}
                     onPress={() => handleCopy((Array.isArray(params.txnId) ? params.txnId[0] : params.txnId) || (Array.isArray(params.orderId) ? params.orderId[0] : params.orderId) || "", "txn")}
                   >
-                    <Text style={styles.infoValueCopy} numberOfLines={1}>
+                    <Text style={styles.infoValueCopyStacked}>
                       {(Array.isArray(params.txnId) ? params.txnId[0] : params.txnId) || (Array.isArray(params.orderId) ? params.orderId[0] : params.orderId) || "N/A"}
                     </Text>
                     <View style={[styles.copyIconWrapper, copiedTxn && styles.copyIconSuccess]}>
@@ -395,14 +576,14 @@ export default function PaymentFailure() {
                 </View>
 
                 {/* Order ID with Copy Micro-Interaction */}
-                <View style={styles.infoRow}>
+                <View style={styles.infoRowStacked}>
                   <Text style={styles.infoLabel}>{t("orderId")}</Text>
                   <TouchableOpacity 
                     activeOpacity={0.7}
-                    style={styles.valueCopyRow}
+                    style={styles.valueCopyRowStacked}
                     onPress={() => handleCopy(Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || ""), "order")}
                   >
-                    <Text style={styles.infoValueCopy} numberOfLines={1}>
+                    <Text style={styles.infoValueCopyStacked}>
                       {Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || "N/A")}
                     </Text>
                     <View style={[styles.copyIconWrapper, copiedOrder && styles.copyIconSuccess]}>
@@ -431,6 +612,14 @@ export default function PaymentFailure() {
                   </Text>
                 </View>
 
+                {/* Failure Reason */}
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>{t("failureReason") || "Reason"}</Text>
+                  <Text style={[styles.infoValue, { color: theme.colors.error, fontWeight: "600" }]} numberOfLines={1}>
+                    {localizedReason || errorMessage}
+                  </Text>
+                </View>
+
                 {/* Date & Time */}
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>{t("paymentDate") || "Date & Time"}</Text>
@@ -454,7 +643,7 @@ export default function PaymentFailure() {
               activeOpacity={0.8}
             >
               <Ionicons name="logo-whatsapp" size={20} color="#fff" />
-              <Text style={styles.supportButtonText}>{t("contactSupport") || "Contact Support"}</Text>
+              <Text style={styles.supportButtonText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.7}>{t("contactSupport") || "Contact Support"}</Text>
             </TouchableOpacity>
 
             <View style={styles.buttonRow}>
@@ -466,7 +655,7 @@ export default function PaymentFailure() {
                     activeOpacity={0.8}
                   >
                     <Ionicons name="receipt-outline" size={20} color={theme.colors.textDark} />
-                    <Text style={styles.secondaryButtonText}>{(t("backToBills") || "Bills").toUpperCase()}</Text>
+                    <Text style={styles.secondaryButtonText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.7}>{(t("backToBills") || "Bills").toUpperCase()}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.secondaryButton}
@@ -474,7 +663,7 @@ export default function PaymentFailure() {
                     activeOpacity={0.8}
                   >
                     <Ionicons name="home-outline" size={20} color={theme.colors.textDark} />
-                    <Text style={styles.secondaryButtonText}>{t("home").toUpperCase()}</Text>
+                    <Text style={styles.secondaryButtonText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.7}>{t("home").toUpperCase()}</Text>
                   </TouchableOpacity>
                 </>
               ) : (type === "booking" || type === "advance_booking") ? (
@@ -485,7 +674,7 @@ export default function PaymentFailure() {
                     activeOpacity={0.8}
                   >
                     <Ionicons name="time-outline" size={20} color={theme.colors.textDark} />
-                    <Text style={styles.secondaryButtonText}>{(t("bookingHistory") || "History").toUpperCase()}</Text>
+                    <Text style={styles.secondaryButtonText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.7}>{(t("bookingHistory") || "History").toUpperCase()}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.secondaryButton}
@@ -493,7 +682,7 @@ export default function PaymentFailure() {
                     activeOpacity={0.8}
                   >
                     <Ionicons name="home-outline" size={20} color={theme.colors.textDark} />
-                    <Text style={styles.secondaryButtonText}>{t("home").toUpperCase()}</Text>
+                    <Text style={styles.secondaryButtonText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.7}>{t("home").toUpperCase()}</Text>
                   </TouchableOpacity>
                 </>
               ) : (
@@ -504,7 +693,7 @@ export default function PaymentFailure() {
                     activeOpacity={0.8}
                   >
                     <Ionicons name="home-outline" size={20} color={theme.colors.textDark} />
-                    <Text style={styles.secondaryButtonText}>{t("home")}</Text>
+                    <Text style={styles.secondaryButtonText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.7}>{t("home")}</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity
@@ -513,7 +702,7 @@ export default function PaymentFailure() {
                     activeOpacity={0.8}
                   >
                     <Ionicons name="refresh-outline" size={20} color="#fff" />
-                    <Text style={styles.primaryButtonText}>{t("retry")}</Text>
+                    <Text style={styles.primaryButtonText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.7}>{t("retry")}</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -533,7 +722,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "flex-start",
+    justifyContent: "center",
     paddingVertical: 12,
   },
   content: {
@@ -757,6 +946,7 @@ const styles = StyleSheet.create({
     fontSize: rf(15, { minSize: 13, maxSize: 17 }),
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
+    flexShrink: 1,
   },
   buttonRow: {
     flexDirection: "row",
@@ -783,6 +973,7 @@ const styles = StyleSheet.create({
     fontSize: rf(15, { minSize: 13, maxSize: 17 }),
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
+    flexShrink: 1,
   },
   secondaryButton: {
     flex: 1,
@@ -801,6 +992,7 @@ const styles = StyleSheet.create({
     fontSize: rf(15, { minSize: 13, maxSize: 17 }),
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
+    flexShrink: 1,
   },
   jaggedContainer: {
     position: "absolute",
@@ -823,5 +1015,75 @@ const styles = StyleSheet.create({
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
     borderBottomColor: "#f8f9ff", // Triangle body is background color, biting into white card
+  },
+  diagnosisCard: {
+    backgroundColor: "#FEF2F2", // soft red
+    borderRadius: rb(12),
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+    padding: wp(4),
+    marginTop: 15,
+  },
+  diagnosisHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  diagnosisTitle: {
+    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+    fontWeight: "700",
+    color: "#991B1B", // dark red
+    fontFamily: "Inter_600SemiBold",
+  },
+  diagnosisDescription: {
+    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
+    color: "#7F1D1D", // medium dark red
+    lineHeight: rf(17),
+    fontFamily: "Inter_400Regular",
+  },
+  diagnosisDivider: {
+    height: 1,
+    backgroundColor: "#FEE2E2",
+    marginVertical: 10,
+  },
+  resolutionContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  resolutionTitle: {
+    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
+    fontWeight: "700",
+    color: "#92400E", // dark amber
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 2,
+  },
+  resolutionText: {
+    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
+    color: "#78350F", // medium dark amber
+    lineHeight: rf(17),
+    fontFamily: "Inter_400Regular",
+  },
+  infoRowStacked: {
+    flexDirection: "column",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+    gap: 4,
+    width: "100%",
+  },
+  valueCopyRowStacked: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    alignSelf: "flex-end",
+    gap: 8,
+    width: "100%",
+  },
+  infoValueCopyStacked: {
+    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+    color: "#1a202c",
+    fontWeight: "600",
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "right",
+    flexShrink: 1,
   },
 });

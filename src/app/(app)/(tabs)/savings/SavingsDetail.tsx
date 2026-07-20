@@ -27,7 +27,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
 import api, { paymentAPI } from "@/services/api";
-import { initiatePayment, initializeSocket } from "@/utils/paymentUtils";
+import { initiatePayment } from "@/utils/paymentUtils";
 import { saveFileToPublicDirectory } from "@/utils/fileUtils";
 import { moderateScale } from "react-native-size-matters";
 import SupportContactCard from "@/components/SupportContactCard";
@@ -46,7 +46,7 @@ import {
   generatePaymentReceiptHTML,
   PaymentReceiptData,
 } from "@/templates/html";
-import { Socket } from "socket.io-client";
+
 import { CommonActions, useNavigationState } from "@react-navigation/native";
 import { formatGoldWeight } from "@/utils/imageUtils";
 import { theme } from "@/constants/theme";
@@ -119,7 +119,7 @@ const SavingsDetail = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [socket, setSocket] = useState<Socket | null>(null);
+
   const { height, width } = useWindowDimensions();
   const { bottom, top } = useSafeAreaInsets();
   const bottomPadding = height * 0.1 + bottom;
@@ -417,14 +417,7 @@ const SavingsDetail = () => {
     }
   };
 
-  // Initialize socket connection
-  useEffect(() => {
-    const socketInstance = initializeSocket();
-    setSocket(socketInstance);
-    return () => {
-      socketInstance.disconnect();
-    };
-  }, []);
+
 
   const PaymentNow = async () => {
     if (!user) {

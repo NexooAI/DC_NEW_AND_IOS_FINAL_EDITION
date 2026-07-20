@@ -8,5 +8,9 @@ export * from './colors';
 // Export theme
 export { theme } from './theme';
 
+// Export appConfig
+export { default as APP_CONFIG } from './appConfig';
+export * from './appConfig';
+
 // Export color types
 export * from './colors.d';

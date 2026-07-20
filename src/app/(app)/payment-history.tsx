@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '@/constants/theme';
 import COLORS from '@/constants/colors';
@@ -37,7 +37,7 @@ if (
 }
 
 const { wp, hp, rf } = responsiveUtils;
-const QUATERNARY_COLOR = theme.colors.quaternary || '#F2E6D2';
+const QUATERNARY_COLOR = '#FFF8E8';
 
 interface TransactionItem {
   id: number | string;
@@ -67,6 +67,7 @@ interface TransactionItem {
 
 export default function PaymentHistoryScreen() {
   const router = useRouter();
+  const { from } = useLocalSearchParams();
   const { t } = useTranslation();
   const { user } = useGlobalStore();
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
@@ -252,6 +253,16 @@ export default function PaymentHistoryScreen() {
     }
   };
 
+  const handleBack = () => {
+    if (from === 'profile') {
+      router.replace('/(app)/(tabs)/profile');
+    } else if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(app)/(tabs)/profile');
+    }
+  };
+
   if (!userId) {
     return (
       <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}>
@@ -260,7 +271,7 @@ export default function PaymentHistoryScreen() {
         <LinearGradient colors={[theme.colors.quaternary, theme.colors.quaternary]} style={StyleSheet.absoluteFill} />
 
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
           </TouchableOpacity>
           <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
@@ -355,10 +366,9 @@ export default function PaymentHistoryScreen() {
     <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
-      <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
         <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>

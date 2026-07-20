@@ -11,6 +11,7 @@ import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
 import useGlobalStore from "@/store/global.store";
 import { BlurView } from "expo-blur";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 export default function TabsLayout() {
   const { t } = useTranslation();
@@ -18,6 +19,7 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const segments = useSegments();
   const router = useRouter();
+  const { isVisible } = useAppVisibility();
 
   // Check if we're on the schemes page
   const fullPath = segments.join("/");
@@ -84,6 +86,7 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="home"
             options={{
+              href: isVisible("showTabHome") ? undefined : null,
               title: t("home") || "Home",
               tabBarIcon: ({ color, size, focused }) => {
                 // Make home tab inactive when on schemes page
@@ -113,6 +116,7 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="savings"
             options={{
+              href: isVisible("showTabSavings") ? undefined : null,
               title: t("schemes.title") || "Schemes",
               tabBarIcon: ({ color, size, focused }) => (
                 <Ionicons
@@ -157,7 +161,7 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="quick_join"
             options={{
-              href: null,
+              href: isVisible("showTabQuickJoin") ? undefined : null,
               title: t("quickJoin") || "Quick Join",
               tabBarLabel: () => null,
               headerShown: false,
@@ -200,6 +204,7 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="rewards"
             options={{
+              href: isVisible("showTabRewards") ? undefined : null,
               title: t("rewards") || "Rewards",
               tabBarIcon: ({ color, size, focused }) => {
                 return (
@@ -239,6 +244,7 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="profile"
             options={{
+              href: isVisible("showTabProfile") ? undefined : null,
               title: t("profile") || "Profile",
               tabBarIcon: ({ color, size, focused }) => (
                 <Ionicons

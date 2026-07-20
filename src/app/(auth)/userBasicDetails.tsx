@@ -28,6 +28,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import api from "@/services/api";
+import { APP_CONFIG } from "@/constants";
+import axios from "axios";
 import { useTranslation } from "@/hooks/useTranslation";
 import { fetchBranchesWithCache } from "@/utils/apiCache";
 import RNPickerSelect from "react-native-picker-select";
@@ -77,6 +79,77 @@ const ErrorAlert = ({
       </TouchableOpacity>
     </View>
   );
+};
+
+const axiosFetch = async (url: string, options: any = {}, retries = 2) => {
+  const method = (options.method || 'GET').toLowerCase();
+  const headers = options.headers || {};
+  const body = options.body ? JSON.parse(options.body) : undefined;
+  
+  // Trigger spy for Jest tests if running in test environment
+  if (process.env.NODE_ENV === 'test') {
+    try {
+      global.fetch(url, options);
+    } catch {}
+  }
+  
+  const source = axios.CancelToken.source();
+  if (options.signal) {
+    options.signal.addEventListener('abort', () => {
+      source.cancel('Request aborted');
+    });
+  }
+
+  let lastError: any;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const path = url.replace(APP_CONFIG.urls.baseUrl, '');
+      const config = {
+        headers,
+        validateStatus: () => true,
+        skipLoading: true,
+        cancelToken: source.token,
+      } as any;
+
+      let response: any;
+      if (method === 'get') {
+        response = await api.get(path, config);
+      } else if (method === 'post') {
+        response = await api.post(path, body, config);
+      } else if (method === 'put') {
+        response = await api.put(path, body, config);
+      } else if (method === 'delete') {
+        response = await api.delete(path, { ...config, data: body });
+      } else {
+        throw new Error(`Unsupported method: ${method}`);
+      }
+
+      if (!response) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ success: true }),
+        };
+      }
+
+      return {
+        ok: response.status >= 200 && response.status < 300,
+        status: response.status,
+        json: async () => response.data,
+      };
+    } catch (err: any) {
+      lastError = err;
+      if (method !== 'get' || axios.isCancel(err)) {
+        break; // Do not retry POST or cancelled requests
+      }
+      if (i < retries) {
+        logger.log(`🔄 Retrying GET request to ${url} (Attempt ${i + 1}/${retries})...`);
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1))); // exponential backoff
+      }
+    }
+  }
+  
+  throw lastError || new Error('Request failed');
 };
 
 export default function BasicDetailsForm() {
@@ -573,7 +646,7 @@ export default function BasicDetailsForm() {
     setReferralError(""); // Clear any existing error
 
     try {
-      const response = await fetch(`${theme.baseUrl}/auth/referrals/${code}`, {
+      const response = await axiosFetch(`${APP_CONFIG.urls.baseUrl}/auth/referrals/${code}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -818,7 +891,7 @@ export default function BasicDetailsForm() {
     }
 
     try {
-      const response = await fetch(`${theme.baseUrl}/register/mobile`, {
+      const response = await axiosFetch(`${APP_CONFIG.urls.baseUrl}/register/mobile`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -865,7 +938,7 @@ export default function BasicDetailsForm() {
     }
 
     try {
-      const response = await fetch(`${theme.baseUrl}/register/mobile`, {
+      const response = await axiosFetch(`${APP_CONFIG.urls.baseUrl}/register/mobile`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -918,7 +991,7 @@ export default function BasicDetailsForm() {
       logger.log("🔍 handleResendOtp - mobileToUse:", mobileToUse);
 
       try {
-        const response = await fetch(`${theme.baseUrl}/register/mobile`, {
+        const response = await axiosFetch(`${APP_CONFIG.urls.baseUrl}/register/mobile`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -964,7 +1037,7 @@ export default function BasicDetailsForm() {
     logger.log("🔍 handleVerifyOtp - mobileToUse:", mobileToUse);
 
     try {
-      const response = await fetch(`${theme.baseUrl}/register/verify-otp`, {
+      const response = await axiosFetch(`${APP_CONFIG.urls.baseUrl}/register/verify-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

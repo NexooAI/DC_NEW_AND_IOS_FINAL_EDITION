@@ -69,7 +69,11 @@ const MpinInput: React.FC<MpinInputProps> = ({
           ref={(el) => {
             if (el) inputRefs.current[index] = el;
           }}
-          style={[styles.input, inputStyle]}
+          style={[
+            styles.input,
+            pin ? styles.inputFilled : styles.inputEmpty,
+            inputStyle,
+          ]}
           keyboardType="numeric"
           maxLength={1}
           secureTextEntry={secureTextEntry}
@@ -88,16 +92,45 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 20,
+    width: "100%",
+    maxWidth: 320,
+    alignSelf: "center",
   },
   input: {
-    width: 50,
-    height: 50,
-    borderWidth: 1,
-    borderColor: "#ffffff",
-    borderRadius: 8,
+    width: 58,
+    height: 58,
+    borderWidth: 2,
+    borderRadius: 15,
     fontSize: 24,
-    color: "#000000",
+    fontWeight: "bold",
+    color: "#1a1a1a",
+    textAlign: "center",
+    marginHorizontal: 4,
+    // Soft shadow
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  inputEmpty: {
+    borderColor: "#E2E8F0",
+    backgroundColor: "#F8FAFC",
+  },
+  inputFilled: {
+    borderColor: "#D4AF37", // Gold
     backgroundColor: "#ffffff",
+    shadowColor: "#D4AF37", // Gold shadow
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 5,
   },
 });
 

@@ -40,6 +40,7 @@ export default function AppLayout() {
     segments.includes("tickets") ||
     segments.includes("lucky_draw") ||
     segments.includes("old_gold") ||
+    segments.includes("joinAdvGold") ||
     segments.includes("notifications") ||
     segments.includes("savings") ||
     segments.includes("payment-history");
@@ -101,6 +102,36 @@ export default function AppLayout() {
                 drawerLabel: "Lucky Draw",
                 title: "Lucky Draw",
                 drawerItemStyle: { display: 'none' } // Hide from drawer menu but keep as valid route
+              }}
+            />
+            <Drawer.Screen
+              name="gold_advance"
+              options={{
+                lazy: true,
+                freezeOnBlur: false,
+                drawerLabel: "Advance Booking",
+                title: "Advance Booking",
+                drawerItemStyle: { display: 'none' }
+              }}
+            />
+            <Drawer.Screen
+              name="bill_payment"
+              options={{
+                lazy: true,
+                freezeOnBlur: false,
+                drawerLabel: "Bill Payment",
+                title: "Bill Payment",
+                drawerItemStyle: { display: 'none' }
+              }}
+            />
+            <Drawer.Screen
+              name="old_gold"
+              options={{
+                lazy: true,
+                freezeOnBlur: false,
+                drawerLabel: "Old Gold",
+                title: "Old Gold",
+                drawerItemStyle: { display: 'none' }
               }}
             />
           </Drawer>

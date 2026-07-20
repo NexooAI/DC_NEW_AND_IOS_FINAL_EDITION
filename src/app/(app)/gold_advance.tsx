@@ -339,13 +339,7 @@ export default function GoldAdvanceScreen() {
         <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-            } else {
-              router.replace('/(app)/dashboard');
-            }
-          }} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.navigate('/(app)/(tabs)/home')} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
           </TouchableOpacity>
           <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
@@ -373,11 +367,7 @@ export default function GoldAdvanceScreen() {
       {/* Custom Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => {
-          if (router.canGoBack()) {
-            router.back();
-          } else {
-            router.replace('/(app)/dashboard');
-          }
+          router.navigate('/(app)/(tabs)/home');
         }} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
         </TouchableOpacity>

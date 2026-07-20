@@ -177,14 +177,14 @@ const CustomModal = ({
     switch (type) {
       case "error":
         return {
-          background: "rgba(133, 1, 17, 0.95)",
-          border: theme.colors.primary,
+          background: COLORS.white,
+          border: "rgba(133, 1, 17, 0.3)",
           icon: "error",
-          iconColor: COLORS.white,
-          textColor: COLORS.white,
-          cancelTextColor: COLORS.white,
-          cancelBg: "rgba(255, 255, 255, 0.1)",
-          cancelBorder: theme.colors.primary,
+          iconColor: COLORS.error,
+          textColor: COLORS.error,
+          cancelTextColor: theme.colors.primary,
+          cancelBg: "rgba(133, 1, 17, 0.05)",
+          cancelBorder: "rgba(133, 1, 17, 0.2)",
         };
       case "success":
         return {
@@ -574,8 +574,21 @@ export default function MpinVerify() {
       }
 
       // Use a simple base64 decode approach
+      const decodeBase64 = (str: string): string => {
+        try {
+          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+          let output = '';
+          str = String(str).replace(/=+$/, '');
+          for (let bc = 0, bs = 0, buffer, idx = 0; (buffer = str.charAt(idx++)); ~buffer && ((bs = bc % 4 ? bs * 64 + buffer : buffer), bc++ % 4) ? (output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6)))) : 0) {
+            buffer = chars.indexOf(buffer);
+          }
+          return output;
+        } catch {
+          return '';
+        }
+      };
       const base64 = tokenParts[1].replace(/-/g, "+").replace(/_/g, "/");
-      const payload = JSON.parse(atob(base64));
+      const payload = JSON.parse(decodeBase64(base64));
       const currentTime = Date.now() / 1000;
 
       // Check if token is expired (with 5 minute buffer)
@@ -852,8 +865,7 @@ export default function MpinVerify() {
         } else {
           showErrorModal(
             t("error"),
-            `${responseMessage || t("incorrectMpin")} (${3 - newAttempts
-            } attempts remaining)`
+            `${responseMessage || t("incorrectMpin")} (${3 - newAttempts} ${t("attemptsRemaining") || "attempts remaining"})`
           );
         }
 
@@ -889,7 +901,7 @@ export default function MpinVerify() {
           const errorMessage = errorData.message || t("incorrectMpin");
           showErrorModal(
             t("error"),
-            `${errorMessage} (${3 - newAttempts} attempts remaining)`
+            `${errorMessage} (${3 - newAttempts} ${t("attemptsRemaining") || "attempts remaining"})`
           );
         }
 
@@ -997,8 +1009,8 @@ export default function MpinVerify() {
                 elevation: 5,
               }}>
                 <Image
-                  source={require("../../../assets/splashscreen_logo.png")}
-                  style={{ width: logoWidth * 1.1, height: 80 }}
+                  source={require("../../../assets/images/logo_trans.png")}
+                  style={{ width: logoWidth * 2, height: logoWidth * 2, aspectRatio: 1 }}
                   resizeMode="contain"
                 />
               </View>
@@ -1016,7 +1028,7 @@ export default function MpinVerify() {
 
   return (
     <View
-      style={[styles.backgroundImage, { backgroundColor: "#FCF9F6" }]}
+      style={[styles.backgroundImage, { backgroundColor: theme.colors.primary }]}
     >
       <StatusBar barStyle="light-content" backgroundColor="#850111" />
       <LinearGradient
@@ -1032,7 +1044,7 @@ export default function MpinVerify() {
           top: 0,
           left: 0,
           right: 0,
-          height: hp(39),
+          height: Platform.OS === 'ios' ? hp(35) : hp(30),
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 6 },
           shadowOpacity: 0.22,
@@ -1073,23 +1085,22 @@ export default function MpinVerify() {
           <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
             <View style={styles.container}>
               <View
-                style={[
-                  styles.logoContainer,
-                  {
-                    paddingTop: Platform.OS === "ios" ? insets.top + (isSmallScreen ? 4 : 8) : 55,
-                    marginBottom: spacing.sm,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  },
-                ]}
+                style={{
+                  height: Platform.OS === 'ios' ? hp(35) : hp(30),
+                  paddingTop: insets.top,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  width: "100%",
+                }}
               >
                 <Image
-                  source={require("../../../assets/splashscreen_logo.png")}
+                  source={require("../../../assets/images/logo_trans.png")}
                   style={[
                     styles.logo,
                     {
-                      width: wp(78),
-                      height: hp(28),
+                      width: 250,
+                      height: 250,
+                      aspectRatio: 1,
                     },
                   ]}
                   resizeMode="contain"

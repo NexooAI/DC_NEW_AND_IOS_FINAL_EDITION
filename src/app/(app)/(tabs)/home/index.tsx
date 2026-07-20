@@ -49,6 +49,7 @@ import api, { offersAPI } from "@/services/api";
 import NetInfo from "@react-native-community/netinfo";
 import { ScaledSheet, moderateScale } from "react-native-size-matters";
 import { theme } from "@/constants/theme";
+import { APP_CONFIG } from "@/constants";
 import { COLORS } from "src/constants/colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import FlashBanner from "@/components/FlashBanner";
@@ -462,13 +463,13 @@ interface BannerCardProps {
   item: Banner;
   router: ReturnType<typeof useRouter>;
 }
-const BannerCard: React.FC<BannerCardProps> = ({ item, router }) => {
+const BannerCard: React.FC<BannerCardProps> = React.memo(({ item, router }) => {
   const { t } = useTranslation();
   const joinNowScale = useRef(new Animated.Value(1)).current;
   const { screenWidth } = useResponsiveLayout();
 
   // Create dynamic styles for BannerCard
-  const bannerCardStyles = StyleSheet.create({
+  const bannerCardStyles = useMemo(() => StyleSheet.create({
     bannerCard: {
       backgroundColor: COLORS.white,
       borderRadius: 20,
@@ -489,7 +490,7 @@ const BannerCard: React.FC<BannerCardProps> = ({ item, router }) => {
       height: 200,
       borderRadius: 20,
     },
-  });
+  }), [screenWidth]);
 
   useEffect(() => {
     const pulse = Animated.loop(
@@ -567,7 +568,7 @@ const BannerCard: React.FC<BannerCardProps> = ({ item, router }) => {
       </View>
     </View>
   );
-};
+});
 
 // Floating Chat Button moved to global layout
 
@@ -1215,7 +1216,7 @@ export default function Home() {
                 poster.image && poster.image.startsWith("http")
                   ? poster.image
                   : poster.image
-                    ? `${theme.baseUrl}${poster.image}`
+                    ? `${APP_CONFIG.urls.baseUrl}${poster.image}`
                     : "",
               title: poster.title || "",
             }));
@@ -1386,7 +1387,7 @@ export default function Home() {
                 {
                   text: t("cancel") || "Cancel",
                   style: "cancel",
-                  onPress: () => {},
+                  onPress: () => { },
                 },
                 {
                   text: t("exitApp") || "Exit",
@@ -1434,7 +1435,7 @@ export default function Home() {
                 image: poster.image && poster.image.startsWith("http")
                   ? poster.image
                   : poster.image
-                    ? `${theme.baseUrl}${poster.image}`
+                    ? `${APP_CONFIG.urls.baseUrl}${poster.image}`
                     : "",
                 title: poster.title || "",
               })));
@@ -2691,19 +2692,7 @@ export default function Home() {
               )}
             </TouchableOpacity>
             <View style={styles.headerNameContainer}>
-              <ResponsiveText
-                variant="caption"
-                size="xs"
-                weight="normal"
-                color={theme.colors.primary}
-                allowWrap={false}
-                maxLines={1}
-                adjustsFontSizeToFit={true}
-                minimumFontScale={0.7}
-                style={styles.headerWelcomeText}
-              >
-                {t("welcomeBack")}
-              </ResponsiveText>
+
               <ResponsiveText
                 variant="body"
                 size="md"
@@ -3340,6 +3329,68 @@ export default function Home() {
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
+
+              {/* Dynamic Action Cards (Gold Advance, Bill Payment, Old Gold) */}
+              {(isVisible("showGoldAdvance") || isVisible("showBillPayment") || isVisible("showOldGold")) && (
+                <View style={{
+                  flexDirection: "row",
+                  paddingHorizontal: moderateScale(16),
+                  paddingVertical: moderateScale(8),
+                  gap: moderateScale(10),
+                  width: "100%",
+                }}>
+                  {isVisible("showGoldAdvance") && (
+                    <TouchableOpacity
+                      onPress={() => router.push("/(app)/gold_advance")}
+                      activeOpacity={0.8}
+                      style={{ flex: 1 }}
+                    >
+                      <View style={styles.actionCard}>
+                        <View style={styles.actionCardIconContainer}>
+                          <Ionicons name="calendar-outline" size={deviceScale(20)} color={theme.colors.primary} />
+                        </View>
+                        <Text style={styles.actionCardText} numberOfLines={2}>
+                          {t("advanceBooking") || "Advance Booking"}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+
+                  {isVisible("showBillPayment") && (
+                    <TouchableOpacity
+                      onPress={() => router.push("/(app)/bill_payment")}
+                      activeOpacity={0.8}
+                      style={{ flex: 1 }}
+                    >
+                      <View style={styles.actionCard}>
+                        <View style={styles.actionCardIconContainer}>
+                          <Ionicons name="receipt-outline" size={deviceScale(20)} color={theme.colors.primary} />
+                        </View>
+                        <Text style={styles.actionCardText} numberOfLines={2}>
+                          {t("billPayments") || "Bill Payment"}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+
+                  {isVisible("showOldGold") && (
+                    <TouchableOpacity
+                      onPress={() => router.push("/(app)/old_gold")}
+                      activeOpacity={0.8}
+                      style={{ flex: 1 }}
+                    >
+                      <View style={styles.actionCard}>
+                        <View style={styles.actionCardIconContainer}>
+                          <Ionicons name="repeat-outline" size={deviceScale(20)} color={theme.colors.primary} />
+                        </View>
+                        <Text style={styles.actionCardText} numberOfLines={2}>
+                          {t("oldGoldDeposits") || "Old Gold Deposit"}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
 
               {/* Support Contact Card - Conditionally rendered based on API */}
 
@@ -5452,6 +5503,37 @@ const styles = StyleSheet.create({
   },
   floatingPillClose: {
     paddingLeft: 4,
+  },
+  actionCard: {
+    backgroundColor: "#fff",
+    borderRadius: rb(12),
+    padding: rp(10),
+    height: rp(105),
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "rgba(212, 175, 55, 0.2)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  actionCardIconContainer: {
+    width: rp(38),
+    height: rp(38),
+    borderRadius: rb(19),
+    backgroundColor: "#FFF8E7",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: rp(4),
+  },
+  actionCardText: {
+    color: "#1a1a1a",
+    fontSize: rf(9, { minSize: 8, maxSize: 11 }),
+    fontWeight: "800",
+    textAlign: "center",
+    paddingHorizontal: rp(2),
   },
 });
 // Skeleton loading styles

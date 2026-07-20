@@ -30,6 +30,7 @@ import apiClient, { billsAPI } from '@/services/api';
 import useGlobalStore from '@/store/global.store';
 import { logAppEvent } from '@/services/appEventService';
 import { saveFileToPublicDirectory } from '@/utils/fileUtils';
+import { useTranslation } from '@/hooks/useTranslation';
 import { formatDate } from '@/utils/dateTimeUtils';
 
 const { wp, hp, rf } = responsiveUtils;
@@ -155,6 +156,7 @@ const getApiErrorMessage = (error: any) => {
 
 export default function BillPayment() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { user } = useGlobalStore();
   const [activeTab, setActiveTab] = useState<'all' | 'closed'>('all');
   const [detailModalVisible, setDetailModalVisible] = useState(false);
@@ -498,7 +500,7 @@ export default function BillPayment() {
       <LinearGradient colors={[theme.colors.quaternary, theme.colors.quaternary]} style={StyleSheet.absoluteFill} />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.navigate('/(app)/(tabs)/home')} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
         <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.primary}>
