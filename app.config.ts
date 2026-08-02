@@ -2,21 +2,25 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 import { themeConfig } from './src/constants/theme.config';
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-    // Dynamically choose bundle identifier, project ID, and owner based on build platform target
-    const isIos = process.env.EAS_BUILD_PLATFORM === 'ios' ||
-        process.env.EXPO_PLATFORM === 'ios' ||
-        process.env.PLATFORM === 'ios' ||
-        (process.argv && process.argv.some(arg => {
-            const lower = arg.toLowerCase();
-            return lower === 'ios' || lower === '--platform=ios' || lower === '-p=ios';
-        }));
-
+    // =========================================================================
+    // 🍎 iOS BUILD CONFIGURATION (ACTIVE DEFAULT FOR iOS BUILD)
+    // =========================================================================
     const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "";
-    const bundleIdentifier = isIos ? "com.dcjewellers.dcjewellers" : "com.nexooai.dcjewellery";
-    const projectId = isIos ? "07310377-0452-4d15-8e38-d42462be6fd8" : "9af1745a-105c-44f9-9e53-a111bc6ed9ce";
-    const owner = isIos ? "dcjewellers" : "sudhakarg";
+    const bundleIdentifier = "com.dcjewellers.dcjewellers";
+    const projectId = "07310377-0452-4d15-8e38-d42462be6fd8";
+    const owner = "dcjewellers";
+    const version = "2.0.2";
 
-    const version = isIos ? "2.0.1" : "3.0.6";
+    /* 
+    // =========================================================================
+    // 🤖 ANDROID BUILD CONFIGURATION (Uncomment this block when building Android)
+    // =========================================================================
+    const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "";
+    const bundleIdentifier = "com.nexooai.dcjewellery";
+    const projectId = "9af1745a-105c-44f9-9e53-a111bc6ed9ce"
+    const owner =  "sudhakarg"
+    const version = "3.0.7";
+    */
 
     return {
         ...config,
@@ -43,9 +47,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
 
         android: {
-            package: bundleIdentifier,
+            package: "com.nexooai.dcjewellery",
             googleServicesFile: "./google-services.json",
-            versionCode: 11,
+            versionCode: 12,
 
             splash: {
                 image: "./assets/images/playstore-icon.png",
@@ -87,7 +91,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                 "applinks:dcjewellers.page.link"
             ],
             googleServicesFile: "./GoogleService-Info.plist",
-            buildNumber: "1",
+            buildNumber: "2",
             jsEngine: "hermes",
             config: {
                 googleMapsApiKey: mapsApiKey,

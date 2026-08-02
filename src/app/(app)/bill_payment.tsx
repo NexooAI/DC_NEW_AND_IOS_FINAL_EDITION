@@ -114,6 +114,13 @@ const getStatusMeta = (status: BillStatus) => {
         color: theme.colors.primary,
         backgroundColor: 'rgba(133,1,17,0.1)',
       };
+    case 'CANCELLED':
+      return {
+        label: 'Cancelled',
+        icon: 'close-circle-outline' as const,
+        color: '#C62828',
+        backgroundColor: 'rgba(198,40,40,0.1)',
+      };
     default:
       return {
         label: String(status || 'Pending'),
@@ -328,7 +335,7 @@ export default function BillPayment() {
 
   const displayedBills = useMemo(() => {
     if (activeTab === 'closed') {
-      return bills.filter((bill) => bill.status === 'PAID' || bill.status === 'EXPIRED');
+      return bills.filter((bill) => bill.status === 'PAID' || bill.status === 'EXPIRED' || bill.status === 'CANCELLED');
     }
     return bills;
   }, [activeTab, bills]);
