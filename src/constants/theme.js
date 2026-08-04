@@ -3,10 +3,10 @@
 const theme = {
   colors: {
     // Primary brand colors
-    primary: "#850111",
-    secondary: "#ffc90c", //
+    primary: "#a3203a",
+    secondary: "#E5A93C",
     tertiary: "#F2B8C6",
-    quaternary: "#F2E6D2",
+    quaternary: "#cccccc",
 
     // Background colors
     background: "#ffffff",
@@ -51,7 +51,7 @@ const theme = {
     inputBackground: "rgba(255, 255, 255, 0.2)",
 
     // Link colors
-    link: "#ffc90c",
+    link: "#E5A93C",
 
     // Neutral colors
     white: "#ffffff",
@@ -109,7 +109,7 @@ const theme = {
     // Shadow colors
     shadowBlack: "#000",
     shadowGold: "#ffd700",
-    shadowPrimary: "#850111",
+    shadowPrimary: "#a3203a",
     shadowSuccess: "#4CAF50",
 
     // Specific UI colors
@@ -119,10 +119,10 @@ const theme = {
     statusCompleted: "#4CAF50",
 
     // Gradient colors
-    gradientPrimary: ["#850111", "#B8860B", "#DAA520"],
-    gradientPrimaryDark: ["#850111", "#5a000b", "#2e0406"],
+    gradientPrimary: ["#a3203a", "#B8860B", "#DAA520"],
+    gradientPrimaryDark: ["#a3203a", "#5a000b", "#2e0406"],
     gradientSuccess: ["#4CAF50", "#45a049", "#3d8b40"],
-    gradientGold: ["#ffc90c", "#ffd700"],
+    gradientGold: ["#E5A93C", "#ffd700"],
     gradientRed: ["#B31313", "#8B0000"],
     gradientBlue: ["#1a1a2e", "#16213e", "#0f3460"],
     gradientSilver: ["#C0C0C0", "#A8A8A8", "#808080"],
@@ -152,9 +152,9 @@ const theme = {
     bgBlackLight: "rgba(0, 0, 0, 0.1)",
     bgBlackMedium: "rgba(0, 0, 0, 0.2)",
     bgBlackHeavy: "rgba(0, 0, 0, 0.5)",
-    bgPrimaryLight: "rgba(133, 1, 17, 0.1)",
-    bgPrimaryMedium: "rgba(133, 1, 17, 0.15)",
-    bgPrimaryHeavy: "rgba(133, 1, 17, 0.85)",
+    bgPrimaryLight: "rgba(163, 32, 58, 0.1)",
+    bgPrimaryMedium: "rgba(163, 32, 58, 0.15)",
+    bgPrimaryHeavy: "rgba(163, 32, 58, 0.85)",
     bgGoldLight: "rgba(255, 215, 0, 0.1)",
     bgGoldMedium: "rgba(255, 215, 0, 0.2)",
     bgGoldHeavy: "rgba(255, 215, 0, 0.25)",
@@ -171,7 +171,7 @@ const theme = {
     tabBackgroundHeavy: "#f7f7f7",
 
     // Icon colors
-    iconPrimary: "#850111",
+    iconPrimary: "#a3203a",
     iconSecondary: "#ffd700",
     iconSuccess: "#4CAF50",
     iconError: "#ff4444",
@@ -183,8 +183,8 @@ const theme = {
     iconBrown: "#8B4513",
 
     // Button colors
-    buttonPrimary: "#850111",
-    buttonSecondary: "#ffc90c",
+    buttonPrimary: "#a3203a",
+    buttonSecondary: "#E5A93C",
     buttonSuccess: "#4CAF50",
     buttonError: "#ff4444",
     buttonWarning: "#FF9800",
@@ -321,7 +321,7 @@ const theme = {
       muted: "#cccccc",
       // Additional border colors found
       bottom: "#f0f0f0",
-      left: "#850111",
+      left: "#a3203a",
       top: "#f0f0f0",
     },
 
@@ -329,7 +329,7 @@ const theme = {
     shadow: {
       black: "#000",
       gold: "#ffd700",
-      primary: "#850111",
+      primary: "#a3203a",
       success: "#4CAF50",
     },
 
@@ -352,8 +352,8 @@ const theme = {
         backgroundHeavy: "#f7f7f7",
       },
       button: {
-        primary: "#850111",
-        secondary: "#ffc90c",
+        primary: "#a3203a",
+        secondary: "#E5A93C",
         success: "#4CAF50",
         error: "#ff4444",
         warning: "#FF9800",
@@ -370,7 +370,7 @@ const theme = {
         borderLight: "#f0f0f0",
       },
       icon: {
-        primary: "#850111",
+        primary: "#a3203a",
         secondary: "#ffd700",
         success: "#4CAF50",
         error: "#ff4444",
@@ -396,7 +396,7 @@ const theme = {
       text: "#ffffff",
     },
     secondary: {
-      background: "#ffc90c",
+      background: "#E5A93C",
       text: "#000000",
     },
     success: {
@@ -413,12 +413,12 @@ const theme = {
     },
     outline: {
       background: "transparent",
-      text: "#850111",
-      border: "#850111",
+      text: "#a3203a",
+      border: "#a3203a",
     },
     ghost: {
       background: "transparent",
-      text: "#850111",
+      text: "#a3203a",
     },
 
     // Button sizes
@@ -586,7 +586,7 @@ const theme = {
   },
 
   constants: {
-    customerName: "DC Jewellers",
+    customerName: "Kanisaa Jewellery",
     address: "Road Fathima Nagar, Mission Quarters, Anchery, Thrissur, Kerala 680005",
     mobile: "+919061803999",
     whatsapp: "+919061803999",
@@ -597,7 +597,7 @@ const theme = {
     providerName: "Agni",
     providerUrl: "https://agni.com",
   },
-  baseUrl: "https://api.prod.dcjewellers.org",
+  baseUrl: "https://api.prod.kanisaajewellery.com",
   // baseUrl: "https://nexooai.ramcarmotor.com",
   youtubeUrl: "https://youtu.be/8RAhdn5b9Bw",
 };

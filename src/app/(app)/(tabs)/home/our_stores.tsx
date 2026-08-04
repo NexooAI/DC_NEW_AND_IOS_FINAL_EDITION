@@ -118,12 +118,12 @@ const StoreLocator = () => {
       const mappedStores: Store[] = branchData.map((branch: any) => {
         const locationUrl = branch.location || branch.location_url || "";
         const parsedCoords = parseCoordinates(locationUrl);
-        const lat = parseFloat(branch.latitude) || parsedCoords?.latitude || 10.519306421007363;
-        const lng = parseFloat(branch.longitude) || parsedCoords?.longitude || 76.22348998262478;
+        const lat = parseFloat(branch.latitude) || parsedCoords?.latitude || 9.366929277928774;
+        const lng = parseFloat(branch.longitude) || parsedCoords?.longitude || 77.67567955202254;
 
         return {
           id: branch.id,
-          name: branch.branch_name || "DC Jewellers",
+          name: branch.branch_name || "Kanisaa Jewellers",
           latitude: lat,
           longitude: lng,
           address: branch.address || "",

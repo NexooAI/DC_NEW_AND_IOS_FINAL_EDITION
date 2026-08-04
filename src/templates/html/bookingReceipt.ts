@@ -19,6 +19,7 @@ export interface BookingReceiptData {
     userMobile?: string;
     userEmail?: string;
     convertedBillId?: number | string;
+    logoBase64?: string;
 }
 
 export const generateBookingReceiptHTML = (data: BookingReceiptData): string => {
@@ -35,7 +36,8 @@ export const generateBookingReceiptHTML = (data: BookingReceiptData): string => 
         userName,
         userMobile,
         userEmail,
-        convertedBillId
+        convertedBillId,
+        logoBase64
     } = data;
 
     const formattedDate = (val: string) => {
@@ -130,7 +132,7 @@ export const generateBookingReceiptHTML = (data: BookingReceiptData): string => 
                 ${theme.constants.customerName}
             </div>
             <div>
-                <img src="https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp" alt="Logo" style="max-width:90px; height:auto;">
+                <img src="${logoBase64 || 'https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp'}" alt="Logo" style="max-width:90px; height:auto;">
             </div>
         </div>
 

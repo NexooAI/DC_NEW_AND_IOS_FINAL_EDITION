@@ -33,6 +33,7 @@ import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 import * as WebBrowser from 'expo-web-browser';
 import { generateBookingReceiptHTML, BookingReceiptData } from '@/templates/html';
+import { loadLogoAsBase64 } from '@/utils/imageUtils';
 
 const { wp, hp, rf } = responsiveUtils;
 const QUATERNARY_COLOR = theme.colors.quaternary || '#F2E6D2';
@@ -75,6 +76,7 @@ export default function BookingHistory() {
   const sanitizeFileName = (str: string) => str.replace(/[^a-zA-Z0-9]/g, '_');
 
   const handleShareBookingReceipt = async (booking: BookingItem) => {
+    const logoBase64 = await loadLogoAsBase64();
     const receiptData: BookingReceiptData = {
       bookingId: booking.id,
       goldWeight: booking.goldWeight,
@@ -89,6 +91,7 @@ export default function BookingHistory() {
       userMobile: user?.mobile?.toString(),
       userEmail: user?.email,
       convertedBillId: booking.convertedBillId,
+      logoBase64,
     };
 
     try {
@@ -127,6 +130,7 @@ export default function BookingHistory() {
   };
 
   const handleDownloadBookingReceipt = async (booking: BookingItem) => {
+    const logoBase64 = await loadLogoAsBase64();
     const receiptData: BookingReceiptData = {
       bookingId: booking.id,
       goldWeight: booking.goldWeight,
@@ -141,6 +145,7 @@ export default function BookingHistory() {
       userMobile: user?.mobile?.toString(),
       userEmail: user?.email,
       convertedBillId: booking.convertedBillId,
+      logoBase64,
     };
 
     try {

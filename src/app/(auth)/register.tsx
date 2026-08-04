@@ -20,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter, useLocalSearchParams } from "expo-router";
 import PhoneInput from "@/components/PhoneInputs";
 import { theme } from "@/constants/theme";
+import { getImageSource } from "@/utils/imageUtils";
 import { COLORS } from "@/constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, Feather } from "@expo/vector-icons";
@@ -454,7 +455,7 @@ export default function Register() {
   return (
     <SafeAreaView style={registerStyles.container}>
       <ImageBackground
-        source={{ uri: theme.image.bg_image }}
+        source={getImageSource(theme.image.bg_image)}
         style={registerStyles.backgroundImage}
       >
         {/* Dark overlay for background */}

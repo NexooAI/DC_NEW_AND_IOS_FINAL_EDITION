@@ -28,6 +28,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as Print from "expo-print";
 import { generatePaymentReceiptHTML, PaymentReceiptData } from "@/templates/html";
+import { loadLogoAsBase64 } from "@/utils/imageUtils";
 import { investmentAPI, billsAPI } from "@/services/api";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -67,11 +68,11 @@ export default function PaymentSuccess() {
     }, 1000);
     return () => clearTimeout(ratingTimer);
   }, []);
-  
+
   useEffect(() => {
     logger.log("Payment Success Params:", params);
   }, [params]);
-  
+
   const { user, setTabVisibility } = useGlobalStore();
 
   const [fetchedInvestment, setFetchedInvestment] = useState<any>(null);
@@ -90,7 +91,7 @@ export default function PaymentSuccess() {
         if (response.data && response.data.success && response.data.data) {
           setFetchedInvestment(response.data.data.investmentList);
           logger.log("Successfully fetched investment details for receipt:", response.data.data.investmentList);
-          
+
           // Find matching transaction in paymentHistory using orderId
           const orderIdStr = (Array.isArray(params.orderId) ? params.orderId[0] : params.orderId || "").trim();
           const history = response.data.data.paymentHistory || [];
@@ -98,34 +99,34 @@ export default function PaymentSuccess() {
             const tOrderId = (t.orderId || t.order_id || t.orderid || "").trim();
             return tOrderId.toLowerCase() === orderIdStr.toLowerCase() && orderIdStr !== "";
           });
-          
+
           let transactionIdToSet = "";
           if (matchingTxn) {
-            transactionIdToSet = 
-              matchingTxn.transactionId || 
-              matchingTxn.gatewayTransactionId || 
-              matchingTxn.txn_id || 
-              matchingTxn.txnId || 
-              matchingTxn.utr_reference || 
-              matchingTxn.rrn || 
-              matchingTxn.epg_txn_id || 
+            transactionIdToSet =
+              matchingTxn.transactionId ||
+              matchingTxn.gatewayTransactionId ||
+              matchingTxn.txn_id ||
+              matchingTxn.txnId ||
+              matchingTxn.utr_reference ||
+              matchingTxn.rrn ||
+              matchingTxn.epg_txn_id ||
               "";
           }
-          
+
           if (transactionIdToSet) {
             setFetchedTransactionId(transactionIdToSet);
             logger.log("Found matching transaction ID in payment history:", transactionIdToSet);
           } else if (history.length > 0) {
             // Fallback to the last item in history
             const lastTxn = history[history.length - 1];
-            const lastTxnId = 
-              lastTxn.transactionId || 
-              lastTxn.gatewayTransactionId || 
-              lastTxn.txn_id || 
-              lastTxn.txnId || 
-              lastTxn.utr_reference || 
-              lastTxn.rrn || 
-              lastTxn.epg_txn_id || 
+            const lastTxnId =
+              lastTxn.transactionId ||
+              lastTxn.gatewayTransactionId ||
+              lastTxn.txn_id ||
+              lastTxn.txnId ||
+              lastTxn.utr_reference ||
+              lastTxn.rrn ||
+              lastTxn.epg_txn_id ||
               "";
             if (lastTxnId) {
               setFetchedTransactionId(lastTxnId);
@@ -152,7 +153,7 @@ export default function PaymentSuccess() {
   useFocusEffect(
     useCallback(() => {
       setTabVisibility(false);
-      
+
       const onBackPress = () => {
         if (isBillPayment) {
           router.replace("/(app)/bill_payment");
@@ -202,7 +203,7 @@ export default function PaymentSuccess() {
       y: new Animated.Value(-100),
       x: new Animated.Value(Math.random() * wp(100) - wp(50)),
       rotate: new Animated.Value(Math.random() * 360),
-      color: ["#ffc90c", "#850111", "#ff4444", "#4CAF50", "#007AFF"][Math.floor(Math.random() * 5)],
+      color: ["#E5A93C", "#850111", "#ff4444", "#4CAF50", "#007AFF"][Math.floor(Math.random() * 5)],
       size: Math.random() * 8 + 6,
     }))
   ).current;
@@ -290,6 +291,7 @@ export default function PaymentSuccess() {
         return;
       }
 
+      const logoBase64 = await loadLogoAsBase64();
       const receiptData: PaymentReceiptData = {
         transactionId: transactionId,
         paymentId: transactionId,
@@ -313,7 +315,8 @@ export default function PaymentSuccess() {
           total_paid: Number(Array.isArray(params.amount) ? params.amount[0] : params.amount) || 0,
           totalgoldweight: fetchedInvestment?.totalgoldweight || 0,
           current_goldrate: Number(Array.isArray(params.goldRate) ? params.goldRate[0] : params.goldRate) || fetchedInvestment?.current_goldrate || 0,
-        }
+        },
+        logoBase64,
       };
 
       const htmlContent = generatePaymentReceiptHTML(receiptData);
@@ -398,7 +401,7 @@ export default function PaymentSuccess() {
   return (
     <SafeAreaView style={styles.container} edges={["bottom", "left", "right"]}>
       <StatusBar barStyle="dark-content" backgroundColor="#f8f9ff" />
-      
+
       {/* Confetti Container */}
       <View style={styles.confettiContainer} pointerEvents="none">
         {confettiAnims.map((anim, i) => (
@@ -428,9 +431,9 @@ export default function PaymentSuccess() {
         ))}
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={{ flex: 1, width: "100%" }}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 20 }]} 
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 20 }]}
         showsVerticalScrollIndicator={false}
         alwaysBounceVertical={false}
       >
@@ -442,7 +445,7 @@ export default function PaymentSuccess() {
         >
           {/* Main Ticket Receipt */}
           <View style={styles.ticketCard}>
-            
+
             {/* Ticket Header (Green Gradient) */}
             <LinearGradient
               colors={["#0D5A2B", "#16A34A"]}
@@ -464,7 +467,7 @@ export default function PaymentSuccess() {
               <Text style={styles.message}>
                 {type === "scheme" ? "Your investment has been successfully received." : (t("paymentSuccessMessage") || "Your payment has been processed successfully.")}
               </Text>
-              
+
               <Text style={styles.amountLabel}>{t("amount").toUpperCase()}</Text>
               <Text style={styles.amountValue}>
                 {new Intl.NumberFormat("en-IN", {
@@ -492,7 +495,7 @@ export default function PaymentSuccess() {
               <Text style={styles.detailsTitle}>{t("paymentDetails")}</Text>
 
               <View style={styles.infoList}>
-                
+
                 {/* Customer Name */}
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>{t("customerName") || "Customer Name"}</Text>
@@ -520,7 +523,7 @@ export default function PaymentSuccess() {
                 {/* Transaction ID with Copy Micro-Interaction */}
                 <View style={styles.infoRowStacked}>
                   <Text style={styles.infoLabel}>{t("transactionId")}</Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     activeOpacity={0.7}
                     style={styles.valueCopyRowStacked}
                     onPress={() => handleCopy((Array.isArray(params.txnId) ? params.txnId[0] : params.txnId) || fetchedTransactionId || (Array.isArray(params.orderId) ? params.orderId[0] : params.orderId) || "", "txn")}
@@ -529,10 +532,10 @@ export default function PaymentSuccess() {
                       {(Array.isArray(params.txnId) ? params.txnId[0] : params.txnId) || fetchedTransactionId || (Array.isArray(params.orderId) ? params.orderId[0] : params.orderId) || "N/A"}
                     </Text>
                     <View style={[styles.copyIconWrapper, copiedTxn && styles.copyIconSuccess]}>
-                      <Ionicons 
-                        name={copiedTxn ? "checkmark-sharp" : "copy-outline"} 
-                        size={14} 
-                        color={copiedTxn ? "#fff" : theme.colors.primary} 
+                      <Ionicons
+                        name={copiedTxn ? "checkmark-sharp" : "copy-outline"}
+                        size={14}
+                        color={copiedTxn ? "#fff" : theme.colors.primary}
                       />
                     </View>
                   </TouchableOpacity>
@@ -541,7 +544,7 @@ export default function PaymentSuccess() {
                 {/* Order ID with Copy Micro-Interaction */}
                 <View style={styles.infoRowStacked}>
                   <Text style={styles.infoLabel}>{t("orderId")}</Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     activeOpacity={0.7}
                     style={styles.valueCopyRowStacked}
                     onPress={() => handleCopy(Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || ""), "order")}
@@ -550,10 +553,10 @@ export default function PaymentSuccess() {
                       {Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || "N/A")}
                     </Text>
                     <View style={[styles.copyIconWrapper, copiedOrder && styles.copyIconSuccess]}>
-                      <Ionicons 
-                        name={copiedOrder ? "checkmark-sharp" : "copy-outline"} 
-                        size={14} 
-                        color={copiedOrder ? "#fff" : theme.colors.primary} 
+                      <Ionicons
+                        name={copiedOrder ? "checkmark-sharp" : "copy-outline"}
+                        size={14}
+                        color={copiedOrder ? "#fff" : theme.colors.primary}
                       />
                     </View>
                   </TouchableOpacity>
@@ -643,7 +646,7 @@ export default function PaymentSuccess() {
                   <Ionicons name="home-outline" size={20} color={theme.colors.textDark} />
                   <Text style={styles.secondaryButtonText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.7}>{t("home")}</Text>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity
                   style={styles.primaryButton}
                   onPress={handleSavingsPress}
@@ -658,11 +661,11 @@ export default function PaymentSuccess() {
 
         </Animated.View>
       </ScrollView>
-      
+
       <RatingModal
         visible={showRating}
         onClose={hideRating}
-        appName="DC Jewellers"
+        appName="Kanisaa Jewellers"
       />
     </SafeAreaView>
   );

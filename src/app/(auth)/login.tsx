@@ -581,6 +581,7 @@ const axiosFetch = async (url: string, options: any = {}, retries = 2) => {
 
 export default function Login() {
   const params = useLocalSearchParams();
+  const { language } = useGlobalStore();
   // State for mobile number and OTP
   const [mobile, setMobile] = useState("");
   const [loading, setLoading] = useState(false);
@@ -1260,13 +1261,17 @@ export default function Login() {
                     }}
                   >
                     <Image
-                      source={require("../../../assets/images/logo_trans.png")}
+                      source={
+                        language === "ta"
+                          ? require("../../../assets/images/logo_trans_ta.png")
+                          : require("../../../assets/images/logo_trans.png")
+                      }
                       style={[
                         registerStyles.logo,
                         {
-                          width: 250,
-                          height: 250,
-                          aspectRatio: 1,
+                          width: 280,
+                          height: 110,
+                          aspectRatio: 2.5,
                         },
                       ]}
                       resizeMode="contain"
@@ -1679,7 +1684,7 @@ export default function Login() {
                             }
                           >
                             <LinearGradient
-                              colors={["#ffc90c", "#ffd700"]}
+                              colors={[theme.colors.secondary, theme.colors.gold]}
                               style={registerStyles.gradientButton}
                             >
                               <ResponsiveText

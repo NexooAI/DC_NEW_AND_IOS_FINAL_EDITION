@@ -17,6 +17,7 @@ export interface BillReceiptData {
     userName?: string;
     userMobile?: string;
     userEmail?: string;
+    logoBase64?: string;
 }
 
 export const generateBillReceiptHTML = (data: BillReceiptData): string => {
@@ -31,7 +32,8 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
         billDate,
         userName,
         userMobile,
-        userEmail
+        userEmail,
+        logoBase64
     } = data;
 
     const formattedDate = (val: string) => {
@@ -48,7 +50,7 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bill Receipt - DC Jewellers</title>
+        <title>Bill Receipt - Kanisaa Jewellers</title>
         <style>
             body {
                 font-family: 'Times New Roman', serif;
@@ -125,7 +127,7 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
                 ${theme.constants.customerName}
             </div>
             <div>
-                <img src="https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp" alt="Logo" style="max-width:90px; height:auto;">
+                <img src="${logoBase64 || 'https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp'}" alt="Logo" style="max-width:90px; height:auto;">
             </div>
         </div>
 

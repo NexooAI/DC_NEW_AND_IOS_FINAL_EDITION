@@ -9,6 +9,7 @@ import {
 import { Image } from "react-native";
 import { useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
+import { getImageSource } from "@/utils/imageUtils";
 import useGlobalStore from "@/store/global.store";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -166,7 +167,7 @@ export default function AuthGuard() {
             logger.error("Error fetching visibility config in AuthGuard:", e);
           }
         }
-        router.replace("/(app)/dashboard");
+        router.replace("/(app)/(tabs)/home");
         return;
       }
 
@@ -301,11 +302,7 @@ export default function AuthGuard() {
 
     return (
       <ImageBackground
-        source={
-          typeof theme.image.bg_image === "string"
-            ? { uri: theme.image.bg_image }
-            : theme.image.bg_image
-        }
+        source={getImageSource(theme.image.bg_image)}
         style={styles.backgroundImage}
       >
         <LinearGradient
@@ -318,11 +315,7 @@ export default function AuthGuard() {
         >
           <View style={styles.container}>
             <Image
-              source={
-                typeof theme.images.auth.logo === "string"
-                  ? { uri: theme.images.auth.logo }
-                  : theme.images.auth.logo
-              }
+              source={getImageSource(theme.images.auth.logo)}
               style={[styles.logo, { width: logoWidth, aspectRatio: 1 }]}
               resizeMode="contain"
             />

@@ -48,7 +48,7 @@ import {
 } from "@/templates/html";
 
 import { CommonActions, useNavigationState } from "@react-navigation/native";
-import { formatGoldWeight } from "@/utils/imageUtils";
+import { formatGoldWeight, loadLogoAsBase64 } from "@/utils/imageUtils";
 import { theme } from "@/constants/theme";
 import COLORS from "@/constants/colors";
 import { SkeletonSavingsDetailPage } from "@/components/SkeletonLoader";
@@ -297,6 +297,7 @@ const SavingsDetail = () => {
       ? Number(transaction.rewardsList.gold_grams)
       : undefined;
 
+    const logoBase64 = await loadLogoAsBase64();
     const receiptData: PaymentReceiptData = {
       transactionId: transaction.transactionId,
       paymentId: String(transaction.paymentId),
@@ -319,6 +320,7 @@ const SavingsDetail = () => {
         ...inversement,
         schemeName: params.schemeName || inversement?.schemeName,
       },
+      logoBase64,
     };
 
     try {
@@ -371,6 +373,7 @@ const SavingsDetail = () => {
       ? Number(transaction.rewardsList.gold_grams)
       : undefined;
 
+    const logoBase64 = await loadLogoAsBase64();
     const receiptData: PaymentReceiptData = {
       transactionId: transaction.transactionId,
       paymentId: String(transaction.paymentId),
@@ -393,6 +396,7 @@ const SavingsDetail = () => {
         ...inversement,
         schemeName: params.schemeName || inversement?.schemeName,
       },
+      logoBase64,
     };
 
     try {

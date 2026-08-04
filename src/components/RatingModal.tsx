@@ -49,7 +49,7 @@ export default function RatingModal({
     visible,
     onClose,
     onSubmitFeedback,
-    appName = 'DC Jewellers',
+    appName = 'Kanisaa Jewellers',
 }: RatingModalProps) {
     const { t } = useTranslation();
     const [rating, setRating] = useState(0);

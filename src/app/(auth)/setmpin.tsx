@@ -466,14 +466,14 @@ const styles = StyleSheet.create({
     color: "#000000",
   },
   pinBoxActive: {
-    borderColor: "#ffc90c",
+    borderColor: theme.colors.secondary,
     backgroundColor: "#ffffff",
   },
   pinDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#ffc90c",
+    backgroundColor: theme.colors.secondary,
   },
   pinPlaceholder: {
     color: "rgba(255, 255, 255, 0.5)",

@@ -182,7 +182,7 @@ export default function MpinSetup() {
           console.error("Error fetching visibility config in mpin.tsx:", visError);
         }
 
-        router.replace("/(app)/dashboard");
+        router.replace("/(app)/(tabs)/home");
       }
     } catch (error: any) {
       Alert.alert(

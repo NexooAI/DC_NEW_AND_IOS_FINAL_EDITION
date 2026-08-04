@@ -330,7 +330,7 @@ export default function MpinVerify() {
   const router = useRouter();
   const { mobile } = useLocalSearchParams();
   const mobileStr = Array.isArray(mobile) ? mobile[0] : mobile || "";
-  const { login, isLoggedIn, logout, user } = useGlobalStore();
+  const { login, isLoggedIn, logout, user, language } = useGlobalStore();
 
   logger.log("🔍 MPIN Verify - Component mounted");
   const { isSmallScreen, isMediumScreen, spacing } = useResponsiveLayout();
@@ -794,7 +794,7 @@ export default function MpinVerify() {
             } catch (visError) {
               logger.error("Error fetching visibility config in mpin_verify:", visError);
             }
-            router.replace("/(app)/dashboard");
+            router.replace("/(app)/(tabs)/home");
           };
 
           // Check if we should ask for biometric enrollment
@@ -1009,8 +1009,12 @@ export default function MpinVerify() {
                 elevation: 5,
               }}>
                 <Image
-                  source={require("../../../assets/images/logo_trans.png")}
-                  style={{ width: logoWidth * 2, height: logoWidth * 2, aspectRatio: 1 }}
+                  source={
+                    language === "ta"
+                      ? require("../../../assets/images/logo_trans_ta.png")
+                      : require("../../../assets/images/logo_trans.png")
+                  }
+                  style={{ width: logoWidth * 1.5, height: (logoWidth * 1.5) / 2.5, aspectRatio: 2.5 }}
                   resizeMode="contain"
                 />
               </View>
@@ -1094,13 +1098,17 @@ export default function MpinVerify() {
                 }}
               >
                 <Image
-                  source={require("../../../assets/images/logo_trans.png")}
+                  source={
+                    language === "ta"
+                      ? require("../../../assets/images/logo_trans_ta.png")
+                      : require("../../../assets/images/logo_trans.png")
+                  }
                   style={[
                     styles.logo,
                     {
-                      width: 250,
-                      height: 250,
-                      aspectRatio: 1,
+                      width: 280,
+                      height: 110,
+                      aspectRatio: 2.5,
                     },
                   ]}
                   resizeMode="contain"
@@ -1220,7 +1228,7 @@ export default function MpinVerify() {
                         colors={
                           isLocked
                             ? ["#cccccc", "#dddddd"]
-                            : ["#ffc90c", "#ffd700"]
+                            : [theme.colors.secondary, theme.colors.gold]
                         }
                         style={styles.buttonGradient}
                       >

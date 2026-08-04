@@ -35,6 +35,7 @@ export interface PaymentReceiptData {
         totalgoldweight: number;
         current_goldrate: number;
     };
+    logoBase64?: string;
 }
 
 export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => {
@@ -51,7 +52,8 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         userName,
         rewardAmount,
         rewardGoldGrams,
-        inversement
+        inversement,
+        logoBase64
     } = data;
 
     const statusText = status || "Success";
@@ -157,7 +159,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
 <body>
     <div class="header" style="justify-content: center;">
         <div>
-            <img src="https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp" alt="Logo" style="max-width:90px; height:auto;">
+            <img src="${logoBase64 || 'https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp'}" alt="Logo" style="max-width:90px; height:auto;">
         </div>
     </div>
 

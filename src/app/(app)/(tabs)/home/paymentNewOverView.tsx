@@ -795,6 +795,12 @@ export default function PaymentNewOverView() {
   }, [weightPerGram]);
 
   const handlePayment = async () => {
+    Alert.alert(
+      "Payment Pending",
+      "Payment is currently pending. Payment process is pending (or under review), once it is completed it will work automatically."
+    );
+    return;
+
     // Immediate UX feedback and guards
     if (isProcessing || isProcessingRef.current) return;
     isProcessingRef.current = true;

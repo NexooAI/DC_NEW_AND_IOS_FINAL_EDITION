@@ -42,7 +42,7 @@ export default function TabsLayout() {
             ),
             tabBarStyle: {
               height: 60,
-              overflow: 'hidden',
+              overflow: 'visible',
               backgroundColor: 'rgba(255, 255, 255, 0.85)', // Light translucent base
               borderTopWidth: 1.5,
               borderTopColor: 'rgba(0, 0, 0, 0.1)', // Light border line
@@ -54,6 +54,7 @@ export default function TabsLayout() {
               paddingBottom: Platform.OS === 'ios' ? 12 : 8,
               paddingTop: 8,
               display: isTabVisible ? 'flex' : 'none',
+              zIndex: 100,
             },
             headerStyle: {
               backgroundColor: theme.colors.primary,
@@ -142,6 +143,7 @@ export default function TabsLayout() {
               title: t("dashboard") || "Dashboard",
               // Hide header because this is a fake tab
               headerShown: false,
+              href: null,
               tabBarIcon: ({ color, size, focused }) => (
                 <Ionicons
                   name={focused ? "grid" : "grid-outline"}
@@ -154,7 +156,7 @@ export default function TabsLayout() {
             listeners={() => ({
               tabPress: (e) => {
                 e.preventDefault();
-                router.push("/(app)/dashboard");
+                router.push("/(app)/(tabs)/home");
               },
             })}
           />
@@ -175,12 +177,13 @@ export default function TabsLayout() {
                     // Float the icon
                     marginBottom: 30, // Push it up
                     borderRadius: 30,
-                    backgroundColor: theme.colors.bgWhite, // Ring border color
+                    backgroundColor: theme.colors.white || '#ffffff', // Ring border color
                     elevation: 5,
                     shadowColor: "#000",
                     shadowOpacity: 0.3,
                     shadowOffset: { width: 0, height: 4 },
                     shadowRadius: 4,
+                    zIndex: 999,
                   }}
                 >
                   <LinearGradient

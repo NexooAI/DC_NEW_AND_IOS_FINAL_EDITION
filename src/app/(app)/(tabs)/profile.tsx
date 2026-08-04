@@ -98,7 +98,7 @@ const ProfileScreen = () => {
     const packageName = "com.nexooai.dcjewellery"; // Correct Application ID
     const url = Platform.OS === 'android'
       ? `market://details?id=${packageName}`
-      : `https://apps.apple.com/us/app/dc-jewellers-gold-diamonds/id6755081937`; // Replace with actual iOS ID if available
+      : `https://apps.apple.com/us/app/kanisaa-jewellers-gold-diamonds/id6755081937`; // Replace with actual iOS ID if available
 
     Linking.canOpenURL(url).then(supported => {
       if (supported) {
@@ -434,12 +434,12 @@ const ProfileScreen = () => {
     try {
       const playStoreLink =
         "https://play.google.com/store/apps/details?id=com.nexooai.dcjewellery&hl=en_IN";
-      const message = `Join me on DC Jewellers Gold and Diamonds! Download the app from: ${playStoreLink}`;
+      const message = `Join me on Kanisaa Jewellers Gold and Diamonds! Download the app from: ${playStoreLink}`;
 
       const result = await Share.share({
         message: message,
         url: playStoreLink,
-        title: "DC Jewellers",
+        title: "Kanisaa Jewellers",
       });
     } catch (error) {
       logger.error("Error sharing:", error);
@@ -864,7 +864,7 @@ const ProfileScreen = () => {
               <View style={styles.settingsCard}>
                 <Text style={styles.settingsTitle}>{t("settings") || "Settings"}</Text>
 
-                 {isVisible("showProfileKyc") && (
+                {isVisible("showProfileKyc") && (
                   <>
                     <TouchableOpacity style={styles.settingItem} onPress={handleChangeKYC}>
                       <View style={[styles.settingIcon, { backgroundColor: '#E3F2FD' }]}>

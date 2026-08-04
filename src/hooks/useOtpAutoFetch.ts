@@ -40,7 +40,7 @@ interface UseOtpAutoFetchProps {
 export const useOtpAutoFetch = ({
   onOtpReceived,
   isActive,
-  senderName = 'Dc Jewellery'
+  senderName = 'Kanisaa Jewellery'
 }: UseOtpAutoFetchProps) => {
   const smsListenerRef = useRef<any>(null);
 

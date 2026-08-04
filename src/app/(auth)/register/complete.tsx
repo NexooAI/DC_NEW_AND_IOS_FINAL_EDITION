@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
+import { getImageSource } from "@/utils/imageUtils";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import api from "@/services/api";
@@ -173,7 +174,7 @@ export default function CompleteRegistration() {
 
   return (
     <ImageBackground
-      source={{ uri: theme.image.bg_image }}
+      source={getImageSource(theme.image.bg_image)}
       style={styles.backgroundImage}
     >
       <LinearGradient
@@ -248,7 +249,7 @@ export default function CompleteRegistration() {
                 disabled={loading}
               >
                 <LinearGradient
-                  colors={["#ffc90c", "#ffd700"]}
+                  colors={[theme.colors.secondary, theme.colors.gold]}
                   style={styles.gradientButton}
                 >
                   <View style={styles.buttonContent}>
@@ -371,14 +372,14 @@ const styles = StyleSheet.create({
     color: "#000000",
   },
   pinBoxActive: {
-    borderColor: "#ffc90c",
+    borderColor: theme.colors.secondary,
     backgroundColor: "#ffffff",
   },
   pinDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#ffc90c",
+    backgroundColor: theme.colors.secondary,
   },
   pinPlaceholder: {
     color: "rgba(255, 255, 255, 0.5)",

@@ -20,6 +20,7 @@ import {
 import { useFocusEffect, useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
 import { theme } from "@/constants/theme";
+import { getImageSource } from "@/utils/imageUtils";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/constants/colors";
@@ -218,7 +219,7 @@ export default function BasicDetailsForm() {
 
   return (
     <ImageBackground
-      source={{ uri: theme.image.bg_image }}
+      source={getImageSource(theme.image.bg_image)}
       style={styles.backgroundImage}
     >
       <LinearGradient
@@ -235,7 +236,7 @@ export default function BasicDetailsForm() {
         >
           <View style={styles.logoContainer}>
             <Image
-              source={{ uri: theme.images.auth.logo }}
+              source={getImageSource(theme.images.auth.logo)}
               style={[styles.logo, { width: logoWidth }]}
               resizeMode="contain"
             />

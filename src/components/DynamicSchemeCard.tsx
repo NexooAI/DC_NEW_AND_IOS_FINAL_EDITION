@@ -1185,7 +1185,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
             <View style={styles.modernSection}>
               <Text style={styles.modernSectionTitle}>{t("termsAndConditions") || "Terms & Conditions"}</Text>
               <Text style={styles.modernDescription}>
-                {t("termsAndConditionsDiscription") || "Welcome to DC Jewellers..."}
+                {t("termsAndConditionsDiscription") || "Welcome to Kanisaa Jewellers..."}
               </Text>
             </View>
           )}

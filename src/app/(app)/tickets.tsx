@@ -133,8 +133,8 @@ export default function TicketsScreen() {
       default:
         return {
           label: t('open') || 'Open',
-          color: theme.colors.primary || '#850111',
-          backgroundColor: 'rgba(133,1,17,0.1)',
+          color: theme.colors.primary || '#a3203a',
+          backgroundColor: 'rgba(163,32,58,0.1)',
         };
     }
   };
@@ -144,7 +144,7 @@ export default function TicketsScreen() {
       <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}>
         <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
-        <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={['rgba(163,32,58,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
 
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   loginButton: {
-    backgroundColor: theme.colors.primary || '#850111',
+    backgroundColor: theme.colors.primary || '#a3203a',
     paddingHorizontal: wp(8),
     paddingVertical: hp(1.5),
     borderRadius: 8,
@@ -368,13 +368,13 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   tabText: { fontSize: rf(13), color: 'rgba(0,0,0,0.5)', fontWeight: '600' },
-  activeTabText: { color: theme.colors.primary || '#850111' },
+  activeTabText: { color: theme.colors.primary || '#a3203a' },
   activeIndicator: {
     position: 'absolute',
     bottom: 0,
     width: '30%',
     height: 3,
-    backgroundColor: theme.colors.primary || '#850111',
+    backgroundColor: theme.colors.primary || '#a3203a',
     borderTopLeftRadius: 3,
     borderTopRightRadius: 3,
   },
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
     width: wp(14),
     height: wp(14),
     borderRadius: wp(7),
-    backgroundColor: theme.colors.secondary || '#ffc90c',
+    backgroundColor: theme.colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({

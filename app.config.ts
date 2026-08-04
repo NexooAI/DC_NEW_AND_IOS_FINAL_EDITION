@@ -2,25 +2,25 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 import { themeConfig } from './src/constants/theme.config';
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-    // =========================================================================
-    // 🍎 iOS BUILD CONFIGURATION (ACTIVE DEFAULT FOR iOS BUILD)
-    // =========================================================================
-    const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "";
-    const bundleIdentifier = "com.dcjewellers.dcjewellers";
-    const projectId = "07310377-0452-4d15-8e38-d42462be6fd8";
-    const owner = "dcjewellers";
-    const version = "2.0.2";
+    // // =========================================================================
+    // // 🍎 iOS BUILD CONFIGURATION (ACTIVE DEFAULT FOR iOS BUILD)
+    // // =========================================================================
+    // const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "";
+    // const bundleIdentifier = "com.nexooai.kanisaajewellerydigigoldsavings";
+    // const projectId = "aeef6800-eac4-4ba3-b14d-a09d7342f537";
+    // const owner = "mnvgroups07";
+    // const version = "1.0.0";
 
-    /* 
+
     // =========================================================================
     // 🤖 ANDROID BUILD CONFIGURATION (Uncomment this block when building Android)
     // =========================================================================
     const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "";
-    const bundleIdentifier = "com.nexooai.dcjewellery";
-    const projectId = "9af1745a-105c-44f9-9e53-a111bc6ed9ce"
-    const owner =  "sudhakarg"
-    const version = "3.0.7";
-    */
+    const bundleIdentifier = "com.nexooai.kanisaajewellerydigigoldsavings";
+    const projectId = "aeef6800-eac4-4ba3-b14d-a09d7342f537";
+    const owner = "mnvgroups07"
+    const version = "1.0.0";
+
 
     return {
         ...config,
@@ -29,7 +29,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         version: version,
         orientation: "portrait",
         userInterfaceStyle: "automatic",
-        scheme: "dcjewellers",
+        scheme: "kanisaajewellerydigigold",
         jsEngine: "hermes",
 
         icon: "./assets/images/playstore-icon.png",
@@ -47,9 +47,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
 
         android: {
-            package: "com.nexooai.dcjewellery",
+            package: "com.nexooai.kanisaajewellerydigigoldsavings",
             googleServicesFile: "./google-services.json",
-            versionCode: 12,
+            versionCode: 1,
 
             splash: {
                 image: "./assets/images/playstore-icon.png",
@@ -86,12 +86,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             icon: "./assets/images/playstore-icon.png",
             bundleIdentifier: bundleIdentifier,
             associatedDomains: [
-                "applinks:api.prod.dcjewellers.org",
-                "applinks:dcjewellers.org",
-                "applinks:dcjewellers.page.link"
+                "applinks:api.prod.kanisaajewellery.com",
+                "applinks:kanisaajewellery.com",
+                "applinks:kanisaajewellery.page.link"
             ],
             googleServicesFile: "./GoogleService-Info.plist",
-            buildNumber: "2",
+            buildNumber: "1",
             jsEngine: "hermes",
             config: {
                 googleMapsApiKey: mapsApiKey,

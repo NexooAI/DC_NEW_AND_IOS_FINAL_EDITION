@@ -6,7 +6,7 @@ export default function DashboardTab() {
 
   useEffect(() => {
     // Fallback redirect just in case the tabPress listener doesn't catch it
-    router.replace('/(app)/dashboard');
+    router.replace('/(app)/(tabs)/home');
   }, [router]);
 
   return null;

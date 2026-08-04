@@ -261,7 +261,7 @@ const TicketDetailPopup = ({
                   isUpcoming && styles.statusRibbonUpcoming,
                   isCompleted && styles.statusRibbonCompleted,
                 ]}>
-                  <ResponsiveText color="#FFFFFF" size="xxs" weight="bold">
+                  <ResponsiveText color="#FFFFFF" size="xs" weight="bold">
                     {isUpcoming ? "UPCOMING" : (isCompleted ? "COMPLETED" : "LIVE")}
                   </ResponsiveText>
                 </View>
@@ -282,7 +282,7 @@ const TicketDetailPopup = ({
                     </ResponsiveText>
                     
                     {!isCompleted && (
-                      <ResponsiveText color="#D4AF37" size="xxs" style={{ lineHeight: 14 }}>
+                      <ResponsiveText color="#D4AF37" size="xs" style={{ lineHeight: 14 }}>
                         {t("luckyDrawInfo")}
                       </ResponsiveText>
                     )}
@@ -290,7 +290,7 @@ const TicketDetailPopup = ({
                     {/* Completed Draw Winner details */}
                     {isCompleted && ticket.winners && ticket.winners.length > 0 && (
                       <View style={{ marginTop: 6, borderTopWidth: 0.5, borderTopColor: "rgba(212,175,55,0.2)", paddingTop: 6 }}>
-                        <ResponsiveText color="#D4AF37" size="xxs" weight="bold" style={{ marginBottom: 4 }}>
+                        <ResponsiveText color="#D4AF37" size="xs" weight="bold" style={{ marginBottom: 4 }}>
                           {t("luckyDrawWinnersList") || "Winners List"}
                         </ResponsiveText>
                         <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 95 }}>
@@ -299,10 +299,10 @@ const TicketDetailPopup = ({
                             return (
                               <View key={idx} style={{ flexDirection: "row", alignItems: "center", marginBottom: 3 }}>
                                 <Ionicons name="ribbon" size={12} color="#D4AF37" />
-                                <ResponsiveText color="#FFFFFF" size="xxs" style={{ marginLeft: 4, flex: 1 }}>
+                                <ResponsiveText color="#FFFFFF" size="xs" style={{ marginLeft: 4, flex: 1 }}>
                                   {winner.user_name || winner.userName} {isCurrentUser && `(You)`}
                                 </ResponsiveText>
-                                <ResponsiveText color="#D4AF37" size="xxs" weight="bold">
+                                <ResponsiveText color="#D4AF37" size="xs" weight="bold">
                                   Rank {winner.prize_rank}
                                 </ResponsiveText>
                               </View>
@@ -318,11 +318,11 @@ const TicketDetailPopup = ({
                 <View style={styles.ticketLeftFooter}>
                   <View style={styles.participantInfo}>
                     <Ionicons name="people-outline" size={13} color="rgba(255,255,255,0.5)" />
-                    <ResponsiveText color="rgba(255,255,255,0.5)" size="xxs" style={{ marginLeft: 4 }}>
+                    <ResponsiveText color="rgba(255,255,255,0.5)" size="xs" style={{ marginLeft: 4 }}>
                       {t("luckyDrawParticipated").replace("{count}", ticket.participants.toLocaleString())}
                     </ResponsiveText>
                   </View>
-                  <ResponsiveText color="rgba(255,255,255,0.6)" size="xxs" weight="semibold">
+                  <ResponsiveText color="rgba(255,255,255,0.6)" size="xs" weight="semibold">
                     {isUpcoming ? (ticket.startDate ? `Starts ${formatDate(ticket.startDate)}` : "Upcoming") : formatDate(ticket.endDate)}
                   </ResponsiveText>
                 </View>
@@ -350,7 +350,7 @@ const TicketDetailPopup = ({
               >
                 <MaterialCommunityIcons name="ticket-confirmation" size={32} color="#5B0015" style={{ marginBottom: 6 }} />
                 
-                <ResponsiveText color="#5B0015" size="xxs" weight="bold" style={{ marginBottom: 12 }}>
+                <ResponsiveText color="#5B0015" size="xs" weight="bold" style={{ marginBottom: 12 }}>
                   {ticket.ticketNumber ? `#${ticket.ticketNumber}` : `#000${ticket.id}`}
                 </ResponsiveText>
 
@@ -365,7 +365,7 @@ const TicketDetailPopup = ({
                 >
                   <ResponsiveText
                     color={isUpcoming || isCompleted ? "#FFFFFF" : "#5B0015"}
-                    size="xxs"
+                    size="xs"
                     weight="bold"
                     style={{ textAlign: "center" }}
                     numberOfLines={1}
@@ -376,8 +376,8 @@ const TicketDetailPopup = ({
               </LinearGradient>
 
               {/* Semicircle notches at the divider */}
-              <View style={[styles.notch, styles.notchTop]} />
-              <View style={[styles.notch, styles.notchBottom]} />
+              <View style={[styles.notchVertical, styles.notchTop]} />
+              <View style={[styles.notchVertical, styles.notchBottom]} />
             </View>
           </AnimatedReanimated.View>
         </Pressable>
@@ -654,8 +654,8 @@ const LuckyTicketCard = ({
       </LinearGradient>
 
       {/* Semicircle Notches on Left and Right center edges */}
-      <View style={[styles.notch, styles.notchLeftCenter]} />
-      <View style={[styles.notch, styles.notchRightCenter]} />
+      <View style={[styles.notchHorizontal, styles.notchLeftCenter]} />
+      <View style={[styles.notchHorizontal, styles.notchRightCenter]} />
 
       {/* Interactive Golden Scratch Foil Overlay */}
       {isWonAndUnrevealed && (
@@ -975,6 +975,23 @@ export default function LuckyDraw() {
   const activeDrawCountdown = useGlobalStore((state) => state.activeDrawCountdown);
   const setActiveDrawCountdown = useGlobalStore((state) => state.setActiveDrawCountdown);
 
+  const handleBack = () => {
+    try {
+      const cache = useGlobalStore.getState().getCachedVisibility();
+      if (cache && cache.data && cache.data.showDashboardAfterLogin === 0) {
+        router.replace("/(app)/(tabs)/home");
+        return;
+      }
+    } catch (e) {
+      console.error("Error reading visibility cache in LuckyDraw handleBack:", e);
+    }
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(app)/(tabs)/home");
+    }
+  };
+
   const [luckyDraws, setLuckyDraws] = useState<LuckyDrawItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
@@ -1254,7 +1271,7 @@ export default function LuckyDraw() {
             });
             setActiveDraw(null);
             setDrawState(null);
-            router.back();
+            handleBack();
           }}
           onFinish={() => {
             setDrawState("spinning");
@@ -1293,7 +1310,7 @@ export default function LuckyDraw() {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => handleBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={luckyDrawColors.primary} />
         </TouchableOpacity>
         <ResponsiveText
@@ -2057,7 +2074,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#D4AF37",
   },
-  notch: {
+  notchHorizontal: {
     position: "absolute",
     width: 14,
     height: 14,
@@ -2121,7 +2138,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#5B0015",
     borderColor: "#5B0015",
   },
-  notch: {
+  notchVertical: {
     position: "absolute",
     width: 20,
     height: 20,

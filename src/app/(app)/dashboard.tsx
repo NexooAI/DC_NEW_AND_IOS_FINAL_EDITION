@@ -30,7 +30,9 @@ import useGlobalStore from "@/store/global.store";
 import api, { userAPI } from "@/services/api";
 import { theme } from "@/constants/theme";
 import { APP_CONFIG } from "@/constants";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 import LanguageSelector from "@/components/LanguageSelector";
+import { logger } from "@/utils/logger";
 import { fetchGoldRatesWithCache } from "@/utils/apiCache";
 
 const { wp, hp, rf } = responsiveUtils;
@@ -48,6 +50,7 @@ export default function Dashboard() {
   const { t } = useTranslation();
   const { user, setChatOpen } = useGlobalStore();
   const insets = useSafeAreaInsets();
+  const { isVisible, visibleData } = useAppVisibility();
   const isFocused = useIsFocused();
   const headerPaddingTop = Platform.OS === "ios" ? 10 : (insets.top > 0 ? insets.top + 10 : 10);
 
@@ -58,6 +61,13 @@ export default function Dashboard() {
   const [languageSelectorVisible, setLanguageSelectorVisible] = useState(false);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupData, setPopupData] = useState<any>(null);
+
+  useEffect(() => {
+    if (visibleData && visibleData.showDashboardAfterLogin === 0) {
+      logger.log("🚪 Dashboard is disabled, redirecting to Home Screen");
+      router.replace("/(app)/(tabs)/home");
+    }
+  }, [visibleData, router]);
 
   useEffect(() => {
     loadData();
@@ -382,32 +392,52 @@ export default function Dashboard() {
               resizeMode="contain"
             />
 
-            <View style={styles.rateRow}>
-              <View style={styles.rateChip}>
-                <ResponsiveText color={GOLD} size="xs" weight="bold">22KT</ResponsiveText>
-                <ResponsiveText color="#fff" size="sm" weight="bold" style={{ marginLeft: 4 }}>
-                  ₹{getDerivedRate(rates?.gold_rate, 22)}
-                </ResponsiveText>
+            {isVisible("showSilverRate") && rates?.silver_rate ? (
+              <View style={styles.rateRow}>
+                <View style={styles.rateChip}>
+                  <ResponsiveText color={GOLD} size="xs" weight="bold">GOLD 22K</ResponsiveText>
+                  <ResponsiveText color="#fff" size="sm" weight="bold" style={{ marginLeft: 4 }}>
+                    ₹{getDerivedRate(rates?.gold_rate, 22)}
+                  </ResponsiveText>
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.rateChip}>
+                  <ResponsiveText color={GOLD} size="xs" weight="bold">SILVER</ResponsiveText>
+                  <ResponsiveText color="#fff" size="sm" weight="bold" style={{ marginLeft: 4 }}>
+                    ₹{rates?.silver_rate ? Math.round(parseFloat(rates.silver_rate.replace(/,/g, ""))).toString() : "-"}
+                  </ResponsiveText>
+                </View>
               </View>
+            ) : (
+              <View style={styles.rateRow}>
+                <View style={styles.rateChip}>
+                  <ResponsiveText color={GOLD} size="xs" weight="bold">22KT</ResponsiveText>
+                  <ResponsiveText color="#fff" size="sm" weight="bold" style={{ marginLeft: 4 }}>
+                    ₹{getDerivedRate(rates?.gold_rate, 22)}
+                  </ResponsiveText>
+                </View>
 
-              <View style={styles.divider} />
+                <View style={styles.divider} />
 
-              <View style={styles.rateChip}>
-                <ResponsiveText color={GOLD} size="xs" weight="bold">18KT</ResponsiveText>
-                <ResponsiveText color="#fff" size="sm" weight="bold" style={{ marginLeft: 4 }}>
-                  ₹{getDerivedRate(rates?.gold_rate_18, 18)}
-                </ResponsiveText>
+                <View style={styles.rateChip}>
+                  <ResponsiveText color={GOLD} size="xs" weight="bold">18KT</ResponsiveText>
+                  <ResponsiveText color="#fff" size="sm" weight="bold" style={{ marginLeft: 4 }}>
+                    ₹{getDerivedRate(rates?.gold_rate_18, 18)}
+                  </ResponsiveText>
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.rateChip}>
+                  <ResponsiveText color={GOLD} size="xs" weight="bold">14KT</ResponsiveText>
+                  <ResponsiveText color="#fff" size="sm" weight="bold" style={{ marginLeft: 4 }}>
+                    ₹{getDerivedRate(rates?.gold_rate_14, 14)}
+                  </ResponsiveText>
+                </View>
               </View>
-
-              <View style={styles.divider} />
-
-              <View style={styles.rateChip}>
-                <ResponsiveText color={GOLD} size="xs" weight="bold">14KT</ResponsiveText>
-                <ResponsiveText color="#fff" size="sm" weight="bold" style={{ marginLeft: 4 }}>
-                  ₹{getDerivedRate(rates?.gold_rate_14, 14)}
-                </ResponsiveText>
-              </View>
-            </View>
+            )}
 
             {/* <ResponsiveText
               color="#ddd"

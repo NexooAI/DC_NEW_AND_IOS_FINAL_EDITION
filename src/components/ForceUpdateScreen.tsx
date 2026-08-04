@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
+import { getImageSource } from "@/utils/imageUtils";
 import { COLORS } from "@/constants/colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import forceUpdateService from "@/services/forceUpdateService";
@@ -57,11 +58,7 @@ export default function ForceUpdateScreen({
 
   return (
     <ImageBackground
-      source={
-        typeof theme.image.bg_image === "string"
-          ? { uri: theme.image.bg_image }
-          : theme.image.bg_image
-      }
+      source={getImageSource(theme.image.bg_image)}
       style={styles.backgroundImage}
     >
       <LinearGradient
@@ -76,11 +73,7 @@ export default function ForceUpdateScreen({
           {/* Logo Header */}
           <View style={styles.logoContainer}>
             <Image
-              source={
-                typeof theme.images.auth.logo === "string"
-                  ? { uri: theme.images.auth.logo }
-                  : theme.images.auth.logo
-              }
+              source={getImageSource(theme.images.auth.logo)}
               style={[
                 styles.logo,
                 {

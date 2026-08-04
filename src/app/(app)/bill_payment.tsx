@@ -22,6 +22,7 @@ import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 import * as WebBrowser from 'expo-web-browser';
 import { generateBillReceiptHTML, BillReceiptData } from '@/templates/html';
+import { loadLogoAsBase64 } from '@/utils/imageUtils';
 import { theme } from '@/constants/theme';
 import { COLORS } from '@/constants/colors';
 import ResponsiveText from '@/components/ResponsiveText';
@@ -222,6 +223,7 @@ export default function BillPayment() {
   const sanitizeFileName = (str: string) => str.replace(/[^a-zA-Z0-9]/g, '_');
 
   const handleShareBillReceipt = async (bill: BillItem) => {
+    const logoBase64 = await loadLogoAsBase64();
     const receiptData: BillReceiptData = {
       billId: bill.id,
       billNumber: bill.billNumber,
@@ -234,6 +236,7 @@ export default function BillPayment() {
       userName: user?.name,
       userMobile: user?.mobile?.toString(),
       userEmail: user?.email,
+      logoBase64,
     };
 
     try {
@@ -272,6 +275,7 @@ export default function BillPayment() {
   };
 
   const handleDownloadBillReceipt = async (bill: BillItem) => {
+    const logoBase64 = await loadLogoAsBase64();
     const receiptData: BillReceiptData = {
       billId: bill.id,
       billNumber: bill.billNumber,
@@ -284,6 +288,7 @@ export default function BillPayment() {
       userName: user?.name,
       userMobile: user?.mobile?.toString(),
       userEmail: user?.email,
+      logoBase64,
     };
 
     try {

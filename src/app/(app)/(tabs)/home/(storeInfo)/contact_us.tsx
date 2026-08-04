@@ -29,7 +29,7 @@ const ContactUs = () => {
     if (!timePart) return "";
     timePart = timePart.trim();
     if (timePart.toLowerCase() === "closed") return t("closed") || timePart;
-    
+
     // Regex to match 12-hour format: e.g., "9:30 AM", "09:30 PM", "9 AM", "12:00 PM"
     const twelveHourRegex = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i;
     // Regex to match 24-hour format: e.g., "09:30", "19:00", "9:30"
@@ -131,8 +131,8 @@ const ContactUs = () => {
       ios: "maps:0,0?q=",
       android: "geo:0,0?q=",
     });
-    const latLng = `${10.519306421007363},${76.22348998262478}`;
-    const label = "DC Jewellers";
+    const latLng = `${9.366929277928774},${77.67567955202254}`;
+    const label = "Kanisaa Jewellers";
     const url = Platform.select({
       ios: `${scheme}${label}@${latLng}`,
       android: `${scheme}${latLng}(${label})`,
@@ -307,7 +307,7 @@ const ContactUs = () => {
 
           {/* Company Info */}
           <View style={styles.companyContainer}>
-            <Text style={styles.companyTitle}>DC JEWELLERS</Text>
+            <Text style={styles.companyTitle}>Kanisaa JEWELLERS</Text>
             <Text style={styles.companySubtitle}>Since 2020</Text>
             <Text style={styles.companyAddress}>
               {aboutData?.shop_addr || aboutData?.shop_address || theme.constants.address}

@@ -1609,7 +1609,7 @@ export default function Home() {
     if (params.redirectOnClose === "schemes") {
       router.push("/(app)/(tabs)/home/schemes");
     } else if (params.redirectOnClose === "dashboard") {
-      router.push("/(app)/dashboard");
+      router.push("/(app)/(tabs)/home");
     }
   }, [selectedCollection, params.redirectOnClose]);
 
@@ -2834,12 +2834,22 @@ export default function Home() {
                   onPress={() => router.push("/home/ratechart")}
                   activeOpacity={0.9}
                 >
-                  <AnimatedGoldRate
-                    goldRate={homeData.data.currentRates.gold_rate}
-                    goldRate18={homeData?.data?.currentRates?.gold_rate_18}
-                    goldRate14={homeData?.data?.currentRates?.gold_rate_14}
-                    updatedAt={homeData.data.currentRates.updated_at || ""}
-                  />
+                  {isVisible("showSilverRate") && homeData?.data?.currentRates?.silver_rate ? (
+                    <GoldSilverRateCard
+                      data={{
+                        goldRate: homeData.data.currentRates.gold_rate,
+                        silverRate: homeData.data.currentRates.silver_rate,
+                        updatedAt: homeData.data.currentRates.updated_at || "",
+                      }}
+                    />
+                  ) : (
+                    <AnimatedGoldRate
+                      goldRate={homeData.data.currentRates.gold_rate}
+                      goldRate18={homeData?.data?.currentRates?.gold_rate_18}
+                      goldRate14={homeData?.data?.currentRates?.gold_rate_14}
+                      updatedAt={homeData.data.currentRates.updated_at || ""}
+                    />
+                  )}
                 </TouchableOpacity>
               )}
 
@@ -3987,7 +3997,7 @@ export default function Home() {
           logger.log("📝 User rating feedback:", { rating, feedback });
           // You can send this to your API if needed
         }}
-        appName="DC Jewellers"
+        appName="Kanisaa Jewellers"
       />
       <LanguageSelector
         visible={languageSelectorVisible}

@@ -81,6 +81,7 @@ export default function AppLayout() {
                 freezeOnBlur: false,
                 drawerLabel: "Dashboard",
                 title: "Dashboard",
+                drawerItemStyle: { display: 'none' }
               }}
             />
             <Drawer.Screen

@@ -61,11 +61,11 @@ if (Platform.OS === "web") {
 const stores = [
   {
     id: 1,
-    name: "DC Jewellers ",
-    latitude: 8.427828080550306,
-    longitude: 78.02855977120382,
+    name: "Kanisaa Jewellers ",
+    latitude: 9.366929277928774,
+    longitude: 77.67567955202254,
     address:
-      "205/64A, Main Bazar, Udangudi, Thoothukudi(D), Tamil Nadu - 628203",
+      "3/487, Tnc Mukku Road, Alangulam - 626127.",
   },
 ];
 

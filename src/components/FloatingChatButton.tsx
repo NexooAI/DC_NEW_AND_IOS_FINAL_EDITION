@@ -90,7 +90,7 @@ const FloatingChatButton = () => {
       id: "3",
       question: "How can I pay my bill online?",
       answer:
-        "Go to 'Bill Payments' from the dashboard. You will see your 'New Bills' list. Tap 'Pay Now' on any bill to proceed with payment.",
+        "Go to 'Bill Payments' from the home page. You will see your 'New Bills' list. Tap 'Pay Now' on any bill to proceed with payment.",
     },
     {
       id: "4",
