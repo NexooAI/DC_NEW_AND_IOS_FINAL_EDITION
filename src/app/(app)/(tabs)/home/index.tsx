@@ -1208,16 +1208,11 @@ export default function Home() {
             setCollectionsData(getDefaultStatusImages(t));
           }
 
-          // Set slider images from posters
+          // Set slider images from posters using safe image URL resolver
           if (data.posters && data.posters.length > 0) {
             const images = data.posters.map((poster: Poster) => ({
               id: poster.id,
-              image:
-                poster.image && poster.image.startsWith("http")
-                  ? poster.image
-                  : poster.image
-                    ? `${APP_CONFIG.urls.baseUrl}${poster.image}`
-                    : "",
+              image: poster.image ? getFullImageUrl(poster.image) : "",
               title: poster.title || "",
             }));
             setSliderImages(images);
@@ -1432,11 +1427,7 @@ export default function Home() {
             if (cachedData?.data?.posters && cachedData.data.posters.length > 0) {
               setSliderImages((currentImages) => currentImages.length > 0 ? currentImages : cachedData.data.posters.map((poster: any) => ({
                 id: poster.id,
-                image: poster.image && poster.image.startsWith("http")
-                  ? poster.image
-                  : poster.image
-                    ? `${APP_CONFIG.urls.baseUrl}${poster.image}`
-                    : "",
+                image: poster.image ? getFullImageUrl(poster.image) : "",
                 title: poster.title || "",
               })));
             }

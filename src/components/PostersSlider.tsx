@@ -21,6 +21,7 @@ interface PostersSliderProps {
 const PostersSlider: React.FC<PostersSliderProps> = ({ images = [] }) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [failedImages, setFailedImages] = useState<Record<string | number, boolean>>({});
   const { screenWidth, isTablet } = useResponsiveLayout();
 
   const sliderWidth = isTablet ? 600 : screenWidth;
@@ -85,14 +86,17 @@ const PostersSlider: React.FC<PostersSliderProps> = ({ images = [] }) => {
           >
             <Image
               source={
-                typeof item.image === "string"
-                  ? { uri: item.image }
-                  : item.image
+                failedImages[item.id]
+                  ? require("../../assets/images/slider1.png")
+                  : typeof item.image === "string"
+                    ? { uri: item.image }
+                    : item.image
               }
               style={styles.image}
               resizeMode="stretch"
               onError={(error) => {
-                logger.error("Poster image loading error:", error);
+                logger.error(`Poster image loading error for item ${item.id}:`, error);
+                setFailedImages((prev) => ({ ...prev, [item.id]: true }));
               }}
             />
           </View>
