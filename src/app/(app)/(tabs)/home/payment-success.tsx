@@ -503,50 +503,14 @@ export default function PaymentSuccess() {
         )}
 
         {/* Button Row depending on payment type */}
-        {type === "bill" ? (
-          <TouchableOpacity
-            style={styles.shareButton} // Full width styled button like shareButton
-            onPress={() => router.replace("/(app)/bill_payment")}
-          >
-            <Text style={styles.shareButtonText}>{(t("backToBills") || "BACK TO BILLS").toUpperCase()}</Text>
-          </TouchableOpacity>
-        ) : (type === "booking" || type === "advance_booking") ? (
-          <View style={{ width: "100%", gap: rp(12) }}>
-            <TouchableOpacity
-              style={styles.shareButton} // Full width styled primary button
-              onPress={() => router.replace("/(tabs)/home/BookingHistory")}
-            >
-              <Ionicons name="time-outline" size={20} color="#fff" />
-              <Text style={styles.shareButtonText}>{(t("showAdvanceHistory") || "SHOW ADVANCE HISTORY").toUpperCase()}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.buttonHome, { width: "100%", minHeight: rp(56) }]} // Full width styled secondary button
-              onPress={() => router.replace("/(tabs)/home")}
-            >
-              <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
-              <Text style={[styles.buttonText, styles.buttonTextHome]}>{(t("backToHome") || "BACK TO HOME").toUpperCase()}</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={[styles.button, styles.buttonLeft, styles.buttonHome]}
-              onPress={handleHomePress}
-              activeOpacity={0.9}
-            >
-              <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
-              <Text style={[styles.buttonText, styles.buttonTextHome]}>{t("home")}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.buttonRight, styles.buttonSavings]}
-              onPress={handleSavingsPress}
-              activeOpacity={0.9}
-            >
-              <Ionicons name="wallet" size={rp(20)} color="#fff" />
-              <Text style={styles.buttonText}>{t("savings")}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <TouchableOpacity
+          style={[styles.button, styles.buttonHome, { width: "100%", minHeight: 56, marginTop: 12 }]}
+          onPress={handleHomePress}
+          activeOpacity={0.9}
+        >
+          <Ionicons name="home" size={20} color={theme.colors.textDark} />
+          <Text style={[styles.buttonText, styles.buttonTextHome, { marginLeft: 8 }]}>{(t("backToHome") || "BACK TO HOME").toUpperCase()}</Text>
+        </TouchableOpacity>
       </Animated.View>
       </ScrollView>
       <RatingModal

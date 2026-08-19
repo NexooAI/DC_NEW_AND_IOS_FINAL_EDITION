@@ -266,7 +266,7 @@ const EnhancedLoader: React.FC<EnhancedLoaderProps> = ({
           ]}
         >
           <LinearGradient
-            colors={theme.colors.gradientBlue}
+            colors={theme.colors.gradientBlue || ["#1e293b", "#334155", "#475569"]}
             style={styles.ringGradient}
           />
         </Animated.View>

@@ -723,7 +723,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
     <View style={styles.headerContainer}>
       {!hasAmountType && (
         <LinearGradient
-          colors={theme.colors.gradientPrimary}
+          colors={theme.colors.gradientPrimary || ["#0b162c", "#16315c", "#d4af37"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.portfolioCard}

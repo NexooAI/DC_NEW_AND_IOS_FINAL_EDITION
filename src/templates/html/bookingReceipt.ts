@@ -141,7 +141,7 @@ export const generateBookingReceiptHTML = (data: BookingReceiptData): string => 
         <table class="details-table">
             <tr>
                 <th>Booking ID</th>
-                <td>#DCJ-B-${bookingId}</td>
+                <td>#STT-B-${bookingId}</td>
             </tr>
             <tr>
                 <th>Gold Weight</th>

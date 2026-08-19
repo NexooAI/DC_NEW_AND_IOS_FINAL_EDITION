@@ -707,7 +707,7 @@ const SavingsDetail = () => {
   const renderHeroCard = () => (
     <View style={styles.heroContainer}>
       <LinearGradient
-        colors={theme.colors.gradientPrimary}
+        colors={theme.colors.gradientPrimary || ["#0b162c", "#16315c", "#d4af37"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.heroCard}
@@ -828,7 +828,7 @@ const SavingsDetail = () => {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.gridLabel}>{translations.accountNo}</Text>
-              <Text style={styles.gridValue} numberOfLines={1}>DCJ-{params.accNo}</Text>
+              <Text style={styles.gridValue} numberOfLines={1}>STT-{params.accNo}</Text>
             </View>
           </View>
 
@@ -1077,7 +1077,7 @@ const SavingsDetail = () => {
               <View style={styles.modalBody}>
                 <View style={styles.receiptRow}>
                   <Text style={styles.receiptLabel}>Transaction ID</Text>
-                  <Text style={styles.receiptValue}>DCJ-{selectedTransaction.transactionId}</Text>
+                  <Text style={styles.receiptValue}>STT-{selectedTransaction.transactionId}</Text>
                 </View>
                 {selectedTransaction.monthNumber && (
                   <View style={styles.receiptRow}>

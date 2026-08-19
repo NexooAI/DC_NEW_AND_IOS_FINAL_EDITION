@@ -1,12 +1,12 @@
-import React, { useEffect, useState, useRef } from "react";
-import { View, Modal, StyleSheet, Alert, Text, TouchableOpacity, ActivityIndicator, Platform, StatusBar, Linking } from "react-native";
+import React, { useEffect, useState, useRef, useMemo } from "react";
+import { View, Modal, StyleSheet, Alert, Text, TouchableOpacity, ActivityIndicator, Platform, StatusBar, Linking, AppState, AppStateStatus } from "react-native";
 import { WebView } from "react-native-webview";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { usePaymentSocket } from "@/hooks/usePaymentSocket";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import NetInfo from "@react-native-community/netinfo";
 import { hp } from "@/utils/responsiveUtils";
-import { theme } from "@/constants/theme";
+import { theme as themeConstants } from "@/constants/theme";
 import apiClient from "@/services/api";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { logAppEvent } from "@/services/appEventService";
@@ -27,6 +27,25 @@ const safeParseJSON = (jsonString: any, fallback: any = {}) => {
   }
 };
 
+const INJECTED_JS = `
+  (function() {
+    window.open = function(url, target, features) {
+      if (url) {
+        window.location.href = url;
+        return window;
+      }
+      return null;
+    };
+    document.addEventListener('submit', function(e) {
+      var form = e.target;
+      if (form && form.target === '_blank') {
+        form.target = '_self';
+      }
+    }, true);
+  })();
+  true;
+`;
+
 export default function PaymentWebView() {
   const theme = useAppTheme();
   styles = getStyles(theme);
@@ -41,13 +60,25 @@ export default function PaymentWebView() {
   const urlBlockedAlertShown = useRef(false);
   const webViewRef = useRef<any>(null);
   const wasDisconnectedRef = useRef(false);
+  // Forward reference so the socket hook can call stopStatusPolling before it is defined.
+  const stopPollingRef = useRef<() => void>(() => {});
+  const hasLoadedRealUrl = useRef(false);
+
+  const isPaymentProcessed = useRef(false);
+  const appState = useRef(AppState.currentState);
+  const resumptionTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { user } = useGlobalStore();
+
+  useEffect(() => {
+    stopPollingRef.current = stopStatusPolling;
+  }, []);
 
   const type = (params.type as any) || 'scheme';
   const bookingId = params.bookingId as string;
   const amount = params.amount as string;
   const url = (params.url || params.paymentUrl || "") as string;
+  const webViewSource = useMemo(() => ({ uri: url }), [url]);
   const accountNumber = params.accountNumber as string;
   const accountName = params.accountName as string;
   const schemeName = (params.schemeName || "") as string;
@@ -74,13 +105,12 @@ export default function PaymentWebView() {
     });
   }, []);
 
-  const { socket, handleCancel } = usePaymentSocket({
+  const { socket, handleCancel, disconnect } = usePaymentSocket({
+    onStopPolling: () => stopPollingRef.current(),
     onPaymentSuccess: (data) => {
+      isPaymentProcessed.current = true;
       setIsVerifyingPayment(true);
-      // Disconnect socket before navigation
-      if (socket && socket.connected) {
-        socket.disconnect();
-      }
+      disconnect();
       stopStatusPolling();
 
       logAppEvent('PAYMENT_WEBVIEW_SUCCESS', {
@@ -114,11 +144,9 @@ export default function PaymentWebView() {
       router.replace(routerParams);
     },
     onPaymentFailure: (data) => {
+      isPaymentProcessed.current = true;
       setIsVerifyingPayment(true);
-      // Disconnect socket before navigation
-      if (socket && socket.connected) {
-        socket.disconnect();
-      }
+      disconnect();
       stopStatusPolling();
 
       logAppEvent('PAYMENT_WEBVIEW_FAILURE', {
@@ -210,10 +238,7 @@ export default function PaymentWebView() {
       );
     },
     onPaymentExpired: () => {
-      // Disconnect socket before navigation
-      if (socket && socket.connected) {
-        socket.disconnect();
-      }
+      disconnect();
       stopStatusPolling();
       Alert.alert(
         "Payment Expired",
@@ -253,40 +278,86 @@ export default function PaymentWebView() {
     setIsVerifyingPayment(true);
 
     console.log(`[Polling Fallback] Starting interval checks for orderId: ${orderIdValue}`);
+    let attempts = 0;
+    const maxAttempts = 30; // 30 attempts * 2s = 60s
+    let consecutiveErrors = 0;
+    const maxConsecutiveErrors = 5;
 
     pollingIntervalRef.current = setInterval(async () => {
+      attempts++;
+      if (attempts > maxAttempts) {
+        console.log("[Polling Fallback] Max polling attempts reached (60 seconds). Routing to failure/pending.");
+        stopStatusPolling();
+        
+        if (!isTransitioningRef.current) {
+          isTransitioningRef.current = true;
+          disconnect();
+          const timedOutFailureTarget = {
+            ...failureTarget,
+            params: {
+              ...failureTarget.params,
+              message: "Payment verification timed out. If money was debited, it will be credited or updated in your plan shortly.",
+              status: "PENDING",
+            },
+          };
+          router.replace(timedOutFailureTarget);
+        }
+        return;
+      }
+
       try {
         console.log(`[Polling Fallback] Fetching status from server for orderId: ${orderIdValue}`);
-        const response = await apiClient.get(`/payments/status/${orderIdValue}`);
+        const response = await apiClient.get(`/payments/status/${orderIdValue}?t=${Date.now()}`);
         const data = response.data;
 
+        consecutiveErrors = 0; // Reset error counter on successful response
         console.log("[Polling Fallback] Status check response:", JSON.stringify(data));
 
         if (data?.success) {
-          const status = data.status;
+          const status = String(data.status || "").toLowerCase();
           
-          if (status === "Success" || status === "success") {
+          if (status === "success" || status === "charged" || status === "paid") {
             console.log("[Polling Fallback] Payment succeeded. Stopping poll and routing to success.");
             stopStatusPolling();
             
             if (!isTransitioningRef.current) {
               isTransitioningRef.current = true;
-              if (socket && socket.connected) socket.disconnect();
+              disconnect();
               router.replace(successTarget);
             }
-          } else if (status === "failed" || status === "cancelled" || status === "Expired") {
+          } else if (status === "failed" || status === "cancelled" || status === "expired" || status === "failure") {
             console.log("[Polling Fallback] Payment unsuccessful. Stopping poll and routing to failure.");
             stopStatusPolling();
             
             if (!isTransitioningRef.current) {
               isTransitioningRef.current = true;
-              if (socket && socket.connected) socket.disconnect();
+              disconnect();
               router.replace(failureTarget);
             }
           }
         }
       } catch (error) {
-        console.error("[Polling Fallback] Error checking payment status:", error);
+        consecutiveErrors++;
+        console.error(`[Polling Fallback] Error checking payment status (error count: ${consecutiveErrors}):`, error);
+        
+        if (consecutiveErrors >= maxConsecutiveErrors) {
+          console.log("[Polling Fallback] Max consecutive status check errors reached. Routing to failure.");
+          stopStatusPolling();
+          
+          if (!isTransitioningRef.current) {
+            isTransitioningRef.current = true;
+            disconnect();
+            const connectionErrorTarget = {
+              ...failureTarget,
+              params: {
+                ...failureTarget.params,
+                message: "Unable to verify payment status due to a connection issue. Please verify in your transaction history.",
+                status: "PENDING",
+              },
+            };
+            router.replace(connectionErrorTarget);
+          }
+        }
       }
     }, 2000);
   };
@@ -343,10 +414,7 @@ export default function PaymentWebView() {
     });
 
     // Disconnect socket
-    if (socket && socket.connected) {
-      console.log("Disconnecting socket...");
-      socket.disconnect();
-    }
+    disconnect();
 
     // Small delay to ensure socket disconnection completes, then navigate to payment failure page
     setTimeout(() => {
@@ -370,7 +438,43 @@ export default function PaymentWebView() {
 
   // Handle exit confirmation (for exit modal if still used)
   const handleExitConfirm = () => {
-    handleCancelPayment();
+    setShowExitModal(false);
+    
+    // Disconnect socket and stop polling
+    disconnect();
+    stopStatusPolling();
+
+    // Retrieve stored session from global store
+    const session = useGlobalStore.getState().getCurrentPaymentSession();
+    
+    if (session) {
+      // Clean/strip stale orderId to allow fresh retries
+      const cleanedUserDetails = { ...session.userDetails } as any;
+      delete cleanedUserDetails.orderId;
+
+      console.log("🔄 Restoring payment session context and replace-navigating to paymentNewOverView");
+      router.replace({
+        pathname: "/(tabs)/home/paymentNewOverView",
+        params: {
+          amount: String(session.amount),
+          paymentType: String(cleanedUserDetails.source || cleanedUserDetails.paymentType || type || ""),
+          schemeId: String(cleanedUserDetails.schemeId || ""),
+          schemeName: String(cleanedUserDetails.schemeName || ""),
+          chitId: String(cleanedUserDetails.chitId || ""),
+          paymentFrequency: String(cleanedUserDetails.paymentFrequency || ""),
+          schemeType: String(cleanedUserDetails.schemeType || ""),
+          noOfIns: String(cleanedUserDetails.noOfIns || ""),
+          totalPaid: String(cleanedUserDetails.totalPaid || ""),
+          paidPaymentCount: String(cleanedUserDetails.paidPaymentCount || ""),
+          maturityDate: String(cleanedUserDetails.maturityDate || ""),
+          joiningDate: String(cleanedUserDetails.joiningDate || ""),
+          userDetails: JSON.stringify(cleanedUserDetails),
+        }
+      });
+    } else {
+      console.log("⚠️ No payment session found in global store. Navigating back to overview default.");
+      router.replace("/(tabs)/home/paymentNewOverView");
+    }
   };
 
   // Handle exit cancellation
@@ -428,10 +532,134 @@ export default function PaymentWebView() {
     };
   }, [socket]);
 
+  // AppState change listener for background -> foreground transitions (5s buffer before WebView reload)
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === "active"
+      ) {
+        console.log("🔄 App returned to foreground. Setting 5s buffer to yield socket status...");
+        
+        if (resumptionTimerRef.current) {
+          clearTimeout(resumptionTimerRef.current);
+        }
+
+        resumptionTimerRef.current = setTimeout(() => {
+          if (!isPaymentProcessed.current) {
+            console.log("⏰ 5-second resumption buffer elapsed without socket status. Reloading WebView to force status check...");
+            if (webViewRef.current) {
+              webViewRef.current.reload();
+            }
+          } else {
+            console.log("✅ Payment processed. No reload needed on resumption.");
+          }
+        }, 5000);
+      }
+      appState.current = nextAppState;
+    };
+
+    const appStateSubscription = AppState.addEventListener("change", handleAppStateChange);
+
+    return () => {
+      appStateSubscription.remove();
+      if (resumptionTimerRef.current) {
+        clearTimeout(resumptionTimerRef.current);
+      }
+    };
+  }, []);
+
+  // System deep link listener for fallback status queries (reload WebView on success/failure queries)
+  useEffect(() => {
+    const handleDeepLink = (event: { url: string }) => {
+      console.log("🔗 System Deep Link detected:", event.url);
+      const lowerUrl = event.url.toLowerCase();
+      
+      const hasStatusQuery = 
+        lowerUrl.includes("status=success") || 
+        lowerUrl.includes("payment=success") || 
+        lowerUrl.includes("/success") ||
+        lowerUrl.includes("status=cancelled") || 
+        lowerUrl.includes("/cancel") ||
+        lowerUrl.includes("status=failed") || 
+        lowerUrl.includes("status=failure") || 
+        lowerUrl.includes("/failed") ||
+        lowerUrl.includes("/error");
+
+      if (hasStatusQuery) {
+        console.log("🔄 Fallback status query matches in deep link. Reloading WebView...");
+        if (webViewRef.current) {
+          webViewRef.current.reload();
+        }
+      }
+    };
+
+    const deepLinkSubscription = Linking.addEventListener("url", handleDeepLink);
+
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink({ url });
+      }
+    });
+
+    return () => {
+      deepLinkSubscription.remove();
+    };
+  }, []);
+
   // Handle WebView requests
   const handleShouldStartLoadWithRequest = (request: any) => {
     const { url } = request;
     console.log("WebView attempting to load:", url);
+
+    const currentUrl = url.toLowerCase();
+    const apiDomain = themeConstants.baseUrl 
+      ? themeConstants.baseUrl.toLowerCase().replace("http://", "").replace("https://", "").split("/")[0] 
+      : "api.srithangathamarai.com";
+    const isOurDomain = currentUrl.includes(apiDomain) || currentUrl.includes("srithangathamarai.com");
+
+    const isSuccessUrl = isOurDomain && (currentUrl.includes("status=success") || currentUrl.includes("payment=success") || currentUrl.includes("/success"));
+    const isCancelUrl = isOurDomain && (currentUrl.includes("status=cancelled") || currentUrl.includes("/cancel"));
+    const isFailureUrl = isOurDomain && (currentUrl.includes("status=failed") || currentUrl.includes("status=failure") || currentUrl.includes("/failed") || currentUrl.includes("/error"));
+    const isCallbackUrl = isOurDomain && (currentUrl.includes("/payments/status") || currentUrl.includes("/loading"));
+
+    if (isSuccessUrl || isCancelUrl || isFailureUrl || isCallbackUrl) {
+      console.log("[WebView Interception] blocking URL load in handleShouldStartLoadWithRequest:", url);
+      
+      const userDetails = safeParseJSON(params.userDetails);
+      const successTarget = {
+        pathname: "/(tabs)/home/payment-success" as any,
+        params: {
+          txnId: "",
+          orderId: params.orderId as string,
+          amount: params.amount as string,
+          investmentId: userDetails?.investmentId,
+          schemeType: userDetails?.schemeType,
+          paymentFrequency: userDetails?.paymentFrequency,
+          schemeName: schemeName,
+          goldRate: goldRate,
+          joiningDate: joiningDate || userDetails?.joiningDate || "",
+          maturityDate: maturityDate || userDetails?.maturityDate || "",
+          type: type,
+          userId: params.userId as string || user?.id || "",
+        },
+      };
+      const failureTarget = {
+        pathname: "/(tabs)/home/payment-failure" as any,
+        params: {
+          message: isCancelUrl ? "Payment cancelled by user" : "Payment Verification Pending/Failed",
+          orderId: params.orderId as string,
+          txnId: "",
+          amount: params.amount as string,
+          status: isCancelUrl ? "CANCELLED" : "FAILED",
+          type: type,
+          userId: params.userId as string || user?.id || "",
+          investmentId: userDetails?.investmentId || params.investmentId || "",
+        },
+      };
+      startStatusPolling(params.orderId as string, successTarget, failureTarget);
+      return false; // Blocks the load
+    }
 
     // Allow standard web schemes
     if (
@@ -453,18 +681,41 @@ export default function PaymentWebView() {
       return true;
     }
 
+    // Handle custom schemes and intent:// parsing
+    let targetUrl = url;
+    if (url.toLowerCase().startsWith("intent://")) {
+      try {
+        // Parse intent URI: intent://pay?pa=...#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;S.browser_fallback_url=...;end
+        const parts = url.split("#Intent;");
+        if (parts.length >= 2) {
+          const intentUri = parts[0].substring(9); // remove intent://
+          let scheme = "upi";
+          const intentParams = parts[1].split(";");
+          for (const param of intentParams) {
+            if (param.startsWith("scheme=")) {
+              scheme = param.substring(7);
+            }
+          }
+          targetUrl = `${scheme}://${intentUri}`;
+          console.log("Parsed intent:// URL to:", targetUrl);
+        }
+      } catch (e) {
+        console.error("Failed to parse intent URL:", e);
+      }
+    }
+
     // Handle special schemes (tez://, upi://, phonepe://, etc.)
     // We try to open them in the respective app
-    Linking.canOpenURL(url)
+    Linking.canOpenURL(targetUrl)
       .then((supported) => {
         if (supported) {
-          return Linking.openURL(url);
+          return Linking.openURL(targetUrl);
         } else {
           // Even if canOpenURL returns false (due to visibility queries issues on Android 11+),
           // we should still TRY to open it, as it might just work if the app is installed.
           // This serves as a fail-safe.
-          console.log("canOpenURL returned false, but attempting to open anyway:", url);
-          return Linking.openURL(url).catch((err) => {
+          console.log("canOpenURL returned false, but attempting to open anyway:", targetUrl);
+          return Linking.openURL(targetUrl).catch((err) => {
             console.log("Failed to open URL forcibly:", err);
             // If it really fails, THEN show the alert
             Alert.alert(
@@ -472,15 +723,11 @@ export default function PaymentWebView() {
               "Could not open the selected payment app. Please install it or try another method.",
               [{ text: "OK", onPress: () => {} }]
             );
-            // Throw to prevent the next catch block from thinking it succeeded? 
-            // Actually catching it here is enough.
           });
         }
       })
       .catch((err) => {
           console.error("An error occurred handling the URL:", err);
-          // Only show generic error if we haven't already shown specific one
-          // (Logic simplified above to handle openURL failure directly)
       });
 
     return false;
@@ -532,258 +779,41 @@ export default function PaymentWebView() {
                   </Text>
                 </View>
               )}
-
-            {Platform.OS === 'android' ? (
-              <WebView
+               <WebView
                 ref={webViewRef}
-                source={{ uri: url }}
+                source={webViewSource}
                 style={{ flex: 1 }}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
                 originWhitelist={["*"]}
+                userAgent={
+                  Platform.OS === "android"
+                    ? "Mozilla/5.0 (Linux; Android 13; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36"
+                    : "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1"
+                }
                 startInLoadingState={true}
+                injectedJavaScriptBeforeContentLoaded={INJECTED_JS}
                 renderLoading={() => (
                   <View style={styles.webViewLoading}>
-                    <ActivityIndicator size="large" color={theme.colors.secondary} />
-                    <Text style={styles.webViewLoadingText}>Loading secure payment gateway...</Text>
-                  </View>
-                )}
-                allowsInlineMediaPlayback={true}
-                thirdPartyCookiesEnabled={true}
-                textZoom={100}
-                scalesPageToFit={true}
-                overScrollMode="never"
-                mixedContentMode="always"
-                setSupportMultipleWindows={false}
-                cacheEnabled={true}
-                onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
-                onOpenWindow={(event) => {
-                  console.log("OPEN WINDOW:", event.nativeEvent);
-                }}
-                onLoadStart={() => {
-                  console.log("WebView started loading:", url);
-                }}
-                onLoadEnd={() => {
-                  console.log("WebView finished loading");
-                }}
-                onNavigationStateChange={(navState) => {
-                  console.log("Payment Navigation State:", {
-                    url: navState.url,
-                    title: navState.title,
-                    loading: navState.loading,
-                    canGoBack: navState.canGoBack,
-                  });
-
-                  // Check for about:blank URL blocking scenario
-                  if (
-                    navState.url === "about:blank" &&
-                    !navState.title &&
-                    !navState.loading &&
-                    !urlBlockedAlertShown.current
-                  ) {
-                    urlBlockedAlertShown.current = true;
-
-                    // Disconnect socket
-                    if (socket && socket.connected) {
-                      socket.disconnect();
-                    }
-
-                    // Show alert about URL blocking
-                    Alert.alert(
-                      "URL Blocked",
-                      "The payment URL has been blocked. Please check with customer service for assistance.",
-                      [
-                        {
-                          text: "OK",
-                          onPress: () => {
-                            // Navigate to payment failure page
-                            router.replace({
-                              pathname: "/(tabs)/home/payment-failure",
-                              params: {
-                                message: "Payment URL blocked. Please contact customer service.",
-                                orderId: params.orderId as string,
-                                txnId: "",
-                                amount: params.amount as string,
-                                status: "blocked",
-                              },
-                            });
-                          },
-                        },
-                      ]
-                    );
-                    return;
-                  }
-
-                  const currentUrl = navState.url.toLowerCase();
-                  
-                  // Check for explicit cancel/failed status in the URL first
-                  const isExplicitCancel = currentUrl.includes("status=cancelled") || currentUrl.includes("/cancel");
-                  const isExplicitFailure = currentUrl.includes("status=failed") || currentUrl.includes("status=failure") || currentUrl.includes("/failed") || currentUrl.includes("/error");
-                  
-                  if (isExplicitCancel || isExplicitFailure) {
-                    console.log(`[DEBUG Payment Flow] WebView reached explicit cancel/failure page (${isExplicitCancel ? 'Cancel' : 'Failure'}). Routing to failure screen...`);
-                    stopStatusPolling();
-                    if (socket && socket.connected) {
-                      socket.disconnect();
-                    }
-                    
-                    if (!isTransitioningRef.current) {
-                      isTransitioningRef.current = true;
-                      const userDetails = safeParseJSON(params.userDetails);
-                      const investmentId = userDetails?.investmentId || params.investmentId || "";
-                      router.replace({
-                        pathname: "/(tabs)/home/payment-failure",
-                        params: {
-                          message: isExplicitCancel ? "Payment cancelled by user" : "Payment Verification Pending/Failed",
-                          orderId: params.orderId as string || "",
-                          txnId: "",
-                          amount: params.amount as string || "",
-                          status: isExplicitCancel ? "CANCELLED" : "FAILED",
-                          type: type,
-                          userId: params.userId as string || user?.id || "",
-                          investmentId: String(investmentId),
-                        },
-                      });
-                    }
-                    return;
-                  }
-
-                  if (currentUrl.includes("/payments/status") || currentUrl.includes("/loading")) {
-                    console.log("[DEBUG Payment Flow] WebView reached return url callback page. Starting polling...");
-                    const userDetails = safeParseJSON(params.userDetails);
-                    const successTarget = {
-                      pathname: "/(tabs)/home/payment-success" as any,
-                      params: {
-                        txnId: "",
-                        orderId: params.orderId as string,
-                        amount: params.amount as string,
-                        investmentId: userDetails?.investmentId,
-                        schemeType: userDetails?.schemeType,
-                        paymentFrequency: userDetails?.paymentFrequency,
-                        schemeName: schemeName,
-                        goldRate: goldRate,
-                        joiningDate: joiningDate || userDetails?.joiningDate || "",
-                        maturityDate: maturityDate || userDetails?.maturityDate || "",
-                        type: type,
-                        userId: params.userId as string || user?.id || "",
-                      },
-                    };
-                    const failureTarget = {
-                      pathname: "/(tabs)/home/payment-failure" as any,
-                      params: {
-                        message: "Payment Verification Pending/Failed",
-                        orderId: params.orderId as string,
-                        txnId: "",
-                        amount: params.amount as string,
-                        status: "FAILED",
-                        type: type,
-                        userId: params.userId as string || user?.id || "",
-                        investmentId: userDetails?.investmentId || params.investmentId || "",
-                      },
-                    };
-                    startStatusPolling(params.orderId as string, successTarget, failureTarget);
-                  }
-                }}
-                onError={(err) => {
-                  console.log("WebView Error:", err);
-                  const errorCode = err.nativeEvent?.code;
-                  const errorDescription = err.nativeEvent?.description || '';
-                  const errorDomain = err.nativeEvent?.domain || '';
-
-                  // Check if it's a network connectivity error
-                  const isNetworkError =
-                    errorCode === -1009 || // NSURLErrorNotConnectedToInternet (iOS)
-                    errorCode === -1001 || // NSURLErrorTimedOut
-                    errorCode === -1004 || // NSURLErrorCannotConnectToHost
-                    errorDescription.toLowerCase().includes('offline') ||
-                    errorDescription.toLowerCase().includes('internet connection') ||
-                    errorDescription.toLowerCase().includes('network') ||
-                    errorDomain.includes('NSURLErrorDomain');
-
-                  if (isNetworkError) {
-                    console.log("⚠️ WebView network error detected - handled by connection monitoring");
-                    // Don't show alert - the connection banner will handle this
-                    // Network monitoring will automatically retry when connection is restored
-                    return;
-                  }
-
-                  // Only show alert for non-network errors
-                  Alert.alert(
-                    "WebView Error",
-                    `Failed to load payment page: ${errorDescription || 'Unknown error'}`,
-                    [
-                      {
-                        text: "OK",
-                        onPress: () => {
-                          // Optionally reload the page
-                          // webViewRef.current?.reload();
-                        }
-                      }
-                    ]
-                  );
-                }}
-                onHttpError={(e) => {
-                  console.log("HTTP error:", e.nativeEvent);
-                  const statusCode = e.nativeEvent.statusCode;
-                  const description = e.nativeEvent.description || '';
-
-                  // Don't show alert for network-related HTTP errors
-                  // These are handled by the connection monitoring
-                  if (statusCode === 0 || statusCode >= 500) {
-                    console.log("⚠️ HTTP error likely due to network - handled by connection monitoring");
-                    return;
-                  }
-
-                  // Only show alert for client errors (4xx) that aren't network-related
-                  if (statusCode >= 400 && statusCode < 500) {
-                    Alert.alert(
-                      "HTTP Error",
-                      `HTTP Error: ${statusCode} - ${description}`,
-                      [
-                        {
-                          text: "OK",
-                          onPress: () => {
-                            // Optionally handle the error
-                          }
-                        }
-                      ]
-                    );
-                  }
-                }}
-              />
-            ) : (
-              <WebView
-                ref={webViewRef}
-                source={{ uri: url }}
-                style={{ flex: 1 }}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                originWhitelist={["*"]}
-                startInLoadingState={true}
-                renderLoading={() => (
-                  <View style={styles.webViewLoading}>
-                    <ActivityIndicator size="large" color={theme.colors.secondary} />
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
                     <Text style={styles.webViewLoadingText}>Loading secure payment gateway...</Text>
                   </View>
                 )}
                 allowsInlineMediaPlayback={true}
                 sharedCookiesEnabled={true}
                 thirdPartyCookiesEnabled={true}
-                setSupportMultipleWindows={true}
+                setSupportMultipleWindows={false}
                 onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
-                onOpenWindow={(event) => {
-                  console.log("OPEN WINDOW:", event.nativeEvent);
-                }}
                 allowsBackForwardNavigationGestures={true}
                 allowsLinkPreview={false}
-                userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Safari/604.1"
                 cacheEnabled={true}
                 incognito={false}
                 onLoadStart={() => {
-                  console.log("WebView started loading:", url);
+                  console.log("WebView started loading");
                 }}
                 onLoadEnd={() => {
                   console.log("WebView finished loading");
+                  hasLoadedRealUrl.current = true;
                 }}
                 onNavigationStateChange={(navState) => {
                   console.log("Payment Navigation State:", {
@@ -801,13 +831,7 @@ export default function PaymentWebView() {
                     !urlBlockedAlertShown.current
                   ) {
                     urlBlockedAlertShown.current = true;
-
-                    // Disconnect socket
-                    if (socket && socket.connected) {
-                      socket.disconnect();
-                    }
-
-                    // Show alert about URL blocking
+                    disconnect();
                     Alert.alert(
                       "URL Blocked",
                       "The payment URL has been blocked. Please check with customer service for assistance.",
@@ -815,7 +839,6 @@ export default function PaymentWebView() {
                         {
                           text: "OK",
                           onPress: () => {
-                            // Navigate to payment failure page
                             router.replace({
                               pathname: "/(tabs)/home/payment-failure",
                               params: {
@@ -834,41 +857,26 @@ export default function PaymentWebView() {
                   }
 
                   const currentUrl = navState.url.toLowerCase();
+                  const apiDomain = themeConstants.baseUrl 
+                    ? themeConstants.baseUrl.toLowerCase().replace("http://", "").replace("https://", "").split("/")[0] 
+                    : "api.srithangathamarai.com";
+                  const isOurDomain = currentUrl.includes(apiDomain) || currentUrl.includes("srithangathamarai.com");
                   
-                  // Check for explicit cancel/failed status in the URL first
-                  const isExplicitCancel = currentUrl.includes("status=cancelled") || currentUrl.includes("/cancel");
-                  const isExplicitFailure = currentUrl.includes("status=failed") || currentUrl.includes("status=failure") || currentUrl.includes("/failed") || currentUrl.includes("/error");
+                  // Check for landing URLs
+                  const isSuccessUrl = isOurDomain && (currentUrl.includes("status=success") || currentUrl.includes("payment=success") || currentUrl.includes("/success"));
+                  const isCancelUrl = isOurDomain && (currentUrl.includes("status=cancelled") || currentUrl.includes("/cancel"));
+                  const isFailureUrl = isOurDomain && (currentUrl.includes("status=failed") || currentUrl.includes("status=failure") || currentUrl.includes("/failed") || currentUrl.includes("/error"));
+                  const isCallbackUrl = isOurDomain && (currentUrl.includes("/payments/status") || currentUrl.includes("/loading"));
                   
-                  if (isExplicitCancel || isExplicitFailure) {
-                    console.log(`[DEBUG Payment Flow] WebView reached explicit cancel/failure page (${isExplicitCancel ? 'Cancel' : 'Failure'}). Routing to failure screen...`);
-                    stopStatusPolling();
-                    if (socket && socket.connected) {
-                      socket.disconnect();
-                    }
+                  if (isSuccessUrl || isCancelUrl || isFailureUrl || isCallbackUrl) {
+                    console.log("[WebView Interception] Intercepted landing/callback URL:", navState.url);
                     
-                    if (!isTransitioningRef.current) {
-                      isTransitioningRef.current = true;
-                      const userDetails = safeParseJSON(params.userDetails);
-                      const investmentId = userDetails?.investmentId || params.investmentId || "";
-                      router.replace({
-                        pathname: "/(tabs)/home/payment-failure",
-                        params: {
-                          message: isExplicitCancel ? "Payment cancelled by user" : "Payment Verification Pending/Failed",
-                          orderId: params.orderId as string || "",
-                          txnId: "",
-                          amount: params.amount as string || "",
-                          status: isExplicitCancel ? "CANCELLED" : "FAILED",
-                          type: type,
-                          userId: params.userId as string || user?.id || "",
-                          investmentId: String(investmentId),
-                        },
-                      });
+                    // Stop webview loading to block redirection
+                    if (webViewRef.current) {
+                      webViewRef.current.stopLoading();
                     }
-                    return;
-                  }
 
-                  if (currentUrl.includes("/payments/status") || currentUrl.includes("/loading")) {
-                    console.log("[DEBUG Payment Flow] WebView reached return url callback page. Starting polling...");
+                    // Start polling status check, socket will handle navigation with verified backend details
                     const userDetails = safeParseJSON(params.userDetails);
                     const successTarget = {
                       pathname: "/(tabs)/home/payment-success" as any,
@@ -890,11 +898,11 @@ export default function PaymentWebView() {
                     const failureTarget = {
                       pathname: "/(tabs)/home/payment-failure" as any,
                       params: {
-                        message: "Payment Verification Pending/Failed",
+                        message: isCancelUrl ? "Payment cancelled by user" : "Payment Verification Pending/Failed",
                         orderId: params.orderId as string,
                         txnId: "",
                         amount: params.amount as string,
-                        status: "FAILED",
+                        status: isCancelUrl ? "CANCELLED" : "FAILED",
                         type: type,
                         userId: params.userId as string || user?.id || "",
                         investmentId: userDetails?.investmentId || params.investmentId || "",
@@ -921,22 +929,16 @@ export default function PaymentWebView() {
 
                   if (isNetworkError) {
                     console.log("⚠️ WebView network error detected - handled by connection monitoring");
-                    // Don't show alert - the connection banner will handle this
-                    // Network monitoring will automatically retry when connection is restored
                     return;
                   }
 
-                  // Only show alert for non-network errors
                   Alert.alert(
                     "WebView Error",
                     `Failed to load payment page: ${errorDescription || 'Unknown error'}`,
                     [
                       {
                         text: "OK",
-                        onPress: () => {
-                          // Optionally reload the page
-                          // webViewRef.current?.reload();
-                        }
+                        onPress: () => {}
                       }
                     ]
                   );
@@ -946,14 +948,11 @@ export default function PaymentWebView() {
                   const statusCode = e.nativeEvent.statusCode;
                   const description = e.nativeEvent.description || '';
 
-                  // Don't show alert for network-related HTTP errors
-                  // These are handled by the connection monitoring
                   if (statusCode === 0 || statusCode >= 500) {
                     console.log("⚠️ HTTP error likely due to network - handled by connection monitoring");
                     return;
                   }
 
-                  // Only show alert for client errors (4xx) that aren't network-related
                   if (statusCode >= 400 && statusCode < 500) {
                     Alert.alert(
                       "HTTP Error",
@@ -961,16 +960,13 @@ export default function PaymentWebView() {
                       [
                         {
                           text: "OK",
-                          onPress: () => {
-                            // Optionally handle the error
-                          }
+                          onPress: () => {}
                         }
                       ]
                     );
                   }
                 }}
               />
-            )}
             </View>
           </View>
         </View>
@@ -1169,4 +1165,4 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
 }) }
 
-var styles = getStyles(theme);;
+var styles = getStyles(themeConstants);;

@@ -1,5 +1,3 @@
-import { theme } from "@/constants/theme";
-import { useAppTheme } from "@/store/global.store";
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -17,8 +15,6 @@ import * as SecureStore from "expo-secure-store";
 const MPIN_KEY = "user_mpin";
 
 export default function AuthScreen({ navigation }: { navigation: any }) {
-  const theme = useAppTheme();
-  styles = getStyles(theme);
   const [isMpinSet, setIsMpinSet] = useState(false);
   const [mpin, setMpin] = useState(""); // For setting a new MPIN
   const [enteredMpin, setEnteredMpin] = useState(""); // For verifying MPIN
@@ -114,7 +110,6 @@ export default function AuthScreen({ navigation }: { navigation: any }) {
           <TextInput
             style={styles.input}
             placeholder="Enter MPIN"
-            placeholderTextColor={COLORS.text.grey}
             secureTextEntry
             keyboardType="numeric"
             value={mpin}
@@ -130,7 +125,6 @@ export default function AuthScreen({ navigation }: { navigation: any }) {
           <TextInput
             style={styles.input}
             placeholder="Enter MPIN"
-            placeholderTextColor={COLORS.text.grey}
             secureTextEntry
             keyboardType="numeric"
             value={enteredMpin}
@@ -145,7 +139,7 @@ export default function AuthScreen({ navigation }: { navigation: any }) {
   );
 }
 
-function getStyles(theme: any) { return StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
@@ -172,7 +166,6 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginVertical: 10,
     textAlign: "center",
     fontSize: 18,
-    color: COLORS.textSecondary,
   },
   button: {
     backgroundColor: COLORS.info,
@@ -187,6 +180,4 @@ function getStyles(theme: any) { return StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
-}) }
-
-var styles = getStyles(theme);;
+});

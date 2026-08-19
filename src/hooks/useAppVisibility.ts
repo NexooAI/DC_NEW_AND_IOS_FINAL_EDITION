@@ -25,6 +25,13 @@ export interface AppVisibilityData {
     showTranslate: number;
     showYoutube: number;
     showSchemsPage: number;
+    showReferEarn?: number;
+    showLuckyDraw?: number;
+    showGoldScheme?: number;
+    showSilverScheme?: number;
+    showDiamondScheme?: number;
+    showPlatinumScheme?: number;
+    showOldGoldScheme?: number;
     updated_at: string;
 }
 
@@ -80,15 +87,22 @@ export function useAppVisibility() {
             // Default core components to true if visibleData is not loaded yet
             const defaultVisible: Array<keyof Omit<AppVisibilityData, 'id' | 'updated_at'>> = [
                 'showGoldRate', 'showPoster', 'showFlashnews', 'showCustomerCard',
-                'showSchemes', 'showSocialMedia', 'showSupportCard', 'showHallmark'
+                'showSchemes', 'showSocialMedia', 'showSupportCard', 'showHallmark',
+                'showReferEarn', 'showLuckyDraw', 'showGoldScheme', 'showSilverScheme',
+                'showDiamondScheme', 'showPlatinumScheme', 'showOldGoldScheme'
             ];
             return defaultVisible.includes(componentName);
         }
-        // Ensure gold rate component defaults to true unless explicitly disabled (0)
-        if (componentName === 'showGoldRate') {
-            return visibleData[componentName] !== 0;
+        // Ensure core components default to true unless explicitly disabled (0)
+        if (
+            componentName === 'showGoldRate' || componentName === 'showReferEarn' || 
+            componentName === 'showLuckyDraw' || componentName === 'showGoldScheme' || 
+            componentName === 'showSilverScheme' || componentName === 'showDiamondScheme' || 
+            componentName === 'showPlatinumScheme' || componentName === 'showOldGoldScheme'
+        ) {
+            return (visibleData as any)[componentName] !== 0;
         }
-        return visibleData[componentName] === 1;
+        return (visibleData as any)[componentName] === 1;
     }, [visibleData]);
 
     // Helper function to get all visible components

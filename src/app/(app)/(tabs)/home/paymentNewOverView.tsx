@@ -107,6 +107,27 @@ export default function PaymentNewOverView() {
   const router = useRouter();
   const { language, user } = useGlobalStore();
   const [userDetails, setUserDetails] = useState<any>(null);
+  const [branches, setBranches] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadBranches = async () => {
+      try {
+        const { fetchBranchesWithCache } = await import("@/utils/apiCache");
+        const branchData = await fetchBranchesWithCache() || [];
+        setBranches(branchData);
+      } catch (e) {
+        logger.error("Error loading branches in overview:", e);
+      }
+    };
+    loadBranches();
+  }, []);
+
+  const branchName = useMemo(() => {
+    const branchId = userDetails?.associated_branch || userDetails?.branchId || userDetails?.branch_id || (user as any)?.branch_id || "";
+    if (!branchId) return "";
+    const b = branches.find(item => String(item.id) === String(branchId));
+    return b ? b.branch_name : "";
+  }, [branches, userDetails, user]);
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [termsContent, setTermsContent] = useState("test");
@@ -123,6 +144,7 @@ export default function PaymentNewOverView() {
   const [isMounted, setIsMounted] = useState(true); // Track component mount state
   const isNavigatingRef = useRef(false); // Prevent multiple simultaneous navigations
   const isMountedRef = useRef(true); // More reliable mount tracking for async operations
+  const isProcessingRef = useRef(false);
   // Check for Flexi type using both paymentFrequency and schemeType parameters
   const hybridStatus = useMemo(() => {
     if (params.hybridStatus) {
@@ -271,6 +293,7 @@ export default function PaymentNewOverView() {
     useCallback(() => {
       setIsProcessing(false);
       isNavigatingRef.current = false; // Reset navigation flag
+      isProcessingRef.current = false;
     }, [])
   );
 
@@ -281,8 +304,14 @@ export default function PaymentNewOverView() {
       isMountedRef.current = false;
       setIsMounted(false);
       isNavigatingRef.current = false;
+      isProcessingRef.current = false;
     };
   }, []);
+
+  // Sync isProcessing state to ref for synchronous double-tap prevention
+  useEffect(() => {
+    isProcessingRef.current = isProcessing;
+  }, [isProcessing]);
 
   // Handle hardware back button press
   useFocusEffect(
@@ -791,7 +820,8 @@ export default function PaymentNewOverView() {
 
   const handlePayment = async () => {
     // Immediate UX feedback and guards
-    if (isProcessing) return;
+    if (isProcessing || isProcessingRef.current) return;
+    isProcessingRef.current = true;
     if (!currentAmount || currentAmount <= 0) {
       if (isMountedRef.current) {
         Alert.alert(
@@ -852,7 +882,7 @@ export default function PaymentNewOverView() {
         };
         useGlobalStore.getState().storePaymentSession(sessionData);
 
-        router.push({
+        router.replace({
           pathname: '/(tabs)/home/PaymentWebView',
           params: {
             url: paymentUrl,
@@ -885,7 +915,8 @@ export default function PaymentNewOverView() {
           paymentMode: "UPI",
           accountNumber: userDetails.accountNo,
           source: "APP",
-          expiryDate: params.expiryDate as string
+          expiryDate: params.expiryDate as string,
+          branchId: userDetails.associated_branch || userDetails.branchId || userDetails.branch_id || user?.branch_id || 1,
         };
 
         logger.log("[DEBUG Payment Flow Overview] Calling advanceBookingAPI.createBooking with:", JSON.stringify(payload));
@@ -922,7 +953,7 @@ export default function PaymentNewOverView() {
         };
         useGlobalStore.getState().storePaymentSession(sessionData);
 
-        router.push({
+        router.replace({
           pathname: '/(tabs)/home/PaymentWebView',
           params: {
             url: String(paymentLink),
@@ -966,7 +997,7 @@ export default function PaymentNewOverView() {
           throw new Error(response?.data?.message || 'Repayment session not available');
         }
 
-        router.push({
+        router.replace({
           pathname: '/(tabs)/home/PaymentWebView',
           params: {
             url: String(paymentLink),
@@ -1047,6 +1078,7 @@ export default function PaymentNewOverView() {
           userDetails?.chitId ||
           (Array.isArray(params.chitId) ? params.chitId[0] : params.chitId),
         paymentFrequency: params.paymentFrequency,
+        branchId: userDetails?.associated_branch || userDetails?.branchId || userDetails?.branch_id || user?.branch_id || 1,
       };
 
       logger.log("initialpayment ======>", payload);
@@ -1085,7 +1117,7 @@ export default function PaymentNewOverView() {
         };
         useGlobalStore.getState().storePaymentSession(sessionData);
 
-        router.push({
+        router.replace({
           pathname: "/(tabs)/home/PaymentWebView",
           params: {
             url: paymentUrl,
@@ -1145,7 +1177,7 @@ export default function PaymentNewOverView() {
         };
         useGlobalStore.getState().storePaymentSession(sessionData);
 
-        router.push({
+        router.replace({
           pathname: "/(tabs)/home/PaymentWebView",
           params: {
             url: paymentUrl,
@@ -1633,7 +1665,7 @@ export default function PaymentNewOverView() {
               <View style={styles.schemeDetailsRow}>
                 <Text style={styles.schemeDetailLabel}>{t("accountNo")}:</Text>
                 <Text style={styles.schemeDetailValue}>
-                  {params.accNo ? `DCJ-${params.accNo}` : (userDetails?.accNo || "N/A")}
+                  {params.accNo ? `STT-${params.accNo}` : (userDetails?.accNo || "N/A")}
                 </Text>
               </View>
 
@@ -1702,6 +1734,12 @@ export default function PaymentNewOverView() {
                 <Text style={styles.schemeDetailLabel}>{t("schemeName")}:</Text>
                 <Text style={styles.schemeDetailValue}>{schemeName}</Text>
               </View>
+              {!!branchName && (
+                <View style={styles.schemeDetailsRow}>
+                  <Text style={styles.schemeDetailLabel}>{t("branchName") || "Branch Name"}:</Text>
+                  <Text style={styles.schemeDetailValue}>{branchName}</Text>
+                </View>
+              )}
             </Animated.View>
           </View>
         )}

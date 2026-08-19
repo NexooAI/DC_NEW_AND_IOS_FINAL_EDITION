@@ -171,7 +171,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
                 {translations.accountNumberLabel || "Account Number"}
               </Text>
               <Text style={styles.paymentInfoValue}>
-                DCJ-OG-{item.id}
+                STT-OG-{item.id}
               </Text>
             </View>
           </View>
@@ -382,7 +382,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
           }}
         >
           <LinearGradient
-            colors={theme.colors.gradientPrimary}
+            colors={theme.colors.gradientPrimary || ["#0b162c", "#16315c", "#d4af37"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.detailsButtonGradient}

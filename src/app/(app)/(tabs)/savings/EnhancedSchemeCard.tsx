@@ -518,7 +518,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                   {translations.accountNumberLabel}
                 </Text>
                 <Text style={styles.paymentInfoValue}>
-                  DCJ-{item.accNo}
+                  STT-{item.accNo}
                 </Text>
               </View>
             </View>
@@ -590,7 +590,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             }}
           >
             <LinearGradient
-              colors={theme.colors.gradientPrimary}
+              colors={theme.colors.gradientPrimary || ["#0b162c", "#16315c", "#d4af37"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.detailsButtonGradient}
@@ -618,7 +618,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                 colors={
                   isLoading
                     ? ["#6B6B6B", "#4A4A4A", "#2E2E2E"] // Disabled / Loading
-                    : theme.colors.gradientPrimary // Use theme primary gradient
+                    : (theme.colors.gradientPrimary || ["#0b162c", "#16315c", "#d4af37"]) // Use theme primary gradient
                 }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}

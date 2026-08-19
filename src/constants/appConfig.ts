@@ -34,5 +34,8 @@ export const APP_CONFIG = {
   longitude: themeConfig.longitude || 0,
   foundationYear: themeConfig.foundationYear || 0,
   baseUrl: themeConfig.baseUrl || "",
+  urls: {
+    baseUrl: themeConfig.baseUrl || "",
+  },
   youtubeUrl: themeConfig.youtubeUrl || "",
 };

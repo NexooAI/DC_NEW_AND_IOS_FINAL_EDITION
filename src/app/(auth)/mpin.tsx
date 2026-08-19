@@ -1,4 +1,3 @@
-import { theme } from "@/constants/theme";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -14,6 +13,9 @@ import {
   TextInput,
   NativeSyntheticEvent,
   TextInputKeyPressEventData,
+  Keyboard,
+  Pressable,
+  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -22,11 +24,12 @@ import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "@/constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
-import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
+import useGlobalStore from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 import ResponsiveButton from "@/components/ResponsiveButton";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { registerStyles } from "../../_styles/registerStyles";
+import { theme } from "@/constants";
 
 const { width } = Dimensions.get("window");
 
@@ -101,8 +104,6 @@ const MpinInput = ({
 };
 
 export default function MpinSetup() {
-  const theme = useAppTheme();
-  styles = getStyles(theme);
   const { name, email, mobile, referral_code, branch_id } = useLocalSearchParams();
   const router = useRouter();
   const { t } = useTranslation();
@@ -166,8 +167,22 @@ export default function MpinSetup() {
           usertype: data.user.userType,
         });
 
-        const destination = getAppConfig().constants.enableDashboard ? "/(app)/dashboard" : "/(app)/(tabs)/home";
-        router.replace(destination);
+        try {
+          const visResponse = await api.get('/app-visible', {
+            headers: { Authorization: `Bearer ${data.token}` }
+          });
+          if (visResponse.data) {
+            useGlobalStore.getState().setCachedVisibility(visResponse.data);
+            if (visResponse.data.showDashboardAfterLogin === 0) {
+              router.replace("/(app)/(tabs)/home");
+              return;
+            }
+          }
+        } catch (visError) {
+          console.error("Error fetching visibility config in mpin.tsx:", visError);
+        }
+
+        router.replace("/(app)/dashboard");
       }
     } catch (error: any) {
       Alert.alert(
@@ -181,6 +196,7 @@ export default function MpinSetup() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary} />
       <ImageBackground
         source={require("../../../assets/images/bg_login.jpg")}
         style={styles.backgroundImage}
@@ -193,102 +209,95 @@ export default function MpinSetup() {
             behavior={undefined}
             style={styles.keyboardAvoidingView}
           >
-            {/* Header with Back Button */}
-            {/* <View style={styles.header}>
-              <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-              </TouchableOpacity>
-              <Text style={styles.headerTitle}>{t("setMpinTitle")}</Text>
-              <View style={styles.headerSpacer} />
-            </View> */}
+            <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
+              <View style={styles.mainContent}>
+                {/* <Image
+                  source={require("../../../assets/images/logo_trans.png")}
+                  style={styles.logo}
+                  resizeMode="contain"
+                /> */}
 
-            <View style={styles.mainContent}>
-              {/* <Image
-                source={require("../../../assets/images/logo_trans.png")}
-                style={styles.logo}
-                resizeMode="contain"
-              /> */}
+                <Text style={styles.pageTitle}>{t("setMpinTitle")}</Text>
+                <Text style={styles.pageSubtitle}>{t("setMpinSubtitle")}</Text>
 
-              <Text style={styles.pageTitle}>{t("setMpinTitle")}</Text>
-              <Text style={styles.pageSubtitle}>{t("setMpinSubtitle")}</Text>
-
-              <Text style={styles.sectionLabel}>{t("createMpinLabel")}</Text>
-              <View style={styles.mpinSection}>
-                <MpinInput
-                  onComplete={setMpin}
-                  showValues={showMpin}
-                  resetTrigger={resetTrigger}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowMpin(!showMpin)}
-                  style={styles.eyeButton}
-                >
-                  <Ionicons
-                    name={showMpin ? "eye-off" : "eye"}
-                    size={20}
-                    color={COLORS.primary}
+                <Text style={styles.sectionLabel}>{t("createMpinLabel")}</Text>
+                <View style={styles.mpinSection}>
+                  <MpinInput
+                    onComplete={setMpin}
+                    showValues={showMpin}
+                    resetTrigger={resetTrigger}
                   />
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.sectionLabel}>{t("confirmMpinLabel")}</Text>
-              <View style={styles.mpinSection}>
-                <MpinInput
-                  onComplete={setConfirmMpin}
-                  showValues={showConfirmMpin}
-                  resetTrigger={resetTrigger}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowConfirmMpin(!showConfirmMpin)}
-                  style={styles.eyeButton}
-                >
-                  <Ionicons
-                    name={showConfirmMpin ? "eye-off" : "eye"}
-                    size={20}
-                    color={COLORS.primary}
-                  />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.buttonContainer}>
-                <ResponsiveButton
-                  title={loading ? t("processing") : t("setMpinButton")}
-                  variant="primary"
-                  size="lg"
-                  fullWidth={true}
-                  loading={loading}
-                  disabled={
-                    mpin.length !== 4 ||
-                    confirmMpin.length !== 4 ||
-                    mpin !== confirmMpin
-                  }
-                  onPress={handleSubmit}
-                  style={styles.submitButton}
-                />
-
-                <View style={styles.actionButtonsContainer}>
                   <TouchableOpacity
-                    onPress={handleReset}
-                    style={styles.actionButton}
-                  >
-                    <Ionicons name="refresh" size={20} color={COLORS.primary} />
-                    <Text style={styles.actionButtonText}>{t("reset")}</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={handleBack}
-                    style={styles.actionButton}
+                    onPress={() => setShowMpin(!showMpin)}
+                    style={styles.eyeButton}
                   >
                     <Ionicons
-                      name="arrow-back"
+                      name={showMpin ? "eye-off" : "eye"}
                       size={20}
                       color={COLORS.primary}
                     />
-                    <Text style={styles.actionButtonText}>{t("back")}</Text>
                   </TouchableOpacity>
                 </View>
+
+                <Text style={styles.sectionLabel}>{t("confirmMpinLabel")}</Text>
+                <View style={styles.mpinSection}>
+                  <MpinInput
+                    onComplete={setConfirmMpin}
+                    showValues={showConfirmMpin}
+                    resetTrigger={resetTrigger}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmMpin(!showConfirmMpin)}
+                    style={styles.eyeButton}
+                  >
+                    <Ionicons
+                      name={showConfirmMpin ? "eye-off" : "eye"}
+                      size={20}
+                      color={COLORS.primary}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.buttonContainer}>
+                  <ResponsiveButton
+                    title={loading ? t("processing") : t("setMpinButton")}
+                    variant="primary"
+                    size="lg"
+                    fullWidth={true}
+                    loading={loading}
+                    disabled={
+                      mpin.length !== 4 ||
+                      confirmMpin.length !== 4 ||
+                      mpin !== confirmMpin
+                    }
+                    onPress={handleSubmit}
+                    style={styles.submitButton}
+                  />
+
+                  <View style={styles.actionButtonsContainer}>
+                    <TouchableOpacity
+                      onPress={handleReset}
+                      style={styles.actionButton}
+                    >
+                      <Ionicons name="refresh" size={20} color={COLORS.primary} />
+                      <Text style={styles.actionButtonText}>{t("reset")}</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={handleBack}
+                      style={styles.actionButton}
+                    >
+                      <Ionicons
+                        name="arrow-back"
+                        size={20}
+                        color={COLORS.primary}
+                      />
+                      <Text style={styles.actionButtonText}>{t("back")}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
-            </View>
+            </Pressable>
           </KeyboardAvoidingView>
         </LinearGradient>
       </ImageBackground>
@@ -296,7 +305,7 @@ export default function MpinSetup() {
   );
 }
 
-function getStyles(theme: any) { return StyleSheet.create({
+const styles = StyleSheet.create({
   container: { flex: 1 },
   backgroundImage: { flex: 1, resizeMode: "cover" },
   gradient: { flex: 1 },
@@ -317,7 +326,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: theme.colors.textDark,
+    color: COLORS.primary,
     flex: 1,
     textAlign: "center",
   },
@@ -333,13 +342,13 @@ function getStyles(theme: any) { return StyleSheet.create({
   pageTitle: {
     fontSize: 22,
     fontWeight: "bold",
-    color: theme.colors.textDark,
+    color: COLORS.primary,
     marginBottom: 6,
     textAlign: "center",
   },
   pageSubtitle: {
     fontSize: 14,
-    color: theme.colors.textDark,
+    color: COLORS.primary,
     marginBottom: 20,
     textAlign: "center",
     opacity: 0.8,
@@ -347,7 +356,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   sectionLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: theme.colors.textDark,
+    color: COLORS.primary,
     marginTop: 10,
     marginBottom: 8,
     textAlign: "center",
@@ -368,11 +377,11 @@ function getStyles(theme: any) { return StyleSheet.create({
     height: 50,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    color: theme.colors.textDark,
+    borderColor: COLORS.primary,
+    color: COLORS.primary,
     fontSize: 20,
     textAlign: "center",
-    backgroundColor: theme.colors.backgroundSecondary,
+    backgroundColor: "rgba(255,255,255,0.1)",
   },
   eyeButton: {
     padding: 8,
@@ -404,7 +413,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     minWidth: 100,
   },
   actionButtonText: {
-    color: theme.colors.textDark,
+    color: COLORS.primary,
     fontSize: 14,
     fontWeight: "600",
     marginLeft: 6,
@@ -412,6 +421,4 @@ function getStyles(theme: any) { return StyleSheet.create({
   submitButton: {
     marginTop: 0,
   },
-}) }
-
-var styles = getStyles(theme);;
+});

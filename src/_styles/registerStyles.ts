@@ -4,8 +4,7 @@ import COLORS from "@/constants/colors";
 // Helper to get active colors safely
 const getActiveColors = () => {
   try {
-    const useGlobalStore = require('@/store/global.store').default;
-    return useGlobalStore.getState()?.appConfig?.colors || require('@/constants/colors').default;
+    return require('@/constants/colors').default;
   } catch (e) {
     return require('@/constants/colors').default;
   }

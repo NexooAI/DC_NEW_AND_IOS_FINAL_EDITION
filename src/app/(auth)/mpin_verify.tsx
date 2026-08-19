@@ -18,12 +18,18 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Modal,
+  Pressable,
+  Linking,
+  StatusBar,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
+import { responsiveUtils } from "@/utils/responsiveUtils";
+const { wp, hp } = responsiveUtils;
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import * as Crypto from "expo-crypto";
-import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
+import useGlobalStore from "@/store/global.store";
 import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -45,6 +51,13 @@ import { useBiometrics } from "@/hooks/useBiometrics";
 
 const borderRadius = getBorderRadius();
 
+const ornamentImages = [
+  require("../../../assets/images/slider1.png"),
+  require("../../../assets/images/banner.png"),
+  require("../../../assets/images/banner2.png"),
+  require("../../../assets/images/scheme1.jpg"),
+];
+
 // Simple Language Switcher Component
 const SimpleLanguageSwitcher = () => {
   const { language } = useGlobalStore();
@@ -58,6 +71,9 @@ const SimpleLanguageSwitcher = () => {
     spacing,
     fontSize,
     padding,
+    isSmallScreen,
+    isMediumScreen,
+    isLargeScreen,
   } = useResponsiveLayout();
 
   const handleLanguageChange = () => {
@@ -92,33 +108,21 @@ const SimpleLanguageSwitcher = () => {
           zIndex: 1000,
           backgroundColor: "rgba(0, 0, 0, 0.7)",
           padding: spacing.sm,
-          borderRadius: borderRadius.round,
-          flexDirection: "row",
+          borderRadius: 20,
+          width: 40,
+          height: 40,
           alignItems: "center",
+          justifyContent: "center",
           borderWidth: 1,
           borderColor: "rgba(255, 255, 255, 0.3)",
           ...SHADOW_UTILS.card(),
         }}
       >
-        <Image
-          source={require("../../../assets/images/translate.png")}
-          style={{
-            width: rf(20),
-            height: rf(20),
-            marginRight: spacing.xs,
-            tintColor: COLORS.white,
-          }}
-        />
-        <ResponsiveText
-          variant="caption"
-          size="sm"
-          weight="bold"
+        <Icon
+          name="translate"
+          size={22}
           color={COLORS.white}
-          allowWrap={false}
-          maxLines={1}
-        >
-          {getLanguageDisplayName()}
-        </ResponsiveText>
+        />
       </TouchableOpacity>
 
       <LanguageSelector
@@ -173,10 +177,14 @@ const CustomModal = ({
     switch (type) {
       case "error":
         return {
-          background: "rgba(133, 1, 17, 0.95)",
-          border: theme.colors.primary,
+          background: COLORS.white,
+          border: "rgba(133, 1, 17, 0.3)",
           icon: "error",
-          iconColor: COLORS.white,
+          iconColor: COLORS.error,
+          textColor: COLORS.error,
+          cancelTextColor: theme.colors.primary,
+          cancelBg: "rgba(133, 1, 17, 0.05)",
+          cancelBorder: "rgba(133, 1, 17, 0.2)",
         };
       case "success":
         return {
@@ -184,13 +192,21 @@ const CustomModal = ({
           border: theme.colors.success,
           icon: "check-circle",
           iconColor: COLORS.white,
+          textColor: COLORS.white,
+          cancelTextColor: COLORS.white,
+          cancelBg: "rgba(255, 255, 255, 0.1)",
+          cancelBorder: theme.colors.success,
         };
       case "warning":
         return {
-          background: "rgba(255, 201, 12, 0.95)",
-          border: theme.colors.secondary,
+          background: COLORS.white,
+          border: "rgba(133, 1, 17, 0.3)",
           icon: "warning",
-          iconColor: COLORS.black,
+          iconColor: COLORS.error,
+          textColor: COLORS.black,
+          cancelTextColor: theme.colors.primary,
+          cancelBg: "rgba(133, 1, 17, 0.05)",
+          cancelBorder: "rgba(133, 1, 17, 0.2)",
         };
       default:
         return {
@@ -198,6 +214,10 @@ const CustomModal = ({
           border: theme.colors.primary,
           icon: "error",
           iconColor: COLORS.white,
+          textColor: COLORS.white,
+          cancelTextColor: COLORS.white,
+          cancelBg: "rgba(255, 255, 255, 0.1)",
+          cancelBorder: theme.colors.primary,
         };
     }
   };
@@ -229,8 +249,8 @@ const CustomModal = ({
               color={colors.iconColor}
             />
           </View>
-          <Text style={styles.modalTitle}>{title}</Text>
-          <Text style={styles.modalMessage}>{message}</Text>
+          <Text style={[styles.modalTitle, { color: colors.textColor }]}>{title}</Text>
+          <Text style={[styles.modalMessage, { color: colors.textColor }]}>{message}</Text>
           <View style={styles.modalButtonContainer}>
             {showCancelButton && (
               <TouchableOpacity
@@ -238,12 +258,8 @@ const CustomModal = ({
                   styles.modalButton,
                   styles.modalCancelButton,
                   {
-                    borderColor:
-                      type === "warning" ? theme.colors.grey : colors.border,
-                    backgroundColor:
-                      type === "warning"
-                        ? "rgba(128, 128, 128, 0.3)"
-                        : "rgba(255, 255, 255, 0.1)",
+                    borderColor: colors.cancelBorder || colors.border,
+                    backgroundColor: colors.cancelBg,
                   },
                 ]}
                 onPress={onClose}
@@ -252,8 +268,7 @@ const CustomModal = ({
                   style={[
                     styles.modalCancelButtonText,
                     {
-                      color:
-                        type === "warning" ? theme.colors.white : COLORS.white,
+                      color: colors.cancelTextColor,
                     },
                   ]}
                 >
@@ -294,14 +309,14 @@ const CustomModal = ({
 };
 
 export default function MpinVerify() {
-  const theme = useAppTheme();
-  styles = getStyles(theme);
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const [mpinPins, setMpinPins] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [attempts, setAttempts] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [showMpin, setShowMpin] = useState(false);
   const [modalData, setModalData] = useState({
     title: "",
     message: "",
@@ -309,10 +324,16 @@ export default function MpinVerify() {
   });
   const [isLocked, setIsLocked] = useState(false);
   const [lockdownTimer, setLockdownTimer] = useState(0);
+  const [rates, setRates] = useState<{ gold_rate: number; silver_rate: number; show_silver: boolean } | null>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const router = useRouter();
+  const { mobile } = useLocalSearchParams();
+  const mobileStr = Array.isArray(mobile) ? mobile[0] : mobile || "";
   const { login, isLoggedIn, logout, user } = useGlobalStore();
 
   logger.log("🔍 MPIN Verify - Component mounted");
+  const { isSmallScreen, isMediumScreen, spacing } = useResponsiveLayout();
   logger.log("🔍 MPIN Verify - isLoggedIn:", isLoggedIn);
   logger.log("🔍 MPIN Verify - user:", user ? "EXISTS" : "NOT_FOUND");
   const { width } = Dimensions.get("window");
@@ -367,6 +388,41 @@ export default function MpinVerify() {
       return () => clearTimeout(timer);
     }
   }, [initializing, isEnabled]);
+
+  // Manage keyboard listeners and auto-play slideshow
+  // useEffect(() => {
+  //   const keyboardDidShowListener = Keyboard.addListener(
+  //     "keyboardDidShow",
+  //     () => setIsKeyboardVisible(true)
+  //   );
+  //   const keyboardDidHideListener = Keyboard.addListener(
+  //     "keyboardDidHide",
+  //     () => setIsKeyboardVisible(false)
+  //   );
+
+  //   // Commented out live rates fetching due to unauthenticated state limitation
+  //   // const fetchRates = async () => {
+  //   //   try {
+  //   //     const response = await apiClient.get("/rates/current");
+  //   //     if (response.data && response.data.success && response.data.data) {
+  //   //       setRates(response.data.data);
+  //   //     }
+  //   //   } catch (error) {
+  //   //     logger.error("Error fetching live rates in mpin_verify:", error);
+  //   //   }
+  //   // };
+  //   // fetchRates();
+
+  //   const interval = setInterval(() => {
+  //     setCurrentImageIndex((prevIndex) => (prevIndex + 1) % ornamentImages.length);
+  //   }, 4000);
+
+  //   return () => {
+  //     keyboardDidShowListener.remove();
+  //     keyboardDidHideListener.remove();
+  //     clearInterval(interval);
+  //   };
+  // }, []);
 
   // Animation for button press
   const animatePress = () => {
@@ -426,6 +482,13 @@ export default function MpinVerify() {
         // Get stored token and user data
         const token = await SecureStore.getItemAsync("authToken");
         const userData = await AsyncStorage.getItem("userData");
+
+        // If direct login via mobile param, bypass token check
+        if (mobileStr) {
+          logger.log("🔍 MPIN Verify - Direct login mode with mobile:", mobileStr);
+          setInitializing(false);
+          return;
+        }
 
         // Only logout if absolutely no token exists (critical security issue)
         if (!token) {
@@ -511,8 +574,21 @@ export default function MpinVerify() {
       }
 
       // Use a simple base64 decode approach
+      const decodeBase64 = (str: string): string => {
+        try {
+          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+          let output = '';
+          str = String(str).replace(/=+$/, '');
+          for (let bc = 0, bs = 0, buffer, idx = 0; (buffer = str.charAt(idx++)); ~buffer && ((bs = bc % 4 ? bs * 64 + buffer : buffer), bc++ % 4) ? (output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6)))) : 0) {
+            buffer = chars.indexOf(buffer);
+          }
+          return output;
+        } catch {
+          return '';
+        }
+      };
       const base64 = tokenParts[1].replace(/-/g, "+").replace(/_/g, "/");
-      const payload = JSON.parse(atob(base64));
+      const payload = JSON.parse(decodeBase64(base64));
       const currentTime = Date.now() / 1000;
 
       // Check if token is expired (with 5 minute buffer)
@@ -600,15 +676,13 @@ export default function MpinVerify() {
       );
 
       const userData = JSON.parse(userDataString || "{}");
-      logger.log("🔐 MPIN Verification - Parsed user data:", {
-        mobile_number: userData.mobile_number,
-        user_id: userData.user_id,
-        name: userData.name,
-      });
+      const activeMobileNumber = mobileStr || userData.mobile_number;
 
-      if (!userData.mobile_number) {
+      logger.log("🔐 MPIN Verification - Active mobile number to verify:", activeMobileNumber);
+
+      if (!activeMobileNumber) {
         logger.log(
-          "🔐 MPIN Verification - No mobile number found in user data"
+          "🔐 MPIN Verification - No mobile number found"
         );
         showErrorModal(t("error"), "User mobile number not found");
         setLoading(false);
@@ -617,15 +691,15 @@ export default function MpinVerify() {
 
       // Validate mobile number format
       const mobileRegex = /^[6-9]\d{9}$/;
-      if (!mobileRegex.test(userData.mobile_number)) {
+      if (!mobileRegex.test(activeMobileNumber)) {
         showErrorModal(t("error"), "Invalid mobile number format");
         setLoading(false);
         return;
       }
 
-      logger.log("🔐 Verifying MPIN for mobile:", userData.mobile_number);
+      logger.log("🔐 Verifying MPIN for mobile:", activeMobileNumber);
       logger.log("🔐 About to call API with data:", {
-        mobileNumber: userData.mobile_number,
+        mobileNumber: activeMobileNumber,
         mpin: enteredMpin,
       });
 
@@ -634,7 +708,7 @@ export default function MpinVerify() {
       const response = await apiClient.post(
         "/auth/login-mpin",
         {
-          mobileNumber: userData.mobile_number,
+          mobileNumber: activeMobileNumber,
           mpin: enteredMpin,
         },
         {
@@ -702,8 +776,26 @@ export default function MpinVerify() {
           logger.log(
             "==========================================================================="
           );
-          // Navigate to home page after successful MPIN verification
-          // Navigate to home page after successful MPIN verification
+
+          const handlePostVerificationRedirect = async () => {
+            try {
+              logger.log("📡 Fetching visibility config in mpin_verify...");
+              const visResponse = await apiClient.get('/app-visible', {
+                headers: { Authorization: `Bearer ${data.token}` }
+              });
+              if (visResponse.data) {
+                useGlobalStore.getState().setCachedVisibility(visResponse.data);
+                if (visResponse.data.showDashboardAfterLogin === 0) {
+                  logger.log("✅ Config dictates redirecting to home page instead of dashboard");
+                  router.replace("/(app)/(tabs)/home");
+                  return;
+                }
+              }
+            } catch (visError) {
+              logger.error("Error fetching visibility config in mpin_verify:", visError);
+            }
+            router.replace("/(app)/dashboard");
+          };
 
           // Check if we should ask for biometric enrollment
           const hasDeclinedBiometrics = await AsyncStorage.getItem('hasDeclinedBiometrics');
@@ -720,18 +812,16 @@ export default function MpinVerify() {
                     } catch (err) {
                       logger.error("Error setting hasDeclinedBiometrics:", err);
                     }
-                    const destination = getAppConfig().constants.enableDashboard ? "/(app)/dashboard" : "/(app)/(tabs)/home";
-                    router.replace(destination);
+                    await handlePostVerificationRedirect();
                   }
                 },
                 {
                   text: t("yes") || "Yes",
                   onPress: async () => {
                     const success = await enableBiometrics(enteredMpin);
-                    const destination = getAppConfig().constants.enableDashboard ? "/(app)/dashboard" : "/(app)/(tabs)/home";
                     if (success) {
                       Alert.alert(t("success"), t("biometricsEnabled") || "Biometrics enabled successfully", [
-                        { text: "OK", onPress: () => router.replace(destination) }
+                        { text: "OK", onPress: () => handlePostVerificationRedirect() }
                       ]);
                     } else {
                       try {
@@ -739,7 +829,7 @@ export default function MpinVerify() {
                       } catch (err) {
                         logger.error("Error setting hasDeclinedBiometrics after failure:", err);
                       }
-                      router.replace(destination);
+                      await handlePostVerificationRedirect();
                     }
                   }
                 }
@@ -747,8 +837,7 @@ export default function MpinVerify() {
               { cancelable: false }
             );
           } else {
-            const destination = getAppConfig().constants.enableDashboard ? "/(app)/dashboard" : "/(app)/(tabs)/home";
-            router.replace(destination);
+            await handlePostVerificationRedirect();
           }
         } catch (storageError) {
           logger.error("Error storing authentication data:", storageError);
@@ -776,8 +865,7 @@ export default function MpinVerify() {
         } else {
           showErrorModal(
             t("error"),
-            `${responseMessage || t("incorrectMpin")} (${3 - newAttempts
-            } attempts remaining)`
+            `${responseMessage || t("incorrectMpin")} (${3 - newAttempts} ${t("attemptsRemaining") || "attempts remaining"})`
           );
         }
 
@@ -813,7 +901,7 @@ export default function MpinVerify() {
           const errorMessage = errorData.message || t("incorrectMpin");
           showErrorModal(
             t("error"),
-            `${errorMessage} (${3 - newAttempts} attempts remaining)`
+            `${errorMessage} (${3 - newAttempts} ${t("attemptsRemaining") || "attempts remaining"})`
           );
         }
 
@@ -902,27 +990,34 @@ export default function MpinVerify() {
   if (initializing) {
     return (
       <View
-        style={[styles.backgroundImage, { backgroundColor: theme.colors.primary }]}
+        style={[styles.backgroundImage, { backgroundColor: theme.colors.quaternary }]}
       >
         <LinearGradient
           colors={[
-            "rgba(32, 1, 1, 0)",
-            "rgba(167, 0, 0, 0)",
-            "rgba(118, 1, 1, 0.02)",
+            theme.colors.quaternary,
+            theme.colors.quaternary,
           ]}
           style={styles.gradient}
         >
           <View style={styles.container}>
-            <View style={styles.logoContainer}>
-              <Image
-                source={require("../../../assets/images/logo_trans.png")}
-                style={[styles.logo, { width: logoWidth }]}
-                resizeMode="contain"
-              />
+            <View style={[styles.logoContainer, { alignItems: "center" }]}>
+              <View style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.25,
+                shadowRadius: 5,
+                elevation: 5,
+              }}>
+                <Image
+                  source={require("../../../assets/images/logo_trans.png")}
+                  style={{ width: logoWidth * 2, height: logoWidth * 2, aspectRatio: 1 }}
+                  resizeMode="contain"
+                />
+              </View>
             </View>
             <View style={styles.loadingContainer}>
               <Text style={styles.loadingText}>
-                {t("verifyingCredentials")}
+                {t("initializing") || "Initializing..."}
               </Text>
             </View>
           </View>
@@ -933,26 +1028,81 @@ export default function MpinVerify() {
 
   return (
     <View
-      style={[styles.backgroundImage, { backgroundColor: theme.colors.quaternary }]}
+      style={[styles.backgroundImage, { backgroundColor: theme.colors.primary }]}
     >
+      <StatusBar barStyle="light-content" backgroundColor="#850111" />
       <LinearGradient
         colors={[
-          theme.colors.primary,
-          "rgba(167, 0, 0, 0)",
-          "rgba(118, 1, 1, 0.02)",
+          "#FCF9F6",
+          "#FCF9F6",
         ]}
         style={styles.gradient}
       >
+        {/* Curved wave header background */}
+        <View style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: Platform.OS === 'ios' ? hp(43) : hp(40),
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.22,
+          shadowRadius: 8,
+          elevation: 8,
+        }}>
+          <Svg
+            height="100%"
+            width="100%"
+            viewBox="0 0 375 380"
+            preserveAspectRatio="none"
+          >
+            <Defs>
+              <SvgLinearGradient id="waveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor={theme.colors.primary || "#4A0007"} stopOpacity="0.95" />
+                <Stop offset="100%" stopColor={theme.colors.primaryDark || "#2E0406"} stopOpacity="0.98" />
+              </SvgLinearGradient>
+            </Defs>
+            {/* Wave Shape */}
+            <Path
+              d="M0,0 L0,310 C100,380 180,240 270,330 C320,380 350,310 375,290 L375,0 Z"
+              fill="url(#waveGrad)"
+            />
+            {/* Golden Outline Line */}
+            <Path
+              d="M0,310 C100,380 180,240 270,330 C320,380 350,310 375,290"
+              fill="none"
+              stroke="#FFD700"
+              strokeWidth="3.5"
+            />
+          </Svg>
+        </View>
+
         <KeyboardAvoidingView
           behavior={undefined}
           style={styles.container}
         >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
             <View style={styles.container}>
-              <View style={styles.logoContainer}>
+              <View
+                style={{
+                  height: Platform.OS === 'ios' ? hp(43) : hp(40),
+                  paddingTop: insets.top,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  width: "100%",
+                }}
+              >
                 <Image
                   source={require("../../../assets/images/logo_trans.png")}
-                  style={[styles.logo, { width: logoWidth }]}
+                  style={[
+                    styles.logo,
+                    {
+                      width: 150,
+                      height: 150,
+                      aspectRatio: 1,
+                    },
+                  ]}
                   resizeMode="contain"
                 />
               </View>
@@ -978,103 +1128,61 @@ export default function MpinVerify() {
                       style={styles.lockoutResetButton}
                       onPress={() => router.push("/(auth)/forgot_mpin")}
                     >
-                      <Icon name="vpn-key" size={18} color={theme.colors.secondary} />
+                      <Icon name="vpn-key" size={18} color={COLORS.error} />
                       <Text style={styles.lockoutResetButtonText}>
                         Forgot MPIN? Reset via OTP
                       </Text>
                     </TouchableOpacity>
                   )}
 
-                  <Animated.View
-                    style={[
-                      styles.otpInputsContainer,
-                      {
-                        transform: [{ translateX: shakeAnim }],
-                      },
-                    ]}
-                  >
-                    {mpinPins.map((pin, index) => (
-                      <View key={index} style={styles.inputWrapper}>
-                        <TextInput
-                          ref={mpinInputRefs[index]}
-                          style={[
-                            styles.otpInput,
-                            pin ? styles.otpInputFilled : styles.otpInputEmpty,
-                            isLocked && styles.otpInputDisabled,
-                          ]}
-                          keyboardType="numeric"
-                          maxLength={1}
-                          value={pin}
-                          onChangeText={(text) =>
-                            handleEnterMpinChange(text, index)
-                          }
-                          onKeyPress={(e) => handleMpinKeyPress(e, index)}
-                          secureTextEntry={true}
-                          autoFocus={index === 0}
-                          editable={!isLocked}
-                        />
-                        {pin !== "" && <View style={styles.inputDot} />}
-                      </View>
-                    ))}
-                  </Animated.View>
-
-                  {/* View MPIN and Clear Button */}
-                  <View style={styles.actionButtonsContainer}>
-                    <TouchableOpacity
-                      style={styles.viewMpinButton}
-                      onPress={() => {
-                        // Show current MPIN in modal or alert
-                        const currentMpin = mpinPins.join("");
-                        if (currentMpin) {
-                          showErrorModal(
-                            "Current MPIN",
-                            `Your entered MPIN: ${currentMpin}`
-                          );
-                        } else {
-                          showErrorModal(
-                            "No MPIN",
-                            "Please enter your MPIN first"
-                          );
-                        }
-                      }}
-                      disabled={loading || isLocked}
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: 30 }}>
+                    <Animated.View
+                      style={[
+                        styles.otpInputsContainer,
+                        {
+                          marginBottom: 0,
+                          width: "60%",
+                        },
+                        {
+                          transform: [{ translateX: shakeAnim }],
+                        },
+                      ]}
                     >
-                      <Icon
-                        name="visibility"
-                        size={20}
-                        color={isLocked ? COLORS.grey : COLORS.white}
-                      />
-                      <Text
-                        style={[
-                          styles.viewMpinButtonText,
-                          isLocked && { color: COLORS.grey },
-                        ]}
-                      >
-                        {t("View_MPIN")}
-                      </Text>
-                    </TouchableOpacity>
+                      {mpinPins.map((pin, index) => (
+                        <View key={index} style={styles.inputWrapper}>
+                          <TextInput
+                            ref={mpinInputRefs[index]}
+                            style={[
+                              styles.otpInput,
+                              pin ? styles.otpInputFilled : styles.otpInputEmpty,
+                              isLocked && styles.otpInputDisabled,
+                            ]}
+                            keyboardType="numeric"
+                            maxLength={1}
+                            value={pin}
+                            onChangeText={(text) =>
+                              handleEnterMpinChange(text, index)
+                            }
+                            onKeyPress={(e) => handleMpinKeyPress(e, index)}
+                            secureTextEntry={!showMpin}
+                            autoFocus={index === 0}
+                            editable={!isLocked}
+                          />
+                          {pin !== "" && <View style={styles.inputDot} />}
+                        </View>
+                      ))}
+                    </Animated.View>
 
                     <TouchableOpacity
-                      style={styles.clearButton}
-                      onPress={() => {
-                        resetMpinAndFocus();
-                        setAttempts(0);
-                      }}
-                      disabled={loading || isLocked}
+                      style={{ marginLeft: 15, padding: 5 }}
+                      onPress={() => setShowMpin(!showMpin)}
+                      disabled={isLocked}
                     >
                       <Icon
-                        name="clear"
-                        size={20}
-                        color={isLocked ? COLORS.grey : COLORS.primary}
+                        name={showMpin ? "visibility-off" : "visibility"}
+                        size={26}
+                        color={isLocked ? COLORS.grey : theme.colors.primary}
                       />
-                      <Text
-                        style={[
-                          styles.clearButtonText,
-                          isLocked && { color: COLORS.grey },
-                        ]}
-                      >
-                        {t("clear")}
-                      </Text>
                     </TouchableOpacity>
                   </View>
 
@@ -1187,10 +1295,83 @@ export default function MpinVerify() {
                       <Text style={styles.loginLink}>{t("Forgot_MPIN")}</Text>
                     </TouchableOpacity>
                   </View>
+
+                  {/* Live Metal Rates Card - Commented out for future reuse when token becomes available
+                  {!isKeyboardVisible && (
+                    <View style={styles.liveRatesCardContainer}>
+                      <BlurView intensity={30} tint="light" style={styles.liveRatesBlur}>
+                        <View style={styles.liveRatesHeader}>
+                          <View style={styles.liveIndicatorContainer}>
+                            <View style={styles.livePulseDot} />
+                            <Text style={styles.liveRatesTitle}>{t("liveRates") || "Live Metal Rates"}</Text>
+                          </View>
+                          <Text style={styles.liveRatesUpdateText}>DC Jewellers</Text>
+                        </View>
+                        
+                        <View style={styles.ratesRow}>
+                          <View style={styles.rateColumn}>
+                            <Image
+                              source={require("../../../assets/images/gold_coin_badge.png")}
+                              style={styles.metalIcon}
+                            />
+                            <View>
+                              <Text style={styles.metalName}>{t("gold") || "Gold"} (22K)</Text>
+                              <Text style={styles.metalPrice}>
+                                ₹{rates ? Math.round(rates.gold_rate) : "7,250"}/g
+                              </Text>
+                            </View>
+                          </View>
+
+                          {(!rates || rates.show_silver) && (
+                            <View style={[styles.rateColumn, styles.rateColumnBorder]}>
+                              <Image
+                                source={require("../../../assets/images/silver_coin_badge.png")}
+                                style={styles.metalIcon}
+                              />
+                              <View>
+                                <Text style={styles.metalName}>{t("silver") || "Silver"}</Text>
+                                <Text style={styles.metalPrice}>
+                                  ₹{rates ? Math.round(rates.silver_rate) : "92"}/g
+                                </Text>
+                              </View>
+                            </View>
+                          )}
+                        </View>
+                      </BlurView>
+                    </View>
+                  )}
+                  */}
+
+                  {/* {!isKeyboardVisible && (
+                    <View style={styles.ornamentCardContainer}>
+                      <Image
+                        source={ornamentImages[currentImageIndex]}
+                        style={styles.ornamentImage}
+                        resizeMode="cover"
+                      />
+                      <LinearGradient
+                        colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.75)"]}
+                        style={StyleSheet.absoluteFill}
+                      />
+                      <View style={styles.ornamentTextContainer}>
+                        <Text style={styles.ornamentPromoTitle}>DC Jewellers Collections</Text>
+                        <Text style={styles.ornamentPromoSubtitle}>Explore our pure gold savings schemes & new arrivals</Text>
+                      </View>
+                    </View>
+                  )} */}
+
+                  {!isKeyboardVisible && (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(theme.constants.providerUrl)}
+                      style={styles.poweredByContainer}
+                    >
+                      <Text style={styles.poweredByText}>Powered by {theme.constants.providerName}</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             </View>
-          </TouchableWithoutFeedback>
+          </Pressable>
         </KeyboardAvoidingView>
       </LinearGradient>
       <SimpleLanguageSwitcher />
@@ -1236,7 +1417,7 @@ export default function MpinVerify() {
   );
 }
 
-function getStyles(theme: any) { return StyleSheet.create({
+const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
     resizeMode: "cover",
@@ -1251,7 +1432,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   logoContainer: {
     width: "100%",
     alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 180 : 130,
+    paddingTop: Platform.OS === "ios" ? 80 : 50,
     marginBottom: 0,
   },
   logo: {
@@ -1314,22 +1495,22 @@ function getStyles(theme: any) { return StyleSheet.create({
     borderRadius: 12,
     textAlign: "center",
     fontSize: 24,
-    color: theme.colors.textDark,
-    backgroundColor: theme.colors.background,
+    color: COLORS.black,
+    backgroundColor: COLORS.white,
   },
   otpInputEmpty: {
     borderColor: "rgba(174, 28, 28, 0.2)",
-    backgroundColor: theme.colors.background,
-    color: theme.colors.textDark,
+    backgroundColor: COLORS.white,
+    color: COLORS.black,
   },
   otpInputFilled: {
     borderColor: theme.colors.secondary,
-    backgroundColor: theme.colors.background,
-    color: theme.colors.textDark,
+    backgroundColor: COLORS.white,
+    color: COLORS.black,
   },
   otpInputDisabled: {
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.backgroundSecondary,
+    borderColor: COLORS.grey,
+    backgroundColor: COLORS.lightGrey,
     color: COLORS.textSecondary,
   },
   inputDot: {
@@ -1388,7 +1569,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     flex: 1,
   },
   loginLink: {
-    color: theme.colors.secondary,
+    color: theme.colors.primary,
     marginLeft: 8,
     fontSize: 16,
     fontWeight: "600",
@@ -1409,7 +1590,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: theme.colors.background,
+    backgroundColor: "rgba(255, 255, 255, 0.97)",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -1431,13 +1612,13 @@ function getStyles(theme: any) { return StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 2,
-    borderColor: theme.colors.secondary,
-    backgroundColor: "rgba(255, 201, 12, 0.15)",
+    borderColor: COLORS.error,
+    backgroundColor: "rgba(220, 53, 69, 0.15)",
     marginTop: 5,
     marginBottom: 20,
   },
   lockoutResetButtonText: {
-    color: theme.colors.secondary,
+    color: COLORS.error,
     fontSize: 16,
     fontWeight: "bold",
     marginLeft: 8,
@@ -1564,6 +1745,147 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginTop: 5,
     fontSize: 14,
   },
-}) }
-
-var styles = getStyles(theme);;
+  liveRatesCardContainer: {
+    width: "100%",
+    borderRadius: 20,
+    overflow: "hidden",
+    marginTop: 25,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  liveRatesBlur: {
+    padding: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+  },
+  liveRatesHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  liveIndicatorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  livePulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#2ECC71",
+  },
+  liveRatesTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: theme.colors.primary,
+    letterSpacing: 0.5,
+  },
+  liveRatesUpdateText: {
+    fontSize: 12,
+    color: COLORS.grey,
+    fontWeight: "600",
+  },
+  ratesRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  rateColumn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+    justifyContent: "center",
+  },
+  rateColumnBorder: {
+    borderLeftWidth: 1,
+    borderLeftColor: "rgba(0, 0, 0, 0.05)",
+  },
+  metalIcon: {
+    width: 32,
+    height: 32,
+  },
+  metalName: {
+    fontSize: 12,
+    color: COLORS.grey,
+    fontWeight: "600",
+  },
+  metalPrice: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: theme.colors.primary,
+    marginTop: 2,
+  },
+  ornamentCardContainer: {
+    width: "100%",
+    height: 140,
+    borderRadius: 20,
+    overflow: "hidden",
+    marginTop: 25,
+    position: "relative",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.25)",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
+  },
+  ornamentImage: {
+    width: "100%",
+    height: "100%",
+  },
+  ornamentTextContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+  },
+  ornamentPromoTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: COLORS.white,
+    textShadowColor: "rgba(0, 0, 0, 0.4)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  ornamentPromoSubtitle: {
+    fontSize: 11,
+    color: "rgba(255, 255, 255, 0.9)",
+    marginTop: 2,
+    textShadowColor: "rgba(0, 0, 0, 0.4)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  poweredByContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
+    marginBottom: 10,
+    paddingVertical: 8,
+  },
+  poweredByText: {
+    fontSize: 12,
+    color: "rgba(0, 0, 0, 0.4)",
+    fontWeight: "500",
+    textDecorationLine: "underline",
+  },
+});

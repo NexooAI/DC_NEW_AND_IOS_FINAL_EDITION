@@ -168,7 +168,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
     <table class="details-table">
         <tr>
             <th>Transaction ID</th>
-            <td>DCJ-${transactionId}</td>
+            <td>STT-${transactionId}</td>
         </tr>
         <tr>
             <th>Payment ID</th>

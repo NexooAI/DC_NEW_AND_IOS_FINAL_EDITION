@@ -136,7 +136,7 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
         <table class="details-table">
             <tr>
                 <th>Bill Reference ID</th>
-                <td>#DCJ-B-ID-${billId}</td>
+                <td>#STT-B-ID-${billId}</td>
             </tr>
             <tr>
                 <th>Bill Number</th>

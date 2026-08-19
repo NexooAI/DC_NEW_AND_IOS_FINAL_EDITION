@@ -100,6 +100,7 @@ import SkeletonLoader, {
 import { fetchSchemesWithCache, fetchBranchesWithCache } from "@/utils/apiCache";
 import UserInfoCard from "@/components/home/UserInfoCard";
 import AnimatedGoldRate from "@/components/home/AnimatedGoldRate";
+import MySchemesCards from "@/components/home/MySchemesCards";
 
 // Constants - Using responsive layout hook instead
 const REFRESH_INTERVAL = 15000; // 15 seconds
@@ -671,6 +672,52 @@ export default function Home() {
   const [flashNews, setFlashNews] = useState<any[]>([]);
   const [sliderImages, setSliderImages] = useState<any[]>([]);
   const [schemes, setSchemes] = useState<any[]>([]); // Added schemes state
+  const activeMetalTypes = useMemo(() => {
+    const types = { gold: false, silver: false, diamond: false, platinum: false, old_gold: false };
+    const getLocalText = (textObj: any): string => {
+      if (!textObj) return "";
+      if (typeof textObj === "string") return textObj;
+      if (typeof textObj === "object") {
+        return textObj[language] || textObj.en || textObj.ta || "";
+      }
+      return String(textObj);
+    };
+
+    if (!schemes || schemes.length === 0) {
+      return {
+        gold: isVisible("showGoldScheme"),
+        silver: isVisible("showSilverScheme"),
+        diamond: isVisible("showDiamondScheme"),
+        platinum: isVisible("showPlatinumScheme"),
+        old_gold: isVisible("showOldGoldScheme") !== false,
+      };
+    }
+
+    schemes.forEach((scheme: any) => {
+      if (scheme.ACTIVE !== "Y") return;
+
+      const schemeNameLower = getLocalText(scheme.SCHEMENAME).toLowerCase();
+      const schemeTypeLower = (scheme.SCHEMETYPE || "").toLowerCase();
+      const insTypeLower = (scheme.INS_TYPE || "").toLowerCase();
+      const savingTypeLower = (scheme.savingType || "").toLowerCase();
+      const descLower = getLocalText(scheme.DESCRIPTION).toLowerCase();
+      const combined = `${schemeNameLower} ${schemeTypeLower} ${insTypeLower} ${savingTypeLower} ${descLower}`;
+
+      if (combined.includes("old gold") || combined.includes("oldgold") || combined.includes("பழைய தங்கம்")) {
+        types.old_gold = true;
+      } else if (combined.includes("silver") || combined.includes("வெள்ளி")) {
+        types.silver = true;
+      } else if (combined.includes("diamond") || combined.includes("வைரம்")) {
+        types.diamond = true;
+      } else if (combined.includes("platinum") || combined.includes("பிளாட்டினம்")) {
+        types.platinum = true;
+      } else {
+        types.gold = true;
+      }
+    });
+
+    return types;
+  }, [schemes, isVisible, language]);
   const [isSliderLoading, setIsSliderLoading] = useState(true);
   const [viewedCollections, setViewedCollections] = useState<{
     [id: number]: boolean;
@@ -2929,9 +2976,23 @@ export default function Home() {
                 />
               )}
 
+              {/* My Schemes Cards Section */}
+              <MySchemesCards
+                onGoldPress={() => router.push({ pathname: "/(app)/(tabs)/home/schemes", params: { type: "gold" } })}
+                onSilverPress={() => router.push({ pathname: "/(app)/(tabs)/home/schemes", params: { type: "silver" } })}
+                onDiamondPress={() => router.push({ pathname: "/(app)/(tabs)/home/schemes", params: { type: "diamond" } })}
+                onPlatinumPress={() => router.push({ pathname: "/(app)/(tabs)/home/schemes", params: { type: "platinum" } })}
+                onOldGoldPress={() => router.push({ pathname: "/(app)/(tabs)/home/schemes", params: { type: "old_gold" } })}
+                showGold={isVisible("showGoldScheme") && activeMetalTypes.gold}
+                showSilver={isVisible("showSilverScheme") && activeMetalTypes.silver}
+                showDiamond={isVisible("showDiamondScheme") && activeMetalTypes.diamond}
+                showPlatinum={isVisible("showPlatinumScheme") && activeMetalTypes.platinum}
+                showOldGold={isVisible("showOldGoldScheme") !== false && activeMetalTypes.old_gold}
+              />
 
-              {/* Our Schemes Section - Conditionally rendered based on API */}
-              {isVisible("showSchemes") && (
+
+              {/* Hidden old Our Schemes section as requested */}
+              {/* {isVisible("showSchemes") && (
                 <>
                   <View style={[styles.statusHeader, { justifyContent: 'space-between', alignItems: 'center' }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -2953,184 +3014,11 @@ export default function Home() {
                   </View>
                   <DynamicSchemeCard
                     onJoinPress={async (scheme) => {
-                      // Check if schemes page should be skipped
-                      const showSchemsPage = isVisible("showSchemsPage");
-
-                      if (!showSchemsPage) {
-                        // Skip schemes page and navigate directly
-                        try {
-                          // Helper function to get translated text
-                          const getTranslatedText = (
-                            textObj: any,
-                            lang: string
-                          ): string => {
-                            if (textObj === null || textObj === undefined || textObj === "") {
-                              return "";
-                            }
-                            if (typeof textObj === "string") {
-                              return textObj.trim() || "";
-                            }
-                            if (typeof textObj === "number") {
-                              return isNaN(textObj) ? "" : String(textObj);
-                            }
-                            if (typeof textObj === "object" && textObj !== null) {
-                              if (Array.isArray(textObj)) {
-                                const validItems = textObj.filter(
-                                  (item) => item !== null && item !== undefined && item !== ""
-                                );
-                                return validItems.length > 0 ? validItems.join(", ") : "";
-                              }
-
-                              // Check if this object contains any translation keys
-                              const hasEn = textObj.hasOwnProperty("en") || textObj.hasOwnProperty("EN");
-                              const hasTa = textObj.hasOwnProperty("ta") || textObj.hasOwnProperty("TA");
-                              const hasTe = textObj.hasOwnProperty("te") || textObj.hasOwnProperty("TE");
-                              const hasHi = textObj.hasOwnProperty("hi") || textObj.hasOwnProperty("HI");
-                              const hasMal = textObj.hasOwnProperty("mal") || textObj.hasOwnProperty("MAL") || (textObj as any).hasOwnProperty("_ta") || (textObj as any).hasOwnProperty("_TA");
-
-                              if (hasEn || hasTa || hasTe || hasHi || hasMal) {
-                                const targetText = textObj[lang] || textObj[lang.toUpperCase()] || textObj[lang.toLowerCase()];
-                                const enText = textObj.en || textObj.EN || "";
-                                const taText = textObj.ta || textObj.TA || "";
-
-                                // Malayalam fallback logic if "mal" translation is missing
-                                if ((lang === "mal" || lang === "MAL") && !targetText) {
-                                  const malTextLegacy = (textObj as any)._ta || (textObj as any)._TA || "";
-                                  return malTextLegacy || taText || enText || Object.values(textObj)[0] || "";
-                                }
-
-                                return targetText || enText || taText || Object.values(textObj)[0] || "";
-                              }
-
-                              try {
-                                const stringified = JSON.stringify(textObj);
-                                return stringified === "{}" || stringified === "[]" ? "" : stringified;
-                              } catch {
-                                return "";
-                              }
-                            }
-                            try {
-                              return String(textObj);
-                            } catch {
-                              return "";
-                            }
-                          };
-
-                          // Determine scheme type and active tab
-                          const chits = scheme?.chits || [];
-                          let targetTab = "Monthly";
-                          let isFlexi = false;
-
-                          // Check chits to determine payment frequency
-                          if (chits.length > 0) {
-                            const activeChits = chits.filter(
-                              (chit) => chit && chit.ACTIVE === "Y"
-                            );
-                            if (activeChits.length > 0) {
-                              const paymentFrequencies = activeChits
-                                .map((chit) => chit.PAYMENT_FREQUENCY)
-                                .filter(Boolean);
-                              if (paymentFrequencies.length > 0) {
-                                const flexiChits = paymentFrequencies.filter(freq =>
-                                  freq && (freq.toLowerCase().includes("flexi") || freq.toLowerCase().includes("flexible"))
-                                );
-                                if (flexiChits.length > 0) {
-                                  targetTab = "Flexi";
-                                  isFlexi = true;
-                                } else {
-                                  targetTab = paymentFrequencies[0] || "Monthly";
-                                }
-                              }
-                            }
-                          }
-
-                          // Get relevant chits for the target tab
-                          const relevantChits = chits.filter(
-                            (chit) => {
-                              if (!chit || !chit.PAYMENT_FREQUENCY) return false;
-                              const chitFreq = chit.PAYMENT_FREQUENCY.toLowerCase().trim();
-                              const targetTabLower = targetTab.toLowerCase().trim();
-
-                              if (chitFreq === targetTabLower) return true;
-                              if (targetTabLower === "flexi") {
-                                return chitFreq.includes("flexi") || chitFreq.includes("flexible");
-                              }
-                              return false;
-                            }
-                          );
-
-                          // Prepare scheme data to store
-                          const schemeDataToStore = {
-                            schemeId: scheme?.SCHEMEID || 0,
-                            name: getTranslatedText(scheme?.SCHEMENAME as any, language) || "Unnamed Scheme",
-                            description: getTranslatedText(scheme?.DESCRIPTION as any, language) || "No description available",
-                            type: targetTab,
-                            chits: relevantChits,
-                            schemeType: isFlexi ? "flexi" : "fixed",
-                            activeTab: targetTab,
-                            benefits: (scheme as any)?.BENEFITS || [],
-                            slogan: getTranslatedText((scheme as any)?.SLOGAN || { en: "" }, language) || "",
-                            image: scheme?.IMAGE || "",
-                            icon: scheme?.ICON || "",
-                            durationMonths: scheme?.DURATION_MONTHS || 0,
-                            metaData: scheme?.table_meta || (scheme as any)?.meta_data || null,
-                            instant_intrest: (scheme as any)?.instant_intrest || false,
-                            timestamp: new Date().toISOString(),
-                            savingType: (scheme as any)?.savingType || ((scheme as any)?.SCHEMETYPE?.toLowerCase() === "weight" ? "weight" : "amount"),
-                          };
-
-                          // Store scheme data in AsyncStorage
-                          await AsyncStorage.setItem(
-                            "@current_scheme_data",
-                            JSON.stringify(schemeDataToStore)
-                          );
-
-                          // Navigate directly to the appropriate page
-                          // if (isFlexi) {
-                          //   router.push({
-                          //     pathname: "/home/digigold_payment_calculator",
-                          //     params: {
-                          //       schemeId: ((scheme?.SCHEMEID || 0)).toString(),
-                          //     },
-                          //   });
-                          // } else {
-                          router.push({
-                            pathname: "/home/join_savings",
-                            params: {
-                              schemeId: ((scheme?.SCHEMEID || 0)).toString(),
-                            },
-                          });
-                          // }
-                        } catch (error) {
-                          logger.error("Error in onJoinPress (skip schemes):", error);
-                          Alert.alert(t("schemes.error") || "Error", t("schemes.failedToLoadSchemeData") || "Failed to load scheme data");
-                        }
-                      } else {
-                        // Normal flow: Navigate to schemes page
-                        router.push({
-                          pathname: "/(app)/(tabs)/home/schemes",
-                          params: {
-                            schemeId: scheme?.SCHEMEID?.toString() || "",
-                            schemeType: scheme?.SCHEMETYPE || "",
-                          },
-                        });
-                      }
-                    }}
-                    onInfoPress={handleSchemeInfoPress}
-                    onQuickJoinPress={initiateQuickJoin}
-                    showDots={false}
-                    visibilityFlags={{
-                      showFlexiScheme: isVisible("showFlexiScheme"),
-                      showFixedScheme: isVisible("showFixedScheme"),
-                      showDailyScheme: isVisible("showDailyScheme"),
-                      showWeeklyScheme: isVisible("showWeeklyScheme"),
-                      showMonthlyScheme: isVisible("showMonthlyScheme"),
+                      ...
                     }}
                   />
-
-
                 </>
-              )}
+              )} */}
 
               {/* YouTube Video - Conditionally rendered based on API */}
               {isVisible("showYoutube") && (
@@ -3142,201 +3030,207 @@ export default function Home() {
               {/* Social Media Card - Conditionally rendered based on API */}
 
               {/* Refer & Earn Premium Card (Refactored to match SupportContactCard) */}
-              {/* Refer & Earn and Lucky Draw Side-by-Side Premium Cards */}
-              <View style={{
-                flexDirection: "row",
-                paddingHorizontal: moderateScale(16),
-                paddingVertical: moderateScale(8),
-                gap: moderateScale(12),
-                width: "100%",
-              }}>
-                {/* Refer & Earn Card */}
-                <TouchableOpacity
-                  onPress={() => router.push("/(app)/(tabs)/home/refer_earn")}
-                  activeOpacity={0.9}
-                  style={{ flex: 1 }}
-                >
-                  <LinearGradient
-                    colors={["#FFD700", "#F5DEB3"]} // Premium gold to peach gradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{
-                      borderRadius: moderateScale(16),
-                      padding: moderateScale(12),
-                      height: moderateScale(130), // Fixed height to align them
-                      justifyContent: "space-between",
-                      shadowColor: theme.colors.primary,
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.15,
-                      shadowRadius: 6,
-                      elevation: 4,
-                      borderWidth: 1,
-                      borderColor: `rgba(255,201,12,0.6)`,
-                    }}
-                  >
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <Animated.View style={{ transform: [{ translateX: referAnim }] }}>
-                        <LinearGradient
-                          colors={["#ffffff", "#fefefe"]}
-                          style={{
-                            width: moderateScale(36),
-                            height: moderateScale(36),
-                            borderRadius: moderateScale(18),
-                            justifyContent: "center",
-                            alignItems: "center",
-                            shadowColor: theme.colors.primary,
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.1,
-                            shadowRadius: 4,
-                            elevation: 4,
-                          }}
-                        >
-                          <Ionicons
-                            name="gift"
-                            size={deviceScale(18)}
-                            color={theme.colors.primary}
-                          />
-                        </LinearGradient>
-                      </Animated.View>
-
-                      <Ionicons name="chevron-forward" size={deviceScale(16)} color={theme.colors.textDark} style={{ opacity: 0.8 }} />
-                    </View>
-
-                    <View>
-                      <Text style={{
-                        color: theme.colors.textDark,
-                        fontSize: moderateScale(14),
-                        fontWeight: "800",
-                        letterSpacing: 0.3,
-                        marginBottom: 2
-                      }}>
-                        {t("referAndEarn") || "Refer & Earn"}
-                      </Text>
-                      <Text
+              {/* Refer & Earn and Lucky Draw Side-by-Side Premium Cards (with backend visibility check) */}
+              {(isVisible("showReferEarn") || isVisible("showLuckyDraw")) && (
+                <View style={{
+                  flexDirection: "row",
+                  paddingHorizontal: moderateScale(16),
+                  paddingVertical: moderateScale(8),
+                  gap: moderateScale(12),
+                  width: "100%",
+                }}>
+                  {/* Refer & Earn Card */}
+                  {isVisible("showReferEarn") && (
+                    <TouchableOpacity
+                      onPress={() => router.push("/(app)/(tabs)/home/refer_earn")}
+                      activeOpacity={0.9}
+                      style={{ flex: 1 }}
+                    >
+                      <LinearGradient
+                        colors={["#FFD700", "#F5DEB3"]} // Premium gold to peach gradient
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
                         style={{
-                          color: theme.colors.textDark,
-                          fontSize: moderateScale(10),
-                          fontWeight: "500",
-                          opacity: 0.85,
+                          borderRadius: moderateScale(16),
+                          padding: moderateScale(12),
+                          height: moderateScale(130), // Fixed height to align them
+                          justifyContent: "space-between",
+                          shadowColor: theme.colors.primary,
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.15,
+                          shadowRadius: 6,
+                          elevation: 4,
+                          borderWidth: 1,
+                          borderColor: `rgba(255,201,12,0.6)`,
                         }}
-                        numberOfLines={2}
                       >
-                        {t("inviteFriendsEarn") || "Invite your friends and earn rewards."}
-                      </Text>
-                    </View>
-                  </LinearGradient>
-                </TouchableOpacity>
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <Animated.View style={{ transform: [{ translateX: referAnim }] }}>
+                            <LinearGradient
+                              colors={["#ffffff", "#fefefe"]}
+                              style={{
+                                width: moderateScale(36),
+                                height: moderateScale(36),
+                                borderRadius: moderateScale(18),
+                                justifyContent: "center",
+                                alignItems: "center",
+                                shadowColor: theme.colors.primary,
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.1,
+                                shadowRadius: 4,
+                                elevation: 4,
+                              }}
+                            >
+                              <Ionicons
+                                name="gift"
+                                size={deviceScale(18)}
+                                color={theme.colors.primary}
+                              />
+                            </LinearGradient>
+                          </Animated.View>
 
-                {/* Lucky Draw Card */}
-                <TouchableOpacity
-                  onPress={() => router.push("/(app)/lucky_draw")}
-                  activeOpacity={0.9}
-                  style={{ flex: 1 }}
-                >
-                  <LinearGradient
-                    colors={["#4F46E5", "#7C3AED"]} // Indigo to Violet premium gradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{
-                      borderRadius: moderateScale(16),
-                      padding: moderateScale(12),
-                      height: moderateScale(130), // Same fixed height to match Refer card
-                      justifyContent: "space-between",
-                      shadowColor: "#7C3AED",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.2,
-                      shadowRadius: 6,
-                      elevation: 4,
-                      borderWidth: 1.5,
-                      borderColor: "#FFD700", // Metallic Gold Border
-                    }}
-                  >
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <Animated.View style={{ transform: [{ rotate: luckyRotation }] }}>
-                        <LinearGradient
-                          colors={["#BF953F", "#FCF6BA", "#B38728", "#FBF5B7", "#AA771C"]}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={{
-                            width: moderateScale(36),
-                            height: moderateScale(36),
-                            borderRadius: moderateScale(18),
-                            justifyContent: "center",
-                            alignItems: "center",
-                            shadowColor: "#000",
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.2,
-                            shadowRadius: 4,
-                            elevation: 4,
-                          }}
-                        >
-                          <Ionicons
-                            name="aperture"
-                            size={deviceScale(18)}
-                            color="#FFF"
-                          />
-                        </LinearGradient>
-                      </Animated.View>
+                          <Ionicons name="chevron-forward" size={deviceScale(16)} color={theme.colors.textDark} style={{ opacity: 0.8 }} />
+                        </View>
 
-                      <Ionicons name="chevron-forward" size={deviceScale(16)} color="#FFF" style={{ opacity: 0.8 }} />
-                    </View>
-
-                    <View>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 2 }}>
-                        <Text style={{
-                          color: "#FFF",
-                          fontSize: moderateScale(14),
-                          fontWeight: "800",
-                          letterSpacing: 0.3,
-                        }}>
-                          {
-                            {
-                              en: "Lucky Draw",
-                              ta: "லக்கி டிரா",
-                              mal: "ലക്കി ഡ്രോ",
-                              te: "లక్కీ డ్రా",
-                              hi: "लकी ड्रा"
-                            }[language] || "Lucky Draw"
-                          }
-                        </Text>
-                        <View style={{
-                          backgroundColor: "#FFD700",
-                          paddingHorizontal: moderateScale(4),
-                          paddingVertical: moderateScale(1),
-                          borderRadius: moderateScale(4),
-                        }}>
+                        <View>
                           <Text style={{
-                            color: "#111",
-                            fontSize: moderateScale(8),
-                            fontWeight: "900",
+                            color: theme.colors.textDark,
+                            fontSize: moderateScale(14),
+                            fontWeight: "800",
+                            letterSpacing: 0.3,
+                            marginBottom: 2
                           }}>
-                            NEW
+                            {t("referAndEarn") || "Refer & Earn"}
+                          </Text>
+                          <Text
+                            style={{
+                              color: theme.colors.textDark,
+                              fontSize: moderateScale(10),
+                              fontWeight: "500",
+                              opacity: 0.85,
+                            }}
+                            numberOfLines={2}
+                          >
+                            {t("inviteFriendsEarn") || "Invite your friends and earn rewards."}
                           </Text>
                         </View>
-                      </View>
-                      <Text
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Lucky Draw Card */}
+                  {isVisible("showLuckyDraw") && (
+                    <TouchableOpacity
+                      onPress={() => router.push("/(app)/lucky_draw")}
+                      activeOpacity={0.9}
+                      style={{ flex: 1 }}
+                    >
+                      <LinearGradient
+                        colors={["#4F46E5", "#7C3AED"]} // Indigo to Violet premium gradient
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
                         style={{
-                          color: "#E2E8F0",
-                          fontSize: moderateScale(10),
-                          fontWeight: "500",
-                          opacity: 0.9,
+                          borderRadius: moderateScale(16),
+                          padding: moderateScale(12),
+                          height: moderateScale(130), // Same fixed height to match Refer card
+                          justifyContent: "space-between",
+                          shadowColor: "#7C3AED",
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.2,
+                          shadowRadius: 6,
+                          elevation: 4,
+                          borderWidth: 1.5,
+                          borderColor: "#FFD700", // Metallic Gold Border
                         }}
-                        numberOfLines={2}
                       >
-                        {
-                          {
-                            en: "Participate in draw & view winners",
-                            ta: "குலுக்கலில் வெற்றியாளர்களைக் காண்க",
-                            mal: "വിജയികളെ കാണുക",
-                            te: "విజేతలను చూడండి",
-                            hi: "विजेताओं को देखें"
-                          }[language] || "Participate in draw & view winners"
-                        }
-                      </Text>
-                    </View>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <Animated.View style={{ transform: [{ rotate: luckyRotation }] }}>
+                            <LinearGradient
+                              colors={["#BF953F", "#FCF6BA", "#B38728", "#FBF5B7", "#AA771C"]}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                              style={{
+                                width: moderateScale(36),
+                                height: moderateScale(36),
+                                borderRadius: moderateScale(18),
+                                justifyContent: "center",
+                                alignItems: "center",
+                                shadowColor: "#000",
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.2,
+                                shadowRadius: 4,
+                                elevation: 4,
+                              }}
+                            >
+                              <Ionicons
+                                name="aperture"
+                                size={deviceScale(18)}
+                                color="#FFF"
+                              />
+                            </LinearGradient>
+                          </Animated.View>
+
+                          <Ionicons name="chevron-forward" size={deviceScale(16)} color="#FFF" style={{ opacity: 0.8 }} />
+                        </View>
+
+                        <View>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 2 }}>
+                            <Text style={{
+                              color: "#FFF",
+                              fontSize: moderateScale(14),
+                              fontWeight: "800",
+                              letterSpacing: 0.3,
+                            }}>
+                              {
+                                {
+                                  en: "Lucky Draw",
+                                  ta: "லக்கி டிரா",
+                                  mal: "ലക്കി ഡ്രോ",
+                                  te: "లక్కీ డ్రా",
+                                  hi: "लकी ड्रा"
+                                }[language] || "Lucky Draw"
+                              }
+                            </Text>
+                            <View style={{
+                              backgroundColor: "#FFD700",
+                              paddingHorizontal: moderateScale(4),
+                              paddingVertical: moderateScale(1),
+                              borderRadius: moderateScale(4),
+                            }}>
+                              <Text style={{
+                                color: "#111",
+                                fontSize: moderateScale(8),
+                                fontWeight: "900",
+                              }}>
+                                NEW
+                              </Text>
+                            </View>
+                          </View>
+                          <Text
+                            style={{
+                              color: "#E2E8F0",
+                              fontSize: moderateScale(10),
+                              fontWeight: "500",
+                              opacity: 0.9,
+                            }}
+                            numberOfLines={2}
+                          >
+                            {
+                              {
+                                en: "Participate in draw & view winners",
+                                ta: "குலுக்கலில் வெற்றியாளர்களைக் காண்க",
+                                mal: "വിജയികളെ കാണുക",
+                                te: "വിജയികളെ കാണുക",
+                                hi: "विजेताओं को देखें"
+                              }[language] || "Participate in draw & view winners"
+                            }
+                          </Text>
+                        </View>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
 
               {/* Support Contact Card - Conditionally rendered based on API */}
 
@@ -3938,9 +3832,76 @@ export default function Home() {
         visible={languageSelectorVisible}
         onClose={() => setLanguageSelectorVisible(false)}
       />
+      <MinimizedLuckyDrawPill />
     </AuthGuard>
   );
 }
+
+// Floating Countdown Pill Component
+const MinimizedLuckyDrawPill = () => {
+  const router = useRouter();
+  const activeDrawCountdown = useGlobalStore((state) => state.activeDrawCountdown);
+  const setActiveDrawCountdown = useGlobalStore((state) => state.setActiveDrawCountdown);
+  const [timeLeftStr, setTimeLeftStr] = useState("");
+
+  useEffect(() => {
+    if (!activeDrawCountdown) return;
+
+    const calculateTime = () => {
+      const diff = new Date(activeDrawCountdown.endDate).getTime() - Date.now();
+      if (diff <= 0) {
+        setTimeLeftStr("00:00");
+        return;
+      }
+      const mins = Math.floor((diff / 1000 / 60) % 60);
+      const secs = Math.floor((diff / 1000) % 60);
+      const format = (n: number) => (n < 10 ? `0${n}` : n);
+      setTimeLeftStr(`${format(mins)}:${format(secs)}`);
+    };
+
+    calculateTime();
+    const interval = setInterval(calculateTime, 1000);
+    return () => clearInterval(interval);
+  }, [activeDrawCountdown]);
+
+  if (!activeDrawCountdown) return null;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={() => {
+        router.push(`/(app)/lucky_draw?drawId=${activeDrawCountdown.id}`);
+      }}
+      style={styles.floatingPill}
+    >
+      <LinearGradient
+        colors={["#850111", "#4A0010"]}
+        style={styles.floatingPillGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <Ionicons name="time" size={16} color="#FFD700" style={{ marginRight: 6 }} />
+        <View style={{ marginRight: 8 }}>
+          <Text style={styles.floatingPillTitle} numberOfLines={1}>
+            {activeDrawCountdown.title}
+          </Text>
+          <Text style={styles.floatingPillTime}>
+            Live in: {timeLeftStr}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={(e) => {
+            e.stopPropagation();
+            setActiveDrawCountdown(null);
+          }}
+          style={styles.floatingPillClose}
+        >
+          <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.7)" />
+        </TouchableOpacity>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+};
 
 function getStyles(theme: any) {
   return StyleSheet.create({
@@ -5345,6 +5306,43 @@ function getStyles(theme: any) {
       fontSize: 13,
       color: "#666",
       lineHeight: 18,
+    },
+    floatingPill: {
+      position: "absolute",
+      bottom: Platform.OS === "ios" ? 100 : 80,
+      right: 16,
+      zIndex: 9999,
+      borderRadius: 20,
+      borderWidth: 1.5,
+      borderColor: "#D4AF37",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 5,
+      elevation: 8,
+      maxWidth: 200,
+    },
+    floatingPillGradient: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 18,
+    },
+    floatingPillTitle: {
+      color: "#fff",
+      fontSize: 10,
+      fontWeight: "bold",
+      maxWidth: 110,
+    },
+    floatingPillTime: {
+      color: "#FFD700",
+      fontSize: 11,
+      fontWeight: "bold",
+      marginTop: 1,
+    },
+    floatingPillClose: {
+      paddingLeft: 4,
     },
   })
 }

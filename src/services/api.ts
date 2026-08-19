@@ -407,25 +407,21 @@ apiClient.interceptors.request.use(
     config.headers = config.headers || new axios.AxiosHeaders();
     config.headers['x-client-platform'] = Platform.OS;
 
-    // Add authentication token
     try {
       let token = await SecureStore.getItemAsync("token");
-      logger.log('🔑 Token from SecureStore (token):', token);
 
       if (!token) {
         token = await SecureStore.getItemAsync("accessToken");
-        logger.log('🔑 Token from SecureStore (accessToken):', token);
       }
 
       if (!token) {
         token = await SecureStore.getItemAsync("authToken");
-        logger.log('🔑 Token from SecureStore (authToken):', token);
       }
 
       if (token) {
         config.headers = config.headers || new axios.AxiosHeaders();
         config.headers.Authorization = `Bearer ${token}`;
-        logger.log('✅ Authorization header set:', config.headers.Authorization);
+        logger.log('✅ Auth token loaded & Authorization header configured');
       } else {
         logger.log('❌ No token found in SecureStore');
       }

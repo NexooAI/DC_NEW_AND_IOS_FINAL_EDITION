@@ -11,11 +11,46 @@ const withAlpha = (hex, alpha) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+const ensureValidGradient = (gradient, fallback) => {
+  if (Array.isArray(gradient) && gradient.length >= 2 && gradient.every(c => typeof c === 'string' && c)) {
+    return gradient;
+  }
+  return fallback;
+};
+
 const createThemeColors = (basePalette, overrides = {}) => {
+  // Filter out null, undefined, or empty values from overrides to prevent pollution
+  const safeOverrides = {};
+  if (overrides && typeof overrides === 'object') {
+    Object.keys(overrides).forEach(key => {
+      const val = overrides[key];
+      if (val !== null && val !== undefined && val !== "") {
+        safeOverrides[key] = val;
+      }
+    });
+  }
+
   const colors = {
     ...basePalette,
-    ...overrides,
+    ...safeOverrides,
   };
+
+  // Safe fallback gradients
+  const fallbackPrimary = ["#0b162c", "#16315c", "#d4af37"];
+  const fallbackPrimaryDark = ["#0b162c", "#081121", "#020408"];
+  const fallbackSuccess = ["#10b981", "#059669", "#047857"];
+  const fallbackGold = ["#d4af37", "#f4c961"];
+  const fallbackRed = ["#ef4444", "#dc2626"];
+  const fallbackBlue = ["#1e293b", "#334155", "#475569"];
+  const fallbackSilver = ["#cbd5e1", "#94a3b8", "#64748b"];
+
+  colors.gradientPrimary = ensureValidGradient(colors.gradientPrimary, basePalette?.gradientPrimary || fallbackPrimary);
+  colors.gradientPrimaryDark = ensureValidGradient(colors.gradientPrimaryDark, basePalette?.gradientPrimaryDark || fallbackPrimaryDark);
+  colors.gradientSuccess = ensureValidGradient(colors.gradientSuccess, basePalette?.gradientSuccess || fallbackSuccess);
+  colors.gradientGold = ensureValidGradient(colors.gradientGold, basePalette?.gradientGold || fallbackGold);
+  colors.gradientRed = ensureValidGradient(colors.gradientRed, basePalette?.gradientRed || fallbackRed);
+  colors.gradientBlue = ensureValidGradient(colors.gradientBlue, basePalette?.gradientBlue || fallbackBlue);
+  colors.gradientSilver = ensureValidGradient(colors.gradientSilver, basePalette?.gradientSilver || fallbackSilver);
 
   const isDarkSurface = colors.background === "#121212";
   const textOnPrimary = colors.textPrimary;
@@ -61,6 +96,8 @@ const createThemeColors = (basePalette, overrides = {}) => {
     overlay: colors.overlay || withAlpha("#000000", isDarkSurface ? 0.7 : 0.5),
     overlayLight: colors.overlayLight || withAlpha("#000000", isDarkSurface ? 0.45 : 0.2),
     overlayMedium: colors.overlayMedium || withAlpha("#000000", isDarkSurface ? 0.55 : 0.3),
+    bgImageOverlay: colors.bgImageOverlay || colors.overlay || withAlpha("#000000", isDarkSurface ? 0.7 : 0.5),
+    bgImageOverlayMedium: colors.bgImageOverlayMedium || colors.overlayMedium || withAlpha("#000000", isDarkSurface ? 0.55 : 0.3),
     blackOverlay: colors.blackOverlay || withAlpha("#000000", 0.5),
     blackOverlayLight: colors.blackOverlayLight || withAlpha("#000000", 0.2),
     whiteOverlay: colors.whiteOverlay || withAlpha("#ffffff", isDarkSurface ? 0.12 : 0.9),

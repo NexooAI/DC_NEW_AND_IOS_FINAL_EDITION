@@ -418,74 +418,14 @@ export default function PaymentFailure() {
 
 
 
-        <View style={styles.buttonRow}>
-          {isBillPayment ? (
-            <>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonHalf, styles.buttonRetry]}
-                onPress={() => router.replace("/(app)/bill_payment")}
-                activeOpacity={0.9}
-              >
-                <Ionicons name="receipt-outline" size={rp(20)} color="#fff" />
-                <Text style={styles.buttonText}>{(t("backToBills") || "BACK TO BILLS").toUpperCase()}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonHalf, styles.buttonHome]}
-                onPress={handleHomePress}
-                activeOpacity={0.9}
-              >
-                <Ionicons name="home" size={rp(20)} color={theme.colors.textDark} />
-                <Text style={[styles.buttonText, styles.buttonTextHome]}>{(t("home") || "GO TO HOME").toUpperCase()}</Text>
-              </TouchableOpacity>
-            </>
-          ) : (type === "booking" || type === "advance_booking") ? (
-            <>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonHalf, styles.buttonRetry]}
-                onPress={() => router.replace("/(tabs)/home/BookingHistory")}
-                activeOpacity={0.9}
-              >
-                <Ionicons name="time" size={rp(20)} color="#fff" />
-                <Text style={styles.buttonText}>{(t("bookingHistory") || "BOOKING HISTORY").toUpperCase()}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonHalf, styles.buttonHome]}
-                onPress={() => router.replace("/(app)/gold_advance")}
-                activeOpacity={0.9}
-              >
-                <Ionicons name="arrow-back" size={rp(20)} color={theme.colors.textDark} />
-                <Text style={[styles.buttonText, styles.buttonTextHome]}>{(t("goBack") || "GO BACK").toUpperCase()}</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonHalf, styles.buttonRetry]}
-                onPress={handleRetry}
-                activeOpacity={0.9}
-              >
-                <Ionicons name="refresh" size={rp(20)} color="#fff" />
-                <Text style={styles.buttonText}>{t("retry")}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonHalf, styles.buttonHome]}
-                onPress={handleHomePress}
-                activeOpacity={0.9}
-              >
-                <Ionicons 
-                  name={investmentId && investmentId !== "0" && investmentId !== "undefined" ? "wallet" : "home"} 
-                  size={rp(20)} 
-                  color={theme.colors.textDark} 
-                />
-                <Text style={[styles.buttonText, styles.buttonTextHome]}>
-                  {investmentId && investmentId !== "0" && investmentId !== "undefined"
-                    ? (t("backToSavings") || "BACK TO SAVINGS")
-                    : t("home")}
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
+        <TouchableOpacity
+          style={[styles.button, { width: "100%", backgroundColor: theme.colors.error }]}
+          onPress={handleHomePress}
+          activeOpacity={0.9}
+        >
+          <Ionicons name="home" size={20} color="#fff" />
+          <Text style={[styles.buttonText, { color: '#fff', marginLeft: 8 }]}>{(t("home") || "GO TO HOME").toUpperCase()}</Text>
+        </TouchableOpacity>
         </Animated.View>
       </ScrollView>
     </SafeAreaView>

@@ -31,7 +31,7 @@ import Icon from "@expo/vector-icons/MaterialIcons";
 import { t } from "@/i18n";
 import { AppLocale } from "@/i18n";
 import apiClient from "@/services/api";
-import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
+import useGlobalStore from "@/store/global.store";
 import { useOtpAutoFetch } from "@/hooks/useOtpAutoFetch";
 
 import { logger } from "@/utils/logger";
@@ -338,8 +338,6 @@ const MpinInput = ({
 };
 
 export default function ForgotMpin() {
-  const theme = useAppTheme();
-  styles = getStyles(theme);
   const [step, setStep] = useState<"verifyOtp" | "createMpin">("verifyOtp");
   const [mobileNumber, setMobileNumber] = useState("");
   const [otp, setOtp] = useState("");
@@ -1079,7 +1077,7 @@ export default function ForgotMpin() {
   );
 }
 
-function getStyles(theme: any) { return StyleSheet.create({
+const styles = StyleSheet.create({
   otpInputsWrapper: {
     position: "relative",
     width: "100%",
@@ -1175,15 +1173,8 @@ function getStyles(theme: any) { return StyleSheet.create({
     paddingVertical: 10,
   },
   card: {
-    backgroundColor: theme.colors.quaternary || "#F2E6D2",
-    borderRadius: 20,
-    padding: 24,
     width: "100%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5,
+    padding: 0,
     marginBottom: 20,
   },
   cardTitle: {
@@ -1455,6 +1446,4 @@ function getStyles(theme: any) { return StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-}) }
-
-var styles = getStyles(theme);;
+});
