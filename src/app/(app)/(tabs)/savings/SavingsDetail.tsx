@@ -33,6 +33,7 @@ import { moderateScale } from "react-native-size-matters";
 import SupportContactCard from "@/components/SupportContactCard";
 import CustomAlert from "@/components/Alert";
 import Icon from "react-native-vector-icons/AntDesign";
+import Svg, { Path, Circle } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Clipboard from "expo-clipboard";
@@ -704,54 +705,117 @@ const SavingsDetail = () => {
 
   // New Component Renderers
 
-  const renderHeroCard = () => (
-    <View style={styles.heroContainer}>
-      <LinearGradient
-        colors={theme.colors.gradientPrimary || ["#0b162c", "#16315c", "#d4af37"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.heroCard}
-      >
-        <View style={styles.heroBackground}>
-          <View style={styles.heroHeaderRow}>
-            <View>
-              <Text style={styles.heroSchemeName}>{params.schemeName}</Text>
-              <Text style={styles.heroSchemeCode}>{params.schemeCode}</Text>
-            </View>
-            {/* <View style={styles.heroStatusBadge}>
-               <View style={styles.heroStatusDot} />
-               <Text style={styles.heroStatusText}>{translations.statusActive || "Active"}</Text>
-             </View> */}
-          </View>
+  const renderHeroCard = () => {
+    const totalMonths = Number(params.noOfIns) || 12;
+    const monthsPaid = Number(params.monthsPaid) || 0;
+    const progressPercent = getProgressPercentage();
+    
+    // SVG radial configuration
+    const size = 95;
+    const radius = 38;
+    const strokeWidth = 5;
+    const cx = size / 2;
+    const cy = size / 2 + 10;
+    
+    // We will draw a semi-circle dial from -180 deg (left) to 0 deg (right)
+    // Semi-circle path: start at (cx - radius, cy), end at (cx + radius, cy)
+    const startX = cx - radius;
+    const endX = cx + radius;
+    const dialPath = `M ${startX} ${cy} A ${radius} ${radius} 0 0 1 ${endX} ${cy}`;
+    const circumference = Math.PI * radius; // Approx 119.38
+    const strokeDashoffset = circumference - (circumference * progressPercent) / 100;
 
-          <View style={styles.heroStatsRow}>
-            <View style={styles.heroStatItem}>
-              <Text style={styles.heroStatLabel}>{translations.totalInvested}</Text>
-              <Text style={styles.heroStatValue}>₹{Number(totalAmountandRewards).toLocaleString()}</Text>
-            </View>
-            {schemesData?.schemeType?.toLowerCase() === "weight" && (
-              <View style={styles.heroStatItem}>
-                <Text style={styles.heroStatLabel}>{translations.goldAccumulated}</Text>
-                <Text style={styles.heroStatValue}>{formatGoldWeight(parseFloat(params.goldWeight) || 0)}</Text>
-              </View>
-            )}
-          </View>
+    // Generate tick pointers (12 markers or based on totalMonths)
+    const ticks = [];
+    const maxTicks = Math.min(totalMonths, 12);
+    for (let i = 0; i < maxTicks; i++) {
+      const angle = 180 - (i * 180) / (maxTicks - 1); // 180 to 0 degrees
+      const rad = (angle * Math.PI) / 180;
+      const tx = cx + (radius + 6) * Math.cos(rad);
+      const ty = cy - (radius + 6) * Math.sin(rad);
+      const isReached = i < monthsPaid;
+      ticks.push(
+        <Circle
+          key={i}
+          cx={tx}
+          cy={ty}
+          r={2}
+          fill={isReached ? theme.colors.secondary : "rgba(255, 255, 255, 0.3)"}
+        />
+      );
+    }
 
-          {schemesData?.paymentFrequencyName !== "Flexi" && schemesData?.paymentFrequencyName !== "Hybrid" && schemesData?.paymentFrequencyName?.toLowerCase() !== "hybrid" && (
-            <View style={styles.progressContainer}>
-              <View style={styles.progressLabels}>
-                <Text style={styles.progressLabelText}>{translations.paymentProgress}</Text>
-                <Text style={styles.progressValueText}>{params.monthsPaid}/{params.noOfIns} {translations.months}</Text>
+    return (
+      <View style={styles.heroContainer}>
+        <LinearGradient
+          colors={theme.colors.gradientPrimary || ["#0b162c", "#16315c", "#d4af37"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroCard}
+        >
+          <View style={[styles.heroBackground, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
+            {/* Left Column: Stats */}
+            <View style={{ flex: 1.2, paddingRight: 10 }}>
+              <Text style={styles.heroSchemeName} numberOfLines={1}>{(params.schemeName || "").toUpperCase()}</Text>
+              <Text style={[styles.heroSchemeCode, { fontSize: 12, marginBottom: 8 }]}>{params.schemeCode}</Text>
+              
+              <View style={{ marginBottom: 6 }}>
+                <Text style={[styles.heroStatLabel, { fontSize: 10, marginBottom: 2 }]}>{translations.totalInvested}</Text>
+                <Text style={styles.heroStatValue}>₹{Number(totalAmountandRewards).toLocaleString()}</Text>
               </View>
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: `${getProgressPercentage()}%` }]} />
-              </View>
+              
+              {schemesData?.schemeType?.toLowerCase() === "weight" && (
+                <View>
+                  <Text style={[styles.heroStatLabel, { fontSize: 10, marginBottom: 2 }]}>{translations.goldAccumulated}</Text>
+                  <Text style={[styles.heroStatValue, { fontSize: 16 }]}>{formatGoldWeight(parseFloat(params.goldWeight) || 0)}</Text>
+                </View>
+              )}
             </View>
-          )}
-        </View>
-      </LinearGradient>
-    </View>
-  );
+
+            {/* Right Column: Speedometer Progress Gauge */}
+            {schemesData?.paymentFrequencyName !== "Flexi" && schemesData?.paymentFrequencyName !== "Hybrid" && schemesData?.paymentFrequencyName?.toLowerCase() !== "hybrid" ? (
+              <View style={{ flex: 0.8, alignItems: "center", justifyContent: "center" }}>
+                <View style={{ width: size, height: size - 10, position: "relative", alignItems: "center", justifyContent: "center" }}>
+                  <Svg width={size} height={size}>
+                    {/* Background Dial Track */}
+                    <Path
+                      d={dialPath}
+                      fill="none"
+                      stroke="rgba(255, 255, 255, 0.15)"
+                      strokeWidth={strokeWidth}
+                      strokeLinecap="round"
+                    />
+                    {/* Active Dial Fill */}
+                    <Path
+                      d={dialPath}
+                      fill="none"
+                      stroke={theme.colors.secondary}
+                      strokeWidth={strokeWidth}
+                      strokeLinecap="round"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={strokeDashoffset}
+                    />
+                    {/* Pointer Ticks */}
+                    {ticks}
+                  </Svg>
+                  
+                  {/* Central Text overlay */}
+                  <View style={{ position: "absolute", bottom: 12, alignItems: "center" }}>
+                    <Text style={{ color: "#FFF", fontSize: 14, fontWeight: "800" }}>
+                      {monthsPaid}/{totalMonths}
+                    </Text>
+                    <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      Months
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ) : null}
+          </View>
+        </LinearGradient>
+      </View>
+    );
+  };
 
   const renderInfoGrid = () => {
     const isFlexiOrHybrid = (schemesData?.paymentFrequencyName || params.paymentFrequency || "").toLowerCase().includes("flexi") ||
@@ -762,6 +826,22 @@ const SavingsDetail = () => {
     const schemeTypeDisplay = isFlexiOrHybrid
       ? (((schemesData?.paymentFrequencyName || params.paymentFrequency || "").toLowerCase().includes("hybrid") || (params.schemeName || "").toLowerCase().includes("hybrid")) ? "Hybrid" : "Flexi")
       : (schemesData?.paymentFrequencyName || params.paymentFrequency || "Fixed");
+
+    const getStartDate = () => {
+      const rawDate = inversement?.start_date || inversement?.joiningDate || params.joiningDate;
+      if (rawDate && rawDate !== "N/A" && rawDate !== "") {
+        try {
+          return new Date(rawDate).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          });
+        } catch (e) {
+          return rawDate;
+        }
+      }
+      return null;
+    };
 
     return (
       <View style={styles.sectionContainer}>
@@ -800,12 +880,31 @@ const SavingsDetail = () => {
               <View style={{ flex: 1 }}>
                 <Text style={styles.gridLabel}>Next Due Date</Text>
                 <Text style={styles.gridValue} numberOfLines={1}>
-                  {new Date(params.dueDate).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
+                  {(() => {
+                    const parsedDate = new Date(params.dueDate);
+                    if (isNaN(parsedDate.getTime())) {
+                      return params.dueDate;
+                    }
+                    return parsedDate.toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    });
+                  })()}
                 </Text>
+              </View>
+            </View>
+          ) : null}
+
+          {/* Start Date */}
+          {getStartDate() ? (
+            <View style={styles.gridItem}>
+              <View style={[styles.gridIcon, { backgroundColor: '#E8F5E9' }]}>
+                <Ionicons name="calendar-outline" size={20} color="#2E7D32" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.gridLabel}>Start Date</Text>
+                <Text style={styles.gridValue} numberOfLines={1}>{getStartDate()}</Text>
               </View>
             </View>
           ) : null}
@@ -822,7 +921,7 @@ const SavingsDetail = () => {
           </View>
 
           {/* Account Number */}
-          <View style={styles.gridItem}>
+          <View style={[styles.gridItem, { width: "100%" }]}>
             <View style={[styles.gridIcon, { backgroundColor: '#F3E5F5' }]}>
               <Ionicons name="bookmark" size={20} color="#7B1FA2" />
             </View>
@@ -1208,19 +1307,20 @@ function getStyles(theme: any) { return StyleSheet.create({
     overflow: 'hidden',
   },
   heroBackground: {
-    padding: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
   heroHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 25,
+    marginBottom: 8,
   },
   heroSchemeName: {
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: '800',
     color: '#FFF',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   heroSchemeCode: {
     fontSize: 14,
@@ -1249,7 +1349,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   heroStatsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 25,
+    marginBottom: 8,
   },
   heroStatItem: {
     flex: 1,
@@ -1262,7 +1362,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     letterSpacing: 1,
   },
   heroStatValue: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '700',
     color: '#FFF',
   },
@@ -1272,7 +1372,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   progressLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   progressLabelText: {
     color: 'rgba(255,255,255,0.8)',
@@ -1291,7 +1391,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.secondary,
     borderRadius: 3,
   },
 
@@ -1301,9 +1401,9 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginBottom: 25,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.textDark || '#1A1A1A',
     marginBottom: 15,
   },
   sectionHeaderRow: {

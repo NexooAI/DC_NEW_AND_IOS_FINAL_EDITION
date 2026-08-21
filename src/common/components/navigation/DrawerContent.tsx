@@ -22,6 +22,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getFullImageUrl } from "@/utils/imageUtils";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 const { width } = Dimensions.get("window");
 
@@ -161,6 +162,16 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
   const { logout, user, themeMode, toggleThemeMode } = useGlobalStore();
   const [isNavigating, setIsNavigating] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const { isVisible } = useAppVisibility();
+
+  const showRefer = isVisible("showSideReferEarn");
+  const showTickets = isVisible("showSideTickets");
+  const showOffers = isVisible("showSideOffers");
+  const showStores = isVisible("showSideStores");
+  const showContactUs = isVisible("showSideContactUs");
+  const showFaq = isVisible("showSideFaq");
+  const showPrivacy = isVisible("showSidePrivacy");
+  const showTerms = isVisible("showSideTerms");
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const version = Constants.expoConfig?.version || '1.0.0';
 
@@ -343,93 +354,113 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
       >
         <View style={styles.menuContainer}>
           {/* General Section */}
-          <SectionHeader title={t("general") || "General"} />
-          {/* <DrawerMenuItem
-            label={t("profile")}
-            iconName="person-outline"
-            onPress={() => handleNavigation("/(tabs)/profile")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/profile")}
-            delay={100}
-          /> */}
-          <DrawerMenuItem
-            label={t("referAndEarn")}
-            iconName="gift-outline"
-            onPress={() => handleNavigation("/(tabs)/home/refer_earn")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/home/refer_earn")}
-            delay={150}
-            iconColor={theme.colors.secondary}
-          />
-          <DrawerMenuItem
-            label={t("ticketsAndEnquiries") || "Tickets & Enquiries"}
-            iconName="receipt-outline"
-            onPress={() => handleNavigation("/tickets")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/tickets")}
-            delay={175}
-            iconColor={theme.colors.primary} // Primary Brand color
-          />
+          {(showRefer || showTickets) && (
+            <>
+              <SectionHeader title={t("general") || "General"} />
+              {showRefer && (
+                <DrawerMenuItem
+                  label={t("referAndEarn")}
+                  iconName="gift-outline"
+                  onPress={() => handleNavigation("/(tabs)/home/refer_earn")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/(tabs)/home/refer_earn")}
+                  delay={150}
+                  iconColor={theme.colors.secondary}
+                />
+              )}
+              {showTickets && (
+                <DrawerMenuItem
+                  label={t("ticketsAndEnquiries") || "Tickets & Enquiries"}
+                  iconName="receipt-outline"
+                  onPress={() => handleNavigation("/tickets")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/tickets")}
+                  delay={175}
+                  iconColor={theme.colors.primary} // Primary Brand color
+                />
+              )}
+            </>
+          )}
 
           {/* Support Section */}
-          <SectionHeader title={t("information") || "Information"} />
-          <DrawerMenuItem
-            label={t("offers") || "Our Offers"}
-            iconName="pricetag-outline"
-            onPress={() => handleNavigation("/(tabs)/home/offers")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/home/offers")}
-            delay={190}
-            iconColor={theme.colors.error}
-          />
-          <DrawerMenuItem
-            label={t("ourStores")}
-            iconName="storefront-outline"
-            onPress={() => handleNavigation("/(tabs)/home/our_stores")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/home/our_stores")}
-            delay={200}
-            iconColor={theme.colors.error}
-          />
-          <DrawerMenuItem
-            label={t("contactUs")}
-            iconName="call-outline"
-            onPress={() => handleNavigation("/(tabs)/home/contact_us")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/home/contact_us")}
-            delay={250}
-            iconColor={theme.colors.success}
-          />
-          <DrawerMenuItem
-            label={t("faqAndHelp")}
-            iconName="help-circle-outline"
-            onPress={() => handleNavigation("/(tabs)/home/faq")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/home/faq")}
-            delay={300}
-            iconColor={theme.colors.warning}
-          />
+          {(showOffers || showStores || showContactUs || showFaq) && (
+            <>
+              <SectionHeader title={t("information") || "Information"} />
+              {showOffers && (
+                <DrawerMenuItem
+                  label={t("offers") || "Our Offers"}
+                  iconName="pricetag-outline"
+                  onPress={() => handleNavigation("/(tabs)/home/offers")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/(tabs)/home/offers")}
+                  delay={190}
+                  iconColor={theme.colors.error}
+                />
+              )}
+              {showStores && (
+                <DrawerMenuItem
+                  label={t("ourStores")}
+                  iconName="storefront-outline"
+                  onPress={() => handleNavigation("/(tabs)/home/our_stores")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/(tabs)/home/our_stores")}
+                  delay={200}
+                  iconColor={theme.colors.error}
+                />
+              )}
+              {showContactUs && (
+                <DrawerMenuItem
+                  label={t("contactUs")}
+                  iconName="call-outline"
+                  onPress={() => handleNavigation("/(tabs)/home/contact_us")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/(tabs)/home/contact_us")}
+                  delay={250}
+                  iconColor={theme.colors.success}
+                />
+              )}
+              {showFaq && (
+                <DrawerMenuItem
+                  label={t("faqAndHelp")}
+                  iconName="help-circle-outline"
+                  onPress={() => handleNavigation("/(tabs)/home/faq")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/(tabs)/home/faq")}
+                  delay={300}
+                  iconColor={theme.colors.warning}
+                />
+              )}
+            </>
+          )}
 
           {/* Legal Section */}
-          <SectionHeader title={t("legal") || "Legal"} />
-          <DrawerMenuItem
-            label={t("privacyPolicy")}
-            iconName="lock-closed-outline"
-            onPress={() => handleNavigation("/(tabs)/home/policies/privacyPolicy")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/home/policies/privacyPolicy")}
-            delay={350}
-            iconColor={theme.colors.info}
-          />
-          <DrawerMenuItem
-            label={t("termsAndConditions")}
-            iconName="document-text-outline"
-            onPress={() => handleNavigation("/(tabs)/home/policies/termsAndConditionsPolicies")}
-            disabled={isNavigating}
-            isActive={isRouteActive("/(tabs)/home/policies/termsAndConditionsPolicies")}
-            delay={400}
-            iconColor={theme.colors.info}
-          />
+          {(showPrivacy || showTerms) && (
+            <>
+              <SectionHeader title={t("legal") || "Legal"} />
+              {showPrivacy && (
+                <DrawerMenuItem
+                  label={t("privacyPolicy")}
+                  iconName="lock-closed-outline"
+                  onPress={() => handleNavigation("/(tabs)/home/policies/privacyPolicy")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/(tabs)/home/policies/privacyPolicy")}
+                  delay={350}
+                  iconColor={theme.colors.info}
+                />
+              )}
+              {showTerms && (
+                <DrawerMenuItem
+                  label={t("termsAndConditions")}
+                  iconName="document-text-outline"
+                  onPress={() => handleNavigation("/(tabs)/home/policies/termsAndConditionsPolicies")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/(tabs)/home/policies/termsAndConditionsPolicies")}
+                  delay={400}
+                  iconColor={theme.colors.info}
+                />
+              )}
+            </>
+          )}
 
           {/* Account Section */}
           <SectionHeader title={t("account") || "Account"} />

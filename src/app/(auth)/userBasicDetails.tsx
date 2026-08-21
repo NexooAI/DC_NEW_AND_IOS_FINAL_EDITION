@@ -36,6 +36,10 @@ import RNPickerSelect from "react-native-picker-select";
 import ResponsiveText from "@/components/ResponsiveText";
 import ResponsiveButton from "@/components/ResponsiveButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { responsiveUtils } from "@/utils/responsiveUtils";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
+const { hp } = responsiveUtils;
+import Svg, { Path } from 'react-native-svg';
 
 import { logger } from "@/utils/logger";
 const { width, height } = Dimensions.get("window");
@@ -154,6 +158,7 @@ const axiosFetch = async (url: string, options: any = {}, retries = 2) => {
 
 export default function BasicDetailsForm() {
   const { t } = useTranslation();
+  const { isVisible } = useAppVisibility();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [referralCode, setReferralCode] = useState("");
@@ -1105,15 +1110,15 @@ export default function BasicDetailsForm() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: theme.colors.quaternary,
+          backgroundColor: '#FFFFFF',
         },
       ]}
     >
       <LinearGradient
-        colors={[theme.colors.quaternary, theme.colors.quaternary]}
+        colors={['#FFFFFF', '#FFFFFF']}
         style={styles.gradient}
       >
-        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary} />
+        <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
         {showError && (
           <ErrorAlert message={errorMessage} onClose={hideErrorAlert} />
         )}
@@ -1129,57 +1134,138 @@ export default function BasicDetailsForm() {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              <View style={styles.mainContent}>
-                <View style={styles.formContainer}>
-                  {/* Header Back Button */}
-                  <TouchableOpacity
-                    style={{
+              <Pressable onPress={Keyboard.dismiss} style={{ flex: 1, width: "100%" }}>
+                {/* Header Back Button and Title */}
+                <View
+                  style={{
+                    height: Platform.OS === 'ios' ? hp(22) : hp(20),
+                    paddingTop: Platform.OS === 'ios' ? 70 : 50,
+                    paddingHorizontal: 20,
+                    width: "100%",
+                    zIndex: 1,
+                    backgroundColor: theme.colors.primary,
+                  }}
+                >
+                  {/* Background Models Grid Watermark Layer (1, 2, 3 Grid Models) */}
+                  {isVisible("showLoginBackgroundImages") && (
+                    <View style={{
                       position: 'absolute',
-                      top: Platform.OS === 'ios' ? 20 : 10,
-                      left: 15,
-                      zIndex: 10,
-                      padding: 8,
-                      borderRadius: 20,
-                      backgroundColor: 'rgba(0, 0, 0, 0.03)'
-                    }}
-                    onPress={handleBack}
-                  >
-                    <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
-                  </TouchableOpacity>
-                  <View style={{ height: Platform.OS === 'ios' ? 60 : 45 }} />
+                      top: 10,
+                      left: 12,
+                      right: 12,
+                      bottom: 10,
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      opacity: 0.25,
+                      zIndex: 0,
+                    }}>
+                      <View style={{
+                        flex: 1,
+                        height: '100%',
+                        marginHorizontal: 4,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        borderWidth: 1,
+                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                      }}>
+                        <Image
+                          source={require("../../../assets/images/intro_1.png")}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      </View>
+                      <View style={{
+                        flex: 1,
+                        height: '100%',
+                        marginHorizontal: 4,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        borderWidth: 1,
+                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                      }}>
+                        <Image
+                          source={require("../../../assets/images/intro_2.png")}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      </View>
+                      <View style={{
+                        flex: 1,
+                        height: '100%',
+                        marginHorizontal: 4,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        borderWidth: 1,
+                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                      }}>
+                        <Image
+                          source={require("../../../assets/images/intro_3.png")}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      </View>
+                    </View>
+                  )}
 
-                  {/* Page Title and Subtitle */}
-                  <View style={styles.titleContainer}>
-                    <ResponsiveText
-                      variant="title"
-                      size="lg"
-                      weight="bold"
-                      color={theme.colors.primary}
-                      align="center"
-                      truncateMode="double"
-                      style={styles.pageTitle}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', zIndex: 1 }}>
+                    {/* Back arrow in small yellow circle */}
+                    <TouchableOpacity
+                      onPress={handleBack}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        backgroundColor: theme.colors.secondary || '#F8CF2C',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
                     >
-                      {otpModalVisible ? (otpVerified ? (t("otpVerificationSuccessful") || "Verification Successful") : t("otpVerificationRequired")) : t("createYourAccount")}
-                    </ResponsiveText>
-                    <ResponsiveText
-                      variant="subtitle"
-                      size="md"
-                      color="#ffffff"
-                      align="center"
-                      truncateMode="double"
-                      style={styles.subtitle}
-                    >
-                      {otpModalVisible ? (
-                        otpVerified
-                          ? t("otpHasBeenVerifiedSuccessfully")
-                          : autoOtpSending
-                            ? t("sendingOtpToYourMobileNumber")
-                            : otpSentFromModal
-                              ? t("otpHasBeenAutomaticallySent")
-                              : t("pleaseVerifyYourMobileNumber")
-                      ) : t("enterYourDetailsToGetStarted")}
-                    </ResponsiveText>
+                      <Ionicons name="arrow-back" size={22} color={theme.colors.primary} />
+                    </TouchableOpacity>
                   </View>
+                </View>
+
+                {/* Bottom White Card */}
+                <View
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    paddingHorizontal: 24,
+                    paddingTop: 30,
+                    paddingBottom: Platform.OS === "ios" ? 80 : 100,
+                    flex: 1,
+                    zIndex: 1,
+                    position: 'relative',
+                  }}
+                >
+                  {/* Custom wave curve at the top */}
+                  <View style={{ position: 'absolute', top: -39, left: 0, right: 0, height: 40, zIndex: 10, backgroundColor: 'transparent' }}>
+                    <Svg height="40" width={width} viewBox={`0 0 ${width} 40`} style={{ position: 'absolute', top: 0, left: 0 }}>
+                      <Path
+                        d={`M0,40 C${width * 0.3},40 ${width * 0.7},0 ${width},0 L${width},40 L0,40 Z`}
+                        fill="#FFFFFF"
+                      />
+                    </Svg>
+                  </View>
+                  {/* Content */}
+                  <View style={{ width: '100%' }}>
+                    {/* Title and Subtitle inside the white card */}
+                    <View style={{ marginBottom: 20 }}>
+                      <Text style={{ color: theme.colors.primary, fontSize: 22, fontWeight: 'bold', marginBottom: 6 }}>
+                        {otpModalVisible ? (otpVerified ? (t("otpVerificationSuccessful") || "Verification Successful") : t("otpVerificationRequired")) : t("createYourAccount")}
+                      </Text>
+                      <Text style={{ color: '#666666', fontSize: 14 }}>
+                        {otpModalVisible ? (
+                          otpVerified
+                            ? t("otpHasBeenVerifiedSuccessfully")
+                            : autoOtpSending
+                              ? t("sendingOtpToYourMobileNumber")
+                              : otpSentFromModal
+                                ? t("otpHasBeenAutomaticallySent")
+                                : t("pleaseVerifyYourMobileNumber")
+                        ) : t("enterYourDetailsToGetStarted")}
+                      </Text>
+                    </View>
 
                   <View style={otpModalVisible ? { display: "none" } : { width: "100%" }}>
                     {/* Mobile Number (Editable) */}
@@ -1757,6 +1843,8 @@ export default function BasicDetailsForm() {
                         ? t("processing")
                         : t("continueToMpinSetup") || "Continue to MPIN Setup"
                     }
+                    backgroundColor={theme.colors.primary}
+                    textColor="#FFFFFF"
                     variant="secondary"
                     size="md"
                     fullWidth={true}
@@ -1766,7 +1854,7 @@ export default function BasicDetailsForm() {
                     style={[
                       styles.loginButton,
                       loading && styles.loginButtonDisabled,
-                      { height: 42, minHeight: 42, borderRadius: 21 },
+                      { height: 48, minHeight: 48, borderRadius: 8 },
                     ]}
                   />
 
@@ -1951,7 +2039,8 @@ export default function BasicDetailsForm() {
                   )}
                 </View>
               </View>
-              </View>
+            </View>
+          </Pressable>
             </ScrollView>
           </KeyboardAvoidingView>
         </TouchableWithoutFeedback>
@@ -2411,13 +2500,10 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   inputLabel: {
-    color: theme.colors.primary,
-    fontSize: getResponsiveSize(14, 16),
-    fontWeight: "600",
-    marginBottom: getResponsiveHeight(8, 10),
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    color: "#555555",
+    fontSize: getResponsiveSize(14, 15),
+    fontWeight: "500",
+    marginBottom: getResponsiveHeight(6, 8),
     flexShrink: 1,
   },
   input: {
@@ -2438,11 +2524,12 @@ const styles = StyleSheet.create({
   inputWithIcon: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    paddingHorizontal: 12,
+    backgroundColor: "transparent",
+    borderRadius: 0,
+    borderWidth: 0,
+    borderBottomWidth: 1.5,
+    borderBottomColor: "#F8CF2C",
+    paddingHorizontal: 4,
     paddingVertical: 8,
     marginVertical: 6,
     minHeight: getResponsiveHeight(45, 50),
@@ -2476,10 +2563,10 @@ const styles = StyleSheet.create({
   newGetOtpButton: {
     marginTop: getResponsiveHeight(8, 10),
     alignSelf: "flex-end",
-    backgroundColor: theme.colors.secondary,
+    backgroundColor: theme.colors.primary,
     paddingVertical: getResponsiveHeight(10, 12),
     paddingHorizontal: getResponsiveSize(20, 24),
-    borderRadius: getResponsiveSize(8, 10),
+    borderRadius: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.18,
@@ -2524,7 +2611,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: width * 0.9,
     height: getResponsiveHeight(45, 50),
-    borderRadius: getResponsiveSize(25, 28),
+    borderRadius: 8,
     overflow: "hidden",
     marginTop: getResponsiveHeight(15, 20),
     marginBottom: getResponsiveHeight(10, 15),
@@ -2732,7 +2819,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
     paddingVertical: Math.min(12, width * 0.03),
     paddingHorizontal: Math.min(20, width * 0.05),
-    borderRadius: Math.min(12, width * 0.03),
+    borderRadius: 8,
     marginBottom: Math.min(16, width * 0.04),
     alignItems: "center",
     justifyContent: "center",

@@ -17,6 +17,7 @@ interface PhoneInputProps {
   onFocus?: () => void;
   disableBlurAlert?: boolean;
   label?: string;
+  variant?: "default" | "line";
 }
 
 const PhoneInput: React.FC<PhoneInputProps> = ({
@@ -26,9 +27,10 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   onFocus,
   disableBlurAlert = false,
   label,
+  variant = "default",
 }) => {
   const theme = useAppTheme();
-  styles = getStyles(theme);
+  styles = getStyles(theme, variant);
   const { t } = useTranslation();
   const [error, setError] = useState("");
 
@@ -69,7 +71,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{displayLabel}:</Text>
+      <Text style={styles.label}>{displayLabel}</Text>
 
       <View style={[styles.inputContainer, error && styles.errorContainer]}>
         <View style={styles.countryCodeBox}>
@@ -105,51 +107,56 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   );
 };
 
-function getStyles(theme: any) { return StyleSheet.create({
+function getStyles(theme: any, variant: "default" | "line" = "default") { 
+  const isLine = variant === 'line';
+  return StyleSheet.create({
   container: {
     marginBottom: 4,
     width: "100%",
   },
   label: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: theme.colors.primary,
-    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: "500",
+    color: isLine ? '#666666' : theme.colors.primary,
+    marginBottom: 6,
     paddingLeft: 4,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.colors.surfaceElevated,
-    borderRadius: 12,
+    backgroundColor: isLine ? 'transparent' : theme.colors.surfaceElevated,
+    borderRadius: isLine ? 0 : 12,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderWidth: isLine ? 0 : 1,
+    borderBottomWidth: isLine ? 1.5 : 1,
+    borderColor: isLine ? '#cbd5e1' : theme.colors.border,
+    borderBottomColor: isLine ? '#F8CF2C' : theme.colors.border,
     height: 50,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: {
+    shadowColor: isLine ? 'transparent' : theme.colors.shadow,
+    shadowOffset: isLine ? { width: 0, height: 0 } : {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowOpacity: isLine ? 0 : 0.1,
+    shadowRadius: isLine ? 0 : 3,
+    elevation: isLine ? 0 : 3,
   },
   errorContainer: {
-    backgroundColor: theme.colors.surfaceElevated,
+    backgroundColor: isLine ? 'transparent' : theme.colors.surfaceElevated,
     borderColor: theme.colors.error,
-    borderWidth: 2,
+    borderWidth: isLine ? 0 : 2,
+    borderBottomWidth: isLine ? 2 : 2,
   },
   countryCodeBox: {
-    backgroundColor: theme.colors.goldLight,
-    paddingHorizontal: 16,
+    backgroundColor: isLine ? 'transparent' : theme.colors.goldLight,
+    paddingHorizontal: isLine ? 4 : 16,
     paddingVertical: 0,
-    borderRightWidth: 1,
+    borderRightWidth: isLine ? 0 : 1,
     borderRightColor: theme.colors.border,
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    minWidth: 50,
+    minWidth: isLine ? 35 : 50,
   },
   countryCodeText: {
     color: theme.colors.textDark,
@@ -158,11 +165,11 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   input: {
     flex: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: isLine ? 8 : 12,
     paddingVertical: 0,
     fontSize: 16,
     height: 50,
-    backgroundColor: theme.colors.surfaceElevated,
+    backgroundColor: isLine ? 'transparent' : theme.colors.surfaceElevated,
     color: theme.colors.textDark,
     fontWeight: "500",
     textAlignVertical: "center",
@@ -173,7 +180,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginBottom: 0,
   },
   inputError: {
-    backgroundColor: theme.colors.surfaceElevated,
+    backgroundColor: isLine ? 'transparent' : theme.colors.surfaceElevated,
     color: theme.colors.textDark,
   },
   counterText: {

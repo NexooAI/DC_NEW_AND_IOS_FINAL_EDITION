@@ -158,6 +158,16 @@ export default function PaymentFailure() {
       duration: 300,
       useNativeDriver: true,
     }).start(() => {
+      router.replace("/(tabs)/home");
+    });
+  };
+
+  const handleRetryPress = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
       if (isBillPayment) {
         router.replace("/(app)/bill_payment");
       } else if (type === "booking" || type === "advance_booking") {
@@ -200,6 +210,21 @@ export default function PaymentFailure() {
   };
 
   const handleRetry = () => {
+    const handleRetryPressFallback = () => {
+      if (isBillPayment) {
+        router.replace("/(app)/bill_payment");
+      } else if (type === "booking" || type === "advance_booking") {
+        router.replace("/(tabs)/home/BookingHistory");
+      } else if (type === "scheme" && investmentId && investmentId !== "0" && investmentId !== "undefined") {
+        router.replace({
+          pathname: "/(tabs)/savings/SavingsDetail",
+          params: { investmentId }
+        });
+      } else {
+        router.replace("/(tabs)/home");
+      }
+    };
+
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 300,
@@ -274,19 +299,17 @@ export default function PaymentFailure() {
               });
             } catch (navError) {
               logger.error("Error navigating to paymentNewOverView:", navError);
-              // Fallback: try to go back
-              router.back();
+              handleRetryPressFallback();
             }
           });
         } else {
-          // No payment session found, try to navigate back to payment overview
-          logger.warn("No payment session found for retry, navigating back");
-          router.back();
+          // No payment session found, try to navigate back to payment overview fallback
+          logger.warn("No payment session found for retry, using fallback navigation");
+          handleRetryPressFallback();
         }
       } catch (error) {
         logger.error("Error in handleRetry:", error);
-        // Fallback: navigate back
-        router.back();
+        handleRetryPressFallback();
       }
     });
   };
@@ -420,11 +443,20 @@ export default function PaymentFailure() {
 
         <TouchableOpacity
           style={[styles.button, { width: "100%", backgroundColor: theme.colors.error }]}
+          onPress={handleRetry}
+          activeOpacity={0.9}
+        >
+          <Ionicons name="refresh" size={20} color="#fff" />
+          <Text style={[styles.buttonText, { color: '#fff', marginLeft: 8 }]}>{(t("tryAgain") || "TRY AGAIN").toUpperCase()}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.buttonHome, { width: "100%", marginTop: 12 }]}
           onPress={handleHomePress}
           activeOpacity={0.9}
         >
-          <Ionicons name="home" size={20} color="#fff" />
-          <Text style={[styles.buttonText, { color: '#fff', marginLeft: 8 }]}>{(t("home") || "GO TO HOME").toUpperCase()}</Text>
+          <Ionicons name="home" size={20} color={theme.colors.textDark || "#000"} />
+          <Text style={[styles.buttonText, styles.buttonTextHome, { marginLeft: 8 }]}>{(t("home") || "GO TO HOME").toUpperCase()}</Text>
         </TouchableOpacity>
         </Animated.View>
       </ScrollView>

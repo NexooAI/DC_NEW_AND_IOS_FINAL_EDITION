@@ -29,7 +29,7 @@ const CompactContactButton: React.FC<{
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
-      toValue: 0.9,
+      toValue: 0.95,
       friction: 3,
       tension: 100,
       useNativeDriver: true,
@@ -57,12 +57,13 @@ const CompactContactButton: React.FC<{
         style={[
           styles.compactButtonContent,
           {
-            backgroundColor: color,
             transform: [{ scale: scaleAnim }],
           },
         ]}
       >
-        <Ionicons name={icon as any} size={20} color="#fff" />
+        <View style={[styles.iconBadge, { backgroundColor: color }]}>
+          <Ionicons name={icon as any} size={14} color="#fff" />
+        </View>
         <Text style={styles.compactButtonLabel} numberOfLines={1}>
           {label}
         </Text>
@@ -116,7 +117,7 @@ const SupportContactCard = () => {
   return (
     <View style={styles.cardWrapper}>
       <LinearGradient
-        colors={["#850111", "#3A0F14", "#0E0E0E"]}
+        colors={[theme.colors.primary || "#0b162c", "#132342", "#050b15"]}
         style={styles.mainGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -181,7 +182,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     borderWidth: 1,
-    borderColor: `rgba(255,201,12,0.2)`,
+    borderColor: theme.colors.secondary ? `${theme.colors.secondary}33` : "rgba(255, 201, 12, 0.2)",
     overflow: "hidden",
   },
   headerRow: {
@@ -225,21 +226,31 @@ function getStyles(theme: any) { return StyleSheet.create({
   compactButtonContent: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: moderateScale(10),
-    paddingHorizontal: moderateScale(8),
+    justifyContent: "flex-start",
+    paddingVertical: moderateScale(7),
+    paddingHorizontal: moderateScale(7),
     borderRadius: moderateScale(12),
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
     gap: moderateScale(6),
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
   },
+  iconBadge: {
+    width: moderateScale(26),
+    height: moderateScale(26),
+    borderRadius: moderateScale(13),
+    justifyContent: "center",
+    alignItems: "center",
+  },
   compactButtonLabel: {
     color: "#fff",
-    fontSize: moderateScale(12),
-    fontWeight: "600",
+    fontSize: moderateScale(10.5),
+    fontWeight: "700",
     flex: 1,
   },
 }) }

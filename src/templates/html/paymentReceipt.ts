@@ -92,7 +92,8 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
             margin-bottom: 15px;
             padding: 10px 15px;
             background: ${theme.colors.primary};
-            color: #fff;
+            color: #ffffff;
+            border-bottom: 2px solid #ffd700;
         }
         .company-info { font-size: 12px; font-weight: bold; }
         .letter-title {
@@ -155,7 +156,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
 <body>
     <div class="header" style="justify-content: center;">
         <div>
-            <img src="https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp" alt="Logo" style="max-width:90px; height:auto;">
+            <img src="https://srithangathamarai.com/assets/logo_trans.png" alt="Logo" style="max-width:90px; height:auto;">
         </div>
     </div>
 

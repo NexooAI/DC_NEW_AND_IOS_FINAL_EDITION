@@ -12,10 +12,13 @@ const withAlpha = (hex, alpha) => {
 };
 
 const ensureValidGradient = (gradient, fallback) => {
-  if (Array.isArray(gradient) && gradient.length >= 2 && gradient.every(c => typeof c === 'string' && c)) {
+  if (Array.isArray(gradient) && gradient.length >= 2 && gradient.every(c => typeof c === 'string' && c && !c.includes('null') && !c.includes('undefined'))) {
     return gradient;
   }
-  return fallback;
+  if (Array.isArray(fallback) && fallback.length >= 2 && fallback.every(c => typeof c === 'string' && c)) {
+    return fallback;
+  }
+  return ["#0b162c", "#d4af37"];
 };
 
 const createThemeColors = (basePalette, overrides = {}) => {
@@ -44,13 +47,13 @@ const createThemeColors = (basePalette, overrides = {}) => {
   const fallbackBlue = ["#1e293b", "#334155", "#475569"];
   const fallbackSilver = ["#cbd5e1", "#94a3b8", "#64748b"];
 
-  colors.gradientPrimary = ensureValidGradient(colors.gradientPrimary, basePalette?.gradientPrimary || fallbackPrimary);
-  colors.gradientPrimaryDark = ensureValidGradient(colors.gradientPrimaryDark, basePalette?.gradientPrimaryDark || fallbackPrimaryDark);
-  colors.gradientSuccess = ensureValidGradient(colors.gradientSuccess, basePalette?.gradientSuccess || fallbackSuccess);
-  colors.gradientGold = ensureValidGradient(colors.gradientGold, basePalette?.gradientGold || fallbackGold);
-  colors.gradientRed = ensureValidGradient(colors.gradientRed, basePalette?.gradientRed || fallbackRed);
-  colors.gradientBlue = ensureValidGradient(colors.gradientBlue, basePalette?.gradientBlue || fallbackBlue);
-  colors.gradientSilver = ensureValidGradient(colors.gradientSilver, basePalette?.gradientSilver || fallbackSilver);
+  colors.gradientPrimary = ensureValidGradient(colors.gradientPrimary, fallbackPrimary);
+  colors.gradientPrimaryDark = ensureValidGradient(colors.gradientPrimaryDark, fallbackPrimaryDark);
+  colors.gradientSuccess = ensureValidGradient(colors.gradientSuccess, fallbackSuccess);
+  colors.gradientGold = ensureValidGradient(colors.gradientGold, fallbackGold);
+  colors.gradientRed = ensureValidGradient(colors.gradientRed, fallbackRed);
+  colors.gradientBlue = ensureValidGradient(colors.gradientBlue, fallbackBlue);
+  colors.gradientSilver = ensureValidGradient(colors.gradientSilver, fallbackSilver);
 
   const isDarkSurface = colors.background === "#121212";
   const textOnPrimary = colors.textPrimary;
@@ -65,6 +68,8 @@ const createThemeColors = (basePalette, overrides = {}) => {
     ...colors,
     backgroundQuaternary: colors.backgroundQuaternary || colors.quaternary,
     backgroundQuinary: colors.backgroundQuinary || colors.backgroundTertiary,
+    bgBlackHeavy: colors.bgBlackHeavy || "rgba(0, 0, 0, 0.8)",
+    bgBlackMedium: colors.bgBlackMedium || "rgba(0, 0, 0, 0.5)",
     surface,
     surfaceElevated,
     surfaceMuted,
@@ -123,6 +128,8 @@ const lightPalette = createThemeColors({
   secondary: "#d4af37",
   tertiary: "#F2B8C6",
   quaternary: "#F2E6D2",
+  bgBlackHeavy: "rgba(0, 0, 0, 0.85)",
+  bgBlackMedium: "rgba(0, 0, 0, 0.5)",
   background: "#fafafa",
   backgroundSecondary: "#f0f0f0",
   backgroundTertiary: "#f3f4f6",
@@ -181,6 +188,8 @@ const darkPalette = createThemeColors({
   secondary: "#ffd700",
   tertiary: "#F2B8C6",
   quaternary: "#22252a",
+  bgBlackHeavy: "rgba(0, 0, 0, 0.9)",
+  bgBlackMedium: "rgba(0, 0, 0, 0.7)",
   background: "#121212",
   backgroundSecondary: "#1e1e1e",
   backgroundTertiary: "#2a2a2a",
@@ -463,6 +472,8 @@ const theme = {
     longitude: themeConfig.longitude || 78.1192,
     foundationYear: themeConfig.foundationYear || 1995,
     enableDashboard: themeConfig.enableDashboard !== undefined ? themeConfig.enableDashboard : false,
+    providerName: "Agnisofterp",
+    providerUrl: "https://agnisofterp.com/",
   },
   baseUrl: themeConfig.baseUrl || "https://api.srithangathamarai.com",
   youtubeUrl: themeConfig.youtubeUrl || "https://youtu.be/8RAhdn5b9Bw",

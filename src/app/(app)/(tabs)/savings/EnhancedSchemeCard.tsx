@@ -383,9 +383,34 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
     };
   }, []);
 
+  const getLeftAccentColor = () => {
+    if (getLocalizedText(item.metalType).toLowerCase() === "silver") {
+      return "#94A3B8"; // Silver slate
+    }
+    if (item.savingType === "old_gold") {
+      return "#D97706"; // Warm dark gold
+    }
+    if (isHybrid) {
+      return "#8B5CF6"; // Violet
+    }
+    if (isFlexiOrHybrid) {
+      return "#06B6D4"; // Cyan
+    }
+    return "#EAB308"; // Gold
+  };
+
   return (
     <View
-      style={[styles.cardWrapper, isActive && styles.cardWrapperActive]}
+      style={[
+        styles.cardWrapper, 
+        isActive && styles.cardWrapperActive,
+        {
+          borderLeftWidth: 6,
+          borderLeftColor: getLeftAccentColor(),
+          borderWidth: isExpanded ? 1.5 : 1,
+          borderColor: isExpanded ? (theme.colors.gold || "#D97706") : "rgba(0, 0, 0, 0.08)",
+        }
+      ]}
     >
       <View
         style={styles.cardBackgroundImage}
@@ -395,7 +420,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             <View style={styles.schemeInfo}>
               <View style={styles.schemeTitleContainer}>
                 <Text style={styles.schemeTitle}>
-                  {getLocalizedText(item.schemeName)}
+                  {(getLocalizedText(item.schemeName) || "").toUpperCase()}
                 </Text>
                 <View style={styles.schemeSubtitleContainer}>
                   <View
@@ -501,24 +526,10 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
               </View>
               <View style={styles.paymentInfoContent}>
                 <Text style={styles.paymentInfoLabel}>
-                  {translations.accountHolderLabel}
+                  A/C Name / No
                 </Text>
                 <Text style={styles.paymentInfoValue}>
-                  {item.accountHolder?.toUpperCase()}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.paymentInfoDivider} />
-            <View style={styles.paymentInfoItem}>
-              <View style={styles.paymentInfoIconContainer}>
-                <Ionicons name="card-outline" size={16} color={theme.colors.textDark} />
-              </View>
-              <View style={styles.paymentInfoContent}>
-                <Text style={styles.paymentInfoLabel}>
-                  {translations.accountNumberLabel}
-                </Text>
-                <Text style={styles.paymentInfoValue}>
-                  STT-{item.accNo}
+                  {item.accountHolder?.toUpperCase()} / STT-{item.accNo}
                 </Text>
               </View>
             </View>
@@ -531,14 +542,14 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
               </View>
               <View style={styles.paymentInfoContent}>
                 <Text style={styles.paymentInfoLabel}>
-                  {translations.frequency}
+                  Frequency
                 </Text>
                 <Text style={styles.paymentInfoValue}>
                   {isHybrid
                     ? "Hybrid"
                     : isFlexiOrHybrid
                       ? translations.flexi
-                      : getLocalizedText(item.paymentFrequency) || getLocalizedText(item.schemesData?.paymentFrequencyName)}
+                      : getLocalizedText(item.paymentFrequency) || getLocalizedText(item.schemesData?.paymentFrequencyName) || "Monthly"}
                 </Text>
               </View>
             </View>
@@ -561,14 +572,14 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
               ) : (
                 <>
                   <View style={styles.paymentInfoIconContainer}>
-                    <Ionicons name="checkmark-circle-outline" size={16} color={theme.colors.textDark} />
+                    <Ionicons name="cash-outline" size={16} color={theme.colors.textDark} />
                   </View>
                   <View style={styles.paymentInfoContent}>
                     <Text style={styles.paymentInfoLabel}>
-                      {translations.paymentsMade || "Payments Made"}
+                      Total Invested
                     </Text>
-                    <Text style={styles.paymentInfoValue}>
-                      {item.monthsPaid}
+                    <Text style={[styles.paymentInfoValue, { color: theme.colors.gold || "#D97706", fontWeight: "bold" }]}>
+                      ₹{item.totalPaid?.toLocaleString('en-IN') || "0"}
                     </Text>
                   </View>
                 </>
@@ -577,6 +588,212 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
           </View>
 
         </TouchableOpacity>
+
+        <Animated.View
+          style={[
+            styles.cardContent,
+            {
+              maxHeight: animatedHeight.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 500],
+              }),
+            },
+          ]}
+        >
+          {/* Total Investment Highlighted at the Top */}
+          {item.savingType !== "old_gold" && (
+            <View style={{
+              backgroundColor: "rgba(212, 175, 55, 0.12)",
+              borderColor: "rgba(212, 175, 55, 0.3)",
+              borderWidth: 1,
+              borderRadius: 12,
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              marginHorizontal: 16,
+              marginBottom: 16,
+              alignItems: "center",
+              flexDirection: "row",
+              justifyContent: "space-between"
+            }}>
+              <View>
+                <Text style={{ fontSize: 11, fontWeight: "600", color: theme.colors.textDark || "#666", textTransform: "uppercase" }}>
+                  Total Invested
+                </Text>
+                <Text style={{ fontSize: 18, fontWeight: "800", color: theme.colors.textDark || "#111", marginTop: 2 }}>
+                  ₹{(item.totalPaid + totalRewardAmount).toLocaleString()}
+                </Text>
+              </View>
+              <View style={{ backgroundColor: theme.colors.secondary || "#FFD700", borderRadius: 8, padding: 6 }}>
+                <Ionicons name="wallet-outline" size={20} color="#fff" />
+              </View>
+            </View>
+          )}
+
+          {/* Enhanced Info Grid with More Relevant Data */}
+          <View style={styles.enhancedInfoGrid}>
+            <View style={styles.enhancedInfoRow}>
+              {item.savingType === "old_gold" ? (
+                <>
+                  <View style={styles.enhancedInfoItem}>
+                    <View style={styles.enhancedInfoIconContainer}>
+                      <Ionicons name="scale-outline" size={20} color={theme.colors.textDark} />
+                    </View>
+                    <Text style={styles.enhancedInfoLabel}>Gross Weight</Text>
+                    <Text style={styles.enhancedInfoValue}>
+                      {((item as any).grossWeight || 0).toFixed(3)} g
+                    </Text>
+                  </View>
+                  <View style={styles.enhancedInfoItem}>
+                    <View style={styles.enhancedInfoIconContainer}>
+                      <Ionicons name="ribbon-outline" size={20} color={theme.colors.textDark} />
+                    </View>
+                    <Text style={styles.enhancedInfoLabel}>Purity Carat</Text>
+                    <Text style={styles.enhancedInfoValue}>
+                      {((item as any).purityCarat || 22)}K
+                    </Text>
+                  </View>
+                  <View style={styles.enhancedInfoItem}>
+                    <View style={styles.enhancedInfoIconContainer}>
+                      <Ionicons name="time-outline" size={20} color={theme.colors.textDark} />
+                    </View>
+                    <Text style={styles.enhancedInfoLabel}>Maturity Date</Text>
+                    <Text style={styles.enhancedInfoValue}>
+                      {item.maturityDate}
+                    </Text>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <View style={styles.enhancedInfoItem}>
+                    <View style={styles.enhancedInfoIconContainer}>
+                      <Ionicons name="calendar-outline" size={20} color={theme.colors.textDark} />
+                    </View>
+                    <Text style={styles.enhancedInfoLabel}>
+                      Start Date
+                    </Text>
+                    <Text style={styles.enhancedInfoValue}>
+                      {item.joiningDate || "N/A"}
+                    </Text>
+                  </View>
+                  <View style={styles.enhancedInfoItem}>
+                    <View style={styles.enhancedInfoIconContainer}>
+                      <Ionicons name="checkmark-done-circle-outline" size={20} color={theme.colors.textDark} />
+                    </View>
+                    <Text style={styles.enhancedInfoLabel}>
+                      Maturity Date
+                    </Text>
+                    <Text style={styles.enhancedInfoValue}>
+                      {item?.maturityDate || "N/A"}
+                    </Text>
+                  </View>
+                  <View style={styles.enhancedInfoItem}>
+                    <View style={styles.enhancedInfoIconContainer}>
+                      <Ionicons name="cash-outline" size={20} color={theme.colors.textDark} />
+                    </View>
+                    <Text style={styles.enhancedInfoLabel}>
+                      Monthly EMI
+                    </Text>
+                    <Text style={styles.enhancedInfoValue}>₹{item.emiAmount}</Text>
+                  </View>
+                </>
+              )}
+            </View>
+
+            {/* Additional Row for More Details */}
+            <View style={styles.enhancedInfoRow}>
+              {/* Reward Fields - Highlighted */}
+              {totalRewardAmount > 0 && (
+                <View style={styles.rewardInfoItem}>
+                  <View style={styles.rewardIconContainer}>
+                    <Ionicons name="trophy" size={22} color="#FFD700" />
+                  </View>
+                  <Text style={styles.rewardInfoLabel}>
+                    {translations.rewardAmountLabel}
+                  </Text>
+                  <Text style={styles.rewardInfoValue}>
+                    ₹{totalRewardAmount.toLocaleString()}
+                  </Text>
+                </View>
+              )}
+              {totalRewardGoldGrams > 0 && (
+                <View style={styles.rewardInfoItem}>
+                  <View style={styles.rewardIconContainer}>
+                    <Ionicons name="trophy" size={22} color="#FFD700" />
+                  </View>
+                  <Text style={styles.rewardInfoLabel}>
+                    {translations.rewardGoldLabel}
+                  </Text>
+                  <Text style={styles.rewardInfoValue}>
+                    {formatGoldWeight(totalRewardGoldGrams)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Installment Progress Section - Hide for paymentFrequencyId == 4 or if it is hybrid */}
+          {item.schemesData?.paymentFrequencyId !== 4 && !isHybrid && (
+            <View style={styles.progressContainer}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressLabel}>
+                  {translations.installmentProgress}
+                </Text>
+                <View style={styles.progressStats}>
+                  <Text style={styles.progressMonths}>
+                    {isFlexiOrHybrid
+                      ? `${item.monthsPaid} ${translations.paid}`
+                      : `${item.monthsPaid}/${item.noOfIns} ${translations.monthsLabel}`}
+                  </Text>
+                </View>
+              </View>
+              {/* ProgressBar hidden per user request */}
+              {false && !isFlexiOrHybrid && (
+                <View style={styles.progressBar}>
+                  <Animated.View
+                    style={[
+                      styles.progressFill,
+                      {
+                        width: animatedHeight.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ["0%", `${progressPercentage}%`],
+                        }),
+                      },
+                    ]}
+                  />
+                </View>
+              )}
+              <View style={styles.monthsInfo}>
+                <View style={styles.monthItem}>
+                  <View
+                    style={[styles.monthDot, { backgroundColor: "#850111" }]}
+                  />
+                  <Text style={styles.monthLabel}>{translations.paid}</Text>
+                  <Text style={styles.monthValue}>{item.monthsPaid}</Text>
+                </View>
+                {!isFlexiOrHybrid && (
+                  <>
+                    <View style={styles.monthItem}>
+                      <View
+                        style={[styles.monthDot, { backgroundColor: "#DAA520" }]}
+                      />
+                      <Text style={styles.monthLabel}>{translations.pending}</Text>
+                      <Text style={styles.monthValue}>
+                        {Number(item.noOfIns) - Number(item.monthsPaid)}
+                      </Text>
+                    </View>
+                    <View style={styles.monthItem}>
+                      <View
+                        style={[styles.monthDot, { backgroundColor: "#850111" }]}
+                      />
+                      <Text style={styles.monthLabel}>{translations.total}</Text>
+                      <Text style={styles.monthValue}>{item.noOfIns}</Text>
+                    </View>
+                  </>
+                )}
+              </View>
+            </View>
+          )}
+        </Animated.View>
 
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity
@@ -638,182 +855,6 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             </TouchableOpacity>
           )}
         </View>
-
-        <Animated.View
-          style={[
-            styles.cardContent,
-            {
-              maxHeight: animatedHeight.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, 500],
-              }),
-            },
-          ]}
-        >
-          {/* Enhanced Info Grid with More Relevant Data */}
-          <View style={styles.enhancedInfoGrid}>
-            <View style={styles.enhancedInfoRow}>
-              {item.savingType === "old_gold" ? (
-                <>
-                  <View style={styles.enhancedInfoItem}>
-                    <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="scale-outline" size={20} color={theme.colors.textDark} />
-                    </View>
-                    <Text style={styles.enhancedInfoLabel}>Gross Weight</Text>
-                    <Text style={styles.enhancedInfoValue}>
-                      {((item as any).grossWeight || 0).toFixed(3)} g
-                    </Text>
-                  </View>
-                  <View style={styles.enhancedInfoItem}>
-                    <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="ribbon-outline" size={20} color={theme.colors.textDark} />
-                    </View>
-                    <Text style={styles.enhancedInfoLabel}>Purity Carat</Text>
-                    <Text style={styles.enhancedInfoValue}>
-                      {((item as any).purityCarat || 22)}K
-                    </Text>
-                  </View>
-                  <View style={styles.enhancedInfoItem}>
-                    <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="time-outline" size={20} color={theme.colors.textDark} />
-                    </View>
-                    <Text style={styles.enhancedInfoLabel}>Maturity Date</Text>
-                    <Text style={styles.enhancedInfoValue}>
-                      {item.maturityDate}
-                    </Text>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <View style={styles.enhancedInfoItem}>
-                    <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="wallet-outline" size={20} color={theme.colors.textDark} />
-                    </View>
-                    <Text style={styles.enhancedInfoLabel}>
-                      {translations.totalInvestedLabel}
-                    </Text>
-                    <Text style={styles.enhancedInfoValue}>
-                      ₹{(item.totalPaid + totalRewardAmount).toLocaleString()}
-                    </Text>
-                  </View>
-                  <View style={styles.enhancedInfoItem}>
-                    <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="time-outline" size={20} color={theme.colors.textDark} />
-                    </View>
-                    <Text style={styles.enhancedInfoLabel}>
-                      {translations.maturityDateLabel}
-                    </Text>
-                    <Text style={styles.enhancedInfoValue}>
-                      {item?.maturityDate}
-                    </Text>
-                  </View>
-                  <View style={styles.enhancedInfoItem}>
-                    <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="cash-outline" size={20} color={theme.colors.textDark} />
-                    </View>
-                    <Text style={styles.enhancedInfoLabel}>
-                      {translations.monthlyEMILabel}
-                    </Text>
-                    <Text style={styles.enhancedInfoValue}>₹{item.emiAmount}</Text>
-                  </View>
-                </>
-              )}
-            </View>
-
-            {/* Additional Row for More Details */}
-            <View style={styles.enhancedInfoRow}>
-              {/* Reward Fields - Highlighted */}
-              {totalRewardAmount > 0 && (
-                <View style={styles.rewardInfoItem}>
-                  <View style={styles.rewardIconContainer}>
-                    <Ionicons name="trophy" size={22} color="#FFD700" />
-                  </View>
-                  <Text style={styles.rewardInfoLabel}>
-                    {translations.rewardAmountLabel}
-                  </Text>
-                  <Text style={styles.rewardInfoValue}>
-                    ₹{totalRewardAmount.toLocaleString()}
-                  </Text>
-                </View>
-              )}
-              {totalRewardGoldGrams > 0 && (
-                <View style={styles.rewardInfoItem}>
-                  <View style={styles.rewardIconContainer}>
-                    <Ionicons name="trophy" size={22} color="#FFD700" />
-                  </View>
-                  <Text style={styles.rewardInfoLabel}>
-                    {translations.rewardGoldLabel}
-                  </Text>
-                  <Text style={styles.rewardInfoValue}>
-                    {formatGoldWeight(totalRewardGoldGrams)}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Installment Progress Section - Hide for paymentFrequencyId == 4 */}
-          {item.schemesData?.paymentFrequencyId !== 4 && (
-            <View style={styles.progressContainer}>
-              <View style={styles.progressHeader}>
-                <Text style={styles.progressLabel}>
-                  {translations.installmentProgress}
-                </Text>
-                <View style={styles.progressStats}>
-                  <Text style={styles.progressMonths}>
-                    {isFlexiOrHybrid
-                      ? `${item.monthsPaid} ${translations.paid}`
-                      : `${item.monthsPaid}/${item.noOfIns} ${translations.monthsLabel}`}
-                  </Text>
-                </View>
-              </View>
-              {!isFlexiOrHybrid && (
-                <View style={styles.progressBar}>
-                  <Animated.View
-                    style={[
-                      styles.progressFill,
-                      {
-                        width: animatedHeight.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ["0%", `${progressPercentage}%`],
-                        }),
-                      },
-                    ]}
-                  />
-                </View>
-              )}
-              <View style={styles.monthsInfo}>
-                <View style={styles.monthItem}>
-                  <View
-                    style={[styles.monthDot, { backgroundColor: "#850111" }]}
-                  />
-                  <Text style={styles.monthLabel}>{translations.paid}</Text>
-                  <Text style={styles.monthLabel}>{item.monthsPaid}</Text>
-                </View>
-                {!isFlexiOrHybrid && (
-                  <>
-                    <View style={styles.monthItem}>
-                      <View
-                        style={[styles.monthDot, { backgroundColor: "#DAA520" }]}
-                      />
-                      <Text style={styles.monthLabel}>{translations.pending}</Text>
-                      <Text style={styles.monthLabel}>
-                        {Number(item.noOfIns) - Number(item.monthsPaid)}
-                      </Text>
-                    </View>
-                    <View style={styles.monthItem}>
-                      <View
-                        style={[styles.monthDot, { backgroundColor: "#850111" }]}
-                      />
-                      <Text style={styles.monthLabel}>{translations.total}</Text>
-                      <Text style={styles.monthLabel}>{item.noOfIns}</Text>
-                    </View>
-                  </>
-                )}
-              </View>
-            </View>
-          )}
-        </Animated.View>
       </View>
 
       <CustomAlert
@@ -1165,10 +1206,12 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   progressContainer: {
     padding: 16,
-    backgroundColor: theme.colors.backgroundSecondary,
+    backgroundColor: "rgba(133, 1, 17, 0.04)",
     marginHorizontal: 16,
     borderRadius: 12,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(133, 1, 17, 0.08)",
   },
   progressHeader: {
     flexDirection: "row",

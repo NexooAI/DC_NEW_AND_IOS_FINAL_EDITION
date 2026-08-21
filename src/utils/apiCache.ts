@@ -24,7 +24,7 @@ const CACHE_CONFIG = {
   },
   APP_CONFIG: {
     MAX_AGE: 12 * 60 * 60 * 1000, // 12 hours
-    ENDPOINT: '/app-config',
+    ENDPOINT: '/config/settings',
   },
 };
 

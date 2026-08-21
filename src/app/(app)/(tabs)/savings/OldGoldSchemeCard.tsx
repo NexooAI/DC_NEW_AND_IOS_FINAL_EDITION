@@ -75,14 +75,25 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
   const valAmount = parseFloat(String(item.valuationAmount || 0)) || 0;
 
   return (
-    <View style={[styles.cardWrapper, isActive && styles.cardWrapperActive]}>
+    <View
+      style={[
+        styles.cardWrapper,
+        isActive && styles.cardWrapperActive,
+        {
+          borderLeftWidth: 6,
+          borderLeftColor: "#D97706", // Warm dark gold for Old Gold Schemes
+          borderWidth: isExpanded ? 1.5 : 1,
+          borderColor: isExpanded ? (theme.colors.gold || "#D97706") : "rgba(0, 0, 0, 0.08)",
+        }
+      ]}
+    >
       <TouchableOpacity activeOpacity={0.9} onPress={toggleExpand}>
         {/* Header Row */}
         <View style={styles.cardHeader}>
           <View style={styles.schemeInfo}>
             <View style={styles.schemeTitleContainer}>
               <Text style={styles.schemeTitle}>
-                {getLocalizedText(item.schemeName) || "Old Gold Scheme"}
+                {(getLocalizedText(item.schemeName) || "Old Gold Scheme").toUpperCase()}
               </Text>
               <View style={styles.schemeSubtitleContainer}>
                 <View
@@ -154,24 +165,10 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
             </View>
             <View style={styles.paymentInfoContent}>
               <Text style={styles.paymentInfoLabel}>
-                {translations.accountHolderLabel || "Account Holder"}
+                A/C Name / No
               </Text>
               <Text style={styles.paymentInfoValue}>
-                {item.accountHolder?.toUpperCase() || "N/A"}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.paymentInfoDivider} />
-          <View style={styles.paymentInfoItem}>
-            <View style={styles.paymentInfoIconContainer}>
-              <Ionicons name="card-outline" size={16} color={theme.colors.textDark} />
-            </View>
-            <View style={styles.paymentInfoContent}>
-              <Text style={styles.paymentInfoLabel}>
-                {translations.accountNumberLabel || "Account Number"}
-              </Text>
-              <Text style={styles.paymentInfoValue}>
-                STT-OG-{item.id}
+                {(item.accountHolder || "N/A").toUpperCase()} / STT-OG-{item.id}
               </Text>
             </View>
           </View>
@@ -185,7 +182,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
             </View>
             <View style={styles.paymentInfoContent}>
               <Text style={styles.paymentInfoLabel}>
-                {translations.frequency || "Frequency"}
+                Frequency
               </Text>
               <Text style={styles.paymentInfoValue}>One-time</Text>
             </View>
@@ -205,6 +202,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
             </View>
           </View>
         </View>
+
       </TouchableOpacity>
 
       {/* Expanded Accordion Details */}

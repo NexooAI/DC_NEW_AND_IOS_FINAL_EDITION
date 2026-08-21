@@ -854,15 +854,20 @@ export default function PaymentNewOverView() {
         const userId = userDetails.userId || user?.id;
 
         logger.log("[DEBUG Payment Flow Overview] Calling billsAPI.payBill with:", { billId, userId });
+        const startTime = Date.now();
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Posting to /bills/pay with billId = ${billId}, userId = ${userId}...`);
         const response = await api.post('/bills/pay', { billId, userId });
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] /bills/pay response received in ${Date.now() - startTime}ms`);
 
         logger.log("[DEBUG Payment Flow Overview] billsAPI.payBill response success:", response?.data?.success);
 
         const data = response?.data?.data;
         const paymentSession = data?.paymentSession;
         const paymentUrl = extractPaymentUrl(paymentSession);
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Extracted details from bill pay: orderId = ${data?.orderId || 'none'}, billId = ${billId || 'none'}, paymentUrl = ${paymentUrl || 'none'}`);
 
         if (!response?.data?.success || !data?.orderId || !paymentUrl) {
+          console.error(`[Payment Initiation] [${new Date().toISOString()}] Bill payment initiation failed: success = ${response?.data?.success}, has orderId = ${!!data?.orderId}, has paymentUrl = ${!!paymentUrl}, message = ${response?.data?.message}`);
           throw new Error(response?.data?.message || 'Payment session not available');
         }
 
@@ -920,15 +925,20 @@ export default function PaymentNewOverView() {
         };
 
         logger.log("[DEBUG Payment Flow Overview] Calling advanceBookingAPI.createBooking with:", JSON.stringify(payload));
+        const startTime = Date.now();
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Posting to /advancebookings...`);
         const response = await api.post('/advancebookings', payload);
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] /advancebookings response received in ${Date.now() - startTime}ms`);
 
         logger.log("[DEBUG Payment Flow Overview] createBooking response success:", response?.data?.success);
 
         const paymentLink = extractPaymentLink(response?.data);
         const orderId = extractOrderId(response?.data);
         const bookingId = extractBookingId(response?.data);
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Extracted details from booking: orderId = ${orderId || 'none'}, bookingId = ${bookingId || 'none'}, paymentLink = ${paymentLink || 'none'}`);
 
         if (!response?.data?.success || !paymentLink) {
+          console.error(`[Payment Initiation] [${new Date().toISOString()}] Booking initiation failed: success = ${response?.data?.success}, has paymentLink = ${!!paymentLink}, message = ${response?.data?.message}`);
           throw new Error(response?.data?.message || 'Booking or payment session not available');
         }
 
@@ -986,14 +996,19 @@ export default function PaymentNewOverView() {
         };
 
         logger.log("[DEBUG Repayment Flow] Calling advancebookings pay with:", JSON.stringify(payload));
+        const startTime = Date.now();
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Posting to /advancebookings/${bookingId}/pay...`);
         const response = await api.post(`/advancebookings/${bookingId}/pay`, payload);
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] /advancebookings/${bookingId}/pay response received in ${Date.now() - startTime}ms`);
 
         logger.log("[DEBUG Repayment Flow] pay response success:", response?.data?.success);
 
         const paymentLink = extractPaymentLink(response?.data);
         const orderId = extractOrderId(response?.data);
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Extracted details from repayment: orderId = ${orderId || 'none'}, bookingId = ${bookingId || 'none'}, paymentLink = ${paymentLink || 'none'}`);
 
         if (!response?.data?.success || !paymentLink) {
+          console.error(`[Payment Initiation] [${new Date().toISOString()}] Repayment initiation failed: success = ${response?.data?.success}, has paymentLink = ${!!paymentLink}, message = ${response?.data?.message}`);
           throw new Error(response?.data?.message || 'Repayment session not available');
         }
 
@@ -1082,15 +1097,18 @@ export default function PaymentNewOverView() {
       };
 
       logger.log("initialpayment ======>", payload);
-
+      const schemePaymentStartTime = Date.now();
+      console.log(`[Payment Initiation] [${new Date().toISOString()}] Initiating payment with payload:`, JSON.stringify(payload));
+      
       const response: any = await paymentService.initiatePayment(payload);
-      logger.log("response ======>", response);
+      console.log(`[Payment Initiation] [${new Date().toISOString()}] Payment response received in ${Date.now() - schemePaymentStartTime}ms:`, JSON.stringify(response));
 
       if (response?.success && response?.session?.payment_links?.web) {
         // Extract order ID from the payment response
         const orderId = response?.session?.order_id;
         const paymentUrl = response?.session?.payment_links?.web;
 
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Success: Extracted orderId = ${orderId || 'none'}, paymentUrl = ${paymentUrl || 'none'}`);
         console.log("Payment URL:", paymentUrl);
         console.log("Order ID:", orderId);
 
@@ -1147,10 +1165,11 @@ export default function PaymentNewOverView() {
       }
       // Fallback for old response structure
       else if (response?.success && response?.data) {
-        console.log("Using fallback response structure");
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Using fallback response structure`);
         const orderId = response?.order_id || response?.session?.order_id;
         const paymentUrl = response?.data;
 
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Fallback Success: Extracted orderId = ${orderId || 'none'}, paymentUrl = ${paymentUrl || 'none'}`);
         console.log("Fallback Payment URL:", paymentUrl);
         console.log("Fallback Order ID:", orderId);
 

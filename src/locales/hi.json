@@ -508,6 +508,7 @@
   "goToKycNow": "अभी केवाईसी पर जाएं",
   "goToLogin": "लॉगिन पर जाएं",
   "gold": "सोना",
+  "ratesLabel": "दरें",
   "goldAccumulated": "सोना संचित",
   "goldAdvance": "गोल्ड एडवांस",
   "goldAmountBasedFixed": "गोल्ड अमाउंट बेस्ड फिक्स्ड",
@@ -1519,6 +1520,7 @@
   "weight": "वजन",
   "weightBased": "वजन आधारित",
   "welcome": "स्वागत है",
+  "hi": "नमस्ते",
   "welcomeBack": "वापसी पर स्वागत है",
   "welcomeToDigitalGold": "डिजिटल गोल्ड में स्वागत है",
   "welcomeToDigitalGoldSavings": "🎉 डिजिटल गोल्ड सेविंग्स में स्वागत है!",
@@ -1549,5 +1551,9 @@
   "zeroMakingChargesDesc": "नए आभूषणों के लिए मेकिंग चार्ज पूरी तरह से माफ कर दिया गया है।",
   "zeroPenalties": "शून्य दंड",
   "zeroWastage": "शून्य अपव्यय (Zero Wastage)",
-  "zeroWastageDesc": "परिपक्वता के बाद नए सोने के आभूषण खरीदते समय कोई अपव्यय शुल्क (Wastage charges) नहीं।"
+  "zeroWastageDesc": "परिपक्वता के बाद नए सोने के आभूषण खरीदते समय कोई अपव्यय शुल्क (Wastage charges) नहीं।",
+  "active": "सक्रिय",
+  "matured": "परिपक्व",
+  "claimed": "दावा किया",
+  "dropped": "छोड़ दिया"
 }

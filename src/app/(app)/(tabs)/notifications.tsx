@@ -383,11 +383,14 @@ const NotificationModal = ({
   visible,
   notification,
   onClose,
+  router,
 }: {
   visible: boolean;
   notification: Notification | null;
   onClose: () => void;
+  router: any;
 }) => {
+  const theme = useAppTheme();
   if (!notification) return null;
 
   return (
@@ -454,18 +457,38 @@ const NotificationModal = ({
               {notification.message}
             </Text>
 
-            <TouchableOpacity
-              onPress={onClose}
-              style={{
-                marginTop: 24,
-                backgroundColor: theme.colors.backgroundSecondary,
-                paddingVertical: 14,
-                borderRadius: 12,
-                alignItems: "center"
-              }}
-            >
-              <Text style={{ fontSize: 16, fontWeight: "600", color: "#666" }}>Dismiss</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", marginTop: 24, justifyContent: "space-between" }}>
+              <TouchableOpacity
+                onPress={() => {
+                  onClose();
+                  router.push("/home/ratechart");
+                }}
+                style={{
+                  flex: 1,
+                  backgroundColor: theme.colors.primary || "#850111",
+                  paddingVertical: 14,
+                  borderRadius: 12,
+                  alignItems: "center",
+                  marginRight: 10,
+                }}
+              >
+                <Text style={{ fontSize: 16, fontWeight: "700", color: "white" }}>Rate Chart</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={onClose}
+                style={{
+                  flex: 1,
+                  backgroundColor: theme.colors.backgroundSecondary || "#E0E0E0",
+                  paddingVertical: 14,
+                  borderRadius: 12,
+                  alignItems: "center",
+                  marginLeft: 10,
+                }}
+              >
+                <Text style={{ fontSize: 16, fontWeight: "600", color: "#666" }}>Dismiss</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </Animated.View>
       </View>
@@ -738,10 +761,9 @@ export default function NotificationsScreen() {
     <SafeAreaView 
       style={{ 
         flex: 1, 
-        backgroundColor: "#F8F9FA",
-        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0
+        backgroundColor: theme.colors.quaternary || '#F2E6D2',
       }} 
-      edges={['right', 'bottom', 'left']}
+      edges={['top', 'right', 'bottom', 'left']}
     >
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
       {/* Header Container */}
@@ -797,7 +819,7 @@ export default function NotificationsScreen() {
       </View>
 
       {/* Scrollable Content */}
-      <View style={{ flex: 1, backgroundColor: "#F8F9FA" }}>
+      <View style={{ flex: 1, backgroundColor: theme.colors.background || '#FFFFFF' }}>
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{
@@ -952,6 +974,7 @@ export default function NotificationsScreen() {
         visible={modalVisible}
         notification={selectedNotification}
         onClose={closeModal}
+        router={router}
       />
     </SafeAreaView>
   );

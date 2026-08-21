@@ -34,7 +34,22 @@ const INJECTED_JS = `
         window.location.href = url;
         return window;
       }
-      return null;
+      var mockWin = {
+        document: {},
+        location: {
+          set href(val) { window.location.href = val; },
+          get href() { return window.location.href; },
+          assign: function(val) { window.location.href = val; },
+          replace: function(val) { window.location.replace(val); }
+        },
+        focus: function() {},
+        close: function() {}
+      };
+      Object.defineProperty(mockWin, 'location', {
+        get: function() { return mockWin.location; },
+        set: function(val) { window.location.href = val; }
+      });
+      return mockWin;
     };
     document.addEventListener('submit', function(e) {
       var form = e.target;
@@ -87,6 +102,14 @@ export default function PaymentWebView() {
   const joiningDate = (params.joiningDate || "") as string;
 
   // Debug logging
+  console.log(`[PaymentWebView] [MOUNT] [${new Date().toISOString()}] PaymentWebView rendered. Params:`, {
+    url,
+    orderId: params.orderId,
+    type,
+    bookingId,
+    amount,
+    hasUserDetails: !!params.userDetails
+  });
   console.log("PaymentWebView params:", {
     url,
     orderId: params.orderId,
@@ -97,6 +120,7 @@ export default function PaymentWebView() {
   });
 
   useEffect(() => {
+    console.log(`[PaymentWebView] [MOUNT] [${new Date().toISOString()}] PAYMENT_WEBVIEW_LOADED event logged.`);
     logAppEvent('PAYMENT_WEBVIEW_LOADED', {
       orderId: String(params.orderId || ''),
       type,
@@ -106,16 +130,21 @@ export default function PaymentWebView() {
   }, []);
 
   const { socket, handleCancel, disconnect } = usePaymentSocket({
-    onStopPolling: () => stopPollingRef.current(),
+    onStopPolling: () => {
+      console.log(`[PaymentWebView] [onStopPolling] [${new Date().toISOString()}] Socket connection restored or connection established. Stopping polling fallback...`);
+      stopPollingRef.current();
+    },
     onPaymentSuccess: (data) => {
+      console.log(`[PaymentWebView] [onPaymentSuccess] [${new Date().toISOString()}] Payment success event received from socket:`, JSON.stringify(data));
       isPaymentProcessed.current = true;
+      console.log(`[PaymentWebView] [onPaymentSuccess] [${new Date().toISOString()}] Setting isVerifyingPayment to true, disconnecting socket and stopping status polling`);
       setIsVerifyingPayment(true);
       disconnect();
       stopStatusPolling();
 
       logAppEvent('PAYMENT_WEBVIEW_SUCCESS', {
         orderId: data?.paymentResponse?.order_id || params.orderId || "",
-        txnId: data?.paymentResponse?.txn_id || "",
+        txnId: data?.paymentResponse?.txn_id || data?.paymentResponse?.tracking_id || data?.paymentResponse?.bank_ref_no || "",
         amount: data?.paymentResponse?.amount || amount || "",
         type,
       });
@@ -126,7 +155,7 @@ export default function PaymentWebView() {
       const routerParams = {
         pathname: "/(tabs)/home/payment-success",
         params: {
-          txnId: data?.paymentResponse?.txn_id || "",
+          txnId: data?.paymentResponse?.txn_id || data?.paymentResponse?.tracking_id || data?.paymentResponse?.bank_ref_no || "",
           orderId: data?.paymentResponse?.order_id || params.orderId || "",
           amount: data?.paymentResponse?.amount || params.amount || amount || "",
           investmentId: userDetails?.investmentId || "",
@@ -140,18 +169,20 @@ export default function PaymentWebView() {
           userId: params.userId as string || user?.id || "",
         },
       };
-      console.log("routerParams", routerParams);
+      console.log(`[PaymentWebView] [onPaymentSuccess] [${new Date().toISOString()}] Routing to payment-success page:`, JSON.stringify(routerParams));
       router.replace(routerParams);
     },
     onPaymentFailure: (data) => {
+      console.log(`[PaymentWebView] [onPaymentFailure] [${new Date().toISOString()}] Payment failure event received from socket:`, JSON.stringify(data));
       isPaymentProcessed.current = true;
+      console.log(`[PaymentWebView] [onPaymentFailure] [${new Date().toISOString()}] Setting isVerifyingPayment to true, disconnecting socket and stopping status polling`);
       setIsVerifyingPayment(true);
       disconnect();
       stopStatusPolling();
 
       logAppEvent('PAYMENT_WEBVIEW_FAILURE', {
         orderId: data?.paymentResponse?.order_id || params.orderId || "",
-        txnId: data?.paymentResponse?.txn_id || "",
+        txnId: data?.paymentResponse?.txn_id || data?.paymentResponse?.tracking_id || data?.paymentResponse?.bank_ref_no || "",
         amount: data?.paymentResponse?.amount || amount || "",
         message: data?.paymentResponse?.payment_gateway_response?.resp_message ||
           data?.paymentResponse?.txn_detail?.error_message ||
@@ -161,7 +192,7 @@ export default function PaymentWebView() {
 
       const userDetails = safeParseJSON(params.userDetails);
       const investmentId = userDetails?.investmentId || params.investmentId || "";
-      router.replace({
+      const failureParams = {
         pathname: "/(tabs)/home/payment-failure",
         params: {
           message:
@@ -170,19 +201,22 @@ export default function PaymentWebView() {
             (data?.paymentResponse?.txn_detail as any)?.response_message ||
             "Payment Failed",
           orderId: data?.paymentResponse?.order_id || params.orderId || "",
-          txnId: data?.paymentResponse?.txn_id || "",
+          txnId: data?.paymentResponse?.txn_id || data?.paymentResponse?.tracking_id || data?.paymentResponse?.bank_ref_no || "",
           amount: data?.paymentResponse?.amount || params.amount || amount || "",
           status: data?.paymentResponse?.status || "FAILED",
           type: type,
           userId: params.userId as string || user?.id || "",
           investmentId: String(investmentId),
         },
-      });
+      };
+      console.log(`[PaymentWebView] [onPaymentFailure] [${new Date().toISOString()}] Routing to payment-failure page:`, JSON.stringify(failureParams));
+      router.replace(failureParams);
     },
     onPaymentError: (error) => {
+      console.log(`[PaymentWebView] [onPaymentError] [${new Date().toISOString()}] Payment error received:`, JSON.stringify(error));
       // Don't show error for network disconnection - we handle it automatically by starting polling
       if (error?.error === "Disconnected" || error?.error === "Connection Error") {
-        console.log("⚠️ Payment error due to disconnection - handled automatically, starting fallback polling");
+        console.log(`[PaymentWebView] [onPaymentError] [${new Date().toISOString()}] Payment error due to disconnection (${error?.error}) - starting fallback polling automatically`);
         
         // Start polling fallback if not already started
         const userDetails = safeParseJSON(params.userDetails);
@@ -215,13 +249,15 @@ export default function PaymentWebView() {
             userId: params.userId as string || user?.id || "",
           },
         };
+        console.log(`[PaymentWebView] [onPaymentError] [${new Date().toISOString()}] Triggering startStatusPolling for orderId: ${params.orderId}`);
         startStatusPolling(params.orderId as string, successTarget, failureTarget);
         return;
       }
 
       // Only show alert for non-network related errors
       // These are actual payment processing errors, not connection issues
-      console.log("⚠️ Payment error (non-network):", error);
+      console.log(`[PaymentWebView] [onPaymentError] [${new Date().toISOString()}] Payment error (non-network):`, error);
+      console.log(`[PaymentWebView] [onPaymentError] [${new Date().toISOString()}] Stopping status polling and showing Alert dialogue`);
       stopStatusPolling();
       Alert.alert(
         "Payment Error",
@@ -231,6 +267,7 @@ export default function PaymentWebView() {
           {
             text: "OK",
             onPress: () => {
+              console.log(`[PaymentWebView] [onPaymentError] [${new Date().toISOString()}] User dismissed Alert. Navigating back.`);
               router.back();
             },
           },
@@ -238,6 +275,8 @@ export default function PaymentWebView() {
       );
     },
     onPaymentExpired: () => {
+      console.log(`[PaymentWebView] [onPaymentExpired] [${new Date().toISOString()}] Payment session expired event received.`);
+      console.log(`[PaymentWebView] [onPaymentExpired] [${new Date().toISOString()}] Disconnecting, stopping status polling, and showing Alert dialogue`);
       disconnect();
       stopStatusPolling();
       Alert.alert(
@@ -247,6 +286,7 @@ export default function PaymentWebView() {
           {
             text: "OK",
             onPress: () => {
+              console.log(`[PaymentWebView] [onPaymentExpired] [${new Date().toISOString()}] User dismissed Alert. Navigating back.`);
               router.back();
             },
           },
@@ -274,7 +314,11 @@ export default function PaymentWebView() {
   const isTransitioningRef = useRef<boolean>(false);
 
   const startStatusPolling = (orderIdValue: string, successTarget: any, failureTarget: any) => {
-    if (pollingIntervalRef.current) return;
+    if (pollingIntervalRef.current) {
+      console.log(`[PaymentWebView] [startStatusPolling] [${new Date().toISOString()}] Polling is already active for orderId: ${orderIdValue}. Ignoring duplicate start call.`);
+      return;
+    }
+    console.log(`[PaymentWebView] [startStatusPolling] [${new Date().toISOString()}] Starting status polling. Setting isVerifyingPayment to true. target success: ${JSON.stringify(successTarget)}, target failure: ${JSON.stringify(failureTarget)}`);
     setIsVerifyingPayment(true);
 
     console.log(`[Polling Fallback] Starting interval checks for orderId: ${orderIdValue}`);
@@ -285,7 +329,9 @@ export default function PaymentWebView() {
 
     pollingIntervalRef.current = setInterval(async () => {
       attempts++;
+      console.log(`[PaymentWebView] [startStatusPolling] [${new Date().toISOString()}] Polling attempt: ${attempts}/${maxAttempts} for orderId: ${orderIdValue}`);
       if (attempts > maxAttempts) {
+        console.log(`[PaymentWebView] [startStatusPolling] [${new Date().toISOString()}] Max polling attempts (${maxAttempts}) reached (60 seconds). Routing to failure/pending.`);
         console.log("[Polling Fallback] Max polling attempts reached (60 seconds). Routing to failure/pending.");
         stopStatusPolling();
         
@@ -300,6 +346,7 @@ export default function PaymentWebView() {
               status: "PENDING",
             },
           };
+          console.log(`[PaymentWebView] [startStatusPolling] [${new Date().toISOString()}] Transitioning to timeout target:`, JSON.stringify(timedOutFailureTarget));
           router.replace(timedOutFailureTarget);
         }
         return;
@@ -307,41 +354,71 @@ export default function PaymentWebView() {
 
       try {
         console.log(`[Polling Fallback] Fetching status from server for orderId: ${orderIdValue}`);
+        console.log(`[PaymentWebView] [startStatusPolling] [${new Date().toISOString()}] GET /payments/status/${orderIdValue}`);
+        const apiCallStartTime = Date.now();
         const response = await apiClient.get(`/payments/status/${orderIdValue}?t=${Date.now()}`);
+        console.log(`[PaymentWebView] [startStatusPolling] [${new Date().toISOString()}] GET response received in ${Date.now() - apiCallStartTime}ms`);
         const data = response.data;
 
         consecutiveErrors = 0; // Reset error counter on successful response
         console.log("[Polling Fallback] Status check response:", JSON.stringify(data));
+        console.log(`[PaymentWebView] [startStatusPolling] [${new Date().toISOString()}] Polling status check response:`, JSON.stringify(data));
 
         if (data?.success) {
           const status = String(data.status || "").toLowerCase();
+          console.log(`[PaymentWebView] [startStatusPolling] [${new Date().toISOString()}] Parsed status: ${status}`);
           
           if (status === "success" || status === "charged" || status === "paid") {
             console.log("[Polling Fallback] Payment succeeded. Stopping poll and routing to success.");
+            console.log(`[PaymentWebView] [startStatusPolling] [${new Date().toISOString()}] Polling matched success. Stopping polling and routing...`);
             stopStatusPolling();
             
             if (!isTransitioningRef.current) {
               isTransitioningRef.current = true;
               disconnect();
-              router.replace(successTarget);
+              
+              const updatedSuccessTarget = {
+                ...successTarget,
+                params: {
+                  ...successTarget.params,
+                  txnId: data.txnId || data.transactionId || successTarget.params.txnId || "",
+                }
+              };
+              
+              console.log(`[PaymentWebView] [startStatusPolling] [${new Date().toISOString()}] Transitioning to successTarget:`, JSON.stringify(updatedSuccessTarget));
+              router.replace(updatedSuccessTarget);
             }
           } else if (status === "failed" || status === "cancelled" || status === "expired" || status === "failure") {
             console.log("[Polling Fallback] Payment unsuccessful. Stopping poll and routing to failure.");
+            console.log(`[PaymentWebView] [startStatusPolling] [${new Date().toISOString()}] Polling matched failure. Stopping polling and routing...`);
             stopStatusPolling();
             
             if (!isTransitioningRef.current) {
               isTransitioningRef.current = true;
               disconnect();
-              router.replace(failureTarget);
+              
+              const updatedFailureTarget = {
+                ...failureTarget,
+                params: {
+                  ...failureTarget.params,
+                  txnId: data.txnId || data.transactionId || failureTarget.params.txnId || "",
+                  message: data.message || failureTarget.params.message || "Payment Verification Pending/Failed",
+                }
+              };
+              
+              console.log(`[PaymentWebView] [startStatusPolling] [${new Date().toISOString()}] Transitioning to failureTarget:`, JSON.stringify(updatedFailureTarget));
+              router.replace(updatedFailureTarget);
             }
           }
         }
       } catch (error) {
         consecutiveErrors++;
         console.error(`[Polling Fallback] Error checking payment status (error count: ${consecutiveErrors}):`, error);
+        console.error(`[PaymentWebView] [startStatusPolling ERROR] [${new Date().toISOString()}] Error checking payment status (count: ${consecutiveErrors}):`, error);
         
         if (consecutiveErrors >= maxConsecutiveErrors) {
           console.log("[Polling Fallback] Max consecutive status check errors reached. Routing to failure.");
+          console.log(`[PaymentWebView] [startStatusPolling] [${new Date().toISOString()}] Max consecutive errors (${consecutiveErrors}) reached. Transitioning to pending...`);
           stopStatusPolling();
           
           if (!isTransitioningRef.current) {
@@ -355,6 +432,7 @@ export default function PaymentWebView() {
                 status: "PENDING",
               },
             };
+            console.log(`[PaymentWebView] [startStatusPolling] [${new Date().toISOString()}] Transitioning to connection error target:`, JSON.stringify(connectionErrorTarget));
             router.replace(connectionErrorTarget);
           }
         }
@@ -366,6 +444,7 @@ export default function PaymentWebView() {
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
+      console.log(`[PaymentWebView] [stopStatusPolling] [${new Date().toISOString()}] Polling interval successfully cleared.`);
       console.log("[Polling Fallback] Polling interval cleared.");
     }
   };
@@ -378,7 +457,9 @@ export default function PaymentWebView() {
 
   // Handle back button press
   const handleBackPress = () => {
+    console.log(`[PaymentWebView] [handleBackPress] [${new Date().toISOString()}] User pressed back button. isVerifyingPayment: ${isVerifyingPayment}, isCancelling: ${isCancelling}`);
     if (isVerifyingPayment || isCancelling) {
+      console.log(`[PaymentWebView] [handleBackPress] [${new Date().toISOString()}] Verification or cancellation is active. Ignoring back button.`);
       return;
     }
     Alert.alert(
@@ -389,12 +470,14 @@ export default function PaymentWebView() {
           text: "No",
           style: "cancel",
           onPress: () => {
+            console.log(`[PaymentWebView] [handleBackPress] [${new Date().toISOString()}] User chose not to cancel.`);
             // Do nothing, stay on payment page
           },
         },
         {
           text: "Yes",
           onPress: () => {
+            console.log(`[PaymentWebView] [handleBackPress] [${new Date().toISOString()}] User confirmed cancel. calling handleCancelPayment...`);
             handleCancelPayment();
           },
         },
@@ -405,6 +488,7 @@ export default function PaymentWebView() {
 
   // Handle cancel payment
   const handleCancelPayment = () => {
+    console.log(`[PaymentWebView] [handleCancelPayment] [${new Date().toISOString()}] Starting payment cancellation flow. Setting isCancelling to true.`);
     setIsCancelling(true);
 
     logAppEvent('PAYMENT_WEBVIEW_CANCELLED', {
@@ -414,13 +498,14 @@ export default function PaymentWebView() {
     });
 
     // Disconnect socket
+    console.log(`[PaymentWebView] [handleCancelPayment] [${new Date().toISOString()}] Disconnecting socket.`);
     disconnect();
 
     // Small delay to ensure socket disconnection completes, then navigate to payment failure page
     setTimeout(() => {
       const userDetails = safeParseJSON(params.userDetails);
       const investmentId = userDetails?.investmentId || params.investmentId || "";
-      router.replace({
+      const cancelRouteParams = {
         pathname: "/(tabs)/home/payment-failure",
         params: {
           message: "Payment cancelled by user",
@@ -432,12 +517,15 @@ export default function PaymentWebView() {
           userId: params.userId as string || user?.id || "",
           investmentId: String(investmentId),
         },
-      });
+      };
+      console.log(`[PaymentWebView] [handleCancelPayment] [${new Date().toISOString()}] Timeout elapsed. Routing to failure page:`, JSON.stringify(cancelRouteParams));
+      router.replace(cancelRouteParams);
     }, 500); // 500ms delay for socket disconnection
   };
 
   // Handle exit confirmation (for exit modal if still used)
   const handleExitConfirm = () => {
+    console.log(`[PaymentWebView] [handleExitConfirm] [${new Date().toISOString()}] Exit confirmed by user. Closing modal, disconnecting socket, and stopping polling.`);
     setShowExitModal(false);
     
     // Disconnect socket and stop polling
@@ -446,6 +534,7 @@ export default function PaymentWebView() {
 
     // Retrieve stored session from global store
     const session = useGlobalStore.getState().getCurrentPaymentSession();
+    console.log(`[PaymentWebView] [handleExitConfirm] [${new Date().toISOString()}] Retrieved payment session from store:`, JSON.stringify(session));
     
     if (session) {
       // Clean/strip stale orderId to allow fresh retries
@@ -453,7 +542,7 @@ export default function PaymentWebView() {
       delete cleanedUserDetails.orderId;
 
       console.log("🔄 Restoring payment session context and replace-navigating to paymentNewOverView");
-      router.replace({
+      const restoreParams = {
         pathname: "/(tabs)/home/paymentNewOverView",
         params: {
           amount: String(session.amount),
@@ -470,15 +559,19 @@ export default function PaymentWebView() {
           joiningDate: String(cleanedUserDetails.joiningDate || ""),
           userDetails: JSON.stringify(cleanedUserDetails),
         }
-      });
+      };
+      console.log(`[PaymentWebView] [handleExitConfirm] [${new Date().toISOString()}] Routing to overview with restored params:`, JSON.stringify(restoreParams));
+      router.replace(restoreParams);
     } else {
       console.log("⚠️ No payment session found in global store. Navigating back to overview default.");
+      console.log(`[PaymentWebView] [handleExitConfirm] [${new Date().toISOString()}] No session found. Routing to overview directly.`);
       router.replace("/(tabs)/home/paymentNewOverView");
     }
   };
 
   // Handle exit cancellation
   const handleExitCancel = () => {
+    console.log(`[PaymentWebView] [handleExitCancel] [${new Date().toISOString()}] Exit cancelled by user.`);
     setShowExitModal(false);
   };
 
@@ -486,6 +579,7 @@ export default function PaymentWebView() {
   useEffect(() => {
     // Check initial network state
     NetInfo.fetch().then(state => {
+      console.log(`[PaymentWebView] [NetInfo] [${new Date().toISOString()}] Checked initial network state. isConnected: ${state.isConnected}`);
       setIsConnected(state.isConnected === true);
     });
 
@@ -493,18 +587,22 @@ export default function PaymentWebView() {
     const unsubscribe = NetInfo.addEventListener(state => {
       const connected = state.isConnected === true;
       const wasConnected = isConnected;
+      console.log(`[PaymentWebView] [NetInfo] [${new Date().toISOString()}] Network state changed: isConnected = ${connected}, wasConnected = ${wasConnected}`);
       setIsConnected(connected);
 
       if (!connected) {
+        console.log(`[PaymentWebView] [NetInfo] [${new Date().toISOString()}] Network disconnected. Setting isReconnecting to true.`);
         setIsReconnecting(true);
         wasDisconnectedRef.current = true;
       } else {
         // When connection is restored
         if (wasDisconnectedRef.current && wasConnected === false) {
           console.log("✅ [WebView] Connection restored, reloading WebView");
+          console.log(`[PaymentWebView] [NetInfo] [${new Date().toISOString()}] Connection restored. Setting reload timeout...`);
           // Reload WebView when connection is restored
           setTimeout(() => {
             if (webViewRef.current) {
+              console.log(`[PaymentWebView] [NetInfo] [${new Date().toISOString()}] Reloading WebView now.`);
               webViewRef.current.reload();
             }
             setIsReconnecting(false);
@@ -512,6 +610,7 @@ export default function PaymentWebView() {
           }, 1000); // Small delay to ensure connection is stable
         } else {
           setTimeout(() => {
+            console.log(`[PaymentWebView] [NetInfo] [${new Date().toISOString()}] Stable connection, setting isReconnecting to false.`);
             setIsReconnecting(false);
           }, 2000);
         }
@@ -535,24 +634,57 @@ export default function PaymentWebView() {
   // AppState change listener for background -> foreground transitions (5s buffer before WebView reload)
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      console.log(`[PaymentWebView] [AppState] [${new Date().toISOString()}] AppState changed from ${appState.current} to ${nextAppState}`);
       if (
         appState.current.match(/inactive|background/) &&
         nextAppState === "active"
       ) {
         console.log("🔄 App returned to foreground. Setting 5s buffer to yield socket status...");
+        console.log(`[PaymentWebView] [AppState] [${new Date().toISOString()}] App returned to foreground. Setting 5s resumption buffer...`);
         
         if (resumptionTimerRef.current) {
           clearTimeout(resumptionTimerRef.current);
         }
 
         resumptionTimerRef.current = setTimeout(() => {
+          console.log(`[PaymentWebView] [AppState] [${new Date().toISOString()}] 5s resumption buffer elapsed. isPaymentProcessed: ${isPaymentProcessed.current}`);
           if (!isPaymentProcessed.current) {
-            console.log("⏰ 5-second resumption buffer elapsed without socket status. Reloading WebView to force status check...");
-            if (webViewRef.current) {
-              webViewRef.current.reload();
-            }
+            console.log("⏰ 5-second resumption buffer elapsed without socket status. Starting background status polling fallback...");
+            console.log(`[PaymentWebView] [AppState] [${new Date().toISOString()}] Payment not processed. Starting fallback polling automatically.`);
+            const userDetails = safeParseJSON(params.userDetails);
+            const successTarget = {
+              pathname: "/(tabs)/home/payment-success" as any,
+              params: {
+                txnId: "",
+                orderId: params.orderId as string,
+                amount: params.amount as string,
+                investmentId: userDetails?.investmentId,
+                schemeType: userDetails?.schemeType,
+                paymentFrequency: userDetails?.paymentFrequency,
+                schemeName: schemeName,
+                goldRate: goldRate,
+                joiningDate: joiningDate || userDetails?.joiningDate || "",
+                maturityDate: maturityDate || userDetails?.maturityDate || "",
+                type: type,
+                userId: params.userId as string || user?.id || "",
+              },
+            };
+            const failureTarget = {
+              pathname: "/(tabs)/home/payment-failure" as any,
+              params: {
+                message: "Payment Verification Pending/Failed",
+                orderId: params.orderId as string,
+                txnId: "",
+                amount: params.amount as string,
+                status: "FAILED",
+                type: type,
+                userId: params.userId as string || user?.id || "",
+              },
+            };
+            startStatusPolling(params.orderId as string, successTarget, failureTarget);
           } else {
-            console.log("✅ Payment processed. No reload needed on resumption.");
+            console.log("✅ Payment processed. No action needed on resumption.");
+            console.log(`[PaymentWebView] [AppState] [${new Date().toISOString()}] Payment already processed. Skipping polling fallback.`);
           }
         }, 5000);
       }
@@ -572,6 +704,7 @@ export default function PaymentWebView() {
   // System deep link listener for fallback status queries (reload WebView on success/failure queries)
   useEffect(() => {
     const handleDeepLink = (event: { url: string }) => {
+      console.log(`[PaymentWebView] [DeepLink] [${new Date().toISOString()}] System Deep Link detected: ${event.url}`);
       console.log("🔗 System Deep Link detected:", event.url);
       const lowerUrl = event.url.toLowerCase();
       
@@ -588,6 +721,7 @@ export default function PaymentWebView() {
 
       if (hasStatusQuery) {
         console.log("🔄 Fallback status query matches in deep link. Reloading WebView...");
+        console.log(`[PaymentWebView] [DeepLink] [${new Date().toISOString()}] Status query matches. Reloading WebView.`);
         if (webViewRef.current) {
           webViewRef.current.reload();
         }
@@ -598,6 +732,7 @@ export default function PaymentWebView() {
 
     Linking.getInitialURL().then((url) => {
       if (url) {
+        console.log(`[PaymentWebView] [DeepLink] [${new Date().toISOString()}] Initial URL detected: ${url}`);
         handleDeepLink({ url });
       }
     });
@@ -610,6 +745,7 @@ export default function PaymentWebView() {
   // Handle WebView requests
   const handleShouldStartLoadWithRequest = (request: any) => {
     const { url } = request;
+    console.log(`[PaymentWebView] [WebView] [${new Date().toISOString()}] handleShouldStartLoadWithRequest: ${url}`);
     console.log("WebView attempting to load:", url);
 
     const currentUrl = url.toLowerCase();
@@ -625,6 +761,7 @@ export default function PaymentWebView() {
 
     if (isSuccessUrl || isCancelUrl || isFailureUrl || isCallbackUrl) {
       console.log("[WebView Interception] blocking URL load in handleShouldStartLoadWithRequest:", url);
+      console.log(`[PaymentWebView] [WebView Interception] [${new Date().toISOString()}] Intercepted callback landing URL: ${url}. Triggering fallback polling.`);
       
       const userDetails = safeParseJSON(params.userDetails);
       const successTarget = {
@@ -809,13 +946,16 @@ export default function PaymentWebView() {
                 cacheEnabled={true}
                 incognito={false}
                 onLoadStart={() => {
+                  console.log(`[PaymentWebView] [WebView] [${new Date().toISOString()}] onLoadStart: WebView started loading.`);
                   console.log("WebView started loading");
                 }}
                 onLoadEnd={() => {
+                  console.log(`[PaymentWebView] [WebView] [${new Date().toISOString()}] onLoadEnd: WebView finished loading.`);
                   console.log("WebView finished loading");
                   hasLoadedRealUrl.current = true;
                 }}
                 onNavigationStateChange={(navState) => {
+                  console.log(`[PaymentWebView] [WebView] [${new Date().toISOString()}] onNavigationStateChange: url=${navState.url}, loading=${navState.loading}, title=${navState.title}`);
                   console.log("Payment Navigation State:", {
                     url: navState.url,
                     title: navState.title,
@@ -830,6 +970,7 @@ export default function PaymentWebView() {
                     !navState.loading &&
                     !urlBlockedAlertShown.current
                   ) {
+                    console.log(`[PaymentWebView] [WebView] [${new Date().toISOString()}] Detected about:blank URL block. Triggering alert.`);
                     urlBlockedAlertShown.current = true;
                     disconnect();
                     Alert.alert(
@@ -839,6 +980,7 @@ export default function PaymentWebView() {
                         {
                           text: "OK",
                           onPress: () => {
+                            console.log(`[PaymentWebView] [WebView] [${new Date().toISOString()}] User dismissed about:blank Alert. Redirecting to failure.`);
                             router.replace({
                               pathname: "/(tabs)/home/payment-failure",
                               params: {
@@ -870,6 +1012,7 @@ export default function PaymentWebView() {
                   
                   if (isSuccessUrl || isCancelUrl || isFailureUrl || isCallbackUrl) {
                     console.log("[WebView Interception] Intercepted landing/callback URL:", navState.url);
+                    console.log(`[PaymentWebView] [WebView] [${new Date().toISOString()}] Intercepted landing/callback URL: ${navState.url}. Stopping load and starting polling.`);
                     
                     // Stop webview loading to block redirection
                     if (webViewRef.current) {
@@ -908,6 +1051,7 @@ export default function PaymentWebView() {
                         investmentId: userDetails?.investmentId || params.investmentId || "",
                       },
                     };
+                    console.log(`[PaymentWebView] [WebView] [${new Date().toISOString()}] Triggering startStatusPolling for orderId: ${params.orderId}`);
                     startStatusPolling(params.orderId as string, successTarget, failureTarget);
                   }
                 }}
@@ -916,6 +1060,7 @@ export default function PaymentWebView() {
                   const errorCode = err.nativeEvent?.code;
                   const errorDescription = err.nativeEvent?.description || '';
                   const errorDomain = err.nativeEvent?.domain || '';
+                  console.error(`[PaymentWebView] [WebView ERROR] [${new Date().toISOString()}] WebView onError triggered: code=${errorCode}, description=${errorDescription}, domain=${errorDomain}`);
 
                   // Check if it's a network connectivity error
                   const isNetworkError =
@@ -929,6 +1074,7 @@ export default function PaymentWebView() {
 
                   if (isNetworkError) {
                     console.log("⚠️ WebView network error detected - handled by connection monitoring");
+                    console.log(`[PaymentWebView] [WebView ERROR] [${new Date().toISOString()}] Categorized as network error. Handled automatically.`);
                     return;
                   }
 
@@ -938,18 +1084,22 @@ export default function PaymentWebView() {
                     [
                       {
                         text: "OK",
-                        onPress: () => {}
+                        onPress: () => {
+                          console.log(`[PaymentWebView] [WebView ERROR] [${new Date().toISOString()}] User dismissed WebView Error Alert.`);
+                        }
                       }
                     ]
                   );
                 }}
                 onHttpError={(e) => {
-                  console.log("HTTP error:", e.nativeEvent);
                   const statusCode = e.nativeEvent.statusCode;
                   const description = e.nativeEvent.description || '';
+                  console.log("HTTP error:", e.nativeEvent);
+                  console.error(`[PaymentWebView] [WebView ERROR] [${new Date().toISOString()}] onHttpError triggered: statusCode=${statusCode}, description=${description}`);
 
                   if (statusCode === 0 || statusCode >= 500) {
                     console.log("⚠️ HTTP error likely due to network - handled by connection monitoring");
+                    console.log(`[PaymentWebView] [WebView ERROR] [${new Date().toISOString()}] HTTP error statusCode ${statusCode} categorized as network/transient. Handled automatically.`);
                     return;
                   }
 
@@ -960,7 +1110,9 @@ export default function PaymentWebView() {
                       [
                         {
                           text: "OK",
-                          onPress: () => {}
+                          onPress: () => {
+                            console.log(`[PaymentWebView] [WebView ERROR] [${new Date().toISOString()}] User dismissed HTTP Error Alert.`);
+                          }
                         }
                       ]
                     );

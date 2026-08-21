@@ -104,7 +104,7 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={["#2e0406", "#4a0007"]} // Royal dark gold-red gradient
+        colors={[theme.colors.primary || "#0b162c", "#162a4e", "#060c18"]} // Premium Midnight Blue Gradient
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.bar}
@@ -114,12 +114,8 @@ const AnimatedGoldRate: React.FC<AnimatedGoldRateProps> = ({
           <View style={styles.goldLabelContainer}>
             <Ionicons name="flame" size={16} color="#FFD700" style={{ marginRight: 6 }} />
             <Text style={styles.goldLabel}>
-              {t("liveRates") || "LIVE RATES"}
+              {t("ratesLabel") || "RATES"}
             </Text>
-            <View style={styles.liveIndicator}>
-              <Animated.View style={[styles.liveDot, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]} />
-              <Text style={styles.liveText}>{t("live")?.toUpperCase() || "LIVE"}</Text>
-            </View>
           </View>
           {updatedAt && (
             <Text style={styles.updatedText}>
@@ -197,7 +193,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     paddingVertical: hp(1.8),
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: "rgba(255, 215, 0, 0.25)",
+    borderColor: theme.colors.secondary ? `${theme.colors.secondary}40` : "rgba(255, 215, 0, 0.25)",
     overflow: "hidden",
     position: "relative",
   },
@@ -246,7 +242,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: "rgba(255, 215, 0, 0.15)",
+    backgroundColor: theme.colors.secondary ? `${theme.colors.secondary}25` : "rgba(255, 215, 0, 0.15)",
     marginVertical: hp(0.5),
     marginBottom: hp(1.2),
   },
@@ -265,7 +261,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     borderRadius: 8,
   },
   toggleBtnActive: {
-    backgroundColor: '#FFD700',
+    backgroundColor: theme.colors.secondary || '#FFD700',
   },
   toggleText: {
     color: 'rgba(255, 255, 255, 0.6)',
@@ -287,7 +283,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     alignItems: "center",
   },
   caratLabel: {
-    color: "#DAA520",
+    color: theme.colors.secondary || "#DAA520",
     fontSize: rf(11),
     fontWeight: "800",
     marginBottom: 4,
@@ -316,7 +312,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   colDivider: {
     width: 1.5,
     height: hp(3.5),
-    backgroundColor: "rgba(255, 215, 0, 0.15)",
+    backgroundColor: theme.colors.secondary ? `${theme.colors.secondary}25` : "rgba(255, 215, 0, 0.15)",
   },
   accentLine: {
     position: "absolute",
@@ -324,7 +320,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     left: 20,
     right: 20,
     height: 1,
-    backgroundColor: "rgba(255,215,0,0.1)",
+    backgroundColor: theme.colors.secondary ? `${theme.colors.secondary}15` : "rgba(255,215,0,0.1)",
   },
 }) }
 

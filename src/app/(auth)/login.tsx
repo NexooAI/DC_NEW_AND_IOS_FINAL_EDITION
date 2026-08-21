@@ -61,6 +61,8 @@ import {
   getBorderRadius,
 } from "@/utils/responsiveUtils";
 import { useOtpAutoFetch } from "@/hooks/useOtpAutoFetch";
+import { getImageSource } from "@/utils/imageUtils";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 
 // Responsive constants
@@ -586,6 +588,49 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  const [loginImages, setLoginImages] = useState<(string | null)[]>([null, null, null]);
+
+  const { isVisible, visibleData } = useAppVisibility();
+  const [currentOffset, setCurrentOffset] = useState(0);
+
+  useEffect(() => {
+    if (!isVisible("enableLoginBackgroundMovement") || !loginImages || loginImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentOffset(prev => prev + 1);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [visibleData, loginImages]);
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      try {
+        const config = useGlobalStore.getState().appConfig;
+        if (config?.brand?.loginImages && Array.isArray(config.brand.loginImages) && config.brand.loginImages.length >= 3) {
+          setLoginImages(config.brand.loginImages);
+          return;
+        }
+
+        const res = await api.get("/config/settings");
+        if (res?.data?.success && res?.data?.data) {
+          const brand = res.data.data.brand;
+          if (brand?.loginImages && Array.isArray(brand.loginImages) && brand.loginImages.length >= 3) {
+            setLoginImages(brand.loginImages);
+            return;
+          }
+        }
+
+        const resImages = await api.get("/intro-screens/active");
+        if (resImages?.data?.success && Array.isArray(resImages.data.data) && resImages.data.data.length > 0) {
+          const imagePaths = resImages.data.data.map((item: any) => item.image || null);
+          setLoginImages(imagePaths);
+        }
+      } catch (err) {
+        logger.warn("Failed to fetch login images from API, using defaults", err);
+      }
+    };
+    fetchImages();
+  }, []);
+
   useEffect(() => {
     if (params && params.mobile) {
       setMobile(params.mobile as string);
@@ -625,7 +670,7 @@ export default function Login() {
 
   // OTP related state
   const [otpCode, setOtpCode] = useState("");
-  const [timer, setTimer] = useState(120);
+  const [timer, setTimer] = useState(30);
   const [resendAttempts, setResendAttempts] = useState(3);
   const [isShowOtp, setIsShowOtp] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
@@ -882,7 +927,7 @@ export default function Login() {
       if (response.ok) {
         // Show OTP screen
         setIsShowOtp(true);
-        setTimer(120);
+        setTimer(30);
         setResendAttempts(3); // Reset resend attempts when first OTP is sent
         // Auto-focus first OTP input
         setTimeout(() => inputRefs[0]?.current?.focus(), 100);
@@ -950,8 +995,9 @@ export default function Login() {
       const data = await response.json();
 
       if (response.ok) {
+        const nextTimerVal = resendAttempts === 3 ? 60 : 120;
         setResendAttempts((prev) => prev - 1);
-        setTimer(120);
+        setTimer(nextTimerVal);
         setOtpCode("");
         Alert.alert(t("success"), t("otpResentSuccess"));
         // Auto-focus first OTP input
@@ -983,7 +1029,7 @@ export default function Login() {
       // If OTP fields are showing, hide them and go back to mobile input
       setIsShowOtp(false);
       setOtpCode("");
-      setTimer(120);
+      setTimer(30);
       setResendAttempts(3);
       setShowOtp(false); // Reset OTP visibility
       // Stop SMS listener when going back to mobile input
@@ -1151,6 +1197,12 @@ export default function Login() {
     }
   };
 
+  const getIndexImage = (boxIndex: number) => {
+    if (!loginImages || loginImages.length === 0) return null;
+    const index = (boxIndex + currentOffset) % loginImages.length;
+    return loginImages[index];
+  };
+
   if (isLoggedIn) return null;
 
   // Show loading while translations are being initialized
@@ -1170,193 +1222,155 @@ export default function Login() {
     <View
       style={{
         flex: 1,
-        backgroundColor: theme.colors.primary,
+        backgroundColor: '#FFFFFF',
       }}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#850111" />
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <View style={{ flex: 1 }}>
-          <LinearGradient
-            colors={[
-              "#FCF9F6",
-              "#FCF9F6",
-            ]}
-            style={StyleSheet.absoluteFill}
+        <View style={{ flex: 1, position: 'relative' }}>
+          <SimpleLanguageSwitcher />
+
+          {showError && (
+            <ErrorAlert message={errorMessage} onClose={hideErrorAlert} />
+          )}
+          <KeyboardAvoidingView
+            behavior={undefined}
+            style={{ flex: 1 }}
           >
-            {/* Curved wave header background */}
-            <View style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: Platform.OS === 'ios' ? hp(43) : hp(40),
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.22,
-              shadowRadius: 8,
-              elevation: 8,
-              overflow: 'hidden',
-            }}>
-              {/* Background Models Grid Watermark Layer (1, 2, 3 Grid Models) */}
-              <View style={{
-                position: 'absolute',
-                top: (insets.top || 20) + 10,
-                left: 12,
-                right: 12,
-                height: hp(22),
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                opacity: 0.22,
-                zIndex: 0,
-              }}>
-                <View style={{
-                  flex: 1,
-                  height: '100%',
-                  marginHorizontal: 4,
-                  borderRadius: 12,
-                  overflow: 'hidden',
-                  borderWidth: 1,
-                  borderColor: 'rgba(255, 215, 0, 0.35)',
-                }}>
-                  <Image
-                    source={require("../../../assets/images/intro_1.png")}
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                  />
-                </View>
-                <View style={{
-                  flex: 1,
-                  height: '100%',
-                  marginHorizontal: 4,
-                  borderRadius: 12,
-                  overflow: 'hidden',
-                  borderWidth: 1,
-                  borderColor: 'rgba(255, 215, 0, 0.35)',
-                }}>
-                  <Image
-                    source={require("../../../assets/images/intro_2.png")}
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                  />
-                </View>
-                <View style={{
-                  flex: 1,
-                  height: '100%',
-                  marginHorizontal: 4,
-                  borderRadius: 12,
-                  overflow: 'hidden',
-                  borderWidth: 1,
-                  borderColor: 'rgba(255, 215, 0, 0.35)',
-                }}>
-                  <Image
-                    source={require("../../../assets/images/intro_3.png")}
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                  />
-                </View>
-              </View>
-
-              <Svg
-                height="100%"
-                width="100%"
-                viewBox="0 0 375 380"
-                preserveAspectRatio="none"
-                style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}
-              >
-                <Defs>
-                  <SvgLinearGradient id="waveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <Stop offset="0%" stopColor={theme.colors.primary || "#4A0007"} stopOpacity="0.95" />
-                    <Stop offset="100%" stopColor={theme.colors.primaryDark || "#2E0406"} stopOpacity="0.98" />
-                  </SvgLinearGradient>
-                </Defs>
-                {/* Extended Milky Wave Shape */}
-                <Path
-                  d="M0,0 L0,310 C100,380 180,240 270,330 C320,380 350,310 375,290 L375,0 Z"
-                  fill="url(#waveGrad)"
-                />
-                {/* Golden Accent Wave Line */}
-                <Path
-                  d="M0,310 C100,380 180,240 270,330 C320,380 350,310 375,290"
-                  fill="none"
-                  stroke="#FFD700"
-                  strokeWidth="3.5"
-                />
-              </Svg>
-            </View>
-            <SimpleLanguageSwitcher />
-
-            {/* Debug Button */}
-
-
-            {showError && (
-              <ErrorAlert message={errorMessage} onClose={hideErrorAlert} />
-            )}
-            <KeyboardAvoidingView
-              behavior={undefined}
-              style={{ flex: 1 }}
+            <ScrollView
+              contentContainerStyle={[
+                registerStyles.scrollViewContent,
+                {
+                  flexGrow: 1,
+                  minHeight: screenHeight,
+                  paddingTop: 0,
+                  paddingBottom: insets.bottom + 40,
+                  position: "relative",
+                  backgroundColor: 'transparent',
+                },
+              ]}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
-              <ScrollView
-                contentContainerStyle={[
-                  registerStyles.scrollViewContent,
-                  {
-                    flexGrow: 1,
-                    minHeight: screenHeight,
-                    paddingTop: 0,
-                    paddingBottom: insets.bottom + 40,
-                    // Prevent any keyboard-related adjustments
-                    position: "relative",
-                  },
-                ]}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-              >
-                <Pressable onPress={Keyboard.dismiss} style={{ flex: 1, width: "100%" }}>
-                  <View
-                    style={{
-                      height: Platform.OS === 'ios' ? hp(43) : hp(40),
-                      paddingTop: insets.top,
-                      justifyContent: "center",
-                      alignItems: "center",
-                      width: "100%",
-                    }}
-                  >
-                    <Image
-                      source={require("../../../assets/images/logo_trans.png")}
-                      style={[
-                        registerStyles.logo,
-                        {
-                          width: 150,
-                          height: 150,
-                          aspectRatio: 1,
-                        },
-                      ]}
-                      resizeMode="contain"
-                    />
-                  </View>
+              <Pressable onPress={Keyboard.dismiss} style={{ flex: 1, width: "100%" }}>
+                <View
+                  style={{
+                    height: Platform.OS === 'ios' ? hp(38) : hp(36),
+                    paddingTop: insets.top,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    width: "100%",
+                    position: 'relative',
+                    zIndex: 1,
+                    backgroundColor: theme.colors.primary,
+                  }}
+                >
+                  {/* Background Models Grid Watermark Layer (1, 2, 3 Grid Models) */}
+                  {isVisible("showLoginBackgroundImages") && (
+                    <View style={{
+                      position: 'absolute',
+                      top: (insets.top || 20) + 10,
+                      left: 12,
+                      right: 12,
+                      bottom: 10,
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      opacity: 0.25,
+                      zIndex: 0,
+                    }}>
+                      <View style={{
+                        flex: 1,
+                        height: '100%',
+                        marginHorizontal: 4,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        borderWidth: 1,
+                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                      }}>
+                        <Image
+                          source={getIndexImage(0) ? getImageSource(getIndexImage(0)) : require("../../../assets/images/intro_1.png")}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      </View>
+                      <View style={{
+                        flex: 1,
+                        height: '100%',
+                        marginHorizontal: 4,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        borderWidth: 1,
+                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                      }}>
+                        <Image
+                          source={getIndexImage(1) ? getImageSource(getIndexImage(1)) : require("../../../assets/images/intro_2.png")}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      </View>
+                      <View style={{
+                        flex: 1,
+                        height: '100%',
+                        marginHorizontal: 4,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        borderWidth: 1,
+                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                      }}>
+                        <Image
+                          source={getIndexImage(2) ? getImageSource(getIndexImage(2)) : require("../../../assets/images/intro_3.png")}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      </View>
+                    </View>
+                  )}
 
+                  <Image
+                    source={require("../../../assets/images/logo_trans.png")}
+                    style={{
+                      width: 150,
+                      height: 150,
+                      aspectRatio: 1,
+                      zIndex: 1,
+                    }}
+                    resizeMode="contain"
+                  />
+                </View>
+
+                <View
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    paddingHorizontal: spacing.lg + 10,
+                    paddingTop: 30,
+                    paddingBottom: insets.bottom + 40,
+                    flex: 1,
+                    zIndex: 1,
+                    position: 'relative',
+                  }}
+                >
+                  {/* Custom wave curve at the top */}
+                  <View style={{ position: 'absolute', top: -39, left: 0, right: 0, height: 40, zIndex: 10, backgroundColor: 'transparent' }}>
+                    <Svg height="40" width={screenWidth} viewBox={`0 0 ${screenWidth} 40`} style={{ position: 'absolute', top: 0, left: 0 }}>
+                      <Path
+                        d={`M0,40 C${screenWidth * 0.3},40 ${screenWidth * 0.7},0 ${screenWidth},0 L${screenWidth},40 L0,40 Z`}
+                        fill="#FFFFFF"
+                      />
+                    </Svg>
+                  </View>
                   <View
                     style={[
-                      registerStyles.formContainer,
                       {
                         paddingHorizontal: spacing.lg,
+                        paddingBottom: spacing.lg,
                         paddingTop: 0,
-                        paddingBottom: spacing.xl,
+                        marginBottom: spacing.md,
+                        alignItems: "center",
+                        justifyContent: "center",
                       },
                     ]}
                   >
-                    <View
-                      style={[
-                        {
-                          paddingHorizontal: spacing.lg,
-                          paddingBottom: spacing.lg,
-                          paddingTop: 0,
-                          marginBottom: spacing.md,
-                          alignItems: "center",
-                          justifyContent: "center",
-                        },
-                      ]}
-                    >
                       {!isShowOtp ? (<>
                         <ResponsiveText
                           variant="title"
@@ -1411,7 +1425,7 @@ export default function Login() {
                       ) : null}
                       {!isShowOtp ? (
                         <>
-                          <View style={registerStyles.inputContainer}>
+                          <View style={[registerStyles.inputContainer, { borderWidth: 0, shadowColor: 'transparent', elevation: 0, paddingHorizontal: 0 }]}>
                             <PhoneInput
                               value={mobile}
                               label={t("registerMobileNumber")}
@@ -1421,6 +1435,7 @@ export default function Login() {
                               }}
                               loading={loading}
                               disableBlurAlert={isNavigatingToRegister}
+                              variant="line"
                             />
                             {mobileError ? (
                               <ResponsiveText
@@ -1437,6 +1452,8 @@ export default function Login() {
                           </View>
                           <ResponsiveButton
                             title={loading ? t("processing") : t("getOtp")}
+                            backgroundColor={theme.colors.primary}
+                            textColor="#FFFFFF"
                             variant="secondary"
                             size="md"
                             fullWidth={true}
@@ -1447,9 +1464,9 @@ export default function Login() {
                               {
                                 width: "100%",
                                 maxWidth: wp(75),
-                                height: 42,
-                                minHeight: 42,
-                                borderRadius: 21,
+                                height: 48,
+                                minHeight: 48,
+                                borderRadius: 8,
                                 overflow: "hidden",
                                 marginTop: spacing.md,
                               },
@@ -1637,23 +1654,6 @@ export default function Login() {
                                 </View>
                               ))}
                             </View>
-                            <TouchableOpacity
-                              onPress={() => setShowOtp((prev) => !prev)}
-                              style={[
-                                registerStyles.eyeButton,
-                                {
-                                  right: isSmallScreen ? -35 : -40,
-                                  top: isSmallScreen ? 15 : 20,
-                                  zIndex: 20, // Keep eye button clickable above hidden input
-                                },
-                              ]}
-                            >
-                              <Feather
-                                name={showOtp ? "eye-off" : "eye"}
-                                size={isSmallScreen ? 20 : 24}
-                                color={theme.colors.primary}
-                              />
-                            </TouchableOpacity>
                           </Pressable>
                           <View
                             style={[
@@ -1731,6 +1731,7 @@ export default function Login() {
                           <TouchableOpacity
                             style={[
                               registerStyles.loginButton,
+                              { borderRadius: 8 },
                               (loading ||
                                 otpCode.length !== 4) &&
                               registerStyles.loginButtonDisabled,
@@ -1741,14 +1742,14 @@ export default function Login() {
                             }
                           >
                             <LinearGradient
-                              colors={["#ffc90c", "#ffd700"]}
-                              style={registerStyles.gradientButton}
+                              colors={[theme.colors.primary, theme.colors.primary]}
+                              style={[registerStyles.gradientButton, { borderRadius: 8 }]}
                             >
                               <ResponsiveText
                                 variant="button"
                                 size="md"
                                 weight="bold"
-                                color={theme.colors.primary}
+                                color="#FFFFFF"
                                 align="center"
                                 truncateMode="single"
                                 style={registerStyles.loginButtonText}
@@ -1780,7 +1781,7 @@ export default function Login() {
                               inRow={true}
                               style={registerStyles.backButtonText}
                             >
-                              {t("backToMobile")}
+                              {t("back")}
                             </ResponsiveText>
                           </TouchableOpacity>
                         </View>
@@ -1813,7 +1814,6 @@ export default function Login() {
                 </Text>
               </TouchableOpacity>
             )}
-          </LinearGradient>
 
           {/* Invalid Mobile Modal */}
           <InvalidMobileModal

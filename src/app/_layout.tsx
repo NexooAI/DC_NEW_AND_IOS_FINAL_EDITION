@@ -33,6 +33,8 @@ interface NotificationData {
   [key: string]: any;
 }
 
+let pendingNotificationData: NotificationData | null = null;
+
 export default function RootLayout() {
   const theme = useAppTheme();
   const isExpoGo = Constants.executionEnvironment === "storeClient";
@@ -83,10 +85,12 @@ export default function RootLayout() {
 
   const handleNotificationNavigation = useCallback(
     (data: NotificationData) => {
-      logger.log("ðŸ”” Handling notification navigation with data:", data);
+      logger.log("🔔 Handling notification navigation with data:", data);
 
       if (!isLoggedIn) {
-        logger.log("âš ï¸ User not logged in, ignoring notification navigation");
+        logger.log("⚠️ User not logged in, storing notification for post-login navigation");
+        pendingNotificationData = data;
+        router.replace("/(auth)/login");
         return;
       }
 
@@ -114,7 +118,9 @@ export default function RootLayout() {
             router.push("/(app)/(tabs)/home/schemes");
             break;
           case "gold-rate":
-            router.push("/(app)/(tabs)/home/goldRate");
+          case "ratechart":
+          case "rate-chart":
+            router.push("/(app)/(tabs)/home/ratechart");
             break;
           default:
             switch (notificationType) {
@@ -127,7 +133,9 @@ export default function RootLayout() {
                 break;
               case "rate":
               case "gold_rate":
-                router.push("/(app)/(tabs)/home/goldRate");
+              case "ratechart":
+              case "rate_chart":
+                router.push("/(app)/(tabs)/home/ratechart");
                 break;
               default:
                 router.push("/(app)/(tabs)/notifications");
@@ -136,13 +144,13 @@ export default function RootLayout() {
             break;
         }
 
-        logger.log("âœ… Navigated to screen based on notification");
+        logger.log("✅ Navigated to screen based on notification");
       } catch (error) {
-        logger.error("âŒ Error navigating from notification:", error);
+        logger.error("❌ Error navigating from notification:", error);
         try {
           router.push("/(app)/(tabs)/notifications");
         } catch (fallbackError) {
-          logger.error("âŒ Fallback navigation also failed:", fallbackError);
+          logger.error("❌ Fallback navigation also failed:", fallbackError);
         }
       }
     },
@@ -186,20 +194,23 @@ export default function RootLayout() {
       responseSubscription =
         Notifications.addNotificationResponseReceivedListener((response) => {
           logger.log(
-            "ðŸ”” Notification tapped:",
+            "🔔 Notification tapped:",
             response.notification.request.content
           );
 
           const data = response.notification.request.content
             .data as NotificationData;
 
-          if (isNavigationReady.current) {
+          if (isNavigationReady.current && isLoggedIn) {
             setTimeout(() => {
               handleNotificationNavigation(data);
             }, 500);
           } else {
-            notificationResponseRef.current = response;
-            logger.log("ðŸ“Œ Stored notification for later navigation");
+            pendingNotificationData = data;
+            logger.log("📌 Stored notification for later navigation (not logged in or not ready)");
+            if (!isLoggedIn) {
+              router.replace("/(auth)/login");
+            }
           }
         });
 
@@ -237,10 +248,17 @@ export default function RootLayout() {
 
         if (lastNotificationResponse) {
           logger.log(
-            "ðŸš€ App launched from notification:",
+            "🚀 App launched from notification:",
             lastNotificationResponse.notification.request.content
           );
-          notificationResponseRef.current = lastNotificationResponse;
+          const data = lastNotificationResponse.notification.request.content
+            .data as NotificationData;
+          if (!isLoggedIn) {
+            pendingNotificationData = data;
+            router.replace("/(auth)/login");
+          } else {
+            notificationResponseRef.current = lastNotificationResponse;
+          }
         }
       } catch (error) {
         logger.error("Error checking initial notification:", error);
@@ -248,7 +266,7 @@ export default function RootLayout() {
     };
 
     checkInitialNotification();
-  }, [isExpoGo]);
+  }, [isExpoGo, isLoggedIn]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -270,6 +288,17 @@ export default function RootLayout() {
 
     return () => clearTimeout(timer);
   }, [handleNotificationNavigation, isFirstLaunch]);
+
+  useEffect(() => {
+    if (isLoggedIn && isNavigationReady.current && pendingNotificationData) {
+      const data = pendingNotificationData;
+      pendingNotificationData = null; // Clear first to prevent double runs
+      logger.log("🔄 Processing pending notification after login:", data);
+      setTimeout(() => {
+        handleNotificationNavigation(data);
+      }, 1000);
+    }
+  }, [isLoggedIn, handleNotificationNavigation]);
 
   useEffect(() => {
     const initializeUserData = async () => {

@@ -522,6 +522,7 @@
   "goToKycNow": "Go to KYC Now",
   "goToLogin": "Go to Login",
   "gold": "Gold",
+  "ratesLabel": "Rates",
   "goldAccumulated": "Gold Accumulated",
   "goldAdvance": "Gold Advance",
   "goldAmountBasedFixed": "Gold Amount Based Fixed",
@@ -1539,6 +1540,7 @@
   "weight": "Weight",
   "weightBased": "Weight Based",
   "welcome": "Welcome",
+  "hi": "Hi",
   "welcomeBack": "Welcome back",
   "welcomeToDigitalGold": "Welcome to Digital Gold",
   "welcomeToDigitalGoldSavings": "🎉 Welcome to Digital Gold Savings!",
@@ -1570,5 +1572,9 @@
   "zeroMakingChargesDesc": "Making charges for new ornaments are completely waived.",
   "zeroPenalties": "Zero penalties",
   "zeroWastage": "Zero Wastage (No Wastage)",
-  "zeroWastageDesc": "No wastage charges when purchasing new gold ornaments after maturity."
+  "zeroWastageDesc": "No wastage charges when purchasing new gold ornaments after maturity.",
+  "active": "Active",
+  "matured": "Matured",
+  "claimed": "Claimed",
+  "dropped": "Dropped"
 }

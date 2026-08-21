@@ -47,6 +47,8 @@ import { SHADOW_UTILS } from "@/utils/shadowUtils";
 import { getBorderRadius, rf } from "@/utils/responsiveUtils";
 import ResponsiveText from "@/components/ResponsiveText";
 import { useBiometrics } from "@/hooks/useBiometrics";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
+import { getImageSource } from "@/utils/imageUtils";
 
 
 const borderRadius = getBorderRadius();
@@ -326,7 +328,50 @@ export default function MpinVerify() {
   const [lockdownTimer, setLockdownTimer] = useState(0);
   const [rates, setRates] = useState<{ gold_rate: number; silver_rate: number; show_silver: boolean } | null>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [userWantsToEnableBiometrics, setUserWantsToEnableBiometrics] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [loginImages, setLoginImages] = useState<(string | null)[]>([null, null, null]);
+
+  const { isVisible, visibleData } = useAppVisibility();
+  const [currentOffset, setCurrentOffset] = useState(0);
+
+  useEffect(() => {
+    if (!isVisible("enableLoginBackgroundMovement") || !loginImages || loginImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentOffset(prev => prev + 1);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [visibleData, loginImages]);
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      try {
+        const config = useGlobalStore.getState().appConfig;
+        if (config?.brand?.loginImages && Array.isArray(config.brand.loginImages) && config.brand.loginImages.length >= 3) {
+          setLoginImages(config.brand.loginImages);
+          return;
+        }
+
+        const res = await apiClient.get("/config/settings");
+        if (res?.data?.success && res?.data?.data) {
+          const brand = res.data.data.brand;
+          if (brand?.loginImages && Array.isArray(brand.loginImages) && brand.loginImages.length >= 3) {
+            setLoginImages(brand.loginImages);
+            return;
+          }
+        }
+
+        const resImages = await apiClient.get("/intro-screens/active");
+        if (resImages?.data?.success && Array.isArray(resImages.data.data) && resImages.data.data.length > 0) {
+          const imagePaths = resImages.data.data.map((item: any) => item.image || null);
+          setLoginImages(imagePaths);
+        }
+      } catch (err) {
+        logger.warn("Failed to fetch login images from API, using defaults", err);
+      }
+    };
+    fetchImages();
+  }, []);
   const router = useRouter();
   const { mobile } = useLocalSearchParams();
   const mobileStr = Array.isArray(mobile) ? mobile[0] : mobile || "";
@@ -375,6 +420,33 @@ export default function MpinVerify() {
       //     mpinInputRefs[0].current.focus();
       //   }
       // }, 300);
+    }
+  };
+
+  const handleBiometricPress = () => {
+    if (isEnabled) {
+      handleBiometricAuth();
+    } else {
+      setUserWantsToEnableBiometrics(true);
+      Alert.alert(
+        t("enableBiometrics") || "Enable Biometric Login",
+        t("enableBiometricsPrompt") || "Please enter your 4-digit MPIN first to verify and enable biometric login.",
+        [
+          {
+            text: t("cancel") || "Cancel",
+            style: "cancel",
+            onPress: () => setUserWantsToEnableBiometrics(false)
+          },
+          {
+            text: t("ok") || "OK",
+            onPress: () => {
+              if (mpinInputRefs[0] && mpinInputRefs[0].current) {
+                mpinInputRefs[0].current.focus();
+              }
+            }
+          }
+        ]
+      );
     }
   };
 
@@ -799,27 +871,34 @@ export default function MpinVerify() {
 
           // Check if we should ask for biometric enrollment
           const hasDeclinedBiometrics = await AsyncStorage.getItem('hasDeclinedBiometrics');
-          if (!isBiometric && !isEnabled && isSupported && isEnrolled && hasDeclinedBiometrics !== 'true') {
+          if (!isBiometric && !isEnabled && isSupported && isEnrolled && (hasDeclinedBiometrics !== 'true' || userWantsToEnableBiometrics)) {
+            const title = t("setupBiometrics");
+            const msg = t("setupBiometricsMsg");
+            const yesText = t("yes");
+            const noText = t("no");
+
             Alert.alert(
-              t("setupBiometrics") || "Enable Biometrics",
-              t("setupBiometricsMsg") || "Would you like to use Face ID / Fingerprint for faster login next time?",
+              title.startsWith("[missing") ? "Enable Biometrics" : title,
+              msg.startsWith("[missing") ? "Would you like to use Face ID / Fingerprint for faster login next time?" : msg,
               [
                 {
-                  text: t("no") || "No",
+                  text: noText.startsWith("[missing") ? "No" : noText,
                   onPress: async () => {
                     try {
                       await AsyncStorage.setItem('hasDeclinedBiometrics', 'true');
                     } catch (err) {
                       logger.error("Error setting hasDeclinedBiometrics:", err);
                     }
+                    setUserWantsToEnableBiometrics(false);
                     await handlePostVerificationRedirect();
                   }
                 },
                 {
-                  text: t("yes") || "Yes",
+                  text: yesText.startsWith("[missing") ? "Yes" : yesText,
                   onPress: async () => {
                     const success = await enableBiometrics(enteredMpin);
                     if (success) {
+                      setUserWantsToEnableBiometrics(false);
                       Alert.alert(t("success"), t("biometricsEnabled") || "Biometrics enabled successfully", [
                         { text: "OK", onPress: () => handlePostVerificationRedirect() }
                       ]);
@@ -829,6 +908,7 @@ export default function MpinVerify() {
                       } catch (err) {
                         logger.error("Error setting hasDeclinedBiometrics after failure:", err);
                       }
+                      setUserWantsToEnableBiometrics(false);
                       await handlePostVerificationRedirect();
                     }
                   }
@@ -986,6 +1066,12 @@ export default function MpinVerify() {
     }
   };
 
+  const getIndexImage = (boxIndex: number) => {
+    if (!loginImages || loginImages.length === 0) return null;
+    const index = (boxIndex + currentOffset) % loginImages.length;
+    return loginImages[index];
+  };
+
   // Show loading screen while initializing
   if (initializing) {
     return (
@@ -1012,6 +1098,7 @@ export default function MpinVerify() {
                   source={require("../../../assets/images/logo_trans.png")}
                   style={{ width: logoWidth * 2, height: logoWidth * 2, aspectRatio: 1 }}
                   resizeMode="contain"
+                  fadeDuration={0}
                 />
               </View>
             </View>
@@ -1030,53 +1117,15 @@ export default function MpinVerify() {
     <View
       style={[styles.backgroundImage, { backgroundColor: theme.colors.primary }]}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#850111" />
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
       <LinearGradient
         colors={[
-          "#FCF9F6",
-          "#FCF9F6",
+          "#FFFFFF",
+          "#FFFFFF",
         ]}
         style={styles.gradient}
       >
-        {/* Curved wave header background */}
-        <View style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: Platform.OS === 'ios' ? hp(43) : hp(40),
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.22,
-          shadowRadius: 8,
-          elevation: 8,
-        }}>
-          <Svg
-            height="100%"
-            width="100%"
-            viewBox="0 0 375 380"
-            preserveAspectRatio="none"
-          >
-            <Defs>
-              <SvgLinearGradient id="waveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <Stop offset="0%" stopColor={theme.colors.primary || "#4A0007"} stopOpacity="0.95" />
-                <Stop offset="100%" stopColor={theme.colors.primaryDark || "#2E0406"} stopOpacity="0.98" />
-              </SvgLinearGradient>
-            </Defs>
-            {/* Wave Shape */}
-            <Path
-              d="M0,0 L0,310 C100,380 180,240 270,330 C320,380 350,310 375,290 L375,0 Z"
-              fill="url(#waveGrad)"
-            />
-            {/* Golden Outline Line */}
-            <Path
-              d="M0,310 C100,380 180,240 270,330 C320,380 350,310 375,290"
-              fill="none"
-              stroke="#FFD700"
-              strokeWidth="3.5"
-            />
-          </Svg>
-        </View>
+
 
         <KeyboardAvoidingView
           behavior={undefined}
@@ -1086,28 +1135,104 @@ export default function MpinVerify() {
             <View style={styles.container}>
               <View
                 style={{
-                  height: Platform.OS === 'ios' ? hp(43) : hp(40),
-                  paddingTop: insets.top,
+                  height: Platform.OS === 'ios' ? hp(34) : hp(30),
+                  paddingTop: insets.top + (Platform.OS === 'ios' ? 20 : 10),
                   justifyContent: "center",
                   alignItems: "center",
                   width: "100%",
+                  backgroundColor: theme.colors.primary,
+                  position: 'relative',
                 }}
               >
+                {/* Background Models Grid Watermark Layer (1, 2, 3 Grid Models) */}
+                {isVisible("showLoginBackgroundImages") && (
+                  <View style={{
+                    position: 'absolute',
+                    top: 10,
+                    left: 12,
+                    right: 12,
+                    bottom: 10,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    opacity: 0.25,
+                    zIndex: 0,
+                  }}>
+                    <View style={{
+                      flex: 1,
+                      height: '100%',
+                      marginHorizontal: 4,
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      borderWidth: 1,
+                      borderColor: 'rgba(255, 215, 0, 0.25)',
+                    }}>
+                      <Image
+                        source={getIndexImage(0) ? getImageSource(getIndexImage(0)) : require("../../../assets/images/intro_1.png")}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                    </View>
+                    <View style={{
+                      flex: 1,
+                      height: '100%',
+                      marginHorizontal: 4,
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      borderWidth: 1,
+                      borderColor: 'rgba(255, 215, 0, 0.25)',
+                    }}>
+                      <Image
+                        source={getIndexImage(1) ? getImageSource(getIndexImage(1)) : require("../../../assets/images/intro_2.png")}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                    </View>
+                    <View style={{
+                      flex: 1,
+                      height: '100%',
+                      marginHorizontal: 4,
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      borderWidth: 1,
+                      borderColor: 'rgba(255, 215, 0, 0.25)',
+                    }}>
+                      <Image
+                        source={getIndexImage(2) ? getImageSource(getIndexImage(2)) : require("../../../assets/images/intro_3.png")}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                    </View>
+                  </View>
+                )}
+
                 <Image
                   source={require("../../../assets/images/logo_trans.png")}
                   style={[
                     styles.logo,
                     {
-                      width: 150,
-                      height: 150,
+                      width: 130,
+                      height: 130,
                       aspectRatio: 1,
+                      zIndex: 1,
                     },
                   ]}
                   resizeMode="contain"
+                  fadeDuration={0}
                 />
               </View>
 
               <View style={styles.formContainer}>
+                {/* Custom wave curve at the top */}
+                <View style={{ position: 'absolute', top: -39, left: 0, right: 0, height: 40, zIndex: 10, backgroundColor: 'transparent' }}>
+                  <Svg height="40" width={width} viewBox={`0 0 ${width} 40`} style={{ position: 'absolute', top: 0, left: 0 }}>
+                    <Path
+                      d={`M0,40 C${width * 0.3},40 ${width * 0.7},0 ${width},0 L${width},40 L0,40 Z`}
+                      fill="#FFFFFF"
+                    />
+                  </Svg>
+                </View>
+
                 <View style={styles.contentWrapper}>
                   <Text style={styles.mpinTitle}>{t("enterMpinTitle")}</Text>
                   <Text style={styles.mpinSubtitle}>
@@ -1220,7 +1345,7 @@ export default function MpinVerify() {
                         colors={
                           isLocked
                             ? ["#cccccc", "#dddddd"]
-                            : ["#ffc90c", "#ffd700"]
+                            : [theme.colors.primary, theme.colors.primary]
                         }
                         style={styles.buttonGradient}
                       >
@@ -1243,10 +1368,10 @@ export default function MpinVerify() {
                   </Animated.View>
 
                   {/* Biometric Button */}
-                  {(isSupported && isEnrolled && isEnabled) && (
+                  {(isSupported && isEnrolled) && (
                     <TouchableOpacity
                       style={styles.biometricButton}
-                      onPress={handleBiometricAuth}
+                      onPress={handleBiometricPress}
                       disabled={loading || isLocked}
                     >
                       <Icon name="fingerprint" size={40} color={COLORS.primary} />
@@ -1453,9 +1578,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "flex-start",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === "ios" ? 60 : 0,
-    paddingBottom: Platform.OS === "ios" ? 40 : 0,
+    paddingHorizontal: 24,
+    paddingTop: 40,
+    paddingBottom: Platform.OS === "ios" ? 80 : 100,
+    backgroundColor: '#FFFFFF',
+    zIndex: 1,
+    position: 'relative',
   },
   contentWrapper: {
     width: "100%",
@@ -1499,7 +1627,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   otpInputEmpty: {
-    borderColor: "rgba(174, 28, 28, 0.2)",
+    borderColor: "#cbd5e1",
     backgroundColor: COLORS.white,
     color: COLORS.black,
   },
@@ -1526,7 +1654,7 @@ const styles = StyleSheet.create({
   loginButton: {
     width: "100%",
     height: 50,
-    borderRadius: 25,
+    borderRadius: 8,
     overflow: "hidden",
     marginTop: 20,
     ...Platform.select({
@@ -1550,7 +1678,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   loginButtonText: {
-    color: theme.colors.textDark,
+    color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "bold",
   },

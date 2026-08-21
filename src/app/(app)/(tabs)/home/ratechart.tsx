@@ -281,6 +281,52 @@ export default function RateChart() {
             >
                 {/* Header Section */}
                 <View style={styles.headerSection}>
+                    {/* Rate Type Tab Selector */}
+                    <View style={{
+                        flexDirection: "row",
+                        backgroundColor: "rgba(133, 1, 17, 0.06)",
+                        borderRadius: 14,
+                        padding: 4,
+                        marginBottom: 20,
+                        marginHorizontal: 16,
+                    }}>
+                        <TouchableOpacity
+                            onPress={() => setSelectedRateType("gold")}
+                            style={{
+                                flex: 1,
+                                backgroundColor: selectedRateType === "gold" ? theme.colors.primary || "#850111" : "transparent",
+                                paddingVertical: 10,
+                                borderRadius: 10,
+                                alignItems: "center",
+                            }}
+                        >
+                            <Text style={{
+                                fontSize: 14,
+                                fontWeight: "700",
+                                color: selectedRateType === "gold" ? "white" : theme.colors.textDark || "#666",
+                            }}>
+                                {t("rateChart_gold") || "Gold"}
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => setSelectedRateType("silver")}
+                            style={{
+                                flex: 1,
+                                backgroundColor: selectedRateType === "silver" ? theme.colors.primary || "#850111" : "transparent",
+                                paddingVertical: 10,
+                                borderRadius: 10,
+                                alignItems: "center",
+                            }}
+                        >
+                            <Text style={{
+                                fontSize: 14,
+                                fontWeight: "700",
+                                color: selectedRateType === "silver" ? "white" : theme.colors.textDark || "#666",
+                            }}>
+                                {t("rateChart_silver") || "Silver"}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Current Rate Display */}
                     {currentRate !== null && (

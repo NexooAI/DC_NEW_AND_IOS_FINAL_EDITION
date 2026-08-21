@@ -19,6 +19,8 @@ import {
   ScrollView,
   Modal,
   KeyboardAvoidingView,
+  StatusBar,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -33,6 +35,10 @@ import { AppLocale } from "@/i18n";
 import apiClient from "@/services/api";
 import useGlobalStore from "@/store/global.store";
 import { useOtpAutoFetch } from "@/hooks/useOtpAutoFetch";
+import { responsiveUtils } from "@/utils/responsiveUtils";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
+const { hp } = responsiveUtils;
+import Svg, { Path } from 'react-native-svg';
 
 import { logger } from "@/utils/logger";
 const { width } = Dimensions.get("window");
@@ -338,6 +344,7 @@ const MpinInput = ({
 };
 
 export default function ForgotMpin() {
+  const { isVisible } = useAppVisibility();
   const [step, setStep] = useState<"verifyOtp" | "createMpin">("verifyOtp");
   const [mobileNumber, setMobileNumber] = useState("");
   const [otp, setOtp] = useState("");
@@ -915,7 +922,7 @@ export default function ForgotMpin() {
           disabled={loading || otp.length !== 4}
         >
           <LinearGradient
-            colors={[theme.colors.secondary, theme.colors.secondary]}
+            colors={[theme.colors.primary, theme.colors.primary]}
             style={styles.buttonGradient}
           >
             <Text style={styles.actionButtonText}>
@@ -1022,7 +1029,7 @@ export default function ForgotMpin() {
           }
         >
           <LinearGradient
-            colors={[theme.colors.secondary, theme.colors.secondary]}
+            colors={[theme.colors.primary, theme.colors.primary]}
             style={styles.buttonGradient}
           >
             <Text style={styles.actionButtonText}>
@@ -1035,34 +1042,149 @@ export default function ForgotMpin() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+      }}
+    >
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoid}
       >
-        <View style={styles.headerSpacer}>
-          <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => router.push("/(auth)/mpin_verify")}
-              >
-                <Icon name="arrow-back" size={24} color={theme.colors.primary} />
-              </TouchableOpacity>
-              <View style={styles.headerInfo}>
-                <Text style={styles.headerTitle}>{t("forgotMpinTitle") || "Forgot MPIN"}</Text>
-                <Text style={styles.headerSubtitle}>{t("forgotMpinSubtitle") || "Reset your MPIN"}</Text>
-              </View>
-              <View style={styles.headerRightPlaceholder} />
-            </View>
-          </View>
-        </View>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <Pressable onPress={Keyboard.dismiss} style={{ flex: 1, width: "100%" }}>
+            {/* Header Back Button and Title Area */}
+            <View
+              style={{
+                height: Platform.OS === 'ios' ? hp(22) : hp(20),
+                paddingTop: Platform.OS === 'ios' ? 70 : 50,
+                paddingHorizontal: 20,
+                width: "100%",
+                zIndex: 1,
+                backgroundColor: theme.colors.primary,
+              }}
+            >
+              {/* Background Models Grid Watermark Layer (1, 2, 3 Grid Models) */}
+              {isVisible("showLoginBackgroundImages") && (
+                <View style={{
+                  position: 'absolute',
+                  top: 10,
+                  left: 12,
+                  right: 12,
+                  bottom: 10,
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  opacity: 0.25,
+                  zIndex: 0,
+                }}>
+                  <View style={{
+                    flex: 1,
+                    height: '100%',
+                    marginHorizontal: 4,
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    borderWidth: 1,
+                    borderColor: 'rgba(255, 215, 0, 0.25)',
+                  }}>
+                    <Image
+                      source={require("../../../assets/images/intro_1.png")}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="cover"
+                    />
+                  </View>
+                  <View style={{
+                    flex: 1,
+                    height: '100%',
+                    marginHorizontal: 4,
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    borderWidth: 1,
+                    borderColor: 'rgba(255, 215, 0, 0.25)',
+                  }}>
+                    <Image
+                      source={require("../../../assets/images/intro_2.png")}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="cover"
+                    />
+                  </View>
+                  <View style={{
+                    flex: 1,
+                    height: '100%',
+                    marginHorizontal: 4,
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    borderWidth: 1,
+                    borderColor: 'rgba(255, 215, 0, 0.25)',
+                  }}>
+                    <Image
+                      source={require("../../../assets/images/intro_3.png")}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="cover"
+                    />
+                  </View>
+                </View>
+              )}
 
-        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-          <View style={styles.formContainer}>
-            {step === "verifyOtp" && renderVerifyOtpStep()}
-            {step === "createMpin" && renderCreateMpinStep()}
-          </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', zIndex: 1 }}>
+                {/* Back arrow in small gold circle */}
+                <TouchableOpacity
+                  onPress={() => router.push("/(auth)/mpin_verify")}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: theme.colors.secondary || '#F8CF2C',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Icon name="arrow-back" size={22} color={theme.colors.primary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Bottom White Card */}
+            <View
+              style={{
+                backgroundColor: '#FFFFFF',
+                paddingHorizontal: 24,
+                paddingTop: 30,
+                paddingBottom: Platform.OS === "ios" ? 80 : 100,
+                flex: 1,
+                zIndex: 1,
+                position: 'relative',
+              }}
+            >
+              {/* Custom wave curve at the top */}
+              <View style={{ position: 'absolute', top: -39, left: 0, right: 0, height: 40, zIndex: 10, backgroundColor: 'transparent' }}>
+                <Svg height="40" width={width} viewBox={`0 0 ${width} 40`} style={{ position: 'absolute', top: 0, left: 0 }}>
+                  <Path
+                    d={`M0,40 C${width * 0.3},40 ${width * 0.7},0 ${width},0 L${width},40 L0,40 Z`}
+                    fill="#FFFFFF"
+                  />
+                </Svg>
+              </View>
+
+              {/* Content */}
+              <View style={{ width: '100%' }}>
+                {/* Title and Subtitle inside the white card */}
+                <View style={{ marginBottom: 20 }}>
+                  <Text style={{ color: theme.colors.primary, fontSize: 22, fontWeight: 'bold', marginBottom: 6 }}>
+                    {t("forgotMpinTitle") || "Forgot MPIN"}
+                  </Text>
+                  <Text style={{ color: '#666666', fontSize: 14 }}>
+                    {t("forgotMpinSubtitle") || "Reset your MPIN"}
+                  </Text>
+                </View>
+
+                {step === "verifyOtp" && renderVerifyOtpStep()}
+                {step === "createMpin" && renderCreateMpinStep()}
+              </View>
+            </View>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -1073,7 +1195,7 @@ export default function ForgotMpin() {
         onCancel={handleCancelSendOtp}
         loading={loading}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -1252,7 +1374,7 @@ const styles = StyleSheet.create({
   actionButton: {
     width: "100%",
     height: 50,
-    borderRadius: 25,
+    borderRadius: 8,
     overflow: "hidden",
     marginTop: 20,
     ...Platform.select({
@@ -1276,7 +1398,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   actionButtonText: {
-    color: theme.colors.primary,
+    color: '#FFFFFF',
     fontSize: 18,
     fontWeight: "bold",
   },

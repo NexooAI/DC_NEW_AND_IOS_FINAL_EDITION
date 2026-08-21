@@ -1647,7 +1647,7 @@ export default function Home() {
     // Refresh home data, app visibility settings, and schemes data
     await Promise.all([
       fetchHomeData(true),
-      refetchVisibility(),
+      refetchVisibility(true),
       fetchSchemesData(true), // Force refresh schemes data on pull-to-refresh
       fetchKycStatus(), // Refresh KYC status
     ]);
@@ -2721,29 +2721,17 @@ export default function Home() {
         )} */}
         {/* Home Page Header */}
         <View style={styles.homeHeader}>
-          {/* Left: Profile Image and Name */}
+          {/* Left: Tenant Logo and Welcome Name */}
           <View style={styles.headerLeft}>
-            <TouchableOpacity
-              style={styles.profileImageContainer}
-              onPress={() => router.push("/(tabs)/profile")}
-              activeOpacity={0.7}
-            >
-              {getProfileImageSource() && !profileImageError ? (
-                <Image
-                  source={getProfileImageSource()}
-                  style={styles.headerProfileImage}
-                  resizeMode="cover"
-                  onError={handleProfileImageError}
-                  onLoad={handleProfileImageLoad}
-                />
-              ) : (
-                <Ionicons
-                  name="person-circle"
-                  size={40}
-                  color={theme.colors.textDark}
-                />
-              )}
-            </TouchableOpacity>
+            <Image
+              source={require("../../../../../assets/images/logo_trans.png")}
+              style={{
+                width: 40,
+                height: 40,
+                marginRight: 8,
+              }}
+              resizeMode="contain"
+            />
             <View style={styles.headerNameContainer}>
               <ResponsiveText
                 variant="caption"
@@ -2756,7 +2744,7 @@ export default function Home() {
                 minimumFontScale={0.7}
                 style={styles.headerWelcomeText}
               >
-                {t("welcomeBack")}
+                {t("hi") || "Hi"},
               </ResponsiveText>
               <ResponsiveText
                 variant="body"
@@ -2770,19 +2758,6 @@ export default function Home() {
                 style={styles.headerUserName}
               >
                 {user?.name?.toUpperCase() || "USER"}
-              </ResponsiveText>
-              <ResponsiveText
-                variant="caption"
-                size="xs"
-                weight="normal"
-                color={theme.colors.textSecondary}
-                allowWrap={false}
-                maxLines={1}
-                adjustsFontSizeToFit={true}
-                minimumFontScale={0.7}
-                style={styles.headerUserId}
-              >
-                ID: {user?.id || "N/A"}
               </ResponsiveText>
             </View>
           </View>
@@ -3999,7 +3974,7 @@ function getStyles(theme: any) {
       position: "absolute",
       top: 4,
       right: 4,
-      backgroundColor: COLORS.error,
+      backgroundColor: "#ff3333",
       borderRadius: 10,
       minWidth: 18,
       height: 18,

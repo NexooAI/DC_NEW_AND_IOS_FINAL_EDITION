@@ -6,17 +6,20 @@ import {
   StyleSheet,
   Animated,
   Platform,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useSegments } from "expo-router";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { LinearGradient } from "expo-linear-gradient";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import ResponsiveText from "@/components/ResponsiveText";
+import { getFullImageUrl } from "@/utils/imageUtils";
 import { useNavigationState } from "@/hooks/useNavigationState";
 
 type Tab = {
@@ -27,14 +30,43 @@ type Tab = {
   badge?: number | null;
 };
 
+const TabProfileIcon = ({ source, defaultIcon, color, size, isActive, themeSecondary }: any) => {
+  const [hasError, setHasError] = React.useState(false);
+  if (source && !hasError) {
+    return (
+      <Image
+        source={source}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: isActive ? 1.5 : 0,
+          borderColor: themeSecondary,
+        }}
+        resizeMode="cover"
+        onError={() => setHasError(true)}
+      />
+    );
+  }
+  return <Ionicons name={defaultIcon} size={size} color={color} />;
+};
+
 export default function CustomBottomBar(props: BottomTabBarProps) {
   const theme = useAppTheme();
   styles = getStyles(theme);
   const { t } = useTranslation();
   const router = useRouter();
   const segments = useSegments();
-  const { language } = useGlobalStore();
+  const { language, user } = useGlobalStore();
   const { unreadCount } = useUnreadNotifications();
+  const { isVisible } = useAppVisibility();
+
+  const getProfileImageSource = () => {
+    if (user?.profileImage) {
+      return { uri: getFullImageUrl(user.profileImage) };
+    }
+    return undefined;
+  };
   const { navigate, isNavigating } = useNavigationState();
   const current = segments[segments.length - 1] || "home";
 
@@ -111,7 +143,13 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
       icon: "person-outline",
       iconActive: "person",
     },
-  ];
+  ].filter(tab => {
+    if (tab.name === "home") return isVisible("showTabHome");
+    if (tab.name === "savings") return isVisible("showTabSavings");
+    if (tab.name === "rewards") return isVisible("showTabRewards");
+    if (tab.name === "profile") return isVisible("showTabProfile");
+    return true;
+  });
 
   // Animate tab press
   const animateTabPress = (index: number) => {
@@ -203,10 +241,13 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
                 ]}
               >
                 <View style={styles.iconContainer}>
-                  <Ionicons
-                    name={isActive ? tab.iconActive : tab.icon}
-                    size={26}
+                  <TabProfileIcon
+                    source={tab.name === "profile" ? getProfileImageSource() : undefined}
+                    defaultIcon={isActive ? tab.iconActive : tab.icon}
                     color={isActive ? theme.colors.secondary : theme.colors.textLight || "#ffffff"}
+                    size={26}
+                    isActive={isActive}
+                    themeSecondary={theme.colors.secondary}
                   />
                   {tab.badge && (
                     <Animated.View

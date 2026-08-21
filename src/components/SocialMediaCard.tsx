@@ -135,6 +135,7 @@ const SocialMediaOption: React.FC<SocialMediaOptionProps> = ({
           styles.socialOption,
           {
             transform: [{ scale: scaleAnim }, { scale: pulseAnim }],
+            shadowColor: colors.primary,
           },
         ]}
       >
@@ -254,7 +255,7 @@ const SocialMediaCard = ({
       ]}
     >
       <LinearGradient
-         colors={["#0F172A", "#1A1F2B", "#850111"]}
+        colors={[theme.colors.primary || "#0b162c", "#132342", "#050b15"]}
         style={styles.mainGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -272,7 +273,7 @@ const SocialMediaCard = ({
 
           <View style={styles.headerContent}>
             <LinearGradient
-              colors={["#F59E0B", "#F97316", "#EA580C"]}
+              colors={[theme.colors.secondary || "#FFD700", "#FFC107"]}
               style={styles.mainIconContainer}
             >
               <Ionicons name="share-social" size={22} color="#fff" />
@@ -337,7 +338,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     borderWidth: 1,
-    borderColor: "rgba(245,158,11,0.3)",
+    borderColor: theme.colors.secondary ? `${theme.colors.secondary}33` : "rgba(245,158,11,0.3)",
     overflow: "hidden",
     position: "relative",
   },
@@ -365,7 +366,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: moderateScale(10),
-    shadowColor: "#F59E0B",
+    shadowColor: theme.colors.secondary || "#FFD700",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -396,26 +397,23 @@ function getStyles(theme: any) { return StyleSheet.create({
     alignItems: "center",
   },
   socialOption: {
-    borderRadius: moderateScale(12), // Matches Support card buttons
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-    width: "80%", // Expand slightly to look like buttons
+    borderRadius: moderateScale(23),
+    width: moderateScale(46),
+    height: moderateScale(46),
+    overflow: "visible",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 6,
+    elevation: 6,
   },
   socialOptionGradient: {
+    width: "100%",
+    height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: moderateScale(10),
-    paddingHorizontal: moderateScale(8),
-    borderRadius: moderateScale(12),
+    borderRadius: moderateScale(23),
   },
   socialIconContainer: {
-    width: moderateScale(36),
-    height: moderateScale(36),
-    borderRadius: moderateScale(18),
     justifyContent: "center",
     alignItems: "center",
     zIndex: 2,

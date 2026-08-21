@@ -32,6 +32,37 @@ export interface AppVisibilityData {
     showDiamondScheme?: number;
     showPlatinumScheme?: number;
     showOldGoldScheme?: number;
+    showLoginBackgroundImages?: number;
+    enableLoginBackgroundMovement?: number;
+    showLangTamil?: number;
+    showLangEnglish?: number;
+    showLangHindi?: number;
+    showLangMalayalam?: number;
+    showLangTelugu?: number;
+    // Bottom Tabs
+    showTabHome?: number;
+    showTabSavings?: number;
+    showTabQuickJoin?: number;
+    showTabRewards?: number;
+    showTabProfile?: number;
+    // Side Menu Drawer
+    showSideReferEarn?: number;
+    showSideTickets?: number;
+    showSideOffers?: number;
+    showSideStores?: number;
+    showSideContactUs?: number;
+    showSideFaq?: number;
+    showSidePrivacy?: number;
+    showSideTerms?: number;
+    // Profile Settings
+    showProfileKyc?: number;
+    showProfileMpin?: number;
+    showProfileBiometrics?: number;
+    showProfileLanguage?: number;
+    showProfileRateChart?: number;
+    showProfileRateUs?: number;
+    showProfilePaymentHistory?: number;
+    showProfileDeleteAccount?: number;
     updated_at: string;
 }
 
@@ -89,16 +120,44 @@ export function useAppVisibility() {
                 'showGoldRate', 'showPoster', 'showFlashnews', 'showCustomerCard',
                 'showSchemes', 'showSocialMedia', 'showSupportCard', 'showHallmark',
                 'showReferEarn', 'showLuckyDraw', 'showGoldScheme', 'showSilverScheme',
-                'showDiamondScheme', 'showPlatinumScheme', 'showOldGoldScheme'
+                'showDiamondScheme', 'showPlatinumScheme', 'showOldGoldScheme',
+                'showLoginBackgroundImages', 'enableLoginBackgroundMovement',
+                'showLangTamil', 'showLangEnglish', 'showLangHindi', 'showLangMalayalam', 'showLangTelugu',
+                // Tabs
+                'showTabHome', 'showTabSavings', 'showTabQuickJoin', 'showTabRewards', 'showTabProfile',
+                // Side Menu
+                'showSideReferEarn', 'showSideTickets', 'showSideOffers', 'showSideStores',
+                'showSideContactUs', 'showSideFaq', 'showSidePrivacy', 'showSideTerms',
+                // Profile Settings
+                'showProfileKyc', 'showProfileMpin', 'showProfileBiometrics', 'showProfileLanguage',
+                'showProfileRateChart', 'showProfileRateUs', 'showProfilePaymentHistory', 'showProfileDeleteAccount'
             ];
             return defaultVisible.includes(componentName);
         }
-        // Ensure core components default to true unless explicitly disabled (0)
+        // Ensure components default to true unless explicitly disabled (0)
         if (
             componentName === 'showGoldRate' || componentName === 'showReferEarn' || 
             componentName === 'showLuckyDraw' || componentName === 'showGoldScheme' || 
             componentName === 'showSilverScheme' || componentName === 'showDiamondScheme' || 
-            componentName === 'showPlatinumScheme' || componentName === 'showOldGoldScheme'
+            componentName === 'showPlatinumScheme' || componentName === 'showOldGoldScheme' ||
+            componentName === 'showLoginBackgroundImages' || componentName === 'enableLoginBackgroundMovement' ||
+            componentName === 'showLangTamil' || componentName === 'showLangEnglish' || 
+            componentName === 'showLangHindi' || componentName === 'showLangMalayalam' || 
+            componentName === 'showLangTelugu' ||
+            // Tabs
+            componentName === 'showTabHome' || componentName === 'showTabSavings' || 
+            componentName === 'showTabQuickJoin' || componentName === 'showTabRewards' || 
+            componentName === 'showTabProfile' ||
+            // Side Menu
+            componentName === 'showSideReferEarn' || componentName === 'showSideTickets' || 
+            componentName === 'showSideOffers' || componentName === 'showSideStores' || 
+            componentName === 'showSideContactUs' || componentName === 'showSideFaq' || 
+            componentName === 'showSidePrivacy' || componentName === 'showSideTerms' ||
+            // Profile Settings
+            componentName === 'showProfileKyc' || componentName === 'showProfileMpin' || 
+            componentName === 'showProfileBiometrics' || componentName === 'showProfileLanguage' || 
+            componentName === 'showProfileRateChart' || componentName === 'showProfileRateUs' || 
+            componentName === 'showProfilePaymentHistory' || componentName === 'showProfileDeleteAccount'
         ) {
             return (visibleData as any)[componentName] !== 0;
         }

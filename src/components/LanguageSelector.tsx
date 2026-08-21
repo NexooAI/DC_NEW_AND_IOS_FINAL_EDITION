@@ -5,10 +5,20 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { getLanguageName, getLanguageFlag } from "@/utils/languageUtils";
 import { theme } from "@/constants/theme";
 
+import { useAppVisibility } from "@/hooks/useAppVisibility";
+
 interface LanguageSelectorProps {
   visible: boolean;
   onClose: () => void;
 }
+
+const localeToConfigKey: Record<string, any> = {
+  en: "showLangEnglish",
+  ta: "showLangTamil",
+  hi: "showLangHindi",
+  mal: "showLangMalayalam",
+  te: "showLangTelugu",
+};
 
 const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   visible,
@@ -17,11 +27,20 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const theme = useAppTheme();
   styles = getStyles(theme);
   const { locale, setLocale, supportedLocales, t } = useTranslation();
+  const { isVisible } = useAppVisibility();
 
   const handleLanguageSelect = async (selectedLocale: string) => {
     await setLocale(selectedLocale as any);
     onClose();
   };
+
+  const filteredLocales = supportedLocales.filter((lang) => {
+    const configKey = localeToConfigKey[lang];
+    if (configKey) {
+      return isVisible(configKey);
+    }
+    return true;
+  });
 
   return (
     <Modal
@@ -37,7 +56,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             {t("selectLanguageSubtitle")}
           </Text>
 
-          {supportedLocales.map((lang) => (
+          {filteredLocales.map((lang) => (
             <TouchableOpacity
               key={lang}
               style={[

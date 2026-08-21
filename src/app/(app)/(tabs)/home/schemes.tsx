@@ -183,19 +183,9 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
   const params = useLocalSearchParams<{ schemeId?: string; schemeType?: string; mode?: string; type?: string; category?: string }>();
   const { schemeId, schemeType, mode } = params;
 
-  const [selectedMetal, setSelectedMetal] = useState<string>(() => {
-    const tParam = (params.type || params.category || "").toLowerCase();
-    return ["gold", "silver", "diamond", "platinum", "old_gold"].includes(tParam) ? tParam : "gold";
-  });
+  const [selectedMetal, setSelectedMetal] = useState<string>("all");
 
-  useEffect(() => {
-    const tParam = (params.type || params.category || "").toLowerCase();
-    if (["gold", "silver", "diamond", "platinum", "old_gold"].includes(tParam)) {
-      setSelectedMetal(tParam);
-    }
-  }, [params.type, params.category]);
-
-  const [schemePlanType, setSchemePlanType] = useState<"fixed" | "flexi">("fixed");
+  const [schemePlanType, setSchemePlanType] = useState<"fixed" | "flexi" | "hybrid">("fixed");
   const [activeTab, setActiveTab] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [allSchemes, setAllSchemes] = useState<Scheme[]>([]);
@@ -370,12 +360,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
   );
 
   const filteredSchemes = useMemo(() => {
-    if (!allSchemes.length || !activeTab) return [];
+    if (!allSchemes.length) return [];
 
-    const buckets: { [key: string]: any[] } = {};
+    return allSchemes.filter((scheme: Scheme) => {
+      if (scheme.ACTIVE !== "Y") return false;
 
-    allSchemes.forEach((scheme: Scheme) => {
-      if (scheme.ACTIVE !== "Y") return;
       // Filter by selected metal category (gold, silver, diamond, platinum, all)
       if (selectedMetal !== "all") {
         const schemeNameLower = (getTranslatedText(scheme.SCHEMENAME, "en") || "").toLowerCase();
@@ -386,29 +375,29 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         const combined = `${schemeNameLower} ${schemeTypeLower} ${insTypeLower} ${savingTypeLower} ${descLower}`;
 
         if (selectedMetal === "silver" && !(combined.includes("silver") || combined.includes("வெள்ளி"))) {
-          return;
+          return false;
         }
         if (selectedMetal === "diamond" && !(combined.includes("diamond") || combined.includes("வைரம்"))) {
-          return;
+          return false;
         }
         if (selectedMetal === "platinum" && !(combined.includes("platinum") || combined.includes("பிளாட்டினம்"))) {
-          return;
+          return false;
         }
         if (selectedMetal === "old_gold" && !(combined.includes("old gold") || combined.includes("oldgold") || combined.includes("பழைய தங்கம்"))) {
-          return;
+          return false;
         }
         if (selectedMetal === "gold") {
           const isOtherMetalOrOldGold = combined.includes("silver") || combined.includes("diamond") || combined.includes("platinum") || combined.includes("old gold") || combined.includes("oldgold") || combined.includes("வெள்ளி") || combined.includes("வைரம்") || combined.includes("பிளாட்டினம்") || combined.includes("பழைய தங்கம்");
           if (isOtherMetalOrOldGold && !combined.includes("gold") && !combined.includes("தங்கம்")) {
-            return;
+            return false;
           }
           if (combined.includes("old gold") || combined.includes("oldgold") || combined.includes("பழைய தங்கம்")) {
-            return;
+            return false;
           }
         }
       }
 
-      const activeTabLower = activeTab.toLowerCase().trim();
+      // Filter by plan type (fixed, flexi, hybrid)
       const schemeTypeLower = (scheme.SCHEMETYPE || "").toLowerCase();
       const schemeNameLower = (getTranslatedText(scheme.SCHEMENAME, "en") || "").toLowerCase();
       const insTypeLower = (scheme.INS_TYPE || "").toLowerCase();
@@ -426,51 +415,16 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         scheme.scheme_plan_type_id === 3 ||
         scheme.SCHEME_PLAN_TYPE_ID === 3;
 
-      const isFlexiTab = activeTabLower === "flexi";
-      const isHybridTab = activeTabLower === "hybrid";
-      const matchesTabDirectly =
-        (isFlexiTab && isSchemeFlexi) || (isHybridTab && isSchemeHybrid);
-
-      const chits = scheme.chits || [];
-      const relevantChits = chits.filter(
-        (chit) => {
-          if (!chit || !chit.PAYMENT_FREQUENCY) return false;
-
-          const chitFreq = chit.PAYMENT_FREQUENCY.toLowerCase().trim();
-
-          if (chitFreq === activeTabLower) return true;
-
-          if (activeTabLower === "flexi") {
-            return chitFreq.includes("flexi") || chitFreq.includes("flexible");
-          }
-          if (activeTabLower === "hybrid") {
-            return chitFreq.includes("hybrid");
-          }
-
-          return false;
-        }
-      );
-
-      if (relevantChits.length > 0 || matchesTabDirectly) {
-        if (!buckets[activeTab.toLowerCase()]) {
-          buckets[activeTab.toLowerCase()] = [];
-        }
-
-        const chitsToUse = relevantChits.length > 0 ? relevantChits : chits;
-
-        buckets[activeTab.toLowerCase()].push({
-          ...scheme,
-          chits: chitsToUse,
-          relevantChits: chitsToUse.map((chit) => ({
-            CHITID: chit.CHITID || 0,
-            AMOUNT: parseFloat(chit.AMOUNT || "0") || 0,
-          })),
-        });
+      if (schemePlanType === "flexi") {
+        return isSchemeFlexi;
+      } else if (schemePlanType === "hybrid") {
+        return isSchemeHybrid;
+      } else {
+        // fixed: matches anything that is NOT flexi and NOT hybrid
+        return !isSchemeFlexi && !isSchemeHybrid;
       }
     });
-
-    return buckets[activeTab.toLowerCase()] || [];
-  }, [allSchemes, selectedMetal, activeTab]);
+  }, [allSchemes, selectedMetal, schemePlanType]);
 
   const groupedSchemesData = useMemo(() => {
     if (selectedMetal !== "all") return [];
@@ -1184,7 +1138,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
           <View style={styles.cardHeader}>
             <View style={styles.cardMainInfo}>
               <Text style={styles.newSchemeName} numberOfLines={2}>
-                {getTranslatedText(item.SCHEMENAME, language) || "Unnamed Scheme"}
+                {(getTranslatedText(item.SCHEMENAME, language) || "Unnamed Scheme").toUpperCase()}
               </Text>
               
               {min > 0 ? (
@@ -1261,7 +1215,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.gradientPrimary?.[0] || "#0b162c"} />
+      {!isNested && <StatusBar barStyle="light-content" backgroundColor={theme.colors.gradientPrimary?.[0] || "#0b162c"} />}
       <Stack.Screen options={{ headerShown: false }} />
       {/* Header */}
       {!isNested && (
@@ -1289,6 +1243,17 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
       {/* Metal Category Filter Bar */}
       <View style={styles.metalTabsWrapper}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.metalTabsScroll}>
+          <TouchableOpacity
+            onPress={() => setSelectedMetal("all")}
+            style={[styles.metalTabPill, selectedMetal === "all" && styles.metalTabPillAllActive]}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="grid-outline" size={14} color={selectedMetal === "all" ? "#FFF" : "#666"} />
+            <Text style={[styles.metalTabText, selectedMetal === "all" && { color: "#FFF" }]}>
+              {t("all") || "All Schemes"}
+            </Text>
+          </TouchableOpacity>
+
           {isVisible("showGoldScheme") && availableMetals.gold && (
             <TouchableOpacity
               onPress={() => setSelectedMetal("gold")}
@@ -1353,22 +1318,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               </Text>
             </TouchableOpacity>
           )}
-
-          <TouchableOpacity
-            onPress={() => setSelectedMetal("all")}
-            style={[styles.metalTabPill, selectedMetal === "all" && styles.metalTabPillAllActive]}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="grid-outline" size={14} color={selectedMetal === "all" ? "#FFF" : "#666"} />
-            <Text style={[styles.metalTabText, selectedMetal === "all" && { color: "#FFF" }]}>
-              {t("all") || "All Schemes"}
-            </Text>
-          </TouchableOpacity>
         </ScrollView>
       </View>
 
-      {/* Plan Type Selector (Fixed vs Flexi) - Only shown if both are available */}
-      {hasFlexiSchemes && hasFixedSchemes && (
+      {/* Plan Type Selector (Fixed vs Flexi) - Only shown if both are available and not All Schemes */}
+      {selectedMetal !== "all" && hasFlexiSchemes && hasFixedSchemes && (
         <View style={styles.planTypeWrapper}>
           <TouchableOpacity
             onPress={() => {
@@ -1405,8 +1359,8 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         </View>
       )}
 
-      {/* Sub-tabs for Fixed Schemes - Only shown if Fixed is selected */}
-      {schemePlanType === "fixed" && (
+      {/* Sub-tabs for Fixed Schemes - Hidden per user request */}
+      {false && selectedMetal !== "all" && schemePlanType === "fixed" && (
         <View 
           style={[
             styles.tabsWrapper,
@@ -1531,24 +1485,27 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         onRequestClose={closeDetailModal}
       >
         <View style={styles.modalOverlay}>
-          {/* Close button outside the modal container */}
-          <TouchableOpacity 
-            style={{
-              position: 'absolute',
-              top: Platform.OS === 'ios' ? 50 : 30,
-              alignSelf: 'center',
-              zIndex: 999,
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: 'rgba(0,0,0,0.5)',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }} 
-            onPress={closeDetailModal}
-          >
-            <Ionicons name="close" size={24} color="#fff" />
-          </TouchableOpacity>
+          {/* Close button stacked directly above the card content */}
+          <View style={{ alignItems: 'center', paddingBottom: 10, zIndex: 1000 }}>
+            <TouchableOpacity 
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 21,
+                backgroundColor: 'rgba(0,0,0,0.6)',
+                justifyContent: 'center',
+                alignItems: 'center',
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 4,
+                elevation: 5,
+              }} 
+              onPress={closeDetailModal}
+            >
+              <Ionicons name="close" size={26} color="#fff" />
+            </TouchableOpacity>
+          </View>
           <View style={styles.modalContentModern}>
             <View style={{
               flexDirection: 'row',
@@ -1564,18 +1521,18 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
             }}>
               <Text 
                 style={{ 
-                  fontSize: 14, 
-                  fontWeight: '700', 
-                  color: theme.colors.textPrimary || '#1E293B', 
+                  fontSize: 15, 
+                  fontWeight: '800', 
+                  color: theme.colors.textDark || '#0b162c', 
                   flex: 1, 
                   marginRight: 12,
-                  lineHeight: 18
+                  lineHeight: 19
                 }} 
                 numberOfLines={2} 
                 adjustsFontSizeToFit 
                 minimumFontScale={0.75}
               >
-                {getTranslatedText(selectedScheme?.SCHEMENAME, language) || "Scheme Details"}
+                {(getTranslatedText(selectedScheme?.SCHEMENAME, language) || "Scheme Details").toUpperCase()}
               </Text>
               <TouchableOpacity
                 onPress={() => {
@@ -1625,9 +1582,6 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               {selectedScheme && (
                 <>
                   <View style={styles.modernHeader}>
-                    <Text style={styles.modernTitle}>
-                      {getTranslatedText(selectedScheme.SCHEMENAME, language) || "Unnamed Scheme"}
-                    </Text>
                     {selectedScheme.SLOGAN && (
                       <Text style={styles.modernSlogan}>
                         {getTranslatedText(selectedScheme.SLOGAN as any, language)}
@@ -1807,11 +1761,11 @@ function getStyles(theme: any) { return StyleSheet.create({
     fontWeight: '700',
   },
   metalTabsWrapper: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.borderLight || '#f0f0f0',
   },
   metalTabsScroll: {
     gap: 8,
@@ -1823,9 +1777,9 @@ function getStyles(theme: any) { return StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: theme.colors.backgroundSecondary || '#f8f9fa',
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: theme.colors.borderLight || '#e9ecef',
     marginRight: 6,
     gap: 6,
   },
@@ -1856,19 +1810,19 @@ function getStyles(theme: any) { return StyleSheet.create({
   metalTabText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#495057',
+    color: theme.colors.textSecondary || '#495057',
   },
   metalTabTextActive: {
     color: '#1A1A1A',
     fontWeight: '700',
   },
   stickyModalFooter: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: Platform.OS === 'ios' ? 34 : 20,
     borderTopWidth: 1,
-    borderTopColor: '#F1F3F5',
+    borderTopColor: theme.colors.borderLight || '#F1F3F5',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.05,
@@ -1878,11 +1832,11 @@ function getStyles(theme: any) { return StyleSheet.create({
   stickyTitleText: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#1E293B',
+    color: theme.colors.textSecondary || '#1E293B',
   },
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'transparent',
   },
   headerGradient: {
     paddingTop: Platform.OS === 'ios' ? 12 : 30,
@@ -2408,7 +2362,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   modernHeader: {
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingTop: 16,
     paddingBottom: 10,
   },
   modernTitle: {

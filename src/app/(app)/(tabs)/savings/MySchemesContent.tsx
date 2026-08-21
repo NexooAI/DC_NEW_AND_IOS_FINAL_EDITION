@@ -118,6 +118,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
   const { language, user } = useGlobalStore();
   const params = useLocalSearchParams();
   const flatListRef = useRef<FlatList>(null);
+  const isDark = theme.colors.background === '#121212';
 
   const [savings, setSavings] = useState<Scheme[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -763,7 +764,6 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
 
         </LinearGradient>
       )}
-      <FilterToggle />
     </View>
   );
 
@@ -834,41 +834,60 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
     </View>
   );
 
+  const getTabIcon = (tab: string) => {
+    switch (tab) {
+      case "Active": return "play-circle-outline";
+      case "Matured": return "ribbon-outline";
+      case "Claimed": return "checkmark-done-circle-outline";
+      case "Drop": return "close-circle-outline";
+      default: return "help-circle-outline";
+    }
+  };
+
+  const getTabLabel = (tab: string) => {
+    switch (tab) {
+      case "Active": return t("active") || "Active";
+      case "Matured": return t("matured") || "Matured";
+      case "Claimed": return t("claimed") || "Claimed";
+      case "Drop": return t("dropped") || "Dropped";
+      default: return tab;
+    }
+  };
+
   // Filter Toggle UI (4 Status Tabs + Flexi/Fixed SubToggle)
   const FilterToggle = () => (
-    <View style={{ marginBottom: 20 }}>
+    <View style={styles.bottomTabBarContainer}>
       {/* Main Status Pill Tabs */}
-      <View style={styles.pillSwitcherContainer}>
-        <View style={styles.pillSwitcherBg}>
-          {["Active", "Matured", "Claimed", "Drop"].map((tab) => (
-            <TouchableOpacity
-              key={tab}
+      <View style={styles.bottomTabBar}>
+        {["Active", "Matured", "Claimed", "Drop"].map((tab) => (
+          <TouchableOpacity
+            key={tab}
+            style={[
+              styles.bottomTabItem,
+              selectedType === tab && styles.bottomTabActive
+            ]}
+            onPress={() => setSelectedType(tab as any)}
+            activeOpacity={0.9}
+          >
+            <Ionicons
+              name={getTabIcon(tab) as any}
+              size={18}
+              color={selectedType === tab ? (theme.colors.secondary || "#FFD700") : (isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)")}
+              style={{ marginBottom: 2 }}
+            />
+            <Text
               style={[
-                styles.pillTabItem,
-                selectedType === tab && styles.pillTabActive
+                styles.bottomTabText,
+                selectedType === tab && styles.bottomTabActiveText,
               ]}
-              onPress={() => setSelectedType(tab as any)}
-              activeOpacity={0.9}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
-              {selectedType === tab && (
-                <LinearGradient
-                  colors={['#FFD700', '#DAA520']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={StyleSheet.absoluteFill}
-                />
-              )}
-              <Text
-                style={[
-                  styles.pillTabText,
-                  selectedType === tab && styles.pillTabActiveText,
-                ]}
-              >
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+              {getTabLabel(tab)}
+            </Text>
+            {selectedType === tab && <View style={styles.activeIndicator} />}
+          </TouchableOpacity>
+        ))}
       </View>
 
       {/* Sub Filter: Flexi vs Fixed Pill Tabs */}
@@ -916,139 +935,111 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
 
   // Skeleton loading state component
   const SkeletonLoadingState = () => (
-    <View style={{ flex: 1 }}>
-      <ImageBackground
-        source={require("../../../../../assets/images/bg_new.jpg")}
-        style={{ flex: 1 }}
-        resizeMode="cover"
-      >
-        <LinearGradient
-          colors={[
-            "rgba(0, 0, 0, 0.1)",
-            "rgba(0, 0, 0, 0.05)",
-            "rgba(0, 0, 0, 0.02)",
-          ]}
-          style={StyleSheet.absoluteFillObject}
-        />
-        <View style={{ flex: 1 }}>
-          {/* Header Skeleton */}
-          <View style={[styles.pageHeaderContainer, { paddingTop: top + 12 }]}>
-            <Text style={styles.pageHeaderTitle}>
-              {t("mySchemes") || "My Schemes"}
-            </Text>
-          </View>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <View style={{ flex: 1 }}>
+        {/* Header Skeleton */}
+        <View style={[styles.pageHeaderContainer, { paddingTop: top + 12 }]}>
+          <Text style={styles.pageHeaderTitle}>
+            {t("mySchemes") || "My Schemes"}
+          </Text>
+        </View>
 
-          <ScrollView
-            contentContainerStyle={{
-              paddingBottom: bottomPadding,
-            }}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Portfolio Skeleton */}
-            <View style={styles.headerContainer}>
-              <SkeletonSavingsPortfolio />
+        <ScrollView
+          contentContainerStyle={{
+            paddingBottom: bottomPadding,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Portfolio Skeleton */}
+          <View style={styles.headerContainer}>
+            <SkeletonSavingsPortfolio />
 
-              {/* Section Title Skeleton */}
-              <View style={{ alignItems: "center", marginVertical: 20 }}>
-                <View style={{ width: 180, height: 22, backgroundColor: "#E1E9EE", borderRadius: 4 }} />
-              </View>
-
-              {/* Filter Toggle Skeleton */}
-              <View style={{
-                flexDirection: "row",
-                backgroundColor: "#1a2a39",
-                borderRadius: 40,
-                padding: 6,
-                marginBottom: 20,
-              }}>
-                <View style={{ flex: 1, height: 40, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 30, marginHorizontal: 2 }} />
-                <View style={{ flex: 1, height: 40, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 30, marginHorizontal: 2 }} />
-              </View>
+            {/* Section Title Skeleton */}
+            <View style={{ alignItems: "center", marginVertical: 20 }}>
+              <View style={{ width: 180, height: 22, backgroundColor: "#E1E9EE", borderRadius: 4 }} />
             </View>
 
-            {/* Savings Card Skeletons */}
-            <SkeletonSavingsCard />
-            <SkeletonSavingsCard style={{ marginTop: 16 }} />
-            <SkeletonSavingsCard style={{ marginTop: 16 }} />
-          </ScrollView>
-        </View>
-      </ImageBackground>
+            {/* Filter Toggle Skeleton */}
+            <View style={{
+              flexDirection: "row",
+              backgroundColor: "#1a2a39",
+              borderRadius: 40,
+              padding: 6,
+              marginVertical: 10,
+            }}>
+              <View style={{ flex: 1, height: 40, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 30, marginHorizontal: 2 }} />
+              <View style={{ flex: 1, height: 40, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 30, marginHorizontal: 2 }} />
+            </View>
+          </View>
+
+          {/* Savings Card Skeletons */}
+          <SkeletonSavingsCard />
+          <SkeletonSavingsCard style={{ marginTop: 16 }} />
+          <SkeletonSavingsCard style={{ marginTop: 16 }} />
+        </ScrollView>
+      </View>
     </View>
   );
 
   // Render loading state when no user
   const renderLoadingState = () => (
-    <SafeAreaView className="flex-1 justify-center items-center bg-white">
+    <SafeAreaView style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background }}>
       <ActivityIndicator size="large" color={theme.colors.secondary} />
     </SafeAreaView>
   );
 
   // Render error state
   const renderErrorState = () => (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <ErrorState />
     </SafeAreaView>
   );
 
   // Render main content
   const renderMainContent = () => (
-    <View style={{ flex: 1 }}>
-      <ImageBackground
-        source={require("../../../../../assets/images/bg_new.jpg")}
-        style={{ flex: 1 }}
-        resizeMode="cover"
-      >
-        <LinearGradient
-          colors={[
-            "rgba(0, 0, 0, 0.1)",
-            "rgba(0, 0, 0, 0.05)",
-            "rgba(0, 0, 0, 0.02)",
-          ]}
-          style={StyleSheet.absoluteFillObject}
+    <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+      <View style={{ flex: 1 }}>
+        {/* Custom Header with Page Name (hidden if nested) */}
+        {!isNested && (
+          <View style={[styles.pageHeaderContainer, { paddingTop: 12 }]}>
+            <Text style={styles.pageHeaderTitle}>
+              {t("mySchemes") || "My Schemes"}
+            </Text>
+          </View>
+        )}
+
+        <FlatList
+          ref={flatListRef}
+          data={listData}
+          keyExtractor={(item, index) => {
+            if (item.isHeader) {
+              return `header_${item.title}`;
+            }
+            const type = item.savingType || "saving";
+            const id = item.id || item.investmentId || index;
+            return `${type}_${id}`;
+          }}
+          renderItem={renderSchemeItem}
+          ListHeaderComponent={savings.length > 0 ? <ListHeader /> : null}
+          ListEmptyComponent={<EmptyState isPageEmpty={savings.length === 0} />}
+          contentContainerStyle={{
+            paddingBottom: bottomPadding,
+            flexGrow: 1,
+          }}
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          initialNumToRender={10}
+          onScrollToIndexFailed={(info) => {
+            const wait = new Promise(resolve => setTimeout(resolve, 500));
+            wait.then(() => {
+              flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+            });
+          }}
         />
-
-        <View style={{ flex: 1 }}>
-          {/* Custom Header with Page Name (hidden if nested) */}
-          {!isNested && (
-            <View style={[styles.pageHeaderContainer, { paddingTop: 12 }]}>
-              <Text style={styles.pageHeaderTitle}>
-                {t("mySchemes") || "My Schemes"}
-              </Text>
-            </View>
-          )}
-
-          <FlatList
-            ref={flatListRef}
-            data={listData}
-            keyExtractor={(item, index) => {
-              if (item.isHeader) {
-                return `header_${item.title}`;
-              }
-              const type = item.savingType || "saving";
-              const id = item.id || item.investmentId || index;
-              return `${type}_${id}`;
-            }}
-            renderItem={renderSchemeItem}
-            ListHeaderComponent={savings.length > 0 ? <ListHeader /> : null}
-            ListEmptyComponent={<EmptyState isPageEmpty={savings.length === 0} />}
-            contentContainerStyle={{
-              paddingBottom: bottomPadding,
-              flexGrow: 1,
-            }}
-            showsVerticalScrollIndicator={false}
-            removeClippedSubviews={true}
-            maxToRenderPerBatch={10}
-            windowSize={5}
-            initialNumToRender={10}
-            onScrollToIndexFailed={(info) => {
-              const wait = new Promise(resolve => setTimeout(resolve, 500));
-              wait.then(() => {
-                flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
-              });
-            }}
-          />
-        </View>
-      </ImageBackground>
+        <FilterToggle />
+      </View>
     </View>
   );
 
@@ -1920,6 +1911,59 @@ function getStyles(theme: any) {
       alignItems: 'center',
       borderRadius: 18,
       overflow: 'hidden',
+    },
+    bottomTabBarContainer: {
+      backgroundColor: theme.colors.background || "#fafafa",
+      borderTopWidth: 1.5,
+      borderTopColor: theme.colors.borderLight || "rgba(0,0,0,0.05)",
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      paddingTop: 10,
+      paddingBottom: Platform.OS === 'ios' ? 24 : 10,
+      paddingHorizontal: 16,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+      elevation: 10,
+    },
+    bottomTabBar: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      backgroundColor: theme.colors.backgroundSecondary || "rgba(0,0,0,0.03)",
+      borderRadius: 18,
+      padding: 4,
+      borderWidth: 1,
+      borderColor: theme.colors.borderLight || "rgba(0,0,0,0.04)",
+    },
+    bottomTabItem: {
+      flex: 1,
+      paddingVertical: 10,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 14,
+      position: "relative",
+    },
+    bottomTabActive: {
+      backgroundColor: theme.colors.primary || "#0b162c",
+    },
+    bottomTabText: {
+      fontSize: moderateScale(12.5),
+      fontWeight: "700",
+      color: theme.colors.textSecondary || "rgba(0,0,0,0.5)",
+    },
+    bottomTabActiveText: {
+      color: theme.colors.secondary || "#FFD700",
+      fontWeight: "900",
+    },
+    activeIndicator: {
+      position: "absolute",
+      top: 2,
+      width: 12,
+      height: 3,
+      backgroundColor: theme.colors.secondary || "#FFD700",
+      borderRadius: 1.5,
     },
   })
 }
