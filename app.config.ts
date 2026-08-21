@@ -15,7 +15,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     const projectId = isIos ? "07310377-0452-4d15-8e38-d42462be6fd8" : "912daab2-d11c-42ff-9072-62ddfb4489c0";
     const owner = isIos ? "dcjewellers" : "mnvgroups07";
 
-    const version = isIos ? "1.0.0" : "1.0.0";
+    const version = isIos ? "1.0.0" : "1.0.1";
 
     return {
         ...config,
@@ -44,7 +44,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         android: {
             package: bundleIdentifier,
             googleServicesFile: "./google-services.json",
-            versionCode: 1,
+            versionCode: 2,
 
             splash: {
                 image: "./assets/images/playstore-icon.png",
