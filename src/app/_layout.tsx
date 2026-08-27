@@ -55,15 +55,25 @@ export default function RootLayout() {
     }
   }, [pathname, isLoggedIn]);
 
-  // Log login success when isLoggedIn transitions to true
+  // Log login success when isLoggedIn transitions to true and process pending notifications
+  const pendingNotificationRef = useRef<any>(null);
   const prevIsLoggedInRef = useRef(isLoggedIn);
   useEffect(() => {
     if (isLoggedIn && !prevIsLoggedInRef.current) {
       logAppEvent('login_success');
       logDeviceInfo(true); // Force device info log on login
+
+      if (pendingNotificationRef.current) {
+        const data = pendingNotificationRef.current;
+        logger.log("🔄 Processing pending notification navigation after login:", data);
+        pendingNotificationRef.current = null;
+        setTimeout(() => {
+          handleNotificationNavigation(data);
+        }, 1000);
+      }
     }
     prevIsLoggedInRef.current = isLoggedIn;
-  }, [isLoggedIn]);
+  }, [isLoggedIn, handleNotificationNavigation]);
 
   const notificationResponseRef = useRef<any>(null);
   const isNavigationReady = useRef(false);
@@ -85,10 +95,11 @@ export default function RootLayout() {
 
   const handleNotificationNavigation = useCallback(
     (data: NotificationData) => {
-      logger.log("ðŸ”” Handling notification navigation with data:", data);
+      logger.log("🔔 Handling notification navigation with data:", data);
 
       if (!isLoggedIn) {
-        logger.log("âš ï¸ User not logged in, ignoring notification navigation");
+        logger.log("⚠️ User not logged in, storing notification for later navigation");
+        pendingNotificationRef.current = data;
         return;
       }
 

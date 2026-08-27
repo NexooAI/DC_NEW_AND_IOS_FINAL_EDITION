@@ -275,7 +275,9 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                 isValidString(chit.PAYMENT_FREQUENCY)
               ) {
                 const normalizedFreq = chit.PAYMENT_FREQUENCY.trim();
-                tabTypes.add(normalizedFreq);
+                if (normalizedFreq.toLowerCase() !== "all") {
+                  tabTypes.add(normalizedFreq);
+                }
 
                 if (
                   normalizedFreq.toLowerCase().includes("flexi") ||

@@ -1554,5 +1554,8 @@
   "install_reward": "Install Reward",
   "joined": "Joined",
   "status_credited_investment": "Credited to Investment",
-  "inviteFriendsOnWhatsApp": "Invite friends on WhatsApp"
+  "inviteFriendsOnWhatsApp": "Invite friends on WhatsApp",
+  "submitKyc": "Submit KYC",
+  "updateKyc": "Update KYC",
+  "oldGoldTermsDescription": "1. Old Gold Scheme is valid for 11 months.\n2. Gold ornaments deposited must be of acceptable purity.\n3. Zero wastage and zero making charges are applicable only on gold ornaments purchased of the same weight upon maturity.\n4. Scheme cannot be closed prematurely without applicable charges.\n5. Government taxes and GST are extra as applicable at the time of purchase."
 }

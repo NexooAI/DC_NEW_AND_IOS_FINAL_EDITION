@@ -127,9 +127,39 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = React.useRef<FlatList>(null);
+  const [oldGoldTerms, setOldGoldTerms] = useState<string | null>(null);
+  const [loadingTerms, setLoadingTerms] = useState(false);
 
   const currentLanguage = locale;
   const showSchemsPage = isVisible("showSchemsPage");
+
+  useEffect(() => {
+    if (selectedScheme && checkIsOldGold(selectedScheme) && modalVisible) {
+      const fetchOldGoldTerms = async () => {
+        try {
+          setLoadingTerms(true);
+          const response = await api.get("/policies/type/old_gold_terms");
+          if (response.data && response.data.success && response.data.data) {
+            const policyData = response.data.data;
+            const appLanguage = locale || "en";
+            const targetKey = `description_${appLanguage}`;
+            let terms = policyData[targetKey] || policyData.description || policyData.content || "";
+            if (!terms && appLanguage === "mal") terms = policyData.description_mal || "";
+            if (!terms && appLanguage === "ta") terms = policyData.description_ta || "";
+            if (terms) {
+              setOldGoldTerms(terms);
+              return;
+            }
+          }
+        } catch (error) {
+          logger.error("Error fetching old gold terms from backend:", error);
+        } finally {
+          setLoadingTerms(false);
+        }
+      };
+      fetchOldGoldTerms();
+    }
+  }, [selectedScheme, modalVisible, locale]);
 
   useEffect(() => {
     if (schemes.length > 0 && initialSchemeId) {
@@ -1184,9 +1214,13 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
           {isOldGold && (
             <View style={styles.modernSection}>
               <Text style={styles.modernSectionTitle}>{t("termsAndConditions") || "Terms & Conditions"}</Text>
-              <Text style={styles.modernDescription}>
-                {t("termsAndConditionsDiscription") || "Welcome to DC Jewellers..."}
-              </Text>
+              {loadingTerms ? (
+                <ActivityIndicator size="small" color={accentColor} style={{ marginVertical: 10 }} />
+              ) : (
+                <Text style={styles.modernDescription}>
+                  {oldGoldTerms || t("oldGoldTermsDescription") || "Welcome to DC Jewellers..."}
+                </Text>
+              )}
             </View>
           )}
 

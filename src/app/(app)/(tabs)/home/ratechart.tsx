@@ -201,9 +201,9 @@ export default function RateChart() {
         decimalPlaces: 2,
         color: (opacity = 1) => {
             if (selectedRateType === "gold") {
-                return `rgba(255, 215, 0, ${opacity})`; // Gold color
+                return `rgba(218, 165, 32, ${opacity})`; // Pure gold color
             } else {
-                return `rgba(192, 192, 192, ${opacity})`; // Silver color
+                return `rgba(120, 130, 140, ${opacity})`; // Pure silver/slate color
             }
         },
         labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
@@ -211,13 +211,13 @@ export default function RateChart() {
             borderRadius: 16,
         },
         propsForDots: {
-            r: "4",
+            r: "5",
             strokeWidth: "2",
-            stroke: selectedRateType === "gold" ? "#FFD700" : "#C0C0C0",
+            stroke: selectedRateType === "gold" ? "#DAA520" : "#78828c",
         },
         propsForBackgroundLines: {
-            strokeDasharray: "", // solid lines
-            stroke: theme.colors.borderLight,
+            strokeDasharray: "4 4", // sleek dashed grid lines
+            stroke: theme.colors.borderLight || "rgba(0,0,0,0.06)",
             strokeWidth: 1,
         },
     };
@@ -279,6 +279,51 @@ export default function RateChart() {
             >
                 {/* Header Section */}
                 <View style={styles.headerSection}>
+                    {/* Rate Type Selector Toggles */}
+                    <View style={styles.toggleContainer}>
+                        <TouchableOpacity
+                            style={[
+                                styles.toggleButton,
+                                selectedRateType === "gold" && styles.toggleButtonActive,
+                            ]}
+                            onPress={() => setSelectedRateType("gold")}
+                        >
+                            <Ionicons
+                                name="ribbon"
+                                size={18}
+                                color={selectedRateType === "gold" ? "#fff" : theme.colors.textGrey || "#666"}
+                            />
+                            <Text
+                                style={[
+                                    styles.toggleButtonText,
+                                    selectedRateType === "gold" && styles.toggleButtonTextActive,
+                                ]}
+                            >
+                                {t("rateChart_gold") || "Gold"}
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[
+                                styles.toggleButton,
+                                selectedRateType === "silver" && styles.toggleButtonActive,
+                            ]}
+                            onPress={() => setSelectedRateType("silver")}
+                        >
+                            <Ionicons
+                                name="shield"
+                                size={18}
+                                color={selectedRateType === "silver" ? "#fff" : theme.colors.textGrey || "#666"}
+                            />
+                            <Text
+                                style={[
+                                    styles.toggleButtonText,
+                                    selectedRateType === "silver" && styles.toggleButtonTextActive,
+                                ]}
+                            >
+                                {t("rateChart_silver") || "Silver"}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Current Rate Display */}
                     {currentRate !== null && (

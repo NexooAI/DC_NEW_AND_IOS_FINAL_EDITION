@@ -371,11 +371,12 @@ const ProfileScreen = () => {
           t("failedToUpdateProfilePleaseTryAgain")
         );
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error("Profile update error:", error);
+      const serverMessage = error.response?.data?.message || error.response?.data?.error || error.message;
       Alert.alert(
         t("errorTitle") || "Error",
-        t("failedToUpdateProfilePleaseCheckInternet")
+        serverMessage || t("failedToUpdateProfilePleaseCheckInternet") || "Failed to update profile. Please try again."
       );
     }
   };

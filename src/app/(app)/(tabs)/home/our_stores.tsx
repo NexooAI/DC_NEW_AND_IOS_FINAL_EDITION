@@ -62,8 +62,8 @@ if (Platform.OS === "web") {
   Marker = () => null;
 } else {
   const maps = require("react-native-maps");
-  MapView = maps.default;
-  Marker = maps.Marker;
+  MapView = maps.default || maps;
+  Marker = maps.Marker || (maps.default && maps.default.Marker) || MapView.Marker;
 }
 
 const StoreLocator = () => {

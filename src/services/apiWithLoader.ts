@@ -143,8 +143,9 @@ export const apiWithLoader = {
     },
     updateProfile: async (userId: number | any, userData?: any) => {
       const data = userData !== undefined ? userData : userId;
+      const targetUserId = userData !== undefined ? userId : null;
       return LoadingService.withLoading(
-        () => api.put('/user/profile', data),
+        () => api.put(targetUserId ? `/users/${targetUserId}` : '/user/profile', data),
         'Updating your profile...'
       );
     },

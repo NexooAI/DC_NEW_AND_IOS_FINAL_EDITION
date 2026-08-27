@@ -166,7 +166,12 @@ export default function GoldAdvanceScreen() {
         setLoading(true);
         const response = await api.get("/advance-booking-config?status=ACTIVE");
         if (response.data && response.data.success && Array.isArray(response.data.data) && response.data.data.length > 0) {
-          const mapped = response.data.data.map((config: any, index: number) => {
+          const sortedConfigs = [...response.data.data].sort((a: any, b: any) => {
+            const valA = parseFloat(a.percentage) || 0;
+            const valB = parseFloat(b.percentage) || 0;
+            return valA - valB;
+          });
+          const mapped = sortedConfigs.map((config: any, index: number) => {
             const pct = config.percentage;
             const days = config.booking_days;
             const isSilver = config.metal_type?.toUpperCase() === 'SILVER';
@@ -517,7 +522,7 @@ export default function GoldAdvanceScreen() {
                     style={styles.enquireButtonNew}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleInfo(activeOption);
+                      handleEnquire(activeOption);
                     }}
                     activeOpacity={0.8}
                   >
@@ -528,7 +533,7 @@ export default function GoldAdvanceScreen() {
                       end={{ x: 1, y: 0 }}
                     >
                       <Text style={activeOption.metalType === 'SILVER' ? styles.buttonTextNewSilver : styles.buttonTextNew}>
-                        {t("knowMore") || "Know More"}
+                        {t("joinThisSchemes") || "Join Now"}
                       </Text>
                     </LinearGradient>
                   </TouchableOpacity>

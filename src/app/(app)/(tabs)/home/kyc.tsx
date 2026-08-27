@@ -27,7 +27,7 @@ import { theme } from "@/constants/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useFocusEffect } from "@react-navigation/native";
-import { t } from "@/i18n";
+import { useTranslation } from "@/hooks/useTranslation";
 
 import { logger } from "@/utils/logger";
 import { formatDate as globalFormatDate } from "@/utils/dateTimeUtils";
@@ -109,6 +109,7 @@ const formatDateToDDMMYYYY = (dateVal: string | Date | number | null | undefined
 };
 
 export default function KycForm() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { from } = useLocalSearchParams();
   const insets = useSafeAreaInsets();

@@ -165,6 +165,14 @@ export default function OldGoldScreen() {
       return;
     }
 
+    if (description && description.length > 22) {
+      Alert.alert(
+        t("error") || "Error",
+        "Ornament description should be a maximum of 22 characters."
+      );
+      return;
+    }
+
     setSubmittingEnquiry(true);
     try {
       const payload = {
@@ -534,6 +542,7 @@ export default function OldGoldScreen() {
             placeholderTextColor="#666"
             value={description}
             onChangeText={setDescription}
+            maxLength={22}
             multiline
           />
 
@@ -679,6 +688,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: wp(4),
+    flexGrow: 1,
   },
   loaderContainer: {
     flex: 1,
