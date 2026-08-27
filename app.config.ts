@@ -15,7 +15,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     const projectId = isIos ? "07310377-0452-4d15-8e38-d42462be6fd8" : "912daab2-d11c-42ff-9072-62ddfb4489c0";
     const owner = isIos ? "dcjewellers" : "mnvgroups07";
 
-    const version = isIos ? "1.0.0" : "1.0.1";
+    const version = isIos ? "1.0.1" : "1.0.2";
 
     return {
         ...config,
@@ -44,7 +44,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         android: {
             package: bundleIdentifier,
             googleServicesFile: "./google-services.json",
-            versionCode: 2,
+            versionCode: 3,
 
             splash: {
                 image: "./assets/images/playstore-icon.png",
@@ -81,7 +81,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             icon: "./assets/images/playstore-icon.png",
             bundleIdentifier: bundleIdentifier,
             googleServicesFile: "./GoogleService-Info.plist",
-            buildNumber: "1",
+            buildNumber: "2",
             jsEngine: "hermes",
             config: {
                 googleMapsApiKey: "AIzaSyAkuOcNddEvozQR4D4yPdTrbwXCiPsuEFc",
@@ -183,6 +183,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             "./plugins/withSmsRetriever",
             "./plugins/with-proguard.js",
             "./plugins/withAndroidQueries.js",
+            "./plugins/withMainActivityTheme",
             "@react-native-firebase/app",
             "@react-native-firebase/crashlytics",
         ],
