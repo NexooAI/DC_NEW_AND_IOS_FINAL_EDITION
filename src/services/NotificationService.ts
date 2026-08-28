@@ -336,13 +336,20 @@ class NotificationService {
         // If no captured payload, fall back to constructing it manually
         if (!fcmData) {
           logger.log('⚠️ No captured getExpoPushToken payload found, using fallback construction');
+
+          const dynamicAppId = Platform.OS === 'ios'
+            ? (Constants.expoConfig?.ios?.bundleIdentifier || 'com.nexooai.srithangathamarai')
+            : (Constants.expoConfig?.android?.package || 'com.nexooai.srithangathamarai');
+
+          const dynamicProjectId = Constants.expoConfig?.extra?.eas?.projectId || '912daab2-d11c-42ff-9072-62ddfb4489c0';
+
           fcmData = {
             type: "fcm",
             deviceId: generateUUID(), // Generate UUID like in the screenshot
             development: __DEV__, // true for development, false for production
-            appId: "com.nexooai.dcjewellery", // Use the exact app bundle ID
+            appId: dynamicAppId, // Dynamically use the active app bundle ID
             deviceToken: fcmToken, // This is the actual FCM token
-            projectId: "9af1745a-105c-44f9-9e53-a111bc6ed9ce" // Use the exact project ID
+            projectId: dynamicProjectId // Dynamically use the active project ID
           };
         } else {
           // Use the exact same payload without modifying deviceToken

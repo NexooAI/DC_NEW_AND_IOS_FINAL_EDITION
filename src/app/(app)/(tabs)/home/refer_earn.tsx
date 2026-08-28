@@ -91,7 +91,7 @@ export default function ReferCodeScreen() {
     Alert.alert(t("copied") || "Copied", t("referral_code_copied") || "Referral Code Copied");
   };
 
-  const shareMessage = (t("refer_earn_share_message") || "Use my referral code {code} to sign up and earn rewards! Click here to download the app: https://dcjewellers.org/refer?code={code}").replace(/{code}/g, code);
+  const shareMessage = (t("refer_earn_share_message") || "Use my referral code {code} to sign up and earn rewards! Click here to download the app: https://api.srithangathamarai.com/refer?code={code}").replace(/{code}/g, code);
 
   const onShare = async () => {
     try {
@@ -411,17 +411,17 @@ export default function ReferCodeScreen() {
               month: 'short',
               year: 'numeric'
             });
-            
+
             return (
               <View key={`${item.type}_${item.id || index}`} style={styles.referralItem}>
                 <View style={[
                   styles.referralIcon,
                   !isReferral && { backgroundColor: 'rgba(244, 67, 54, 0.05)' }
                 ]}>
-                  <Ionicons 
-                    name={isReferral ? "person" : "gift"} 
-                    size={20} 
-                    color={isReferral ? "#004B40" : "#F44336"} 
+                  <Ionicons
+                    name={isReferral ? "person" : "gift"}
+                    size={20}
+                    color={isReferral ? "#004B40" : "#F44336"}
                   />
                 </View>
                 <View style={{ flex: 1 }}>

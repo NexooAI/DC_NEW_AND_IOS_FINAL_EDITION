@@ -10,7 +10,7 @@ const themeConfig = {
   owner: "mnvgroups07",
   slug: "srithangathamarai",
   enableDashboard: false,
-  playStoreUrl: "https://play.google.com/store/apps/details?id=com.nexooai.dcjewellery&hl=en_IN",
+  playStoreUrl: "https://play.google.com/store/apps/details?id=com.nexooai.srithangathamarai&hl=en_IN",
   appStoreUrl: "https://apps.apple.com/us/app/dc-jewellers-gold-diamonds/id6755081937",
 };
 

@@ -128,16 +128,16 @@ const getDummyData = (t: (key: string) => string) => ({
     },
   },
   sliderImages: [
-    require("../../../../../assets/images/slider1.png"),
-    require("../../../../../assets/images/slider1.png"),
-    require("../../../../../assets/images/slider1.png"),
-    require("../../../../../assets/images/slider1.png"),
+    require("../../../../../assets/images/slider.png"),
+    require("../../../../../assets/images/slider.png"),
+    require("../../../../../assets/images/slider.png"),
+    require("../../../../../assets/images/slider.png"),
   ],
   defaultPopups: [
     {
       id: 1,
       title: t("welcomeToDigitalGold"),
-      image: require("../../../../../assets/images/slider1.png"),
+      image: require("../../../../../assets/images/slider.png"),
       description: t("startYourGoldSavingsJourney"),
       actionText: t("getStarted"),
       actionUrl: "/(app)/(tabs)/home/schemes",
@@ -145,7 +145,7 @@ const getDummyData = (t: (key: string) => string) => ({
     {
       id: 2,
       title: t("specialGoldOffer"),
-      image: require("../../../../../assets/images/slider1.png"),
+      image: require("../../../../../assets/images/slider.png"),
       description: t("limitedTimeOfferOnGoldSchemes"),
       actionText: t("viewOffers"),
       actionUrl: "/(app)/(tabs)/home/schemes",
@@ -153,7 +153,7 @@ const getDummyData = (t: (key: string) => string) => ({
     {
       id: 3,
       title: t("goldRateUpdates"),
-      image: require("../../../../../assets/images/slider1.png"),
+      image: require("../../../../../assets/images/slider.png"),
       description: t("stayUpdatedWithLiveGoldRates"),
       actionText: t("checkRates"),
       actionUrl: "#", // Live rates page removed
@@ -1979,7 +1979,7 @@ export default function Home() {
           name: getTranslatedText(selectedScheme?.SCHEMENAME as any, language) || "Unnamed Scheme",
           description: getTranslatedText(selectedScheme?.DESCRIPTION as any, language) || "No description available",
           type: targetTab,
-          chits: relevantChits,
+          chits: relevantChits.length > 0 ? relevantChits : chits,
           schemeType: isFlexi ? "flexi" : "fixed",
           activeTab: targetTab,
           benefits: selectedScheme?.BENEFITS || [],

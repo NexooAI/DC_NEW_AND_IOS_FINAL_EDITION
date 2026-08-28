@@ -54,10 +54,6 @@ import { getImageSource } from "@/utils/imageUtils";
 const borderRadius = getBorderRadius();
 
 const ornamentImages = [
-  require("../../../assets/images/slider1.png"),
-  require("../../../assets/images/banner.png"),
-  require("../../../assets/images/banner2.png"),
-  require("../../../assets/images/scheme1.jpg"),
 ];
 
 // Simple Language Switcher Component

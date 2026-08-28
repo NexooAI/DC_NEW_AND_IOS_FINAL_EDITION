@@ -28,6 +28,7 @@ import { theme } from "@/constants/theme";
 import { userAPI } from "@/services/api";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
+import { useTranslation } from "@/hooks/useTranslation";
 
 import { logger } from '@/utils/logger';
 // Utility function to format date
@@ -391,6 +392,7 @@ const NotificationModal = ({
   router: any;
 }) => {
   const theme = useAppTheme();
+  const { t } = useTranslation();
   if (!notification) return null;
 
   return (
@@ -458,36 +460,87 @@ const NotificationModal = ({
             </Text>
 
             <View style={{ flexDirection: "row", marginTop: 24, justifyContent: "space-between" }}>
-              <TouchableOpacity
-                onPress={() => {
-                  onClose();
-                  router.push("/home/ratechart");
-                }}
-                style={{
-                  flex: 1,
-                  backgroundColor: theme.colors.primary || "#850111",
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  alignItems: "center",
-                  marginRight: 10,
-                }}
-              >
-                <Text style={{ fontSize: 16, fontWeight: "700", color: "white" }}>Rate Chart</Text>
-              </TouchableOpacity>
+              {(() => {
+                const getNotificationAction = () => {
+                  const type = notification.type ? notification.type.toLowerCase() : "";
+                  switch (type) {
+                    case "offer":
+                    case "offers":
+                      return {
+                        label: t("viewOffers") || "View Offers",
+                        route: "/(app)/(tabs)/home/offers",
+                      };
+                    case "rate":
+                    case "rates":
+                      return {
+                        label: t("rateChart") || "Rate Chart",
+                        route: "/home/ratechart",
+                      };
+                    case "transaction":
+                    case "transactions":
+                      return {
+                        label: t("viewSavings") || "View Savings",
+                        route: "/(tabs)/savings",
+                      };
+                    default:
+                      return null;
+                  }
+                };
 
-              <TouchableOpacity
-                onPress={onClose}
-                style={{
-                  flex: 1,
-                  backgroundColor: theme.colors.backgroundSecondary || "#E0E0E0",
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  alignItems: "center",
-                  marginLeft: 10,
-                }}
-              >
-                <Text style={{ fontSize: 16, fontWeight: "600", color: "#666" }}>Dismiss</Text>
-              </TouchableOpacity>
+                const action = getNotificationAction();
+
+                if (action) {
+                  return (
+                    <>
+                      <TouchableOpacity
+                        onPress={() => {
+                          onClose();
+                          router.push(action.route);
+                        }}
+                        style={{
+                          flex: 1,
+                          backgroundColor: theme.colors.primary || "#850111",
+                          paddingVertical: 14,
+                          borderRadius: 12,
+                          alignItems: "center",
+                          marginRight: 10,
+                        }}
+                      >
+                        <Text style={{ fontSize: 16, fontWeight: "700", color: "white" }}>{action.label}</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={onClose}
+                        style={{
+                          flex: 1,
+                          backgroundColor: theme.colors.backgroundSecondary || "#E0E0E0",
+                          paddingVertical: 14,
+                          borderRadius: 12,
+                          alignItems: "center",
+                          marginLeft: 10,
+                        }}
+                      >
+                        <Text style={{ fontSize: 16, fontWeight: "600", color: "#666" }}>{t("dismiss") || "Dismiss"}</Text>
+                      </TouchableOpacity>
+                    </>
+                  );
+                }
+
+                return (
+                  <TouchableOpacity
+                    onPress={onClose}
+                    style={{
+                      flex: 1,
+                      backgroundColor: theme.colors.backgroundSecondary || "#E0E0E0",
+                      paddingVertical: 14,
+                      borderRadius: 12,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ fontSize: 16, fontWeight: "600", color: "#666" }}>{t("dismiss") || "Dismiss"}</Text>
+                  </TouchableOpacity>
+                );
+              })()}
             </View>
           </View>
         </Animated.View>

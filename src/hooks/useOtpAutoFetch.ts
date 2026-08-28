@@ -7,13 +7,13 @@ import Constants from 'expo-constants';
 
 // Import SMS Retriever for Android - with safety checks
 // Dynamically required to avoid Expo Go crashes
-const getSmsRetriever = () => {
+const getOtpVerify = () => {
   // Prevent require in Expo Go which causes "Cannot read property 'requestPhoneNumber' of null"
   if (Constants.executionEnvironment === 'storeClient') return null;
 
   if (Platform.OS !== 'android') return null;
   try {
-    return require('react-native-sms-retriever').default;
+    return require('@pushpendersingh/react-native-otp-verify');
   } catch (e) {
     return null;
   }
@@ -22,12 +22,9 @@ const getSmsRetriever = () => {
 let SmsRetrieverAvailable = false;
 
 if (Platform.OS === 'android') {
-  const SmsRetriever = getSmsRetriever();
-  if (SmsRetriever && typeof (SmsRetriever as any).startSmsRetriever === 'function') {
+  const OtpVerify = getOtpVerify();
+  if (OtpVerify && typeof OtpVerify.startSmsRetriever === 'function') {
     SmsRetrieverAvailable = true;
-  } else {
-    // SMS Retriever not available - likely needs native rebuild
-    // console.log('SMS Retriever not available. Run "npx expo run:android" to rebuild.');
   }
 }
 
@@ -76,9 +73,9 @@ export const useOtpAutoFetch = ({
 
   // Start SMS listening for Android using SMS Retriever API
   const startSmsListener = async () => {
-    const SmsRetriever = getSmsRetriever();
+    const OtpVerify = getOtpVerify();
 
-    if (Platform.OS !== 'android' || !SmsRetriever) {
+    if (Platform.OS !== 'android' || !OtpVerify) {
       // SMS Retriever not available - silently skip
       return;
     }
@@ -87,9 +84,9 @@ export const useOtpAutoFetch = ({
       // Get the App Hash (Signature) for debugging/setup (optional)
       // You need to add this hash to your SMS message for auto-retrieval to work
       // Format: "<#> Your OTP is 1234 [HASH]"
-      if (typeof (SmsRetriever as any).getAppSignature === 'function') {
+      if (typeof OtpVerify.getAppSignature === 'function') {
         try {
-          const hash = await (SmsRetriever as any).getAppSignature();
+          const hash = await OtpVerify.getAppSignature();
           console.log('App Hash for SMS Retriever:', hash);
         } catch (hashError) {
           // getAppSignature might not be available on all devices
@@ -98,29 +95,25 @@ export const useOtpAutoFetch = ({
       }
 
       // Start SMS listener - this does NOT require READ_SMS permission
-      if (typeof (SmsRetriever as any).startSmsRetriever !== 'function') {
-        console.log('SMS Retriever not properly linked. Run "npx expo run:android" to rebuild.');
+      if (typeof OtpVerify.startSmsRetriever !== 'function') {
+        console.log('OTP Verify not properly linked. Run "npx expo run:android" to rebuild.');
         return;
       }
 
-      const registered = await (SmsRetriever as any).startSmsRetriever();
+      await OtpVerify.startSmsRetriever();
 
-      if (registered) {
-        smsListenerRef.current = (SmsRetriever as any).addSmsListener((event: any) => {
-          if (event && event.message) {
-            const otp = extractOtpFromMessage(event.message);
-            if (otp) {
-              onOtpReceived(otp);
-              stopSmsListener(); // Stop listening after successful OTP extraction
-            }
-          } else if (event && event.timeout) {
-            // Timeout happens after 5 minutes
+      smsListenerRef.current = OtpVerify.addSmsListener((message: string) => {
+        if (message) {
+          const otp = extractOtpFromMessage(message);
+          if (otp) {
+            onOtpReceived(otp);
+            stopSmsListener(); // Stop listening after successful OTP extraction
           }
-        });
-      }
+        }
+      });
     } catch (error) {
       // Silently fail - SMS auto-read is a convenience feature
-      console.log('SMS Retriever error (rebuild may be needed):', error);
+      console.log('OTP Verify error (rebuild may be needed):', error);
     }
   };
 
@@ -128,10 +121,10 @@ export const useOtpAutoFetch = ({
   const stopSmsListener = () => {
     if (smsListenerRef.current) {
       try {
-        const SmsRetriever = getSmsRetriever();
-        if (Platform.OS === 'android' && SmsRetriever) {
-          if (typeof (SmsRetriever as any).removeSmsListener === 'function') {
-            (SmsRetriever as any).removeSmsListener();
+        const OtpVerify = getOtpVerify();
+        if (Platform.OS === 'android' && OtpVerify) {
+          if (typeof OtpVerify.removeSmsListener === 'function') {
+            OtpVerify.removeSmsListener();
           }
         }
         smsListenerRef.current = null;
@@ -164,4 +157,4 @@ export const useOtpAutoFetch = ({
     stopSmsListener,
     extractOtpFromMessage,
   };
-}; 
+};

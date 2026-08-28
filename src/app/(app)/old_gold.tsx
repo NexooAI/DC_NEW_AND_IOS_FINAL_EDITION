@@ -404,8 +404,8 @@ export default function OldGoldScreen() {
                           {t("photos") || "Photos"}
                         </ResponsiveText>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                           {images.map((photo, idx) => {
-                            const baseURL = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/$/, '') : 'https://api.dcjewellers.org';
+                          {images.map((photo, idx) => {
+                            const baseURL = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/$/, '') : 'https://api.srithangathamarai.com';
                             const cleanPhoto = photo.startsWith('/') ? photo : `/${photo}`;
                             const fullUrl = photo.startsWith('http') ? photo : `${baseURL}${cleanPhoto}`;
                             return (
@@ -432,7 +432,7 @@ export default function OldGoldScreen() {
                           {t("documents") || "Documents & Receipts"}
                         </ResponsiveText>
                         {docs.map((doc, idx) => {
-                          const baseURL = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/$/, '') : 'https://api.dcjewellers.org';
+                          const baseURL = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/$/, '') : 'https://api.srithangathamarai.com';
                           const cleanDoc = doc.startsWith('/') ? doc : `/${doc}`;
                           const fullUrl = doc.startsWith('http') ? doc : `${baseURL}${cleanDoc}`;
                           const fileName = doc.split('/').pop()?.split('-').slice(1).join('-') || doc.split('/').pop() || 'document.pdf';
@@ -636,210 +636,212 @@ export default function OldGoldScreen() {
   );
 }
 
-function getStyles(theme: any) { return StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.quaternary,
-  },
-  header: {
-    paddingTop: Platform.OS === "ios" ? 12 : 20,
-    paddingBottom: 16,
-    paddingHorizontal: wp(4),
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-  },
-  tabsContainer: {
-    flexDirection: "row",
-    backgroundColor: CARD_BG,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(212, 175, 55, 0.2)",
-  },
-  tabBtn: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 6,
-  },
-  tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: GOLD,
-  },
-  scrollContent: {
-    padding: wp(4),
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: wp(10),
-  },
-  actionBtn: {
-    backgroundColor: GOLD,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 20,
-  },
-  depositCard: {
-    backgroundColor: CARD_BG,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.2)",
-    ...shadowUtils.SHADOW_PRESETS.small,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    marginVertical: 12,
-  },
-  cardBody: {},
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  infoCol: {
-    flex: 1,
-  },
-  ornamentImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginRight: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-  },
-  documentRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.2)",
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 6,
-  },
-  formContainer: {
-    backgroundColor: CARD_BG,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.2)",
-  },
-  label: {
-    marginBottom: 6,
-    marginTop: 12,
-  },
-  input: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.2)",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: Platform.OS === "ios" ? 12 : 8,
-    color: "#FFF",
-    fontSize: 14,
-  },
-  disabledInput: {
-    backgroundColor: "rgba(255, 255, 255, 0.02)",
-    borderColor: "rgba(255, 255, 255, 0.05)",
-    color: "#888",
-  },
-  purityRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 6,
-  },
-  purityBtn: {
-    flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.2)",
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: "center",
-    marginHorizontal: 4,
-  },
-  purityBtnActive: {
-    backgroundColor: GOLD,
-    borderColor: GOLD,
-  },
-  submitBtn: {
-    backgroundColor: GOLD,
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 24,
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  schemeDetailCard: {
-    backgroundColor: CARD_BG,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.2)",
-  },
-  benefitRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 16,
-  },
-  benefitTextCol: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  contactCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.03)",
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.1)",
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 20,
-  },
-  contactRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  contactBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: GOLD,
-    paddingVertical: 10,
-    borderRadius: 6,
-  },
-}) }
+function getStyles(theme: any) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.quaternary,
+    },
+    header: {
+      paddingTop: Platform.OS === "ios" ? 12 : 20,
+      paddingBottom: 16,
+      paddingHorizontal: wp(4),
+    },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    backBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    headerTitle: {
+      flex: 1,
+      textAlign: "center",
+    },
+    tabsContainer: {
+      flexDirection: "row",
+      backgroundColor: CARD_BG,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: "rgba(212, 175, 55, 0.2)",
+    },
+    tabBtn: {
+      flex: 1,
+      alignItems: "center",
+      paddingVertical: 6,
+    },
+    tabActive: {
+      borderBottomWidth: 2,
+      borderBottomColor: GOLD,
+    },
+    scrollContent: {
+      padding: wp(4),
+    },
+    loaderContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: wp(10),
+    },
+    actionBtn: {
+      backgroundColor: GOLD,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 8,
+      marginTop: 20,
+    },
+    depositCard: {
+      backgroundColor: CARD_BG,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: "rgba(212, 175, 55, 0.2)",
+      ...shadowUtils.SHADOW_PRESETS.small,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    statusBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: "rgba(255, 255, 255, 0.1)",
+      marginVertical: 12,
+    },
+    cardBody: {},
+    infoRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    infoCol: {
+      flex: 1,
+    },
+    ornamentImage: {
+      width: 80,
+      height: 80,
+      borderRadius: 8,
+      marginRight: 10,
+      backgroundColor: "rgba(255, 255, 255, 0.05)",
+    },
+    documentRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "rgba(255, 255, 255, 0.05)",
+      borderWidth: 1,
+      borderColor: "rgba(212, 175, 55, 0.2)",
+      borderRadius: 8,
+      padding: 10,
+      marginTop: 6,
+    },
+    formContainer: {
+      backgroundColor: CARD_BG,
+      borderRadius: 12,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: "rgba(212, 175, 55, 0.2)",
+    },
+    label: {
+      marginBottom: 6,
+      marginTop: 12,
+    },
+    input: {
+      backgroundColor: "rgba(255, 255, 255, 0.05)",
+      borderWidth: 1,
+      borderColor: "rgba(212, 175, 55, 0.2)",
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: Platform.OS === "ios" ? 12 : 8,
+      color: "#FFF",
+      fontSize: 14,
+    },
+    disabledInput: {
+      backgroundColor: "rgba(255, 255, 255, 0.02)",
+      borderColor: "rgba(255, 255, 255, 0.05)",
+      color: "#888",
+    },
+    purityRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 6,
+    },
+    purityBtn: {
+      flex: 1,
+      backgroundColor: "rgba(255, 255, 255, 0.05)",
+      borderWidth: 1,
+      borderColor: "rgba(212, 175, 55, 0.2)",
+      borderRadius: 8,
+      paddingVertical: 10,
+      alignItems: "center",
+      marginHorizontal: 4,
+    },
+    purityBtnActive: {
+      backgroundColor: GOLD,
+      borderColor: GOLD,
+    },
+    submitBtn: {
+      backgroundColor: GOLD,
+      borderRadius: 8,
+      paddingVertical: 14,
+      alignItems: "center",
+      marginTop: 24,
+    },
+    disabledButton: {
+      opacity: 0.6,
+    },
+    schemeDetailCard: {
+      backgroundColor: CARD_BG,
+      borderRadius: 12,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: "rgba(212, 175, 55, 0.2)",
+    },
+    benefitRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      marginBottom: 16,
+    },
+    benefitTextCol: {
+      marginLeft: 12,
+      flex: 1,
+    },
+    contactCard: {
+      backgroundColor: "rgba(255, 255, 255, 0.03)",
+      borderWidth: 1,
+      borderColor: "rgba(212, 175, 55, 0.1)",
+      borderRadius: 8,
+      padding: 12,
+      marginTop: 20,
+    },
+    contactRow: {
+      flexDirection: "row",
+      gap: 12,
+    },
+    contactBtn: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: GOLD,
+      paddingVertical: 10,
+      borderRadius: 6,
+    },
+  })
+}
 
 var styles = getStyles(theme);;

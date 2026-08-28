@@ -14,7 +14,7 @@ import {
   ScrollView
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
-import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import { useLocalSearchParams, useRouter, useFocusEffect, useNavigation } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
@@ -41,6 +41,33 @@ export default function PaymentSuccess() {
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const router = useRouter();
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        !(type === "bill" || type === "booking" || type === "advance_booking") ? (
+          <TouchableOpacity 
+            onPress={handleShareReceipt} 
+            disabled={isSharing}
+            style={{
+              marginRight: Platform.OS === 'ios' ? 0 : 8,
+              padding: 6,
+              borderRadius: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {isSharing ? (
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+            ) : (
+              <Ionicons name="share-social-outline" size={24} color={theme.colors.primary} />
+            )}
+          </TouchableOpacity>
+        ) : null
+      )
+    });
+  }, [navigation, type, isSharing, theme.colors.primary]);
 
   const type = (Array.isArray(params.type) ? params.type[0] : params.type) || "";
   const isBillPayment = type === "bill";
@@ -484,33 +511,37 @@ export default function PaymentSuccess() {
 
 
 
-        {/* Share Receipt Button */}
-        {!(type === "bill" || type === "booking" || type === "advance_booking") && (
+        {/* Button Row depending on payment type */}
+        {!(type === "bill" || type === "booking" || type === "advance_booking") ? (
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={[styles.button, styles.buttonHome]}
+              onPress={handleHomePress}
+              activeOpacity={0.9}
+            >
+              <Ionicons name="home-outline" size={18} color={theme.colors.textDark} />
+              <Text style={[styles.buttonText, styles.buttonTextHome]}>{t("home") || "Home"}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, styles.buttonSavings]}
+              onPress={handleSavingsPress}
+              activeOpacity={0.9}
+            >
+              <Ionicons name="wallet-outline" size={18} color="#fff" />
+              <Text style={styles.buttonText}>{t("goToSavings") || "Go to Savings"}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
           <TouchableOpacity
-            style={[styles.shareButton, isSharing && { opacity: 0.7 }]}
-            onPress={handleShareReceipt}
-            disabled={isSharing}
+            style={[styles.button, styles.buttonHome, { width: "100%", flex: 0 }]}
+            onPress={handleHomePress}
+            activeOpacity={0.9}
           >
-            {isSharing ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Ionicons name="share-social-outline" size={20} color="#fff" />
-                <Text style={styles.shareButtonText}>{t("shareReceipt")}</Text>
-              </>
-            )}
+            <Ionicons name="home-outline" size={18} color={theme.colors.textDark} />
+            <Text style={[styles.buttonText, styles.buttonTextHome]}>{t("home") || "Home"}</Text>
           </TouchableOpacity>
         )}
-
-        {/* Button Row depending on payment type */}
-        <TouchableOpacity
-          style={[styles.button, styles.buttonHome, { width: "100%", minHeight: 56, marginTop: 12 }]}
-          onPress={handleHomePress}
-          activeOpacity={0.9}
-        >
-          <Ionicons name="home" size={20} color={theme.colors.textDark} />
-          <Text style={[styles.buttonText, styles.buttonTextHome, { marginLeft: 8 }]}>{(t("backToHome") || "BACK TO HOME").toUpperCase()}</Text>
-        </TouchableOpacity>
       </Animated.View>
       </ScrollView>
       <RatingModal

@@ -336,7 +336,7 @@ export default function PaymentFailure() {
             >
               <Ionicons
                 name="close-circle"
-                size={rp(80)}
+                size={rp(56)}
                 color={theme.colors.error}
               />
             </Animated.View>
@@ -429,6 +429,27 @@ export default function PaymentFailure() {
           </View>
         </View>
 
+        {/* Button Row: Try Again & Go to Home */}
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[styles.button, styles.buttonHalf, { backgroundColor: theme.colors.error }]}
+            onPress={handleRetry}
+            activeOpacity={0.9}
+          >
+            <Ionicons name="refresh" size={18} color="#fff" />
+            <Text style={[styles.buttonText, { color: '#fff', marginLeft: 6 }]}>{(t("tryAgain") || "TRY AGAIN").toUpperCase()}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.buttonHalf, styles.buttonHome]}
+            onPress={handleHomePress}
+            activeOpacity={0.9}
+          >
+            <Ionicons name="home" size={18} color={theme.colors.textDark || "#000"} />
+            <Text style={[styles.buttonText, styles.buttonTextHome, { marginLeft: 6 }]}>{(t("home") || "GO TO HOME").toUpperCase()}</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* WhatsApp/Call Support Button */}
         <TouchableOpacity
           style={styles.supportButton}
@@ -437,26 +458,6 @@ export default function PaymentFailure() {
         >
           <Ionicons name="logo-whatsapp" size={20} color="#fff" />
           <Text style={styles.supportButtonText}>{t("contactSupport")}</Text>
-        </TouchableOpacity>
-
-
-
-        <TouchableOpacity
-          style={[styles.button, { width: "100%", backgroundColor: theme.colors.error }]}
-          onPress={handleRetry}
-          activeOpacity={0.9}
-        >
-          <Ionicons name="refresh" size={20} color="#fff" />
-          <Text style={[styles.buttonText, { color: '#fff', marginLeft: 8 }]}>{(t("tryAgain") || "TRY AGAIN").toUpperCase()}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.buttonHome, { width: "100%", marginTop: 12 }]}
-          onPress={handleHomePress}
-          activeOpacity={0.9}
-        >
-          <Ionicons name="home" size={20} color={theme.colors.textDark || "#000"} />
-          <Text style={[styles.buttonText, styles.buttonTextHome, { marginLeft: 8 }]}>{(t("home") || "GO TO HOME").toUpperCase()}</Text>
         </TouchableOpacity>
         </Animated.View>
       </ScrollView>
@@ -471,58 +472,61 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "flex-start",
+    alignItems: "stretch",
   },
   content: {
-    padding: rp(16),
-    alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: rp(16),
+    paddingTop: rp(12),
+    paddingBottom: rp(20),
+    alignItems: "stretch",
     width: "100%",
-    paddingVertical: rp(20),
   },
   iconContainer: {
-    marginBottom: rp(10), // Reduced margin
+    marginBottom: rp(4),
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1,
+    alignSelf: "center",
   },
   iconWrapper: {
-    width: rp(80), // Reduced size
-    height: rp(80),
-    borderRadius: rp(40),
+    width: rp(60),
+    height: rp(60),
+    borderRadius: rp(30),
     backgroundColor: "#ffebee",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: rp(12),
+    marginBottom: rp(8),
   },
   iconInner: {
     alignItems: "center",
     justifyContent: "center",
   },
   title: {
-    fontSize: rf(22, { minSize: 20, maxSize: 26 }),
+    fontSize: rf(18, { minSize: 16, maxSize: 22 }),
     fontWeight: "800",
     color: theme.colors.error,
-    marginBottom: rp(8), // Reduced
+    marginBottom: rp(4),
     textAlign: "center",
     fontFamily: "Inter_700Bold",
+    alignSelf: "center",
   },
   message: {
-    fontSize: rf(15, { minSize: 13, maxSize: 17 }),
+    fontSize: rf(13, { minSize: 11, maxSize: 15 }),
     color: "#616161",
     textAlign: "center",
-    marginBottom: rp(20), // Reduced
-    lineHeight: rp(22),
+    marginBottom: rp(12),
+    lineHeight: rp(18),
     maxWidth: "90%",
     fontFamily: "Inter_400Regular",
+    alignSelf: "center",
   },
   detailsCard: {
     width: "100%",
     backgroundColor: theme.colors.white,
-    borderRadius: rb(24),
-    padding: rp(20), // Reduced
-    marginBottom: rp(20), // Reduced
+    borderRadius: rb(16),
+    padding: rp(12),
+    marginBottom: rp(12),
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.1,
@@ -532,41 +536,41 @@ function getStyles(theme: any) { return StyleSheet.create({
     borderColor: "rgba(0,0,0,0.04)",
   },
   detailsTitle: {
-    fontSize: rf(18, { minSize: 16, maxSize: 20 }),
+    fontSize: rf(15, { minSize: 13, maxSize: 18 }),
     fontWeight: "700",
     color: "#2d3748",
-    marginBottom: rp(16), // Reduced
+    marginBottom: rp(10),
     fontFamily: "Inter_600SemiBold",
   },
   detailRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: rp(12),
+    paddingVertical: rp(6),
   },
   copyRow: {
     flexDirection: "row",
     alignItems: "center",
   },
   detailIcon: {
-    width: rp(36),
-    height: rp(36),
-    borderRadius: rb(12),
+    width: rp(28),
+    height: rp(28),
+    borderRadius: rb(8),
     backgroundColor: "#fde8e8",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: rp(16),
+    marginRight: rp(10),
   },
   detailTextContainer: {
     flex: 1,
   },
   detailLabel: {
-    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+    fontSize: rf(11, { minSize: 9, maxSize: 13 }),
     color: "#718096",
-    marginBottom: rp(4),
+    marginBottom: rp(2),
     fontFamily: "Inter_400Regular",
   },
   detailValue: {
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+    fontSize: rf(13, { minSize: 11, maxSize: 15 }),
     color: "#1a202c",
     fontWeight: "600",
     fontFamily: "Inter_600SemiBold",
@@ -574,34 +578,34 @@ function getStyles(theme: any) { return StyleSheet.create({
   amountValue: {
     color: theme.colors.error,
     fontWeight: "700",
-    fontSize: rf(18, { minSize: 16, maxSize: 22 }),
+    fontSize: rf(15, { minSize: 13, maxSize: 18 }),
   },
   divider: {
     height: 1,
     backgroundColor: "#edf2f7",
-    marginVertical: rp(4),
+    marginVertical: rp(2),
   },
   buttonContainer: {
     width: "100%",
     alignItems: "center",
-    marginBottom: rp(20),
+    marginBottom: rp(12),
   },
   buttonRow: {
     flexDirection: "row",
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: rp(20),
-    gap: rp(16),
+    marginBottom: rp(10),
+    gap: rp(12),
   },
   button: {
-    paddingVertical: rp(18),
-    paddingHorizontal: rp(24),
-    borderRadius: rb(16),
+    paddingVertical: rp(12),
+    paddingHorizontal: rp(16),
+    borderRadius: rb(12),
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
-    minHeight: rp(56),
+    minHeight: rp(46),
     ...shadows.small,
   },
   buttonHalf: {
@@ -623,10 +627,10 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   buttonText: {
     color: "#ffffff",
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+    fontSize: rf(13, { minSize: 11, maxSize: 15 }),
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
-    marginLeft: rp(8),
+    marginLeft: rp(4),
   },
   buttonTextHome: {
     color: theme.colors.textDark,
@@ -635,28 +639,28 @@ function getStyles(theme: any) { return StyleSheet.create({
     backgroundColor: "#fff5f5",
     borderColor: "#feb2b2",
     borderWidth: 1,
-    borderRadius: rb(16),
-    padding: rp(14),
+    borderRadius: rb(12),
+    padding: rp(10),
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: rp(16),
+    marginBottom: rp(10),
     width: "100%",
   },
   upiNoticeText: {
     color: "#c53030",
-    fontSize: rf(13, { minSize: 11, maxSize: 15 }),
+    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
     flex: 1,
-    lineHeight: rp(18),
+    lineHeight: rp(16),
   },
   supportButton: {
     width: "100%",
-    minHeight: rp(56),
-    borderRadius: rb(16),
+    minHeight: rp(46),
+    borderRadius: rb(12),
     backgroundColor: "#25d366",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: rp(16),
+    marginBottom: rp(10),
     paddingHorizontal: rp(20),
     elevation: 4,
     shadowColor: "#25d366",
@@ -667,15 +671,15 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   supportButtonText: {
     color: "#ffffff",
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
   },
   countdownText: {
-    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
     color: "#718096",
     fontFamily: "Inter_400Regular",
-    marginBottom: rp(16),
+    marginBottom: rp(12),
     textAlign: "center",
   },
 }) }

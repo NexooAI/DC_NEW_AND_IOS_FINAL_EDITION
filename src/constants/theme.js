@@ -359,7 +359,7 @@ const theme = {
 
     // Slider and banner images
     banners: {
-      slider1: "../../assets/images/slider1.png",
+      slider1: "../../assets/images/slider.png",
       slider2: "../../assets/images/slider2.png",
       slider3: "../../assets/images/slider3.png",
       slider4: "../../assets/images/slider4.png",
@@ -444,7 +444,7 @@ const theme = {
     gold_image: "../../assets/images/bar.png",
     silver_image: "../../assets/images/silver.png",
     sliderImages: [
-      "../../assets/images/slider1.png",
+      "../../assets/images/slider.png",
       "../../assets/images/slider2.png",
       "../../assets/images/slider3.png",
       "../../assets/images/slider4.png",

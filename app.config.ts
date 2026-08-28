@@ -1,5 +1,6 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
-import { themeConfig } from './src/constants/theme.config';
+import { themeConfig as baseThemeConfig } from './src/constants/theme.config';
+const themeConfig = baseThemeConfig as any;
 
 export default ({ config }: ConfigContext): ExpoConfig => {
     // Dynamically choose bundle identifier, project ID, and owner based on build platform target
@@ -11,11 +12,21 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             return lower === 'ios' || lower === '--platform=ios' || lower === '-p=ios';
         }));
 
-    const bundleIdentifier = isIos ? "com.dcjewellers.dcjewellers" : "com.nexooai.srithangathamarai";
-    const projectId = isIos ? "07310377-0452-4d15-8e38-d42462be6fd8" : "912daab2-d11c-42ff-9072-62ddfb4489c0";
-    const owner = isIos ? "dcjewellers" : "mnvgroups07";
+    const bundleIdentifier = isIos
+        ? (themeConfig.iosBundleIdentifier || themeConfig.bundleIdentifier || "com.dcjewellers.dcjewellers")
+        : (themeConfig.androidBundleIdentifier || themeConfig.bundleIdentifier || "com.nexooai.srithangathamarai");
 
-    const version = isIos ? "1.0.1" : "1.0.2";
+    const projectId = isIos
+        ? (themeConfig.iosProjectId || themeConfig.projectId || "07310377-0452-4d15-8e38-d42462be6fd8")
+        : (themeConfig.androidProjectId || themeConfig.projectId || "912daab2-d11c-42ff-9072-62ddfb4489c0");
+
+    const owner = isIos
+        ? (themeConfig.iosOwner || themeConfig.owner || "dcjewellers")
+        : (themeConfig.androidOwner || themeConfig.owner || "mnvgroups07");
+
+    const version = isIos
+        ? (themeConfig.iosVersion || "1.0.1")
+        : (themeConfig.androidVersion || "1.0.2");
 
     return {
         ...config,
@@ -27,10 +38,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         scheme: "acme",
         jsEngine: "hermes",
 
-        icon: "./assets/images/playstore-icon.png",
+        icon: themeConfig.icon || "./assets/images/logo_trans.png",
 
         splash: {
-            image: "./assets/images/playstore-icon.png",
+            image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
             resizeMode: "contain",
             backgroundColor: themeConfig.primaryColor,
         },
@@ -45,9 +56,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             package: bundleIdentifier,
             googleServicesFile: "./google-services.json",
             versionCode: 3,
-
+            adaptiveIcon: {
+                foregroundImage: themeConfig.adaptiveIcon || "./assets/images/adaptive-icon.png",
+                backgroundColor: themeConfig.primaryColor,
+            },
             splash: {
-                image: "./assets/images/playstore-icon.png",
+                image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
                 resizeMode: "contain",
                 backgroundColor: themeConfig.primaryColor,
             },
@@ -73,12 +87,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         ios: {
             supportsTablet: true,
             splash: {
-                image: "./assets/images/logo_trans.png",
+                image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
                 resizeMode: "contain",
-                backgroundColor: "#0e1e38",
-                tabletImage: "./assets/images/logo_trans.png",
+                backgroundColor: themeConfig.primaryColor,
+                tabletImage: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
             },
-            icon: "./assets/images/playstore-icon.png",
+            icon: themeConfig.icon || "./assets/images/logo_trans.png",
             bundleIdentifier: bundleIdentifier,
             googleServicesFile: "./GoogleService-Info.plist",
             buildNumber: "2",
@@ -180,10 +194,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
             "expo-web-browser",
             "./plugins/withModularHeaders",
-            "./plugins/withSmsRetriever",
             "./plugins/with-proguard.js",
             "./plugins/withAndroidQueries.js",
             "./plugins/withMainActivityTheme",
+            "./plugins/withAndroidNativeFixes",
             "@react-native-firebase/app",
             "@react-native-firebase/crashlytics",
         ],

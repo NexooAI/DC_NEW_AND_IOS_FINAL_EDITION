@@ -20,6 +20,22 @@ const MAX_PERSISTENT_LOGS = 100;
 const PAYMENT_LOG_KEY = '@payment_crash_logs';
 const MAX_PAYMENT_LOGS = 50;
 
+const logToCrashlytics = (error: any) => {
+  try {
+    const { NativeModules } = require('react-native');
+    if (!NativeModules.RNFBAppModule) {
+      return;
+    }
+    const crashlytics = require('@react-native-firebase/crashlytics').default;
+    if (crashlytics) {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      crashlytics().recordError(errorObj);
+    }
+  } catch (e) {
+    // Silently fail if not running in a native environment with Firebase
+  }
+};
+
 const addToErrorLog = (error: any, context?: any) => {
   errorLog.push({
     timestamp: new Date().toISOString(),
@@ -136,6 +152,7 @@ export const logger = {
     const error = args.find(arg => arg instanceof Error) || args[0];
     addToErrorLog(error || message, { message, args });
     console.error(`[ERROR] ${message}`, ...args);
+    logToCrashlytics(error || message);
   },
   warn: isDev ? console.warn : () => { },
   info: isDev ? console.info : () => { },
@@ -162,6 +179,7 @@ export const logger = {
       stack: errorObj.stack,
       context
     });
+    logToCrashlytics(errorObj);
   },
 
   // Payment-specific logging (persists to AsyncStorage)

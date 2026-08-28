@@ -41,7 +41,7 @@ export const images = {
 
     // Slider and banner images
     banners: {
-        slider1: "../../assets/images/slider1.png",
+        slider1: "../../assets/images/slider.png",
         slider2: "../../assets/images/slider2.png",
         slider3: "../../assets/images/slider3.png",
         slider4: "../../assets/images/slider4.png",

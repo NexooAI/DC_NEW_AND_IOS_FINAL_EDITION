@@ -305,7 +305,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
                       {images.map((photo, idx) => {
                         const baseURL = api.defaults.baseURL
                           ? api.defaults.baseURL.replace(/\/$/, "")
-                          : "https://api.dcjewellers.org";
+                          : "https://api.srithangathamarai.com";
                         const cleanPhoto = photo.startsWith("/") ? photo : `/${photo}`;
                         const fullUrl = photo.startsWith("http") ? photo : `${baseURL}${cleanPhoto}`;
                         return (
@@ -333,7 +333,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
                     {docs.map((doc, idx) => {
                       const baseURL = api.defaults.baseURL
                         ? api.defaults.baseURL.replace(/\/$/, "")
-                        : "https://api.dcjewellers.org";
+                        : "https://api.srithangathamarai.com";
                       const cleanDoc = doc.startsWith("/") ? doc : `/${doc}`;
                       const fullUrl = doc.startsWith("http") ? doc : `${baseURL}${cleanDoc}`;
                       const fileName =
@@ -396,313 +396,315 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
   );
 };
 
-function getStyles(theme: any) { return StyleSheet.create({
-  cardWrapper: {
-    marginHorizontal: 16,
-    marginBottom: 20,
-    borderRadius: 24,
-    overflow: "hidden",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    backgroundColor: "rgb(255, 255, 255)",
-  },
-  cardWrapperActive: {
-    transform: [{ scale: 1.02 }],
-    elevation: 12,
-    shadowOpacity: 0.3,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    margin: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "rgba(255, 255, 255, 0.81)",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
-  },
-  schemeInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  schemeTitleContainer: {
-    flex: 1,
-  },
-  schemeTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#000",
-    marginBottom: 6,
-  },
-  schemeSubtitleContainer: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  metalTypeBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.6)",
-  },
-  metalTypeText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#000",
-  },
-  savingTypeBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.6)",
-  },
-  savingTypeText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#000",
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.6)",
-  },
-  statusText: {
-    fontSize: 8,
-    fontWeight: "600",
-  },
-  expandIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(133, 1, 17, 0.08)",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(133, 1, 17, 0.15)",
-  },
-  paymentInfoRow: {
-    flexDirection: "row",
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    alignItems: "center",
-  },
-  paymentInfoItem: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  paymentInfoIconContainer: {
-    width: 20,
-    height: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  paymentInfoContent: {
-    flex: 1,
-  },
-  paymentInfoLabel: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginBottom: 2,
-  },
-  paymentInfoValue: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: theme.colors.textDark,
-  },
-  paymentInfoDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: theme.colors.border,
-    marginHorizontal: 12,
-  },
-  cardContent: {
-    overflow: "hidden",
-  },
-  expandedContainer: {
-    paddingHorizontal: 12,
-    paddingBottom: 12,
-  },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 8,
-    marginBottom: 12,
-  },
-  infoItem: {
-    flex: 1,
-    alignItems: "center",
-    padding: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.48)",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.05)",
-  },
-  infoIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(228, 16, 41, 0.12)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  infoLabel: {
-    fontSize: 10,
-    color: "rgba(7, 0, 0, 0.6)",
-    marginBottom: 2,
-    textAlign: "center",
-  },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#000",
-    textAlign: "center",
-  },
-  dateContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "rgba(45, 22, 17, 0.88)",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-  },
-  dateSection: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  dateIconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  dateInfo: {
-    flex: 1,
-  },
-  dateLabel: {
-    fontSize: 10,
-    color: "rgba(255, 255, 255, 0.7)",
-  },
-  dateValue: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#FFFFFF",
-  },
-  dateDivider: {
-    width: 1,
-    height: "100%",
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    marginHorizontal: 8,
-  },
-  descriptionRow: {
-    marginBottom: 12,
-  },
-  metadataPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(218, 165, 32, 0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(218, 165, 32, 0.2)",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    alignSelf: "flex-start",
-  },
-  metadataPillText: {
-    fontSize: 12,
-    color: "#B8860B",
-    fontWeight: "600",
-  },
-  expandedLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "rgba(0, 0, 0, 0.6)",
-    marginBottom: 4,
-  },
-  expandedDesc: {
-    fontSize: 13,
-    color: "#000",
-    lineHeight: 18,
-  },
-  attachmentsContainer: {
-    marginTop: 8,
-    backgroundColor: "rgba(0, 0, 0, 0.02)",
-    borderRadius: 12,
-    padding: 8,
-  },
-  ornamentImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 8,
-    marginRight: 8,
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
-  },
-  documentRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: theme.colors.white,
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.2)",
-    borderRadius: 8,
-    padding: 8,
-    marginTop: 4,
-  },
-  documentText: {
-    fontSize: 12,
-    color: "#B8860B",
-    fontWeight: "600",
-    flex: 1,
-  },
-  actionButtonsContainer: {
-    flexDirection: "row",
-    marginHorizontal: 12,
-    marginBottom: 16,
-  },
-  detailsButton: {
-    flex: 1,
-    borderRadius: 16,
-    overflow: "hidden",
-    elevation: 4,
-    shadowColor: "#850111",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  detailsButtonGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  detailsButtonText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#fff",
-    marginRight: 8,
-  },
-}) }
+function getStyles(theme: any) {
+  return StyleSheet.create({
+    cardWrapper: {
+      marginHorizontal: 16,
+      marginBottom: 20,
+      borderRadius: 24,
+      overflow: "hidden",
+      elevation: 8,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      backgroundColor: "rgb(255, 255, 255)",
+    },
+    cardWrapperActive: {
+      transform: [{ scale: 1.02 }],
+      elevation: 12,
+      shadowOpacity: 0.3,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      margin: 12,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      backgroundColor: "rgba(255, 255, 255, 0.81)",
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.3)",
+    },
+    schemeInfo: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+    },
+    schemeTitleContainer: {
+      flex: 1,
+    },
+    schemeTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: "#000",
+      marginBottom: 6,
+    },
+    schemeSubtitleContainer: {
+      flexDirection: "row",
+      gap: 8,
+    },
+    metalTypeBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.6)",
+    },
+    metalTypeText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: "#000",
+    },
+    savingTypeBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.6)",
+    },
+    savingTypeText: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: "#000",
+    },
+    headerRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    statusBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.6)",
+    },
+    statusText: {
+      fontSize: 8,
+      fontWeight: "600",
+    },
+    expandIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: "rgba(133, 1, 17, 0.08)",
+      justifyContent: "center",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: "rgba(133, 1, 17, 0.15)",
+    },
+    paymentInfoRow: {
+      flexDirection: "row",
+      paddingHorizontal: 16,
+      paddingBottom: 16,
+      alignItems: "center",
+    },
+    paymentInfoItem: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    paymentInfoIconContainer: {
+      width: 20,
+      height: 20,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    paymentInfoContent: {
+      flex: 1,
+    },
+    paymentInfoLabel: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      marginBottom: 2,
+    },
+    paymentInfoValue: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: theme.colors.textDark,
+    },
+    paymentInfoDivider: {
+      width: 1,
+      height: 30,
+      backgroundColor: theme.colors.border,
+      marginHorizontal: 12,
+    },
+    cardContent: {
+      overflow: "hidden",
+    },
+    expandedContainer: {
+      paddingHorizontal: 12,
+      paddingBottom: 12,
+    },
+    infoRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: 8,
+      marginBottom: 12,
+    },
+    infoItem: {
+      flex: 1,
+      alignItems: "center",
+      padding: 10,
+      backgroundColor: "rgba(255, 255, 255, 0.48)",
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: "rgba(0, 0, 0, 0.05)",
+    },
+    infoIconContainer: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: "rgba(228, 16, 41, 0.12)",
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: 4,
+    },
+    infoLabel: {
+      fontSize: 10,
+      color: "rgba(7, 0, 0, 0.6)",
+      marginBottom: 2,
+      textAlign: "center",
+    },
+    infoValue: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: "#000",
+      textAlign: "center",
+    },
+    dateContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      backgroundColor: "rgba(45, 22, 17, 0.88)",
+      borderRadius: 12,
+      padding: 12,
+      marginBottom: 12,
+    },
+    dateSection: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    dateIconContainer: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: "rgba(255, 255, 255, 0.15)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    dateInfo: {
+      flex: 1,
+    },
+    dateLabel: {
+      fontSize: 10,
+      color: "rgba(255, 255, 255, 0.7)",
+    },
+    dateValue: {
+      fontSize: 12,
+      fontWeight: "500",
+      color: "#FFFFFF",
+    },
+    dateDivider: {
+      width: 1,
+      height: "100%",
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      marginHorizontal: 8,
+    },
+    descriptionRow: {
+      marginBottom: 12,
+    },
+    metadataPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "rgba(218, 165, 32, 0.12)",
+      borderWidth: 1,
+      borderColor: "rgba(218, 165, 32, 0.2)",
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 16,
+      alignSelf: "flex-start",
+    },
+    metadataPillText: {
+      fontSize: 12,
+      color: "#B8860B",
+      fontWeight: "600",
+    },
+    expandedLabel: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: "rgba(0, 0, 0, 0.6)",
+      marginBottom: 4,
+    },
+    expandedDesc: {
+      fontSize: 13,
+      color: "#000",
+      lineHeight: 18,
+    },
+    attachmentsContainer: {
+      marginTop: 8,
+      backgroundColor: "rgba(0, 0, 0, 0.02)",
+      borderRadius: 12,
+      padding: 8,
+    },
+    ornamentImage: {
+      width: 70,
+      height: 70,
+      borderRadius: 8,
+      marginRight: 8,
+      backgroundColor: "rgba(0, 0, 0, 0.05)",
+    },
+    documentRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.colors.white,
+      borderWidth: 1,
+      borderColor: "rgba(212, 175, 55, 0.2)",
+      borderRadius: 8,
+      padding: 8,
+      marginTop: 4,
+    },
+    documentText: {
+      fontSize: 12,
+      color: "#B8860B",
+      fontWeight: "600",
+      flex: 1,
+    },
+    actionButtonsContainer: {
+      flexDirection: "row",
+      marginHorizontal: 12,
+      marginBottom: 16,
+    },
+    detailsButton: {
+      flex: 1,
+      borderRadius: 16,
+      overflow: "hidden",
+      elevation: 4,
+      shadowColor: "#850111",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+    },
+    detailsButtonGradient: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+    },
+    detailsButtonText: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: "#fff",
+      marginRight: 8,
+    },
+  })
+}
 
 var styles = getStyles(theme);;
 
