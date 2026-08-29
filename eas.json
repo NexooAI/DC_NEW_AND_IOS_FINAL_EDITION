@@ -1,7 +1,7 @@
 {
   "cli": { "version": ">= 5.9.1", "appVersionSource": "local" },
   "build": {
-    "base": { "node": "20.19.4" },
+    "base": { "node": "20.19.4", "pnpm": "9.15.2" },
     "development": {
       "extends": "base",
       "developmentClient": true,

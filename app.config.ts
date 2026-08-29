@@ -26,7 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
     const version = isIos
         ? (themeConfig.iosVersion || "1.0.1")
-        : (themeConfig.androidVersion || "1.0.4");
+        : (themeConfig.androidVersion || "1.0.5");
 
     return {
         ...config,
@@ -55,7 +55,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         android: {
             package: bundleIdentifier,
             googleServicesFile: "./google-services.json",
-            versionCode: 5,
+            versionCode: 6,
             adaptiveIcon: {
                 foregroundImage: themeConfig.adaptiveIcon || "./assets/images/adaptive-icon.png",
                 backgroundColor: themeConfig.primaryColor,
