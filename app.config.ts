@@ -26,7 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
     const version = isIos
         ? (themeConfig.iosVersion || "1.0.1")
-        : (themeConfig.androidVersion || "1.0.3");
+        : (themeConfig.androidVersion || "1.0.4");
 
     return {
         ...config,
@@ -55,7 +55,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         android: {
             package: bundleIdentifier,
             googleServicesFile: "./google-services.json",
-            versionCode: 4,
+            versionCode: 5,
             adaptiveIcon: {
                 foregroundImage: themeConfig.adaptiveIcon || "./assets/images/adaptive-icon.png",
                 backgroundColor: themeConfig.primaryColor,
@@ -197,6 +197,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             "./plugins/with-proguard.js",
             "./plugins/withAndroidQueries.js",
             "./plugins/withMainActivityTheme",
+            "./plugins/withExtractNativeLibs",
+            "./plugins/withSoLoaderFallback",
+            "./plugins/withCrashlyticsSymbols",
             "./plugins/withAndroidNativeFixes",
             "@react-native-firebase/app",
             "@react-native-firebase/crashlytics",

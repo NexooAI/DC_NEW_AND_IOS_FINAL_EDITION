@@ -1,18 +1,7 @@
-const { withAndroidManifest, withAppBuildGradle } = require('@expo/config-plugins');
+const { withAppBuildGradle } = require('@expo/config-plugins');
 
 const withAndroidNativeFixes = (config) => {
-  // 1. Modify AndroidManifest.xml to set android:extractNativeLibs="true"
-  config = withAndroidManifest(config, (config) => {
-    const androidManifest = config.modResults;
-    const mainApplication = androidManifest.manifest.application[0];
-    if (mainApplication) {
-      mainApplication['$']['android:extractNativeLibs'] = 'true';
-      console.log('[withAndroidNativeFixes] Set android:extractNativeLibs="true" in AndroidManifest.xml');
-    }
-    return config;
-  });
-
-  // 2. Modify android/app/build.gradle to add packagingOptions and ndk.abiFilters
+  // Modify android/app/build.gradle to add packagingOptions and ndk.abiFilters
   config = withAppBuildGradle(config, (config) => {
     if (config.modResults.language === 'groovy') {
       let contents = config.modResults.contents;
