@@ -19,6 +19,27 @@ import { useFirstLaunch } from "@/common/hooks/useFirstLaunch";
 import apiClient from "@/services/api";
 
 import { logger } from "@/utils/logger";
+
+const getSecureItemWithTimeout = async (key: string, timeoutMs = 1500): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      logger.warn(`⚠️ SecureStore.getItemAsync('${key}') timed out after ${timeoutMs}ms.`);
+      resolve(null);
+    }, timeoutMs);
+
+    SecureStore.getItemAsync(key)
+      .then((val) => {
+        clearTimeout(timer);
+        resolve(val);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        logger.error(`Error reading ${key} from SecureStore:`, err);
+        resolve(null);
+      });
+  });
+};
+
 export default function AuthGuard() {
   const router = useRouter();
   const { login, isLoggedIn, user } = useGlobalStore();
@@ -147,7 +168,7 @@ export default function AuthGuard() {
           }
         } else {
           try {
-            let token = await SecureStore.getItemAsync("authToken") || await SecureStore.getItemAsync("token") || await SecureStore.getItemAsync("accessToken");
+            let token = await getSecureItemWithTimeout("authToken") || await getSecureItemWithTimeout("token") || await getSecureItemWithTimeout("accessToken");
             if (token) {
               logger.log("📡 Fetching visibility config in AuthGuard...");
               const visResponse = await apiClient.get('/app-visible', {
@@ -173,15 +194,15 @@ export default function AuthGuard() {
       setAuthStatus("validating");
 
       // Check for stored authentication token (try multiple token keys)
-      let token = await SecureStore.getItemAsync("authToken");
+      let token = await getSecureItemWithTimeout("authToken");
       logger.log("🔍 Checking authToken:", token ? "EXISTS" : "NOT FOUND");
 
       if (!token) {
-        token = await SecureStore.getItemAsync("token");
+        token = await getSecureItemWithTimeout("token");
         logger.log("🔍 Checking token:", token ? "EXISTS" : "NOT FOUND");
       }
       if (!token) {
-        token = await SecureStore.getItemAsync("accessToken");
+        token = await getSecureItemWithTimeout("accessToken");
         logger.log("🔍 Checking accessToken:", token ? "EXISTS" : "NOT FOUND");
       }
 
