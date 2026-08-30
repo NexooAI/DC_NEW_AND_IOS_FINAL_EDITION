@@ -21,6 +21,27 @@ const CUSTOM_PROGUARD_RULES = `
 -dontwarn okhttp3.**
 -dontwarn okio.**
 
+# SoLoader
+-keep class com.facebook.soloader.** { *; }
+-dontwarn com.facebook.soloader.**
+
+# Reanimated
+-keep class com.swmansion.reanimated.** { *; }
+-keep class com.facebook.react.turbomodule.core.** { *; }
+-dontwarn com.swmansion.reanimated.**
+
+# Worklets
+-keep class com.margelo.worklets.** { *; }
+-dontwarn com.margelo.worklets.**
+
+# Firebase/Crashlytics
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.firebase.**
+
+# react-native-sms-retriever
+-keep class me.furtado.smsretriever.** { *; }
+-dontwarn com.google.android.gms.auth.api.credentials.**
+
 `;
 
 module.exports = function withProguard(config) {

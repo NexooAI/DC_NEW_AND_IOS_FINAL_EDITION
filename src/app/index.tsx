@@ -1,25 +1,25 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
-  Animated,
+  ActivityIndicator,
   StyleSheet,
   ImageBackground,
   Text,
 } from "react-native";
+import { Image } from "react-native";
 import { useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
-import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
+import useGlobalStore from "@/store/global.store";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { COLORS } from "@/constants/colors";
+import { COLORS } from "src/constants/colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { useFirstLaunch } from "@/common/hooks/useFirstLaunch";
+import apiClient from "@/services/api";
 
 import { logger } from "@/utils/logger";
 export default function AuthGuard() {
-  const theme = useAppTheme();
-  styles = getStyles(theme);
   const router = useRouter();
   const { login, isLoggedIn, user } = useGlobalStore();
   const { isFirstLaunch } = useFirstLaunch();
@@ -29,40 +29,6 @@ export default function AuthGuard() {
   >("checking");
   const { screenWidth, screenHeight } = useResponsiveLayout();
   const logoWidth = screenWidth * 0.4;
-
-  const logoScale = useRef(new Animated.Value(0.85)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const progressWidth = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(logoOpacity, {
-        toValue: 1,
-        duration: 900,
-        useNativeDriver: true,
-      }),
-      Animated.timing(logoScale, {
-        toValue: 1,
-        duration: 900,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(progressWidth, {
-          toValue: 1,
-          duration: 1800,
-          useNativeDriver: false,
-        }),
-        Animated.timing(progressWidth, {
-          toValue: 0,
-          duration: 0,
-          useNativeDriver: false,
-        })
-      ])
-    ).start();
-  }, []);
 
   useEffect(() => {
     logger.log(
@@ -107,8 +73,21 @@ export default function AuthGuard() {
       }
 
       // Decode the payload
+      const decodeBase64 = (str: string): string => {
+        try {
+          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+          let output = '';
+          str = String(str).replace(/=+$/, '');
+          for (let bc = 0, bs = 0, buffer, idx = 0; (buffer = str.charAt(idx++)); ~buffer && ((bs = bc % 4 ? bs * 64 + buffer : buffer), bc++ % 4) ? (output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6)))) : 0) {
+            buffer = chars.indexOf(buffer);
+          }
+          return output;
+        } catch {
+          return '';
+        }
+      };
       const base64 = tokenParts[1].replace(/-/g, "+").replace(/_/g, "/");
-      const payload = JSON.parse(atob(base64));
+      const payload = JSON.parse(decodeBase64(base64));
       const currentTime = Date.now() / 1000;
 
       logger.log("🔍 Token payload:", {
@@ -157,10 +136,37 @@ export default function AuthGuard() {
 
       // Check if user is already logged in from global state
       if (isLoggedIn && user) {
-        const hasDashboard = getAppConfig().constants.enableDashboard;
-        logger.log(`✅ User already logged in, redirecting to ${hasDashboard ? "dashboard" : "home"}`);
+        logger.log("✅ User already logged in, checking redirect destination");
         setAuthStatus("navigating");
-        router.replace(hasDashboard ? "/(app)/dashboard" : "/(app)/(tabs)/home");
+        const cache = useGlobalStore.getState().getCachedVisibility();
+        if (cache && cache.data) {
+          if (cache.data.showDashboardAfterLogin === 0) {
+            logger.log("✅ Config dictates redirecting to home page");
+            router.replace("/(app)/(tabs)/home");
+            return;
+          }
+        } else {
+          try {
+            let token = await SecureStore.getItemAsync("authToken") || await SecureStore.getItemAsync("token") || await SecureStore.getItemAsync("accessToken");
+            if (token) {
+              logger.log("📡 Fetching visibility config in AuthGuard...");
+              const visResponse = await apiClient.get('/app-visible', {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              if (visResponse.data) {
+                useGlobalStore.getState().setCachedVisibility(visResponse.data);
+                if (visResponse.data.showDashboardAfterLogin === 0) {
+                  logger.log("✅ Config dictates redirecting to home page (freshly fetched)");
+                  router.replace("/(app)/(tabs)/home");
+                  return;
+                }
+              }
+            }
+          } catch (e) {
+            logger.error("Error fetching visibility config in AuthGuard:", e);
+          }
+        }
+        router.replace("/(app)/dashboard");
         return;
       }
 
@@ -294,39 +300,41 @@ export default function AuthGuard() {
     };
 
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.primary || "#0e1e38" }]}>
-        <Animated.Image
-          source={
-            typeof theme.images.auth.logo === "string"
-              ? { uri: theme.images.auth.logo }
-              : theme.images.auth.logo
-          }
-          style={[
-            styles.logo,
-            {
-              width: logoWidth,
-              aspectRatio: 1,
-              opacity: logoOpacity,
-              transform: [{ scale: logoScale }]
-            }
+      <ImageBackground
+        source={
+          typeof theme.image.bg_image === "string"
+            ? { uri: theme.image.bg_image }
+            : theme.image.bg_image
+        }
+        style={styles.backgroundImage}
+      >
+        <LinearGradient
+          colors={[
+            theme.colors.bgBlackHeavy,
+            theme.colors.bgBlackMedium,
+            theme.colors.bgBlackHeavy,
           ]}
-          resizeMode="contain"
-        />
-        <View style={styles.progressContainer}>
-          <Animated.View
-            style={[
-              styles.progressBar,
-              {
-                width: progressWidth.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0%', '100%']
-                })
+          style={styles.gradient}
+        >
+          <View style={styles.container}>
+            <Image
+              source={
+                typeof theme.images.auth.logo === "string"
+                  ? { uri: theme.images.auth.logo }
+                  : theme.images.auth.logo
               }
-            ]}
-          />
-        </View>
-        <Text style={styles.statusText}>{getStatusText()}</Text>
-      </View>
+              style={[styles.logo, { width: logoWidth, aspectRatio: 1 }]}
+              resizeMode="contain"
+            />
+            <ActivityIndicator
+              size="large"
+              color={authStatus === "error" ? COLORS.error : COLORS.secondary}
+              style={styles.loader}
+            />
+            <Text style={styles.statusText}>{getStatusText()}</Text>
+          </View>
+        </LinearGradient>
+      </ImageBackground>
     );
   }
 
@@ -334,7 +342,14 @@ export default function AuthGuard() {
   return null;
 }
 
-function getStyles(theme: any) { return StyleSheet.create({
+const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    resizeMode: "cover",
+  },
+  gradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     justifyContent: "center",
@@ -344,19 +359,8 @@ function getStyles(theme: any) { return StyleSheet.create({
   logo: {
     marginBottom: 40,
   },
-  progressContainer: {
-    width: 140,
-    height: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 2,
-    overflow: 'hidden',
+  loader: {
     marginTop: 20,
-    marginBottom: 10,
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: '#d4af37',
-    borderRadius: 2,
   },
   statusText: {
     color: COLORS.white,
@@ -366,6 +370,4 @@ function getStyles(theme: any) { return StyleSheet.create({
     textAlign: "center",
     opacity: 0.9,
   },
-}) }
-
-var styles = getStyles(theme);;
+});

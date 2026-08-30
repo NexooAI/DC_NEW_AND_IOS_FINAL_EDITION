@@ -20,8 +20,29 @@ const MAX_PERSISTENT_LOGS = 100;
 const PAYMENT_LOG_KEY = '@payment_crash_logs';
 const MAX_PAYMENT_LOGS = 50;
 
+const isNetworkError = (error: any): boolean => {
+  if (!error) return false;
+
+  // Check if it's an Axios network error or connection timeout
+  if (error.isAxiosError) {
+    if (error.message === 'Network Error' || error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
+      return true;
+    }
+  }
+
+  const msg = String(error.message || error).toLowerCase();
+  if (msg.includes('network error') || msg.includes('timeout of') || msg.includes('econnaborted')) {
+    return true;
+  }
+
+  return false;
+};
+
 const logToCrashlytics = (error: any) => {
   try {
+    if (isNetworkError(error)) {
+      return; // Skip reporting standard network errors to Crashlytics
+    }
     const { NativeModules } = require('react-native');
     if (!NativeModules.RNFBAppModule) {
       return;

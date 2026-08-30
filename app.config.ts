@@ -156,10 +156,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                 "expo-build-properties",
                 {
                     android: {
-                        compileSdkVersion: 36,
-                        targetSdkVersion: 36,
+                        compileSdkVersion: 35,
+                        targetSdkVersion: 35,
                         enableProguardInReleaseBuilds: true,
-                        enableShrinkResources: true,
+                        enableShrinkResources: false,
                         // REMOVE ALL OLD MEDIA PERMISSIONS
                         blockedPermissions: [
                             "android.permission.READ_MEDIA_IMAGES",
