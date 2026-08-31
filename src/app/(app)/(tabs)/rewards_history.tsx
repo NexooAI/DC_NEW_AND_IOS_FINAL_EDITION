@@ -127,7 +127,7 @@ export default function RewardsHistoryScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <StatusBar barStyle="dark-content" backgroundColor="#F2E6D2" />
             <View style={styles.headerContainer}>
                 <View style={styles.header}>

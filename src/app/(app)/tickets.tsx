@@ -180,7 +180,7 @@ export default function TicketsScreen() {
 
   if (!userId) {
     return (
-      <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.quaternary || '#F2E6D2' }]} />
         <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
@@ -268,7 +268,7 @@ export default function TicketsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.quaternary || '#F2E6D2' }]} />
       <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />

@@ -364,7 +364,7 @@ export default function JoinAdvGold() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Background */}
       <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />

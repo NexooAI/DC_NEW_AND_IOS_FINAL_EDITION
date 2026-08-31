@@ -1759,7 +1759,19 @@ export default function Home() {
 
   // Handle drawer toggle
   const handleDrawerToggle = () => {
-    navigation.dispatch(DrawerActions.openDrawer());
+    try {
+      let parent = navigation.getParent();
+      while (parent) {
+        if ((parent as any).openDrawer) {
+          (parent as any).openDrawer();
+          return;
+        }
+        parent = parent.getParent();
+      }
+      navigation.dispatch(DrawerActions.openDrawer());
+    } catch (err) {
+      logger.error("Error opening drawer:", err);
+    }
   };
 
   // Handle notification press

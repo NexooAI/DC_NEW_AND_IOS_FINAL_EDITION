@@ -337,7 +337,7 @@ export default function GoldAdvanceScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : undefined}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
         <View style={styles.header}>
@@ -364,7 +364,7 @@ export default function GoldAdvanceScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'right'] : undefined}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
       {/* Background */}
       <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />

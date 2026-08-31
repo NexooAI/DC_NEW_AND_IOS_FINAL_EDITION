@@ -1100,9 +1100,9 @@ const SavingsDetail = () => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
-      <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         {/* Header */}
-        <View style={[styles.header, { paddingTop: Platform.OS === 'android' ? top + 10 : top - 60 }]}>
+        <View style={[styles.header, { paddingTop: 10 }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={theme.colors.textDark || "#850111"} />
           </TouchableOpacity>
