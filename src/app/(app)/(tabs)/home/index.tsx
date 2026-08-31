@@ -2586,7 +2586,7 @@ export default function Home() {
   // Show skeleton loading screen while data is being fetched
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.fullHeightBackground} edges={Platform.OS === "android" ? ["top"] : []}>
+      <SafeAreaView style={styles.fullHeightBackground} edges={["top", "left", "right"]}>
         {/* Home Page Header Skeleton */}
         <View style={styles.homeHeader}>
           <View style={styles.headerLeft}>
@@ -2677,7 +2677,7 @@ export default function Home() {
   if (!user || !user.id) {
     return (
       <>
-        <SafeAreaView style={styles.fullHeightBackground} edges={Platform.OS === "android" ? ["top"] : []}>
+        <SafeAreaView style={styles.fullHeightBackground} edges={["top", "left", "right"]}>
           <View style={styles.loadingContainer}>
             <Ionicons
               name="person-circle-outline"
@@ -2712,7 +2712,7 @@ export default function Home() {
 
   return (
     <AuthGuard>
-      <SafeAreaView style={styles.fullHeightBackground} edges={Platform.OS === "android" ? ["top"] : []}>
+      <SafeAreaView style={styles.fullHeightBackground} edges={["top", "left", "right"]}>
         {/* {showFlashBanner && (
           <FlashBanner
             imageSource={images.banners.flashBanner}

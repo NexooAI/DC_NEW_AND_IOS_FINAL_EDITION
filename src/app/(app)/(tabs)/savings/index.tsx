@@ -68,7 +68,7 @@ export default function SchemesHub() {
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
             <View style={[styles.headerArea, { backgroundColor: theme.colors.quaternary || '#F2E6D2' }]}>
-                <SafeAreaView edges={Platform.OS === 'ios' ? [] : ["top"]} style={{ backgroundColor: "transparent" }}>
+                <SafeAreaView edges={["top"]} style={{ backgroundColor: "transparent" }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10 }}>
                         <TouchableOpacity
                             onPress={handleBackPress}

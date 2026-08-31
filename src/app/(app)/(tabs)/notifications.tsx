@@ -631,7 +631,7 @@ export default function NotificationsScreen() {
           flex: 1,
           backgroundColor: '#FCFBF7', // Cream background from mockup
         }}
-        edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}
+        edges={['top', 'left', 'right']}
       >
         <StatusBar barStyle="dark-content" backgroundColor="#FCFBF7" />
 
