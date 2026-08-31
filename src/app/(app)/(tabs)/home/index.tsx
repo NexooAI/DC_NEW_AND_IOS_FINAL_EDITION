@@ -1760,15 +1760,23 @@ export default function Home() {
   // Handle drawer toggle
   const handleDrawerToggle = () => {
     try {
-      let parent = navigation.getParent();
+      let parent: any = navigation.getParent();
       while (parent) {
-        if ((parent as any).openDrawer) {
-          (parent as any).openDrawer();
+        if (typeof parent.openDrawer === "function") {
+          parent.openDrawer();
+          return;
+        }
+        if (typeof parent.toggleDrawer === "function") {
+          parent.toggleDrawer();
           return;
         }
         parent = parent.getParent();
       }
-      navigation.dispatch(DrawerActions.openDrawer());
+      if (typeof (navigation as any).openDrawer === "function") {
+        (navigation as any).openDrawer();
+      } else if (typeof (navigation as any).toggleDrawer === "function") {
+        (navigation as any).toggleDrawer();
+      }
     } catch (err) {
       logger.error("Error opening drawer:", err);
     }
