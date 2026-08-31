@@ -42,6 +42,8 @@ export default function PaymentSuccess() {
   const params = useLocalSearchParams();
   const router = useRouter();
   const navigation = useNavigation();
+  const type = (Array.isArray(params.type) ? params.type[0] : params.type) || "";
+  const [isSharing, setIsSharing] = useState(false);
 
   useEffect(() => {
     navigation.setOptions({
@@ -69,7 +71,6 @@ export default function PaymentSuccess() {
     });
   }, [navigation, type, isSharing, theme.colors.primary]);
 
-  const type = (Array.isArray(params.type) ? params.type[0] : params.type) || "";
   const isBillPayment = type === "bill";
 
   const {
@@ -170,7 +171,6 @@ export default function PaymentSuccess() {
   const [pulseAnim] = useState(new Animated.Value(1));
   const [checkmarkAnim] = useState(new Animated.Value(0));
   const rotateAnim = useRef(new Animated.Value(0)).current;
-  const [isSharing, setIsSharing] = useState(false);
 
   // Confetti Particle Generator
   const confettiCount = 30;

@@ -37,9 +37,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         userInterfaceStyle: "automatic",
         scheme: "acme",
         jsEngine: "hermes",
-        updates: {
-            url: `https://u.expo.dev/${projectId}`
-        },
         runtimeVersion: {
             policy: "appVersion"
         },
@@ -218,6 +215,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         updates: {
             enabled: true,
             fallbackToCacheTimeout: 0,
+            url: `https://u.expo.dev/${projectId}`
         },
 
         newArchEnabled: true,
