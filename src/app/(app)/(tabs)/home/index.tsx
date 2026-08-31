@@ -31,7 +31,7 @@ import {
 import { Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, DrawerActions } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LanguageSwitcher from "@/contexts/LanguageSwitcher";
 import LanguageSelector from "@/components/LanguageSelector";
@@ -1759,7 +1759,7 @@ export default function Home() {
 
   // Handle drawer toggle
   const handleDrawerToggle = () => {
-    (navigation as any).openDrawer();
+    navigation.dispatch(DrawerActions.openDrawer());
   };
 
   // Handle notification press
@@ -2587,20 +2587,88 @@ export default function Home() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.fullHeightBackground} edges={["top", "left", "right"]}>
-        {/* Home Page Header Skeleton */}
+        {/* Home Page Header (Real Logo & Welcome) */}
         <View style={styles.homeHeader}>
+          {/* Left: Tenant Logo and Welcome Name */}
           <View style={styles.headerLeft}>
-            <SkeletonLoader width={40} height={40} variant="circle" />
-            <View style={[styles.headerNameContainer, { marginLeft: rp(12) }]}>
-              <SkeletonLoader width={80} height={12} variant="text" />
-              <SkeletonLoader width={120} height={16} variant="text" style={{ marginTop: 4 }} />
-              <SkeletonLoader width={60} height={10} variant="text" style={{ marginTop: 4 }} />
+            <Image
+              source={require("../../../../../assets/images/logo_trans.png")}
+              style={{
+                width: 40,
+                height: 40,
+                marginRight: 8,
+              }}
+              resizeMode="contain"
+            />
+            <View style={styles.headerNameContainer}>
+              <ResponsiveText
+                variant="caption"
+                size="xs"
+                weight="normal"
+                color={theme.colors.textSecondary}
+                allowWrap={false}
+                maxLines={1}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.7}
+                style={styles.headerWelcomeText}
+              >
+                {t("hi") || "Hi"},
+              </ResponsiveText>
+              <ResponsiveText
+                variant="body"
+                size="md"
+                weight="semibold"
+                color={theme.colors.textDark}
+                allowWrap={false}
+                maxLines={1}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.8}
+                style={styles.headerUserName}
+              >
+                {user?.name?.toUpperCase() || "USER"}
+              </ResponsiveText>
             </View>
           </View>
+
+          {/* Right: Icons */}
           <View style={styles.headerRight}>
-            <SkeletonLoader width={32} height={32} variant="circle" />
-            <SkeletonLoader width={32} height={32} variant="circle" />
-            <SkeletonLoader width={32} height={32} variant="circle" />
+            <TouchableOpacity
+              onPress={handleLanguageChange}
+              style={styles.headerIconButton}
+              activeOpacity={0.7}
+            >
+              <View style={styles.languageIconContainer}>
+                <Ionicons
+                  name="language"
+                  size={24}
+                  color={theme.colors.textDark}
+                />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleNotificationPress}
+              style={styles.headerIconButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="notifications-outline"
+                size={24}
+                color={theme.colors.textDark}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleDrawerToggle}
+              style={styles.headerIconButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="menu"
+                size={24}
+                color={theme.colors.primary}
+              />
+            </TouchableOpacity>
           </View>
         </View>
 

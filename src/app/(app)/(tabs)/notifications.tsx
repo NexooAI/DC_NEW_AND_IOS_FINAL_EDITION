@@ -927,7 +927,64 @@ export default function NotificationsScreen() {
                 <Text style={{ fontSize: 14, lineHeight: 22, color: "#374151" }}>
                   {selectedNotification?.message}
                 </Text>
-                
+
+                {/* Contextual Action Button */}
+                {selectedNotification && (
+                  <>
+                    {(selectedNotification.type?.toLowerCase() === "rate" || selectedNotification.type?.toLowerCase() === "rates") && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          closeModal();
+                          router.push("/(app)/(tabs)/home/ratechart");
+                        }}
+                        style={{
+                          backgroundColor: theme.colors.primary,
+                          paddingVertical: 12,
+                          borderRadius: 12,
+                          alignItems: "center",
+                          marginTop: 20,
+                        }}
+                      >
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>View Rate Chart</Text>
+                      </TouchableOpacity>
+                    )}
+                    {(selectedNotification.type?.toLowerCase() === "offer" || selectedNotification.type?.toLowerCase() === "offers") && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          closeModal();
+                          router.push("/(app)/(tabs)/home/offers");
+                        }}
+                        style={{
+                          backgroundColor: theme.colors.primary,
+                          paddingVertical: 12,
+                          borderRadius: 12,
+                          alignItems: "center",
+                          marginTop: 20,
+                        }}
+                      >
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>View Offers</Text>
+                      </TouchableOpacity>
+                    )}
+                    {(selectedNotification.type?.toLowerCase() === "reward" || selectedNotification.type?.toLowerCase() === "rewards") && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          closeModal();
+                          router.push("/(app)/(tabs)/rewards");
+                        }}
+                        style={{
+                          backgroundColor: theme.colors.primary,
+                          paddingVertical: 12,
+                          borderRadius: 12,
+                          alignItems: "center",
+                          marginTop: 20,
+                        }}
+                      >
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>View Rewards</Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                )}
+
                 <TouchableOpacity
                   onPress={closeModal}
                   style={{
@@ -935,7 +992,7 @@ export default function NotificationsScreen() {
                     paddingVertical: 12,
                     borderRadius: 12,
                     alignItems: "center",
-                    marginTop: 24,
+                    marginTop: 12,
                   }}
                 >
                   <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>Dismiss</Text>

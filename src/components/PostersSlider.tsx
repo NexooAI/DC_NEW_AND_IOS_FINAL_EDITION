@@ -6,7 +6,7 @@ import {
   Image,
   ScrollView,
   StyleSheet,
-  Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { COLORS } from "@/constants/colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
@@ -19,6 +19,64 @@ interface PostersSliderProps {
     title?: string;
   }>;
 }
+
+const PosterCard: React.FC<{
+  item: any;
+  index: number;
+  itemWidth: number;
+  itemHeight: number;
+  itemGap: number;
+  theme: any;
+}> = ({ item, index, itemWidth, itemHeight, itemGap, theme }) => {
+  const [loading, setLoading] = useState(true);
+
+  return (
+    <View
+      key={item.id || index}
+      style={[
+        styles.card,
+        {
+          width: itemWidth,
+          height: itemHeight,
+          marginHorizontal: itemGap / 2,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#f3f4f6",
+        },
+      ]}
+    >
+      {loading && (
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 1,
+            },
+          ]}
+        >
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+        </View>
+      )}
+      <Image
+        source={
+          typeof item.image === "string"
+            ? { uri: item.image }
+            : item.image
+        }
+        style={styles.image}
+        resizeMode="stretch"
+        onLoadStart={() => setLoading(true)}
+        onLoadEnd={() => setLoading(false)}
+        onError={(error) => {
+          setLoading(false);
+          logger.error("Poster image loading error:", error);
+        }}
+      />
+    </View>
+  );
+};
 
 const PostersSlider: React.FC<PostersSliderProps> = ({ images = [] }) => {
   const theme = useAppTheme();
@@ -76,30 +134,15 @@ const PostersSlider: React.FC<PostersSliderProps> = ({ images = [] }) => {
         }}
       >
         {images.map((item, index) => (
-          <View
+          <PosterCard
             key={item.id || index}
-            style={[
-              styles.card,
-              {
-                width: itemWidth,
-                height: itemHeight,
-                marginHorizontal: itemGap / 2,
-              },
-            ]}
-          >
-            <Image
-              source={
-                typeof item.image === "string"
-                  ? { uri: item.image }
-                  : item.image
-              }
-              style={styles.image}
-              resizeMode="stretch"
-              onError={(error) => {
-                logger.error("Poster image loading error:", error);
-              }}
-            />
-          </View>
+            item={item}
+            index={index}
+            itemWidth={itemWidth}
+            itemHeight={itemHeight}
+            itemGap={itemGap}
+            theme={theme}
+          />
         ))}
       </ScrollView>
 

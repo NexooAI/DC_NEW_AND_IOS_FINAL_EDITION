@@ -335,7 +335,7 @@ export default function PaymentSuccess() {
       toValue: 0,
       duration: 300,
       useNativeDriver: true,
-    }).start(() => router.replace("/(tabs)/home"));
+    }).start(() => router.replace("/(app)/(tabs)/home"));
   };
   const handleSavingsPress = () => {
     Animated.timing(fadeAnim, {
@@ -344,13 +344,14 @@ export default function PaymentSuccess() {
       useNativeDriver: true,
     }).start(() => {
       // First reset the current stack to home root
-      router.replace("/(tabs)/home");
+      router.replace("/(app)/(tabs)/home");
       
-      // Then navigate to savings after a tick
+      // Then navigate to savings with My Schemes tab active
       setTimeout(() => {
         router.push({
-          pathname: "/(tabs)/savings",
+          pathname: "/(app)/(tabs)/savings",
           params: {
+            tab: "my",
             investmentId: params.investmentId,
             schemeType: params.schemeType,
             paymentFrequency: params.paymentFrequency,

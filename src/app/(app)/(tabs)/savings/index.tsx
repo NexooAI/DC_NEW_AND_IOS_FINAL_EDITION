@@ -28,7 +28,7 @@ export default function SchemesHub() {
   styles = getStyles(theme);
     const { t } = useTranslation();
     const router = useRouter();
-    const params = useLocalSearchParams<{ tab?: string }>();
+    const params = useLocalSearchParams<{ tab?: string; investmentId?: string }>();
     
     const initialTab = params.tab === "join" ? "Join Schemes" : "My Schemes";
     const [activeTab, setActiveTab] = useState<"My Schemes" | "Join Schemes">(
@@ -56,10 +56,10 @@ export default function SchemesHub() {
     React.useEffect(() => {
         if (params.tab === "join" && activeTab !== "Join Schemes") {
             navigateTab("Join Schemes");
-        } else if (params.tab === "my" && activeTab !== "My Schemes") {
+        } else if ((params.tab === "my" || params.tab === "My Schemes" || params.investmentId) && activeTab !== "My Schemes") {
             navigateTab("My Schemes");
         }
-    }, [params.tab]);
+    }, [params.tab, params.investmentId]);
 
     const isDark = theme.colors.background === '#121212';
     const barStyle = isDark ? "light-content" : "dark-content";
