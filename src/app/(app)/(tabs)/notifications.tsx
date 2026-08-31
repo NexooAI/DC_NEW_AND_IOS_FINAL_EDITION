@@ -7,6 +7,7 @@ import {
   Modal,
   ActivityIndicator,
   RefreshControl,
+  ScrollView,
   Platform,
   StatusBar,
 } from "react-native";
@@ -625,7 +626,7 @@ export default function NotificationsScreen() {
   }, [filteredNotifications]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <View style={{ flex: 1 }}>
       <SafeAreaView
         style={{
           flex: 1,
@@ -944,6 +945,6 @@ export default function NotificationsScreen() {
           </View>
         </Modal>
       </SafeAreaView>
-    </GestureHandlerRootView>
+    </View>
   );
 }

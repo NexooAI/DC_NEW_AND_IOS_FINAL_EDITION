@@ -25,8 +25,8 @@ import { useNavigationState } from "@/hooks/useNavigationState";
 type Tab = {
   name: string;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  iconActive: keyof typeof Ionicons.glyphMap;
+  icon: any;
+  iconActive: any;
   badge?: number | null;
 };
 
