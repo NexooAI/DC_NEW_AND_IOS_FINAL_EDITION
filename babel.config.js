@@ -2,9 +2,6 @@ module.exports = function (api) {
   api.cache(true);
 
   const plugins = [
-    // 1️⃣ Worklets Core plugin — should be at the top
-    "react-native-worklets-core/plugin",
-
     // 2️⃣ CSS interop setup for NativeWind
     require("react-native-css-interop/dist/babel-plugin").default,
 
