@@ -11,8 +11,8 @@ import {
   Linking,
   Animated,
   Switch,
+  ScrollView,
 } from "react-native";
-import { DrawerContentScrollView } from "@react-navigation/drawer";
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, usePathname } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -20,6 +20,7 @@ import Constants from "expo-constants";
 import { LinearGradient } from 'expo-linear-gradient';
 
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getFullImageUrl } from "@/utils/imageUtils";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
@@ -155,7 +156,8 @@ interface CustomDrawerContentProps {
 
 export function CustomDrawerContent(props: CustomDrawerContentProps) {
   const theme = useAppTheme();
-  const styles = getStyles(theme);
+  const insets = useSafeAreaInsets();
+  const styles = getStyles(theme, insets);
   const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
@@ -209,7 +211,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
       }
 
       setIsNavigating(true);
-      props.navigation.closeDrawer();
+      props.navigation?.closeDrawer?.();
 
       navigationTimeoutRef.current = setTimeout(() => {
         try {
@@ -347,7 +349,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
         </LinearGradient>
       </View>
 
-      <DrawerContentScrollView
+      <ScrollView
         {...props}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -475,7 +477,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
         </View>
 
         <View style={styles.footerSpacer} />
-      </DrawerContentScrollView>
+      </ScrollView>
 
       {/* Footer */}
       <View style={styles.footer}>
@@ -495,23 +497,23 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
   );
 }
 
-const getStyles = (theme: any) => StyleSheet.create({
+const getStyles = (
+  theme: any,
+  insets: { top: number; bottom: number; left: number; right: number } = { top: 0, bottom: 0, left: 0, right: 0 }
+) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
   },
   headerContainer: {
-    minHeight: 120,
     width: '100%',
     overflow: 'hidden',
     borderBottomRightRadius: 24,
-    marginTop: -5,
   },
   headerGradient: {
-    flex: 1,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 45 : 30,
-    paddingBottom: 10,
+    paddingTop: Platform.OS === 'ios' ? 20 : 18,
+    paddingBottom: 18,
     justifyContent: 'center',
   },
   userInfoContainer: {
@@ -521,7 +523,7 @@ const getStyles = (theme: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   avatarContainer: {
     width: 48,
@@ -722,7 +724,8 @@ const getStyles = (theme: any) => StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: theme.colors.borderLight,
     backgroundColor: theme.colors.background,
-    paddingBottom: Platform.OS === 'ios' ? 10 : 5,
+    paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 16) : 8,
+    paddingTop: 4,
   },
   logoutContainer: {
     paddingHorizontal: 16,

@@ -18,8 +18,8 @@ import {
   KeyboardAvoidingView,
   Linking, // Added Linking
   StatusBar,
+  ScrollView,
 } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import * as ImagePicker from "expo-image-picker";

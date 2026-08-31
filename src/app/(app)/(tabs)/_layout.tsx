@@ -29,9 +29,8 @@ export default function TabsLayout() {
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
-      <NavigationErrorBoundary>
-        <Tabs
-          tabBar={(props) => <CustomBottomBar {...props} />}
+      <Tabs
+        tabBar={(props) => <CustomBottomBar {...props} />}
           screenOptions={{
             headerShown: true,
             /*
@@ -284,7 +283,6 @@ export default function TabsLayout() {
             }}
           />
         </Tabs>
-      </NavigationErrorBoundary>
     </SafeAreaView>
   );
 }

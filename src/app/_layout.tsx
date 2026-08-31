@@ -260,33 +260,6 @@ export default function RootLayout() {
     if (isExpoGo) {
       return;
     }
-
-    const checkInitialNotification = async () => {
-      try {
-        const Notifications = await import("expo-notifications");
-        const lastNotificationResponse =
-          await Notifications.getLastNotificationResponseAsync();
-
-        if (lastNotificationResponse) {
-          logger.log(
-            "🚀 App launched from notification:",
-            lastNotificationResponse.notification.request.content
-          );
-          const data = lastNotificationResponse.notification.request.content
-            .data as NotificationData;
-          if (!isLoggedIn) {
-            pendingNotificationData = data;
-            router.replace("/(auth)/login");
-          } else {
-            notificationResponseRef.current = lastNotificationResponse;
-          }
-        }
-      } catch (error) {
-        logger.error("Error checking initial notification:", error);
-      }
-    };
-
-    checkInitialNotification();
   }, [isExpoGo, isLoggedIn]);
 
   useEffect(() => {

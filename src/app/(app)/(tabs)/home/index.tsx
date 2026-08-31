@@ -45,6 +45,7 @@ import YouTubeVideo from "@/components/YouTubeVideo";
 import SupportContactCard from "@/components/SupportContactCard";
 import SocialMediaCard from "@/components/SocialMediaCard";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
+import CustomDrawerContent from "@/common/components/navigation/DrawerContent";
 import api, { offersAPI } from "@/services/api";
 import NetInfo from "@react-native-community/netinfo";
 import { ScaledSheet, moderateScale } from "react-native-size-matters";
@@ -762,6 +763,7 @@ export default function Home() {
   const [calculatedGoldWeight, setCalculatedGoldWeight] = useState<number | null>(null);
   const [branches, setBranches] = useState<Array<{ id: number; branch_name: string }>>([]);
   const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+  const [isLocalDrawerOpen, setIsLocalDrawerOpen] = useState(false);
   // Amount limits for selected scheme
   const [schemeAmountLimits, setSchemeAmountLimits] = useState<{
     min_amount: number;
@@ -1760,36 +1762,22 @@ export default function Home() {
   // Handle drawer toggle
   const handleDrawerToggle = () => {
     try {
-      const drawerNav: any = (navigation as any).getParent?.("AppDrawer") || (navigation as any).getParent?.()?.getParent?.() || (navigation as any).getParent?.();
-      if (drawerNav) {
-        if (typeof drawerNav.openDrawer === "function") {
-          drawerNav.openDrawer();
+      let p: any = navigation;
+      while (p) {
+        if (typeof p.openDrawer === "function") {
+          p.openDrawer();
           return;
         }
-        if (typeof drawerNav.toggleDrawer === "function") {
-          drawerNav.toggleDrawer();
+        if (typeof p.toggleDrawer === "function") {
+          p.toggleDrawer();
           return;
         }
-        if (typeof drawerNav.dispatch === "function") {
-          drawerNav.dispatch(DrawerActions.openDrawer());
-          return;
-        }
+        p = p.getParent ? p.getParent() : null;
       }
-
-      let parent: any = navigation.getParent();
-      while (parent) {
-        if (typeof parent.openDrawer === "function") {
-          parent.openDrawer();
-          return;
-        }
-        if (typeof parent.toggleDrawer === "function") {
-          parent.toggleDrawer();
-          return;
-        }
-        parent = parent.getParent();
-      }
+      setIsLocalDrawerOpen(true);
     } catch (err) {
       logger.error("Error opening drawer:", err);
+      setIsLocalDrawerOpen(true);
     }
   };
 
@@ -3906,6 +3894,32 @@ export default function Home() {
         visible={languageSelectorVisible}
         onClose={() => setLanguageSelectorVisible(false)}
       />
+      {/* Side Drawer Modal for immediate local testing */}
+      <Modal
+        visible={isLocalDrawerOpen}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setIsLocalDrawerOpen(false)}
+      >
+        <View style={{ flex: 1, flexDirection: "row", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <SafeAreaView 
+            style={{ width: "82%", height: "100%", backgroundColor: theme.colors.background }}
+            edges={Platform.OS === "ios" ? ["top", "bottom", "left"] : ["bottom", "left"]}
+          >
+            <CustomDrawerContent
+              navigation={{
+                ...navigation,
+                closeDrawer: () => setIsLocalDrawerOpen(false),
+              }}
+            />
+          </SafeAreaView>
+          <TouchableOpacity
+            style={{ flex: 1, height: "100%" }}
+            activeOpacity={1}
+            onPress={() => setIsLocalDrawerOpen(false)}
+          />
+        </View>
+      </Modal>
       <MinimizedLuckyDrawPill />
     </AuthGuard>
   );

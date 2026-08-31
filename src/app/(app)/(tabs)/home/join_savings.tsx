@@ -138,7 +138,7 @@ export default function JoinSavings() {
           ],
         });
       } catch (error) {
-        logger.error("Error fetching scheme data from API:", error);
+        logger.warn("Scheme data API fallback:", error);
       }
     };
 

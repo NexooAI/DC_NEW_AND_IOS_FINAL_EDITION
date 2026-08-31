@@ -64,6 +64,11 @@ export default function KnowProduct() {
 
   // Fetch the scheme data from the API when the component mounts
   useEffect(() => {
+    if (!schemeId) {
+      setSchemeData(dummyData);
+      setLoadingData(false);
+      return;
+    }
     api
       .get(`/schemesknowmore/scheme/${schemeId}`)
       .then((response) => {
@@ -78,9 +83,8 @@ export default function KnowProduct() {
         }
       })
       .catch((err) => {
-        logger.error("Error fetching scheme data:", err);
+        logger.warn("API scheme details not found, using default data:", err?.message);
         setSchemeData(dummyData);
-        setFetchError(err);
       })
       .finally(() => {
         setLoadingData(false);
