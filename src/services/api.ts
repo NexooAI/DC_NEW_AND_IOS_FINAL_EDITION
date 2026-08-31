@@ -12,6 +12,40 @@ import useGlobalStore from '@/store/global.store';
 import * as FileSystem from 'expo-file-system/legacy';
 
 import { logger } from '@/utils/logger';
+
+const decodeBase64 = (str: string): string => {
+  try {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+    let output = '';
+    str = String(str).replace(/=+$/, '');
+    for (let bc = 0, bs = 0, buffer, idx = 0; (buffer = str.charAt(idx++)); ~buffer && ((bs = bc % 4 ? bs * 64 + buffer : buffer), bc++ % 4) ? (output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6)))) : 0) {
+      buffer = chars.indexOf(buffer);
+    }
+    return output;
+  } catch {
+    return '';
+  }
+};
+
+const getSecureItemWithTimeout = async (key: string, timeoutMs = 1500): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      logger.warn(`⚠️ SecureStore.getItemAsync('${key}') timed out after ${timeoutMs}ms.`);
+      resolve(null);
+    }, timeoutMs);
+
+    SecureStore.getItemAsync(key)
+      .then((val) => {
+        clearTimeout(timer);
+        resolve(val);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        logger.error(`Error reading ${key} from SecureStore:`, err);
+        resolve(null);
+      });
+  });
+};
 // ============================================================================
 // API LOGGER CLASS
 // ============================================================================
@@ -248,9 +282,9 @@ const isPublicEndpoint = (url: string | undefined): boolean => {
 
 const checkTokenValidity = async () => {
   try {
-    let token = await SecureStore.getItemAsync("token");
+    let token = await getSecureItemWithTimeout("token");
     if (!token) {
-      token = await SecureStore.getItemAsync("accessToken");
+      token = await getSecureItemWithTimeout("accessToken");
     }
 
     if (!token || typeof token !== 'string' || token.trim() === '') {
@@ -267,7 +301,7 @@ const checkTokenValidity = async () => {
     }
 
     try {
-      const tokenData = JSON.parse(atob(tokenParts[1]));
+      const tokenData = JSON.parse(decodeBase64(tokenParts[1]));
       const expirationTime = tokenData.exp * 1000;
       const currentTime = Date.now();
       const timeUntilExpiry = expirationTime - currentTime;
@@ -281,7 +315,7 @@ const checkTokenValidity = async () => {
 
       if (currentTime >= expirationTime) {
         logger.log('🔄 Token expired, attempting refresh...');
-        const refreshToken = await SecureStore.getItemAsync("refreshToken");
+        const refreshToken = await getSecureItemWithTimeout("refreshToken");
         if (refreshToken) {
           try {
             logger.log('🔄 Token expired, attempting refresh...');
@@ -408,14 +442,14 @@ apiClient.interceptors.request.use(
     config.headers['x-client-platform'] = Platform.OS;
 
     try {
-      let token = await SecureStore.getItemAsync("token");
+      let token = await getSecureItemWithTimeout("token");
 
       if (!token) {
-        token = await SecureStore.getItemAsync("accessToken");
+        token = await getSecureItemWithTimeout("accessToken");
       }
 
       if (!token) {
-        token = await SecureStore.getItemAsync("authToken");
+        token = await getSecureItemWithTimeout("authToken");
       }
 
       if (token) {
@@ -483,7 +517,7 @@ apiClient.interceptors.response.use(
 
       try {
         logger.log('🔄 Starting token refresh process...');
-        const refreshToken = await SecureStore.getItemAsync("refreshToken");
+        const refreshToken = await getSecureItemWithTimeout("refreshToken");
 
         if (!refreshToken) {
           logger.log('❌ No refresh token available, initiating logout');

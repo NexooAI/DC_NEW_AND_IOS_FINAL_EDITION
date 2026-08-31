@@ -26,6 +26,26 @@ import { useForceUpdate } from "@/hooks/useForceUpdate";
 import ForceUpdateScreen from "@/components/ForceUpdateScreen";
 import { logger } from "@/utils/logger";
 
+const getSecureItemWithTimeout = async (key: string, timeoutMs = 1500): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      logger.warn(`⚠️ SecureStore.getItemAsync('${key}') timed out after ${timeoutMs}ms.`);
+      resolve(null);
+    }, timeoutMs);
+
+    SecureStore.getItemAsync(key)
+      .then((val) => {
+        clearTimeout(timer);
+        resolve(val);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        logger.error(`Error reading ${key} from SecureStore:`, err);
+        resolve(null);
+      });
+  });
+};
+
 interface NotificationData {
   type?: string;
   screen?: string;
@@ -303,7 +323,7 @@ export default function RootLayout() {
   useEffect(() => {
     const initializeUserData = async () => {
       try {
-        const token = await SecureStore.getItemAsync("authToken");
+        const token = await getSecureItemWithTimeout("authToken");
         const storedUserData = await AsyncStorage.getItem("userData");
 
         if (token && storedUserData) {

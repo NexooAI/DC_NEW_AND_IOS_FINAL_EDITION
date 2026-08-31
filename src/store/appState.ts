@@ -4,6 +4,26 @@ import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 
 import { logger } from '@/utils/logger';
+
+const getSecureItemWithTimeout = async (key: string, timeoutMs = 1500): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      logger.warn(`⚠️ SecureStore.getItemAsync('${key}') timed out after ${timeoutMs}ms.`);
+      resolve(null);
+    }, timeoutMs);
+
+    SecureStore.getItemAsync(key)
+      .then((val) => {
+        clearTimeout(timer);
+        resolve(val);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        logger.error(`Error reading ${key} from SecureStore:`, err);
+        resolve(null);
+      });
+  });
+};
 let appStateTimeout: NodeJS.Timeout | null = null;
 let backgroundTime: number = 0;
 // Increased timeout to prevent automatic logout - set to 30 minutes instead of 30 seconds
@@ -43,8 +63,8 @@ const setupAppStateListener = () => {
         if (timeInBackground > BACKGROUND_TIMEOUT) {
           try {
             // Check if user has valid token and MPIN
-            const token = await SecureStore.getItemAsync("authToken");
-            const storedMPIN = await SecureStore.getItemAsync("user_mpin");
+            const token = await getSecureItemWithTimeout("authToken");
+            const storedMPIN = await getSecureItemWithTimeout("user_mpin");
 
             if (token && storedMPIN) {
               // Force MPIN verification for security only after very long background time

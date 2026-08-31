@@ -26,7 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
     const version = isIos
         ? (themeConfig.iosVersion || "1.0.1")
-        : (themeConfig.androidVersion || "1.0.7");
+        : (themeConfig.androidVersion || "1.0.8");
 
     return {
         ...config,
@@ -37,6 +37,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         userInterfaceStyle: "automatic",
         scheme: "acme",
         jsEngine: "hermes",
+        updates: {
+            url: `https://u.expo.dev/${projectId}`
+        },
+        runtimeVersion: {
+            policy: "appVersion"
+        },
 
         icon: themeConfig.icon || "./assets/images/logo_trans.png",
 
@@ -55,7 +61,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         android: {
             package: bundleIdentifier,
             googleServicesFile: "./google-services.json",
-            versionCode: 8,
+            versionCode: 9,
             adaptiveIcon: {
                 foregroundImage: themeConfig.adaptiveIcon || "./assets/images/adaptive-icon.png",
                 backgroundColor: themeConfig.primaryColor,

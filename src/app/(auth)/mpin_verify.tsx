@@ -40,6 +40,26 @@ import { AppLocale } from "@/i18n";
 import apiClient from "@/services/api";
 
 import { logger } from "@/utils/logger";
+
+const getSecureItemWithTimeout = async (key: string, timeoutMs = 1500): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      logger.warn(`⚠️ SecureStore.getItemAsync('${key}') timed out after ${timeoutMs}ms.`);
+      resolve(null);
+    }, timeoutMs);
+
+    SecureStore.getItemAsync(key)
+      .then((val) => {
+        clearTimeout(timer);
+        resolve(val);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        logger.error(`Error reading ${key} from SecureStore:`, err);
+        resolve(null);
+      });
+  });
+};
 import LanguageSelector from "@/components/LanguageSelector";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
@@ -548,7 +568,7 @@ export default function MpinVerify() {
         }
 
         // Get stored token and user data
-        const token = await SecureStore.getItemAsync("authToken");
+        const token = await getSecureItemWithTimeout("authToken");
         const userData = await AsyncStorage.getItem("userData");
 
         // If direct login via mobile param, bypass token check

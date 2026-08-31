@@ -55,6 +55,26 @@ import { shadowUtils } from "@/utils/shadowUtils";
 import { animationUtils } from "@/utils/animationUtils";
 import Loader from "@/components/Loader";
 import { logger } from "@/utils/logger";
+
+const getSecureItemWithTimeout = async (key: string, timeoutMs = 1500): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      logger.warn(`⚠️ SecureStore.getItemAsync('${key}') timed out after ${timeoutMs}ms.`);
+      resolve(null);
+    }, timeoutMs);
+
+    SecureStore.getItemAsync(key)
+      .then((val) => {
+        clearTimeout(timer);
+        resolve(val);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        logger.error(`Error reading ${key} from SecureStore:`, err);
+        resolve(null);
+      });
+  });
+};
 import {
   getCommonStyles,
   getSpacingValues,
@@ -745,7 +765,7 @@ export default function Login() {
 
   const checkTokenValidity = async () => {
     try {
-      const token = await SecureStore.getItemAsync("authToken");
+      const token = await getSecureItemWithTimeout("authToken");
       if (!token) return;
     } catch (error) {
       logger.error("Error checking token:", error);
@@ -1060,7 +1080,7 @@ export default function Login() {
       const secureKeys = ["authToken", "accessToken", "token", "refreshToken"];
       for (const key of secureKeys) {
         try {
-          const value = await SecureStore.getItemAsync(key);
+          const value = await getSecureItemWithTimeout(key);
           if (value) {
             storageData[`secure_${key}`] = value;
           }
@@ -1073,7 +1093,7 @@ export default function Login() {
       const tokenAnalysis: { [key: string]: any } = {};
 
       // Check main token
-      const mainToken = await SecureStore.getItemAsync("token");
+      const mainToken = await getSecureItemWithTimeout("token");
       if (mainToken) {
         try {
           const tokenParts = mainToken.split(".");
@@ -1154,7 +1174,7 @@ export default function Login() {
   const handleRefreshToken = async () => {
     setIsRefreshingToken(true);
     try {
-      const refreshToken = await SecureStore.getItemAsync("refreshToken");
+      const refreshToken = await getSecureItemWithTimeout("refreshToken");
       if (!refreshToken) {
         Alert.alert("Error", "No refresh token available");
         return;
