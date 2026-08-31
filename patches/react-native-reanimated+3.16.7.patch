@@ -1,0 +1,100 @@
+diff --git a/node_modules/react-native-reanimated/android/src/main/cpp/reanimated/CMakeLists.txt b/node_modules/react-native-reanimated/android/src/main/cpp/reanimated/CMakeLists.txt
+index e8267fe..120fade 100644
+--- a/node_modules/react-native-reanimated/android/src/main/cpp/reanimated/CMakeLists.txt
++++ b/node_modules/react-native-reanimated/android/src/main/cpp/reanimated/CMakeLists.txt
+@@ -1,7 +1,30 @@
+ cmake_minimum_required(VERSION 3.8)
+ 
+-file(GLOB_RECURSE REANIMATED_COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/reanimated/*.cpp")
+-file(GLOB_RECURSE REANIMATED_ANDROID_CPP_SOURCES CONFIGURE_DEPENDS "${ANDROID_CPP_DIR}/reanimated/*.cpp")
++set(REANIMATED_COMMON_CPP_SOURCES
++    ../../../../../Common/cpp/reanimated/AnimatedSensor/AnimatedSensorModule.cpp
++    ../../../../../Common/cpp/reanimated/Fabric/PropsRegistry.cpp
++    ../../../../../Common/cpp/reanimated/Fabric/ReanimatedCommitHook.cpp
++    ../../../../../Common/cpp/reanimated/Fabric/ReanimatedMountHook.cpp
++    ../../../../../Common/cpp/reanimated/Fabric/ShadowTreeCloner.cpp
++    ../../../../../Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsManager.cpp
++    ../../../../../Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsProxy.cpp
++    ../../../../../Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsUtils.cpp
++    ../../../../../Common/cpp/reanimated/NativeModules/NativeReanimatedModule.cpp
++    ../../../../../Common/cpp/reanimated/NativeModules/NativeReanimatedModuleSpec.cpp
++    ../../../../../Common/cpp/reanimated/RuntimeDecorators/ReanimatedWorkletRuntimeDecorator.cpp
++    ../../../../../Common/cpp/reanimated/RuntimeDecorators/RNRuntimeDecorator.cpp
++    ../../../../../Common/cpp/reanimated/RuntimeDecorators/UIRuntimeDecorator.cpp
++    ../../../../../Common/cpp/reanimated/Tools/FeaturesConfig.cpp
++)
++
++set(REANIMATED_ANDROID_CPP_SOURCES
++    android/AndroidUIScheduler.cpp
++    android/JNIHelper.cpp
++    android/LayoutAnimations.cpp
++    android/NativeProxy.cpp
++    android/OnLoad.cpp
++    android/PlatformLogger.cpp
++)
+ 
+ find_package(ReactAndroid REQUIRED CONFIG)
+ 
+diff --git a/node_modules/react-native-reanimated/android/src/main/cpp/worklets/CMakeLists.txt b/node_modules/react-native-reanimated/android/src/main/cpp/worklets/CMakeLists.txt
+index 61508ef..ef35075 100644
+--- a/node_modules/react-native-reanimated/android/src/main/cpp/worklets/CMakeLists.txt
++++ b/node_modules/react-native-reanimated/android/src/main/cpp/worklets/CMakeLists.txt
+@@ -1,6 +1,22 @@
+ cmake_minimum_required(VERSION 3.8)
+ 
+-file(GLOB_RECURSE WORKLETS_COMMON_CPP_SOURCES CONFIGURE_DEPENDS "${COMMON_CPP_DIR}/worklets/*.cpp")
++set(WORKLETS_COMMON_CPP_SOURCES
++    ../../../../../Common/cpp/worklets/Registries/EventHandlerRegistry.cpp
++    ../../../../../Common/cpp/worklets/Registries/WorkletRuntimeRegistry.cpp
++    ../../../../../Common/cpp/worklets/SharedItems/Shareables.cpp
++    ../../../../../Common/cpp/worklets/Tools/AsyncQueue.cpp
++    ../../../../../Common/cpp/worklets/Tools/JSISerializer.cpp
++    ../../../../../Common/cpp/worklets/Tools/JSLogger.cpp
++    ../../../../../Common/cpp/worklets/Tools/JSScheduler.cpp
++    ../../../../../Common/cpp/worklets/Tools/ReanimatedJSIUtils.cpp
++    ../../../../../Common/cpp/worklets/Tools/ReanimatedVersion.cpp
++    ../../../../../Common/cpp/worklets/Tools/UIScheduler.cpp
++    ../../../../../Common/cpp/worklets/Tools/WorkletEventHandler.cpp
++    ../../../../../Common/cpp/worklets/WorkletRuntime/ReanimatedHermesRuntime.cpp
++    ../../../../../Common/cpp/worklets/WorkletRuntime/ReanimatedRuntime.cpp
++    ../../../../../Common/cpp/worklets/WorkletRuntime/WorkletRuntime.cpp
++    ../../../../../Common/cpp/worklets/WorkletRuntime/WorkletRuntimeDecorator.cpp
++)
+ 
+ # Consume shared libraries and headers from prefabs
+ find_package(fbjni REQUIRED CONFIG)
+diff --git a/node_modules/react-native-reanimated/android/src/main/java/com/swmansion/reanimated/ReanimatedPackage.java b/node_modules/react-native-reanimated/android/src/main/java/com/swmansion/reanimated/ReanimatedPackage.java
+index 112f758..6d4e7db 100644
+--- a/node_modules/react-native-reanimated/android/src/main/java/com/swmansion/reanimated/ReanimatedPackage.java
++++ b/node_modules/react-native-reanimated/android/src/main/java/com/swmansion/reanimated/ReanimatedPackage.java
+@@ -69,7 +69,7 @@ public class ReanimatedPackage extends TurboReactPackage implements ReactPackage
+ 
+   private UIManagerModule createUIManager(final ReactApplicationContext reactContext) {
+     ReactMarker.logMarker(CREATE_UI_MANAGER_MODULE_START);
+-    Systrace.beginSection(Systrace.TRACE_TAG_REACT_JAVA_BRIDGE, "createUIManagerModule");
++    Systrace.beginSection(0L, "createUIManagerModule");
+     final ReactInstanceManager reactInstanceManager = getReactInstanceManager(reactContext);
+     List<ViewManager> viewManagers = reactInstanceManager.getOrCreateViewManagers(reactContext);
+     int minTimeLeftInFrameForNonBatchedOperationMs = -1;
+@@ -77,7 +77,7 @@ public class ReanimatedPackage extends TurboReactPackage implements ReactPackage
+       return ReanimatedUIManagerFactory.create(
+           reactContext, viewManagers, minTimeLeftInFrameForNonBatchedOperationMs);
+     } finally {
+-      Systrace.endSection(Systrace.TRACE_TAG_REACT_JAVA_BRIDGE);
++      Systrace.endSection(0L);
+       ReactMarker.logMarker(CREATE_UI_MANAGER_MODULE_END);
+     }
+   }
+diff --git a/node_modules/react-native-reanimated/android/src/reactNativeVersionPatch/BorderRadiiDrawableUtils/latest/com/swmansion/reanimated/BorderRadiiDrawableUtils.java b/node_modules/react-native-reanimated/android/src/reactNativeVersionPatch/BorderRadiiDrawableUtils/latest/com/swmansion/reanimated/BorderRadiiDrawableUtils.java
+index c850777..8af7c09 100644
+--- a/node_modules/react-native-reanimated/android/src/reactNativeVersionPatch/BorderRadiiDrawableUtils/latest/com/swmansion/reanimated/BorderRadiiDrawableUtils.java
++++ b/node_modules/react-native-reanimated/android/src/reactNativeVersionPatch/BorderRadiiDrawableUtils/latest/com/swmansion/reanimated/BorderRadiiDrawableUtils.java
+@@ -18,7 +18,7 @@ public class BorderRadiiDrawableUtils {
+       return defaultValue;
+     }
+     Rect bounds = view.getBackground().getBounds();
+-    return length.resolve(bounds.width(), bounds.height()).toPixelFromDIP().getHorizontal();
++    return length.resolve((float) bounds.width());
+   }
+ 
+   public static ReactNativeUtils.BorderRadii getBorderRadii(View view) {
