@@ -120,7 +120,7 @@ class ForceUpdateService {
             const currentVersion = this.getCurrentVersion();
 
             // Call the API to get latest version info
-            const response = await apiClient.get<AppVersionResponse[]>('/version/verify-version');
+            const response = await apiClient.get<AppVersionResponse[]>('/version/verify-version', { skipLoading: true } as any);
             const versionData = response.data[0]; // Get the first item from the array
 
             if (!versionData) {
