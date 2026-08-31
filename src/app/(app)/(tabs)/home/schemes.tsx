@@ -25,6 +25,7 @@ import {
   Linking,
   StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
@@ -1215,29 +1216,22 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
   return (
     <View style={styles.container}>
-      {!isNested && <StatusBar barStyle="light-content" backgroundColor={theme.colors.gradientPrimary?.[0] || "#0b162c"} />}
+      {!isNested && <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || "#F2E6D2"} />}
       <Stack.Screen options={{ headerShown: false }} />
       {/* Header */}
       {!isNested && (
-        <LinearGradient
-          colors={theme.colors.gradientPrimary || ["#0b162c", "#16315c", "#d4af37"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.headerGradient}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
-                  <Ionicons name="arrow-back" size={24} color="#fff" />
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { marginBottom: 0 }]} numberOfLines={1} adjustsFontSizeToFit>
-                  {t("schemes.title") || "Schemes"}
-                </Text>
-              </View>
+        <SafeAreaView edges={["top"]} style={{ backgroundColor: theme.colors.quaternary || "#F2E6D2" }}>
+          <View style={{ backgroundColor: theme.colors.quaternary || "#F2E6D2", paddingHorizontal: 16, paddingVertical: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
+                <Ionicons name="arrow-back" size={24} color={theme.colors.textDark || "#850111"} />
+              </TouchableOpacity>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: theme.colors.textDark || "#850111", flex: 1 }}>
+                {t("schemes.title") || "Schemes"}
+              </Text>
             </View>
           </View>
-        </LinearGradient>
+        </SafeAreaView>
       )}
 
       {/* Metal Category Filter Bar */}

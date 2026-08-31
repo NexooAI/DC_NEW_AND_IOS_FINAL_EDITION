@@ -448,7 +448,6 @@ export default function RootLayout() {
           <LanguageProvider1>
             <GlobalLoadingProvider>
               <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(app)" options={{ headerShown: false }} />
                 <Stack.Screen name="intro" options={{ gestureEnabled: false }} />
                 <Stack.Screen name="login" options={{ gestureEnabled: false }} />
                 <Stack.Screen

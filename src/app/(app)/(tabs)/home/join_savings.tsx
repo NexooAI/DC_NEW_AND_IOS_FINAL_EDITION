@@ -2759,7 +2759,7 @@ export default function JoinSavings() {
   return (
     <SafeAreaView
       style={styles.safeAreaContainer}
-      edges={["left", "right"]}
+      edges={["top", "left", "right"]}
     >
       <View style={styles.container}>
         {/* <View style={styles.header}>

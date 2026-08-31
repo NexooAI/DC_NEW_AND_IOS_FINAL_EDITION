@@ -17,6 +17,7 @@ import {
   Modal,
   KeyboardAvoidingView,
   Linking, // Added Linking
+  StatusBar,
 } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -646,15 +647,16 @@ const ProfileScreen = () => {
 
   return (
     <AuthGuard>
-      <SafeAreaView style={styles.container} edges={["left", "right"]}>
+      <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || "#F2E6D2"} />
         <KeyboardAvoidingView
           style={styles.keyboardAvoid}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <View style={[styles.header, Platform.OS === 'android' && { paddingTop: insets.top }]}>
+          <View style={styles.header}>
             <View style={styles.headerContent}>
               <TouchableOpacity
-                onPress={() => router.push("/home")}
+                onPress={() => router.push("/(app)/(tabs)/home")}
                 style={styles.backButton}
                 activeOpacity={0.8}
               >

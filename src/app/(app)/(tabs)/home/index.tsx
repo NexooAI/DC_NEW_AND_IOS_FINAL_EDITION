@@ -1760,6 +1760,22 @@ export default function Home() {
   // Handle drawer toggle
   const handleDrawerToggle = () => {
     try {
+      const drawerNav: any = (navigation as any).getParent?.("AppDrawer") || (navigation as any).getParent?.()?.getParent?.() || (navigation as any).getParent?.();
+      if (drawerNav) {
+        if (typeof drawerNav.openDrawer === "function") {
+          drawerNav.openDrawer();
+          return;
+        }
+        if (typeof drawerNav.toggleDrawer === "function") {
+          drawerNav.toggleDrawer();
+          return;
+        }
+        if (typeof drawerNav.dispatch === "function") {
+          drawerNav.dispatch(DrawerActions.openDrawer());
+          return;
+        }
+      }
+
       let parent: any = navigation.getParent();
       while (parent) {
         if (typeof parent.openDrawer === "function") {
@@ -1771,11 +1787,6 @@ export default function Home() {
           return;
         }
         parent = parent.getParent();
-      }
-      if (typeof (navigation as any).openDrawer === "function") {
-        (navigation as any).openDrawer();
-      } else if (typeof (navigation as any).toggleDrawer === "function") {
-        (navigation as any).toggleDrawer();
       }
     } catch (err) {
       logger.error("Error opening drawer:", err);
