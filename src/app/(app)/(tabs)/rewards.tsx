@@ -82,9 +82,9 @@ export default function RewardsScreen() {
                 backgroundColor: "#F2E6D2",
                 elevation: 0,
                 shadowOpacity: 0,
-                height: Platform.OS === 'android' ? (60 + insets.top) : 60,
+                height: 60 + insets.top,
             },
-            headerStatusBarHeight: Platform.OS === 'android' ? insets.top : 0,
+            headerStatusBarHeight: insets.top,
             headerTintColor: "#1a1a1a",
             headerTitleStyle: {
                 fontWeight: "700",

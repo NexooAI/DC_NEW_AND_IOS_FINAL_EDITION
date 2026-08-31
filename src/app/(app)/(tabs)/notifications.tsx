@@ -11,12 +11,6 @@ import {
   StatusBar,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { ScrollView, Swipeable, GestureHandlerRootView } from "react-native-gesture-handler";
-// Bypass type checking for Reanimated due to v4 export issues
-const Reanimated = require("react-native-reanimated");
-const Animated = Reanimated.default || Reanimated;
-const { Layout, FadeOut } = Reanimated;
-
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -376,50 +370,44 @@ const NotificationItem = React.memo(
     };
 
     return (
-      <Animated.View
-        layout={Layout.springify()}
-        exiting={FadeOut}
-        style={{ marginBottom: 12 }}
-      >
-        <Swipeable renderRightActions={renderRightActions}>
-          <Pressable
-            onPress={() => onPress(item.id.toString())}
-            style={({ pressed }) => ({
-              backgroundColor: "white",
-              padding: 16,
-              borderRadius: 16,
-              // Shadow for card styling
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.04,
-              shadowRadius: 6,
-              elevation: 2,
-              borderWidth: 1,
-              borderColor: isUnread ? '#FEF08A' : '#F3F4F6',
-              // Dynamic left border accent for unread items
-              borderLeftWidth: 4,
-              borderLeftColor: categoryColors.border,
-              transform: [{ scale: pressed ? 0.99 : 1 }],
-            })}
-          >
-            {/* Unread "NEW" Tag */}
-            {isUnread && (
-              <View style={{
-                backgroundColor: '#FEF3C7',
-                paddingHorizontal: 8,
-                paddingVertical: 2,
-                borderRadius: 20,
-                alignSelf: "flex-start",
-                marginBottom: 8,
-              }}>
-                <Text style={{ fontSize: 9, color: '#854D0E', fontWeight: "800" }}>NEW</Text>
-              </View>
-            )}
+      <View style={{ marginBottom: 12 }}>
+        <Pressable
+          onPress={() => onPress(item.id.toString())}
+          style={({ pressed }) => ({
+            backgroundColor: "white",
+            padding: 16,
+            borderRadius: 16,
+            // Shadow for card styling
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.04,
+            shadowRadius: 6,
+            elevation: 2,
+            borderWidth: 1,
+            borderColor: isUnread ? '#FEF08A' : '#F3F4F6',
+            // Dynamic left border accent for unread items
+            borderLeftWidth: 4,
+            borderLeftColor: categoryColors.border,
+            transform: [{ scale: pressed ? 0.99 : 1 }],
+          })}
+        >
+          {/* Unread "NEW" Tag */}
+          {isUnread && (
+            <View style={{
+              backgroundColor: '#FEF3C7',
+              paddingHorizontal: 8,
+              paddingVertical: 2,
+              borderRadius: 20,
+              alignSelf: "flex-start",
+              marginBottom: 8,
+            }}>
+              <Text style={{ fontSize: 9, color: '#854D0E', fontWeight: "800" }}>NEW</Text>
+            </View>
+          )}
 
-            {isRateType ? renderRateLayout() : renderGeneralLayout()}
-          </Pressable>
-        </Swipeable>
-      </Animated.View>
+          {isRateType ? renderRateLayout() : renderGeneralLayout()}
+        </Pressable>
+      </View>
     );
   }
 );

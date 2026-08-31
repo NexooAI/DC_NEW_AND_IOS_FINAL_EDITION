@@ -21,6 +21,7 @@ import LoadingService from "@/services/loadingServices";
 import setupAppStateListener from "@/store/appState";
 import { theme } from "@/constants/theme";
 import { RootSiblingParent } from "react-native-root-siblings";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import GlobalLoadingProvider from "@/components/GlobalLoadingProvider";
 import { useForceUpdate } from "@/hooks/useForceUpdate";
 import ForceUpdateScreen from "@/components/ForceUpdateScreen";
@@ -436,29 +437,31 @@ export default function RootLayout() {
   }
 
   return (
-    <RootSiblingParent>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor={theme.colors.primary}
-          translucent={false}
-        />
-        <LanguageProvider1>
-          <GlobalLoadingProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="intro" options={{ gestureEnabled: false }} />
-              <Stack.Screen name="login" options={{ gestureEnabled: false }} />
-              <Stack.Screen
-                name="[...missing]"
-                options={{
-                  gestureEnabled: false,
-                  animation: "fade",
-                }}
-              />
-            </Stack>
-          </GlobalLoadingProvider>
-        </LanguageProvider1>
-      </GestureHandlerRootView>
-    </RootSiblingParent>
+    <SafeAreaProvider style={{ flex: 1 }}>
+      <RootSiblingParent>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <StatusBar
+            barStyle="light-content"
+            backgroundColor={theme.colors.primary}
+            translucent={false}
+          />
+          <LanguageProvider1>
+            <GlobalLoadingProvider>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="intro" options={{ gestureEnabled: false }} />
+                <Stack.Screen name="login" options={{ gestureEnabled: false }} />
+                <Stack.Screen
+                  name="[...missing]"
+                  options={{
+                    gestureEnabled: false,
+                    animation: "fade",
+                  }}
+                />
+              </Stack>
+            </GlobalLoadingProvider>
+          </LanguageProvider1>
+        </GestureHandlerRootView>
+      </RootSiblingParent>
+    </SafeAreaProvider>
   );
 }

@@ -65,11 +65,9 @@ export default function TabsLayout() {
             },
             headerStyle: {
               backgroundColor: theme.colors.primary,
-              height: Platform.OS === 'android' ? 60 : 60, // Reduced height for Android, larger for iOS (includes status bar)
               elevation: 0,
               shadowOpacity: 0,
             },
-            headerStatusBarHeight: Platform.OS === 'ios' ? 0 : 0, // Let the safe area handle it or explicit height
             headerTitleContainerStyle: {
               paddingVertical: Platform.OS === 'android' ? 0 : undefined, // Remove vertical padding on Android to reduce height
             },
