@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React from "react";
 import {
   View,
@@ -11,6 +12,8 @@ import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { theme } from "@/constants/theme";
 
 const ResponsiveDesignTester = () => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const {
     screenWidth,
     screenHeight,
@@ -340,7 +343,7 @@ const ValueItem = ({
   </View>
 );
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -470,6 +473,8 @@ const styles = StyleSheet.create({
   gridItemText: {
     fontWeight: "bold",
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default ResponsiveDesignTester;

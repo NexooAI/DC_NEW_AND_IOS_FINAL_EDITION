@@ -1,52 +1,42 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   View,
   Text,
-  ImageBackground,
   TouchableOpacity,
   Pressable,
   Modal,
   ActivityIndicator,
   RefreshControl,
-  Animated as RNAnimated,
+  ScrollView,
   Platform,
   StatusBar,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { ScrollView, Swipeable, GestureHandlerRootView } from "react-native-gesture-handler";
-// Bypass type checking for Reanimated due to v4 export issues
-const Reanimated = require("react-native-reanimated");
-const Animated = Reanimated.default || Reanimated;
-const { Layout, FadeOut } = Reanimated;
-
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { moderateScale } from "react-native-size-matters";
-// AppHeader is now handled by the layout wrapper
 import { theme } from "@/constants/theme";
-import { userAPI } from "@/services/api";
-import useGlobalStore from "@/store/global.store";
+import api, { userAPI } from "@/services/api";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useTranslation } from "@/hooks/useTranslation";
-
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { logger } from '@/utils/logger';
-import { convertUTCToLocal, formatDate as globalFormatDate } from '@/utils/dateTimeUtils';
+
 // Utility function to format date
 const formatDate = (dateString: string) => {
-  const date = convertUTCToLocal(dateString);
+  const date = new Date(dateString);
   const now = new Date();
-  const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const nowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const diffTime = nowStart.getTime() - dateStart.getTime();
-  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  const diffTime = Math.abs(now.getTime() - date.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) {
-    return "Today";
-  } else if (diffDays === 1) {
+  if (diffDays === 1) {
     return "Yesterday";
+  } else if (diffDays === 0) {
+    return "Today";
   } else {
-    return globalFormatDate(date, {
+    return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -54,64 +44,82 @@ const formatDate = (dateString: string) => {
   }
 };
 
-// Utility function to get category display name
-const getCategoryDisplayName = (category: string): string => {
-  const categoryMap: { [key: string]: string } = {
-    rates: "Gold Rates",
-    rate: "Gold Rates",
-    offers: "Special Offers",
-    offer: "Special Offers",
-    transactions: "Transactions",
-    transaction: "Transactions",
-    reminders: "Reminders",
-    reminder: "Reminders",
-    alerts: "Alerts",
-    alert: "Alerts",
-    blogs: "Blog Posts",
-    blog: "Blog Posts",
-    general: "General",
+// Regex rates parser
+const parseRates = (message: string) => {
+  const getMatch = (regexes: RegExp[]) => {
+    for (const regex of regexes) {
+      const match = message.match(regex);
+      if (match) return match[1];
+    }
+    return null;
   };
 
-  return (
-    categoryMap[category.toLowerCase()] ||
-    category.charAt(0).toUpperCase() + category.slice(1)
-  );
+  const k22 = getMatch([
+    /22\s*[kK]\s*:?\s*(?:₹|Rs\.?)?\s*([\d,]+)/,
+    /22\s*Carat\s*:?\s*(?:₹|Rs\.?)?\s*([\d,]+)/i,
+    /22\s*ct\s*:?\s*(?:₹|Rs\.?)?\s*([\d,]+)/i,
+  ]);
+
+  const k18 = getMatch([
+    /18\s*[kK]\s*:?\s*(?:₹|Rs\.?)?\s*([\d,]+)/,
+    /18\s*Carat\s*:?\s*(?:₹|Rs\.?)?\s*([\d,]+)/i,
+    /18\s*ct\s*:?\s*(?:₹|Rs\.?)?\s*([\d,]+)/i,
+  ]);
+
+  const k14 = getMatch([
+    /14\s*[kK]\s*:?\s*(?:₹|Rs\.?)?\s*([\d,]+)/,
+    /14\s*Carat\s*:?\s*(?:₹|Rs\.?)?\s*([\d,]+)/i,
+    /14\s*ct\s*:?\s*(?:₹|Rs\.?)?\s*([\d,]+)/i,
+  ]);
+
+  const silver = getMatch([
+    /silver\s*:?\s*(?:₹|Rs\.?)?\s*([\d,]+)/i,
+    /வெள்ளி\s*:?\s*(?:₹|Rs\.?)?\s*([\d,]+)/i,
+  ]);
+
+  return { k22, k18, k14, silver };
 };
 
 // Colors mapping helper for notifications category
 const getCategoryColors = (type: string) => {
   switch (type.toLowerCase()) {
     case "offer":
+    case "offers":
       return {
         border: "#DD2476",
         bg: "#FFF0F5",
         iconBg: ["#FF512F", "#DD2476"] as [string, string, ...string[]],
       };
     case "transaction":
+    case "transactions":
       return {
         border: "#2196F3",
         bg: "#E3F2FD",
         iconBg: ["#2196F3", "#21CBF3"] as [string, string, ...string[]],
       };
     case "reminder":
+    case "reminders":
       return {
         border: "#56ab2f",
         bg: "#F1F8E9",
         iconBg: ["#56ab2f", "#a8e063"] as [string, string, ...string[]],
       };
     case "alert":
+    case "alerts":
       return {
         border: "#FF8008",
         bg: "#FFF8E1",
         iconBg: ["#FFC837", "#FF8008"] as [string, string, ...string[]],
       };
     case "rate":
+    case "rates":
       return {
         border: "#D4AF37", // Gold
         bg: "#FFFDF0",
         iconBg: ["#FFD700", "#D4AF37"] as [string, string, ...string[]],
       };
     case "blog":
+    case "blogs":
       return {
         border: "#F2994A",
         bg: "#FFF3E0",
@@ -123,32 +131,6 @@ const getCategoryColors = (type: string) => {
         bg: "#FFF5F6",
         iconBg: ["#4facfe", "#00f2fe"] as [string, string, ...string[]],
       };
-  }
-};
-
-// Category header left bar colors
-const getCategoryColor = (category: string) => {
-  switch (category.toLowerCase()) {
-    case "rates":
-    case "rate":
-      return "#D4AF37"; // Gold
-    case "offers":
-    case "offer":
-      return "#DD2476";
-    case "transactions":
-    case "transaction":
-      return "#2196F3";
-    case "reminders":
-    case "reminder":
-      return "#56ab2f";
-    case "alerts":
-    case "alert":
-      return "#FF8008";
-    case "blogs":
-    case "blog":
-      return "#F2994A";
-    default:
-      return "#850111"; // Burgundy default
   }
 };
 
@@ -168,42 +150,53 @@ type NotificationResponse = {
   [key: string]: Notification[];
 };
 
-// Components
+// Redesigned Standalone Notification Card Component
 const NotificationItem = React.memo(
   ({
     item,
     index,
     onPress,
     onDelete,
+    showSilver,
+    liveRates,
   }: {
     item: Notification;
     index: number;
     onPress: (id: string) => void;
     onDelete: (id: string) => void;
+    showSilver: boolean;
+    liveRates: any;
   }) => {
     const isUnread = item.status === "unread";
     const categoryColors = getCategoryColors(item.type);
+    const isRateType = item.type?.toLowerCase() === "rate" || item.type?.toLowerCase() === "rates";
 
     const getCategoryIcon = (type: string) => {
       switch (type.toLowerCase()) {
         case "offer":
+        case "offers":
           return "gift-outline";
         case "transaction":
+        case "transactions":
           return "wallet-outline";
         case "reminder":
+        case "reminders":
           return "calendar-outline";
         case "alert":
+        case "alerts":
           return "alert-circle-outline";
         case "rate":
+        case "rates":
           return "trending-up-outline";
         case "blog":
+        case "blogs":
           return "document-text-outline";
         default:
           return "notifications-outline";
       }
     };
 
-    const renderRightActions = (progress: any, dragX: any) => {
+    const renderRightActions = () => {
       return (
         <TouchableOpacity
           style={{
@@ -211,99 +204,154 @@ const NotificationItem = React.memo(
             justifyContent: 'center',
             alignItems: 'center',
             width: 80,
-            height: '100%',
-            borderRadius: 0,
+            height: '85%',
+            alignSelf: 'center',
+            borderRadius: 16,
+            marginRight: 4,
           }}
           onPress={() => onDelete(item.id.toString())}
         >
-          <Ionicons name="trash-outline" size={28} color="white" />
+          <Ionicons name="trash-outline" size={24} color="white" />
         </TouchableOpacity>
       );
     };
 
-    return (
-      <Animated.View
-        // entering={FadeIn.delay(index * 50).springify()} // Animation disabled due to import error
-        layout={Layout.springify()}
-        exiting={FadeOut}
-      >
-        <Swipeable renderRightActions={renderRightActions}>
-          <Pressable
-            onPress={() => onPress(item.id.toString())}
-            style={({ pressed }) => ({
-              flexDirection: "column",
-              alignItems: "stretch",
-              // Subtle tinted background for unread, transparent for read to let container card show white
-              backgroundColor: isUnread ? categoryColors.bg : "transparent",
-              padding: 16,
-              // Left border accent matching category colors
-              borderLeftWidth: 4,
-              borderLeftColor: categoryColors.border,
-              // Differentiation: Slight opacity for read items to make them recede
-              opacity: isUnread ? 1 : 0.95,
-              transform: [{ scale: pressed ? 0.98 : 1 }],
-            })}
-          >
-            {/* NEW status badge on top */}
-            {isUnread && (
-              <View
-                style={{
-                  backgroundColor: "#FFE5E5",
-                  paddingHorizontal: 8,
-                  paddingVertical: 2,
-                  borderRadius: 20,
-                  alignSelf: "flex-start",
-                  marginBottom: 10,
-                }}
-              >
-                <Text style={{ fontSize: 10, color: theme.colors.primary, fontWeight: "bold" }}>NEW</Text>
-              </View>
+    // Layout for Rate Notifications
+    const renderRateLayout = () => {
+      const parsed = parseRates(item.message);
+      // Fallback hierarchy: parsed from text -> live API -> standard placeholders
+      const k22 = parsed.k22 || liveRates?.gold_rate || "14,650";
+      const k18 = parsed.k18 || liveRates?.gold_rate_18 || "12,224";
+      const k14 = parsed.k14 || liveRates?.gold_rate_14 || "9,372";
+      const silver = parsed.silver || liveRates?.silver_rate || "95";
+
+      return (
+        <View style={{ width: '100%' }}>
+          {/* Header Row */}
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+            <View style={{
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: '#FEF3C7',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 10
+            }}>
+              <Ionicons name="trending-up" size={18} color="#D4AF37" />
+            </View>
+            <Text style={{ fontSize: 15, fontWeight: "700", color: "#0F1D3A", flex: 1 }}>
+              {item.title}
+            </Text>
+          </View>
+
+          {/* Subtitle */}
+          <Text style={{ fontSize: 13, color: "#6B7280", marginBottom: 12 }}>
+            {item.message}
+          </Text>
+
+          {/* Rates Display Grid */}
+          <View style={{
+            backgroundColor: '#FFFDF0',
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: '#FEF08A',
+            paddingVertical: 12,
+            paddingHorizontal: 8,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-around',
+            marginBottom: 12,
+          }}>
+            <View style={{ alignItems: 'center', flex: 1 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#854D0E', marginBottom: 2 }}>22K</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#0F1D3A' }}>₹{k22}/g</Text>
+            </View>
+            <View style={{ width: 1, height: 24, backgroundColor: '#FEF08A' }} />
+            <View style={{ alignItems: 'center', flex: 1 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#854D0E', marginBottom: 2 }}>18K</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#0F1D3A' }}>₹{k18}/g</Text>
+            </View>
+            <View style={{ width: 1, height: 24, backgroundColor: '#FEF08A' }} />
+            <View style={{ alignItems: 'center', flex: 1 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#854D0E', marginBottom: 2 }}>14K</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#0F1D3A' }}>₹{k14}/g</Text>
+            </View>
+            {showSilver && (
+              <>
+                <View style={{ width: 1, height: 24, backgroundColor: '#FEF08A' }} />
+                <View style={{ alignItems: 'center', flex: 1 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#854D0E', marginBottom: 2 }}>Silver</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: '#0F1D3A' }}>₹{silver}/g</Text>
+                </View>
+              </>
             )}
+          </View>
 
-            {/* Header Row: Left Image (Icon) and Title next to it */}
-            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
-              {/* Icon Container with Gradient */}
-              <LinearGradient
-                colors={categoryColors.iconBg}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 12,
-                  opacity: isUnread ? 1 : 0.8
-                }}
-              >
-                <Ionicons
-                  name={getCategoryIcon(item.type) as any}
-                  size={20}
-                  color="white"
-                />
-              </LinearGradient>
-
-              <Text
-                style={{
-                  fontSize: moderateScale(15),
-                  fontWeight: isUnread ? "700" : "500", // Bolder for unread
-                  color: isUnread ? "#1a1a1a" : "#4b5563", // Darker black for unread, grayish for read
-                  flex: 1,
-                  lineHeight: 22,
-                }}
-                numberOfLines={2}
-              >
-                {item.title}
+          {/* Footer Actions */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="time-outline" size={13} color="#9CA3AF" />
+              <Text style={{ fontSize: 11, color: "#9CA3AF", marginLeft: 4 }}>
+                {formatDate(item.created_at)}
               </Text>
             </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#D4AF37', marginRight: 4 }}>
+                View Gold Rates
+              </Text>
+              <Ionicons name="arrow-forward" size={14} color="#D4AF37" />
+            </View>
+          </View>
+        </View>
+      );
+    };
 
-            {/* Next Row: Message/Body Content */}
+    // Layout for general notifications (Offers, Reminders, Transactions)
+    const renderGeneralLayout = () => {
+      return (
+        <View style={{ flexDirection: "row", alignItems: "flex-start", width: '100%' }}>
+          {/* Left Category Icon with Gradient */}
+          <LinearGradient
+            colors={categoryColors.iconBg}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 12,
+              marginTop: 2,
+            }}
+          >
+            <Ionicons
+              name={getCategoryIcon(item.type) as any}
+              size={18}
+              color="white"
+            />
+          </LinearGradient>
+
+          {/* Card Body */}
+          <View style={{ flex: 1 }}>
             <Text
               style={{
-                fontSize: moderateScale(13),
-                color: isUnread ? "#444" : "#6b7280", // Darker gray for unread body, lighter for read
-                lineHeight: 19,
+                fontSize: moderateScale(14),
+                fontWeight: "700",
+                color: "#0F1D3A",
+                marginBottom: 6,
+                lineHeight: 20,
+              }}
+              numberOfLines={2}
+            >
+              {item.title}
+            </Text>
+            <Text
+              style={{
+                fontSize: moderateScale(12),
+                color: "#6B7280",
+                lineHeight: 18,
                 marginBottom: 10,
               }}
               numberOfLines={3}
@@ -311,189 +359,132 @@ const NotificationItem = React.memo(
               {item.message}
             </Text>
 
-            {/* Date/Time Row */}
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Ionicons name="time-outline" size={14} color="#9CA3AF" />
-              <Text style={{ fontSize: 12, color: "#9CA3AF", marginLeft: 4 }}>
+              <Ionicons name="time-outline" size={13} color="#9CA3AF" />
+              <Text style={{ fontSize: 11, color: "#9CA3AF", marginLeft: 4 }}>
                 {formatDate(item.created_at)}
               </Text>
             </View>
-          </Pressable>
-        </Swipeable>
-      </Animated.View>
+          </View>
+        </View>
+      );
+    };
+
+    return (
+      <View style={{ marginBottom: 12 }}>
+        <Pressable
+          onPress={() => onPress(item.id.toString())}
+          style={({ pressed }) => ({
+            backgroundColor: "white",
+            padding: 16,
+            borderRadius: 16,
+            // Shadow for card styling
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.04,
+            shadowRadius: 6,
+            elevation: 2,
+            borderWidth: 1,
+            borderColor: isUnread ? '#FEF08A' : '#F3F4F6',
+            // Dynamic left border accent for unread items
+            borderLeftWidth: 4,
+            borderLeftColor: categoryColors.border,
+            transform: [{ scale: pressed ? 0.99 : 1 }],
+          })}
+        >
+          {/* Unread "NEW" Tag */}
+          {isUnread && (
+            <View style={{
+              backgroundColor: '#FEF3C7',
+              paddingHorizontal: 8,
+              paddingVertical: 2,
+              borderRadius: 20,
+              alignSelf: "flex-start",
+              marginBottom: 8,
+            }}>
+              <Text style={{ fontSize: 9, color: '#854D0E', fontWeight: "800" }}>NEW</Text>
+            </View>
+          )}
+
+          {isRateType ? renderRateLayout() : renderGeneralLayout()}
+        </Pressable>
+      </View>
     );
   }
 );
 
-const NotificationSection = React.memo(
-  ({
-    title,
-    notifications,
-    onNotificationPress,
-    onNotificationDelete,
-    baseIndex = 0,
-  }: {
-    title: string;
-    notifications: Notification[];
-    onNotificationPress: (id: string) => void;
-    onNotificationDelete: (id: string) => void;
-    baseIndex?: number;
-  }) => (
-    <View style={{ marginTop: 20 }}>
-      <Text
-        style={{
-          fontSize: 13,
-          fontWeight: "700",
-          color: theme.colors.primary,
-          marginBottom: 10,
-          paddingHorizontal: 4,
-          textTransform: "uppercase",
-          letterSpacing: 0.5,
-          opacity: 0.8
-        }}
-      >
-        {title}
-      </Text>
-      <View
-        style={{
-          backgroundColor: "white",
-          padding: 16,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 8,
-          elevation: 2,
-          overflow: "hidden",
-        }}
-      >
-        {notifications.map((notification, index) => (
-          <React.Fragment key={notification.id}>
-            {index > 0 && <View style={{ height: 1, backgroundColor: "#F0F0F0" }} />}
-            <NotificationItem
-              index={baseIndex + index}
-              item={notification}
-              onPress={onNotificationPress}
-              onDelete={onNotificationDelete}
-            />
-          </React.Fragment>
-        ))}
-      </View>
-    </View>
-  )
-);
-
-// Notification Modal Component
-const NotificationModal = ({
-  visible,
-  notification,
-  onClose,
-}: {
-  visible: boolean;
-  notification: Notification | null;
-  onClose: () => void;
-}) => {
-  if (!notification) return null;
-
-  return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0, 0, 0, 0.6)",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: 24,
-        }}
-      >
-        <Animated.View
-          // entering={FadeIn.springify()} // Animation disabled due to import error
-          layout={Layout.springify()}
-          style={{
-            backgroundColor: "white",
-            borderRadius: 24,
-            width: "100%",
-            maxWidth: 400,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.3,
-            shadowRadius: 20,
-            elevation: 10,
-            overflow: 'hidden'
-          }}
-        >
-          {/* Header / Banner */}
-          <LinearGradient
-            colors={[theme.colors.primary, '#850111']}
-            style={{ padding: 24, alignItems: 'center' }}
-          >
-            <View style={{
-              width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.2)',
-              justifyContent: 'center', alignItems: 'center', marginBottom: 12
-            }}>
-              <Ionicons name="notifications" size={30} color="white" />
-            </View>
-            <Text style={{ fontSize: 20, fontWeight: "bold", color: "white", textAlign: "center" }}>
-              {notification.title}
-            </Text>
-            <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 }}>
-              {formatDate(notification.created_at)}
-            </Text>
-
-            <TouchableOpacity
-              onPress={onClose}
-              style={{ position: 'absolute', top: 16, right: 16, padding: 8 }}
-            >
-              <Ionicons name="close-circle" size={30} color="rgba(255,255,255,0.5)" />
-            </TouchableOpacity>
-          </LinearGradient>
-
-          {/* Content */}
-          <View style={{ padding: 24 }}>
-            <Text style={{ fontSize: 16, lineHeight: 26, color: "#333", textAlign: "left" }}>
-              {notification.message}
-            </Text>
-
-            <TouchableOpacity
-              onPress={onClose}
-              style={{
-                marginTop: 24,
-                backgroundColor: "#f5f5f5",
-                paddingVertical: 14,
-                borderRadius: 12,
-                alignItems: "center"
-              }}
-            >
-              <Text style={{ fontSize: 16, fontWeight: "600", color: "#666" }}>Dismiss</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      </View>
-    </Modal>
-  );
-};
-
-// Main Component
+// Main Notifications Screen Redesign
 export default function NotificationsScreen() {
+  const theme = useAppTheme();
   const router = useRouter();
-  const { t } = useTranslation();
   const { user } = useGlobalStore();
+  const { isVisible } = useAppVisibility();
   const { refreshCount } = useUnreadNotifications();
+  
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [categorizedNotifications, setCategorizedNotifications] =
-    useState<NotificationResponse>({});
-  const [selectedNotification, setSelectedNotification] =
-    useState<Notification | null>(null);
+  const [categorizedNotifications, setCategorizedNotifications] = useState<NotificationResponse>({});
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [liveRates, setLiveRates] = useState<any>(null);
 
+  const showSilver = isVisible("showSilverRate");
   const unreadCount = notifications.filter((n) => n.status === "unread").length;
+
+  const filterOptions = [
+    { label: "Gold Rates", value: "rates", icon: "trending-up-outline" },
+    { label: "All", value: "all", icon: "grid-outline" },
+    { label: "Offers", value: "offers", icon: "gift-outline" },
+    { label: "Rewards", value: "rewards", icon: "trophy-outline" },
+  ];
+
+  // Fetch Fallback Gold & Silver Rates from API (Checking both /home and /rates with separate try-catch)
+  const fetchLiveRates = async () => {
+    try {
+      let ratesData: any = {};
+
+      // 1. Fetch from /home (passing userId to avoid 400 Bad Request)
+      if (user?.id) {
+        try {
+          const homeResponse = await api.get(`/home?userId=${user.id}`, { skipLoading: true } as any);
+          if (homeResponse.data?.data?.currentRates) {
+            ratesData = { ...homeResponse.data.data.currentRates };
+          }
+        } catch (homeError) {
+          logger.error("Error fetching live rates from /home:", homeError);
+        }
+      }
+
+      // 2. Fetch from /rates to double check or fill in missing rates (especially silver_rate)
+      try {
+        const ratesResponse = await api.get('/rates', { skipLoading: true } as any);
+        if (ratesResponse.data?.data && ratesResponse.data.data.length > 0) {
+          const sortedRates = [...ratesResponse.data.data].sort((a: any, b: any) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+          const latestRate = sortedRates[0];
+          if (latestRate) {
+            ratesData = {
+              ...ratesData,
+              gold_rate: ratesData.gold_rate || latestRate.gold_rate,
+              silver_rate: ratesData.silver_rate || latestRate.silver_rate,
+            };
+          }
+        }
+      } catch (ratesError) {
+        logger.error("Error fetching live rates from /rates:", ratesError);
+      }
+
+      if (Object.keys(ratesData).length > 0) {
+        setLiveRates(ratesData);
+      }
+    } catch (e) {
+      logger.error("Error in fetchLiveRates fallback:", e);
+    }
+  };
 
   // Fetch notifications from API
   const fetchNotifications = async (isRefresh = false) => {
@@ -505,7 +496,6 @@ export default function NotificationsScreen() {
         setLoading(true);
       }
 
-      // Check if user is available
       if (!user?.id) {
         logger.error("❌ No user ID available for fetching notifications");
         setError("User not authenticated");
@@ -513,7 +503,7 @@ export default function NotificationsScreen() {
       }
 
       logger.log("🔔 Fetching notifications from API for user:", user.id);
-      const response = await userAPI.getNotifications(user.id);
+      const response = await api.get(`/notifications/${user.id}`);
       logger.log("✅ Notifications API response:", response.data);
 
       const responseData = response.data;
@@ -554,9 +544,6 @@ export default function NotificationsScreen() {
 
       setCategorizedNotifications(categorizedData);
       setNotifications(notificationsList);
-      logger.log("📊 Categorized notifications loaded:", Object.keys(categorizedData));
-      logger.log("📊 Flattened notifications count:", notificationsList.length);
-
     } catch (error: any) {
       logger.error("Error fetching notifications:", error);
       setError(error.response?.data?.message || "Failed to load notifications");
@@ -568,141 +555,41 @@ export default function NotificationsScreen() {
     }
   };
 
-  // Load notifications when component mounts
   useEffect(() => {
-    logger.log("🚀 NotificationsScreen mounted, fetching notifications...");
     fetchNotifications();
-  }, [user?.id]); // Add user.id as dependency
+    fetchLiveRates();
+  }, [user?.id]);
 
   const markAsRead = async (id: string) => {
     try {
-      logger.log(`🔔 Marking notification ${id} as read via PATCH...`);
-
       const notificationId = parseInt(id);
-
-      // Update local state immediately for better UX
       setNotifications((prev) =>
         prev.map((notification) =>
-          notification.id === notificationId
-            ? { ...notification, status: "read" }
-            : notification
+          notification.id === notificationId ? { ...notification, status: "read" } : notification
         )
       );
 
-      // Also update categorizedNotifications to reflect the change in UI
-      setCategorizedNotifications((prev) => {
-        const updated = { ...prev };
-        Object.keys(updated).forEach((category) => {
-          if (Array.isArray(updated[category])) {
-            updated[category] = updated[category].map((notification) =>
-              notification.id === notificationId
-                ? { ...notification, status: "read" }
-                : notification
-            );
-          }
-        });
-        return updated;
-      });
-
-      // Call API to mark as read using PATCH method
-      const response = await userAPI.markNotificationAsRead(id);
-      logger.log(
-        `✅ Notification ${id} marked as read successfully:`,
-        response.data
-      );
-
-      // Refresh the badge count
+      await userAPI.markNotificationAsRead(id);
       refreshCount();
     } catch (error) {
-      logger.error(`❌ Error marking notification ${id} as read:`, error);
-      const notificationId = parseInt(id);
-      // Revert local state if API fails
-      setNotifications((prev) =>
-        prev.map((notification) =>
-          notification.id === notificationId
-            ? { ...notification, status: "unread" }
-            : notification
-        )
-      );
-      // Revert categorizedNotifications as well
-      setCategorizedNotifications((prev) => {
-        const updated = { ...prev };
-        Object.keys(updated).forEach((category) => {
-          if (Array.isArray(updated[category])) {
-            updated[category] = updated[category].map((notification) =>
-              notification.id === notificationId
-                ? { ...notification, status: "unread" }
-                : notification
-            );
-          }
-        });
-        return updated;
-      });
+      logger.error(`Error marking notification ${id} as read:`, error);
+      fetchNotifications();
     }
   };
 
   const deleteNotification = async (id: string) => {
     try {
-      // Remove from local state immediately for better UX
-      setNotifications((prev) =>
-        prev.filter((notification) => notification.id !== parseInt(id))
-      );
-
-      // Call API to delete notification
+      setNotifications((prev) => prev.filter((n) => n.id !== parseInt(id)));
       await userAPI.deleteNotification(id);
     } catch (error) {
       logger.error("Error deleting notification:", error);
-      // Revert local state if API fails
-      setNotifications((prev) => prev);
-    }
-  };
-
-  const markAllAsRead = async () => {
-    try {
-      // Update local state immediately for better UX
-      setNotifications((prev) =>
-        prev.map((notification) => ({
-          ...notification,
-          status: "read",
-        }))
-      );
-
-      // Also update categorizedNotifications to reflect the change in UI
-      setCategorizedNotifications((prev) => {
-        const updated = { ...prev };
-        Object.keys(updated).forEach((category) => {
-          if (Array.isArray(updated[category])) {
-            updated[category] = updated[category].map((notification) => ({
-              ...notification,
-              status: "read",
-            }));
-          }
-        });
-        return updated;
-      });
-
-      // Call API to mark all as read
-      await userAPI.markAllNotificationsAsRead();
-
-      // Refresh the badge count
-      refreshCount();
-    } catch (error) {
-      logger.error("Error marking all notifications as read:", error);
-      // Revert local state if API fails - would need to refetch to get original state
       fetchNotifications();
     }
   };
 
   const handleNotificationPress = (id: string) => {
-    logger.log(`👆 User clicked on notification ${id}`);
     const notification = notifications.find((n) => n.id === parseInt(id));
     if (notification) {
-      logger.log(`📱 Opening modal for notification:`, {
-        id: notification.id,
-        title: notification.title,
-        type: notification.type,
-        status: notification.status,
-      });
       setSelectedNotification(notification);
       setModalVisible(true);
       markAsRead(id);
@@ -714,248 +601,407 @@ export default function NotificationsScreen() {
     setSelectedNotification(null);
   };
 
-  // Group notifications by category and date
-  const groupedNotifications = Object.entries(categorizedNotifications).reduce(
-    (
-      acc: { [key: string]: { [date: string]: Notification[] } },
-      [category, notifications]
-    ) => {
-      if (Array.isArray(notifications) && notifications.length > 0) {
-        acc[category] = notifications.reduce(
-          (dateAcc: { [date: string]: Notification[] }, notification) => {
-            const date = formatDate(notification.created_at);
-            if (!dateAcc[date]) {
-              dateAcc[date] = [];
-            }
-            dateAcc[date].push(notification);
-            return dateAcc;
-          },
-          {}
-        );
+  // Filter notifications by Active Chip
+  const filteredNotifications = useMemo(() => {
+    return notifications.filter((item) => {
+      const type = item.type?.toLowerCase() || "";
+      if (activeFilter === "all") return true;
+      if (activeFilter === "rates") return type === "rate" || type === "rates";
+      if (activeFilter === "offers") return type === "offer" || type === "offers";
+      if (activeFilter === "rewards") return type === "reward" || type === "rewards";
+      return true;
+    });
+  }, [notifications, activeFilter]);
+
+  // Group filtered notifications by Date
+  const groupedByDate = useMemo(() => {
+    return filteredNotifications.reduce((acc: { [date: string]: Notification[] }, n) => {
+      const date = formatDate(n.created_at);
+      if (!acc[date]) {
+        acc[date] = [];
       }
+      acc[date].push(n);
       return acc;
-    },
-    {}
-  );
+    }, {});
+  }, [filteredNotifications]);
 
   return (
-    <SafeAreaView 
-      style={{ 
-        flex: 1, 
-        backgroundColor: theme.colors.quaternary || '#F2E6D2',
-      }} 
-      edges={Platform.OS === 'ios' ? ['left', 'right'] : ['top', 'left', 'right']}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
-      {/* Header Container */}
-      <View style={{
-        backgroundColor: theme.colors.quaternary || '#F2E6D2',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 5,
-        zIndex: 10,
-      }}>
+    <View style={{ flex: 1 }}>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: '#FCFBF7', // Cream background from mockup
+        }}
+        edges={['top', 'left', 'right']}
+      >
+        <StatusBar barStyle="dark-content" backgroundColor="#FCFBF7" />
+
+        {/* Premium Header Layout */}
         <View style={{
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
           paddingHorizontal: 20,
-          paddingVertical: 12,
+          paddingVertical: 16,
+          backgroundColor: '#FCFBF7',
         }}>
-          <TouchableOpacity onPress={() => router.push("/(app)/(tabs)/home")} style={{ padding: 8, marginLeft: -8 }}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.primary || "#850111"} />
+          {/* Back Arrow */}
+          <TouchableOpacity onPress={() => router.push("/(app)/(tabs)/home")} style={{ padding: 4 }}>
+            <Ionicons name="arrow-back" size={24} color="#0F1D3A" />
           </TouchableOpacity>
 
-          <Text style={{
-            fontSize: moderateScale(18),
-            fontWeight: "700",
-            color: theme.colors.primary,
-            textAlign: 'center',
-            flex: 1,
-          }}>
-            {t("notification") || "Notifications"}
-          </Text>
+          {/* Centered serif title with gold indicator underline */}
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <View style={{ alignItems: 'flex-start' }}>
+              <Text style={{
+                fontSize: moderateScale(20),
+                fontWeight: "800",
+                color: "#0F1D3A", // Dark navy title
+                fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+              }}>
+                Notifications
+              </Text>
+              {/* Thick gold underline left-aligned */}
+              <View style={{
+                width: 44,
+                height: 3,
+                backgroundColor: '#D4AF37',
+                marginTop: 4,
+              }} />
+            </View>
+          </View>
 
-          <View style={{ width: 40, alignItems: "flex-end", justifyContent: "center" }}>
+          {/* Floating Bell Button with Gold Badge */}
+          <TouchableOpacity
+            onPress={() => router.push("/test-notifications")} // Direct routing placeholder or settings
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: 23,
+              backgroundColor: 'white',
+              justifyContent: 'center',
+              alignItems: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 5,
+              elevation: 4,
+            }}
+          >
+            <Ionicons name="notifications-outline" size={22} color="#0F1D3A" />
             {unreadCount > 0 && (
               <View style={{
-                backgroundColor: theme.colors.primary,
+                position: 'absolute',
+                top: -3,
+                right: -3,
+                backgroundColor: '#D4AF37',
                 borderRadius: 10,
-                paddingHorizontal: 6,
-                paddingVertical: 2,
-                minWidth: 20,
-                height: 20,
+                paddingHorizontal: 4,
+                minWidth: 18,
+                height: 18,
                 justifyContent: "center",
                 alignItems: "center",
+                borderWidth: 1.5,
+                borderColor: 'white'
               }}>
-                <Text style={{ color: "white", fontWeight: "700", fontSize: 10 }}>
+                <Text style={{ color: "white", fontWeight: "800", fontSize: 9 }}>
                   {unreadCount}
                 </Text>
               </View>
             )}
-          </View>
+          </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Scrollable Content */}
-      <View style={{ flex: 1, backgroundColor: "#F8F9FA" }}>
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingBottom: 80,
-            paddingHorizontal: 20,
-            paddingTop: 20,
-          }}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => fetchNotifications(true)}
-              colors={[theme.colors.primary]}
-              tintColor={theme.colors.primary}
-            />
-          }
-        >
-          {/* Loading State */}
-          {loading && !refreshing && (
-            <View
-              style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-                paddingVertical: 60,
-              }}
-            >
-              <ActivityIndicator size="large" color={theme.colors.primary} />
-              <Text style={{ marginTop: 16, fontSize: 16, color: "#666" }}>
-                Loading notifications...
-              </Text>
-            </View>
-          )}
-
-          {/* Error State */}
-          {error && !loading && (
-            <View style={{ paddingVertical: 40, alignItems: "center" }}>
-              <Ionicons name="cloud-offline-outline" size={48} color="#ff6b6b" />
-              <Text style={{ marginTop: 16, fontSize: 16, color: "#666" }}>
-                {error}
-              </Text>
-              <TouchableOpacity
-                onPress={() => fetchNotifications()}
-                style={{
-                  marginTop: 20,
-                  backgroundColor: theme.colors.primary,
-                  paddingHorizontal: 24,
-                  paddingVertical: 12,
-                  borderRadius: 12,
-                }}
-              >
-                <Text style={{ color: "white", fontWeight: "600" }}>Try Again</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Notification Sections */}
-          {!loading &&
-            !error &&
-            notifications.length > 0 &&
-            Object.entries(groupedNotifications)
-              .filter(([category, dateGroups]) =>
-                Object.values(dateGroups).some((n) => n.length > 0)
-              )
-              .map(([category, dateGroups]) => (
-                <View key={category} style={{ marginBottom: 24 }}>
-                  <LinearGradient
-                    colors={['rgba(0,0,0,0.02)', 'rgba(0,0,0,0)']}
+        {/* Filter Chips Scrollbar */}
+        <View style={{ paddingVertical: 12, backgroundColor: '#FCFBF7' }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+              gap: 8,
+            }}
+          >
+            {filterOptions.map((option) => {
+              const isSelected = activeFilter === option.value;
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  onPress={() => setActiveFilter(option.value)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: isSelected ? '#D4AF37' : '#E5E7EB',
+                    backgroundColor: isSelected ? 'rgba(212, 175, 55, 0.08)' : 'white',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: isSelected ? 0.02 : 0.01,
+                    shadowRadius: 2,
+                    elevation: 1,
+                  }}
+                >
+                  <Ionicons
+                    name={option.icon as any}
+                    size={15}
+                    color={isSelected ? '#D4AF37' : '#6B7280'}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text
                     style={{
-                      paddingVertical: 8,
-                      paddingHorizontal: 12,
-                      borderRadius: 8,
-                      marginBottom: 12,
-                      flexDirection: 'row',
-                      alignItems: 'center'
+                      fontSize: 12,
+                      fontWeight: isSelected ? '700' : '500',
+                      color: isSelected ? '#D4AF37' : '#6B7280',
                     }}
                   >
-                    <View style={{ width: 4, height: 16, backgroundColor: getCategoryColor(category), borderRadius: 2, marginRight: 8 }} />
-                    <Text style={{ fontSize: 14, fontWeight: "800", color: getCategoryColor(category), textTransform: "uppercase", letterSpacing: 0.5 }}>
-                      {getCategoryDisplayName(category)}
-                    </Text>
-                  </LinearGradient>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
 
-                  {Object.entries(dateGroups)
-                    .filter(([_, n]) => n.length > 0)
-                    .map(([date, notificationsForDate]) => (
-                      <NotificationSection
-                        key={`${category}-${date}`}
-                        title={date}
-                        notifications={notificationsForDate}
-                        onNotificationPress={handleNotificationPress}
-                        onNotificationDelete={deleteNotification}
-                      />
-                    ))}
-                </View>
-              ))}
-
-          {/* Empty State */}
-          {!loading &&
-            !error &&
-            (Object.keys(categorizedNotifications).length === 0 ||
-              Object.values(categorizedNotifications).every(
-                (n) => Array.isArray(n) && n.length === 0
-              )) && (
-              <View
-                style={{
-                  flex: 1,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginTop: 60,
-                }}
-              >
-                <View style={{
-                  width: 120,
-                  height: 120,
-                  borderRadius: 60,
-                  backgroundColor: 'rgba(133, 1, 17, 0.05)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 24,
-                }}>
-                  <Ionicons name="notifications-outline" size={60} color={theme.colors.primary} style={{ opacity: 0.5 }} />
-                </View>
-                <Text
-                  style={{
-                    fontSize: 20,
-                    fontWeight: "700",
-                    color: "#333",
-                    marginBottom: 8,
-                  }}
-                >
-                  {t("noNewNotifications") || "No New Notifications"}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 15,
-                    color: "#666",
-                    textAlign: "center",
-                    maxWidth: "70%",
-                    lineHeight: 22,
-                  }}
-                >
-                  {t("allCaughtUp") || "You're all caught up! Check back later for updates on your gold investments."}
+        {/* Main List */}
+        <View style={{ flex: 1, backgroundColor: '#FAF9F5' }}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+              paddingTop: 16,
+              paddingBottom: 40,
+            }}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => fetchNotifications(true)}
+                colors={['#D4AF37']}
+                tintColor="#D4AF37"
+              />
+            }
+          >
+            {/* Loading */}
+            {loading && !refreshing && (
+              <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 80 }}>
+                <ActivityIndicator size="large" color="#D4AF37" />
+                <Text style={{ marginTop: 16, fontSize: 14, color: "#666" }}>
+                  Loading notifications...
                 </Text>
               </View>
             )}
-        </ScrollView>
-      </View>
 
-      <NotificationModal
-        visible={modalVisible}
-        notification={selectedNotification}
-        onClose={closeModal}
-      />
-    </SafeAreaView>
+            {/* Error */}
+            {error && !loading && (
+              <View style={{ paddingVertical: 40, alignItems: "center" }}>
+                <Ionicons name="cloud-offline-outline" size={48} color="#FF4B4B" />
+                <Text style={{ marginTop: 16, fontSize: 14, color: "#666" }}>{error}</Text>
+                <TouchableOpacity
+                  onPress={() => fetchNotifications()}
+                  style={{
+                    marginTop: 20,
+                    backgroundColor: '#D4AF37',
+                    paddingHorizontal: 24,
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                  }}
+                >
+                  <Text style={{ color: "white", fontWeight: "700" }}>Try Again</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Notifications Grouped by Date */}
+            {!loading && !error && filteredNotifications.length > 0 && (
+              Object.entries(groupedByDate).map(([date, items]) => (
+                <View key={date} style={{ marginBottom: 20 }}>
+                  {/* Date Heading */}
+                  <Text style={{
+                    fontSize: 11,
+                    fontWeight: "800",
+                    color: "#9CA3AF",
+                    marginBottom: 12,
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                  }}>
+                    {date}
+                  </Text>
+                  
+                  {/* Render Standalone Cards */}
+                  {items.map((item, idx) => (
+                    <NotificationItem
+                      key={item.id}
+                      index={idx}
+                      item={item}
+                      onPress={handleNotificationPress}
+                      onDelete={deleteNotification}
+                      showSilver={showSilver}
+                      liveRates={liveRates}
+                    />
+                  ))}
+                </View>
+              ))
+            )}
+
+            {/* Empty State */}
+            {!loading && !error && filteredNotifications.length === 0 && (
+              <View style={{ flex: 1, justifyContent: "center", alignItems: "center", marginTop: 80 }}>
+                <View style={{
+                  width: 90,
+                  height: 90,
+                  borderRadius: 45,
+                  backgroundColor: 'rgba(212, 175, 55, 0.06)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 16,
+                }}>
+                  <Ionicons name="notifications-off-outline" size={44} color="#D4AF37" />
+                </View>
+                <Text style={{ fontSize: 18, fontWeight: "700", color: "#0F1D3A", marginBottom: 6 }}>
+                  No Notifications
+                </Text>
+                <Text style={{ fontSize: 13, color: "#6B7280", textAlign: "center", maxWidth: "80%", lineHeight: 20 }}>
+                  You don't have any notifications in this section. We will notify you when new rates or offers are live.
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+
+        {/* Detail Modal */}
+        <Modal
+          visible={modalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={closeModal}
+        >
+          <View style={{
+            flex: 1,
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+          }}>
+            <View style={{
+              backgroundColor: "white",
+              borderRadius: 24,
+              width: "100%",
+              maxWidth: 380,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.2,
+              shadowRadius: 20,
+              elevation: 10,
+              overflow: 'hidden'
+            }}>
+              {/* Modal Banner */}
+              <LinearGradient
+                colors={['#0F1D3A', '#850111']}
+                style={{ padding: 24, alignItems: 'center' }}
+              >
+                <View style={{
+                  width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.2)',
+                  justifyContent: 'center', alignItems: 'center', marginBottom: 12
+                }}>
+                  <Ionicons name="notifications" size={24} color="white" />
+                </View>
+                <Text style={{ fontSize: 18, fontWeight: "800", color: "white", textAlign: "center" }}>
+                  {selectedNotification?.title}
+                </Text>
+                <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>
+                  {selectedNotification && formatDate(selectedNotification.created_at)}
+                </Text>
+                <TouchableOpacity
+                  onPress={closeModal}
+                  style={{ position: 'absolute', top: 16, right: 16 }}
+                >
+                  <Ionicons name="close-circle" size={26} color="rgba(255,255,255,0.5)" />
+                </TouchableOpacity>
+              </LinearGradient>
+
+              {/* Modal Body */}
+              <View style={{ padding: 24 }}>
+                <Text style={{ fontSize: 14, lineHeight: 22, color: "#374151" }}>
+                  {selectedNotification?.message}
+                </Text>
+
+                {/* Contextual Action Button */}
+                {selectedNotification && (
+                  <>
+                    {(selectedNotification.type?.toLowerCase() === "rate" || selectedNotification.type?.toLowerCase() === "rates") && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          closeModal();
+                          router.push("/(app)/(tabs)/home/ratechart");
+                        }}
+                        style={{
+                          backgroundColor: theme.colors.primary,
+                          paddingVertical: 12,
+                          borderRadius: 12,
+                          alignItems: "center",
+                          marginTop: 20,
+                        }}
+                      >
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>View Rate Chart</Text>
+                      </TouchableOpacity>
+                    )}
+                    {(selectedNotification.type?.toLowerCase() === "offer" || selectedNotification.type?.toLowerCase() === "offers") && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          closeModal();
+                          router.push("/(app)/(tabs)/home/offers");
+                        }}
+                        style={{
+                          backgroundColor: theme.colors.primary,
+                          paddingVertical: 12,
+                          borderRadius: 12,
+                          alignItems: "center",
+                          marginTop: 20,
+                        }}
+                      >
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>View Offers</Text>
+                      </TouchableOpacity>
+                    )}
+                    {(selectedNotification.type?.toLowerCase() === "reward" || selectedNotification.type?.toLowerCase() === "rewards") && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          closeModal();
+                          router.push("/(app)/(tabs)/rewards");
+                        }}
+                        style={{
+                          backgroundColor: theme.colors.primary,
+                          paddingVertical: 12,
+                          borderRadius: 12,
+                          alignItems: "center",
+                          marginTop: 20,
+                        }}
+                      >
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>View Rewards</Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                )}
+
+                <TouchableOpacity
+                  onPress={closeModal}
+                  style={{
+                    backgroundColor: '#0F1D3A',
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                    alignItems: "center",
+                    marginTop: 12,
+                  }}
+                >
+                  <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>Dismiss</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </SafeAreaView>
+    </View>
   );
 }

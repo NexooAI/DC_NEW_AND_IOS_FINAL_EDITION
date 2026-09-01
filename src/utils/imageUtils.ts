@@ -1,4 +1,4 @@
-import { APP_CONFIG } from '@/constants';
+import { theme } from '@/constants/theme';
 
 import { logger } from '@/utils/logger';
 /**
@@ -16,7 +16,7 @@ export const getFullImageUrl = (path: string): string => {
     return path;
   }
   // Remove trailing slash from baseUrl and leading slash from path
-  const fullUrl = `${APP_CONFIG.urls.baseUrl.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+  const fullUrl = `${theme.baseUrl.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
   logger.log("🔗 getFullImageUrl: Generated URL:", fullUrl, "from path:", path);
   return fullUrl;
 };
@@ -36,6 +36,30 @@ export const getImageSource = (path: string | any) => {
     return url ? { uri: url } : undefined;
   }
   return undefined;
+};
+
+/**
+ * Universal Image Source Resolver:
+ * - If string starts with http/https or data:, returns { uri: string }
+ * - If string is a server relative path (e.g. /uploads/logo.png), converts to full URL -> { uri: string }
+ * - If already a required number or object with uri, returns as is
+ * - If invalid or relative local path (../../), returns fallback
+ */
+export const resolveImageSource = (source: any, fallback?: any) => {
+  if (!source) return fallback;
+  if (typeof source === 'number') return source;
+  if (typeof source === 'object' && source?.uri) return source;
+  if (typeof source === 'string') {
+    const trimmed = source.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+      return { uri: trimmed };
+    }
+    if (!trimmed.startsWith('.') && !trimmed.startsWith('..') && trimmed.length > 0) {
+      const fullUrl = getFullImageUrl(trimmed);
+      return fullUrl ? { uri: fullUrl } : fallback;
+    }
+  }
+  return fallback;
 };
 
 /**

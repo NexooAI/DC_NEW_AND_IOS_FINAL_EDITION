@@ -1,12 +1,13 @@
+import { useAppTheme } from "@/store/global.store";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StyleSheet } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
-import { theme } from "@/constants/theme";
-import { COLORS } from "src/constants/colors";
 
 const Tab = createBottomTabNavigator();
 
 const TabNavigator = () => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const id = undefined;
   return (
     <Tab.Navigator
@@ -14,11 +15,11 @@ const TabNavigator = () => {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: "gray",
+        tabBarInactiveTintColor: theme.colors.textGrey,
         tabBarStyle: {
           height: 80,
           paddingTop: 8,
-          backgroundColor: COLORS.white,
+          backgroundColor: theme.colors.surfaceElevated,
         },
       }}
     >
@@ -36,12 +37,14 @@ const TabNavigator = () => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   tabIcon: {
     width: 24,
     height: 24,
   },
-});
+}) }
+
+var styles: any;
 
 export default TabNavigator;
 

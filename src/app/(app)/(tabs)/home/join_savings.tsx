@@ -16,15 +16,13 @@ import {
   ImageBackground,
   Image,
   InteractionManager,
-  Alert,
 } from "react-native";
 import { useKeyboardVisibility } from "@/hooks/useKeyboardVisibility";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter, Stack } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useAppVisibility } from "@/hooks/useAppVisibility";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { Picker } from "@react-native-picker/picker";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
 import api from "@/services/api";
@@ -61,6 +59,8 @@ interface Branch {
 }
 
 export default function JoinSavings() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const { params } = useRoute();
   const { schemeId, step: stepParam, amount: amountParam, weight: weightParam, calculatedAmount: calculatedAmountParam, calculatedWeight: calculatedWeightParam } = useLocalSearchParams();
@@ -68,9 +68,6 @@ export default function JoinSavings() {
   const { language, user } = useGlobalStore();
   const { keyboardVisible } = useKeyboardVisibility();
   const insets = useSafeAreaInsets();
-  const { isVisible } = useAppVisibility();
-  const bypassToPayment = isVisible("bypassToPayment");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // State for scheme data loaded from AsyncStorage
   const [schemeData, setSchemeData] = useState<any>(null);
@@ -141,7 +138,7 @@ export default function JoinSavings() {
           ],
         });
       } catch (error) {
-        logger.error("Error fetching scheme data from API:", error);
+        logger.warn("Scheme data API fallback:", error);
       }
     };
 
@@ -459,7 +456,6 @@ export default function JoinSavings() {
   // Fetch KYC status
   useFocusEffect(
     React.useCallback(() => {
-      isNavigatingRef.current = false;
       const fetchKycStatus = async () => {
         try {
           setIsKycLoading(true);
@@ -496,12 +492,12 @@ export default function JoinSavings() {
               };
 
               setKycModalData({
-                title: t("kycRequiredAlertBox") || "KYC Required",
-                message: t("kycRedirectMessage") || "Please complete your KYC details to continue. Redirecting to KYC page in 2 seconds...",
+                title: "KYC Required",
+                message: "Please complete your KYC details to continue. Redirecting to KYC page in 2 seconds...",
                 type: "error",
                 buttons: [
                   {
-                    text: t("goToKycNow") || "Go to KYC Now",
+                    text: "Go to KYC Now",
                     onPress: navigateToKyc,
                     style: "default"
                   }
@@ -894,12 +890,12 @@ export default function JoinSavings() {
           ? "Amount is required"
           : numValue < minAmount
             ? (amountLimits?.limit_type === "user"
-                ? `User-specific minimum amount should be ₹${minAmount.toLocaleString("en-IN")}`
-                : `Minimum amount should be ₹${minAmount.toLocaleString("en-IN")}`)
+              ? `User-specific minimum amount should be ₹${minAmount.toLocaleString("en-IN")}`
+              : `Minimum amount should be ₹${minAmount.toLocaleString("en-IN")}`)
             : numValue > maxAmount
               ? (amountLimits?.limit_type === "user"
-                  ? `User-specific maximum amount should be ₹${maxAmount.toLocaleString("en-IN")}`
-                  : `Maximum amount should be ₹${maxAmount.toLocaleString("en-IN")}`)
+                ? `User-specific maximum amount should be ₹${maxAmount.toLocaleString("en-IN")}`
+                : `Maximum amount should be ₹${maxAmount.toLocaleString("en-IN")}`)
               : "";
         break;
       case "name":
@@ -1001,7 +997,7 @@ export default function JoinSavings() {
         </Animated.View>
         <View style={styles.goldRateContent}>
           <Text style={styles.goldRateLabel}>
-            {t("todaysGoldRate") || "Today's Gold Rate"}: <Text style={styles.goldRateValue}>
+            Today's Gold Rate: <Text style={styles.goldRateValue}>
               ₹{goldRate.toLocaleString("en-IN")}/gram
             </Text>
           </Text>
@@ -1091,7 +1087,7 @@ export default function JoinSavings() {
                       isLocked ? styles.progressStepLabelLocked : undefined,
                     ]}
                   >
-                    {num === 1 ? (t("amount") || "Amount") : (t("detailsSummary") || "Details & Summary")}
+                    {num === 1 ? "Amount" : "Details & Summary"}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -1485,7 +1481,7 @@ export default function JoinSavings() {
                 </View>
 
                 <View style={styles.cardFooter}>
-                  <Text style={styles.hintText}>{t("tapToEditAmount") || "Tap to edit amount"}</Text>
+                  <Text style={styles.hintText}>Tap to edit amount</Text>
                 </View>
               </View>
 
@@ -2000,7 +1996,7 @@ export default function JoinSavings() {
               {idProofExpanded && (
                 <View style={{ padding: 20, paddingTop: 12, gap: 12 }}>
                   <View style={styles.kycRow}>
-                    <Text style={styles.kycLabel}>{t("dateOfBirth") || "Date of Birth"}</Text>
+                    <Text style={styles.kycLabel}>Date of Birth</Text>
                     <Text style={styles.kycValue}>
                       {kycDetails.dob
                         ? new Date(kycDetails.dob).toLocaleDateString()
@@ -2008,7 +2004,7 @@ export default function JoinSavings() {
                     </Text>
                   </View>
                   <View style={styles.kycRow}>
-                    <Text style={styles.kycLabel}>{t("kycIdNumber") || "ID Number"}</Text>
+                    <Text style={styles.kycLabel}>ID Number</Text>
                     <Text style={styles.kycValue}>{kycDetails.enternumber}</Text>
                   </View>
                   {/* Nominee Card nested inside ID Proof */}
@@ -2159,192 +2155,23 @@ export default function JoinSavings() {
 
       if (kycStatus !== "Completed") {
         setKycModalData({
-          title: t("kycRequiredAlertBox") || "KYC Required",
-          message: t("completeKycToContinue") || "Please complete your KYC details to continue.",
+          title: "KYC Required",
+          message: "Complete KYC to continue?",
           type: "error",
           buttons: [
             {
-              text: t("cancel") || "Cancel",
+              text: "Cancel",
               onPress: () => { },
               style: "cancel",
             },
             {
-              text: t("complete") || "Complete",
+              text: "Complete",
               onPress: () => router.push("/(tabs)/home/kyc"),
               style: "default",
             },
           ],
         });
         setKycModalVisible(true);
-        return;
-      }
-
-      if (bypassToPayment) {
-        if (!user) {
-          setKycModalData({
-            title: "Error",
-            message: "Please log in again.",
-            type: "error",
-            buttons: [{ text: "OK", onPress: () => { }, style: "default" }],
-          });
-          setKycModalVisible(true);
-          return;
-        }
-
-        const finalName = user?.name || "Default Account";
-        let finalBranch = user?.branch_id ? String(user.branch_id) : "";
-        if (!finalBranch && branch.length > 0) {
-          finalBranch = String(branch[0].id);
-        }
-
-        setFormData(prev => ({
-          ...prev,
-          accountname: finalName,
-          associated_branch: finalBranch,
-          amount: String(currentAmount)
-        }));
-
-        setIsSubmitting(true);
-
-        const payload = {
-          userId: user.id,
-          schemeId: Number(schemeId),
-          chitId: selectedChit ? selectedChit.CHITID : null,
-          accountName: finalName,
-          associated_branch: finalBranch,
-          payment_frequency_id: selectedChit && selectedChit.PAYMENT_FREQUENCY_ID,
-        };
-
-        logger.log("Quick Join: Submitting investment", payload);
-
-        api
-          .post("/investments", payload)
-          .then((data: any) => {
-            try {
-              logger.log('Investment API response:', data);
-
-              if (!data || (!data.data && !data.data?.data)) {
-                throw new Error("Invalid API response structure");
-              }
-
-              const { storePaymentSession } = useGlobalStore.getState();
-              const accountNo = data.data?.data?.accountNo || data.data?.accountNo || data.accountNo || null;
-              const investmentId = data.data?.data?.id || data.data?.id || data.id || null;
-
-              if (!accountNo || !investmentId) {
-                logger.crash(new Error("Missing critical payment data"), {
-                  data,
-                  accountNo,
-                  investmentId,
-                  payload,
-                });
-                throw new Error("Missing account number or investment ID in response");
-              }
-
-              const paymentSessionData = {
-                amount: Number(currentAmount),
-                userDetails: {
-                  accountname: finalName,
-                  accNo: accountNo,
-                  associated_branch: finalBranch,
-                  name: finalName,
-                  mobile: String(user?.mobile || ""),
-                  email: user?.email || "",
-                  userId: user?.id || "",
-                  investmentId: investmentId,
-                  schemeId: Number(schemeId),
-                  schemeType: schemeType,
-                  paymentFrequency: selectedChit ? selectedChit.PAYMENT_FREQUENCY : "",
-                  chitId: selectedChit ? selectedChit.CHITID : null,
-                  isRetryAttempt: false,
-                  source: "join_savings",
-                },
-                timestamp: new Date().toISOString(),
-              };
-
-              storePaymentSession(paymentSessionData);
-              logger.log('Payment session stored in global store from join_savings', paymentSessionData);
-
-              const apiData = data.data?.data || {};
-              const sanitizedApiData: any = {};
-              const allowedFields = ['accountNo', 'accNo', 'id', 'userId', 'schemeId', 'chitId'];
-              allowedFields.forEach(field => {
-                if (apiData[field] !== undefined && apiData[field] !== null) {
-                  sanitizedApiData[field] = apiData[field];
-                }
-              });
-
-              const userDetailsObject = {
-                accountname: finalName,
-                accNo: accountNo,
-                associated_branch: finalBranch,
-                name: finalName,
-                mobile: String(user?.mobile || ""),
-                email: user?.email || "",
-                userId: user?.id || "",
-                investmentId: investmentId,
-                schemeId: Number(schemeId),
-                schemeType: schemeType,
-                schemeName: parsedData?.name || "",
-                paymentFrequency: selectedChit?.PAYMENT_FREQUENCY || "",
-                chitId: selectedChit?.CHITID || null,
-                ...sanitizedApiData,
-              };
-
-              let userDetailsString = JSON.stringify(userDetailsObject);
-              const maxSize = 1500;
-              if (userDetailsString.length > maxSize) {
-                const minimalUserDetails = {
-                  accountname: finalName,
-                  accNo: accountNo,
-                  associated_branch: finalBranch,
-                  userId: user?.id || "",
-                  investmentId: investmentId,
-                  schemeId: Number(schemeId),
-                  schemeType: schemeType,
-                  paymentFrequency: selectedChit?.PAYMENT_FREQUENCY || "",
-                  chitId: selectedChit?.CHITID || null,
-                };
-                userDetailsString = JSON.stringify(minimalUserDetails);
-              }
-
-              const navigationParams = {
-                pathname: "/(tabs)/home/paymentNewOverView",
-                params: {
-                  amount: String(currentAmount),
-                  schemeName: parsedData?.name || "",
-                  schemeId: String(parsedData?.schemeId || schemeId || ""),
-                  chitId: selectedChit?.CHITID ? String(selectedChit.CHITID) : "",
-                  paymentFrequency: selectedChit?.PAYMENT_FREQUENCY || "",
-                  schemeType: schemeType || "",
-                  savinsTypes: parsedData?.savingType || "amount",
-                  userDetails: userDetailsString,
-                },
-              };
-
-              if (isNavigatingRef.current) {
-                setIsSubmitting(false);
-                return;
-              }
-              isNavigatingRef.current = true;
-
-              InteractionManager.runAfterInteractions(() => {
-                setIsSubmitting(false);
-                router.push(navigationParams);
-              });
-            } catch (err: any) {
-              setIsSubmitting(false);
-              logger.error("Error processing Quick Join response:", err);
-              Alert.alert("Error", err.message || "Failed to process payment session");
-            }
-          })
-          .catch((err: any) => {
-            setIsSubmitting(false);
-            const errMsg = err.response?.data?.message || err.message || "Failed to join scheme";
-            logger.error("Quick Join submission error:", err);
-            Alert.alert("Submission Error", errMsg);
-          });
-
         return;
       }
 
@@ -2404,13 +2231,14 @@ export default function JoinSavings() {
         return;
       }
       logger.log("formData ,selectedChit", formData, selectedChit);
+      const activeChit = selectedChit || (parsedData?.chits && parsedData.chits[0]);
       const payload = {
         userId: user.id,
         schemeId: Number(schemeId),
-        chitId: selectedChit ? selectedChit.CHITID : null,
+        chitId: activeChit ? activeChit.CHITID : null,
         accountName: formData.accountname,
         associated_branch: formData.associated_branch,
-        payment_frequency_id: selectedChit && selectedChit.PAYMENT_FREQUENCY_ID,
+        payment_frequency_id: activeChit && activeChit.PAYMENT_FREQUENCY_ID,
       };
       logger.log(payload, selectedChit);
       api
@@ -2893,7 +2721,7 @@ export default function JoinSavings() {
   //         <Text style={styles.headerTitle}>{translations.loadingScheme}</Text>
   //       </View>
   //       <View style={styles.loadingContainer}>
-  //         <ActivityIndicator size="large" color={theme.colors.primary} />
+  //         <ActivityIndicator size="large" color={theme.colors.secondary} />
   //         <Text style={styles.loadingText}>{translations.loadingSchemeDetails}</Text>
   //       </View>
   //     </SafeAreaView>
@@ -2931,9 +2759,8 @@ export default function JoinSavings() {
   return (
     <SafeAreaView
       style={styles.safeAreaContainer}
-      edges={["left", "right"]}
+      edges={["top", "left", "right"]}
     >
-      <Stack.Screen options={{ title: t("joinSchemes") || "Join Schemes" }} />
       <View style={styles.container}>
         {/* <View style={styles.header}>
           <TouchableOpacity
@@ -2994,7 +2821,7 @@ export default function JoinSavings() {
         {renderGoldRateArea()}
         {isKycLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ActivityIndicator size="large" color={theme.colors.secondary} />
             <Text>{translations.loadingKycStatus}</Text>
           </View>
         ) : (
@@ -3014,14 +2841,12 @@ export default function JoinSavings() {
             {keyboardVisible && (
               <View style={styles.footerKeyboard}>
                 <ResponsiveButton
-                  title={step === 2 || bypassToPayment ? translations.confirmAndJoin : translations.next}
+                  title={step === 2 ? translations.confirmAndJoin : translations.next}
                   variant="primary"
                   size="lg"
                   fullWidth={true}
                   onPress={handleNext}
                   style={styles.button}
-                  loading={isSubmitting}
-                  disabled={isSubmitting}
                 />
               </View>
             )}
@@ -3040,14 +2865,12 @@ export default function JoinSavings() {
             ]}
           >
             <ResponsiveButton
-              title={step === 2 || bypassToPayment ? translations.confirmAndJoin : translations.next}
+              title={step === 2 ? translations.confirmAndJoin : translations.next}
               variant="primary"
               size="lg"
               fullWidth={true}
               onPress={handleNext}
               style={styles.button}
-              loading={isSubmitting}
-              disabled={isSubmitting}
             />
           </View>
         )}
@@ -3075,7 +2898,7 @@ export default function JoinSavings() {
 }
 const pickerSelectStyles = StyleSheet.create({
   inputIOS: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderColor: "#CCCCCC",
     borderWidth: 1,
     borderRadius: 8,
@@ -3100,7 +2923,7 @@ const pickerSelectStyles = StyleSheet.create({
 
 const pickerSelectStylesModern = StyleSheet.create({
   inputIOS: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderColor: theme.colors.primary,
     borderWidth: 1.5,
     borderRadius: 12,
@@ -3118,7 +2941,7 @@ const pickerSelectStylesModern = StyleSheet.create({
     borderColor: theme.colors.primary,
     borderRadius: 12,
     color: "#333",
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     paddingRight: 40,
   },
   iconContainer: {
@@ -3134,1535 +2957,1539 @@ const pickerSelectStylesModern = StyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create({
-  safeAreaContainer: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: theme.colors.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: `${theme.colors.border}15`,
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 16,
-    color: theme.colors.white,
-  },
-  progressContainer: {
-    backgroundColor: theme.colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.borderLight,
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-  },
-  progressWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 9,
-  },
-  progressStepCard: {
-    flex: 1,
-    backgroundColor: theme.colors.backgroundSecondary,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 16,
-    borderWidth: 1.5,
-    borderColor: "transparent",
-    shadowColor: theme.colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 1,
+function getStyles(theme: any) {
+  return StyleSheet.create({
+    safeAreaContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.white,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  progressStepCardActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-    shadowColor: theme.colors.primary,
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 3,
-    transform: [{ scale: 1.01 }],
-  },
-  progressStepCardCompleted: {
-    backgroundColor: theme.colors.secondary,
-    borderColor: theme.colors.secondary,
-  },
-  progressStepCardLocked: {
-    backgroundColor: theme.colors.backgroundTertiary,
-    borderColor: theme.colors.borderLight,
-    opacity: 0.6,
-  },
-  progressStepInner: {
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    flexDirection: "row",
-  },
-  progressBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: theme.colors.white,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: theme.colors.borderLight,
-  },
-  progressBadgeActive: {
-    backgroundColor: theme.colors.secondary,
-    borderColor: theme.colors.primary,
-  },
-  progressBadgeCompleted: {
-    backgroundColor: theme.colors.white,
-    borderColor: theme.colors.white,
-  },
-  progressBadgeLocked: {
-    backgroundColor: theme.colors.backgroundSecondary,
-    borderColor: theme.colors.borderLight,
-  },
-  progressBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: theme.colors.primary,
-  },
-  progressBadgeTextActive: {
-    color: theme.colors.white,
-    fontSize: 12,
-  },
-  progressStepLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: theme.colors.primary,
-    textAlign: "center",
-    lineHeight: 14,
-    flex: 1,
-  },
-  progressStepLabelActive: {
-    color: theme.colors.primary,
-    fontWeight: "700",
-    fontSize: 12,
-  },
-  progressStepLabelCompleted: {
-    color: theme.colors.black,
-    fontWeight: "600",
-    fontSize: 11,
-  },
-  progressStepLabelLocked: {
-    color: theme.colors.textLightGrey,
-    fontSize: 10,
-  },
-  progressConnector: {
-    width: 24,
-    height: 2,
-    justifyContent: "center",
-    alignItems: "center",
-    marginHorizontal: 2,
-  },
-  progressConnectorLine: {
-    width: "100%",
-    height: 2,
-    backgroundColor: theme.colors.borderLight,
-    borderRadius: 1,
-  },
-  progressConnectorLineActive: {
-    backgroundColor: theme.colors.primary,
-    shadowColor: theme.colors.primary,
-    shadowOffset: {
-      width: 0,
-      height: 0,
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.white,
     },
-    shadowOpacity: 0.4,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  content: {
-    flex: 1,
-    marginTop: 0,
-    paddingTop: Platform.OS === "android" ? 0 : 0,
-  },
-  // stepContainer: {
-  //   padding: Platform.OS === "android" ? 0 : 12,
-  //   paddingTop: Platform.OS === "android" ? 4 : 8,
-  //   flex: 1,
-  //   justifyContent: "flex-start",
-  // },
-  label: {
-    fontSize: 12,
-    fontWeight: "600",
-    marginBottom: 8,
-    color: theme.colors.primary,
-    textAlign: "left",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#e5e5e5",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 16,
-  },
-  inputError: {
-    borderColor: "#dc2626",
-  },
-  // errorText: {
-  //   color: "#dc2626",
-  //   fontSize: 14,
-  //   marginTop: -12,
-  //   marginBottom: 16,
-  // },
-  returnsCard: {
-    backgroundColor: "#f0fdf4",
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  returnsTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  returnsAmount: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: theme.colors.success,
-    marginVertical: 8,
-  },
-  returnsRate: {
-    fontSize: 14,
-    color: theme.colors.success,
-  },
-  row: {
-    flexDirection: "row",
-    gap: 16,
-    marginBottom: 16,
-  },
-  column: {
-    flex: 1,
-  },
-  summaryCard: {
-    backgroundColor: "#f8fafc",
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-    // Optional: add shadow for better UX on iOS/Android
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: "#64748b",
-  },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-  },
-  // sectionTitle: {
-  //   fontSize: 18,
-  //   fontWeight: "bold",
-  //   color: theme.colors.primary,
-  //   marginBottom: 8,
-  // },
-  footer: {
-    paddingTop: 0,
-    paddingHorizontal: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#e5e5e5",
-    backgroundColor: "#fff",
-    position: "absolute",
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  footerKeyboard: {
-    paddingTop: 1,
-    paddingHorizontal: 1,
-    paddingBottom: 1,
-    borderTopWidth: 1,
-    borderTopColor: "#e5e5e5",
-    backgroundColor: "#fff",
-    marginTop: 1,
-    marginBottom: 1,
-  },
-  button: {
-    backgroundColor: theme.colors.primary, // Golden background
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#fff", // Dark blue-gray text
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    marginBottom: 10,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 16,
-  },
-
-  amountPickerContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginVertical: 10,
-  },
-  // amountCard: {
-  //   backgroundColor: theme.colors.primary,
-  //   borderRadius: 16,
-  //   padding: 20,
-  //   shadowColor: theme.colors.primary,
-  //   shadowOffset: {
-  //     width: 0,
-  //     height: 4,
-  //   },
-  //   shadowOpacity: 0.3,
-  //   shadowRadius: 8,
-  //   elevation: 4,
-  // },
-  selectedAmountCard: {
-    borderColor: theme.colors.primary,
-    borderWidth: 2,
-    backgroundColor: "#fdf2f2", // Light red background for selected
-  },
-  checkboxContainer: {
-    position: "absolute",
-    top: 5,
-    right: 5,
-    backgroundColor: theme.colors.primary,
-    borderRadius: 12,
-    padding: 2,
-  },
-  amountText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: theme.colors.primary,
-  },
-  noAmountText: {
-    fontSize: 16,
-    color: "gray",
-    textAlign: "center",
-    width: "100%",
-  },
-  schemeTypeContainer: {
-    flexDirection: "column",
-    gap: 16,
-    marginTop: 16,
-  },
-  schemeTypeCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "#e5e5e5",
-    alignItems: "center",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  selectedSchemeTypeCard: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  schemeTypeText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginTop: 12,
-    color: theme.colors.primary,
-  },
-  selectedSchemeTypeText: {
-    color: "#fff",
-  },
-  schemeTypeDescription: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-    marginTop: 8,
-  },
-  selectedSchemeTypeDescription: {
-    color: "#fff",
-  },
-  flexiAmountContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
-    marginTop: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  amountDisplayContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 60,
-    flex: 1,
-  },
-  amountValue: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "red",
-    textAlign: "center",
-  },
-  amountLabel: {
-    fontSize: 16,
-    color: "#666",
-  },
-  amountGridContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    padding: 8,
-    marginBottom: 16,
-  },
-  amountGridItem: {
-    width: "31%",
-    aspectRatio: 2,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    marginBottom: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#e5e5e5",
-    padding: 8,
-  },
-  selectedAmountGridItem: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  amountGridText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: theme.colors.primary,
-    textAlign: "center",
-  },
-  selectedAmountGridText: {
-    color: "#fff",
-  },
-  amountInfoContainer: {
-    marginTop: 16,
-    padding: 16,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 12,
-  },
-  amountInfoItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  amountInfoText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: "#666",
-  },
-  frequencyContainer: {
-    flexDirection: "column",
-    gap: 16,
-    marginTop: 16,
-  },
-  frequencyCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "#e5e5e5",
-    alignItems: "center",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  selectedFrequencyCard: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  frequencyText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginTop: 12,
-    color: theme.colors.primary,
-  },
-  selectedFrequencyText: {
-    color: "#fff",
-  },
-  frequencyDescription: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-    marginTop: 8,
-  },
-  selectedFrequencyDescription: {
-    color: "#fff",
-  },
-  quickAmountContainer: {
-    marginTop: 24,
-    marginBottom: 16,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 16,
+      backgroundColor: theme.colors.primary,
+      borderBottomWidth: 1,
+      borderBottomColor: `${theme.colors.border}15`,
+    },
+    backButton: {
+      padding: 8,
+    },
+    headerTitle: {
+      fontSize: 16,
+      fontWeight: "600",
+      marginLeft: 16,
+      color: theme.colors.white,
+    },
+    progressContainer: {
+      backgroundColor: theme.colors.background,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderLight,
+      paddingVertical: 5,
+      paddingHorizontal: 12,
+    },
+    progressWrapper: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 9,
+    },
+    progressStepCard: {
+      flex: 1,
+      backgroundColor: theme.colors.backgroundSecondary,
+      borderRadius: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 16,
+      borderWidth: 1.5,
+      borderColor: "transparent",
+      shadowColor: theme.colors.black,
+      shadowOffset: {
+        width: 0,
+        height: 1,
+      },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    progressStepCardActive: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+      shadowColor: theme.colors.primary,
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
+      elevation: 3,
+      transform: [{ scale: 1.01 }],
+    },
+    progressStepCardCompleted: {
+      backgroundColor: theme.colors.secondary,
+      borderColor: theme.colors.secondary,
+    },
+    progressStepCardLocked: {
+      backgroundColor: theme.colors.backgroundTertiary,
+      borderColor: theme.colors.borderLight,
+      opacity: 0.6,
+    },
+    progressStepInner: {
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      flexDirection: "row",
+    },
+    progressBadge: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: theme.colors.white,
+      justifyContent: "center",
+      alignItems: "center",
+      borderWidth: 1.5,
+      borderColor: theme.colors.borderLight,
+    },
+    progressBadgeActive: {
+      backgroundColor: theme.colors.secondary,
+      borderColor: theme.colors.primary,
+    },
+    progressBadgeCompleted: {
+      backgroundColor: theme.colors.white,
+      borderColor: theme.colors.white,
+    },
+    progressBadgeLocked: {
+      backgroundColor: theme.colors.backgroundSecondary,
+      borderColor: theme.colors.borderLight,
+    },
+    progressBadgeText: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: theme.colors.textDark,
+    },
+    progressBadgeTextActive: {
+      color: theme.colors.white,
+      fontSize: 12,
+    },
+    progressStepLabel: {
+      fontSize: 11,
+      fontWeight: "600",
+      color: theme.colors.textDark,
+      textAlign: "center",
+      lineHeight: 14,
+      flex: 1,
+    },
+    progressStepLabelActive: {
+      color: theme.colors.textDark,
+      fontWeight: "700",
+      fontSize: 12,
+    },
+    progressStepLabelCompleted: {
+      color: theme.colors.black,
+      fontWeight: "600",
+      fontSize: 11,
+    },
+    progressStepLabelLocked: {
+      color: theme.colors.textLightGrey,
+      fontSize: 10,
+    },
+    progressConnector: {
+      width: 24,
       height: 2,
+      justifyContent: "center",
+      alignItems: "center",
+      marginHorizontal: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  quickAmountLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 12,
-  },
-  // quickAmountGrid: {
-  //   flexDirection: "row",
-  //   flexWrap: "wrap",
-  //   justifyContent: "flex-start",
-  //   gap: 10,
-  // },
-  quickAmountButton: {
-    width: "22.5%",
-    paddingVertical: 14,
-    paddingHorizontal: 6,
-    borderRadius: 12,
-    backgroundColor: "#F8F9FA",
-    borderWidth: 1.5,
-    borderColor: "#E5E7EB",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-    minHeight: 50,
-  },
-  selectedQuickAmountButton: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  quickAmountText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: theme.colors.primary,
-  },
-  selectedQuickAmountText: {
-    color: "#fff",
-  },
-  sliderContainer: {
-    marginBottom: 24,
-    paddingHorizontal: 8,
-  },
-  sliderTrack: {
-    height: 40, // Increased height for better touch area
-    backgroundColor: "#E5E7EB",
-    borderRadius: 2,
-    position: "relative",
-    justifyContent: "center",
-  },
-  sliderFill: {
-    height: 4,
-    backgroundColor: theme.colors.primary,
-    borderRadius: 2,
-    position: "absolute",
-    left: 0,
-  },
-  sliderThumb: {
-    width: 24,
-    height: 24,
-    backgroundColor: theme.colors.primary,
-    borderRadius: 12,
-    position: "absolute",
-    top: 8,
-    marginLeft: -12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  sliderLabels: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 12,
-  },
-  sliderLabel: {
-    fontSize: 12,
-    color: "#666",
-    fontWeight: "500",
-  },
-  amountValueContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 8,
-    padding: 10,
-    minWidth: 140,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-  },
-  amountInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 8,
-    padding: 10,
-    minWidth: 140,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-  },
-  currencySymbol: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#FFC857",
-  },
-  amountInput: {
-    fontSize: 22,
-    fontWeight: "700",
-    padding: 0,
-    minWidth: 100,
-    textAlign: "center",
-    color: "black",
-  },
-  editIcon: {
-    marginLeft: 8,
-    opacity: 0.8,
-  },
-  progressHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 0,
-  },
-  progressTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: theme.colors.primary,
-  },
-  goldRateCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fffbe6",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#FFC857",
-    shadowColor: "#FFC857",
-    shadowOffset: {
-      width: 0,
+    progressConnectorLine: {
+      width: "100%",
+      height: 2,
+      backgroundColor: theme.colors.borderLight,
+      borderRadius: 1,
+    },
+    progressConnectorLineActive: {
+      backgroundColor: theme.colors.primary,
+      shadowColor: theme.colors.primary,
+      shadowOffset: {
+        width: 0,
+        height: 0,
+      },
+      shadowOpacity: 0.4,
+      shadowRadius: 3,
+      elevation: 1,
+    },
+    content: {
+      flex: 1,
+      marginTop: 0,
+      paddingTop: Platform.OS === "android" ? 0 : 0,
+    },
+    // stepContainer: {
+    //   padding: Platform.OS === "android" ? 0 : 12,
+    //   paddingTop: Platform.OS === "android" ? 4 : 8,
+    //   flex: 1,
+    //   justifyContent: "flex-start",
+    // },
+    label: {
+      fontSize: 12,
+      fontWeight: "600",
+      marginBottom: 8,
+      color: theme.colors.textDark,
+      textAlign: "left",
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: "#e5e5e5",
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 16,
+      marginBottom: 16,
+    },
+    inputError: {
+      borderColor: "#dc2626",
+    },
+    // errorText: {
+    //   color: "#dc2626",
+    //   fontSize: 14,
+    //   marginTop: -12,
+    //   marginBottom: 16,
+    // },
+    returnsCard: {
+      backgroundColor: "#f0fdf4",
+      padding: 16,
+      borderRadius: 8,
+      marginTop: 16,
+    },
+    returnsTitle: {
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    returnsAmount: {
+      fontSize: 24,
+      fontWeight: "bold",
+      color: theme.colors.success,
+      marginVertical: 8,
+    },
+    returnsRate: {
+      fontSize: 14,
+      color: theme.colors.success,
+    },
+    row: {
+      flexDirection: "row",
+      gap: 16,
+      marginBottom: 16,
+    },
+    column: {
+      flex: 1,
+    },
+    summaryCard: {
+      backgroundColor: "#f8fafc",
+      padding: 16,
+      borderRadius: 8,
+      marginBottom: 16,
+      // Optional: add shadow for better UX on iOS/Android
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    summaryRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 12,
+    },
+    summaryLabel: {
+      fontSize: 14,
+      color: "#64748b",
+    },
+    summaryValue: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: "#333",
+    },
+    // sectionTitle: {
+    //   fontSize: 18,
+    //   fontWeight: "bold",
+    //   color: theme.colors.textDark,
+    //   marginBottom: 8,
+    // },
+    footer: {
+      paddingTop: 0,
+      paddingHorizontal: 12,
+      borderTopWidth: 1,
+      borderTopColor: "#e5e5e5",
+      backgroundColor: theme.colors.white,
+      position: "absolute",
+      left: 0,
+      right: 0,
+      zIndex: 10,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    },
+    footerKeyboard: {
+      paddingTop: 1,
+      paddingHorizontal: 1,
+      paddingBottom: 1,
+      borderTopWidth: 1,
+      borderTopColor: "#e5e5e5",
+      backgroundColor: theme.colors.white,
+      marginTop: 1,
+      marginBottom: 1,
+    },
+    button: {
+      backgroundColor: theme.colors.primary, // Golden background
+      padding: 16,
+      borderRadius: 8,
+      alignItems: "center",
+    },
+    buttonText: {
+      color: "#fff", // Dark blue-gray text
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    pickerContainer: {
+      borderWidth: 1,
+      borderColor: "#ccc",
+      borderRadius: 5,
+      marginBottom: 10,
+    },
+    loadingContainer: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 16,
+    },
+
+    amountPickerContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      marginVertical: 10,
+    },
+    // amountCard: {
+    //   backgroundColor: theme.colors.primary,
+    //   borderRadius: 16,
+    //   padding: 20,
+    //   shadowColor: theme.colors.primary,
+    //   shadowOffset: {
+    //     width: 0,
+    //     height: 4,
+    //   },
+    //   shadowOpacity: 0.3,
+    //   shadowRadius: 8,
+    //   elevation: 4,
+    // },
+    selectedAmountCard: {
+      borderColor: theme.colors.primary,
+      borderWidth: 2,
+      backgroundColor: "#fdf2f2", // Light red background for selected
+    },
+    checkboxContainer: {
+      position: "absolute",
+      top: 5,
+      right: 5,
+      backgroundColor: theme.colors.primary,
+      borderRadius: 12,
+      padding: 2,
+    },
+    amountText: {
+      fontSize: 18,
+      fontWeight: "bold",
+      color: theme.colors.textDark,
+    },
+    noAmountText: {
+      fontSize: 16,
+      color: "gray",
+      textAlign: "center",
+      width: "100%",
+    },
+    schemeTypeContainer: {
+      flexDirection: "column",
+      gap: 16,
+      marginTop: 16,
+    },
+    schemeTypeCard: {
+      backgroundColor: theme.colors.white,
+      borderRadius: 12,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: "#e5e5e5",
+      alignItems: "center",
+      elevation: 2,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    },
+    selectedSchemeTypeCard: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+    },
+    schemeTypeText: {
+      fontSize: 18,
+      fontWeight: "bold",
+      marginTop: 12,
+      color: theme.colors.textDark,
+    },
+    selectedSchemeTypeText: {
+      color: "#fff",
+    },
+    schemeTypeDescription: {
+      fontSize: 14,
+      color: "#666",
+      textAlign: "center",
+      marginTop: 8,
+    },
+    selectedSchemeTypeDescription: {
+      color: "#fff",
+    },
+    flexiAmountContainer: {
+      backgroundColor: theme.colors.white,
+      borderRadius: 16,
+      padding: 24,
+      marginTop: 16,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    amountDisplayContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 60,
+      flex: 1,
+    },
+    amountValue: {
+      fontSize: 22,
+      fontWeight: "700",
+      color: "red",
+      textAlign: "center",
+    },
+    amountLabel: {
+      fontSize: 16,
+      color: "#666",
+    },
+    amountGridContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      padding: 8,
+      marginBottom: 16,
+    },
+    amountGridItem: {
+      width: "31%",
+      aspectRatio: 2,
+      backgroundColor: theme.colors.white,
+      borderRadius: 12,
+      marginBottom: 12,
+      justifyContent: "center",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: "#e5e5e5",
+      padding: 8,
+    },
+    selectedAmountGridItem: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+    },
+    amountGridText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: theme.colors.textDark,
+      textAlign: "center",
+    },
+    selectedAmountGridText: {
+      color: "#fff",
+    },
+    amountInfoContainer: {
+      marginTop: 16,
+      padding: 16,
+      backgroundColor: "#f8f9fa",
+      borderRadius: 12,
+    },
+    amountInfoItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    amountInfoText: {
+      marginLeft: 8,
+      fontSize: 14,
+      color: "#666",
+    },
+    frequencyContainer: {
+      flexDirection: "column",
+      gap: 16,
+      marginTop: 16,
+    },
+    frequencyCard: {
+      backgroundColor: theme.colors.white,
+      borderRadius: 12,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: "#e5e5e5",
+      alignItems: "center",
+      elevation: 2,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    },
+    selectedFrequencyCard: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+    },
+    frequencyText: {
+      fontSize: 18,
+      fontWeight: "bold",
+      marginTop: 12,
+      color: theme.colors.textDark,
+    },
+    selectedFrequencyText: {
+      color: "#fff",
+    },
+    frequencyDescription: {
+      fontSize: 14,
+      color: "#666",
+      textAlign: "center",
+      marginTop: 8,
+    },
+    selectedFrequencyDescription: {
+      color: "#fff",
+    },
+    quickAmountContainer: {
+      marginTop: 24,
+      marginBottom: 16,
+      backgroundColor: theme.colors.white,
+      borderRadius: 12,
+      padding: 16,
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    quickAmountLabel: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: "#333",
+      marginBottom: 12,
+    },
+    // quickAmountGrid: {
+    //   flexDirection: "row",
+    //   flexWrap: "wrap",
+    //   justifyContent: "flex-start",
+    //   gap: 10,
+    // },
+    quickAmountButton: {
+      width: "22.5%",
+      paddingVertical: 14,
+      paddingHorizontal: 6,
+      borderRadius: 12,
+      backgroundColor: "#F8F9FA",
+      borderWidth: 1.5,
+      borderColor: "#E5E7EB",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 10,
+      minHeight: 50,
+    },
+    selectedQuickAmountButton: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+    },
+    quickAmountText: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: theme.colors.textDark,
+    },
+    selectedQuickAmountText: {
+      color: "#fff",
+    },
+    sliderContainer: {
+      marginBottom: 24,
+      paddingHorizontal: 8,
+    },
+    sliderTrack: {
+      height: 40, // Increased height for better touch area
+      backgroundColor: "#E5E7EB",
+      borderRadius: 2,
+      position: "relative",
+      justifyContent: "center",
+    },
+    sliderFill: {
       height: 4,
+      backgroundColor: theme.colors.primary,
+      borderRadius: 2,
+      position: "absolute",
+      left: 0,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-    width: "100%",
-    justifyContent: "space-between",
-  },
-  goldRateIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#FFC85720",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  goldRateContent: {
-    flex: 1,
-  },
-  goldRateLabel: {
-    fontSize: 13,
-    color: "#666",
-    fontWeight: "500",
-  },
-  goldRateValue: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: theme.colors.primary,
-  },
-  selectedAmountBadge: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    marginLeft: 12,
-  },
-  selectedAmountText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#FFC857",
-  },
-  // dualInputContainer: {
-  //   flexDirection: "row",
-  //   alignItems: "stretch",
-  //   justifyContent: "space-between",
-  //   marginBottom: 20,
-  //   marginHorizontal: 8,
-  //   backgroundColor: "transparent",
-  //   gap: 8,
-  // },
-  // singleInputContainer: {
-  //   flexDirection: "row",
-  //   alignItems: "stretch",
-  //   justifyContent: "center",
-  //   marginBottom: 20,
-  //   marginHorizontal: 8,
-  //   backgroundColor: "transparent",
-  // },
-  inputSide: {
-    flex: 1,
-    borderRadius: 12,
-    padding: 12,
-    elevation: 4,
-    minWidth: 150,
-    minHeight: 140,
-    justifyContent: "center",
-  },
-  fullWidthInput: {
-    flex: 1,
-    maxWidth: "100%",
-  },
-  calculationDivider: {
-    width: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    alignSelf: "center",
-  },
-  // goldCard: {
-  //   backgroundColor: "#FFF",
-  //   borderRadius: 16,
-  //   padding: 20,
-  //   borderWidth: 1,
-  //   borderColor: "#FFC857",
-  //   shadowColor: "#FFC857",
-  //   shadowOffset: {
-  //     width: 0,
-  //     height: 4,
-  //   },
-  //   shadowOpacity: 0.2,
-  //   shadowRadius: 8,
-  //   elevation: 4,
-  //   position: "relative",
-  //   overflow: "hidden",
-  //   minHeight: 140,
-  //   justifyContent: "center",
-  // },
-  goldShine: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: "100%",
-    backgroundColor: "#FFC85715",
-    transform: [{ skewX: "-45deg" }],
-  },
-  goldLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    marginBottom: 8,
-    color: theme.colors.primary,
-    textAlign: "center",
-  },
-  goldValueContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    backgroundColor: "#FFF",
-    borderRadius: 8,
-    padding: 10,
-    minWidth: 140,
-    borderWidth: 1,
-    borderColor: "#FFC857",
-  },
-  goldInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    backgroundColor: "#FFF",
-    borderRadius: 8,
-    padding: 10,
-    minWidth: 140,
-    borderWidth: 1,
-    borderColor: "#FFC857",
-  },
-  goldInput: {
-    fontSize: 22,
-    fontWeight: "700",
-    padding: 0,
-    minWidth: 100,
-    textAlign: "center",
-    color: theme.colors.primary,
-  },
-  goldSymbol: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#FFC857",
-  },
-  selectedGoldRateCard: {
-    borderColor: theme.colors.primary,
-    borderWidth: 2,
-    backgroundColor: "#fffbe6",
-    shadowColor: theme.colors.primary,
-    shadowOpacity: 0.2,
-  },
-  summaryCardModern: {
-    backgroundColor: "#fffbe6",
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 18,
-    marginHorizontal: 16,
-    shadowColor: "#FFC857",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 6,
-    borderWidth: 1,
-    borderColor: "#ffe6a1",
-  },
-  summaryCardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  summaryCardTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: theme.colors.primary,
-    marginLeft: 8,
-  },
-  summaryRowModern: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  summaryLabelModern: {
-    fontSize: 15,
-    color: "#bfa14a",
-    fontWeight: "600",
-  },
-  summaryValueModern: {
-    fontSize: 15,
-    color: "#333",
-    fontWeight: "600",
-  },
-  summaryAmountModern: {
-    fontSize: 22,
-    color: "#4CAF50",
-    fontWeight: "bold",
-  },
-  kycRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  kycLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#666",
-    marginRight: 8,
-  },
-  kycValue: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#333",
-  },
-  amountCardLite: {
-    backgroundColor: "#e8f5e9", // Light gold/cream
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-    overflow: "hidden",
-    position: "relative",
-    minHeight: 140,
-    justifyContent: "center",
-  },
-  amountCardBgImage: {
-    position: "absolute",
-    right: 0,
-    bottom: 0,
-    width: 90,
-    height: 90,
-    opacity: 0.12,
-    zIndex: 0,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-  },
-  checkboxRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-    marginTop: 2,
-  },
-  checkboxBox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: "#FFC857",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 6,
-    ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
-  },
-  checkboxLabel: {
-    fontSize: 12,
-    color: "#333",
-  },
-  detailsSection: {
-    marginBottom: 24,
-    paddingHorizontal: 16,
-  },
-  summarySection: {
-    marginTop: 16,
-    marginBottom: 16,
-  },
-  readOnlyInput: {
-    backgroundColor: "#f5f5f5",
-    borderColor: "#e0e0e0",
-    color: "#666",
-  },
-  readOnlyText: {
-    fontSize: 16,
-    color: "#666",
-  },
-  accountDetailsCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: "#f0f0f0",
-  },
-  // cardHeader: {
-  //   flexDirection: "row",
-  //   alignItems: "center",
-  //   marginBottom: 20,
-  //   paddingBottom: 16,
-  //   borderBottomWidth: 1,
-  //   borderBottomColor: "#f0f0f0",
-  // },
-  // cardTitle: {
-  //   fontSize: 18,
-  //   fontWeight: "700",
-  //   color: "#1a237e",
-  //   marginLeft: 10,
-  // },
-  fieldContainer: {
-    marginBottom: 20,
-  },
-  fieldLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-    gap: 6,
-  },
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-  },
-  modernInput: {
-    borderWidth: 1.5,
-    borderColor: "#e5e5e5",
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-    backgroundColor: "#fafafa",
-    color: "#333",
-  },
-  modernInputActive: {
-    borderColor: theme.colors.primary,
-    backgroundColor: "#fff",
-  },
-  modernInputError: {
-    borderColor: "#dc2626",
-    backgroundColor: "#fef2f2",
-  },
-  modernErrorText: {
-    color: "#dc2626",
-    fontSize: 12,
-    marginTop: 6,
-    marginLeft: 4,
-  },
-  modernCheckboxRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 12,
-    paddingVertical: 8,
-  },
-  modernCheckbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: "#d0d0d0",
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-  },
-  modernCheckboxChecked: {
-    backgroundColor: "#FFC857",
-    borderColor: "#FFC857",
-  },
-  modernCheckboxLabel: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "500",
-  },
-  readOnlyInputModern: {
-    backgroundColor: "#f8f9fa",
-    borderColor: "#e9ecef",
-  },
-  readOnlyContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  readOnlyTextModern: {
-    fontSize: 16,
-    color: "#666",
-    fontWeight: "500",
-  },
-  stepContainer: {
-    padding: width < 350 ? 12 : 16,
-    paddingHorizontal: width < 350 ? 8 : 16,
-  },
-  rangeInfoContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  rangePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-  },
-  rangeText: {
-    fontSize: width < 350 ? 12 : 14,
-    color: '#666',
-    marginLeft: 6,
-    fontWeight: '500',
-    flexShrink: 1,
-  },
-  zigzagContainer: {
-    flexDirection: 'column',
-    alignItems: 'stretch',
-    marginBottom: width < 350 ? 12 : 16,
-    gap: width < 350 ? 4 : 6,
-    position: 'relative',
-  },
-  horizontalLineAmount: {
-    position: 'absolute',
-    left: 25,
-    width: '70%',
-    top: '50%',
-    height: 3,
-    backgroundColor: '#D1D5DB',
-    opacity: 0.7,
-    zIndex: 0,
-    transform: [{ translateY: -1.5 }],
-  },
-  horizontalLineGold: {
-    position: 'absolute',
-    right: 0,
-    width: '70%',
-    top: '50%',
-    height: 3,
-    backgroundColor: '#D1D5DB',
-    opacity: 0.7,
-    zIndex: 0,
-    transform: [{ translateY: -1.5 }],
-  },
-  zigzagCardLeft: {
-    width: '70%',
-    alignSelf: 'flex-start',
-    marginRight: 'auto',
-  },
-  zigzagCardRight: {
-    width: '70%',
-    alignSelf: 'flex-end',
-    marginLeft: 'auto',
-  },
-  zigzagCardCenter: {
-    alignSelf: 'center',
-    marginLeft: 'auto',
-    marginRight: 'auto',
-  },
-  amountCardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 0,
-    position: 'relative',
-    minHeight: 120,
-  },
-  goldCardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    marginTop: 0,
-    position: 'relative',
-    minHeight: 120,
-  },
-  lArrowContainer: {
-    position: 'absolute',
-    left: '15%',
-    top: 0,
-    right: '15%',
-    bottom: 10,
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    zIndex: 1,
-    pointerEvents: 'none',
-  },
-  lArrowVertical: {
-    width: width < 350 ? 24 : 30,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: width < 350 ? 50 : 60,
-  },
-  lArrowVerticalLineDown: {
-    width: 2,
-    height: width < 350 ? 30 : 40,
-    backgroundColor: '#FFD700',
-    opacity: 0.6,
-  },
-  lArrowDownIcon: {
-    padding: width < 350 ? 2 : 3,
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-    borderRadius: width < 350 ? 6 : 8,
-    borderWidth: 1.5,
-    borderColor: '#FFD700',
-    marginTop: width < 350 ? 2 : 4,
-  },
-  lArrowHorizontal: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    paddingBottom: width < 350 ? 50 : 60,
-    paddingHorizontal: width < 350 ? 2 : 4,
-  },
-  lArrowHorizontalLine: {
-    height: 1,
-    width: '100%',
-    backgroundColor: '#FFD700',
-    opacity: 0.6,
-  },
-  lArrowVerticalUp: {
-    width: width < 350 ? 24 : 30,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: width < 350 ? 50 : 60,
-  },
-  lArrowVerticalLineUp: {
-    width: 2,
-    height: width < 350 ? 30 : 40,
-    backgroundColor: '#FF8F00',
-    opacity: 0.6,
-  },
-  lArrowUpIcon: {
-    padding: width < 350 ? 2 : 3,
-    backgroundColor: 'rgba(255, 143, 0, 0.1)',
-    borderRadius: width < 350 ? 6 : 8,
-    borderWidth: 1.5,
-    borderColor: '#FF8F00',
-    marginBottom: width < 350 ? 2 : 4,
-  },
-  goldArrowLine: {
-    backgroundColor: '#FF8F00',
-    opacity: 0.6,
-  },
-  dualInputContainer: {
-    flexDirection: width < 350 ? 'column' : 'row',
-    justifyContent: 'space-between',
-    alignItems: 'stretch',
-    marginBottom: width < 350 ? 16 : 24,
-    gap: width < 350 ? 12 : 0,
-  },
-  singleInputContainer: {
-    justifyContent: 'center',
-  },
-  inputCard: {
-    backgroundColor: '#FFF',
-    borderRadius: width < 350 ? 8 : 12,
-    padding: width < 350 ? 6 : width < 400 ? 8 : 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#F1F3F4',
-    zIndex: 2,
-    position: 'relative',
-  },
-  amountCard: {
-    backgroundColor: theme.colors.primary,
-  },
-  goldCard: {
-    backgroundColor: '#FFF8E1',
-    borderColor: '#FFECB3',
-  },
-  fullWidthCard: {
-    width: '90%',
-    alignSelf: 'center',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: width < 350 ? 4 : 6,
-    flexWrap: 'wrap',
-  },
-  titleWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 4,
-  },
-  cardTitle: {
-    fontSize: width < 350 ? 12 : width < 400 ? 13 : 14,
-    fontWeight: '600',
-    color: theme.colors.textDarkBrown,
-    marginLeft: 4,
-    flex: 1,
-    flexWrap: 'wrap',
-  },
-  amountBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: width < 350 ? 6 : 8,
-    paddingVertical: width < 350 ? 2 : 3,
-    borderRadius: 6,
-  },
-  goldBadge: {
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-  },
-  amountBadgeText: {
-    fontSize: width < 350 ? 9 : 10,
-    fontWeight: '600',
-    color: '#FFD700',
-  },
-  amountInputMain: {
-    alignItems: 'center',
-    marginVertical: width < 350 ? 0 : 2,
-    paddingHorizontal: width < 350 ? 4 : 0,
-  },
-  amountInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    flex: 1,
-  },
-  currencySymbolLarge: {
-    fontSize: width < 350 ? 18 : width < 400 ? 22 : 24,
-    fontWeight: '700',
-    color: '#FFD700',
-    marginRight: width < 350 ? 3 : 4,
-  },
-  amountInputLarge: {
-    fontSize: width < 350 ? 18 : width < 400 ? 22 : 24,
-    fontWeight: '700',
-    color: '#FFF',
-    minWidth: width < 350 ? 60 : width < 400 ? 80 : 100,
-    padding: 0,
-    textAlign: 'center',
-  },
-  amountDisplay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    flex: 1,
-  },
-  amountDisplayText: {
-    fontSize: width < 350 ? 16 : width < 400 ? 20 : 22,
-    fontWeight: '700',
-    color: '#FFF',
-    textAlign: 'center',
-    flexShrink: 1,
-  },
-  editButton: {
-    marginLeft: width < 350 ? 4 : 8,
-    padding: width < 350 ? 4 : 6,
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-    borderRadius: width < 350 ? 4 : 6,
-  },
-  amountInputWithButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    gap: width < 350 ? 6 : 8,
-  },
-  amountButtonsContainer: {
-    flexDirection: 'column',
-    gap: width < 350 ? 4 : 6,
-  },
-  incrementButton: {
-    width: width < 350 ? 28 : 32,
-    height: width < 350 ? 28 : 32,
-    borderRadius: width < 350 ? 14 : 16,
-    backgroundColor: 'rgba(255, 215, 0, 0.3)',
-    borderWidth: 1.5,
-    borderColor: '#FFD700',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  decrementButton: {
-    width: width < 350 ? 28 : 32,
-    height: width < 350 ? 28 : 32,
-    borderRadius: width < 350 ? 14 : 16,
-    backgroundColor: 'rgba(255, 215, 0, 0.3)',
-    borderWidth: 1.5,
-    borderColor: '#FFD700',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  goldInputWithButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    gap: width < 350 ? 6 : 8,
-  },
-  goldButtonsContainer: {
-    flexDirection: 'column',
-    gap: width < 350 ? 4 : 6,
-  },
-  goldIncrementButton: {
-    width: width < 350 ? 28 : 32,
-    height: width < 350 ? 28 : 32,
-    borderRadius: width < 350 ? 14 : 16,
-    backgroundColor: 'rgba(255, 143, 0, 0.2)',
-    borderWidth: 1.5,
-    borderColor: '#FF8F00',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#FF8F00',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  goldDecrementButton: {
-    width: width < 350 ? 28 : 32,
-    height: width < 350 ? 28 : 32,
-    borderRadius: width < 350 ? 14 : 16,
-    backgroundColor: 'rgba(255, 143, 0, 0.2)',
-    borderWidth: 1.5,
-    borderColor: '#FF8F00',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#FF8F00',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  goldInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    flex: 1,
-  },
-  goldInputLarge: {
-    fontSize: width < 350 ? 18 : width < 400 ? 22 : 24,
-    fontWeight: '700',
-    color: '#FF8F00',
-    minWidth: width < 350 ? 60 : width < 400 ? 80 : 100,
-    padding: 0,
-    textAlign: 'center',
-    flexShrink: 1,
-  },
-  goldUnit: {
-    fontSize: width < 350 ? 11 : width < 400 ? 12 : 14,
-    fontWeight: '600',
-    color: '#FF8F00',
-    marginLeft: width < 350 ? 4 : 6,
-    opacity: 0.8,
-  },
-  cardFooter: {
-    marginTop: width < 350 ? 0 : 2,
-  },
-  hintText: {
-    fontSize: width < 350 ? 9 : 10,
-    color: 'rgba(255, 255, 255, 0.7)',
-    textAlign: 'center',
-    paddingHorizontal: 4,
-  },
-  conversionArrow: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: width < 350 ? 30 : 40,
-    marginVertical: width < 350 ? 8 : 0,
-  },
-  arrowLine: {
-    flex: 1,
-    width: 2,
-    backgroundColor: '#FFD700',
-    opacity: 0.5,
-  },
-  arrowIcon: {
-    padding: 10,
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#FFD700',
-  },
-  quickAmountSection: {
-    marginTop: 8,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: width < 350 ? 14 : 16,
-    fontWeight: '600',
-    color: '#666',
-    marginLeft: 8,
-    flexShrink: 1,
-  },
-  quickAmountGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  quickAmountChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-    paddingHorizontal: width < 350 ? 8 : width < 400 ? 12 : 16,
-    paddingVertical: width < 350 ? 8 : 12,
-    borderRadius: width < 350 ? 8 : 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    marginBottom: width < 350 ? 8 : 12,
-    width: width < 350 ? '48%' : '31%',
-    position: 'relative',
-    minHeight: width < 350 ? 36 : 44,
-  },
-  selectedQuickAmountChip: {
-    backgroundColor: theme.colors.primary,
-    borderColor: '#FFD700',
-  },
-  lastInRow: {
-    marginRight: 0,
-  },
-  quickAmountChipText: {
-    fontSize: width < 350 ? 11 : width < 400 ? 12 : 14,
-    fontWeight: '600',
-    color: '#666',
-    flex: 1,
-    textAlign: 'center',
-    flexShrink: 1,
-  },
-  selectedQuickAmountChipText: {
-    color: '#FFF',
-  },
-  selectedIndicator: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: '#FF6B6B',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFEBEE',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FFCDD2',
-    marginTop: 16,
-  },
-  errorText: {
-    color: '#D32F2F',
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 8,
-  },
-});
+    sliderThumb: {
+      width: 24,
+      height: 24,
+      backgroundColor: theme.colors.primary,
+      borderRadius: 12,
+      position: "absolute",
+      top: 8,
+      marginLeft: -12,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 4,
+    },
+    sliderLabels: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 12,
+    },
+    sliderLabel: {
+      fontSize: 12,
+      color: "#666",
+      fontWeight: "500",
+    },
+    amountValueContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      backgroundColor: "rgba(255, 255, 255, 0.1)",
+      borderRadius: 8,
+      padding: 10,
+      minWidth: 140,
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.2)",
+    },
+    amountInputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 4,
+      backgroundColor: "rgba(255, 255, 255, 0.1)",
+      borderRadius: 8,
+      padding: 10,
+      minWidth: 140,
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.2)",
+    },
+    currencySymbol: {
+      fontSize: 18,
+      fontWeight: "600",
+      color: "#FFC857",
+    },
+    amountInput: {
+      fontSize: 22,
+      fontWeight: "700",
+      padding: 0,
+      minWidth: 100,
+      textAlign: "center",
+      color: "black",
+    },
+    editIcon: {
+      marginLeft: 8,
+      opacity: 0.8,
+    },
+    progressHeader: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      marginBottom: 0,
+    },
+    progressTitle: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: theme.colors.textDark,
+    },
+    goldRateCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#fffbe6",
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 16,
+      borderWidth: 2,
+      borderColor: "#FFC857",
+      shadowColor: "#FFC857",
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 4,
+      width: "100%",
+      justifyContent: "space-between",
+    },
+    goldRateIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: "#FFC85720",
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 12,
+    },
+    goldRateContent: {
+      flex: 1,
+    },
+    goldRateLabel: {
+      fontSize: 13,
+      color: "#666",
+      fontWeight: "500",
+    },
+    goldRateValue: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: theme.colors.textDark,
+    },
+    selectedAmountBadge: {
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 10,
+      marginLeft: 12,
+    },
+    selectedAmountText: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: "#FFC857",
+    },
+    // dualInputContainer: {
+    //   flexDirection: "row",
+    //   alignItems: "stretch",
+    //   justifyContent: "space-between",
+    //   marginBottom: 20,
+    //   marginHorizontal: 8,
+    //   backgroundColor: "transparent",
+    //   gap: 8,
+    // },
+    // singleInputContainer: {
+    //   flexDirection: "row",
+    //   alignItems: "stretch",
+    //   justifyContent: "center",
+    //   marginBottom: 20,
+    //   marginHorizontal: 8,
+    //   backgroundColor: "transparent",
+    // },
+    inputSide: {
+      flex: 1,
+      borderRadius: 12,
+      padding: 12,
+      elevation: 4,
+      minWidth: 150,
+      minHeight: 140,
+      justifyContent: "center",
+    },
+    fullWidthInput: {
+      flex: 1,
+      maxWidth: "100%",
+    },
+    calculationDivider: {
+      width: 28,
+      alignItems: "center",
+      justifyContent: "center",
+      alignSelf: "center",
+    },
+    // goldCard: {
+    //   backgroundColor: theme.colors.white,
+    //   borderRadius: 16,
+    //   padding: 20,
+    //   borderWidth: 1,
+    //   borderColor: "#FFC857",
+    //   shadowColor: "#FFC857",
+    //   shadowOffset: {
+    //     width: 0,
+    //     height: 4,
+    //   },
+    //   shadowOpacity: 0.2,
+    //   shadowRadius: 8,
+    //   elevation: 4,
+    //   position: "relative",
+    //   overflow: "hidden",
+    //   minHeight: 140,
+    //   justifyContent: "center",
+    // },
+    goldShine: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: "100%",
+      backgroundColor: "#FFC85715",
+      transform: [{ skewX: "-45deg" }],
+    },
+    goldLabel: {
+      fontSize: 12,
+      fontWeight: "600",
+      marginBottom: 8,
+      color: theme.colors.textDark,
+      textAlign: "center",
+    },
+    goldValueContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      backgroundColor: theme.colors.white,
+      borderRadius: 8,
+      padding: 10,
+      minWidth: 140,
+      borderWidth: 1,
+      borderColor: "#FFC857",
+    },
+    goldInputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 4,
+      backgroundColor: theme.colors.white,
+      borderRadius: 8,
+      padding: 10,
+      minWidth: 140,
+      borderWidth: 1,
+      borderColor: "#FFC857",
+    },
+    goldInput: {
+      fontSize: 22,
+      fontWeight: "700",
+      padding: 0,
+      minWidth: 100,
+      textAlign: "center",
+      color: theme.colors.textDark,
+    },
+    goldSymbol: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: "#FFC857",
+    },
+    selectedGoldRateCard: {
+      borderColor: theme.colors.primary,
+      borderWidth: 2,
+      backgroundColor: "#fffbe6",
+      shadowColor: theme.colors.primary,
+      shadowOpacity: 0.2,
+    },
+    summaryCardModern: {
+      backgroundColor: "#fffbe6",
+      borderRadius: 18,
+      padding: 20,
+      marginBottom: 18,
+      marginHorizontal: 16,
+      shadowColor: "#FFC857",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.12,
+      shadowRadius: 12,
+      elevation: 6,
+      borderWidth: 1,
+      borderColor: "#ffe6a1",
+    },
+    summaryCardHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 14,
+    },
+    summaryCardTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      color: theme.colors.textDark,
+      marginLeft: 8,
+    },
+    summaryRowModern: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 10,
+    },
+    summaryLabelModern: {
+      fontSize: 15,
+      color: "#bfa14a",
+      fontWeight: "600",
+    },
+    summaryValueModern: {
+      fontSize: 15,
+      color: "#333",
+      fontWeight: "600",
+    },
+    summaryAmountModern: {
+      fontSize: 22,
+      color: "#4CAF50",
+      fontWeight: "bold",
+    },
+    kycRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    kycLabel: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: "#666",
+      marginRight: 8,
+    },
+    kycValue: {
+      fontSize: 14,
+      fontWeight: "500",
+      color: "#333",
+    },
+    amountCardLite: {
+      backgroundColor: "#e8f5e9", // Light gold/cream
+      borderRadius: 16,
+      padding: 20,
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 4,
+      overflow: "hidden",
+      position: "relative",
+      minHeight: 140,
+      justifyContent: "center",
+    },
+    amountCardBgImage: {
+      position: "absolute",
+      right: 0,
+      bottom: 0,
+      width: 90,
+      height: 90,
+      opacity: 0.12,
+      zIndex: 0,
+    },
+    loadingText: {
+      marginTop: 16,
+      fontSize: 16,
+      fontWeight: "600",
+      color: "#333",
+    },
+    checkboxRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 8,
+      marginTop: 2,
+    },
+    checkboxBox: {
+      width: 20,
+      height: 20,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: "#FFC857",
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 6,
+      ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+    },
+    checkboxLabel: {
+      fontSize: 12,
+      color: "#333",
+    },
+    detailsSection: {
+      marginBottom: 24,
+      paddingHorizontal: 16,
+    },
+    summarySection: {
+      marginTop: 16,
+      marginBottom: 16,
+    },
+    readOnlyInput: {
+      backgroundColor: theme.colors.backgroundSecondary,
+      borderColor: "#e0e0e0",
+      color: "#666",
+    },
+    readOnlyText: {
+      fontSize: 16,
+      color: "#666",
+    },
+    accountDetailsCard: {
+      backgroundColor: theme.colors.white,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 16,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      elevation: 3,
+      borderWidth: 1,
+      borderColor: "#f0f0f0",
+    },
+    // cardHeader: {
+    //   flexDirection: "row",
+    //   alignItems: "center",
+    //   marginBottom: 20,
+    //   paddingBottom: 16,
+    //   borderBottomWidth: 1,
+    //   borderBottomColor: "#f0f0f0",
+    // },
+    // cardTitle: {
+    //   fontSize: 18,
+    //   fontWeight: "700",
+    //   color: "#1a237e",
+    //   marginLeft: 10,
+    // },
+    fieldContainer: {
+      marginBottom: 20,
+    },
+    fieldLabelRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 8,
+      gap: 6,
+    },
+    fieldLabel: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: "#333",
+    },
+    modernInput: {
+      borderWidth: 1.5,
+      borderColor: "#e5e5e5",
+      borderRadius: 12,
+      padding: 14,
+      fontSize: 16,
+      backgroundColor: theme.colors.background,
+      color: "#333",
+    },
+    modernInputActive: {
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.white,
+    },
+    modernInputError: {
+      borderColor: "#dc2626",
+      backgroundColor: "#fef2f2",
+    },
+    modernErrorText: {
+      color: "#dc2626",
+      fontSize: 12,
+      marginTop: 6,
+      marginLeft: 4,
+    },
+    modernCheckboxRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 12,
+      paddingVertical: 8,
+    },
+    modernCheckbox: {
+      width: 22,
+      height: 22,
+      borderRadius: 6,
+      borderWidth: 2,
+      borderColor: "#d0d0d0",
+      backgroundColor: theme.colors.white,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 10,
+    },
+    modernCheckboxChecked: {
+      backgroundColor: "#FFC857",
+      borderColor: "#FFC857",
+    },
+    modernCheckboxLabel: {
+      fontSize: 14,
+      color: "#666",
+      fontWeight: "500",
+    },
+    readOnlyInputModern: {
+      backgroundColor: "#f8f9fa",
+      borderColor: "#e9ecef",
+    },
+    readOnlyContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    readOnlyTextModern: {
+      fontSize: 16,
+      color: "#666",
+      fontWeight: "500",
+    },
+    stepContainer: {
+      padding: width < 350 ? 12 : 16,
+      paddingHorizontal: width < 350 ? 8 : 16,
+    },
+    rangeInfoContainer: {
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    rangePill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#F8F9FA',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: '#E9ECEF',
+    },
+    rangeText: {
+      fontSize: width < 350 ? 12 : 14,
+      color: '#666',
+      marginLeft: 6,
+      fontWeight: '500',
+      flexShrink: 1,
+    },
+    zigzagContainer: {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+      marginBottom: width < 350 ? 12 : 16,
+      gap: width < 350 ? 4 : 6,
+      position: 'relative',
+    },
+    horizontalLineAmount: {
+      position: 'absolute',
+      left: 25,
+      width: '70%',
+      top: '50%',
+      height: 3,
+      backgroundColor: '#D1D5DB',
+      opacity: 0.7,
+      zIndex: 0,
+      transform: [{ translateY: -1.5 }],
+    },
+    horizontalLineGold: {
+      position: 'absolute',
+      right: 0,
+      width: '70%',
+      top: '50%',
+      height: 3,
+      backgroundColor: '#D1D5DB',
+      opacity: 0.7,
+      zIndex: 0,
+      transform: [{ translateY: -1.5 }],
+    },
+    zigzagCardLeft: {
+      width: '70%',
+      alignSelf: 'flex-start',
+      marginRight: 'auto',
+    },
+    zigzagCardRight: {
+      width: '70%',
+      alignSelf: 'flex-end',
+      marginLeft: 'auto',
+    },
+    zigzagCardCenter: {
+      alignSelf: 'center',
+      marginLeft: 'auto',
+      marginRight: 'auto',
+    },
+    amountCardRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: '100%',
+      marginBottom: 0,
+      position: 'relative',
+      minHeight: 120,
+    },
+    goldCardRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: '100%',
+      marginTop: 0,
+      position: 'relative',
+      minHeight: 120,
+    },
+    lArrowContainer: {
+      position: 'absolute',
+      left: '15%',
+      top: 0,
+      right: '15%',
+      bottom: 10,
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      zIndex: 1,
+      pointerEvents: 'none',
+    },
+    lArrowVertical: {
+      width: width < 350 ? 24 : 30,
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      paddingBottom: width < 350 ? 50 : 60,
+    },
+    lArrowVerticalLineDown: {
+      width: 2,
+      height: width < 350 ? 30 : 40,
+      backgroundColor: '#FFD700',
+      opacity: 0.6,
+    },
+    lArrowDownIcon: {
+      padding: width < 350 ? 2 : 3,
+      backgroundColor: 'rgba(255, 215, 0, 0.1)',
+      borderRadius: width < 350 ? 6 : 8,
+      borderWidth: 1.5,
+      borderColor: '#FFD700',
+      marginTop: width < 350 ? 2 : 4,
+    },
+    lArrowHorizontal: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      paddingBottom: width < 350 ? 50 : 60,
+      paddingHorizontal: width < 350 ? 2 : 4,
+    },
+    lArrowHorizontalLine: {
+      height: 1,
+      width: '100%',
+      backgroundColor: '#FFD700',
+      opacity: 0.6,
+    },
+    lArrowVerticalUp: {
+      width: width < 350 ? 24 : 30,
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      paddingTop: width < 350 ? 50 : 60,
+    },
+    lArrowVerticalLineUp: {
+      width: 2,
+      height: width < 350 ? 30 : 40,
+      backgroundColor: '#FF8F00',
+      opacity: 0.6,
+    },
+    lArrowUpIcon: {
+      padding: width < 350 ? 2 : 3,
+      backgroundColor: 'rgba(255, 143, 0, 0.1)',
+      borderRadius: width < 350 ? 6 : 8,
+      borderWidth: 1.5,
+      borderColor: '#FF8F00',
+      marginBottom: width < 350 ? 2 : 4,
+    },
+    goldArrowLine: {
+      backgroundColor: '#FF8F00',
+      opacity: 0.6,
+    },
+    dualInputContainer: {
+      flexDirection: width < 350 ? 'column' : 'row',
+      justifyContent: 'space-between',
+      alignItems: 'stretch',
+      marginBottom: width < 350 ? 16 : 24,
+      gap: width < 350 ? 12 : 0,
+    },
+    singleInputContainer: {
+      justifyContent: 'center',
+    },
+    inputCard: {
+      backgroundColor: theme.colors.white,
+      borderRadius: width < 350 ? 8 : 12,
+      padding: width < 350 ? 6 : width < 400 ? 8 : 10,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      elevation: 4,
+      borderWidth: 1,
+      borderColor: '#F1F3F4',
+      zIndex: 2,
+      position: 'relative',
+    },
+    amountCard: {
+      backgroundColor: theme.colors.primary,
+    },
+    goldCard: {
+      backgroundColor: '#FFF8E1',
+      borderColor: '#FFECB3',
+    },
+    fullWidthCard: {
+      width: '90%',
+      alignSelf: 'center',
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: width < 350 ? 4 : 6,
+      flexWrap: 'wrap',
+    },
+    titleWithIcon: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+      marginRight: 4,
+    },
+    cardTitle: {
+      fontSize: width < 350 ? 12 : width < 400 ? 13 : 14,
+      fontWeight: '600',
+      color: theme.colors.textDarkBrown,
+      marginLeft: 4,
+      flex: 1,
+      flexWrap: 'wrap',
+    },
+    amountBadge: {
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      paddingHorizontal: width < 350 ? 6 : 8,
+      paddingVertical: width < 350 ? 2 : 3,
+      borderRadius: 6,
+    },
+    goldBadge: {
+      backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    },
+    amountBadgeText: {
+      fontSize: width < 350 ? 9 : 10,
+      fontWeight: '600',
+      color: '#FFD700',
+    },
+    amountInputMain: {
+      alignItems: 'center',
+      marginVertical: width < 350 ? 0 : 2,
+      paddingHorizontal: width < 350 ? 4 : 0,
+    },
+    amountInputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexWrap: 'wrap',
+      flex: 1,
+    },
+    currencySymbolLarge: {
+      fontSize: width < 350 ? 18 : width < 400 ? 22 : 24,
+      fontWeight: '700',
+      color: '#FFD700',
+      marginRight: width < 350 ? 3 : 4,
+    },
+    amountInputLarge: {
+      fontSize: width < 350 ? 18 : width < 400 ? 22 : 24,
+      fontWeight: '700',
+      color: '#FFF',
+      minWidth: width < 350 ? 60 : width < 400 ? 80 : 100,
+      padding: 0,
+      textAlign: 'center',
+    },
+    amountDisplay: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexWrap: 'wrap',
+      flex: 1,
+    },
+    amountDisplayText: {
+      fontSize: width < 350 ? 16 : width < 400 ? 20 : 22,
+      fontWeight: '700',
+      color: '#FFF',
+      textAlign: 'center',
+      flexShrink: 1,
+    },
+    editButton: {
+      marginLeft: width < 350 ? 4 : 8,
+      padding: width < 350 ? 4 : 6,
+      backgroundColor: 'rgba(255, 215, 0, 0.1)',
+      borderRadius: width < 350 ? 4 : 6,
+    },
+    amountInputWithButtons: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      width: '100%',
+      gap: width < 350 ? 6 : 8,
+    },
+    amountButtonsContainer: {
+      flexDirection: 'column',
+      gap: width < 350 ? 4 : 6,
+    },
+    incrementButton: {
+      width: width < 350 ? 28 : 32,
+      height: width < 350 ? 28 : 32,
+      borderRadius: width < 350 ? 14 : 16,
+      backgroundColor: 'rgba(255, 215, 0, 0.3)',
+      borderWidth: 1.5,
+      borderColor: '#FFD700',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#FFD700',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    decrementButton: {
+      width: width < 350 ? 28 : 32,
+      height: width < 350 ? 28 : 32,
+      borderRadius: width < 350 ? 14 : 16,
+      backgroundColor: 'rgba(255, 215, 0, 0.3)',
+      borderWidth: 1.5,
+      borderColor: '#FFD700',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#FFD700',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    goldInputWithButtons: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      width: '100%',
+      gap: width < 350 ? 6 : 8,
+    },
+    goldButtonsContainer: {
+      flexDirection: 'column',
+      gap: width < 350 ? 4 : 6,
+    },
+    goldIncrementButton: {
+      width: width < 350 ? 28 : 32,
+      height: width < 350 ? 28 : 32,
+      borderRadius: width < 350 ? 14 : 16,
+      backgroundColor: 'rgba(255, 143, 0, 0.2)',
+      borderWidth: 1.5,
+      borderColor: '#FF8F00',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#FF8F00',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    goldDecrementButton: {
+      width: width < 350 ? 28 : 32,
+      height: width < 350 ? 28 : 32,
+      borderRadius: width < 350 ? 14 : 16,
+      backgroundColor: 'rgba(255, 143, 0, 0.2)',
+      borderWidth: 1.5,
+      borderColor: '#FF8F00',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#FF8F00',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    goldInputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexWrap: 'wrap',
+      flex: 1,
+    },
+    goldInputLarge: {
+      fontSize: width < 350 ? 18 : width < 400 ? 22 : 24,
+      fontWeight: '700',
+      color: '#FF8F00',
+      minWidth: width < 350 ? 60 : width < 400 ? 80 : 100,
+      padding: 0,
+      textAlign: 'center',
+      flexShrink: 1,
+    },
+    goldUnit: {
+      fontSize: width < 350 ? 11 : width < 400 ? 12 : 14,
+      fontWeight: '600',
+      color: '#FF8F00',
+      marginLeft: width < 350 ? 4 : 6,
+      opacity: 0.8,
+    },
+    cardFooter: {
+      marginTop: width < 350 ? 0 : 2,
+    },
+    hintText: {
+      fontSize: width < 350 ? 9 : 10,
+      color: 'rgba(255, 255, 255, 0.7)',
+      textAlign: 'center',
+      paddingHorizontal: 4,
+    },
+    conversionArrow: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: width < 350 ? 30 : 40,
+      marginVertical: width < 350 ? 8 : 0,
+    },
+    arrowLine: {
+      flex: 1,
+      width: 2,
+      backgroundColor: '#FFD700',
+      opacity: 0.5,
+    },
+    arrowIcon: {
+      padding: 10,
+      backgroundColor: theme.colors.white,
+      borderRadius: 20,
+      borderWidth: 2,
+      borderColor: '#FFD700',
+    },
+    quickAmountSection: {
+      marginTop: 8,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+    },
+    sectionTitle: {
+      fontSize: width < 350 ? 14 : 16,
+      fontWeight: '600',
+      color: '#666',
+      marginLeft: 8,
+      flexShrink: 1,
+    },
+    quickAmountGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+    },
+    quickAmountChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#F8F9FA',
+      paddingHorizontal: width < 350 ? 8 : width < 400 ? 12 : 16,
+      paddingVertical: width < 350 ? 8 : 12,
+      borderRadius: width < 350 ? 8 : 12,
+      borderWidth: 2,
+      borderColor: 'transparent',
+      marginBottom: width < 350 ? 8 : 12,
+      width: width < 350 ? '48%' : '31%',
+      position: 'relative',
+      minHeight: width < 350 ? 36 : 44,
+    },
+    selectedQuickAmountChip: {
+      backgroundColor: theme.colors.primary,
+      borderColor: '#FFD700',
+    },
+    lastInRow: {
+      marginRight: 0,
+    },
+    quickAmountChipText: {
+      fontSize: width < 350 ? 11 : width < 400 ? 12 : 14,
+      fontWeight: '600',
+      color: '#666',
+      flex: 1,
+      textAlign: 'center',
+      flexShrink: 1,
+    },
+    selectedQuickAmountChipText: {
+      color: '#FFF',
+    },
+    selectedIndicator: {
+      position: 'absolute',
+      top: -6,
+      right: -6,
+      backgroundColor: '#FF6B6B',
+      borderRadius: 10,
+      width: 20,
+      height: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    errorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#FFEBEE',
+      padding: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#FFCDD2',
+      marginTop: 16,
+    },
+    errorText: {
+      color: '#D32F2F',
+      fontSize: 14,
+      fontWeight: '500',
+      marginLeft: 8,
+    },
+  })
+}
+
+var styles = getStyles(theme);;

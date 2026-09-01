@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import {
@@ -27,6 +28,8 @@ interface AppLayoutWrapperProps {
 const AppLayoutWrapper: React.FC<AppLayoutWrapperProps> = ({
   children,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
@@ -43,7 +46,7 @@ const AppLayoutWrapper: React.FC<AppLayoutWrapperProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -56,6 +59,8 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default AppLayoutWrapper;

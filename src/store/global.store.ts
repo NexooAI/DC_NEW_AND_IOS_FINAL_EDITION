@@ -191,6 +191,12 @@ interface GlobalStore {
 
   // Debug function
   debugState: () => GlobalStore;
+
+  // App Config
+  appConfig: any | null;
+  setAppConfig: (config: any) => void;
+  themeMode: 'light' | 'dark';
+  toggleThemeMode: () => void;
 }
 
 const useGlobalStore = create<GlobalStore>()(
@@ -200,6 +206,10 @@ const useGlobalStore = create<GlobalStore>()(
       token: null,
       user: null,
       language: 'en',
+      appConfig: null,
+      setAppConfig: (config: any) => set({ appConfig: config }),
+      themeMode: 'light',
+      toggleThemeMode: () => set((state) => ({ themeMode: state.themeMode === 'light' ? 'dark' : 'light' })),
 
       // Payment retry data
       paymentRetryData: null,
@@ -520,9 +530,75 @@ const useGlobalStore = create<GlobalStore>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         language: state.language,
+        user: state.user,
+        themeMode: state.themeMode,
       })
     }
   )
 );
 
-export default useGlobalStore
+export default useGlobalStore;
+
+// Dynamic configuration helper (non-reactive)
+import { theme, lightPalette, darkPalette, createThemeColors } from '@/constants/theme';
+import { useMemo } from 'react';
+
+export const getAppConfig = () => {
+  const storeConfig = useGlobalStore.getState().appConfig;
+  const themeMode = useGlobalStore.getState().themeMode;
+  const basePalette = themeMode === 'dark' ? darkPalette : lightPalette;
+  
+  if (storeConfig) {
+    const colors = createThemeColors(basePalette, storeConfig.colors);
+    return {
+      ...theme,
+      colors,
+      constants: {
+        ...theme.constants,
+        ...storeConfig.brand,
+        ...storeConfig.features,
+      },
+      gradients: {
+        ...basePalette,
+        ...storeConfig.gradients,
+      },
+      youtubeUrl: storeConfig.brand?.youtubeUrl || theme.youtubeUrl,
+      baseUrl: storeConfig.brand?.baseUrl || theme.baseUrl,
+    };
+  }
+  return {
+    ...theme,
+    colors: createThemeColors(basePalette),
+  };
+};
+
+// Dynamic hook (reactive to store changes)
+export const useAppTheme = () => {
+  const appConfig = useGlobalStore((state) => state.appConfig);
+  const themeMode = useGlobalStore((state) => state.themeMode);
+  
+  return useMemo(() => {
+    const basePalette = themeMode === 'dark' ? darkPalette : lightPalette;
+    if (appConfig) {
+      return {
+        ...theme,
+        colors: createThemeColors(basePalette, appConfig.colors),
+        constants: {
+          ...theme.constants,
+          ...appConfig.brand,
+          ...appConfig.features,
+        },
+        gradients: {
+          ...basePalette,
+          ...appConfig.gradients,
+        },
+        youtubeUrl: appConfig.brand?.youtubeUrl || theme.youtubeUrl,
+        baseUrl: appConfig.brand?.baseUrl || theme.baseUrl,
+      };
+    }
+    return {
+      ...theme,
+      colors: createThemeColors(basePalette),
+    };
+  }, [appConfig, themeMode]);
+};

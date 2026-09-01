@@ -1,8 +1,10 @@
+import { useAppTheme } from "@/store/global.store";
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Constants from 'expo-constants';
 import AppLayoutWrapper from '@/components/AppLayoutWrapper';
 import { theme } from '@/constants/theme';
+import { APP_CONFIG } from '@/constants';
 
 interface DrawerContentLayoutProps {
   children: React.ReactNode;
@@ -15,6 +17,8 @@ const DrawerContentLayout: React.FC<DrawerContentLayoutProps> = ({
   title,
   showLanguageSwitcher = true,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const version = Constants.expoConfig?.version || '1.0.0';
 
   return (
@@ -36,7 +40,7 @@ const DrawerContentLayout: React.FC<DrawerContentLayoutProps> = ({
         <View style={styles.footer}>
           <Text style={styles.versionText}>v{version}</Text>
           <Text style={styles.copyrightText}>
-             DC Jewellers. All rights reserved.
+             {APP_CONFIG.copyright}
           </Text>
         </View>
       </View>
@@ -44,7 +48,7 @@ const DrawerContentLayout: React.FC<DrawerContentLayoutProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background, // Ensure background matches theme
@@ -72,7 +76,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: theme.colors.textLightGrey,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default DrawerContentLayout;
  

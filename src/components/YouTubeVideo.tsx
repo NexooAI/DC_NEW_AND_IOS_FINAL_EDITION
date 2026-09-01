@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -31,6 +32,8 @@ interface YouTubeVideoProps {
 }
 
 const YouTubeVideo: React.FC<YouTubeVideoProps> = ({ videos }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const {
     screenWidth,
@@ -277,14 +280,14 @@ const YouTubeVideo: React.FC<YouTubeVideoProps> = ({ videos }) => {
               <Ionicons
                 name="play-circle"
                 size={rf(24)}
-                color={theme.colors.primary}
+                color={theme.colors.secondary}
               />
               <Text style={styles.headerText}>{t("featuredVideo")}</Text>
             </View>
             <View style={styles.headerLine} />
           </View>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ActivityIndicator size="large" color={theme.colors.secondary} />
             <Text style={styles.loadingText}>Loading videos...</Text>
           </View>
         </View>
@@ -303,7 +306,7 @@ const YouTubeVideo: React.FC<YouTubeVideoProps> = ({ videos }) => {
             <Ionicons
               name="play-circle"
               size={rf(24)}
-              color={theme.colors.primary}
+              color={theme.colors.secondary}
             />
             <Text style={styles.headerText}>{t("featuredVideo")}</Text>
           </View>
@@ -315,7 +318,7 @@ const YouTubeVideo: React.FC<YouTubeVideoProps> = ({ videos }) => {
             <Ionicons
               name="alert-circle"
               size={rf(48)}
-              color={theme.colors.primary}
+              color={theme.colors.secondary}
             />
             <Text style={styles.errorText}>
               {error === "videoLoadingError"
@@ -360,7 +363,7 @@ const YouTubeVideo: React.FC<YouTubeVideoProps> = ({ videos }) => {
                   <Ionicons
                     name="play-skip-back"
                     size={20}
-                    color={theme.colors.primary}
+                    color={theme.colors.textDark}
                   />
                 </TouchableOpacity>
 
@@ -371,7 +374,7 @@ const YouTubeVideo: React.FC<YouTubeVideoProps> = ({ videos }) => {
                   <Ionicons
                     name={playing ? "pause" : "play"}
                     size={24}
-                    color={theme.colors.primary}
+                    color={theme.colors.textDark}
                   />
                 </TouchableOpacity>
 
@@ -382,7 +385,7 @@ const YouTubeVideo: React.FC<YouTubeVideoProps> = ({ videos }) => {
                   <Ionicons
                     name="play-skip-forward"
                     size={20}
-                    color={theme.colors.primary}
+                    color={theme.colors.textDark}
                   />
                 </TouchableOpacity>
               </View>
@@ -406,7 +409,7 @@ const YouTubeVideo: React.FC<YouTubeVideoProps> = ({ videos }) => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   safeArea: {
     flex: 1,
   },
@@ -426,7 +429,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: rf(18), // Use RF for responsive font scaling
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginLeft: wp(2),
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -465,7 +468,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: rf(16), // Use RF for responsive font scaling
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginLeft: wp(2.5),
   },
   errorContainer: {
@@ -478,13 +481,13 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: rf(16), // Use RF for responsive font scaling
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginBottom: hp(1),
     textAlign: "center",
   },
   errorSubText: {
     fontSize: rf(14),
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginBottom: hp(2.5),
     textAlign: "center",
     opacity: 0.8,
@@ -521,13 +524,15 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: rf(16), // Use RF for responsive font scaling
     fontWeight: "700",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginRight: wp(2),
   },
   videoDate: {
     fontSize: rf(14), // Use RF for responsive font scaling
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default YouTubeVideo;

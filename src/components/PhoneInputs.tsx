@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState } from "react";
 import {
   View,
@@ -8,7 +9,6 @@ import {
   Keyboard,
 } from "react-native";
 import { useTranslation } from "@/hooks/useTranslation";
-import { theme } from "@/constants";
 
 interface PhoneInputProps {
   value: string;
@@ -17,6 +17,7 @@ interface PhoneInputProps {
   onFocus?: () => void;
   disableBlurAlert?: boolean;
   label?: string;
+  variant?: "default" | "line";
 }
 
 const PhoneInput: React.FC<PhoneInputProps> = ({
@@ -26,7 +27,10 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   onFocus,
   disableBlurAlert = false,
   label,
+  variant = "default",
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme, variant);
   const { t } = useTranslation();
   const [error, setError] = useState("");
 
@@ -48,14 +52,15 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
       return;
     }
 
-    // Do not show required error on blur if input is empty (UX enhancement)
     if (!value) {
-      setError("");
+      setError(t("pleaseEnterMobile"));
+      Alert.alert(t("error"), t("pleaseEnterMobile"));
       return;
     }
 
     if (value.length !== 10) {
       setError(t("validMobileNumber"));
+      Alert.alert(t("error"), t("validMobileNumber"));
       return;
     }
 
@@ -66,7 +71,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{displayLabel}:</Text>
+      <Text style={styles.label}>{displayLabel}</Text>
 
       <View style={[styles.inputContainer, error && styles.errorContainer]}>
         <View style={styles.countryCodeBox}>
@@ -74,7 +79,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
         </View>
         <TextInput
           placeholder={t("enterMobileNumber")}
-          placeholderTextColor="rgba(0, 0, 0, 0.5)"
+          placeholderTextColor={theme.colors.textGrey}
           value={value}
           onChangeText={validateMobile}
           onBlur={handleBlur}
@@ -102,65 +107,70 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any, variant: "default" | "line" = "default") { 
+  const isLine = variant === 'line';
+  return StyleSheet.create({
   container: {
     marginBottom: 4,
     width: "100%",
   },
   label: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: theme.colors.primary,
-    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: "500",
+    color: isLine ? '#666666' : theme.colors.primary,
+    marginBottom: 6,
     paddingLeft: 4,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
+    backgroundColor: isLine ? 'transparent' : theme.colors.surfaceElevated,
+    borderRadius: isLine ? 0 : 12,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.1)",
+    borderWidth: isLine ? 0 : 1,
+    borderBottomWidth: isLine ? 1.5 : 1,
+    borderColor: isLine ? '#cbd5e1' : theme.colors.border,
+    borderBottomColor: isLine ? '#F8CF2C' : theme.colors.border,
     height: 50,
-    shadowColor: "#000",
-    shadowOffset: {
+    shadowColor: isLine ? 'transparent' : theme.colors.shadow,
+    shadowOffset: isLine ? { width: 0, height: 0 } : {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowOpacity: isLine ? 0 : 0.1,
+    shadowRadius: isLine ? 0 : 3,
+    elevation: isLine ? 0 : 3,
   },
   errorContainer: {
-    backgroundColor: "#ffffff",
-    borderColor: "#ff4444",
-    borderWidth: 2,
+    backgroundColor: isLine ? 'transparent' : theme.colors.surfaceElevated,
+    borderColor: theme.colors.error,
+    borderWidth: isLine ? 0 : 2,
+    borderBottomWidth: isLine ? 2 : 2,
   },
   countryCodeBox: {
-    backgroundColor: "rgba(255, 215, 0, 0.1)",
-    paddingHorizontal: 16,
+    backgroundColor: isLine ? 'transparent' : theme.colors.goldLight,
+    paddingHorizontal: isLine ? 4 : 16,
     paddingVertical: 0,
-    borderRightWidth: 1,
-    borderRightColor: "rgba(0, 0, 0, 0.1)",
+    borderRightWidth: isLine ? 0 : 1,
+    borderRightColor: theme.colors.border,
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    minWidth: 50,
+    minWidth: isLine ? 35 : 50,
   },
   countryCodeText: {
-    color: "#000000",
+    color: theme.colors.textDark,
     fontSize: 16,
     fontWeight: "600",
   },
   input: {
     flex: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: isLine ? 8 : 12,
     paddingVertical: 0,
     fontSize: 16,
     height: 50,
-    backgroundColor: "#ffffff",
-    color: "#000000",
+    backgroundColor: isLine ? 'transparent' : theme.colors.surfaceElevated,
+    color: theme.colors.textDark,
     fontWeight: "500",
     textAlignVertical: "center",
     includeFontPadding: false,
@@ -170,8 +180,8 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   inputError: {
-    backgroundColor: "#ffffff",
-    color: "#000000",
+    backgroundColor: isLine ? 'transparent' : theme.colors.surfaceElevated,
+    color: theme.colors.textDark,
   },
   counterText: {
     textAlign: "right",
@@ -182,8 +192,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   errorText: {
-    color: "#ff4444",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    color: theme.colors.error,
+    backgroundColor: theme.colors.errorLight,
     fontSize: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -192,6 +202,8 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     fontWeight: "500",
   },
-});
+}) }
+
+var styles: any;
 
 export default PhoneInput;

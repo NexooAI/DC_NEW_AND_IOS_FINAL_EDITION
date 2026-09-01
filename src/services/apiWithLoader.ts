@@ -137,15 +137,13 @@ export const apiWithLoader = {
   user: {
     getProfile: async () => {
       return LoadingService.withLoading(
-        () => api.get('/user/profile'),
+        () => api.get('/users/profile'),
         'Loading your profile...'
       );
     },
-    updateProfile: async (userId: number | any, userData?: any) => {
-      const data = userData !== undefined ? userData : userId;
-      const targetUserId = userData !== undefined ? userId : null;
+    updateProfile: async (userId: number, userData: any) => {
       return LoadingService.withLoading(
-        () => api.put(targetUserId ? `/users/${targetUserId}` : '/user/profile', data),
+        () => api.put(`/users/${userId}`, userData),
         'Updating your profile...'
       );
     },

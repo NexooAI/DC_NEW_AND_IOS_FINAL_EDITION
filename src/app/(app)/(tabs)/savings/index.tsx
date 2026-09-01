@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState } from "react";
 import {
     View,
@@ -23,9 +24,11 @@ import JoinSchemesContent from "../home/schemes";
 const { width } = Dimensions.get("window");
 
 export default function SchemesHub() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
     const { t } = useTranslation();
     const router = useRouter();
-    const params = useLocalSearchParams<{ tab?: string }>();
+    const params = useLocalSearchParams<{ tab?: string; investmentId?: string }>();
     
     const initialTab = params.tab === "join" ? "Join Schemes" : "My Schemes";
     const [activeTab, setActiveTab] = useState<"My Schemes" | "Join Schemes">(
@@ -42,87 +45,52 @@ export default function SchemesHub() {
         }).start();
     };
 
+    const handleBackPress = () => {
+        if (activeTab === "Join Schemes") {
+            navigateTab("My Schemes");
+        } else {
+            router.push("/(app)/(tabs)/home");
+        }
+    };
+
     React.useEffect(() => {
         if (params.tab === "join" && activeTab !== "Join Schemes") {
             navigateTab("Join Schemes");
-        } else if (params.tab === "my" && activeTab !== "My Schemes") {
+        } else if ((params.tab === "my" || params.tab === "My Schemes" || params.investmentId) && activeTab !== "My Schemes") {
             navigateTab("My Schemes");
         }
-    }, [params.tab]);
+    }, [params.tab, params.investmentId]);
+
+    const isDark = theme.colors.background === '#121212';
+    const barStyle = isDark ? "light-content" : "dark-content";
 
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
             <View style={[styles.headerArea, { backgroundColor: theme.colors.quaternary || '#F2E6D2' }]}>
-                <SafeAreaView edges={Platform.OS === 'ios' ? [] : ["top"]} style={{ backgroundColor: "transparent" }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 2 }}>
+                <SafeAreaView edges={["top"]} style={{ backgroundColor: "transparent" }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10 }}>
                         <TouchableOpacity
-                            onPress={() => router.push("/(app)/(tabs)/home")}
+                            onPress={handleBackPress}
                             style={{ padding: 4 }}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                            <Ionicons name="arrow-back" size={24} color={theme.colors.primary || "#850111"} />
+                            <Ionicons name="arrow-back" size={24} color={theme.colors.textDark || "#850111"} />
                         </TouchableOpacity>
-                        <Text style={{ fontSize: 20, fontWeight: "700", color: theme.colors.primary || "#850111", flex: 1, textAlign: 'center' }}>
-                            {typeof t("schemes") === 'object' ? t("schemes.title") : t("schemes") || "Schemes"}
+                        <Text style={{ fontSize: 20, fontWeight: "700", color: theme.colors.textDark || "#850111", flex: 1, textAlign: 'center' }}>
+                            {activeTab === "My Schemes" ? (t("mySchemes") || "My Schemes") : (t("joinSchemes") || "Join Schemes")}
                         </Text>
-                        <View style={{ width: 32 }} />
-                    </View>
-
-                    <View style={styles.pillSwitcherContainer}>
-                        <View style={styles.pillSwitcherBg}>
+                        {activeTab === "My Schemes" ? (
                             <TouchableOpacity
-                                style={[
-                                    styles.pillTabItem,
-                                    activeTab === "My Schemes" && styles.pillTabActive
-                                ]}
-                                onPress={() => navigateTab("My Schemes")}
-                                activeOpacity={0.9}
-                            >
-                                {activeTab === "My Schemes" && (
-                                    <LinearGradient
-                                        colors={['#FFD700', '#DAA520']}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 0 }}
-                                        style={StyleSheet.absoluteFill}
-                                    />
-                                )}
-                                <Text
-                                    style={[
-                                        styles.pillTabText,
-                                        activeTab === "My Schemes" && styles.pillTabActiveText,
-                                    ]}
-                                >
-                                    {t("mySchemes") || "My Schemes"}
-                                </Text>
-                            </TouchableOpacity>
- 
-                            <TouchableOpacity
-                                style={[
-                                    styles.pillTabItem,
-                                    activeTab === "Join Schemes" && styles.pillTabActive
-                                ]}
                                 onPress={() => navigateTab("Join Schemes")}
-                                activeOpacity={0.9}
+                                style={{ padding: 4 }}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                             >
-                                {activeTab === "Join Schemes" && (
-                                    <LinearGradient
-                                        colors={['#FFD700', '#DAA520']}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 0 }}
-                                        style={StyleSheet.absoluteFill}
-                                    />
-                                )}
-                                <Text
-                                    style={[
-                                        styles.pillTabText,
-                                        activeTab === "Join Schemes" && styles.pillTabActiveText,
-                                    ]}
-                                >
-                                    {t("joinSchemes") || "Join Schemes"}
-                                </Text>
+                                <Ionicons name="add" size={28} color={theme.colors.textDark || "#850111"} />
                             </TouchableOpacity>
-                        </View>
+                        ) : (
+                            <View style={{ width: 32 }} />
+                        )}
                     </View>
                 </SafeAreaView>
             </View>
@@ -152,7 +120,7 @@ export default function SchemesHub() {
 
 
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
@@ -214,4 +182,6 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         width: width * 2,
     },
-});
+}) }
+
+var styles = getStyles(theme);;

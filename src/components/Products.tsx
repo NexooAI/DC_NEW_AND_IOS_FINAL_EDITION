@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { router, useRouter } from "expo-router";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { LinearGradient } from "expo-linear-gradient";
 import { theme } from "@/constants/theme";
 import { BlurView } from "expo-blur";
@@ -262,6 +262,8 @@ interface InvestmentCardsProps {
 }
 
 const InvestmentCards = React.memo(({ schemes }: InvestmentCardsProps) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const {
     screenWidth,
@@ -322,7 +324,7 @@ const InvestmentCards = React.memo(({ schemes }: InvestmentCardsProps) => {
 
 InvestmentCards.displayName = "InvestmentCards";
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   cardContainer: {
     elevation: 15,
     shadowColor: "#850111",
@@ -459,6 +461,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 0.3,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default InvestmentCards;

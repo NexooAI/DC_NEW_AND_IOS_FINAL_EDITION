@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useEffect, useState, useRef } from "react";
 import {
   View,
@@ -30,6 +31,8 @@ const FlashOffer: React.FC<FlashOfferProps> = ({
   iconColor = theme.colors.white,
   backgroundGradient = [theme.colors.primary, theme.colors.textDark],
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { screenWidth } = useResponsiveLayout();
   const translateX = useRef(new Animated.Value(screenWidth)).current;
   const [newsMessages, setNewsMessages] = useState<string[]>(fallbackMessages);
@@ -135,7 +138,7 @@ const FlashOffer: React.FC<FlashOfferProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     height: 40,
     overflow: "hidden",
@@ -187,6 +190,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "500",
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default FlashOffer;

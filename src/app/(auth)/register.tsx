@@ -15,10 +15,15 @@ import {
   ScrollView,
   Keyboard,
   Pressable,
+  StatusBar,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter, useLocalSearchParams } from "expo-router";
+import { responsiveUtils } from "@/utils/responsiveUtils";
+const { hp } = responsiveUtils;
 import PhoneInput from "@/components/PhoneInputs";
+import Svg, { Path } from 'react-native-svg';
 import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
@@ -30,6 +35,7 @@ import LanguageSelector from "@/components/LanguageSelector";
 import { AppLocale } from "@/i18n";
 import useGlobalStore from "@/store/global.store";
 import * as Clipboard from "expo-clipboard";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { APP_CONFIG } from "@/constants";
 
 import api from "@/services/api";
@@ -191,6 +197,7 @@ const axiosFetch = async (url: string, options: any = {}, retries = 2) => {
 
 export default function Register() {
   const { t } = useTranslation();
+  const { isVisible } = useAppVisibility();
   const [mobile, setMobile] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -452,21 +459,77 @@ export default function Register() {
   };
 
   return (
-    <SafeAreaView style={registerStyles.container}>
-      <ImageBackground
-        source={{ uri: theme.image.bg_image }}
-        style={registerStyles.backgroundImage}
-      >
-        {/* Dark overlay for background */}
-        <View style={registerStyles.darkOverlay} />
-        <LinearGradient
-          colors={[
-            "rgba(32, 1, 1, 0.55)",
-            "rgba(167, 0, 0, 0)",
-            "rgba(118, 1, 1, 0)",
-          ]}
-          style={registerStyles.gradient}
-        >
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: theme.colors.primary,
+      }}
+    >
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={{ flex: 1, position: 'relative' }}>
+          {/* Background Models Grid Watermark Layer (1, 2, 3 Grid Models) */}
+          {isVisible("showLoginBackgroundImages") && (
+            <View style={{
+              position: 'absolute',
+              top: Platform.OS === 'ios' ? 70 : 50,
+              left: 12,
+              right: 12,
+              height: hp(22),
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              opacity: 0.25,
+              zIndex: 0,
+            }}>
+              <View style={{
+                flex: 1,
+                height: '100%',
+                marginHorizontal: 4,
+                borderRadius: 12,
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: 'rgba(255, 215, 0, 0.25)',
+              }}>
+                <Image
+                  source={require("../../../assets/images/intro_1.png")}
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                />
+              </View>
+              <View style={{
+                flex: 1,
+                height: '100%',
+                marginHorizontal: 4,
+                borderRadius: 12,
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: 'rgba(255, 215, 0, 0.25)',
+              }}>
+                <Image
+                  source={require("../../../assets/images/intro_2.png")}
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                />
+              </View>
+              <View style={{
+                flex: 1,
+                height: '100%',
+                marginHorizontal: 4,
+                borderRadius: 12,
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: 'rgba(255, 215, 0, 0.25)',
+              }}>
+                <Image
+                  source={require("../../../assets/images/intro_3.png")}
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                />
+              </View>
+            </View>
+          )}
+
           <SimpleLanguageSwitcher />
           {showError && (
             <ErrorAlert message={errorMessage} onClose={hideErrorAlert} />
@@ -477,85 +540,121 @@ export default function Register() {
             keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
           >
             <ScrollView
-              contentContainerStyle={registerStyles.scrollViewContent}
+              contentContainerStyle={[
+                registerStyles.scrollViewContent,
+                {
+                  flexGrow: 1,
+                  minHeight: Dimensions.get('window').height,
+                  paddingTop: 0,
+                  paddingBottom: Platform.OS === "ios" ? 40 : 60,
+                  backgroundColor: 'transparent',
+                }
+              ]}
               keyboardShouldPersistTaps="handled"
             >
               <Pressable onPress={Keyboard.dismiss} style={{ flex: 1, width: "100%" }}>
-                <View style={{ height: Platform.OS === 'ios' ? 100 : 80 }} />
+                <View
+                  style={{
+                    height: Platform.OS === 'ios' ? hp(22) : hp(20),
+                    paddingTop: Platform.OS === 'ios' ? 70 : 50,
+                    paddingHorizontal: 20,
+                    width: "100%",
+                    zIndex: 1,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {/* Back arrow in small yellow circle */}
+                    <TouchableOpacity
+                      onPress={handleBackButton}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        backgroundColor: theme.colors.secondary || '#F8CF2C',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginRight: 15,
+                      }}
+                    >
+                      <Ionicons name="arrow-back" size={22} color={theme.colors.primary} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
 
-                <View style={registerStyles.formContainer}>
-                  <View style={registerStyles.cardContainer}>
-                    {/* Base fog layer */}
-                    <LinearGradient
-                      colors={[
-                        "rgba(6, 2, 2, 0.78)",
-                        "rgba(34, 0, 0, 0.35)",
-                        "rgba(31, 3, 3, 0.54)",
-                      ]}
-                      style={StyleSheet.absoluteFill}
-                    />
-                    {/* Top fog highlight */}
-                    <LinearGradient
-                      colors={["rgba(10, 2, 2, 0.38)", "rgba(76, 63, 63, 0.74)"]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 0, y: 0.5 }}
-                      style={StyleSheet.absoluteFill}
-                    />
-                    {/* Bottom fog highlight */}
-                    <LinearGradient
-                      colors={["rgba(0, 0, 0, 0.44)", "rgba(0, 0, 0, 0.28)"]}
-                      start={{ x: 0, y: 0.5 }}
-                      end={{ x: 0, y: 1 }}
-                      style={StyleSheet.absoluteFill}
-                    />
-                    {/* Content */}
-                    <View style={registerStyles.cardContent}>
-                      <Text style={registerStyles.pageTitle}>
-                        {t("createAccount")}
-                      </Text>
-                      <Text style={registerStyles.subtitle}>
-                        {t("joinUsToStartYourJourney")}
-                      </Text>
+                <View
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    paddingHorizontal: 24,
+                    paddingTop: 30,
+                    paddingBottom: Platform.OS === "ios" ? 80 : 100,
+                    flex: 1,
+                    zIndex: 1,
+                    position: 'relative',
+                  }}
+                >
+                  {/* Custom wave curve at the top */}
+                  <View style={{ position: 'absolute', top: -39, left: 0, right: 0, height: 40, zIndex: 10, backgroundColor: 'transparent' }}>
+                    <Svg height="40" width={Dimensions.get("window").width} viewBox={`0 0 ${Dimensions.get("window").width} 40`} style={{ position: 'absolute', top: 0, left: 0 }}>
+                      <Path
+                        d={`M0,40 C${Dimensions.get("window").width * 0.3},40 ${Dimensions.get("window").width * 0.6},0 ${Dimensions.get("window").width},0 L${Dimensions.get("window").width},40 L0,40 Z`}
+                        fill="#FFFFFF"
+                      />
+                    </Svg>
+                  </View>
 
-                      {!otpSent ? (
-                        <>
-                          <View style={registerStyles.inputContainer}>
-                            <PhoneInput
-                              value={mobile}
-                              onChangeText={setMobile}
-                              loading={loading}
-                            />
-                          </View>
-                          <TouchableOpacity
-                            style={[
-                              registerStyles.loginButton,
-                              loading && registerStyles.loginButtonDisabled,
-                            ]}
-                            onPress={handleGetOtp}
-                            disabled={loading}
+                  {/* Content */}
+                  <View style={{ width: '100%' }}>
+                    {/* Title and Subtitle inside the white card */}
+                    <View style={{ marginBottom: 20 }}>
+                      <Text style={{ color: theme.colors.primary, fontSize: 22, fontWeight: 'bold', marginBottom: 6 }}>
+                        {t("createAccount") || "Create Your Account"}
+                      </Text>
+                      <Text style={{ color: '#666666', fontSize: 14 }}>
+                        {t("registerSubtitle") || "Fill in the details below to register"}
+                      </Text>
+                    </View>
+
+                    {!otpSent ? (
+                      <>
+                        <View style={[registerStyles.inputContainer, { borderWidth: 0, shadowColor: 'transparent', elevation: 0, paddingHorizontal: 0 }]}>
+                          <PhoneInput
+                            value={mobile}
+                            onChangeText={setMobile}
+                            loading={loading}
+                            variant="line"
+                          />
+                        </View>
+                        <TouchableOpacity
+                          style={[
+                            registerStyles.loginButton,
+                            { borderRadius: 8, marginTop: 20 },
+                            loading && registerStyles.loginButtonDisabled,
+                          ]}
+                          onPress={handleGetOtp}
+                          disabled={loading}
+                        >
+                          <LinearGradient
+                            colors={[theme.colors.primary, theme.colors.primary]}
+                            style={[registerStyles.gradientButton, { borderRadius: 8 }]}
                           >
-                            <LinearGradient
-                              colors={[COLORS.secondary, COLORS.gold]}
-                              style={registerStyles.gradientButton}
-                            >
-                              <Text style={registerStyles.loginButtonText}>
-                                {loading ? t("sending") : t("getOtp")}
-                              </Text>
-                            </LinearGradient>
-                          </TouchableOpacity>
-                          <View style={registerStyles.footer}>
-                            <Text style={registerStyles.footerText}>
-                              {t("alreadyHaveAccount")}{" "}
+                            <Text style={registerStyles.loginButtonText}>
+                              {loading ? t("sending") : t("getOtp")}
                             </Text>
-                            <TouchableOpacity
-                              onPress={() => router.push("/login")}
-                            >
-                              <Text style={registerStyles.footerLink}>
-                                {t("login")}
-                              </Text>
-                            </TouchableOpacity>
-                          </View>
-                        </>
+                          </LinearGradient>
+                        </TouchableOpacity>
+                        <View style={registerStyles.footer}>
+                          <Text style={[registerStyles.footerText, { color: '#666666' }]}>
+                            {t("alreadyHaveAccount")}{" "}
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() => router.push("/login")}
+                          >
+                            <Text style={[registerStyles.footerLink, { color: theme.colors.primary }]}>
+                              {t("login")}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </>
                       ) : (
                         <View style={registerStyles.otpContainer}>
                           <Text style={registerStyles.otpTitle}>
@@ -659,14 +758,15 @@ export default function Register() {
                           <TouchableOpacity
                             style={[
                               registerStyles.loginButton,
+                              { borderRadius: 8 },
                               loading && registerStyles.loginButtonDisabled,
                             ]}
                             onPress={handleVerifyOtp}
                             disabled={loading || pins.includes("")}
                           >
                             <LinearGradient
-                              colors={[COLORS.secondary, COLORS.gold]}
-                              style={registerStyles.gradientButton}
+                              colors={[theme.colors.primary, theme.colors.primary]}
+                              style={[registerStyles.gradientButton, { borderRadius: 8 }]}
                             >
                               <Text style={registerStyles.loginButtonText}>
                                 {loading ? t("verifying") : t("verifyOtp")}
@@ -677,17 +777,16 @@ export default function Register() {
                       )}
                     </View>
                   </View>
-                </View>
               </Pressable>
             </ScrollView>
           </KeyboardAvoidingView>
           <View style={registerStyles.poweredByContainer}>
-            <Text style={registerStyles.poweredByText}>
+            <Text style={[registerStyles.poweredByText, { color: '#666666' }]}>
               {t("poweredBy")}{" "}
               <Text
                 style={{
                   textDecorationLine: "underline",
-                  color: theme.colors.textLight,
+                  color: theme.colors.primary,
                 }}
                 onPress={() => Linking.openURL("https://agnisofterp.com/")}
               >
@@ -695,8 +794,8 @@ export default function Register() {
               </Text>
             </Text>
           </View>
-        </LinearGradient>
-      </ImageBackground>
-    </SafeAreaView>
+        </View>
+      </TouchableWithoutFeedback>
+    </View>
   );
 }

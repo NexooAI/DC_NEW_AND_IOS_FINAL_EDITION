@@ -22,7 +22,7 @@ import { useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
 import { moderateScale } from "react-native-size-matters";
 import { LinearGradient } from "expo-linear-gradient";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import AppLayoutWrapper from "@/components/AppLayoutWrapper";
 import { useFocusEffect } from "@react-navigation/native";
 import FAQService, { FAQQuestion } from "@/services/faqService";
@@ -64,6 +64,8 @@ const getFAQQuestions = (t: (key: string) => string) => {
 };
 
 export default function FAQChatScreen() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
@@ -457,10 +459,10 @@ export default function FAQChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   header: {
     paddingHorizontal: 20,
@@ -481,7 +483,7 @@ const styles = StyleSheet.create({
   },
   chatContainer: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   messagesList: {
     flex: 1,
@@ -527,7 +529,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   botBubble: {
-    backgroundColor: "#e0e0e0",
+    backgroundColor: theme.colors.backgroundTertiary || "#e0e0e0",
     borderBottomLeftRadius: 4,
   },
   userBubble: {
@@ -539,14 +541,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   botBubbleText: {
-    color: "#333",
+    color: theme.colors.textDark,
   },
   userBubbleText: {
     color: "white",
   },
   messageTime: {
     fontSize: moderateScale(10),
-    color: "#666",
+    color: theme.colors.textSecondary,
     marginTop: 4,
     textAlign: "right",
   },
@@ -556,13 +558,13 @@ const styles = StyleSheet.create({
   },
   typingText: {
     fontSize: moderateScale(12),
-    color: "#666",
+    color: theme.colors.textSecondary,
     fontStyle: "italic",
   },
   inputArea: {
-    backgroundColor: "white",
+    backgroundColor: theme.colors.background,
     borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
+    borderTopColor: theme.colors.borderLight,
   },
   faqContainer: {
     paddingHorizontal: 10,
@@ -571,7 +573,7 @@ const styles = StyleSheet.create({
   faqTitle: {
     fontSize: moderateScale(14),
     fontWeight: "600",
-    color: "#333",
+    color: theme.colors.textDark,
     marginBottom: 8,
   },
   faqButtonsContainer: {
@@ -604,13 +606,13 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: theme.colors.border,
     borderRadius: 20,
     paddingHorizontal: 15,
     paddingVertical: 10,
     fontSize: moderateScale(14),
-    color: "#333",
-    backgroundColor: "#f9f9f9",
+    color: theme.colors.textDark,
+    backgroundColor: theme.colors.backgroundSecondary,
     maxHeight: 100,
   },
   sendButton: {
@@ -652,4 +654,6 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(12),
     marginTop: 2,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

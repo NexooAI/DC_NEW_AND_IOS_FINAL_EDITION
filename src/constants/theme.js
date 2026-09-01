@@ -1,452 +1,328 @@
-// src/constants/theme.js
+const { themeConfig } = require('./theme.config');
+
+const withAlpha = (hex, alpha) => {
+  const normalized = hex.replace("#", "");
+  const value = normalized.length === 3
+    ? normalized.split("").map((char) => char + char).join("")
+    : normalized;
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const ensureValidGradient = (gradient, fallback) => {
+  if (Array.isArray(gradient) && gradient.length >= 2 && gradient.every(c => typeof c === 'string' && c && !c.includes('null') && !c.includes('undefined'))) {
+    return gradient;
+  }
+  if (Array.isArray(fallback) && fallback.length >= 2 && fallback.every(c => typeof c === 'string' && c)) {
+    return fallback;
+  }
+  return ["#0b162c", "#d4af37"];
+};
+
+const createThemeColors = (basePalette, overrides = {}) => {
+  // Filter out null, undefined, or empty values from overrides to prevent pollution
+  const safeOverrides = {};
+  if (overrides && typeof overrides === 'object') {
+    Object.keys(overrides).forEach(key => {
+      const val = overrides[key];
+      if (val !== null && val !== undefined && val !== "") {
+        safeOverrides[key] = val;
+      }
+    });
+  }
+
+  const colors = {
+    ...basePalette,
+    ...safeOverrides,
+  };
+
+  // Safe fallback gradients
+  const fallbackPrimary = ["#0b162c", "#16315c", "#d4af37"];
+  const fallbackPrimaryDark = ["#0b162c", "#081121", "#020408"];
+  const fallbackSuccess = ["#10b981", "#059669", "#047857"];
+  const fallbackGold = ["#d4af37", "#f4c961"];
+  const fallbackRed = ["#ef4444", "#dc2626"];
+  const fallbackBlue = ["#1e293b", "#334155", "#475569"];
+  const fallbackSilver = ["#cbd5e1", "#94a3b8", "#64748b"];
+
+  colors.gradientPrimary = ensureValidGradient(colors.gradientPrimary, fallbackPrimary);
+  colors.gradientPrimaryDark = ensureValidGradient(colors.gradientPrimaryDark, fallbackPrimaryDark);
+  colors.gradientSuccess = ensureValidGradient(colors.gradientSuccess, fallbackSuccess);
+  colors.gradientGold = ensureValidGradient(colors.gradientGold, fallbackGold);
+  colors.gradientRed = ensureValidGradient(colors.gradientRed, fallbackRed);
+  colors.gradientBlue = ensureValidGradient(colors.gradientBlue, fallbackBlue);
+  colors.gradientSilver = ensureValidGradient(colors.gradientSilver, fallbackSilver);
+
+  const isDarkSurface = colors.background === "#121212";
+  const textOnPrimary = colors.textPrimary;
+  const textOnAccent = isDarkSurface ? "#0b162c" : "#0b162c";
+  const surface = colors.background;
+  const surfaceElevated = colors.backgroundSecondary;
+  const surfaceMuted = colors.backgroundTertiary;
+  const inverseSurface = isDarkSurface ? "#f8fafc" : "#0b162c";
+  const inverseText = isDarkSurface ? "#0b162c" : "#ffffff";
+
+  return {
+    ...colors,
+    backgroundQuaternary: colors.backgroundQuaternary || colors.quaternary,
+    backgroundQuinary: colors.backgroundQuinary || colors.backgroundTertiary,
+    bgBlackHeavy: colors.bgBlackHeavy || "rgba(0, 0, 0, 0.8)",
+    bgBlackMedium: colors.bgBlackMedium || "rgba(0, 0, 0, 0.5)",
+    surface,
+    surfaceElevated,
+    surfaceMuted,
+    surfaceInverse: inverseSurface,
+    textOnPrimary,
+    textOnSecondary: textOnAccent,
+    textOnAccent,
+    textDisabled: colors.textDisabled || colors.textLightGrey,
+    iconPrimary: colors.iconPrimary || colors.primary,
+    iconSecondary: colors.iconSecondary || colors.secondary,
+    iconMuted: colors.iconMuted || colors.textGrey,
+    silver: colors.silver || colors.textLightGrey,
+    gold: colors.gold || colors.secondary,
+    goldLight: colors.goldLight || colors.backgroundTertiary,
+    textBrown: colors.textBrown || colors.textSecondary,
+    textDarkBrown: colors.textDarkBrown || colors.textDark,
+    cardBackgroundLight: colors.cardBackgroundLight || surfaceElevated,
+    borderWhite: colors.borderWhite || colors.borderLight,
+    successLight: colors.successLight || withAlpha(colors.success, isDarkSurface ? 0.18 : 0.12),
+    successDark: colors.successDark || colors.success,
+    errorLight: colors.errorLight || withAlpha(colors.error, isDarkSurface ? 0.18 : 0.12),
+    errorDark: colors.errorDark || colors.error,
+    warningLight: colors.warningLight || withAlpha(colors.warning, isDarkSurface ? 0.2 : 0.14),
+    infoLight: colors.infoLight || withAlpha(colors.info, isDarkSurface ? 0.18 : 0.12),
+    statusActive: colors.statusActive || colors.success,
+    statusInactive: colors.statusInactive || colors.error,
+    statusPending: colors.statusPending || colors.warning,
+    statusCompleted: colors.statusCompleted || colors.success,
+    overlay: colors.overlay || withAlpha("#000000", isDarkSurface ? 0.7 : 0.5),
+    overlayLight: colors.overlayLight || withAlpha("#000000", isDarkSurface ? 0.45 : 0.2),
+    overlayMedium: colors.overlayMedium || withAlpha("#000000", isDarkSurface ? 0.55 : 0.3),
+    bgImageOverlay: colors.bgImageOverlay || colors.overlay || withAlpha("#000000", isDarkSurface ? 0.7 : 0.5),
+    bgImageOverlayMedium: colors.bgImageOverlayMedium || colors.overlayMedium || withAlpha("#000000", isDarkSurface ? 0.55 : 0.3),
+    blackOverlay: colors.blackOverlay || withAlpha("#000000", 0.5),
+    blackOverlayLight: colors.blackOverlayLight || withAlpha("#000000", 0.2),
+    whiteOverlay: colors.whiteOverlay || withAlpha("#ffffff", isDarkSurface ? 0.12 : 0.9),
+    whiteOverlayLight: colors.whiteOverlayLight || withAlpha("#ffffff", isDarkSurface ? 0.1 : 0.7),
+    whiteOverlayVeryLight: colors.whiteOverlayVeryLight || withAlpha("#ffffff", 0.1),
+    shadow: colors.shadow || withAlpha("#000000", isDarkSurface ? 0.55 : 0.16),
+    buttonPrimary: colors.buttonPrimary || colors.primary,
+    buttonPrimaryText: colors.buttonPrimaryText || textOnPrimary,
+    buttonSecondary: colors.buttonSecondary || colors.secondary,
+    buttonSecondaryText: colors.buttonSecondaryText || textOnAccent,
+    buttonDisabled: colors.buttonDisabled || colors.backgroundTertiary,
+    buttonDisabledText: colors.buttonDisabledText || colors.textDisabled,
+    buttonPressed: colors.buttonPressed || colors.secondary,
+    buttonPressedText: colors.buttonPressedText || textOnAccent,
+    outlineButtonText: colors.outlineButtonText || colors.primary,
+    outlineButtonBorder: colors.outlineButtonBorder || colors.primary,
+    inverseText,
+  };
+};
+
+const lightPalette = createThemeColors({
+  primary: "#0b162c",
+  secondary: "#d4af37",
+  tertiary: "#F2B8C6",
+  quaternary: "#F2E6D2",
+  bgBlackHeavy: "rgba(0, 0, 0, 0.85)",
+  bgBlackMedium: "rgba(0, 0, 0, 0.5)",
+  background: "#fafafa",
+  backgroundSecondary: "#f0f0f0",
+  backgroundTertiary: "#f3f4f6",
+  textPrimary: "#ffffff",
+  textSecondary: "#1e293b",
+  textDark: "#0b162c",
+  textLight: "#ffffff",
+  textGrey: "#64748b",
+  textDarkGrey: "#1e293b",
+  textMediumGrey: "#64748b",
+  textLightGrey: "#94a3b8",
+  textSuccess: "#10b981",
+  textError: "#ef4444",
+  textWarning: "#f59e0b",
+  error: "#ef4444",
+  success: "#10b981",
+  warning: "#f59e0b",
+  info: "#3b82f6",
+  border: "#cbd5e1",
+  borderLight: "#e2e8f0",
+  white: "#ffffff",
+  black: "#000000",
+  transparent: "transparent",
+  gradientPrimary: ["#0b162c", "#16315c", "#d4af37"],
+  gradientPrimaryDark: ["#0b162c", "#081121", "#020408"],
+  gradientSuccess: ["#10b981", "#059669", "#047857"],
+  gradientGold: ["#d4af37", "#f4c961"],
+  gradientRed: ["#ef4444", "#dc2626"],
+  gradientBlue: ["#1e293b", "#334155", "#475569"],
+  gradientSilver: ["#cbd5e1", "#94a3b8", "#64748b"],
+  support_container: ["#0b162c", "#16315c", "#1e3a6c"],
+  text: {
+    primary: "#ffffff",
+    secondary: "#1e293b",
+    dark: "#0b162c",
+    light: "#ffffff",
+    grey: "#64748b",
+    darkGrey: "#1e293b",
+    mediumGrey: "#64748b",
+    lightGrey: "#94a3b8",
+    success: "#10b981",
+    error: "#ef4444",
+    warning: "#f59e0b",
+  },
+  additional: {
+    formBg: "#fafafa",
+    formBorder: "#cbd5e1",
+    formText: "#64748b",
+    formTextDark: "#1e293b",
+    buttonOrange: "#f97316",
+  }
+});
+
+const darkPalette = createThemeColors({
+  primary: "#0b162c",
+  secondary: "#ffd700",
+  tertiary: "#F2B8C6",
+  quaternary: "#22252a",
+  bgBlackHeavy: "rgba(0, 0, 0, 0.9)",
+  bgBlackMedium: "rgba(0, 0, 0, 0.7)",
+  background: "#121212",
+  backgroundSecondary: "#1e1e1e",
+  backgroundTertiary: "#2a2a2a",
+  textPrimary: "#ffffff",
+  textSecondary: "#f8fafc",
+  textDark: "#f8fafc",
+  textLight: "#ffffff",
+  textGrey: "#94a3b8",
+  textDarkGrey: "#f8fafc",
+  textMediumGrey: "#94a3b8",
+  textLightGrey: "#64748b",
+  textSuccess: "#34d399",
+  textError: "#f87171",
+  textWarning: "#fbbf24",
+  error: "#f87171",
+  success: "#34d399",
+  warning: "#fbbf24",
+  info: "#60a5fa",
+  border: "#2d3748",
+  borderLight: "#3f485a",
+  white: "#ffffff",
+  black: "#000000",
+  transparent: "transparent",
+  gradientPrimary: ["#0b162c", "#1e293b", "#ffd700"],
+  gradientPrimaryDark: ["#121212", "#1e1e1e", "#2a2a2a"],
+  gradientSuccess: ["#34d399", "#059669", "#047857"],
+  gradientGold: ["#ffd700", "#f4c961"],
+  gradientRed: ["#f87171", "#dc2626"],
+  gradientBlue: ["#1e1e1e", "#2d3748", "#3f485a"],
+  gradientSilver: ["#cbd5e1", "#94a3b8", "#64748b"],
+  support_container: ["#121212", "#1e1e1e", "#2a2a2a"],
+  text: {
+    primary: "#ffffff",
+    secondary: "#f8fafc",
+    dark: "#f8fafc",
+    light: "#ffffff",
+    grey: "#94a3b8",
+    darkGrey: "#f8fafc",
+    mediumGrey: "#94a3b8",
+    lightGrey: "#64748b",
+    success: "#34d399",
+    error: "#f87171",
+    warning: "#fbbf24",
+  },
+  additional: {
+    formBg: "#1e1e1e",
+    formBorder: "#2d3748",
+    formText: "#94a3b8",
+    formTextDark: "#f8fafc",
+    buttonOrange: "#f97316",
+  }
+});
 
 const theme = {
-  colors: {
-    // Primary brand colors
-    primary: "#850111",
-    secondary: "#ffc90c", //
-    tertiary: "#F2B8C6",
-    quaternary: "#F2E6D2",
+  get colors() {
+    try {
+      const useGlobalStore = require('@/store/global.store').default;
+      const state = useGlobalStore.getState();
+      const appConfig = state?.appConfig;
+      const themeMode = state?.themeMode;
+      const basePalette = themeMode === 'dark' ? darkPalette : lightPalette;
 
-    // Background colors
-    background: "#ffffff",
-    backgroundSecondary: "#f0f0f0",
-    backgroundTertiary: "#f3f4f6",
-    backgroundQuaternary: "#f5f5f5",
-    backgroundQuinary: "#f7f7f7",
-
-    // Text colors
-    textPrimary: "#ffffff",
-    textSecondary: "#000000",
-    textDark: "#2e0406",
-    textLight: "#ffffff",
-    textGrey: "#808080",
-    textDarkGrey: "#333",
-    textMediumGrey: "#666",
-    textLightGrey: "#888",
-    textBrown: "#8B4513",
-    textDarkBrown: "#2C1810",
-    textSuccess: "#00cc44",
-    textError: "#ff4444",
-    textWarning: "#FF9800",
-
-    // Status colors
-    error: "#ff4d4f",
-    errorLight: "#FF6B6B",
-    errorDark: "#D32F2F",
-    success: "#4CAF50",
-    successLight: "#4caf50",
-    successDark: "#2E7D32",
-    warning: "#FF9800",
-    warningLight: "#FFC857",
-    info: "#007AFF",
-
-    // Border colors
-    border: "#cccccc",
-    borderLight: "#e5e5e5",
-    borderWhite: "#f0f0f0",
-    borderGold: "#ffd700",
-
-    // Input and form colors
-    inputBackground: "rgba(255, 255, 255, 0.2)",
-
-    // Link colors
-    link: "#ffc90c",
-
-    // Neutral colors
-    white: "#ffffff",
-    black: "#000000",
-    grey: "#808080",
-    lightGrey: "#f0f0f0",
-    darkGrey: "#808080",
-    lightBlack: "#000000",
-    transparent: "transparent",
-
-    // Gold and metallic colors
-    gold: "#ffd700",
-    goldLight: "#DAA520",
-    goldDark: "#B8860B",
-    goldDarker: "#8B4513",
-    silver: "#C0C0C0",
-    silverLight: "#A8A8A8",
-    silverDark: "#808080",
-
-    // Red and burgundy colors
-    red: "#FF0000",
-    redLight: "#ff4444",
-    redDark: "#7c0a12",
-    redDarker: "#5a000b",
-    redBurgundy: "#7b0006",
-    redBurgundyLight: "#B31313",
-    redBurgundyDark: "#8B0000",
-
-    // Blue colors
-    blue: "#60a5fa",
-    blueDark: "#1a1a2e",
-    blueDarker: "#16213e",
-    blueDarkest: "#0f3460",
-
-    // Green colors
-    green: "#4ade80",
-    greenLight: "#96fc88",
-    greenSuccess: "#00cc44",
-
-    // Brown and tan colors
-    brown: "#8B4513",
-    brownLight: "#F5DEB3",
-    brownDark: "#2C1810",
-    tan: "#FFF8DC",
-
-    // Support container colors
-    support_container: ["#1a4a6d", "#2a5a8d", "#3a6aad"],
-
-    // Overlay and shadow colors
-    overlayDark: "rgba(0, 0, 0, 0.5)",
-    overlayLight: "rgba(255, 255, 255, 0.2)",
-    overlayMedium: "rgba(255, 255, 255, 0.5)",
-    overlayHeavy: "rgba(0, 0, 0, 0.8)",
-
-    // Shadow colors
-    shadowBlack: "#000",
-    shadowGold: "#ffd700",
-    shadowPrimary: "#850111",
-    shadowSuccess: "#4CAF50",
-
-    // Specific UI colors
-    statusActive: "#2E7D32",
-    statusInactive: "#D32F2F",
-    statusPending: "#FF9800",
-    statusCompleted: "#4CAF50",
-
-    // Gradient colors
-    gradientPrimary: ["#850111", "#B8860B", "#DAA520"],
-    gradientPrimaryDark: ["#850111", "#5a000b", "#2e0406"],
-    gradientSuccess: ["#4CAF50", "#45a049", "#3d8b40"],
-    gradientGold: ["#ffc90c", "#ffd700"],
-    gradientRed: ["#B31313", "#8B0000"],
-    gradientBlue: ["#1a1a2e", "#16213e", "#0f3460"],
-    gradientSilver: ["#C0C0C0", "#A8A8A8", "#808080"],
-
-    // Background image colors
-    bgImageOverlay: "rgba(0,0,0,0.7)",
-    bgImageOverlayLight: "rgba(0,0,0,0.5)",
-    bgImageOverlayMedium: "rgba(0,0,0,0.3)",
-
-    // Text shadow colors
-    textShadowGold: "rgba(255, 215, 0, 0.8)",
-    textShadowBlack: "rgba(0, 0, 0, 0.3)",
-    textShadowWhite: "rgba(255, 255, 255, 0.5)",
-    textShadowBrown: "rgba(139, 69, 19, 0.3)",
-
-    // Border opacity colors
-    borderWhiteLight: "rgba(255, 255, 255, 0.3)",
-    borderWhiteMedium: "rgba(255, 255, 255, 0.5)",
-    borderGoldLight: "rgba(255, 215, 0, 0.2)",
-    borderGoldMedium: "rgba(255, 215, 0, 0.3)",
-
-    // Background opacity colors
-    bgWhiteLight: "rgba(255, 255, 255, 0.1)",
-    bgWhiteMedium: "rgba(255, 255, 255, 0.2)",
-    bgWhiteHeavy: "rgba(255, 255, 255, 0.5)",
-    bgWhiteVeryHeavy: "rgba(255, 255, 255, 0.8)",
-    bgBlackLight: "rgba(0, 0, 0, 0.1)",
-    bgBlackMedium: "rgba(0, 0, 0, 0.2)",
-    bgBlackHeavy: "rgba(0, 0, 0, 0.5)",
-    bgPrimaryLight: "rgba(133, 1, 17, 0.1)",
-    bgPrimaryMedium: "rgba(133, 1, 17, 0.15)",
-    bgPrimaryHeavy: "rgba(133, 1, 17, 0.85)",
-    bgGoldLight: "rgba(255, 215, 0, 0.1)",
-    bgGoldMedium: "rgba(255, 215, 0, 0.2)",
-    bgGoldHeavy: "rgba(255, 215, 0, 0.25)",
-    bgSuccessLight: "rgba(0, 204, 68, 0.1)",
-    bgErrorLight: "rgba(255, 68, 68, 0.1)",
-    bgErrorMedium: "rgba(255, 68, 68, 0.95)",
-
-    // Specific component colors
-    tabInactive: "#888",
-    tabActive: "#FFC857",
-    tabBackground: "#777",
-    tabBackgroundLight: "#f0f0f0",
-    tabBackgroundMedium: "#f5f5f5",
-    tabBackgroundHeavy: "#f7f7f7",
-
-    // Icon colors
-    iconPrimary: "#850111",
-    iconSecondary: "#ffd700",
-    iconSuccess: "#4CAF50",
-    iconError: "#ff4444",
-    iconWarning: "#FF9800",
-    iconInfo: "#60a5fa",
-    iconWhite: "#FFFFFF",
-    iconBlack: "#000",
-    iconGrey: "#777",
-    iconBrown: "#8B4513",
-
-    // Button colors
-    buttonPrimary: "#850111",
-    buttonSecondary: "#ffc90c",
-    buttonSuccess: "#4CAF50",
-    buttonError: "#ff4444",
-    buttonWarning: "#FF9800",
-    buttonWhite: "#ffffff",
-    buttonBlack: "#000000",
-    buttonTransparent: "transparent",
-
-    // Card colors
-    cardBackground: "#ffffff",
-    cardBackgroundLight: "#FFF8DC",
-    cardBackgroundMedium: "#F5DEB3",
-    cardBackgroundDark: "#f3f4f6",
-    cardBorder: "#e5e5e5",
-    cardBorderLight: "#f0f0f0",
-
-    // Status bar colors
-    statusBarPrimary: "#5a000b",
-    statusBarLight: "light-content",
-    statusBarDark: "dark-content",
-
-    // Additional colors found in components
-    // Common UI colors
-    common: {
-      white: "#ffffff",
-      black: "#000000",
-      transparent: "transparent",
-    },
-
-    // Overlay colors
-    blackOverlay: "rgba(0,0,0,0.5)",
-    blackOverlayLight: "rgba(0,0,0,0.2)",
-
-    // Additional hardcoded colors found in components
-    additional: {
-      // Form and input colors
-      formBg: "#f8f9fa",
-      formBorder: "#f0f0f0",
-      formText: "#666",
-      formTextDark: "#333",
-      formTextMedium: "#555",
-      formTextLight: "#999999",
-
-      // Button and action colors
-      buttonOrange: "#ff6b35",
-      buttonBlue: "#007AFF",
-      buttonGrey: "#e0e0e0",
-
-      // Status and notification colors
-      statusBlue: "#1976d2",
-      statusGold: "#bfa14a",
-      statusGreen: "#388e3c",
-      statusRed: "#FF3B30",
-
-      // UI element colors
-      cardBgLight: "#fafafa",
-      cardBgMedium: "#F9F9F9",
-      cardBgDark: "#EEE",
-      cardBorder: "#E0E0E0",
-
-      // Text variations
-      textMuted: "#595959",
-      textMutedDark: "#262626",
-      textMutedLight: "#bfbfbf",
-      textMutedMedium: "#555555",
-      textLightGrey: "#9E9E9E",
-
-      // Background variations
-      bgLight: "#f9fafb",
-      bgMedium: "#f3f4f6",
-      bgDark: "#ef4444",
-      bgGrey: "#6b7280",
-      bgLightGrey: "#374151",
-      bgDarkGrey: "#1f2937",
-      bgMediumGrey: "#222",
-      bgLightMedium: "#444",
-
-      // Icon background colors
-      iconBgBlue: "#E3F2FD",
-      iconBgGreen: "#E8F5E9",
-      iconBgOrange: "#FFF3E0",
-      iconBgRed: "#FFEBEE",
-      iconBgRedText: "#F44336",
-
-      // Collection status colors
-      collectionBlue: "#4ECDC4",
-      collectionGreen: "#45B7D1",
-      collectionLightGreen: "#96CEB4",
-      collectionOrange: "#FFA726",
-    },
-
-    // Text variations
-    text: {
-      primary: "#ffffff",
-      secondary: "#000000",
-      dark: "#2e0406",
-      light: "#ffffff",
-      grey: "#808080",
-      darkGrey: "#333",
-      mediumGrey: "#666",
-      lightGrey: "#888",
-      brown: "#8B4513",
-      darkBrown: "#2C1810",
-      success: "#00cc44",
-      error: "#ff4444",
-      warning: "#FF9800",
-      // Additional text colors found
-      muted: "#595959",
-      mutedDark: "#262626",
-      mutedLight: "#bfbfbf",
-      mutedMedium: "#555555",
-    },
-
-    // Background variations
-    bg: {
-      white: "#ffffff",
-      light: "#f0f0f0",
-      medium: "#f5f5f5",
-      dark: "#f3f4f6",
-      card: "#FFF8DC",
-      cardMedium: "#F5DEB3",
-      cardDark: "#f7f7f7",
-      // Additional background colors found
-      muted: "#f7f7f7",
-      overlay: "rgba(0,0,0,0.7)",
-      overlayLight: "rgba(0,0,0,0.5)",
-      overlayMedium: "rgba(0,0,0,0.3)",
-    },
-
-    // Border variations
-    borderVariants: {
-      light: "#e5e5e5",
-      white: "#f0f0f0",
-      gold: "#ffd700",
-      muted: "#cccccc",
-      // Additional border colors found
-      bottom: "#f0f0f0",
-      left: "#850111",
-      top: "#f0f0f0",
-    },
-
-    // Shadow variations
-    shadow: {
-      black: "#000",
-      gold: "#ffd700",
-      primary: "#850111",
-      success: "#4CAF50",
-    },
-
-    // Status variations
-    status: {
-      active: "#2E7D32",
-      inactive: "#D32F2F",
-      pending: "#FF9800",
-      completed: "#4CAF50",
-    },
-
-    // Component-specific colors
-    components: {
-      tab: {
-        inactive: "#888",
-        active: "#FFC857",
-        background: "#777",
-        backgroundLight: "#f0f0f0",
-        backgroundMedium: "#f5f5f5",
-        backgroundHeavy: "#f7f7f7",
-      },
-      button: {
-        primary: "#850111",
-        secondary: "#ffc90c",
-        success: "#4CAF50",
-        error: "#ff4444",
-        warning: "#FF9800",
-        white: "#ffffff",
-        black: "#000000",
-        transparent: "transparent",
-      },
-      card: {
-        background: "#ffffff",
-        backgroundLight: "#FFF8DC",
-        backgroundMedium: "#F5DEB3",
-        backgroundDark: "#f3f4f6",
-        border: "#e5e5e5",
-        borderLight: "#f0f0f0",
-      },
-      icon: {
-        primary: "#850111",
-        secondary: "#ffd700",
-        success: "#4CAF50",
-        error: "#ff4444",
-        warning: "#FF9800",
-        info: "#60a5fa",
-        white: "#FFFFFF",
-        black: "#000",
-        grey: "#777",
-        brown: "#8B4513",
-      },
-    },
+      if (appConfig && appConfig.colors) {
+        return createThemeColors(basePalette, appConfig.colors);
+      }
+      return basePalette;
+    } catch (e) {
+      return lightPalette;
+    }
   },
 
-  // Standardized button configuration
-  button: {
-    // Default button colors
-    background: "#FFD700", // Gold background as requested
-    text: "#000000", // Black text for contrast
+  get button() {
+    const colors = this.colors;
 
-    // Button variants
-    primary: {
-      background: "#1a2a39",
-      text: "#ffffff",
-    },
-    secondary: {
-      background: "#ffc90c",
-      text: "#000000",
-    },
-    success: {
-      background: "#4CAF50",
-      text: "#ffffff",
-    },
-    error: {
-      background: "#ff4444",
-      text: "#ffffff",
-    },
-    warning: {
-      background: "#FF9800",
-      text: "#ffffff",
-    },
-    outline: {
-      background: "transparent",
-      text: "#850111",
-      border: "#850111",
-    },
-    ghost: {
-      background: "transparent",
-      text: "#850111",
-    },
+    return {
+      background: colors.buttonSecondary,
+      text: colors.buttonSecondaryText,
+      primary: {
+        background: colors.buttonPrimary,
+        text: colors.buttonPrimaryText,
+      },
+      secondary: {
+        background: colors.buttonSecondary,
+        text: colors.buttonSecondaryText,
+      },
+      success: {
+        background: colors.success,
+        text: colors.textLight,
+      },
+      error: {
+        background: colors.error,
+        text: colors.textLight,
+      },
+      warning: {
+        background: colors.warning,
+        text: colors.textOnAccent,
+      },
+      outline: {
+        background: colors.transparent,
+        text: colors.outlineButtonText,
+        border: colors.outlineButtonBorder,
+      },
+      ghost: {
+        background: colors.transparent,
+        text: colors.outlineButtonText,
+      },
 
-    // Button sizes
-    small: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      fontSize: 12,
-    },
-    medium: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      fontSize: 14,
-    },
-    large: {
-      paddingHorizontal: 20,
-      paddingVertical: 12,
-      fontSize: 16,
-    },
+      // Button sizes
+      small: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        fontSize: 12,
+      },
+      medium: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        fontSize: 14,
+      },
+      large: {
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        fontSize: 16,
+      },
 
-    // Button states
-    disabled: {
-      background: "#cccccc",
-      text: "#666666",
-    },
-    pressed: {
-      background: "#B8860B", // Darker gold when pressed
-      text: "#000000",
-    },
+      disabled: {
+        background: colors.buttonDisabled,
+        text: colors.buttonDisabledText,
+      },
+      pressed: {
+        background: colors.buttonPressed,
+        text: colors.buttonPressedText,
+      },
+    };
   },
 
   // Comprehensive images object with semantic keys
@@ -483,7 +359,7 @@ const theme = {
 
     // Slider and banner images
     banners: {
-      slider1: "../../assets/images/slider1.png",
+      slider1: "../../assets/images/slider.png",
       slider2: "../../assets/images/slider2.png",
       slider3: "../../assets/images/slider3.png",
       slider4: "../../assets/images/slider4.png",
@@ -568,7 +444,7 @@ const theme = {
     gold_image: "../../assets/images/bar.png",
     silver_image: "../../assets/images/silver.png",
     sliderImages: [
-      "../../assets/images/slider1.png",
+      "../../assets/images/slider.png",
       "../../assets/images/slider2.png",
       "../../assets/images/slider3.png",
       "../../assets/images/slider4.png",
@@ -586,20 +462,21 @@ const theme = {
   },
 
   constants: {
-    customerName: "DC Jewellers",
-    address: "Road Fathima Nagar, Mission Quarters, Anchery, Thrissur, Kerala 680005",
-    mobile: "+919061803999",
-    whatsapp: "+919061803999",
-    email: "dcjewellerstcr@gmail.com",
-    website: "https://www.dcjewellers.org",
-    latitude: 8.427828080550306,
-    longitude: 78.02855977120382,
-    providerName: "Agni",
-    providerUrl: "https://agni.com",
+    customerName: themeConfig.customerName || "Sri Thanga Thamarai",
+    address: themeConfig.address || "2/59, Pacharisikara Street, Khansa Mettu Street, Madurai - 625001",
+    mobile: themeConfig.mobile || "+919876543210",
+    whatsapp: themeConfig.whatsapp || "+919876543210",
+    email: themeConfig.email || "info@sttjewellers.com",
+    website: themeConfig.website || "https://srithangathamarai.com",
+    latitude: themeConfig.latitude || 9.9175,
+    longitude: themeConfig.longitude || 78.1192,
+    foundationYear: themeConfig.foundationYear || 1995,
+    enableDashboard: themeConfig.enableDashboard !== undefined ? themeConfig.enableDashboard : false,
+    providerName: "Agnisofterp",
+    providerUrl: "https://agnisofterp.com/",
   },
-  baseUrl: "https://api.prod.dcjewellers.org",
-  // baseUrl: "https://nexooai.ramcarmotor.com",
-  youtubeUrl: "https://youtu.be/8RAhdn5b9Bw",
+  baseUrl: themeConfig.baseUrl || "https://api.srithangathamarai.com",
+  youtubeUrl: themeConfig.youtubeUrl || "https://youtu.be/8RAhdn5b9Bw",
 };
 
-module.exports = { theme };
+module.exports = { theme, lightPalette, darkPalette, createThemeColors };

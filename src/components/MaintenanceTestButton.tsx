@@ -1,4 +1,6 @@
 // components/MaintenanceTestButton.tsx - Test Button for Maintenance Mode
+import { theme } from "@/constants/theme";
+import { useAppTheme } from "@/store/global.store";
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import MaintenanceService from "@/services/maintenanceService";
@@ -11,6 +13,8 @@ interface MaintenanceTestButtonProps {
 export default function MaintenanceTestButton({
   style,
 }: MaintenanceTestButtonProps) {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const simulateMaintenanceMode = () => {
     const maintenanceData = {
       maintenanceStatus: true,
@@ -67,7 +71,7 @@ export default function MaintenanceTestButton({
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   button: {
     backgroundColor: "#667eea",
     paddingHorizontal: 16,
@@ -87,4 +91,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

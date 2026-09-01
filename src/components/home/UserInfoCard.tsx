@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -56,6 +57,8 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
     onImageError,
     onImageLoad,
   }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
     const { t } = useTranslation();
     const [isExpanded, setIsExpanded] = useState(true);
     const arrowOpacity = useRef(new Animated.Value(1)).current;
@@ -121,7 +124,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
     return (
       <View style={styles.container}>
         <LinearGradient
-          colors={["#4a0007", "#2e0004", "#000000"]} // Deep Premium Burgundy to Black
+          colors={[theme.colors.primary || "#0b162c", "#132342", "#050b15"]} // Premium Midnight Blue to Black
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.cardGradient}
@@ -144,7 +147,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
             <View style={styles.headerRow}>
               <View style={styles.avatarContainer}>
                 <LinearGradient
-                  colors={["#FFD700", "#B8860B"]}
+                  colors={[theme.colors.secondary || "#FFD700", "#B8860B"]}
                   style={styles.avatarPlaceholder}
                 >
                   <MaterialCommunityIcons name="wallet-membership" size={20} color="#3E2723" />
@@ -179,29 +182,38 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
               <View style={styles.divider} />
               
               <View style={styles.statsGrid}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>{t("activeSchemes")}</Text>
+                <View style={styles.statBox}>
+                  <View style={styles.statHeader}>
+                    <Ionicons name="folder-open-outline" size={12} color={theme.colors.secondary || "#FFD700"} />
+                    <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>{t("activeSchemes")}</Text>
+                  </View>
                   <Text style={styles.statValue}>{activeSchemesCount}</Text>
                 </View>
                 
                 {showTotalGold && (
-                    <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>{t("totalGold")}</Text>
+                  <View style={styles.statBox}>
+                    <View style={styles.statHeader}>
+                      <MaterialCommunityIcons name="gold" size={13} color={theme.colors.secondary || "#FFD700"} />
+                      <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>{t("totalGold")}</Text>
+                    </View>
                     <View style={styles.goldValueContainer}>
-                        <Text style={styles.statValue}>
-                            {formatGoldWeight(totalGoldSavings).replace(" g", "")}
-                        </Text>
-                        <Text style={styles.statUnit}>g</Text>
+                      <Text style={styles.statValue}>
+                        {formatGoldWeight(totalGoldSavings).replace(" g", "")}
+                      </Text>
+                      <Text style={styles.statUnit}>g</Text>
                     </View>
-                    </View>
+                  </View>
                 )}
                 
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>{t("totalPaid")}</Text>
+                <View style={styles.statBox}>
+                  <View style={styles.statHeader}>
+                    <Ionicons name="wallet-outline" size={12} color={theme.colors.secondary || "#FFD700"} />
+                    <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>{t("totalPaid")}</Text>
+                  </View>
                   <View style={styles.amountValueContainer}>
                     <Text style={styles.currencySymbol}>₹</Text>
                     <Text style={styles.statValue}>
-                        {totalAmount.toLocaleString()}
+                      {totalAmount.toLocaleString()}
                     </Text>
                   </View>
                 </View>
@@ -213,7 +225,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
                 activeOpacity={0.8}
               >
                  <LinearGradient
-                    colors={["#FFD700", "#FFC107"]}
+                    colors={[theme.colors.secondary || "#FFD700", theme.colors.warning || "#FFC107"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.actionButtonGradient}
@@ -233,7 +245,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
   }
 );
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     paddingHorizontal: moderateScale(16),
     paddingVertical: moderateScale(8),
@@ -245,7 +257,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.large,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(255, 215, 0, 0.2)", // Subtle gold border
+    borderColor: theme.colors.secondary ? `${theme.colors.secondary}33` : "rgba(255, 215, 0, 0.2)", // Subtle gold border
     ...SHADOW_UTILS.card(),
     elevation: 8,
     shadowColor: "#000",
@@ -299,7 +311,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 0,
     right: 0,
-    backgroundColor: "#FFF",
+    backgroundColor: theme.colors.white,
     borderRadius: 10,
     overflow: "hidden",
   },
@@ -359,7 +371,7 @@ const styles = StyleSheet.create({
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: 'rgba(255,215,0,0.1)'
+      borderColor: theme.colors.secondary ? `${theme.colors.secondary}1a` : 'rgba(255,215,0,0.1)'
   },
   statsWrapper: {
     overflow: "hidden",
@@ -373,22 +385,37 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: moderateScale(8),
+    marginBottom: moderateScale(10),
+    marginHorizontal: -moderateScale(3),
   },
-  statItem: {
-    flex: 1, 
+  statBox: {
+    flex: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    borderRadius: 12,
+    paddingVertical: moderateScale(8),
+    paddingHorizontal: moderateScale(4),
+    marginHorizontal: moderateScale(3),
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
     alignItems: "center",
+    justifyContent: "center",
+  },
+  statHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+    gap: 4,
   },
   statLabel: {
-    fontSize: moderateScale(10),
-    color: "rgba(255, 255, 255, 0.6)",
-    marginBottom: 4,
+    fontSize: moderateScale(8.5),
+    color: "rgba(255, 255, 255, 0.55)",
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
+    fontWeight: "600",
   },
   statValue: {
-    fontSize: moderateScale(14),
-    fontWeight: "700",
+    fontSize: moderateScale(13),
+    fontWeight: "800",
     color: "#FFFFFF",
   },
   goldValueContainer: {
@@ -396,7 +423,7 @@ const styles = StyleSheet.create({
       alignItems: 'baseline'
   },
   statUnit: {
-      fontSize: moderateScale(10),
+      fontSize: moderateScale(9),
       color: theme.colors.secondary,
       marginLeft: 2,
       fontWeight: '600'
@@ -406,21 +433,26 @@ const styles = StyleSheet.create({
       alignItems: 'baseline'
   },
   currencySymbol: {
-      fontSize: moderateScale(11),
+      fontSize: moderateScale(10),
       color: theme.colors.secondary,
       marginRight: 2,
       fontWeight: '600'
   },
   actionButton: {
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
-    marginTop: 4
+    marginTop: 6,
+    shadowColor: theme.colors.secondary || "#FFD700",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 4,
   },
   actionButtonGradient: {
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: moderateScale(8),
+      paddingVertical: moderateScale(9),
       gap: 6
   },
   actionButtonText: {
@@ -430,6 +462,8 @@ const styles = StyleSheet.create({
       textTransform: "uppercase",
       letterSpacing: 0.5
   }
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default UserInfoCard;

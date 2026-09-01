@@ -24,8 +24,9 @@ import api from "@/services/api";
 import { logger } from "@/utils/logger";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { responsiveUtils } from "@/utils/responsiveUtils";
+import { APP_CONFIG } from "@/constants";
 
 const { width: screenWidth } = Dimensions.get("window");
 console.log('DynamicSchemeCard', useAppVisibility);
@@ -117,6 +118,8 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
   initialSchemeId,
   horizontal = true, // Default to horizontal scrolling
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t, locale } = useTranslation();
   const router = useRouter();
   const { language } = useGlobalStore();
@@ -127,39 +130,9 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = React.useRef<FlatList>(null);
-  const [oldGoldTerms, setOldGoldTerms] = useState<string | null>(null);
-  const [loadingTerms, setLoadingTerms] = useState(false);
 
   const currentLanguage = locale;
   const showSchemsPage = isVisible("showSchemsPage");
-
-  useEffect(() => {
-    if (selectedScheme && checkIsOldGold(selectedScheme) && modalVisible) {
-      const fetchOldGoldTerms = async () => {
-        try {
-          setLoadingTerms(true);
-          const response = await api.get("/policies/type/old_gold_terms");
-          if (response.data && response.data.success && response.data.data) {
-            const policyData = response.data.data;
-            const appLanguage = locale || "en";
-            const targetKey = `description_${appLanguage}`;
-            let terms = policyData[targetKey] || policyData.description || policyData.content || "";
-            if (!terms && appLanguage === "mal") terms = policyData.description_mal || "";
-            if (!terms && appLanguage === "ta") terms = policyData.description_ta || "";
-            if (terms) {
-              setOldGoldTerms(terms);
-              return;
-            }
-          }
-        } catch (error) {
-          logger.error("Error fetching old gold terms from backend:", error);
-        } finally {
-          setLoadingTerms(false);
-        }
-      };
-      fetchOldGoldTerms();
-    }
-  }, [selectedScheme, modalVisible, locale]);
 
   useEffect(() => {
     if (schemes.length > 0 && initialSchemeId) {
@@ -342,8 +315,8 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
           name: getTranslatedText(schemeToJoin.SCHEMENAME as any, language) || "Unnamed Scheme",
           description: getTranslatedText(schemeToJoin.DESCRIPTION as any, language) || "No description available",
           type: targetTab,
-          chits: relevantChits,
-          schemeType: scheme?.SCHEMETYPE?.toLowerCase() || "",
+          chits: relevantChits.length > 0 ? relevantChits : chits,
+          schemeType: schemeToJoin.SCHEMETYPE?.toLowerCase() || "",
           activeTab: targetTab,
           benefits: (schemeToJoin as any).BENEFITS || [],
           slogan: getTranslatedText((schemeToJoin as any).SLOGAN || { en: "" }, language) || "",
@@ -403,7 +376,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
     if (onEnquirePress) {
       onEnquirePress(scheme);
     } else {
-      router.push("/(app)/old_gold?tab=enquiry");
+      router.push("/(app)/old_gold?tab=schemes");
     }
   };
 
@@ -421,18 +394,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
     }
 
     if (typeof textObj === "string") {
-      const trimmed = textObj.trim();
-      const key = trimmed
-        .replace(/[^a-zA-Z0-9 ]/g, "")
-        .split(" ")
-        .filter(Boolean)
-        .map((word, i) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1))
-        .join("");
-      const translated = t(key);
-      if (translated && translated !== key && !translated.includes("missing")) {
-        return translated;
-      }
-      return trimmed;
+      return textObj.trim() || "";
     }
 
     if (typeof textObj === "number") {
@@ -1214,13 +1176,9 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
           {isOldGold && (
             <View style={styles.modernSection}>
               <Text style={styles.modernSectionTitle}>{t("termsAndConditions") || "Terms & Conditions"}</Text>
-              {loadingTerms ? (
-                <ActivityIndicator size="small" color={accentColor} style={{ marginVertical: 10 }} />
-              ) : (
-                <Text style={styles.modernDescription}>
-                  {oldGoldTerms || t("oldGoldTermsDescription") || "Welcome to DC Jewellers..."}
-                </Text>
-              )}
+              <Text style={styles.modernDescription}>
+                {t("termsAndConditionsDiscription") || `Welcome to ${APP_CONFIG.appName}...`}
+              </Text>
             </View>
           )}
 
@@ -1281,21 +1239,19 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
           ) : (
             <View style={styles.modalFooter}>
               {/* Quick Join Button (Lightning) */}
-              {isVisible("showTabQuickJoin") && (
-                <TouchableOpacity
-                  style={styles.modalQuickJoinButton}
-                  onPress={() => handleQuickJoinPress(selectedScheme)}
+              <TouchableOpacity
+                style={styles.modalQuickJoinButton}
+                onPress={() => handleQuickJoinPress(selectedScheme)}
+              >
+                <LinearGradient
+                  colors={["#FFD700", "#FFA500"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.modalQuickJoinGradient}
                 >
-                  <LinearGradient
-                    colors={["#FFD700", "#FFA500"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.modalQuickJoinGradient}
-                  >
-                    <Ionicons name="flash" size={20} color="#000" />
-                  </LinearGradient>
-                </TouchableOpacity>
-              )}
+                  <Ionicons name="flash" size={20} color="#000" />
+                </LinearGradient>
+              </TouchableOpacity>
 
               {/* Join / Enquire Button */}
               <TouchableOpacity
@@ -1442,7 +1398,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -2083,7 +2039,7 @@ const styles = StyleSheet.create({
     width: '48%', // 2 columns
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.colors.background,
     padding: 10,
     borderRadius: 12,
     borderWidth: 1,
@@ -2152,10 +2108,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#F5F5F5',
-    backgroundColor: '#FFF',
+    backgroundColor: theme.colors.white,
   },
   tableRowAlt: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.colors.background,
   },
   tableRefinedCell: {
     flex: 1,
@@ -2182,6 +2138,8 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.6,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default DynamicSchemeCard;

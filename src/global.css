@@ -3,5 +3,5 @@
 @tailwind utilities;
 
 .text-primary {
-  color: var(--color-primary, #850111);
+  color: var(--color-primary, #0e1e38);
 }

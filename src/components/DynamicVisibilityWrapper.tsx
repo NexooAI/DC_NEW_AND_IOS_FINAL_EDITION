@@ -1,3 +1,5 @@
+import { theme } from "@/constants/theme";
+import { useAppTheme } from "@/store/global.store";
 import React from "react";
 import { View, StyleSheet, RefreshControl, ScrollView } from "react-native";
 import {
@@ -92,6 +94,8 @@ const DynamicVisibilityWrapper: React.FC<DynamicVisibilityWrapperProps> = ({
   renderEmpty,
   fallbackChildren,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   // Hook for managing visibility
   const { visibilityConfig, isLoading, error, refreshConfig, isVisible } =
     useDynamicVisibility(apiEndpoint, autoFetch);
@@ -246,7 +250,7 @@ const DynamicVisibilityWrapper: React.FC<DynamicVisibilityWrapperProps> = ({
   return content;
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -298,6 +302,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 16,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default DynamicVisibilityWrapper;

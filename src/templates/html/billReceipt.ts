@@ -48,7 +48,7 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bill Receipt - DC Jewellers</title>
+        <title>Bill Receipt - Sri Thanga Thamarai</title>
         <style>
             body {
                 font-family: 'Times New Roman', serif;
@@ -64,10 +64,9 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
                 align-items: center;
                 margin-bottom: 15px;
                 padding: 10px 15px;
-                background-color: ${theme.colors.primary} !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-                color: #fff;
+                background: ${theme.colors.primary};
+                color: #ffffff;
+                border-bottom: 2px solid #ffd700;
             }
             .company-info { font-size: 12px; font-weight: bold; }
             .letter-title {
@@ -125,7 +124,7 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
                 ${theme.constants.customerName}
             </div>
             <div>
-                <img src="https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp" alt="Logo" style="max-width:90px; height:auto;">
+                <img src="https://srithangathamarai.com/assets/logo_trans.png" alt="Logo" style="max-width:90px; height:auto;">
             </div>
         </div>
 
@@ -138,7 +137,7 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
         <table class="details-table">
             <tr>
                 <th>Bill Reference ID</th>
-                <td># ${billId}</td>
+                <td>#STT-B-ID-${billId}</td>
             </tr>
             <tr>
                 <th>Bill Number</th>
@@ -182,8 +181,8 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
             </div>
             <div class="footer-bottom">
                 <p>Date: ${new Date().toLocaleDateString("en-GB", {
-        day: "2-digit", month: "short", year: "numeric"
-    })}</p>
+            day: "2-digit", month: "short", year: "numeric"
+        })}</p>
                 <p class="signature">Authorized Signatory<br/>${theme.constants.customerName}</p>
             </div>
         </div>

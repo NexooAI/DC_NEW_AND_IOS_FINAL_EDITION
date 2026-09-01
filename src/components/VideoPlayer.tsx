@@ -1,3 +1,5 @@
+import { theme } from "@/constants/theme";
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -266,6 +268,8 @@ const VideoPlayer = ({
   duration = "00:00",
   channel: initialChannel = "Gold TV",
 }: VideoPlayerProps) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPowered, setIsPowered] = useState(true);
@@ -550,7 +554,7 @@ const VideoPlayer = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   tvContainer: {
     width: "100%",
     aspectRatio: 4 / 3,
@@ -853,7 +857,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#FFF",
+    backgroundColor: theme.colors.white,
   },
   staticPattern: {
     flex: 1,
@@ -867,6 +871,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.3)",
     zIndex: 10,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default VideoPlayer;

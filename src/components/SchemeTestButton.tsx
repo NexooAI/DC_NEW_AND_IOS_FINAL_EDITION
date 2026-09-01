@@ -1,8 +1,12 @@
+import { theme } from "@/constants/theme";
+import { useAppTheme } from "@/store/global.store";
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 
 export default function SchemeTestButton() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
 
   const testNavigation = () => {
@@ -37,7 +41,7 @@ export default function SchemeTestButton() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   button: {
     backgroundColor: "#007AFF",
     padding: 12,
@@ -49,4 +53,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "600",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

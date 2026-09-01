@@ -16,13 +16,12 @@ import {
 import { Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
-import { APP_CONFIG } from "@/constants";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { logger } from "@/utils/logger";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import FAQService from "@/services/faqService";
 
 interface StatusViewProps {
@@ -37,6 +36,8 @@ const STATUS_DURATION = 5000; // 5 seconds per status (snappier feel)
 
 const StatusView: React.FC<StatusViewProps> = React.memo(
   ({ collections, isVisible, initialCollectionIndex, onClose, onEnquire }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
     const { t } = useTranslation();
     const [currentCollection, setCurrentCollection] = useState(
       collections[initialCollectionIndex]
@@ -352,7 +353,7 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
       if (typeof path === "string") {
         if (path.startsWith("http")) return { uri: path };
         return {
-          uri: `${APP_CONFIG.urls.baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`,
+          uri: `${theme.baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`,
         };
       }
       return undefined;
@@ -530,7 +531,7 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
                    </View>
                    
                    <Text style={styles.modalDescription}>
-                     {t("generateTicketConfirm") || "Would you like to generate an enquiry ticket for this product?"}
+                     Would you like to generate an enquiry ticket for this product?
                    </Text>
 
                    <View style={styles.enquiryDetailsContainer}>
@@ -560,7 +561,7 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
                            colors={[theme.colors.primary, "#002b24"]}
                            style={styles.modalButtonGradient}
                          >
-                           <Text style={styles.modalButtonText}>{t("generateTicket") || "Generate Ticket"}</Text>
+                           <Text style={styles.modalButtonText}>Generate Ticket</Text>
                          </LinearGradient>
                        </TouchableOpacity>
 
@@ -586,7 +587,7 @@ const StatusView: React.FC<StatusViewProps> = React.memo(
 
 StatusView.displayName = "StatusView";
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
@@ -638,7 +639,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#FFF', // or #FFD700 for gold
+    backgroundColor: theme.colors.white, // or #FFD700 for gold
     borderRadius: 2,
   },
   headerRow: {
@@ -746,7 +747,7 @@ const styles = StyleSheet.create({
     zIndex: 9999,
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 24,
     padding: 24,
     width: "100%",
@@ -815,6 +816,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default StatusView;

@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Animated,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -15,7 +14,7 @@ import { formatGoldWeight } from "@/utils/imageUtils";
 import { useTranslation } from "@/hooks/useTranslation";
 import { theme } from "@/constants/theme";
 import api from "@/services/api";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { logger } from "@/utils/logger";
 import CustomAlert from "@/components/Alert";
 
@@ -62,6 +61,8 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
   translations,
   autoExpand = false,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t, locale } = useTranslation();
   const { user } = useGlobalStore();
   const [isExpanded, setIsExpanded] = useState(autoExpand);
@@ -249,27 +250,6 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
     }
 
     try {
-      // Verify KYC status before proceeding to pay
-      const kycResponse = await api.get(`/kyc/status/${user.id}`);
-      const isKycCompleted = kycResponse.data && (kycResponse.data.kyc_status === "Completed" || kycResponse.data.data);
-      if (!isKycCompleted) {
-        setIsLoading(false);
-        Alert.alert(
-          t("kycRequired") || 'KYC Required',
-          t("kycNotCompleted") || 'Please complete your KYC details to continue with this payment.',
-          [
-            { text: t("cancel") || 'Cancel', style: 'cancel' },
-            {
-              text: t("completeKyc") || 'Complete KYC',
-              onPress: () => {
-                router.push('/home/kyc');
-              }
-            }
-          ]
-        );
-        return;
-      }
-
       // Call API to check payment and get investment details
       const payload = {
         userId: user.id,
@@ -403,9 +383,34 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
     };
   }, []);
 
+  const getLeftAccentColor = () => {
+    if (getLocalizedText(item.metalType).toLowerCase() === "silver") {
+      return "#94A3B8"; // Silver slate
+    }
+    if (item.savingType === "old_gold") {
+      return "#D97706"; // Warm dark gold
+    }
+    if (isHybrid) {
+      return "#8B5CF6"; // Violet
+    }
+    if (isFlexiOrHybrid) {
+      return "#06B6D4"; // Cyan
+    }
+    return "#EAB308"; // Gold
+  };
+
   return (
     <View
-      style={[styles.cardWrapper, isActive && styles.cardWrapperActive]}
+      style={[
+        styles.cardWrapper, 
+        isActive && styles.cardWrapperActive,
+        {
+          borderLeftWidth: 6,
+          borderLeftColor: getLeftAccentColor(),
+          borderWidth: isExpanded ? 1.5 : 1,
+          borderColor: isExpanded ? (theme.colors.gold || "#D97706") : "rgba(0, 0, 0, 0.08)",
+        }
+      ]}
     >
       <View
         style={styles.cardBackgroundImage}
@@ -415,7 +420,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             <View style={styles.schemeInfo}>
               <View style={styles.schemeTitleContainer}>
                 <Text style={styles.schemeTitle}>
-                  {getLocalizedText(item.schemeName)}
+                  {(getLocalizedText(item.schemeName) || "").toUpperCase()}
                 </Text>
                 <View style={styles.schemeSubtitleContainer}>
                   <View
@@ -517,28 +522,14 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
           <View style={styles.paymentInfoRow}>
             <View style={styles.paymentInfoItem}>
               <View style={styles.paymentInfoIconContainer}>
-                <Ionicons name="person-outline" size={16} color={theme.colors.primary} />
+                <Ionicons name="person-outline" size={16} color={theme.colors.textDark} />
               </View>
               <View style={styles.paymentInfoContent}>
                 <Text style={styles.paymentInfoLabel}>
-                  {translations.accountHolderLabel}
+                  A/C Name / No
                 </Text>
                 <Text style={styles.paymentInfoValue}>
-                  {item.accountHolder?.toUpperCase()}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.paymentInfoDivider} />
-            <View style={styles.paymentInfoItem}>
-              <View style={styles.paymentInfoIconContainer}>
-                <Ionicons name="card-outline" size={16} color={theme.colors.primary} />
-              </View>
-              <View style={styles.paymentInfoContent}>
-                <Text style={styles.paymentInfoLabel}>
-                  {translations.accountNumberLabel}
-                </Text>
-                <Text style={styles.paymentInfoValue}>
-                  {item.accNo}
+                  {item.accountHolder?.toUpperCase()} / STT-{item.accNo}
                 </Text>
               </View>
             </View>
@@ -547,18 +538,18 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
           <View style={styles.paymentInfoRow}>
             <View style={styles.paymentInfoItem}>
               <View style={styles.paymentInfoIconContainer}>
-                <Ionicons name="time-outline" size={16} color={theme.colors.primary} />
+                <Ionicons name="time-outline" size={16} color={theme.colors.textDark} />
               </View>
               <View style={styles.paymentInfoContent}>
                 <Text style={styles.paymentInfoLabel}>
-                  {translations.frequency}
+                  Frequency
                 </Text>
                 <Text style={styles.paymentInfoValue}>
                   {isHybrid
                     ? "Hybrid"
                     : isFlexiOrHybrid
                       ? translations.flexi
-                      : getLocalizedText(item.paymentFrequency) || getLocalizedText(item.schemesData?.paymentFrequencyName)}
+                      : getLocalizedText(item.paymentFrequency) || getLocalizedText(item.schemesData?.paymentFrequencyName) || "Monthly"}
                 </Text>
               </View>
             </View>
@@ -567,7 +558,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
               {item.savingType === "old_gold" || item.schemesData?.schemeType?.toLowerCase() === "weight" ? (
                 <>
                   <View style={styles.paymentInfoIconContainer}>
-                    <Ionicons name="scale-outline" size={16} color={theme.colors.primary} />
+                    <Ionicons name="scale-outline" size={16} color={theme.colors.textDark} />
                   </View>
                   <View style={styles.paymentInfoContent}>
                     <Text style={styles.paymentInfoLabel}>
@@ -581,14 +572,14 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
               ) : (
                 <>
                   <View style={styles.paymentInfoIconContainer}>
-                    <Ionicons name="checkmark-circle-outline" size={16} color={theme.colors.primary} />
+                    <Ionicons name="cash-outline" size={16} color={theme.colors.textDark} />
                   </View>
                   <View style={styles.paymentInfoContent}>
                     <Text style={styles.paymentInfoLabel}>
-                      {translations.paymentsMade || "Payments Made"}
+                      Total Invested
                     </Text>
-                    <Text style={styles.paymentInfoValue}>
-                      {item.monthsPaid}
+                    <Text style={[styles.paymentInfoValue, { color: theme.colors.gold || "#D97706", fontWeight: "bold" }]}>
+                      ₹{item.totalPaid?.toLocaleString('en-IN') || "0"}
                     </Text>
                   </View>
                 </>
@@ -597,67 +588,6 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
           </View>
 
         </TouchableOpacity>
-
-        <View style={styles.actionButtonsContainer}>
-          <TouchableOpacity
-            style={item.savingType === "old_gold" ? [styles.detailsButton, { width: "100%" }] : styles.detailsButton}
-            onPress={() => {
-              if (item.savingType === "old_gold") {
-                router.push("/(app)/old_gold");
-              } else {
-                handleNavigation(item);
-              }
-            }}
-          >
-            <LinearGradient
-              colors={theme.colors.gradientPrimary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.detailsButtonGradient}
-            >
-              <Text style={styles.detailsButtonText}>
-                {translations.viewDetails}
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={theme.colors.white}
-              />
-            </LinearGradient>
-          </TouchableOpacity>
-          {item.savingType !== "old_gold" && (
-            <TouchableOpacity
-              style={[
-                styles.payNowButtonLarge,
-                isLoading && styles.disabledButton,
-              ]}
-              onPress={handlePayNow}
-              disabled={isLoading}
-            >
-              <LinearGradient
-                colors={
-                  isLoading
-                    ? ["#6B6B6B", "#4A4A4A", "#2E2E2E"] // Disabled / Loading
-                    : theme.colors.gradientPrimary // Use theme primary gradient
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.payNowButtonGradient}
-              >
-                {isLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <Text style={styles.payNowButtonTextLarge}>
-                      {translations.payNow}
-                    </Text>
-                    <Ionicons name="card-outline" size={20} color="#fff" />
-                  </>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
-          )}
-        </View>
 
         <Animated.View
           style={[
@@ -670,6 +600,35 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             },
           ]}
         >
+          {/* Total Investment Highlighted at the Top */}
+          {item.savingType !== "old_gold" && (
+            <View style={{
+              backgroundColor: "rgba(212, 175, 55, 0.12)",
+              borderColor: "rgba(212, 175, 55, 0.3)",
+              borderWidth: 1,
+              borderRadius: 12,
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              marginHorizontal: 16,
+              marginBottom: 16,
+              alignItems: "center",
+              flexDirection: "row",
+              justifyContent: "space-between"
+            }}>
+              <View>
+                <Text style={{ fontSize: 11, fontWeight: "600", color: theme.colors.textDark || "#666", textTransform: "uppercase" }}>
+                  Total Invested
+                </Text>
+                <Text style={{ fontSize: 18, fontWeight: "800", color: theme.colors.textDark || "#111", marginTop: 2 }}>
+                  ₹{(item.totalPaid + totalRewardAmount).toLocaleString()}
+                </Text>
+              </View>
+              <View style={{ backgroundColor: theme.colors.secondary || "#FFD700", borderRadius: 8, padding: 6 }}>
+                <Ionicons name="wallet-outline" size={20} color="#fff" />
+              </View>
+            </View>
+          )}
+
           {/* Enhanced Info Grid with More Relevant Data */}
           <View style={styles.enhancedInfoGrid}>
             <View style={styles.enhancedInfoRow}>
@@ -677,7 +636,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                 <>
                   <View style={styles.enhancedInfoItem}>
                     <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="scale-outline" size={20} color={theme.colors.primary} />
+                      <Ionicons name="scale-outline" size={20} color={theme.colors.textDark} />
                     </View>
                     <Text style={styles.enhancedInfoLabel}>Gross Weight</Text>
                     <Text style={styles.enhancedInfoValue}>
@@ -686,7 +645,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                   </View>
                   <View style={styles.enhancedInfoItem}>
                     <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="ribbon-outline" size={20} color={theme.colors.primary} />
+                      <Ionicons name="ribbon-outline" size={20} color={theme.colors.textDark} />
                     </View>
                     <Text style={styles.enhancedInfoLabel}>Purity Carat</Text>
                     <Text style={styles.enhancedInfoValue}>
@@ -695,7 +654,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                   </View>
                   <View style={styles.enhancedInfoItem}>
                     <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
+                      <Ionicons name="time-outline" size={20} color={theme.colors.textDark} />
                     </View>
                     <Text style={styles.enhancedInfoLabel}>Maturity Date</Text>
                     <Text style={styles.enhancedInfoValue}>
@@ -707,32 +666,32 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                 <>
                   <View style={styles.enhancedInfoItem}>
                     <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="wallet-outline" size={20} color={theme.colors.primary} />
+                      <Ionicons name="calendar-outline" size={20} color={theme.colors.textDark} />
                     </View>
                     <Text style={styles.enhancedInfoLabel}>
-                      {translations.totalInvestedLabel}
+                      Start Date
                     </Text>
                     <Text style={styles.enhancedInfoValue}>
-                      ₹{(item.totalPaid + totalRewardAmount).toLocaleString()}
+                      {item.joiningDate || "N/A"}
                     </Text>
                   </View>
                   <View style={styles.enhancedInfoItem}>
                     <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
+                      <Ionicons name="checkmark-done-circle-outline" size={20} color={theme.colors.textDark} />
                     </View>
                     <Text style={styles.enhancedInfoLabel}>
-                      {translations.maturityDateLabel}
+                      Maturity Date
                     </Text>
                     <Text style={styles.enhancedInfoValue}>
-                      {item?.maturityDate}
+                      {item?.maturityDate || "N/A"}
                     </Text>
                   </View>
                   <View style={styles.enhancedInfoItem}>
                     <View style={styles.enhancedInfoIconContainer}>
-                      <Ionicons name="cash-outline" size={20} color={theme.colors.primary} />
+                      <Ionicons name="cash-outline" size={20} color={theme.colors.textDark} />
                     </View>
                     <Text style={styles.enhancedInfoLabel}>
-                      {translations.monthlyEMILabel}
+                      Monthly EMI
                     </Text>
                     <Text style={styles.enhancedInfoValue}>₹{item.emiAmount}</Text>
                   </View>
@@ -772,8 +731,8 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             </View>
           </View>
 
-          {/* Installment Progress Section - Hide for paymentFrequencyId == 4 */}
-          {item.schemesData?.paymentFrequencyId !== 4 && (
+          {/* Installment Progress Section - Hide for paymentFrequencyId == 4 or if it is hybrid */}
+          {item.schemesData?.paymentFrequencyId !== 4 && !isHybrid && (
             <View style={styles.progressContainer}>
               <View style={styles.progressHeader}>
                 <Text style={styles.progressLabel}>
@@ -787,7 +746,8 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                   </Text>
                 </View>
               </View>
-              {!isFlexiOrHybrid && (
+              {/* ProgressBar hidden per user request */}
+              {false && !isFlexiOrHybrid && (
                 <View style={styles.progressBar}>
                   <Animated.View
                     style={[
@@ -808,7 +768,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                     style={[styles.monthDot, { backgroundColor: "#850111" }]}
                   />
                   <Text style={styles.monthLabel}>{translations.paid}</Text>
-                  <Text style={styles.monthLabel}>{item.monthsPaid}</Text>
+                  <Text style={styles.monthValue}>{item.monthsPaid}</Text>
                 </View>
                 {!isFlexiOrHybrid && (
                   <>
@@ -817,7 +777,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                         style={[styles.monthDot, { backgroundColor: "#DAA520" }]}
                       />
                       <Text style={styles.monthLabel}>{translations.pending}</Text>
-                      <Text style={styles.monthLabel}>
+                      <Text style={styles.monthValue}>
                         {Number(item.noOfIns) - Number(item.monthsPaid)}
                       </Text>
                     </View>
@@ -826,7 +786,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                         style={[styles.monthDot, { backgroundColor: "#850111" }]}
                       />
                       <Text style={styles.monthLabel}>{translations.total}</Text>
-                      <Text style={styles.monthLabel}>{item.noOfIns}</Text>
+                      <Text style={styles.monthValue}>{item.noOfIns}</Text>
                     </View>
                   </>
                 )}
@@ -834,6 +794,67 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             </View>
           )}
         </Animated.View>
+
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity
+            style={item.savingType === "old_gold" ? [styles.detailsButton, { width: "100%" }] : styles.detailsButton}
+            onPress={() => {
+              if (item.savingType === "old_gold") {
+                router.push("/(app)/old_gold");
+              } else {
+                handleNavigation(item);
+              }
+            }}
+          >
+            <LinearGradient
+              colors={theme.colors.gradientPrimary || ["#0b162c", "#16315c", "#d4af37"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.detailsButtonGradient}
+            >
+              <Text style={styles.detailsButtonText}>
+                {translations.viewDetails}
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={theme.colors.white}
+              />
+            </LinearGradient>
+          </TouchableOpacity>
+          {item.savingType !== "old_gold" && (
+            <TouchableOpacity
+              style={[
+                styles.payNowButtonLarge,
+                isLoading && styles.disabledButton,
+              ]}
+              onPress={handlePayNow}
+              disabled={isLoading}
+            >
+              <LinearGradient
+                colors={
+                  isLoading
+                    ? ["#6B6B6B", "#4A4A4A", "#2E2E2E"] // Disabled / Loading
+                    : (theme.colors.gradientPrimary || ["#0b162c", "#16315c", "#d4af37"]) // Use theme primary gradient
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.payNowButtonGradient}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Text style={styles.payNowButtonTextLarge}>
+                      {translations.payNow}
+                    </Text>
+                    <Ionicons name="card-outline" size={20} color="#fff" />
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <CustomAlert
@@ -854,7 +875,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   cardWrapper: {
     marginHorizontal: 16,
     marginVertical: 8,
@@ -893,7 +914,7 @@ const styles = StyleSheet.create({
   schemeTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginBottom: 8,
   },
   schemeSubtitleContainer: {
@@ -1185,10 +1206,12 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     padding: 16,
-    backgroundColor: theme.colors.backgroundSecondary,
+    backgroundColor: "rgba(133, 1, 17, 0.04)",
     marginHorizontal: 16,
     borderRadius: 12,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(133, 1, 17, 0.08)",
   },
   progressHeader: {
     flexDirection: "row",
@@ -1199,7 +1222,7 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   progressStats: {
     flexDirection: "row",
@@ -1209,7 +1232,7 @@ const styles = StyleSheet.create({
   progressMonths: {
     fontSize: 14,
     fontWeight: "600",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   progressBar: {
     height: 8,
@@ -1245,6 +1268,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: theme.colors.secondary,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default EnhancedSchemeCard;

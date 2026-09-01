@@ -1,10 +1,10 @@
+import { theme } from "@/constants/theme";
+import { useAppTheme } from "@/store/global.store";
 import React from "react";
 import { View, Text, StyleSheet, Image, ImageSourcePropType, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
-import { theme } from "@/constants";
-import { convertUTCToLocal } from "@/utils/dateTimeUtils";
 
 interface RateData {
     goldRate: string | number;
@@ -25,6 +25,8 @@ const GoldSilverRateCard: React.FC<GoldSilverRateCardProps> = ({
     silverImage,
     onPress,
 }) => {
+  const theme = useAppTheme();
+  
     const { t } = useTranslation();
     const {
         screenWidth,
@@ -64,7 +66,7 @@ const GoldSilverRateCard: React.FC<GoldSilverRateCardProps> = ({
     const formatDateToIndian = (isoString: string | undefined): string => {
         if (!isoString) return "";
         try {
-            const date = convertUTCToLocal(isoString);
+            const date = new Date(isoString);
             return date.toLocaleString("en-IN", {
                 day: "2-digit",
                 month: "2-digit",

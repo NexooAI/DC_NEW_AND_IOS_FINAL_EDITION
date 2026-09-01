@@ -17,6 +17,7 @@ import {
   Keyboard,
   Pressable,
   StatusBar,
+  ScrollView,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
@@ -29,6 +30,11 @@ import * as Crypto from "expo-crypto";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore from "@/store/global.store";
+import { responsiveUtils } from "@/utils/responsiveUtils";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
+import { useBiometrics } from "@/hooks/useBiometrics";
+const { hp } = responsiveUtils;
+import Svg, { Path } from 'react-native-svg';
 
 import { logger } from "@/utils/logger";
 const { width } = Dimensions.get("window");
@@ -73,7 +79,7 @@ const PinInput: React.FC<PinInputProps> = ({
         style={[
           styles.pinBoxInner,
           isActive && styles.pinBoxActive,
-          { textAlign: "center", fontSize: 24, color: theme.colors.textLight },
+          { textAlign: "center", fontSize: 24, color: theme.colors.primary },
         ]}
         keyboardType="number-pad"
         maxLength={1}
@@ -90,8 +96,15 @@ const PinInput: React.FC<PinInputProps> = ({
 
 export default function SetMpinPage() {
   const { t } = useTranslation();
+  const { isVisible } = useAppVisibility();
   const { mobile, name, email, referral_code, branch_id } = useLocalSearchParams();
   const router = useRouter();
+  const {
+    isSupported,
+    isEnrolled,
+    isEnabled,
+    enableBiometrics
+  } = useBiometrics();
   const [mpin, setMpin] = useState(["", "", "", ""]);
   const [confirmMpin, setConfirmMpin] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
@@ -213,8 +226,57 @@ export default function SetMpinPage() {
           }
 
           // Navigate directly to home page after successful registration
-          logger.log("🔍 Set MPIN successful, navigating to home");
-          router.replace("/(app)/(tabs)/home");
+          logger.log("🔍 Set MPIN successful, prompting biometric enrollment if supported");
+          
+          const handlePostRegistrationRedirect = () => {
+            router.replace("/(app)/(tabs)/home");
+          };
+
+          if (isSupported && isEnrolled) {
+            const title = t("setupBiometrics");
+            const msg = t("setupBiometricsMsg");
+            const yesText = t("yes");
+            const noText = t("no");
+
+            Alert.alert(
+              title.startsWith("[missing") ? "Enable Biometrics" : title,
+              msg.startsWith("[missing") ? "Would you like to use Face ID / Fingerprint for faster login next time?" : msg,
+              [
+                {
+                  text: noText.startsWith("[missing") ? "No" : noText,
+                  onPress: async () => {
+                    try {
+                      await AsyncStorage.setItem('hasDeclinedBiometrics', 'true');
+                    } catch (err) {
+                      logger.error("Error setting hasDeclinedBiometrics:", err);
+                    }
+                    handlePostRegistrationRedirect();
+                  }
+                },
+                {
+                  text: yesText.startsWith("[missing") ? "Yes" : yesText,
+                  onPress: async () => {
+                    const success = await enableBiometrics(mpinValue);
+                    if (success) {
+                      Alert.alert(t("success"), t("biometricsEnabled") || "Biometrics enabled successfully", [
+                        { text: "OK", onPress: () => handlePostRegistrationRedirect() }
+                      ]);
+                    } else {
+                      try {
+                        await AsyncStorage.setItem('hasDeclinedBiometrics', 'true');
+                      } catch (err) {
+                        logger.error("Error setting hasDeclinedBiometrics after failure:", err);
+                      }
+                      handlePostRegistrationRedirect();
+                    }
+                  }
+                }
+              ],
+              { cancelable: false }
+            );
+          } else {
+            handlePostRegistrationRedirect();
+          }
         } catch (storageError) {
           logger.error("Error storing authentication data:", storageError);
           showErrorAlert("Failed to store authentication data");
@@ -230,21 +292,13 @@ export default function SetMpinPage() {
   };
 
   return (
-   <View
-              style={[
-                styles.backgroundImage,
-                {
-                  // Ensure background doesn't move with keyboard
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: theme.colors.primary,
-                },
-              ]}
-            >
-      <StatusBar barStyle="light-content" backgroundColor="#850111" />
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+      }}
+    >
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
       <View style={styles.gradient}>
         {showError && (
           <View style={styles.errorAlert}>
@@ -264,130 +318,253 @@ export default function SetMpinPage() {
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.container}
         >
-          <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
-            <View style={styles.formContainer}>
-              <View style={styles.cardContainer}>
-                <Text style={styles.pageTitle}>{t("setMpinTitle")}</Text>
-                <Text style={styles.subtitle}>{t("setMpinSubtitle")}</Text>
-                {/* MPIN Input Boxes */}
-                <Text style={styles.label}>{t("createMpinLabel")}</Text>
-                <View style={styles.pinContainer}>
-                  {mpin.map((digit, index) => (
-                    <PinInput
-                      key={index}
-                      value={digit}
-                      isActive={activeInput === "mpin" && activeIndex === index}
-                      onPress={() => {
-                        setActiveInput("mpin");
-                        setActiveIndex(index);
-                        mpinRefs[index].current?.focus();
-                      }}
-                      index={index}
-                      secureTextEntry={!showPin}
-                      onChange={(val, idx) => handlePinChange(val, idx, "mpin")}
-                      inputRef={mpinRefs[index]}
-                    />
-                  ))}
-                </View>
-                <Text style={styles.label}>{t("confirmMpinLabel")}</Text>
-                <View style={styles.pinContainer}>
-                  {confirmMpin.map((digit, index) => (
-                    <PinInput
-                      key={index}
-                      value={digit}
-                      isActive={
-                        activeInput === "confirm" && activeIndex === index
-                      }
-                      onPress={() => {
-                        setActiveInput("confirm");
-                        setActiveIndex(index);
-                        confirmRefs[index].current?.focus();
-                      }}
-                      index={index}
-                      secureTextEntry={!showPin}
-                      onChange={(val, idx) =>
-                        handlePinChange(val, idx, "confirm")
-                      }
-                      inputRef={confirmRefs[index]}
-                    />
-                  ))}
-                </View>
-                {/* Show/Hide Toggle */}
-                <TouchableOpacity
-                  style={styles.eyeToggle}
-                  onPress={() => setShowPin(!showPin)}
-                >
-                  <Ionicons
-                    name={showPin ? "eye-off" : "eye"}
-                    size={24}
-                    color={theme.colors.secondary}
-                  />
-                  <Text style={styles.eyeText}>
-                    {showPin ? t("hideMpinLabel") : t("showMpinLabel")}
-                  </Text>
-                </TouchableOpacity>
-                {matchError && (
-                  <View style={styles.errorContainer}>
-                    <Ionicons name="alert-circle" size={20} color={COLORS.red} />
-                    <Text style={styles.errorText}>{t("mpinMismatchError")}</Text>
+          <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <Pressable onPress={Keyboard.dismiss} style={{ flex: 1, width: "100%" }}>
+              {/* Header Back Button Area */}
+              <View
+                style={{
+                  height: Platform.OS === 'ios' ? hp(22) : hp(20),
+                  paddingTop: Platform.OS === 'ios' ? 70 : 50,
+                  paddingHorizontal: 20,
+                  width: "100%",
+                  zIndex: 1,
+                  backgroundColor: theme.colors.primary,
+                }}
+              >
+                {/* Background Models Grid Watermark Layer (1, 2, 3 Grid Models) */}
+                {isVisible("showLoginBackgroundImages") && (
+                  <View style={{
+                    position: 'absolute',
+                    top: 10,
+                    left: 12,
+                    right: 12,
+                    bottom: 10,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    opacity: 0.25,
+                    zIndex: 0,
+                  }}>
+                    <View style={{
+                      flex: 1,
+                      height: '100%',
+                      marginHorizontal: 4,
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      borderWidth: 1,
+                      borderColor: 'rgba(255, 215, 0, 0.25)',
+                    }}>
+                      <Image
+                        source={require("../../../assets/images/intro_1.png")}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                    </View>
+                    <View style={{
+                      flex: 1,
+                      height: '100%',
+                      marginHorizontal: 4,
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      borderWidth: 1,
+                      borderColor: 'rgba(255, 215, 0, 0.25)',
+                    }}>
+                      <Image
+                        source={require("../../../assets/images/intro_2.png")}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                    </View>
+                    <View style={{
+                      flex: 1,
+                      height: '100%',
+                      marginHorizontal: 4,
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      borderWidth: 1,
+                      borderColor: 'rgba(255, 215, 0, 0.25)',
+                    }}>
+                      <Image
+                        source={require("../../../assets/images/intro_3.png")}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                    </View>
                   </View>
                 )}
-                {/* Submit Button */}
-                <TouchableOpacity
-                  style={[
-                    styles.submitButton,
-                    (loading || !mpinValid || !confirmValid || matchError) &&
-                      styles.submitButtonDisabled,
-                  ]}
-                  onPress={handleSubmit}
-                  disabled={loading || !mpinValid || !confirmValid || matchError}
-                >
-                  <LinearGradient
-                    colors={[COLORS.secondary, COLORS.gold]}
-                    style={styles.gradientButton}
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', zIndex: 1 }}>
+                  {/* Back arrow in small gold circle */}
+                  <TouchableOpacity
+                    onPress={() => router.back()}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: theme.colors.secondary || '#F8CF2C',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
                   >
-                    <View style={styles.buttonContent}>
-                      {loading ? (
-                        <>
-                          <Ionicons
-                            name="hourglass"
-                            size={20}
-                            color={theme.colors.textDark}
-                          />
-                          <Text style={styles.submitButtonText}>
-                            {t("processing")}
-                          </Text>
-                        </>
-                      ) : (
-                        <>
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={20}
-                            color={theme.colors.textDark}
-                          />
-                          <Text style={styles.submitButtonText}>
-                            {t("setMpinButton")}
-                          </Text>
-                        </>
-                      )}
-                    </View>
-                  </LinearGradient>
-                </TouchableOpacity>
-                {/* Back Button */}
-                <TouchableOpacity
-                  style={styles.backButton}
-                  onPress={() => router.back()}
-                >
-                  <Ionicons
-                    name="arrow-back"
-                    size={20}
-                    color={theme.colors.white}
-                  />
-                  <Text style={styles.backButtonText}>{t("backButton")}</Text>
-                </TouchableOpacity>
+                    <Ionicons name="arrow-back" size={22} color={theme.colors.primary} />
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          </Pressable>
+
+              {/* Bottom White Card */}
+              <View
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  paddingHorizontal: 24,
+                  paddingTop: 30,
+                  paddingBottom: Platform.OS === "ios" ? 80 : 100,
+                  flex: 1,
+                  zIndex: 1,
+                  position: 'relative',
+                }}
+              >
+                {/* Custom wave curve at the top */}
+                <View style={{ position: 'absolute', top: -39, left: 0, right: 0, height: 40, zIndex: 10, backgroundColor: 'transparent' }}>
+                  <Svg height="40" width={width} viewBox={`0 0 ${width} 40`} style={{ position: 'absolute', top: 0, left: 0 }}>
+                    <Path
+                      d={`M0,40 C${width * 0.3},40 ${width * 0.7},0 ${width},0 L${width},40 L0,40 Z`}
+                      fill="#FFFFFF"
+                    />
+                  </Svg>
+                </View>
+
+                {/* Content */}
+                <View style={{ width: '100%' }}>
+                  {/* Title and Subtitle inside the white card */}
+                  <View style={{ marginBottom: 20 }}>
+                    <Text style={{ color: theme.colors.primary, fontSize: 22, fontWeight: 'bold', marginBottom: 6 }}>
+                      {t("setMpinTitle") || "Set MPIN"}
+                    </Text>
+                    <Text style={{ color: '#666666', fontSize: 14 }}>
+                      {t("setMpinSubtitle") || "Set your 4-digit MPIN for quick login"}
+                    </Text>
+                  </View>
+
+                  {/* MPIN Input Boxes */}
+                  <Text style={styles.label}>{t("createMpinLabel")}</Text>
+                  <View style={styles.pinContainer}>
+                    {mpin.map((digit, index) => (
+                      <PinInput
+                        key={index}
+                        value={digit}
+                        isActive={activeInput === "mpin" && activeIndex === index}
+                        onPress={() => {
+                          setActiveInput("mpin");
+                          setActiveIndex(index);
+                          mpinRefs[index].current?.focus();
+                        }}
+                        index={index}
+                        secureTextEntry={!showPin}
+                        onChange={(val, idx) => handlePinChange(val, idx, "mpin")}
+                        inputRef={mpinRefs[index]}
+                      />
+                    ))}
+                  </View>
+                  <Text style={styles.label}>{t("confirmMpinLabel")}</Text>
+                  <View style={styles.pinContainer}>
+                    {confirmMpin.map((digit, index) => (
+                      <PinInput
+                        key={index}
+                        value={digit}
+                        isActive={
+                          activeInput === "confirm" && activeIndex === index
+                        }
+                        onPress={() => {
+                          setActiveInput("confirm");
+                          setActiveIndex(index);
+                          confirmRefs[index].current?.focus();
+                        }}
+                        index={index}
+                        secureTextEntry={!showPin}
+                        onChange={(val, idx) =>
+                          handlePinChange(val, idx, "confirm")
+                        }
+                        inputRef={confirmRefs[index]}
+                      />
+                    ))}
+                  </View>
+                  {/* Show/Hide Toggle */}
+                  <TouchableOpacity
+                    style={styles.eyeToggle}
+                    onPress={() => setShowPin(!showPin)}
+                  >
+                    <Ionicons
+                      name={showPin ? "eye-off" : "eye"}
+                      size={24}
+                      color={theme.colors.secondary}
+                    />
+                    <Text style={styles.eyeText}>
+                      {showPin ? t("hideMpinLabel") : t("showMpinLabel")}
+                    </Text>
+                  </TouchableOpacity>
+                  {matchError && (
+                    <View style={styles.errorContainer}>
+                      <Ionicons name="alert-circle" size={20} color={COLORS.red} />
+                      <Text style={styles.errorText}>{t("mpinMismatchError")}</Text>
+                    </View>
+                  )}
+                  {/* Submit Button */}
+                  <TouchableOpacity
+                    style={[
+                      styles.submitButton,
+                      (loading || !mpinValid || !confirmValid || matchError) &&
+                        styles.submitButtonDisabled,
+                    ]}
+                    onPress={handleSubmit}
+                    disabled={loading || !mpinValid || !confirmValid || matchError}
+                  >
+                    <LinearGradient
+                      colors={[theme.colors.primary, theme.colors.primary]}
+                      style={styles.gradientButton}
+                    >
+                      <View style={styles.buttonContent}>
+                        {loading ? (
+                          <>
+                            <Ionicons
+                              name="hourglass"
+                              size={20}
+                              color="#FFFFFF"
+                            />
+                            <Text style={[styles.submitButtonText, { color: '#FFFFFF' }]}>
+                              {t("processing")}
+                            </Text>
+                          </>
+                        ) : (
+                          <>
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={20}
+                              color="#FFFFFF"
+                            />
+                            <Text style={[styles.submitButtonText, { color: '#FFFFFF' }]}>
+                              {t("setMpinButton")}
+                            </Text>
+                          </>
+                        )}
+                      </View>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                  {/* Back Button */}
+                  <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => router.back()}
+                  >
+                    <Ionicons
+                      name="arrow-back"
+                      size={20}
+                      color={theme.colors.primary}
+                    />
+                    <Text style={styles.backButtonText}>{t("backButton")}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Pressable>
+          </ScrollView>
         </KeyboardAvoidingView>
       </View>
     </View>
@@ -459,7 +636,7 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.3)",
+    borderColor: "#cbd5e1",
     backgroundColor: "#ffffff",
     justifyContent: "center",
     alignItems: "center",
@@ -498,7 +675,7 @@ const styles = StyleSheet.create({
   submitButton: {
     width: "100%",
     height: 50,
-    borderRadius: 25,
+    borderRadius: 8,
     overflow: "hidden",
     marginTop: 15,
     marginBottom: 15,
@@ -528,7 +705,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   backButtonText: {
-    color: theme.colors.white,
+    color: theme.colors.primary,
     fontSize: 16,
     marginLeft: 5,
   },
@@ -568,7 +745,7 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   label: {
-    color: theme.colors.textLight,
+    color: theme.colors.primary,
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 8,

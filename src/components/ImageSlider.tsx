@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -26,6 +27,8 @@ interface ImageSliderProps {
 
 const ImageSlider = React.memo(
   ({ images = [] }: ImageSliderProps): React.ReactElement => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
     const [activeIndex, setActiveIndex] = useState(0);
     const scrollX = useRef(new Animated.Value(0)).current;
     const flatListRef = useRef<FlatList>(null);
@@ -231,7 +234,7 @@ const ImageSlider = React.memo(
 
 ImageSlider.displayName = "ImageSlider";
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     height: ITEM_HEIGHT,
     // backgroundColor: theme.colors.black,
@@ -295,6 +298,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 5,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default ImageSlider;

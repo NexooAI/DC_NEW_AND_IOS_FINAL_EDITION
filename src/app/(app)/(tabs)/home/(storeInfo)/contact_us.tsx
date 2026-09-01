@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
@@ -15,11 +16,14 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { LinearGradient } from "expo-linear-gradient";
 import AppLayoutWrapper from "@/components/AppLayoutWrapper";
 import { theme } from "@/constants/theme";
+import { APP_CONFIG } from "@/constants";
 import api from "@/services/api";
 import { getFullImageUrl } from "@/utils/imageUtils";
 import { fetchAboutPageWithCache } from "@/utils/apiCache";
 
 const ContactUs = () => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const router = useRouter();
   const [aboutData, setAboutData] = useState<any>(null);
@@ -29,7 +33,7 @@ const ContactUs = () => {
     if (!timePart) return "";
     timePart = timePart.trim();
     if (timePart.toLowerCase() === "closed") return t("closed") || timePart;
-    
+
     // Regex to match 12-hour format: e.g., "9:30 AM", "09:30 PM", "9 AM", "12:00 PM"
     const twelveHourRegex = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i;
     // Regex to match 24-hour format: e.g., "09:30", "19:00", "9:30"
@@ -132,7 +136,7 @@ const ContactUs = () => {
       android: "geo:0,0?q=",
     });
     const latLng = `${10.519306421007363},${76.22348998262478}`;
-    const label = "DC Jewellers";
+    const label = APP_CONFIG.appName;
     const url = Platform.select({
       ios: `${scheme}${label}@${latLng}`,
       android: `${scheme}${latLng}(${label})`,
@@ -180,7 +184,7 @@ const ContactUs = () => {
               <View
                 style={[styles.actionIcon, { backgroundColor: "#E3F2FD" }]}
               >
-                <Ionicons name="call" size={24} color={theme.colors.primary} />
+                <Ionicons name="call" size={24} color={theme.colors.textDark} />
               </View>
               <Text style={styles.actionText}>{t("callNow")}</Text>
             </TouchableOpacity>
@@ -262,10 +266,10 @@ const ContactUs = () => {
                   </Text>
                 </View>
                 <View style={[styles.hourRow, { borderBottomWidth: 0 }]}>
-                  <Text style={[styles.dayText, { color: theme.colors.primary }]}>
+                  <Text style={[styles.dayText, { color: theme.colors.textDark }]}>
                     {t("sunday")}
                   </Text>
-                  <Text style={[styles.timeText, { color: theme.colors.primary }]}>
+                  <Text style={[styles.timeText, { color: theme.colors.textDark }]}>
                     {t("closed")}
                   </Text>
                 </View>
@@ -307,7 +311,7 @@ const ContactUs = () => {
 
           {/* Company Info */}
           <View style={styles.companyContainer}>
-            <Text style={styles.companyTitle}>DC JEWELLERS</Text>
+            <Text style={styles.companyTitle}>{APP_CONFIG.companyNameUpper}</Text>
             <Text style={styles.companySubtitle}>Since 2020</Text>
             <Text style={styles.companyAddress}>
               {aboutData?.shop_addr || aboutData?.shop_address || theme.constants.address}
@@ -319,204 +323,208 @@ const ContactUs = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.quaternary,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 40,
-  },
-  heroContainer: {
-    height: 240,
-    marginHorizontal: 16,
-    marginTop: 10,
-    borderRadius: 24,
-    overflow: "hidden",
-  },
-  heroImage: {
-    width: "100%",
-    height: "100%",
-  },
-  heroGradient: {
-    flex: 1,
-    justifyContent: "flex-end",
-    padding: 24,
-  },
-  heroTitle: {
-    fontSize: 32,
-    fontWeight: "800",
-    color: "white",
-    marginBottom: 8,
-    textShadowColor: "rgba(0,0,0,0.3)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  heroSubtitle: {
-    fontSize: 16,
-    color: "rgba(255, 255, 255, 0.95)",
-    lineHeight: 22,
-    fontWeight: "500",
-  },
-  actionsContainer: {
-    flexDirection: "row",
-    paddingHorizontal: 16,
-    marginTop: 24,
-    gap: 12,
-  },
-  actionButton: {
-    flex: 1,
-    backgroundColor: "white",
-    paddingVertical: 20,
-    borderRadius: 20,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  actionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  actionText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: theme.colors.textDarkGrey,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  websiteContainer: {
-    paddingHorizontal: 16,
-    marginTop: 24,
-  },
-  websiteTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: theme.colors.textDarkGrey,
-    marginBottom: 16,
-    marginLeft: 4,
-  },
-  websiteButton: {
-    borderRadius: 16,
-    overflow: "hidden",
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  websiteGradient: {
-    paddingVertical: 18,
-    paddingHorizontal: 24,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  websiteText: {
-    flex: 1,
-    color: "white",
-    fontSize: 16,
-    fontWeight: "700",
-    marginLeft: 12,
-  },
-  hoursContainer: {
-    marginTop: 24,
-    marginHorizontal: 16,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 24,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-  },
-  hoursTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: theme.colors.textDarkGrey,
-  },
-  hoursHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  toggleButton: {
-    backgroundColor: "rgba(133, 1, 17, 0.08)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(133, 1, 17, 0.2)",
-  },
-  toggleButtonText: {
-    color: theme.colors.primary,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  hourRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f5f5f5",
-  },
-  dayText: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#666",
-  },
-  timeText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: theme.colors.primary,
-  },
-  companyContainer: {
-    marginTop: 24,
-    marginHorizontal: 16,
-    marginBottom: 20,
-    alignItems: "center",
-    padding: 24,
-    backgroundColor: "rgba(133, 1, 17, 0.03)", // Very light primary tint
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(133, 1, 17, 0.05)",
-  },
-  companyTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: theme.colors.primary,
-    marginBottom: 4,
-    textAlign: "center",
-    letterSpacing: 0.5,
-  },
-  companySubtitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#888",
-    marginBottom: 16,
-    textAlign: "center",
-    textTransform: "uppercase",
-    letterSpacing: 2,
-  },
-  companyAddress: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-    lineHeight: 22,
-    maxWidth: "80%",
-  },
-});
+function getStyles(theme: any) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.quaternary,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingBottom: 40,
+    },
+    heroContainer: {
+      height: 240,
+      marginHorizontal: 16,
+      marginTop: 10,
+      borderRadius: 24,
+      overflow: "hidden",
+    },
+    heroImage: {
+      width: "100%",
+      height: "100%",
+    },
+    heroGradient: {
+      flex: 1,
+      justifyContent: "flex-end",
+      padding: 24,
+    },
+    heroTitle: {
+      fontSize: 32,
+      fontWeight: "800",
+      color: "white",
+      marginBottom: 8,
+      textShadowColor: "rgba(0,0,0,0.3)",
+      textShadowOffset: { width: 0, height: 2 },
+      textShadowRadius: 4,
+    },
+    heroSubtitle: {
+      fontSize: 16,
+      color: "rgba(255, 255, 255, 0.95)",
+      lineHeight: 22,
+      fontWeight: "500",
+    },
+    actionsContainer: {
+      flexDirection: "row",
+      paddingHorizontal: 16,
+      marginTop: 24,
+      gap: 12,
+    },
+    actionButton: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+      paddingVertical: 20,
+      borderRadius: 20,
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 4,
+    },
+    actionIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    actionText: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: theme.colors.textDarkGrey,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    websiteContainer: {
+      paddingHorizontal: 16,
+      marginTop: 24,
+    },
+    websiteTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: theme.colors.textDarkGrey,
+      marginBottom: 16,
+      marginLeft: 4,
+    },
+    websiteButton: {
+      borderRadius: 16,
+      overflow: "hidden",
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    websiteGradient: {
+      paddingVertical: 18,
+      paddingHorizontal: 24,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    websiteText: {
+      flex: 1,
+      color: "white",
+      fontSize: 16,
+      fontWeight: "700",
+      marginLeft: 12,
+    },
+    hoursContainer: {
+      marginTop: 24,
+      marginHorizontal: 16,
+      backgroundColor: theme.colors.background,
+      borderRadius: 20,
+      padding: 24,
+      elevation: 3,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 10,
+    },
+    hoursTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: theme.colors.textDarkGrey,
+    },
+    hoursHeaderRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    toggleButton: {
+      backgroundColor: "rgba(133, 1, 17, 0.08)",
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: "rgba(133, 1, 17, 0.2)",
+    },
+    toggleButtonText: {
+      color: theme.colors.textDark,
+      fontSize: 12,
+      fontWeight: "700",
+    },
+    hourRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderLight,
+    },
+    dayText: {
+      fontSize: 15,
+      fontWeight: "500",
+      color: theme.colors.textSecondary,
+    },
+    timeText: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: theme.colors.textDark,
+    },
+    companyContainer: {
+      marginTop: 24,
+      marginHorizontal: 16,
+      marginBottom: 20,
+      alignItems: "center",
+      padding: 24,
+      backgroundColor: "rgba(133, 1, 17, 0.03)", // Very light primary tint
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: "rgba(133, 1, 17, 0.05)",
+    },
+    companyTitle: {
+      fontSize: 22,
+      fontWeight: "800",
+      color: theme.colors.textDark,
+      marginBottom: 4,
+      textAlign: "center",
+      letterSpacing: 0.5,
+    },
+    companySubtitle: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: theme.colors.textSecondary,
+      marginBottom: 16,
+      textAlign: "center",
+      textTransform: "uppercase",
+      letterSpacing: 2,
+    },
+    companyAddress: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      textAlign: "center",
+      lineHeight: 22,
+      maxWidth: "80%",
+    },
+  })
+}
+
+var styles = getStyles(theme);;
 
 export default ContactUs;

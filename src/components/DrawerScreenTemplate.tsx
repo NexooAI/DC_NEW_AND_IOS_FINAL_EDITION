@@ -6,11 +6,10 @@ import {
   useDrawerAuthState,
 } from "@/hooks/useDrawerScreen";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import Loader from "@/components/Loader";
 import ResponsiveText from "@/components/ResponsiveText";
 import ResponsiveButton from "@/components/ResponsiveButton";
-import { COLORS } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 
 interface DrawerScreenTemplateProps {
@@ -42,6 +41,8 @@ export default function DrawerScreenTemplate({
   loginPromptMessage,
   onRetry,
 }: DrawerScreenTemplateProps) {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   // ALL HOOKS CALLED AT TOP LEVEL - No exceptions
   const { t } = useDrawerScreen({
     title,
@@ -118,11 +119,11 @@ export default function DrawerScreenTemplate({
   if (error) {
     return (
       <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={60} color={COLORS.error} />
+        <Ionicons name="alert-circle-outline" size={60} color={theme.colors.error} />
         <ResponsiveText
           variant="body"
           size="md"
-          color={COLORS.text.primary}
+          color={theme.colors.textDark}
           align="center"
           style={styles.errorText}
         >
@@ -145,12 +146,12 @@ export default function DrawerScreenTemplate({
         <Ionicons
           name="person-circle-outline"
           size={60}
-          color={COLORS.secondary}
+          color={theme.colors.secondary}
         />
         <ResponsiveText
           variant="body"
           size="md"
-          color={COLORS.white}
+          color={theme.colors.textPrimary}
           align="center"
           style={styles.loginText}
         >
@@ -173,17 +174,17 @@ export default function DrawerScreenTemplate({
   return <View style={styles.container}>{children}</View>;
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background.primary,
+    backgroundColor: theme.colors.background,
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: COLORS.background.primary,
+    backgroundColor: theme.colors.background,
   },
   errorText: {
     marginVertical: 20,
@@ -197,7 +198,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: COLORS.primary,
+    backgroundColor: theme.colors.primary,
   },
   loginText: {
     marginVertical: 20,
@@ -206,4 +207,6 @@ const styles = StyleSheet.create({
   loginButton: {
     marginTop: 20,
   },
-});
+}) }
+
+var styles: any;

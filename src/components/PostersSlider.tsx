@@ -1,10 +1,12 @@
+import { theme } from "@/constants/theme";
+import { useAppTheme } from "@/store/global.store";
 import React, { useRef, useEffect, useState } from "react";
 import {
   View,
   Image,
   ScrollView,
   StyleSheet,
-  Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { COLORS } from "@/constants/colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
@@ -18,7 +20,67 @@ interface PostersSliderProps {
   }>;
 }
 
+const PosterCard: React.FC<{
+  item: any;
+  index: number;
+  itemWidth: number;
+  itemHeight: number;
+  itemGap: number;
+  theme: any;
+}> = ({ item, index, itemWidth, itemHeight, itemGap, theme }) => {
+  const [loading, setLoading] = useState(true);
+
+  return (
+    <View
+      key={item.id || index}
+      style={[
+        styles.card,
+        {
+          width: itemWidth,
+          height: itemHeight,
+          marginHorizontal: itemGap / 2,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#f3f4f6",
+        },
+      ]}
+    >
+      {loading && (
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 1,
+            },
+          ]}
+        >
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+        </View>
+      )}
+      <Image
+        source={
+          typeof item.image === "string"
+            ? { uri: item.image }
+            : item.image
+        }
+        style={styles.image}
+        resizeMode="stretch"
+        onLoadStart={() => setLoading(true)}
+        onLoadEnd={() => setLoading(false)}
+        onError={(error) => {
+          setLoading(false);
+          logger.error("Poster image loading error:", error);
+        }}
+      />
+    </View>
+  );
+};
+
 const PostersSlider: React.FC<PostersSliderProps> = ({ images = [] }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const { screenWidth, isTablet } = useResponsiveLayout();
@@ -72,30 +134,15 @@ const PostersSlider: React.FC<PostersSliderProps> = ({ images = [] }) => {
         }}
       >
         {images.map((item, index) => (
-          <View
+          <PosterCard
             key={item.id || index}
-            style={[
-              styles.card,
-              {
-                width: itemWidth,
-                height: itemHeight,
-                marginHorizontal: itemGap / 2,
-              },
-            ]}
-          >
-            <Image
-              source={
-                typeof item.image === "string"
-                  ? { uri: item.image }
-                  : item.image
-              }
-              style={styles.image}
-              resizeMode="stretch"
-              onError={(error) => {
-                logger.error("Poster image loading error:", error);
-              }}
-            />
-          </View>
+            item={item}
+            index={index}
+            itemWidth={itemWidth}
+            itemHeight={itemHeight}
+            itemGap={itemGap}
+            theme={theme}
+          />
         ))}
       </ScrollView>
 
@@ -118,7 +165,7 @@ const PostersSlider: React.FC<PostersSliderProps> = ({ images = [] }) => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     alignSelf: "center",
     marginVertical: 12,
@@ -127,7 +174,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -161,6 +208,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.mediumGrey,
     opacity: 0.3,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default PostersSlider;

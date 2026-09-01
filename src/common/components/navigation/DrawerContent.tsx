@@ -10,16 +10,17 @@ import {
   Platform,
   Linking,
   Animated,
+  Switch,
+  ScrollView,
 } from "react-native";
-import { DrawerContentScrollView } from "@react-navigation/drawer";
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, usePathname } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { LinearGradient } from 'expo-linear-gradient';
 
-import useGlobalStore from "@/store/global.store";
-import { theme } from "@/constants/theme";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getFullImageUrl } from "@/utils/imageUtils";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
@@ -37,6 +38,8 @@ interface DrawerMenuItemProps {
   iconColor?: string;
 }
 
+const withOpacity = (color: string, opacityHex: string) => `${color}${opacityHex}`;
+
 const DrawerMenuItem = ({
   label,
   iconName,
@@ -47,6 +50,8 @@ const DrawerMenuItem = ({
   delay = 0,
   iconColor,
 }: DrawerMenuItemProps) => {
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -84,7 +89,7 @@ const DrawerMenuItem = ({
           isLogout && styles.logoutIconContainer,
           isActive && styles.activeIconContainer,
           // Add subtle background tint based on icon color for non-active items
-          (!isActive && !isLogout && iconColor) ? { backgroundColor: iconColor + '10' } : {}
+          (!isActive && !isLogout && iconColor) ? { backgroundColor: withOpacity(iconColor, '10') } : {}
         ]}>
           <Ionicons
             name={iconName}
@@ -117,23 +122,31 @@ const DrawerMenuItem = ({
   );
 };
 
-const SectionHeader = ({ title }: { title: string }) => (
-  <View style={styles.sectionHeaderContainer}>
-    <Text style={styles.sectionHeaderText}>{title}</Text>
-    <View style={styles.sectionDivider} />
-  </View>
-);
-
-const SocialIcon = ({ name, url, color }: { name: any, url: string, color: string }) => (
-  <TouchableOpacity
-    style={styles.socialIconBtn}
-    onPress={() => Linking.openURL(url).catch(err => console.error("Couldn't load page", err))}
-  >
-    <View style={[styles.socialIconContainer, { backgroundColor: color + '15' }]}>
-      <FontAwesome5 name={name} size={18} color={color} />
+const SectionHeader = ({ title }: { title: string }) => {
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
+  return (
+    <View style={styles.sectionHeaderContainer}>
+      <Text style={styles.sectionHeaderText}>{title}</Text>
+      <View style={styles.sectionDivider} />
     </View>
-  </TouchableOpacity>
-);
+  );
+};
+
+const SocialIcon = ({ name, url, color }: { name: any, url: string, color: string }) => {
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
+  return (
+    <TouchableOpacity
+      style={styles.socialIconBtn}
+      onPress={() => Linking.openURL(url).catch(err => console.error("Couldn't load page", err))}
+    >
+      <View style={[styles.socialIconContainer, { backgroundColor: withOpacity(color, '15') }]}>
+        <FontAwesome5 name={name} size={18} color={color} />
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 interface CustomDrawerContentProps {
   navigation: {
@@ -142,13 +155,25 @@ interface CustomDrawerContentProps {
 }
 
 export function CustomDrawerContent(props: CustomDrawerContentProps) {
+  const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const styles = getStyles(theme, insets);
   const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
-  const { logout, user } = useGlobalStore();
-  const { isVisible } = useAppVisibility();
+  const { logout, user, themeMode, toggleThemeMode } = useGlobalStore();
   const [isNavigating, setIsNavigating] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const { isVisible } = useAppVisibility();
+
+  const showRefer = isVisible("showSideReferEarn");
+  const showTickets = isVisible("showSideTickets");
+  const showOffers = isVisible("showSideOffers");
+  const showStores = isVisible("showSideStores");
+  const showContactUs = isVisible("showSideContactUs");
+  const showFaq = isVisible("showSideFaq");
+  const showPrivacy = isVisible("showSidePrivacy");
+  const showTerms = isVisible("showSideTerms");
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const version = Constants.expoConfig?.version || '1.0.0';
 
@@ -186,7 +211,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
       }
 
       setIsNavigating(true);
-      props.navigation.closeDrawer();
+      props.navigation?.closeDrawer?.();
 
       navigationTimeoutRef.current = setTimeout(() => {
         try {
@@ -243,17 +268,17 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
     {
       name: "whatsapp",
       url: `https://wa.me/${theme.constants.whatsapp?.replace(/\s/g, "") || theme.constants.mobile?.replace(/\s/g, "")}`,
-      color: "#25D366"
+      color: theme.colors.success
     },
     {
       name: "youtube",
       url: theme.youtubeUrl || "https://youtube.com",
-      color: "#FF0000"
+      color: theme.colors.error
     },
     {
       name: "globe",
       url: theme.constants.website,
-      color: "#4285F4"
+      color: theme.colors.info
     },
     {
       name: "phone-alt",
@@ -299,7 +324,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                 </Text>
                 {user?.email && (
                   <View style={styles.emailContainer}>
-                    <Ionicons name="mail-outline" size={10} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
+                    <Ionicons name="mail-outline" size={10} color={theme.colors.whiteOverlayLight} style={{ marginRight: 4 }} />
                     <Text style={styles.userEmail} numberOfLines={1}>
                       {user.email}
                     </Text>
@@ -324,113 +349,119 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
         </LinearGradient>
       </View>
 
-      <DrawerContentScrollView
+      <ScrollView
         {...props}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.menuContainer}>
           {/* General Section */}
-          {(isVisible("showSideReferEarn") || isVisible("showSideTickets")) && (
-            <SectionHeader title={t("general") || "General"} />
-          )}
-          {isVisible("showSideReferEarn") && (
-            <DrawerMenuItem
-              label={t("referAndEarn")}
-              iconName="gift-outline"
-              onPress={() => handleNavigation("/(tabs)/home/refer_earn")}
-              disabled={isNavigating}
-              isActive={isRouteActive("/(tabs)/home/refer_earn")}
-              delay={150}
-              iconColor="#F4B400" // Google Yellow/Gold
-            />
-          )}
-          {isVisible("showSideTickets") && (
-            <DrawerMenuItem
-              label={t("ticketsAndEnquiries") || "Tickets & Enquiries"}
-              iconName="receipt-outline"
-              onPress={() => handleNavigation("/tickets")}
-              disabled={isNavigating}
-              isActive={isRouteActive("/tickets")}
-              delay={175}
-              iconColor="#850111" // Primary Brand Red
-            />
+          {(showRefer || showTickets) && (
+            <>
+              <SectionHeader title={t("general") || "General"} />
+              {showRefer && (
+                <DrawerMenuItem
+                  label={t("referAndEarn")}
+                  iconName="gift-outline"
+                  onPress={() => handleNavigation("/(tabs)/home/refer_earn")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/(tabs)/home/refer_earn")}
+                  delay={150}
+                  iconColor={theme.colors.secondary}
+                />
+              )}
+              {showTickets && (
+                <DrawerMenuItem
+                  label={t("ticketsAndEnquiries") || "Tickets & Enquiries"}
+                  iconName="receipt-outline"
+                  onPress={() => handleNavigation("/tickets")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/tickets")}
+                  delay={175}
+                  iconColor={theme.colors.primary} // Primary Brand color
+                />
+              )}
+            </>
           )}
 
           {/* Support Section */}
-          {(isVisible("showSideOffers") || isVisible("showSideStores") || isVisible("showSideContactUs") || isVisible("showSideFaq")) && (
-            <SectionHeader title={t("information") || "Information"} />
-          )}
-          {isVisible("showSideOffers") && (
-            <DrawerMenuItem
-              label={t("offers") || "Our Offers"}
-              iconName="pricetag-outline"
-              onPress={() => handleNavigation("/(tabs)/home/offers")}
-              disabled={isNavigating}
-              isActive={isRouteActive("/(tabs)/home/offers")}
-              delay={190}
-              iconColor="#EA4335" // Red
-            />
-          )}
-          {isVisible("showSideStores") && (
-            <DrawerMenuItem
-              label={t("ourStores")}
-              iconName="storefront-outline"
-              onPress={() => handleNavigation("/(tabs)/home/our_stores")}
-              disabled={isNavigating}
-              isActive={isRouteActive("/(tabs)/home/our_stores")}
-              delay={200}
-              iconColor="#EA4335" // Google Red (or Branded Primary)
-            />
-          )}
-          {isVisible("showSideContactUs") && (
-            <DrawerMenuItem
-              label={t("contactUs")}
-              iconName="call-outline"
-              onPress={() => handleNavigation("/(tabs)/home/contact_us")}
-              disabled={isNavigating}
-              isActive={isRouteActive("/(tabs)/home/contact_us")}
-              delay={250}
-              iconColor="#0F9D58" // Google Green
-            />
-          )}
-          {isVisible("showSideFaq") && (
-            <DrawerMenuItem
-              label={t("faqAndHelp")}
-              iconName="help-circle-outline"
-              onPress={() => handleNavigation("/(tabs)/home/faq")}
-              disabled={isNavigating}
-              isActive={isRouteActive("/(tabs)/home/faq")}
-              delay={300}
-              iconColor="#FB8C00" // Orange
-            />
+          {(showOffers || showStores || showContactUs || showFaq) && (
+            <>
+              <SectionHeader title={t("information") || "Information"} />
+              {showOffers && (
+                <DrawerMenuItem
+                  label={t("offers") || "Our Offers"}
+                  iconName="pricetag-outline"
+                  onPress={() => handleNavigation("/(tabs)/home/offers")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/(tabs)/home/offers")}
+                  delay={190}
+                  iconColor={theme.colors.error}
+                />
+              )}
+              {showStores && (
+                <DrawerMenuItem
+                  label={t("ourStores")}
+                  iconName="storefront-outline"
+                  onPress={() => handleNavigation("/(tabs)/home/our_stores")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/(tabs)/home/our_stores")}
+                  delay={200}
+                  iconColor={theme.colors.error}
+                />
+              )}
+              {showContactUs && (
+                <DrawerMenuItem
+                  label={t("contactUs")}
+                  iconName="call-outline"
+                  onPress={() => handleNavigation("/(tabs)/home/contact_us")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/(tabs)/home/contact_us")}
+                  delay={250}
+                  iconColor={theme.colors.success}
+                />
+              )}
+              {showFaq && (
+                <DrawerMenuItem
+                  label={t("faqAndHelp")}
+                  iconName="help-circle-outline"
+                  onPress={() => handleNavigation("/(tabs)/home/faq")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/(tabs)/home/faq")}
+                  delay={300}
+                  iconColor={theme.colors.warning}
+                />
+              )}
+            </>
           )}
 
           {/* Legal Section */}
-          {(isVisible("showSidePrivacy") || isVisible("showSideTerms")) && (
-            <SectionHeader title={t("legal") || "Legal"} />
-          )}
-          {isVisible("showSidePrivacy") && (
-            <DrawerMenuItem
-              label={t("privacyPolicy")}
-              iconName="lock-closed-outline"
-              onPress={() => handleNavigation("/(tabs)/home/policies/privacyPolicy")}
-              disabled={isNavigating}
-              isActive={isRouteActive("/(tabs)/home/policies/privacyPolicy")}
-              delay={350}
-              iconColor="#607D8B" // Blue Grey
-            />
-          )}
-          {isVisible("showSideTerms") && (
-            <DrawerMenuItem
-              label={t("termsAndConditions")}
-              iconName="document-text-outline"
-              onPress={() => handleNavigation("/(tabs)/home/policies/termsAndConditionsPolicies")}
-              disabled={isNavigating}
-              isActive={isRouteActive("/(tabs)/home/policies/termsAndConditionsPolicies")}
-              delay={400}
-              iconColor="#607D8B" // Blue Grey
-            />
+          {(showPrivacy || showTerms) && (
+            <>
+              <SectionHeader title={t("legal") || "Legal"} />
+              {showPrivacy && (
+                <DrawerMenuItem
+                  label={t("privacyPolicy")}
+                  iconName="lock-closed-outline"
+                  onPress={() => handleNavigation("/(tabs)/home/policies/privacyPolicy")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/(tabs)/home/policies/privacyPolicy")}
+                  delay={350}
+                  iconColor={theme.colors.info}
+                />
+              )}
+              {showTerms && (
+                <DrawerMenuItem
+                  label={t("termsAndConditions")}
+                  iconName="document-text-outline"
+                  onPress={() => handleNavigation("/(tabs)/home/policies/termsAndConditionsPolicies")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/(tabs)/home/policies/termsAndConditionsPolicies")}
+                  delay={400}
+                  iconColor={theme.colors.info}
+                />
+              )}
+            </>
           )}
 
           {/* Account Section */}
@@ -446,7 +477,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
         </View>
 
         <View style={styles.footerSpacer} />
-      </DrawerContentScrollView>
+      </ScrollView>
 
       {/* Footer */}
       <View style={styles.footer}>
@@ -458,7 +489,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
         </View>
 
         <View style={styles.versionContainer}>
-          <Text style={styles.companyName}>DC JEWELLERS</Text>
+          <Text style={styles.companyName}>{theme.constants.customerName.toUpperCase()}</Text>
           <Text style={styles.versionText}>v{version}</Text>
         </View>
       </View>
@@ -466,23 +497,23 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (
+  theme: any,
+  insets: { top: number; bottom: number; left: number; right: number } = { top: 0, bottom: 0, left: 0, right: 0 }
+) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
   },
   headerContainer: {
-    minHeight: 120,
     width: '100%',
     overflow: 'hidden',
     borderBottomRightRadius: 24,
-    marginTop: -5,
   },
   headerGradient: {
-    flex: 1,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 45 : 30,
-    paddingBottom: 10,
+    paddingTop: Platform.OS === 'ios' ? 20 : 18,
+    paddingBottom: 18,
     justifyContent: 'center',
   },
   userInfoContainer: {
@@ -492,18 +523,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   avatarContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: theme.colors.whiteOverlayLight,
     overflow: 'hidden',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceElevated,
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -520,7 +551,7 @@ const styles = StyleSheet.create({
   avatarInitials: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: theme.colors.secondary,
   },
   rewardsBadge: {
     flexDirection: 'row',
@@ -530,7 +561,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: theme.colors.whiteOverlayVeryLight,
   },
   rewardsText: {
     fontSize: 10,
@@ -545,17 +576,17 @@ const styles = StyleSheet.create({
   },
   greetingText: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.9)',
+    color: theme.colors.textPrimary,
     marginBottom: 2,
     fontWeight: '500',
   },
   userName: {
     fontSize: 16,
     fontWeight: '800', // Extra bold for premium feel
-    color: '#fff',
+    color: theme.colors.textPrimary,
     marginBottom: 4,
     letterSpacing: 0.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowColor: theme.colors.overlayLight,
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
@@ -565,7 +596,7 @@ const styles = StyleSheet.create({
   },
   userEmail: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.8)',
+    color: theme.colors.whiteOverlayLight,
   },
   decorativeCircle: {
     position: 'absolute',
@@ -574,7 +605,7 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: theme.colors.whiteOverlayVeryLight,
   },
   decorativeCircleSmall: {
     position: 'absolute',
@@ -583,7 +614,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: theme.colors.whiteOverlayVeryLight,
   },
   scrollContent: {
     paddingTop: 8,
@@ -617,10 +648,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 12,
     marginBottom: 2,
-    backgroundColor: 'transparent', // Default
+    backgroundColor: theme.colors.transparent,
   },
   activeMenuItem: {
-    backgroundColor: theme.colors.secondary + '20', // Pale Gold/Yellow (20% opacity)
+    backgroundColor: withOpacity(theme.colors.secondary, '20'),
   },
   iconContainer: {
     width: 30,
@@ -631,10 +662,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeIconContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surfaceElevated,
   },
   logoutIconContainer: {
-    backgroundColor: '#FFE5E5',
+    backgroundColor: theme.colors.errorLight,
+  },
+  darkModeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    marginBottom: 2,
+  },
+  darkModeLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginLeft: 4,
+  },
+  darkModeText: {
+    fontSize: 14,
+    color: theme.colors.textDarkGrey,
+    fontWeight: '500',
   },
   menuItemText: {
     flex: 1,
@@ -672,8 +723,9 @@ const styles = StyleSheet.create({
   footer: {
     borderTopWidth: 1,
     borderTopColor: theme.colors.borderLight,
-    backgroundColor: '#fff',
-    paddingBottom: Platform.OS === 'ios' ? 10 : 5,
+    backgroundColor: theme.colors.background,
+    paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 16) : 8,
+    paddingTop: 4,
   },
   logoutContainer: {
     paddingHorizontal: 16,

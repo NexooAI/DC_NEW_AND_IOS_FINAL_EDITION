@@ -31,7 +31,7 @@ import {
 import { Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, DrawerActions } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LanguageSwitcher from "@/contexts/LanguageSwitcher";
 import LanguageSelector from "@/components/LanguageSelector";
@@ -44,7 +44,8 @@ import FlashOffer from "@/components/FlashOffer";
 import YouTubeVideo from "@/components/YouTubeVideo";
 import SupportContactCard from "@/components/SupportContactCard";
 import SocialMediaCard from "@/components/SocialMediaCard";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
+import CustomDrawerContent from "@/common/components/navigation/DrawerContent";
 import api, { offersAPI } from "@/services/api";
 import NetInfo from "@react-native-community/netinfo";
 import { ScaledSheet, moderateScale } from "react-native-size-matters";
@@ -100,6 +101,7 @@ import SkeletonLoader, {
 import { fetchSchemesWithCache, fetchBranchesWithCache } from "@/utils/apiCache";
 import UserInfoCard from "@/components/home/UserInfoCard";
 import AnimatedGoldRate from "@/components/home/AnimatedGoldRate";
+import MySchemesCards from "@/components/home/MySchemesCards";
 
 // Constants - Using responsive layout hook instead
 const REFRESH_INTERVAL = 15000; // 15 seconds
@@ -127,16 +129,16 @@ const getDummyData = (t: (key: string) => string) => ({
     },
   },
   sliderImages: [
-    require("../../../../../assets/images/slider1.png"),
-    require("../../../../../assets/images/slider1.png"),
-    require("../../../../../assets/images/slider1.png"),
-    require("../../../../../assets/images/slider1.png"),
+    require("../../../../../assets/images/slider.png"),
+    require("../../../../../assets/images/slider.png"),
+    require("../../../../../assets/images/slider.png"),
+    require("../../../../../assets/images/slider.png"),
   ],
   defaultPopups: [
     {
       id: 1,
       title: t("welcomeToDigitalGold"),
-      image: require("../../../../../assets/images/slider1.png"),
+      image: require("../../../../../assets/images/slider.png"),
       description: t("startYourGoldSavingsJourney"),
       actionText: t("getStarted"),
       actionUrl: "/(app)/(tabs)/home/schemes",
@@ -144,7 +146,7 @@ const getDummyData = (t: (key: string) => string) => ({
     {
       id: 2,
       title: t("specialGoldOffer"),
-      image: require("../../../../../assets/images/slider1.png"),
+      image: require("../../../../../assets/images/slider.png"),
       description: t("limitedTimeOfferOnGoldSchemes"),
       actionText: t("viewOffers"),
       actionUrl: "/(app)/(tabs)/home/schemes",
@@ -152,7 +154,7 @@ const getDummyData = (t: (key: string) => string) => ({
     {
       id: 3,
       title: t("goldRateUpdates"),
-      image: require("../../../../../assets/images/slider1.png"),
+      image: require("../../../../../assets/images/slider.png"),
       description: t("stayUpdatedWithLiveGoldRates"),
       actionText: t("checkRates"),
       actionUrl: "#", // Live rates page removed
@@ -331,7 +333,7 @@ const collectionStyles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     letterSpacing: 0.5,
     textTransform: "uppercase",
   },
@@ -463,13 +465,13 @@ interface BannerCardProps {
   item: Banner;
   router: ReturnType<typeof useRouter>;
 }
-const BannerCard: React.FC<BannerCardProps> = React.memo(({ item, router }) => {
+const BannerCard: React.FC<BannerCardProps> = ({ item, router }) => {
   const { t } = useTranslation();
   const joinNowScale = useRef(new Animated.Value(1)).current;
   const { screenWidth } = useResponsiveLayout();
 
   // Create dynamic styles for BannerCard
-  const bannerCardStyles = useMemo(() => StyleSheet.create({
+  const bannerCardStyles = StyleSheet.create({
     bannerCard: {
       backgroundColor: COLORS.white,
       borderRadius: 20,
@@ -490,7 +492,7 @@ const BannerCard: React.FC<BannerCardProps> = React.memo(({ item, router }) => {
       height: 200,
       borderRadius: 20,
     },
-  }), [screenWidth]);
+  });
 
   useEffect(() => {
     const pulse = Animated.loop(
@@ -533,14 +535,7 @@ const BannerCard: React.FC<BannerCardProps> = React.memo(({ item, router }) => {
           activeOpacity={0.85}
           accessibilityLabel={t("aboutSchemes")}
         >
-          <Text
-            style={styles.aboutSchemesButtonText}
-            numberOfLines={1}
-            adjustsFontSizeToFit={true}
-            minimumFontScale={0.75}
-          >
-            {t("aboutSchemes")}
-          </Text>
+          <Text style={styles.aboutSchemesButtonText}>{t("aboutSchemes")}</Text>
         </TouchableOpacity>
         <Animated.View
           style={{ flex: 1, transform: [{ scale: joinNowScale }] }}
@@ -555,20 +550,13 @@ const BannerCard: React.FC<BannerCardProps> = React.memo(({ item, router }) => {
               "Tap to join the scheme. This button is highlighted for your attention."
             }
           >
-            <Text
-              style={styles.joinNowButtonText}
-              numberOfLines={1}
-              adjustsFontSizeToFit={true}
-              minimumFontScale={0.75}
-            >
-              {t("joinNow")}
-            </Text>
+            <Text style={styles.joinNowButtonText}>{t("joinNow")}</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
     </View>
   );
-});
+};
 
 // Floating Chat Button moved to global layout
 
@@ -578,6 +566,8 @@ import GoldSilverRateCard from "@/components/GoldSilverRateCard";
 
 
 export default function Home() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   // State
   const { language, user, debugState, setLanguage } = useGlobalStore();
@@ -683,6 +673,52 @@ export default function Home() {
   const [flashNews, setFlashNews] = useState<any[]>([]);
   const [sliderImages, setSliderImages] = useState<any[]>([]);
   const [schemes, setSchemes] = useState<any[]>([]); // Added schemes state
+  const activeMetalTypes = useMemo(() => {
+    const types = { gold: false, silver: false, diamond: false, platinum: false, old_gold: false };
+    const getLocalText = (textObj: any): string => {
+      if (!textObj) return "";
+      if (typeof textObj === "string") return textObj;
+      if (typeof textObj === "object") {
+        return textObj[language] || textObj.en || textObj.ta || "";
+      }
+      return String(textObj);
+    };
+
+    if (!schemes || schemes.length === 0) {
+      return {
+        gold: isVisible("showGoldScheme"),
+        silver: isVisible("showSilverScheme"),
+        diamond: isVisible("showDiamondScheme"),
+        platinum: isVisible("showPlatinumScheme"),
+        old_gold: isVisible("showOldGoldScheme") !== false,
+      };
+    }
+
+    schemes.forEach((scheme: any) => {
+      if (scheme.ACTIVE !== "Y") return;
+
+      const schemeNameLower = getLocalText(scheme.SCHEMENAME).toLowerCase();
+      const schemeTypeLower = (scheme.SCHEMETYPE || "").toLowerCase();
+      const insTypeLower = (scheme.INS_TYPE || "").toLowerCase();
+      const savingTypeLower = (scheme.savingType || "").toLowerCase();
+      const descLower = getLocalText(scheme.DESCRIPTION).toLowerCase();
+      const combined = `${schemeNameLower} ${schemeTypeLower} ${insTypeLower} ${savingTypeLower} ${descLower}`;
+
+      if (combined.includes("old gold") || combined.includes("oldgold") || combined.includes("பழைய தங்கம்")) {
+        types.old_gold = true;
+      } else if (combined.includes("silver") || combined.includes("வெள்ளி")) {
+        types.silver = true;
+      } else if (combined.includes("diamond") || combined.includes("வைரம்")) {
+        types.diamond = true;
+      } else if (combined.includes("platinum") || combined.includes("பிளாட்டினம்")) {
+        types.platinum = true;
+      } else {
+        types.gold = true;
+      }
+    });
+
+    return types;
+  }, [schemes, isVisible, language]);
   const [isSliderLoading, setIsSliderLoading] = useState(true);
   const [viewedCollections, setViewedCollections] = useState<{
     [id: number]: boolean;
@@ -727,6 +763,7 @@ export default function Home() {
   const [calculatedGoldWeight, setCalculatedGoldWeight] = useState<number | null>(null);
   const [branches, setBranches] = useState<Array<{ id: number; branch_name: string }>>([]);
   const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+  const [isLocalDrawerOpen, setIsLocalDrawerOpen] = useState(false);
   // Amount limits for selected scheme
   const [schemeAmountLimits, setSchemeAmountLimits] = useState<{
     min_amount: number;
@@ -1060,8 +1097,12 @@ export default function Home() {
           activeOldGoldCount = activeOldGold.length;
           activeOldGoldWeight = activeOldGold.reduce((sum: number, dep: any) => sum + (parseFloat(dep.netGoldWeight || dep.net_gold_weight || "0") || 0), 0);
         }
-      } catch (err) {
-        logger.error("Error fetching old gold deposits in fetchInvestmentData:", err);
+      } catch (err: any) {
+        if (err?.response?.status === 404) {
+          logger.log("ℹ️ Old gold deposits endpoint not found (404), skipping.");
+        } else {
+          logger.error("Error fetching old gold deposits in fetchInvestmentData:", err);
+        }
       }
 
       setActiveSchemesCount((investments.length || 0) + activeOldGoldCount);
@@ -1129,14 +1170,8 @@ export default function Home() {
         }
 
         isRefreshing ? setRefreshing(true) : setIsLoading(true);
-        // Fetch home dashboard data and dynamic offers in parallel
-        const [response, offersResponse] = await Promise.all([
-          api.get(`/home?userId=${userId}`, { skipLoading: true } as any),
-          offersAPI.getOffers().catch(err => {
-            logger.error("Error fetching offers in parallel:", err);
-            return null;
-          })
-        ]);
+        // Skip global loader - we use skeleton loader instead
+        const response = await api.get(`/home?userId=${userId}`, { skipLoading: true } as any);
 
         if (response.data.success) {
           const data = response.data.data;
@@ -1144,18 +1179,23 @@ export default function Home() {
 
           setHomeData(response.data);
 
-          // Process pre-fetched offers data
-          if (offersResponse?.data?.success) {
-            const fetchedOffers = offersResponse.data.data || [];
-            const activeOnly = fetchedOffers.filter((o: any) => o.status === 'active');
-            setActiveOffers(activeOnly);
-            if (activeOnly.length > 0) {
-              setLatestOffer(activeOnly[0]);
-              setShowFloatingOffer(true);
-            } else {
-              setLatestOffer(null);
-              setShowFloatingOffer(false);
+          // Fetch dynamic offers for the floating widget
+          try {
+            const offersResponse = await offersAPI.getOffers();
+            if (offersResponse.data && offersResponse.data.success) {
+              const fetchedOffers = offersResponse.data.data || [];
+              const activeOnly = fetchedOffers.filter((o: any) => o.status === 'active');
+              setActiveOffers(activeOnly);
+              if (activeOnly.length > 0) {
+                setLatestOffer(activeOnly[0]);
+                setShowFloatingOffer(true);
+              } else {
+                setLatestOffer(null);
+                setShowFloatingOffer(false);
+              }
             }
+          } catch (offerErr) {
+            logger.error("Error fetching offers in fetchHomeData:", offerErr);
           }
 
           // Populate investments calculations directly from pre-fetched list
@@ -1216,7 +1256,7 @@ export default function Home() {
                 poster.image && poster.image.startsWith("http")
                   ? poster.image
                   : poster.image
-                    ? `${APP_CONFIG.urls.baseUrl}${poster.image}`
+                    ? `${theme.baseUrl}${poster.image}`
                     : "",
               title: poster.title || "",
             }));
@@ -1373,45 +1413,51 @@ export default function Home() {
     }, [fetchHomeData, fetchSchemesData, refetchVisibility])
   );
 
-  // Consolidate duplicate Android Back Handler event listeners (rating prompt & exit confirmation)
+  // Handle back button press with confirmation
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        checkAndShowRating().then((showed) => {
-          if (!showed) {
-            // Show exit confirmation dialog if rating modal is not triggered
-            Alert.alert(
-              t("exitApp") || "Exit App",
-              t("exitConfirmation") || "Are you sure you want to exit?",
-              [
-                {
-                  text: t("cancel") || "Cancel",
-                  style: "cancel",
-                  onPress: () => { },
-                },
-                {
-                  text: t("exitApp") || "Exit",
-                  style: "destructive",
-                  onPress: () => {
-                    if (Platform.OS === "android") {
-                      BackHandler.exitApp();
-                    }
-                  },
-                },
-              ],
-              { cancelable: true }
-            );
-          }
-        });
-        return true; // Block default native back behavior
+        // Show confirmation alert
+        Alert.alert(
+          t("exitApp") || "Exit App",
+          t("exitConfirmation") || "Are you sure you want to exit?",
+          [
+            {
+              text: t("cancel") || "Cancel",
+              style: "cancel",
+              onPress: () => {
+                // Do nothing, stay on the page
+              },
+            },
+            {
+              text: t("exitApp") || "Exit",
+              style: "destructive",
+              onPress: () => {
+                // Exit the app
+                if (Platform.OS === "android") {
+                  BackHandler.exitApp();
+                } else {
+                  // For iOS, you might want to use a different approach
+                  // or just allow navigation
+                }
+              },
+            },
+          ],
+          { cancelable: true }
+        );
+        // Return true to prevent default back behavior
+        return true;
       };
 
+      // Add event listener
       const backHandler = BackHandler.addEventListener(
         "hardwareBackPress",
         onBackPress
       );
+
+      // Cleanup function
       return () => backHandler.remove();
-    }, [t, checkAndShowRating])
+    }, [t])
   );
 
   // Load cached home data on initial mount
@@ -1435,7 +1481,7 @@ export default function Home() {
                 image: poster.image && poster.image.startsWith("http")
                   ? poster.image
                   : poster.image
-                    ? `${APP_CONFIG.urls.baseUrl}${poster.image}`
+                    ? `${theme.baseUrl}${poster.image}`
                     : "",
                 title: poster.title || "",
               })));
@@ -1521,7 +1567,26 @@ export default function Home() {
     incrementLaunchCount();
   }, []);
 
-  // Note: Back button intercepts for ratings prompt are now consolidated in the useFocusEffect above.
+  // Intercept back button to prompt for rating before leaving the app
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        checkAndShowRating().then((showed) => {
+          if (!showed) {
+            // If the rating modal wasn't triggered (already rated, prompted today, or count < 5), exit the app
+            BackHandler.exitApp();
+          }
+        });
+        return true; // Block default exit behavior
+      };
+
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress
+      );
+      return () => subscription.remove();
+    }, [checkAndShowRating])
+  );
 
   // Monitor flash-news endpoint for continuous calls
   useEffect(() => {
@@ -1584,7 +1649,7 @@ export default function Home() {
     // Refresh home data, app visibility settings, and schemes data
     await Promise.all([
       fetchHomeData(true),
-      refetchVisibility(),
+      refetchVisibility(true),
       fetchSchemesData(true), // Force refresh schemes data on pull-to-refresh
       fetchKycStatus(), // Refresh KYC status
     ]);
@@ -1609,7 +1674,8 @@ export default function Home() {
     if (params.redirectOnClose === "schemes") {
       router.push("/(app)/(tabs)/home/schemes");
     } else if (params.redirectOnClose === "dashboard") {
-      router.push("/(app)/dashboard");
+      const hasDashboard = getAppConfig().constants.enableDashboard;
+      router.push(hasDashboard ? "/(app)/dashboard" : "/(app)/(tabs)/home");
     }
   }, [selectedCollection, params.redirectOnClose]);
 
@@ -1695,7 +1761,24 @@ export default function Home() {
 
   // Handle drawer toggle
   const handleDrawerToggle = () => {
-    (navigation as any).openDrawer();
+    try {
+      let p: any = navigation;
+      while (p) {
+        if (typeof p.openDrawer === "function") {
+          p.openDrawer();
+          return;
+        }
+        if (typeof p.toggleDrawer === "function") {
+          p.toggleDrawer();
+          return;
+        }
+        p = p.getParent ? p.getParent() : null;
+      }
+      setIsLocalDrawerOpen(true);
+    } catch (err) {
+      logger.error("Error opening drawer:", err);
+      setIsLocalDrawerOpen(true);
+    }
   };
 
   // Handle notification press
@@ -1780,18 +1863,7 @@ export default function Home() {
       return "";
     }
     if (typeof textObj === "string") {
-      const trimmed = textObj.trim();
-      const key = trimmed
-        .replace(/[^a-zA-Z0-9 ]/g, "")
-        .split(" ")
-        .filter(Boolean)
-        .map((word, i) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1))
-        .join("");
-      const translated = t(key);
-      if (translated && translated !== key && !translated.includes("missing")) {
-        return translated;
-      }
-      return trimmed;
+      return textObj.trim() || "";
     }
     if (typeof textObj === "number") {
       return isNaN(textObj) ? "" : String(textObj);
@@ -1926,7 +1998,7 @@ export default function Home() {
           name: getTranslatedText(selectedScheme?.SCHEMENAME as any, language) || "Unnamed Scheme",
           description: getTranslatedText(selectedScheme?.DESCRIPTION as any, language) || "No description available",
           type: targetTab,
-          chits: relevantChits,
+          chits: relevantChits.length > 0 ? relevantChits : chits,
           schemeType: isFlexi ? "flexi" : "fixed",
           activeTab: targetTab,
           benefits: selectedScheme?.BENEFITS || [],
@@ -2001,11 +2073,11 @@ export default function Home() {
     if (kycStatus === false) {
       // Show KYC alert
       Alert.alert(
-        t("kycRequiredAlertBox") || "KYC Required",
-        t("kycCompletedClickHere") || "KYC completed click here to complete",
+        "KYC Required",
+        "KYC not completed please complete",
         [
           {
-            text: t("cancel") || "Cancel",
+            text: "Cancel",
             style: "cancel",
             onPress: () => {
               // Clear selectedScheme when canceling
@@ -2013,7 +2085,7 @@ export default function Home() {
             },
           },
           {
-            text: t("update") || "Update",
+            text: "Update",
             onPress: () => {
               // Keep selectedScheme for when user returns from KYC page
               router.push("/(app)/(tabs)/home/kyc");
@@ -2045,18 +2117,18 @@ export default function Home() {
       setTimeout(() => {
         if (kycStatus === false) {
           Alert.alert(
-            t("kycRequiredAlertBox") || "KYC Required",
-            t("kycCompletedClickHere") || "KYC completed click here to complete",
+            "KYC Required",
+            "KYC not completed please complete",
             [
               {
-                text: t("cancel") || "Cancel",
+                text: "Cancel",
                 style: "cancel",
                 onPress: () => {
                   setSelectedScheme(null);
                 },
               },
               {
-                text: t("update") || "Update",
+                text: "Update",
                 onPress: () => router.push("/(app)/(tabs)/home/kyc"),
               },
             ]
@@ -2533,21 +2605,89 @@ export default function Home() {
   // Show skeleton loading screen while data is being fetched
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.fullHeightBackground} edges={Platform.OS === "android" ? ["top"] : []}>
-        {/* Home Page Header Skeleton */}
+      <SafeAreaView style={styles.fullHeightBackground} edges={["top", "left", "right"]}>
+        {/* Home Page Header (Real Logo & Welcome) */}
         <View style={styles.homeHeader}>
+          {/* Left: Tenant Logo and Welcome Name */}
           <View style={styles.headerLeft}>
-            <SkeletonLoader width={40} height={40} variant="circle" />
-            <View style={[styles.headerNameContainer, { marginLeft: rp(12) }]}>
-              <SkeletonLoader width={80} height={12} variant="text" />
-              <SkeletonLoader width={120} height={16} variant="text" style={{ marginTop: 4 }} />
-              <SkeletonLoader width={60} height={10} variant="text" style={{ marginTop: 4 }} />
+            <Image
+              source={require("../../../../../assets/images/logo_trans.png")}
+              style={{
+                width: 40,
+                height: 40,
+                marginRight: 8,
+              }}
+              resizeMode="contain"
+            />
+            <View style={styles.headerNameContainer}>
+              <ResponsiveText
+                variant="caption"
+                size="xs"
+                weight="normal"
+                color={theme.colors.textSecondary}
+                allowWrap={false}
+                maxLines={1}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.7}
+                style={styles.headerWelcomeText}
+              >
+                {t("hi") || "Hi"},
+              </ResponsiveText>
+              <ResponsiveText
+                variant="body"
+                size="md"
+                weight="semibold"
+                color={theme.colors.textDark}
+                allowWrap={false}
+                maxLines={1}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.8}
+                style={styles.headerUserName}
+              >
+                {user?.name?.toUpperCase() || "USER"}
+              </ResponsiveText>
             </View>
           </View>
+
+          {/* Right: Icons */}
           <View style={styles.headerRight}>
-            <SkeletonLoader width={32} height={32} variant="circle" />
-            <SkeletonLoader width={32} height={32} variant="circle" />
-            <SkeletonLoader width={32} height={32} variant="circle" />
+            <TouchableOpacity
+              onPress={handleLanguageChange}
+              style={styles.headerIconButton}
+              activeOpacity={0.7}
+            >
+              <View style={styles.languageIconContainer}>
+                <Ionicons
+                  name="language"
+                  size={24}
+                  color={theme.colors.textDark}
+                />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleNotificationPress}
+              style={styles.headerIconButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="notifications-outline"
+                size={24}
+                color={theme.colors.textDark}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleDrawerToggle}
+              style={styles.headerIconButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="menu"
+                size={24}
+                color={theme.colors.primary}
+              />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -2624,7 +2764,7 @@ export default function Home() {
   if (!user || !user.id) {
     return (
       <>
-        <SafeAreaView style={styles.fullHeightBackground} edges={Platform.OS === "android" ? ["top"] : []}>
+        <SafeAreaView style={styles.fullHeightBackground} edges={["top", "left", "right"]}>
           <View style={styles.loadingContainer}>
             <Ionicons
               name="person-circle-outline"
@@ -2659,7 +2799,7 @@ export default function Home() {
 
   return (
     <AuthGuard>
-      <SafeAreaView style={styles.fullHeightBackground} edges={Platform.OS === "android" ? ["top"] : []}>
+      <SafeAreaView style={styles.fullHeightBackground} edges={["top", "left", "right"]}>
         {/* {showFlashBanner && (
           <FlashBanner
             imageSource={images.banners.flashBanner}
@@ -2668,36 +2808,36 @@ export default function Home() {
         )} */}
         {/* Home Page Header */}
         <View style={styles.homeHeader}>
-          {/* Left: Profile Image and Name */}
+          {/* Left: Tenant Logo and Welcome Name */}
           <View style={styles.headerLeft}>
-            <TouchableOpacity
-              style={styles.profileImageContainer}
-              onPress={() => router.push("/(tabs)/profile")}
-              activeOpacity={0.7}
-            >
-              {getProfileImageSource() && !profileImageError ? (
-                <Image
-                  source={getProfileImageSource()}
-                  style={styles.headerProfileImage}
-                  resizeMode="cover"
-                  onError={handleProfileImageError}
-                  onLoad={handleProfileImageLoad}
-                />
-              ) : (
-                <Ionicons
-                  name="person-circle"
-                  size={40}
-                  color={theme.colors.primary}
-                />
-              )}
-            </TouchableOpacity>
+            <Image
+              source={require("../../../../../assets/images/logo_trans.png")}
+              style={{
+                width: 40,
+                height: 40,
+                marginRight: 8,
+              }}
+              resizeMode="contain"
+            />
             <View style={styles.headerNameContainer}>
-
+              <ResponsiveText
+                variant="caption"
+                size="xs"
+                weight="normal"
+                color={theme.colors.textSecondary}
+                allowWrap={false}
+                maxLines={1}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.7}
+                style={styles.headerWelcomeText}
+              >
+                {t("hi") || "Hi"},
+              </ResponsiveText>
               <ResponsiveText
                 variant="body"
                 size="md"
                 weight="semibold"
-                color={theme.colors.primary}
+                color={theme.colors.textDark}
                 allowWrap={false}
                 maxLines={1}
                 adjustsFontSizeToFit={true}
@@ -2705,19 +2845,6 @@ export default function Home() {
                 style={styles.headerUserName}
               >
                 {user?.name?.toUpperCase() || "USER"}
-              </ResponsiveText>
-              <ResponsiveText
-                variant="caption"
-                size="xs"
-                weight="normal"
-                color={theme.colors.primary}
-                allowWrap={false}
-                maxLines={1}
-                adjustsFontSizeToFit={true}
-                minimumFontScale={0.7}
-                style={styles.headerUserId}
-              >
-                ID: {user?.id || "N/A"}
               </ResponsiveText>
             </View>
           </View>
@@ -2734,7 +2861,7 @@ export default function Home() {
                 <Ionicons
                   name="language"
                   size={24}
-                  color={theme.colors.primary}
+                  color={theme.colors.textDark}
                 />
                 {/* <Text style={styles.languageIconText}>
                   {language === "en" ? "தமிழ்" : "EN"}
@@ -2751,7 +2878,7 @@ export default function Home() {
               <Ionicons
                 name="notifications-outline"
                 size={24}
-                color={theme.colors.primary}
+                color={theme.colors.textDark}
               />
               {unreadCount > 0 && (
                 <View style={styles.notificationBadge}>
@@ -2817,7 +2944,7 @@ export default function Home() {
                     <View style={styles.kycBannerContent}>
                       <Ionicons name="alert-circle" size={24} color={COLORS.white} />
                       <Text style={styles.kycBannerText}>
-                        {t("kycNotCompletedClick") || "KYC not Completed click here to complete"}
+                        KYC not Completed click here to complete
                       </Text>
                       <Ionicons name="chevron-forward" size={20} color={COLORS.white} />
                     </View>
@@ -2838,6 +2965,7 @@ export default function Home() {
                     goldRate={homeData.data.currentRates.gold_rate}
                     goldRate18={homeData?.data?.currentRates?.gold_rate_18}
                     goldRate14={homeData?.data?.currentRates?.gold_rate_14}
+                    silverRate={homeData?.data?.currentRates?.silver_rate}
                     updatedAt={homeData.data.currentRates.updated_at || ""}
                   />
                 </TouchableOpacity>
@@ -2910,13 +3038,27 @@ export default function Home() {
                 />
               )}
 
+              {/* My Schemes Cards Section */}
+              <MySchemesCards
+                onGoldPress={() => router.push({ pathname: "/(app)/(tabs)/home/schemes", params: { type: "gold" } })}
+                onSilverPress={() => router.push({ pathname: "/(app)/(tabs)/home/schemes", params: { type: "silver" } })}
+                onDiamondPress={() => router.push({ pathname: "/(app)/(tabs)/home/schemes", params: { type: "diamond" } })}
+                onPlatinumPress={() => router.push({ pathname: "/(app)/(tabs)/home/schemes", params: { type: "platinum" } })}
+                onOldGoldPress={() => router.push({ pathname: "/(app)/(tabs)/home/schemes", params: { type: "old_gold" } })}
+                showGold={isVisible("showGoldScheme") && activeMetalTypes.gold}
+                showSilver={isVisible("showSilverScheme") && activeMetalTypes.silver}
+                showDiamond={isVisible("showDiamondScheme") && activeMetalTypes.diamond}
+                showPlatinum={isVisible("showPlatinumScheme") && activeMetalTypes.platinum}
+                showOldGold={isVisible("showOldGoldScheme") !== false && activeMetalTypes.old_gold}
+              />
 
-              {/* Our Schemes Section - Conditionally rendered based on API */}
-              {isVisible("showSchemes") && (
+
+              {/* Hidden old Our Schemes section as requested */}
+              {/* {isVisible("showSchemes") && (
                 <>
                   <View style={[styles.statusHeader, { justifyContent: 'space-between', alignItems: 'center' }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Ionicons name="ribbon-outline" size={20} color={theme.colors.primary} style={{ marginRight: 8 }} />
+                      <Ionicons name="ribbon-outline" size={20} color={theme.colors.secondary} style={{ marginRight: 8 }} />
                       <Text style={styles.statusHeaderText}>
                         {t("ourSchemes")}
                       </Text>
@@ -2926,203 +3068,19 @@ export default function Home() {
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                       activeOpacity={0.7}
                     >
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: theme.colors.primary }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: theme.colors.textDark }}>
                         {t("viewAll") || "View All"}
                       </Text>
-                      <Ionicons name="chevron-forward" size={14} color={theme.colors.primary} />
+                      <Ionicons name="chevron-forward" size={14} color={theme.colors.secondary} />
                     </TouchableOpacity>
                   </View>
                   <DynamicSchemeCard
                     onJoinPress={async (scheme) => {
-                      // Check if schemes page should be skipped
-                      const showSchemsPage = isVisible("showSchemsPage");
-
-                      if (!showSchemsPage) {
-                        // Skip schemes page and navigate directly
-                        try {
-                          // Helper function to get translated text
-                          const getTranslatedText = (
-                            textObj: any,
-                            lang: string
-                          ): string => {
-                            if (textObj === null || textObj === undefined || textObj === "") {
-                              return "";
-                            }
-                            if (typeof textObj === "string") {
-                              const trimmed = textObj.trim();
-                              const key = trimmed
-                                .replace(/[^a-zA-Z0-9 ]/g, "")
-                                .split(" ")
-                                .filter(Boolean)
-                                .map((word, i) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1))
-                                .join("");
-                              const translated = t(key);
-                              if (translated && translated !== key && !translated.includes("missing")) {
-                                return translated;
-                              }
-                              return trimmed;
-                            }
-                            if (typeof textObj === "number") {
-                              return isNaN(textObj) ? "" : String(textObj);
-                            }
-                            if (typeof textObj === "object" && textObj !== null) {
-                              if (Array.isArray(textObj)) {
-                                const validItems = textObj.filter(
-                                  (item) => item !== null && item !== undefined && item !== ""
-                                );
-                                return validItems.length > 0 ? validItems.join(", ") : "";
-                              }
-
-                              // Check if this object contains any translation keys
-                              const hasEn = textObj.hasOwnProperty("en") || textObj.hasOwnProperty("EN");
-                              const hasTa = textObj.hasOwnProperty("ta") || textObj.hasOwnProperty("TA");
-                              const hasTe = textObj.hasOwnProperty("te") || textObj.hasOwnProperty("TE");
-                              const hasHi = textObj.hasOwnProperty("hi") || textObj.hasOwnProperty("HI");
-                              const hasMal = textObj.hasOwnProperty("mal") || textObj.hasOwnProperty("MAL") || (textObj as any).hasOwnProperty("_ta") || (textObj as any).hasOwnProperty("_TA");
-
-                              if (hasEn || hasTa || hasTe || hasHi || hasMal) {
-                                const targetText = textObj[lang] || textObj[lang.toUpperCase()] || textObj[lang.toLowerCase()];
-                                const enText = textObj.en || textObj.EN || "";
-                                const taText = textObj.ta || textObj.TA || "";
-
-                                // Malayalam fallback logic if "mal" translation is missing
-                                if ((lang === "mal" || lang === "MAL") && !targetText) {
-                                  const malTextLegacy = (textObj as any)._ta || (textObj as any)._TA || "";
-                                  return malTextLegacy || taText || enText || Object.values(textObj)[0] || "";
-                                }
-
-                                return targetText || enText || taText || Object.values(textObj)[0] || "";
-                              }
-
-                              try {
-                                const stringified = JSON.stringify(textObj);
-                                return stringified === "{}" || stringified === "[]" ? "" : stringified;
-                              } catch {
-                                return "";
-                              }
-                            }
-                            try {
-                              return String(textObj);
-                            } catch {
-                              return "";
-                            }
-                          };
-
-                          // Determine scheme type and active tab
-                          const chits = scheme?.chits || [];
-                          let targetTab = "Monthly";
-                          let isFlexi = false;
-
-                          // Check chits to determine payment frequency
-                          if (chits.length > 0) {
-                            const activeChits = chits.filter(
-                              (chit) => chit && chit.ACTIVE === "Y"
-                            );
-                            if (activeChits.length > 0) {
-                              const paymentFrequencies = activeChits
-                                .map((chit) => chit.PAYMENT_FREQUENCY)
-                                .filter(Boolean);
-                              if (paymentFrequencies.length > 0) {
-                                const flexiChits = paymentFrequencies.filter(freq =>
-                                  freq && (freq.toLowerCase().includes("flexi") || freq.toLowerCase().includes("flexible"))
-                                );
-                                if (flexiChits.length > 0) {
-                                  targetTab = "Flexi";
-                                  isFlexi = true;
-                                } else {
-                                  targetTab = paymentFrequencies[0] || "Monthly";
-                                }
-                              }
-                            }
-                          }
-
-                          // Get relevant chits for the target tab
-                          const relevantChits = chits.filter(
-                            (chit) => {
-                              if (!chit || !chit.PAYMENT_FREQUENCY) return false;
-                              const chitFreq = chit.PAYMENT_FREQUENCY.toLowerCase().trim();
-                              const targetTabLower = targetTab.toLowerCase().trim();
-
-                              if (chitFreq === targetTabLower) return true;
-                              if (targetTabLower === "flexi") {
-                                return chitFreq.includes("flexi") || chitFreq.includes("flexible");
-                              }
-                              return false;
-                            }
-                          );
-
-                          // Prepare scheme data to store
-                          const schemeDataToStore = {
-                            schemeId: scheme?.SCHEMEID || 0,
-                            name: getTranslatedText(scheme?.SCHEMENAME as any, language) || "Unnamed Scheme",
-                            description: getTranslatedText(scheme?.DESCRIPTION as any, language) || "No description available",
-                            type: targetTab,
-                            chits: relevantChits,
-                            schemeType: isFlexi ? "flexi" : "fixed",
-                            activeTab: targetTab,
-                            benefits: (scheme as any)?.BENEFITS || [],
-                            slogan: getTranslatedText((scheme as any)?.SLOGAN || { en: "" }, language) || "",
-                            image: scheme?.IMAGE || "",
-                            icon: scheme?.ICON || "",
-                            durationMonths: scheme?.DURATION_MONTHS || 0,
-                            metaData: scheme?.table_meta || (scheme as any)?.meta_data || null,
-                            instant_intrest: (scheme as any)?.instant_intrest || false,
-                            timestamp: new Date().toISOString(),
-                            savingType: (scheme as any)?.savingType || ((scheme as any)?.SCHEMETYPE?.toLowerCase() === "weight" ? "weight" : "amount"),
-                          };
-
-                          // Store scheme data in AsyncStorage
-                          await AsyncStorage.setItem(
-                            "@current_scheme_data",
-                            JSON.stringify(schemeDataToStore)
-                          );
-
-                          // Navigate directly to the appropriate page
-                          // if (isFlexi) {
-                          //   router.push({
-                          //     pathname: "/home/digigold_payment_calculator",
-                          //     params: {
-                          //       schemeId: ((scheme?.SCHEMEID || 0)).toString(),
-                          //     },
-                          //   });
-                          // } else {
-                          router.push({
-                            pathname: "/home/join_savings",
-                            params: {
-                              schemeId: ((scheme?.SCHEMEID || 0)).toString(),
-                            },
-                          });
-                          // }
-                        } catch (error) {
-                          logger.error("Error in onJoinPress (skip schemes):", error);
-                          Alert.alert(t("schemes.error") || "Error", t("schemes.failedToLoadSchemeData") || "Failed to load scheme data");
-                        }
-                      } else {
-                        // Normal flow: Navigate to schemes page
-                        router.push({
-                          pathname: "/(app)/(tabs)/home/schemes",
-                          params: {
-                            schemeId: scheme?.SCHEMEID?.toString() || "",
-                            schemeType: scheme?.SCHEMETYPE || "",
-                          },
-                        });
-                      }
-                    }}
-                    onInfoPress={handleSchemeInfoPress}
-                    onQuickJoinPress={initiateQuickJoin}
-                    showDots={false}
-                    visibilityFlags={{
-                      showFlexiScheme: isVisible("showFlexiScheme"),
-                      showFixedScheme: isVisible("showFixedScheme"),
-                      showDailyScheme: isVisible("showDailyScheme"),
-                      showWeeklyScheme: isVisible("showWeeklyScheme"),
-                      showMonthlyScheme: isVisible("showMonthlyScheme"),
+                      ...
                     }}
                   />
-
-
                 </>
-              )}
+              )} */}
 
               {/* YouTube Video - Conditionally rendered based on API */}
               {isVisible("showYoutube") && (
@@ -3134,259 +3092,203 @@ export default function Home() {
               {/* Social Media Card - Conditionally rendered based on API */}
 
               {/* Refer & Earn Premium Card (Refactored to match SupportContactCard) */}
-              {/* Refer & Earn and Lucky Draw Side-by-Side Premium Cards */}
-              <View style={{
-                flexDirection: "row",
-                paddingHorizontal: moderateScale(16),
-                paddingVertical: moderateScale(8),
-                gap: moderateScale(12),
-                width: "100%",
-              }}>
-                {/* Refer & Earn Card */}
-                <TouchableOpacity
-                  onPress={() => router.push("/(app)/(tabs)/home/refer_earn")}
-                  activeOpacity={0.9}
-                  style={{ flex: 1 }}
-                >
-                  <LinearGradient
-                    colors={["#FFD700", "#F5DEB3"]} // Premium gold to peach gradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{
-                      borderRadius: moderateScale(16),
-                      padding: moderateScale(12),
-                      height: moderateScale(130), // Fixed height to align them
-                      justifyContent: "space-between",
-                      shadowColor: theme.colors.primary,
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.15,
-                      shadowRadius: 6,
-                      elevation: 4,
-                      borderWidth: 1,
-                      borderColor: `rgba(255,201,12,0.6)`,
-                    }}
-                  >
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <Animated.View style={{ transform: [{ translateX: referAnim }] }}>
-                        <LinearGradient
-                          colors={["#ffffff", "#fefefe"]}
-                          style={{
-                            width: moderateScale(36),
-                            height: moderateScale(36),
-                            borderRadius: moderateScale(18),
-                            justifyContent: "center",
-                            alignItems: "center",
-                            shadowColor: theme.colors.primary,
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.1,
-                            shadowRadius: 4,
-                            elevation: 4,
-                          }}
-                        >
-                          <Ionicons
-                            name="gift"
-                            size={deviceScale(18)}
-                            color={theme.colors.primary}
-                          />
-                        </LinearGradient>
-                      </Animated.View>
-
-                      <Ionicons name="chevron-forward" size={deviceScale(16)} color={theme.colors.primary} style={{ opacity: 0.8 }} />
-                    </View>
-
-                    <View>
-                      <Text style={{
-                        color: theme.colors.primary,
-                        fontSize: moderateScale(14),
-                        fontWeight: "800",
-                        letterSpacing: 0.3,
-                        marginBottom: 2
-                      }}>
-                        {t("referAndEarn") || "Refer & Earn"}
-                      </Text>
-                      <Text
-                        style={{
-                          color: theme.colors.primary,
-                          fontSize: moderateScale(10),
-                          fontWeight: "500",
-                          opacity: 0.85,
-                        }}
-                        numberOfLines={2}
-                      >
-                        {t("inviteFriendsEarn") || "Invite your friends and earn rewards."}
-                      </Text>
-                    </View>
-                  </LinearGradient>
-                </TouchableOpacity>
-
-                {/* Lucky Draw Card */}
-                <TouchableOpacity
-                  onPress={() => router.push("/(app)/lucky_draw")}
-                  activeOpacity={0.9}
-                  style={{ flex: 1 }}
-                >
-                  <LinearGradient
-                    colors={["#4F46E5", "#7C3AED"]} // Indigo to Violet premium gradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{
-                      borderRadius: moderateScale(16),
-                      padding: moderateScale(12),
-                      height: moderateScale(130), // Same fixed height to match Refer card
-                      justifyContent: "space-between",
-                      shadowColor: "#7C3AED",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.2,
-                      shadowRadius: 6,
-                      elevation: 4,
-                      borderWidth: 1.5,
-                      borderColor: "#FFD700", // Metallic Gold Border
-                    }}
-                  >
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <Animated.View style={{ transform: [{ rotate: luckyRotation }] }}>
-                        <LinearGradient
-                          colors={["#BF953F", "#FCF6BA", "#B38728", "#FBF5B7", "#AA771C"]}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={{
-                            width: moderateScale(36),
-                            height: moderateScale(36),
-                            borderRadius: moderateScale(18),
-                            justifyContent: "center",
-                            alignItems: "center",
-                            shadowColor: "#000",
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.2,
-                            shadowRadius: 4,
-                            elevation: 4,
-                          }}
-                        >
-                          <Ionicons
-                            name="aperture"
-                            size={deviceScale(18)}
-                            color="#FFF"
-                          />
-                        </LinearGradient>
-                      </Animated.View>
-
-                      <Ionicons name="chevron-forward" size={deviceScale(16)} color="#FFF" style={{ opacity: 0.8 }} />
-                    </View>
-
-                    <View>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 2 }}>
-                        <Text style={{
-                          color: "#FFF",
-                          fontSize: moderateScale(14),
-                          fontWeight: "800",
-                          letterSpacing: 0.3,
-                        }}>
-                          {
-                            {
-                              en: "Lucky Draw",
-                              ta: "லக்கி டிரா",
-                              mal: "ലക്കി ഡ്രോ",
-                              te: "లక్కీ డ్రా",
-                              hi: "लकी ड्रा"
-                            }[language] || "Lucky Draw"
-                          }
-                        </Text>
-                        <View style={{
-                          backgroundColor: "#FFD700",
-                          paddingHorizontal: moderateScale(4),
-                          paddingVertical: moderateScale(1),
-                          borderRadius: moderateScale(4),
-                        }}>
-                          <Text style={{
-                            color: "#111",
-                            fontSize: moderateScale(8),
-                            fontWeight: "900",
-                          }}>
-                            NEW
-                          </Text>
-                        </View>
-                      </View>
-                      <Text
-                        style={{
-                          color: "#E2E8F0",
-                          fontSize: moderateScale(10),
-                          fontWeight: "500",
-                          opacity: 0.9,
-                        }}
-                        numberOfLines={2}
-                      >
-                        {
-                          {
-                            en: "Participate in draw & view winners",
-                            ta: "குலுக்கலில் வெற்றியாளர்களைக் காண்க",
-                            mal: "വിജയികളെ കാണുക",
-                            te: "విజేతలను చూడండి",
-                            hi: "विजेताओं को देखें"
-                          }[language] || "Participate in draw & view winners"
-                        }
-                      </Text>
-                    </View>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-
-              {/* Dynamic Action Cards (Gold Advance, Bill Payment, Old Gold) */}
-              {(isVisible("showGoldAdvance") || isVisible("showBillPayment") || isVisible("showOldGold")) && (
+              {/* Refer & Earn and Lucky Draw Side-by-Side Premium Cards (with backend visibility check) */}
+              {(isVisible("showReferEarn") || isVisible("showLuckyDraw")) && (
                 <View style={{
                   flexDirection: "row",
                   paddingHorizontal: moderateScale(16),
                   paddingVertical: moderateScale(8),
-                  gap: moderateScale(10),
+                  gap: moderateScale(12),
                   width: "100%",
                 }}>
-                  {isVisible("showGoldAdvance") && (
+                  {/* Refer & Earn Card */}
+                  {isVisible("showReferEarn") && (
                     <TouchableOpacity
-                      onPress={() => router.push("/(app)/gold_advance")}
-                      activeOpacity={0.8}
+                      onPress={() => router.push("/(app)/(tabs)/home/refer_earn")}
+                      activeOpacity={0.9}
                       style={{ flex: 1 }}
                     >
-                      <View style={styles.actionCard}>
-                        <View style={styles.actionCardIconContainer}>
-                          <Ionicons name="calendar-outline" size={deviceScale(20)} color={theme.colors.primary} />
+                      <LinearGradient
+                        colors={["#FFD700", "#F5DEB3"]} // Premium gold to peach gradient
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{
+                          borderRadius: moderateScale(16),
+                          padding: moderateScale(12),
+                          height: moderateScale(130), // Fixed height to align them
+                          justifyContent: "space-between",
+                          shadowColor: theme.colors.primary,
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.15,
+                          shadowRadius: 6,
+                          elevation: 4,
+                          borderWidth: 1,
+                          borderColor: `rgba(255,201,12,0.6)`,
+                        }}
+                      >
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <Animated.View style={{ transform: [{ translateX: referAnim }] }}>
+                            <LinearGradient
+                              colors={["#ffffff", "#fefefe"]}
+                              style={{
+                                width: moderateScale(36),
+                                height: moderateScale(36),
+                                borderRadius: moderateScale(18),
+                                justifyContent: "center",
+                                alignItems: "center",
+                                shadowColor: theme.colors.primary,
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.1,
+                                shadowRadius: 4,
+                                elevation: 4,
+                              }}
+                            >
+                              <Ionicons
+                                name="gift"
+                                size={deviceScale(18)}
+                                color={theme.colors.primary}
+                              />
+                            </LinearGradient>
+                          </Animated.View>
+
+                          <Ionicons name="chevron-forward" size={deviceScale(16)} color={theme.colors.textDark} style={{ opacity: 0.8 }} />
                         </View>
-                        <Text style={styles.actionCardText} numberOfLines={2}>
-                          {t("advanceBooking") || "Advance Booking"}
-                        </Text>
-                      </View>
+
+                        <View>
+                          <Text style={{
+                            color: theme.colors.textDark,
+                            fontSize: moderateScale(14),
+                            fontWeight: "800",
+                            letterSpacing: 0.3,
+                            marginBottom: 2
+                          }}>
+                            {t("referAndEarn") || "Refer & Earn"}
+                          </Text>
+                          <Text
+                            style={{
+                              color: theme.colors.textDark,
+                              fontSize: moderateScale(10),
+                              fontWeight: "500",
+                              opacity: 0.85,
+                            }}
+                            numberOfLines={2}
+                          >
+                            {t("inviteFriendsEarn") || "Invite your friends and earn rewards."}
+                          </Text>
+                        </View>
+                      </LinearGradient>
                     </TouchableOpacity>
                   )}
 
-                  {isVisible("showBillPayment") && (
+                  {/* Lucky Draw Card */}
+                  {isVisible("showLuckyDraw") && (
                     <TouchableOpacity
-                      onPress={() => router.push("/(app)/bill_payment")}
-                      activeOpacity={0.8}
+                      onPress={() => router.push("/(app)/lucky_draw")}
+                      activeOpacity={0.9}
                       style={{ flex: 1 }}
                     >
-                      <View style={styles.actionCard}>
-                        <View style={styles.actionCardIconContainer}>
-                          <Ionicons name="receipt-outline" size={deviceScale(20)} color={theme.colors.primary} />
-                        </View>
-                        <Text style={styles.actionCardText} numberOfLines={2}>
-                          {t("billPayments") || "Bill Payment"}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  )}
+                      <LinearGradient
+                        colors={["#4F46E5", "#7C3AED"]} // Indigo to Violet premium gradient
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{
+                          borderRadius: moderateScale(16),
+                          padding: moderateScale(12),
+                          height: moderateScale(130), // Same fixed height to match Refer card
+                          justifyContent: "space-between",
+                          shadowColor: "#7C3AED",
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.2,
+                          shadowRadius: 6,
+                          elevation: 4,
+                          borderWidth: 1.5,
+                          borderColor: "#FFD700", // Metallic Gold Border
+                        }}
+                      >
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <Animated.View style={{ transform: [{ rotate: luckyRotation }] }}>
+                            <LinearGradient
+                              colors={["#BF953F", "#FCF6BA", "#B38728", "#FBF5B7", "#AA771C"]}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                              style={{
+                                width: moderateScale(36),
+                                height: moderateScale(36),
+                                borderRadius: moderateScale(18),
+                                justifyContent: "center",
+                                alignItems: "center",
+                                shadowColor: "#000",
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.2,
+                                shadowRadius: 4,
+                                elevation: 4,
+                              }}
+                            >
+                              <Ionicons
+                                name="aperture"
+                                size={deviceScale(18)}
+                                color="#FFF"
+                              />
+                            </LinearGradient>
+                          </Animated.View>
 
-                  {isVisible("showOldGold") && (
-                    <TouchableOpacity
-                      onPress={() => router.push("/(app)/old_gold")}
-                      activeOpacity={0.8}
-                      style={{ flex: 1 }}
-                    >
-                      <View style={styles.actionCard}>
-                        <View style={styles.actionCardIconContainer}>
-                          <Ionicons name="repeat-outline" size={deviceScale(20)} color={theme.colors.primary} />
+                          <Ionicons name="chevron-forward" size={deviceScale(16)} color="#FFF" style={{ opacity: 0.8 }} />
                         </View>
-                        <Text style={styles.actionCardText} numberOfLines={2}>
-                          {t("oldGoldDeposits") || "Old Gold Deposit"}
-                        </Text>
-                      </View>
+
+                        <View>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 2 }}>
+                            <Text style={{
+                              color: "#FFF",
+                              fontSize: moderateScale(14),
+                              fontWeight: "800",
+                              letterSpacing: 0.3,
+                            }}>
+                              {
+                                {
+                                  en: "Lucky Draw",
+                                  ta: "லக்கி டிரா",
+                                  mal: "ലക്കി ഡ്രോ",
+                                  te: "లక్కీ డ్రా",
+                                  hi: "लकी ड्रा"
+                                }[language] || "Lucky Draw"
+                              }
+                            </Text>
+                            <View style={{
+                              backgroundColor: "#FFD700",
+                              paddingHorizontal: moderateScale(4),
+                              paddingVertical: moderateScale(1),
+                              borderRadius: moderateScale(4),
+                            }}>
+                              <Text style={{
+                                color: "#111",
+                                fontSize: moderateScale(8),
+                                fontWeight: "900",
+                              }}>
+                                NEW
+                              </Text>
+                            </View>
+                          </View>
+                          <Text
+                            style={{
+                              color: "#E2E8F0",
+                              fontSize: moderateScale(10),
+                              fontWeight: "500",
+                              opacity: 0.9,
+                            }}
+                            numberOfLines={2}
+                          >
+                            {
+                              {
+                                en: "Participate in draw & view winners",
+                                ta: "குலுக்கலில் வெற்றியாளர்களைக் காண்க",
+                                mal: "വിജയികളെ കാണുക",
+                                te: "വിജയികളെ കാണുക",
+                                hi: "विजेताओं को देखें"
+                              }[language] || "Participate in draw & view winners"
+                            }
+                          </Text>
+                        </View>
+                      </LinearGradient>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -3884,7 +3786,7 @@ export default function Home() {
               onPress={() => setShowFloatingOffer(false)}
               activeOpacity={0.7}
             >
-              <Ionicons name="close-circle" size={24} color={theme.colors.primary} />
+              <Ionicons name="close-circle" size={24} color={theme.colors.textDark} />
             </TouchableOpacity>
           </View>
         )}
@@ -3952,19 +3854,19 @@ export default function Home() {
                         {t("termsAndConditions") || "Terms & Conditions"}
                       </Text>
                       <View style={styles.offerModalTermItem}>
-                        <Ionicons name="checkmark-circle" size={16} color={theme.colors.primary} />
+                        <Ionicons name="checkmark-circle" size={16} color={theme.colors.textDark} />
                         <Text style={styles.offerModalTermText}>
                           Offer is valid on selected jewellery collections.
                         </Text>
                       </View>
                       <View style={styles.offerModalTermItem}>
-                        <Ionicons name="checkmark-circle" size={16} color={theme.colors.primary} />
+                        <Ionicons name="checkmark-circle" size={16} color={theme.colors.textDark} />
                         <Text style={styles.offerModalTermText}>
                           Cannot be combined with any other schemes or discount offers.
                         </Text>
                       </View>
                       <View style={styles.offerModalTermItem}>
-                        <Ionicons name="checkmark-circle" size={16} color={theme.colors.primary} />
+                        <Ionicons name="checkmark-circle" size={16} color={theme.colors.textDark} />
                         <Text style={styles.offerModalTermText}>
                           Please present this offer popup at the billing counter to claim.
                         </Text>
@@ -3979,7 +3881,6 @@ export default function Home() {
 
       </SafeAreaView>
 
-      {/* Rating Modal */}
       <RatingModal
         visible={showRating}
         onClose={hideRating}
@@ -3987,13 +3888,38 @@ export default function Home() {
           logger.log("📝 User rating feedback:", { rating, feedback });
           // You can send this to your API if needed
         }}
-        appName="DC Jewellers"
+        appName={APP_CONFIG.appName}
       />
       <LanguageSelector
         visible={languageSelectorVisible}
         onClose={() => setLanguageSelectorVisible(false)}
       />
-      {/* Floating Countdown Pill for Minimized Lucky Draw */}
+      {/* Side Drawer Modal for immediate local testing */}
+      <Modal
+        visible={isLocalDrawerOpen}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setIsLocalDrawerOpen(false)}
+      >
+        <View style={{ flex: 1, flexDirection: "row", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <SafeAreaView 
+            style={{ width: "82%", height: "100%", backgroundColor: theme.colors.background }}
+            edges={Platform.OS === "ios" ? ["top", "bottom", "left"] : ["bottom", "left"]}
+          >
+            <CustomDrawerContent
+              navigation={{
+                ...navigation,
+                closeDrawer: () => setIsLocalDrawerOpen(false),
+              }}
+            />
+          </SafeAreaView>
+          <TouchableOpacity
+            style={{ flex: 1, height: "100%" }}
+            activeOpacity={1}
+            onPress={() => setIsLocalDrawerOpen(false)}
+          />
+        </View>
+      </Modal>
       <MinimizedLuckyDrawPill />
     </AuthGuard>
   );
@@ -4065,1477 +3991,1451 @@ const MinimizedLuckyDrawPill = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  fullHeightBackground: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-    backgroundColor: theme.colors.quaternary,
-  },
-  backgroundImage: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-  },
-  mainContainer: {
-    flex: 1,
-    zIndex: 1,
-    elevation: 1,
-  },
-  headerWrapper: {
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 0,
-  },
-  homeHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: rp(16),
-    paddingVertical: rp(12),
-    paddingTop: 0,
-    backgroundColor: "transparent",
-    zIndex: 10,
-    elevation: 10,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  profileImageContainer: {
-    marginRight: rp(12),
-  },
-  headerProfileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: theme.colors.primary,
-  },
-  headerNameContainer: {
-    flex: 1,
-    flexDirection: "column",
-    justifyContent: "center",
-  },
-  headerWelcomeText: {
-    fontSize: rf(11, { minSize: 9, maxSize: 13 }),
-    fontWeight: "400",
-    opacity: 0.7,
-    marginBottom: 2,
-  },
-  headerUserName: {
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
-    fontWeight: "600",
-    marginBottom: 2,
-  },
-  headerUserId: {
-    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
-    fontWeight: "400",
-    opacity: 0.8,
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: rp(12),
-  },
-  headerIconButton: {
-    padding: rp(8),
-    position: "relative",
-  },
-  languageIconContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  languageIconText: {
-    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
-    fontWeight: "600",
-    color: theme.colors.primary,
-    marginLeft: 2,
-  },
-  notificationBadge: {
-    position: "absolute",
-    top: 4,
-    right: 4,
-    backgroundColor: COLORS.error,
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 4,
-    borderWidth: 1,
-    borderColor: COLORS.white,
-  },
-  notificationBadgeText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: "bold",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "flex-start",
-    alignItems: "stretch",
-    paddingVertical: rp(20), // Increased padding
-    paddingTop: rp(10),
-    paddingBottom: rp(90),
-    zIndex: 1,
-    elevation: 1,
-  },
-  goldRateCardWrapper: {
-    marginTop: rp(5),
-    marginBottom: rp(5),
-  },
-  ratesContainer: {
-    paddingHorizontal: rp(16),
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "center",
-    marginVertical: 0,
-    marginTop: rp(10),
-    zIndex: 1,
-    elevation: 1,
-  },
-  rateCard: {
-    flex: 1,
-    margin: rp(5),
-    alignItems: "center",
-    maxWidth: wp(45),
-    zIndex: 1,
-    elevation: 1,
-  },
-  singleRateCard: {
-    maxWidth: wp(60),
-    zIndex: 1,
-    elevation: 1,
-  },
-  mainContent: {
-    ...commonStyles.container,
-    alignItems: "center",
-    paddingHorizontal: 0,
-    marginHorizontal: 0,
-  },
-  loadingText: {
-    textAlign: "center",
-    color: COLORS.white,
-    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
-    paddingVertical: spacing.lg,
-  },
-  spacer: {
-    height: spacing.xxxl * 2,
-  },
-  languageSwitcherHeader: {
-    marginLeft: spacing.sm,
-  },
-  bannerContainer: {
-    width: "100%",
-    marginVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-  },
-  bannerListContent: {
-    paddingHorizontal: spacing.sm,
-    paddingRight: spacing.xl,
-  },
-  bannerImageWrapper: {
-    width: "100%",
-    borderTopLeftRadius: borderRadius.large,
-    borderTopRightRadius: borderRadius.large,
-    overflow: "hidden",
-  },
-  bannerButtonRow: {
-    ...commonStyles.row,
-    justifyContent: "space-between",
-    width: "90%",
-    alignSelf: "center",
-    marginTop: spacing.lg,
-    gap: spacing.md,
-  },
-  aboutSchemesButton: {
-    flex: 1,
-    backgroundColor: COLORS.overlayLight,
-    borderRadius: borderRadius.medium,
-    paddingVertical: spacing.md,
-    ...commonStyles.center,
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
-    ...SHADOW_UTILS.button(),
-    marginRight: spacing.xs,
-  },
-  aboutSchemesButtonText: {
-    color: theme.colors.primary,
-    fontWeight: "600",
-    fontSize: rf(15, { minSize: 13, maxSize: 17 }),
-    letterSpacing: 0.2,
-  },
-  joinNowButton: {
-    flex: 1,
-    backgroundColor: theme.colors.primary,
-    borderRadius: borderRadius.medium,
-    paddingVertical: spacing.md,
-    ...commonStyles.center,
-    ...SHADOW_UTILS.button(),
-    marginLeft: spacing.xs,
-  },
-  joinNowButtonText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-
-  headerLanguageButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 8,
-    backgroundColor: COLORS.overlayLight,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.overlayMedium,
-  },
-  languageIcon: {
-    fontSize: 16,
-    marginRight: 4,
-  },
-  headerLanguageText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: COLORS.white,
-  },
-  sliderLoadingContainer: {
-    width: "100%",
-    height: 200,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.overlay,
-    borderRadius: 8,
-    marginVertical: 10,
-  },
-  statusContainer: {
-    width: "100%",
-    marginVertical: 0,
-    marginTop: spacing.xs,
-  },
-  statusHeader: {
-    flexDirection: 'row',
-    alignItems: "center",
-    justifyContent: "flex-start",
-    width: "100%",
-    marginBottom: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    marginTop: spacing.xs,
-  },
-  statusHeaderLine: {
-    display: 'none', // Hide lines for cleaner look
-  },
-  statusHeaderText: {
-    fontSize: rf(18, { minSize: 16, maxSize: 20 }),
-    fontWeight: "800",
-    color: theme.colors.primary,
-    textTransform: "uppercase",
-    letterSpacing: 1.5,
-    textAlign: "left",
-  },
-
-  sectionHeader: {
-    width: "100%",
-    paddingHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 10,
-    alignItems: "center",
-  },
-  sectionHeaderContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-  },
-  sectionHeaderLine: {
-    height: 1,
-    width: 40,
-    backgroundColor: theme.colors.secondary, // Thinner, wider lines
-    marginHorizontal: 15,
-    opacity: 0.6
-  },
-  sectionHeaderText: {
-    fontSize: moderateScale(18),
-    fontWeight: "700",
-    color: theme.colors.primary,
-    textTransform: "uppercase",
-    letterSpacing: 1.2,
-  },
-  sectionHeaderSubtext: {
-    fontSize: moderateScale(12),
-    color: COLORS.mediumGrey,
-    marginTop: 6,
-    textAlign: "center",
-    fontWeight: '500',
-    letterSpacing: 0.5
-  },
-  // Collection Styles Added via Implementation Plan
-  collectionContainer: {
-    marginBottom: spacing.xs,
-    paddingVertical: 0,
-  },
-  collectionHeader: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xs,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  collectionHeaderTitle: {
-    fontSize: rf(18),
-    fontWeight: '700',
-    color: theme.colors.primary,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  collectionCompactToggle: {
-    padding: spacing.xs,
-    borderRadius: borderRadius.small,
-    backgroundColor: 'rgba(133, 1, 17, 0.05)',
-  },
-  collectionCompactContainer: {
-    alignItems: 'center',
-    marginRight: spacing.md,
-    width: 76,
-  },
-  compactCircleBorder: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    padding: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  compactCircleInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    overflow: 'hidden',
-    backgroundColor: '#111',
-  },
-  compactImage: {
-    width: '100%',
-    height: '100%',
-  },
-  collectionCompactName: {
-    fontSize: rf(11),
-    color: theme.colors.textSecondary,
-    fontWeight: '600',
-    marginTop: 6,
-    width: '100%',
-    textAlign: 'center',
-  },
-  collectionListContent: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  collectionCardContainer: {
-    marginRight: spacing.md,
-    borderRadius: borderRadius.medium,
-    overflow: 'hidden',
-    backgroundColor: COLORS.white,
-    ...SHADOW_UTILS.card(),
-    width: 140, // Fixed width for horizontal scroll items
-    height: 140,
-    elevation: 4,
-  },
-  videoContainer: {
-    width: "100%",
-    paddingHorizontal: 10,
-    marginVertical: 15,
-  },
-  videoHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-    paddingHorizontal: 5,
-  },
-  videoTitle: {
-    fontSize: moderateScale(16),
-    fontWeight: "700",
-    color: COLORS.error,
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-    marginRight: 10,
-  },
-  videoHeaderLine: {
-    flex: 1,
-    height: 1.5,
-    backgroundColor: COLORS.secondary,
-  },
-  videoWrapper: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: 2,
-    shadowColor: COLORS.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
+function getStyles(theme: any) {
+  return StyleSheet.create({
+    fullHeightBackground: {
+      flex: 1,
+      width: "100%",
+      height: "100%",
+      backgroundColor: theme.colors.quaternary,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  rateWarningContainer: {
-    width: "90%",
-    backgroundColor: COLORS.error,
-    borderRadius: 16,
-    padding: 16,
-    marginVertical: 10,
-  },
-  rateWarningContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  rateWarningTextContainer: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  rateWarningTitle: {
-    fontSize: moderateScale(16),
-    fontWeight: "700",
-    color: COLORS.white,
-    marginBottom: 4,
-  },
-  rateWarningSubtitle: {
-    fontSize: moderateScale(12),
-    color: COLORS.overlayLight,
-  },
-  rateWarningRates: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: COLORS.overlay,
-    borderRadius: 12,
-    padding: 12,
-  },
-  rateWarningRateItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-  rateWarningRateLabel: {
-    fontSize: moderateScale(12),
-    color: COLORS.overlayLight,
-    marginBottom: 4,
-  },
-  rateWarningRateValue: {
-    fontSize: moderateScale(18),
-    fontWeight: "bold",
-    color: COLORS.white,
-  },
-  rateWarningDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: COLORS.overlayLight,
-    marginHorizontal: 12,
-  },
-  viewDetailsContainer: {
-    marginTop: spacing.sm,
-    borderRadius: 12,
-    overflow: "hidden",
-    alignSelf: "center",
-    width: "100%",
-    maxWidth: 200,
-  },
-  viewDetailsGradient: {
-    padding: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  viewDetailsText: {
-    fontSize: moderateScale(10),
-    fontWeight: "bold",
-    color: COLORS.errorDark,
-    textAlign: "center",
-  },
-  doubleArrowContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginLeft: 4,
-  },
-  secondArrow: {
-    marginLeft: -8,
-  },
-  goldRateLabelContainer: {
-    width: "90%",
-    alignSelf: "center",
-  },
-  goldRateLabel: {
-    borderRadius: 10,
-    borderWidth: 3,
-    borderColor: theme.colors.secondary,
-    paddingVertical: 2,
-    paddingHorizontal: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  goldRatePurity: {
-    color: COLORS.overlayLight,
-    fontWeight: "bold",
-    fontSize: 14,
-    textAlign: "center",
-    letterSpacing: 1,
-    marginLeft: 8,
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.success,
-    borderWidth: 1,
-    borderColor: COLORS.white,
-  },
-  goldRateTitle: {
-    color: COLORS.tan,
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 2,
-    marginBottom: 0,
-    textAlign: "center",
-    letterSpacing: 0.5,
-  },
-  goldRateRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 2,
-    marginBottom: 0,
-  },
-  goldRatePrice: {
-    color: COLORS.tan,
-    fontWeight: "700",
-    fontSize: 18,
-    textAlign: "center",
-    letterSpacing: 0.5,
-  },
-  goldRateUpdatedAt: {
-    color: COLORS.tan + "BB",
-    fontSize: 10,
-    marginTop: 2,
-    textAlign: "center",
-    fontStyle: "italic",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: theme.colors.bgBlackLight,
-  },
-  loginButton: {
-    backgroundColor: COLORS.gold,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 16,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  loginButtonText: {
-    color: COLORS.error,
-    fontSize: moderateScale(16),
-    fontWeight: "700",
-    textAlign: "center",
-  },
-
-  poweredByContainer: {
-    width: "100%",
-    paddingHorizontal: 20,
-    marginTop: 10,
-    marginBottom: 5,
-    alignItems: "center",
-  },
-  poweredByButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: theme.colors.bgWhiteLight,
-    borderWidth: 1,
-    borderColor: theme.colors.borderGoldMedium,
-  },
-  poweredByText: {
-    fontSize: moderateScale(12),
-    color: COLORS.mediumGrey,
-    marginRight: 4,
-  },
-  poweredByLink: {
-    fontSize: moderateScale(12),
-    color: COLORS.gold,
-    fontWeight: "600",
-    textDecorationLine: "underline",
-  },
-  debugButton: {
-    backgroundColor: theme.colors.secondary,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-    alignItems: "center",
-  },
-  debugButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-
-  // Floating Chat Button Styles
-  floatingChatButton: {
-    position: "absolute",
-    bottom: 100,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 1000,
-  },
-  floatingButtonGradient: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  // Chat Modal Styles
-  chatModalContainer: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  chatHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    paddingTop: 50,
-  },
-  chatHeaderContent: {
-    flex: 1,
-  },
-  chatHeaderTitle: {
-    fontSize: moderateScale(20),
-    fontWeight: "bold",
-    color: "white",
-  },
-  chatHeaderSubtitle: {
-    fontSize: moderateScale(14),
-    color: "rgba(255,255,255,0.8)",
-    marginTop: 2,
-  },
-  closeButton: {
-    padding: 5,
-  },
-  chatContainer: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  messagesList: {
-    flex: 1,
-  },
-  messagesContent: {
-    padding: 10,
-    paddingBottom: 20,
-  },
-  messageContainer: {
-    flexDirection: "row",
-    marginVertical: 4,
-    paddingHorizontal: 10,
-  },
-  botMessageContainer: {
-    justifyContent: "flex-start",
-  },
-  userMessageContainer: {
-    justifyContent: "flex-end",
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    marginHorizontal: 8,
-  },
-  botAvatar: {
-    backgroundColor: "#007AFF",
-  },
-  userAvatarBackground: {
-    backgroundColor: theme.colors.primary,
-  },
-  avatarText: {
-    color: "white",
-    fontSize: moderateScale(14),
-    fontWeight: "bold",
-  },
-  bubble: {
-    maxWidth: "75%",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 18,
-  },
-  botBubble: {
-    backgroundColor: "#e0e0e0",
-    borderBottomLeftRadius: 4,
-  },
-  userBubble: {
-    backgroundColor: theme.colors.primary,
-    borderBottomRightRadius: 4,
-  },
-  bubbleText: {
-    fontSize: moderateScale(14),
-    lineHeight: 20,
-  },
-  botBubbleText: {
-    color: "#333",
-  },
-  userBubbleText: {
-    color: "white",
-  },
-  messageTime: {
-    fontSize: moderateScale(10),
-    color: "#666",
-    marginTop: 4,
-    textAlign: "right",
-  },
-  typingContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  typingText: {
-    fontSize: moderateScale(12),
-    color: "#666",
-    fontStyle: "italic",
-  },
-  inputArea: {
-    backgroundColor: "white",
-    borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
-  },
-  faqButtonsContainer: {
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-  },
-  faqButton: {
-    marginRight: 10,
-    borderRadius: 20,
-    overflow: "hidden",
-    minWidth: 120,
-    maxWidth: 200,
-  },
-  faqButtonGradient: {
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-  },
-  faqButtonText: {
-    color: "white",
-    fontSize: moderateScale(12),
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    gap: 10,
-  },
-  textInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    fontSize: moderateScale(14),
-    color: "#333",
-    backgroundColor: "#f9f9f9",
-    maxHeight: 100,
-  },
-  sendButton: {
-    borderRadius: 20,
-    overflow: "hidden",
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
-  },
-  sendButtonGradient: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  needHelpButton: {
-    marginHorizontal: 15,
-    marginBottom: 15,
-    borderRadius: 25,
-    overflow: "hidden",
-  },
-  needHelpGradient: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  needHelpText: {
-    color: "white",
-    fontSize: moderateScale(16),
-    fontWeight: "bold",
-  },
-  needHelpSubtext: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: moderateScale(12),
-    marginTop: 2,
-  },
-  kycBannerContainer: {
-    width: "100%",
-    paddingHorizontal: rp(16),
-    marginTop: rp(10),
-    marginBottom: rp(5),
-  },
-  kycBanner: {
-    borderRadius: borderRadius.medium,
-    overflow: "hidden",
-    ...SHADOW_UTILS.card(),
-  },
-  kycBannerGradient: {
-    paddingVertical: rp(14),
-    paddingHorizontal: rp(16),
-  },
-  kycBannerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: rp(12),
-  },
-  kycBannerText: {
-    flex: 1,
-    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
-    fontWeight: "600",
-    color: COLORS.white,
-    textAlign: "left",
-  },
-  // Scheme Info Modal Styles
-  schemeInfoModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
-    justifyContent: "center", // Center vertically
-    alignItems: "center", // Center horizontally
-  },
-  schemeInfoModalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  schemeInfoModalContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 24, // Rounded corners on all sides
-    width: responsiveUtils.isTabletDevice() ? "85%" : "90%",
-    maxWidth: responsiveUtils.isTabletDevice() ? 800 : 420,
-    height: responsiveUtils.isTabletDevice() ? "80%" : "75%",
-    maxHeight: responsiveUtils.isTabletDevice() ? 900 : 620,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 10,
+    backgroundImage: {
+      flex: 1,
+      width: "100%",
+      height: "100%",
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 10,
-    overflow: "hidden", // Clip content inside rounded corners
-  },
-  schemeInfoModalContent: {
-    flex: 1,
-    flexDirection: "column",
-  },
-  schemeInfoModalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: rp(20),
-    paddingVertical: rp(16),
-    backgroundColor: theme.colors.primary,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-  schemeInfoModalTitle: {
-    flex: 1,
-    fontSize: rf(20, { minSize: 18, maxSize: 22 }),
-    fontWeight: "700",
-    color: COLORS.white,
-  },
-  schemeInfoModalCloseButton: {
-    padding: rp(8),
-  },
-  schemeInfoModalScrollView: {
-    flex: 1,
-    flexShrink: 1,
-  },
-  schemeInfoModalScrollContent: {
-    padding: rp(20),
-    paddingBottom: rp(100),
-  },
-  schemeInfoSection: {
-    marginBottom: rp(24),
-  },
-  schemeInfoSectionTitle: {
-    fontSize: rf(18, { minSize: 16, maxSize: 20 }),
-    fontWeight: "700",
-    color: theme.colors.primary,
-    marginBottom: rp(12),
-  },
-  schemeInfoSectionText: {
-    fontSize: rf(15, { minSize: 13, maxSize: 17 }),
-    color: theme.colors.textSecondary,
-    lineHeight: 24,
-  },
-  benefitItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: rp(8),
-    gap: rp(8),
-  },
-  benefitText: {
-    flex: 1,
-    fontSize: rf(15, { minSize: 13, maxSize: 17 }),
-    color: theme.colors.textSecondary,
-    lineHeight: 22,
-  },
-  tableContainer: {
-    borderRadius: rb(12),
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: COLORS.border?.primary || "#e0e0e0",
-    marginTop: rp(8),
-    backgroundColor: COLORS.white,
-  },
-  tableHeader: {
-    flexDirection: "row",
-    backgroundColor: theme.colors.primary,
-    paddingVertical: rp(12),
-    paddingHorizontal: rp(16),
-  },
-  tableHeaderText: {
-    flex: 1,
-    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
-    fontWeight: "700",
-    color: COLORS.white,
-    textAlign: "center",
-  },
-  tableRow: {
-    flexDirection: "row",
-    paddingVertical: rp(12),
-    paddingHorizontal: rp(16),
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border?.primary || "#f5f5f5",
-  },
-  tableRowEven: {
-    backgroundColor: COLORS.white,
-  },
-  tableRowOdd: {
-    backgroundColor: "#fafafa",
-  },
-  tableCell: {
-    flex: 1,
-    fontSize: rf(13, { minSize: 11, maxSize: 15 }),
-    color: theme.colors.textSecondary,
-    textAlign: "center",
-  },
-  schemeInfoModalFooter: {
-    flexDirection: "row",
-    paddingHorizontal: rp(24),
-    paddingVertical: rp(20),
-    gap: rp(16),
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border?.primary || "#e5e5e5",
-    borderBottomLeftRadius: 24, // Align rounded corners at the bottom
-    borderBottomRightRadius: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  quickJoinButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    overflow: "hidden",
-    shadowColor: theme.colors.secondary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  quickJoinButtonGradient: {
-    width: 56,
-    height: 56,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  quickJoinButtonText: {
-    fontSize: rf(15, { minSize: 14, maxSize: 17 }),
-    fontWeight: "700",
-    color: COLORS.dark,
-    letterSpacing: 0.3,
-  },
-  joinSchemesButton: {
-    flex: 1,
-    borderRadius: 14,
-    overflow: "hidden",
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  joinSchemesButtonGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: rp(16),
-    gap: rp(8),
-    height: 56,
-  },
-  joinSchemesButtonText: {
-    fontSize: rf(15, { minSize: 14, maxSize: 17 }),
-    fontWeight: "700",
-    color: COLORS.white,
-    letterSpacing: 0.3,
-  },
-  // Quick Join Modal Styles
-  quickJoinModalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  quickJoinModalBackdrop: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  quickJoinModalContainer: {
-    width: "90%",
-    maxWidth: 500,
-    maxHeight: "80%",
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    ...SHADOW_UTILS.card(),
-  },
-  quickJoinModalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: rp(20),
-    paddingVertical: rp(16),
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border?.primary || "#e5e5e5",
-  },
-  quickJoinModalTitle: {
-    fontSize: rf(20, { minSize: 18, maxSize: 22 }),
-    fontWeight: "700",
-    color: theme.colors.primary,
-  },
-  quickJoinModalCloseButton: {
-    padding: rp(8),
-  },
-  quickJoinModalScrollView: {
-    maxHeight: 400,
-  },
-  quickJoinModalScrollContent: {
-    padding: rp(20),
-  },
-  quickJoinInputContainer: {
-    marginBottom: rp(20),
-  },
-  quickJoinInputLabel: {
-    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
-    fontWeight: "600",
-    color: theme.colors.primary,
-    marginBottom: rp(8),
-  },
-  quickJoinInput: {
-    borderWidth: 1,
-    borderColor: COLORS.border?.primary || "#e5e5e5",
-    borderRadius: borderRadius.medium,
-    paddingHorizontal: rp(16),
-    paddingVertical: rp(12),
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
-    color: "#000000",
-    backgroundColor: COLORS.white,
-  },
-  quickJoinInputError: {
-    borderColor: COLORS.error,
-  },
-  quickJoinErrorText: {
-    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
-    color: COLORS.error,
-    marginTop: rp(4),
-  },
-  quickJoinGoldWeightContainer: {
-    backgroundColor: "rgba(255, 200, 87, 0.1)",
-    borderRadius: borderRadius.medium,
-    padding: rp(16),
-    marginTop: rp(8),
-    borderWidth: 1,
-    borderColor: theme.colors.secondary,
-  },
-  quickJoinGoldWeightRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: rp(8),
-    marginBottom: rp(8),
-  },
-  quickJoinGoldWeightLabel: {
-    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
-    fontWeight: "600",
-    color: theme.colors.primary,
-  },
-  quickJoinGoldWeightValue: {
-    fontSize: rf(18, { minSize: 16, maxSize: 20 }),
-    fontWeight: "700",
-    color: theme.colors.primary,
-  },
-  quickJoinModalFooter: {
-    paddingHorizontal: rp(24),
-    paddingVertical: rp(20),
-    paddingBottom: Platform.OS === 'ios' ? rp(34) : rp(24),
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border?.primary || "#e5e5e5",
-    backgroundColor: COLORS.white,
-  },
-  quickJoinSubmitButton: {
-    borderRadius: 14,
-    overflow: "hidden",
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  quickJoinSubmitButtonDisabled: {
-    opacity: 0.6,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  quickJoinSubmitButtonGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: rp(16),
-    paddingHorizontal: rp(16),
-    gap: rp(8),
-    height: 56,
-  },
-  quickJoinSubmitButtonText: {
-    fontSize: rf(16, { minSize: 14, maxSize: 18 }),
-    fontWeight: "700",
-    color: COLORS.white,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  quickJoinInputHint: {
-    fontSize: rf(12, { minSize: 10, maxSize: 14 }),
-    color: COLORS.mediumGrey,
-    fontWeight: "400",
-  },
-  quickJoinQuickAmountsContainer: {
-    marginTop: rp(8),
-    marginBottom: rp(16),
-  },
-  quickJoinQuickAmountsLabel: {
-    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
-    fontWeight: "600",
-    color: theme.colors.primary,
-    marginBottom: rp(8),
-  },
-  quickJoinQuickAmountsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: rp(8),
-  },
-  quickJoinQuickAmountButton: {
-    paddingHorizontal: rp(16),
-    paddingVertical: rp(10),
-    borderRadius: borderRadius.medium,
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.border?.primary || "#e5e5e5",
-  },
-  quickJoinQuickAmountButtonActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  quickJoinQuickAmountButtonText: {
-    fontSize: rf(14, { minSize: 12, maxSize: 16 }),
-    fontWeight: "600",
-    color: theme.colors.primary,
-  },
-  quickJoinQuickAmountButtonTextActive: {
-    color: COLORS.white,
-  },
+    mainContainer: {
+      flex: 1,
+      zIndex: 1,
+      elevation: 1,
+    },
+    headerWrapper: {
+      width: "100%",
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 0,
+    },
+    homeHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: rp(16),
+      paddingVertical: rp(12),
+      paddingTop: 0,
+      backgroundColor: "transparent",
+      zIndex: 10,
+      elevation: 10,
+    },
+    headerLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+    },
+    profileImageContainer: {
+      marginRight: rp(12),
+    },
+    headerProfileImage: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      borderWidth: 2,
+      borderColor: theme.colors.primary,
+    },
+    headerNameContainer: {
+      flex: 1,
+      flexDirection: "column",
+      justifyContent: "center",
+    },
+    headerWelcomeText: {
+      fontSize: rf(11, { minSize: 9, maxSize: 13 }),
+      fontWeight: "400",
+      opacity: 0.7,
+      marginBottom: 2,
+    },
+    headerUserName: {
+      fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+      fontWeight: "600",
+      marginBottom: 2,
+    },
+    headerUserId: {
+      fontSize: rf(12, { minSize: 10, maxSize: 14 }),
+      fontWeight: "400",
+      opacity: 0.8,
+    },
+    headerRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: rp(12),
+    },
+    headerIconButton: {
+      padding: rp(8),
+      position: "relative",
+    },
+    languageIconContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    languageIconText: {
+      fontSize: rf(12, { minSize: 10, maxSize: 14 }),
+      fontWeight: "600",
+      color: theme.colors.textDark,
+      marginLeft: 2,
+    },
+    notificationBadge: {
+      position: "absolute",
+      top: 4,
+      right: 4,
+      backgroundColor: "#ff3333",
+      borderRadius: 10,
+      minWidth: 18,
+      height: 18,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 4,
+      borderWidth: 1,
+      borderColor: COLORS.white,
+    },
+    notificationBadgeText: {
+      color: COLORS.white,
+      fontSize: 10,
+      fontWeight: "bold",
+    },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: "flex-start",
+      alignItems: "stretch",
+      paddingVertical: rp(20), // Increased padding
+      paddingTop: rp(10),
+      paddingBottom: rp(90),
+      zIndex: 1,
+      elevation: 1,
+    },
+    goldRateCardWrapper: {
+      marginTop: rp(5),
+      marginBottom: rp(5),
+    },
+    ratesContainer: {
+      paddingHorizontal: rp(16),
+      width: "100%",
+      flexDirection: "row",
+      justifyContent: "center",
+      marginVertical: 0,
+      marginTop: rp(10),
+      zIndex: 1,
+      elevation: 1,
+    },
+    rateCard: {
+      flex: 1,
+      margin: rp(5),
+      alignItems: "center",
+      maxWidth: wp(45),
+      zIndex: 1,
+      elevation: 1,
+    },
+    singleRateCard: {
+      maxWidth: wp(60),
+      zIndex: 1,
+      elevation: 1,
+    },
+    mainContent: {
+      ...commonStyles.container,
+      alignItems: "center",
+      paddingHorizontal: 0,
+      marginHorizontal: 0,
+    },
+    loadingText: {
+      textAlign: "center",
+      color: COLORS.white,
+      fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+      paddingVertical: spacing.lg,
+    },
+    spacer: {
+      height: spacing.xxxl * 2,
+    },
+    languageSwitcherHeader: {
+      marginLeft: spacing.sm,
+    },
+    bannerContainer: {
+      width: "100%",
+      marginVertical: spacing.sm,
+      paddingHorizontal: spacing.sm,
+    },
+    bannerListContent: {
+      paddingHorizontal: spacing.sm,
+      paddingRight: spacing.xl,
+    },
+    bannerImageWrapper: {
+      width: "100%",
+      borderTopLeftRadius: borderRadius.large,
+      borderTopRightRadius: borderRadius.large,
+      overflow: "hidden",
+    },
+    bannerButtonRow: {
+      ...commonStyles.row,
+      justifyContent: "space-between",
+      width: "90%",
+      alignSelf: "center",
+      marginTop: spacing.lg,
+      gap: spacing.md,
+    },
+    aboutSchemesButton: {
+      flex: 1,
+      backgroundColor: COLORS.overlayLight,
+      borderRadius: borderRadius.medium,
+      paddingVertical: spacing.md,
+      ...commonStyles.center,
+      borderWidth: 1,
+      borderColor: theme.colors.primary,
+      ...SHADOW_UTILS.button(),
+      marginRight: spacing.xs,
+    },
+    aboutSchemesButtonText: {
+      color: theme.colors.textDark,
+      fontWeight: "600",
+      fontSize: rf(15, { minSize: 13, maxSize: 17 }),
+      letterSpacing: 0.2,
+    },
+    joinNowButton: {
+      flex: 1,
+      backgroundColor: theme.colors.primary,
+      borderRadius: borderRadius.medium,
+      paddingVertical: spacing.md,
+      ...commonStyles.center,
+      ...SHADOW_UTILS.button(),
+      marginLeft: spacing.xs,
+    },
+    joinNowButtonText: {
+      color: "#fff",
+      fontWeight: "700",
+      fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+      letterSpacing: 0.5,
+      textTransform: "uppercase",
+    },
 
-  // Floating Offer Card Styles
-  floatingOfferContainer: {
-    position: "absolute",
-    bottom: Platform.OS === 'ios' ? 100 : 90,
-    right: 16,
-    width: 120,
-    height: 160,
-    borderRadius: 16,
-    backgroundColor: "white",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
-    zIndex: 9999,
-    padding: 2,
-  },
-  floatingOfferCard: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 14,
-    overflow: "hidden",
-  },
-  floatingOfferImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 14,
-  },
-  floatingDiscountBadge: {
-    position: "absolute",
-    top: 6,
-    left: 6,
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  floatingDiscountText: {
-    color: "white",
-    fontSize: 9,
-    fontWeight: "800",
-  },
-  floatingOfferCloseButton: {
-    position: "absolute",
-    top: -8,
-    right: -8,
-    backgroundColor: "white",
-    borderRadius: 12,
-    zIndex: 10000,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 4,
-  },
+    headerLanguageButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 8,
+      backgroundColor: COLORS.overlayLight,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: COLORS.overlayMedium,
+    },
+    languageIcon: {
+      fontSize: 16,
+      marginRight: 4,
+    },
+    headerLanguageText: {
+      fontSize: 12,
+      fontWeight: "bold",
+      color: COLORS.white,
+    },
+    sliderLoadingContainer: {
+      width: "100%",
+      height: 200,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: COLORS.overlay,
+      borderRadius: 8,
+      marginVertical: 10,
+    },
+    statusContainer: {
+      width: "100%",
+      marginVertical: 0,
+      marginTop: spacing.xs,
+    },
+    statusHeader: {
+      flexDirection: 'row',
+      alignItems: "center",
+      justifyContent: "flex-start",
+      width: "100%",
+      marginBottom: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      marginTop: spacing.xs,
+    },
+    statusHeaderLine: {
+      display: 'none', // Hide lines for cleaner look
+    },
+    statusHeaderText: {
+      fontSize: rf(18, { minSize: 16, maxSize: 20 }),
+      fontWeight: "800",
+      color: theme.colors.textDark,
+      textTransform: "uppercase",
+      letterSpacing: 1.5,
+      textAlign: "left",
+    },
 
-  // Offer Details Modal Styles
-  offerModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  offerModalContent: {
-    width: "100%",
-    maxWidth: 400,
-    backgroundColor: "white",
-    borderRadius: 24,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-    maxHeight: "80%",
-  },
-  offerModalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  offerModalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#333",
-    flex: 1,
-    marginRight: 10,
-  },
-  offerModalCloseButton: {
-    padding: 4,
-  },
-  offerModalBody: {
-    padding: 20,
-  },
-  offerModalImage: {
-    width: "100%",
-    height: 180,
-    borderRadius: 16,
-    marginBottom: 16,
-  },
-  offerModalDiscountBadge: {
-    backgroundColor: theme.colors.primary,
-    alignSelf: "flex-start",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  offerModalDiscountText: {
-    color: "white",
-    fontWeight: "800",
-    fontSize: 12,
-    letterSpacing: 0.5,
-  },
-  offerModalSubtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: "#444",
-    marginBottom: 16,
-    fontWeight: "500",
-  },
-  offerModalValidityContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F9F9F9",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  offerModalValidityText: {
-    marginLeft: 8,
-    fontSize: 13,
-    color: "#666",
-    fontWeight: "600",
-  },
-  offerModalTermsContainer: {
-    marginBottom: 24,
-  },
-  offerModalTermsTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#333",
-    marginBottom: 10,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  offerModalTermItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 10,
-    gap: 8,
-  },
-  offerModalTermText: {
-    flex: 1,
-    fontSize: 13,
-    color: "#666",
-    lineHeight: 18,
-  },
-  floatingPill: {
-    position: "absolute",
-    bottom: Platform.OS === "ios" ? 100 : 80,
-    right: 16,
-    zIndex: 9999,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: "#D4AF37",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8,
-    maxWidth: 200,
-  },
-  floatingPillGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 18,
-  },
-  floatingPillTitle: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "bold",
-    maxWidth: 110,
-  },
-  floatingPillTime: {
-    color: "#FFD700",
-    fontSize: 11,
-    fontWeight: "bold",
-    marginTop: 1,
-  },
-  floatingPillClose: {
-    paddingLeft: 4,
-  },
-  actionCard: {
-    backgroundColor: "#fff",
-    borderRadius: rb(12),
-    padding: rp(10),
-    height: rp(105),
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: "rgba(212, 175, 55, 0.2)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  actionCardIconContainer: {
-    width: rp(38),
-    height: rp(38),
-    borderRadius: rb(19),
-    backgroundColor: "#FFF8E7",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: rp(4),
-  },
-  actionCardText: {
-    color: "#1a1a1a",
-    fontSize: rf(9, { minSize: 8, maxSize: 11 }),
-    fontWeight: "800",
-    textAlign: "center",
-    paddingHorizontal: rp(2),
-  },
-});
+    sectionHeader: {
+      width: "100%",
+      paddingHorizontal: 20,
+      marginTop: 20,
+      marginBottom: 10,
+      alignItems: "center",
+    },
+    sectionHeaderContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "100%",
+    },
+    sectionHeaderLine: {
+      height: 1,
+      width: 40,
+      backgroundColor: theme.colors.secondary, // Thinner, wider lines
+      marginHorizontal: 15,
+      opacity: 0.6
+    },
+    sectionHeaderText: {
+      fontSize: moderateScale(18),
+      fontWeight: "700",
+      color: theme.colors.textDark,
+      textTransform: "uppercase",
+      letterSpacing: 1.2,
+    },
+    sectionHeaderSubtext: {
+      fontSize: moderateScale(12),
+      color: COLORS.mediumGrey,
+      marginTop: 6,
+      textAlign: "center",
+      fontWeight: '500',
+      letterSpacing: 0.5
+    },
+    // Collection Styles Added via Implementation Plan
+    collectionContainer: {
+      marginBottom: spacing.xs,
+      paddingVertical: 0,
+    },
+    collectionHeader: {
+      paddingHorizontal: spacing.lg,
+      marginBottom: spacing.xs,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    collectionHeaderTitle: {
+      fontSize: rf(18),
+      fontWeight: '700',
+      color: theme.colors.textDark,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    },
+    collectionCompactToggle: {
+      padding: spacing.xs,
+      borderRadius: borderRadius.small,
+      backgroundColor: 'rgba(133, 1, 17, 0.05)',
+    },
+    collectionCompactContainer: {
+      alignItems: 'center',
+      marginRight: spacing.md,
+      width: 76,
+    },
+    compactCircleBorder: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      padding: 2,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    compactCircleInner: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      overflow: 'hidden',
+      backgroundColor: '#111',
+    },
+    compactImage: {
+      width: '100%',
+      height: '100%',
+    },
+    collectionCompactName: {
+      fontSize: rf(11),
+      color: theme.colors.textSecondary,
+      fontWeight: '600',
+      marginTop: 6,
+      width: '100%',
+      textAlign: 'center',
+    },
+    collectionListContent: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.sm,
+    },
+    collectionCardContainer: {
+      marginRight: spacing.md,
+      borderRadius: borderRadius.medium,
+      overflow: 'hidden',
+      backgroundColor: COLORS.white,
+      ...SHADOW_UTILS.card(),
+      width: 140, // Fixed width for horizontal scroll items
+      height: 140,
+      elevation: 4,
+    },
+    videoContainer: {
+      width: "100%",
+      paddingHorizontal: 10,
+      marginVertical: 15,
+    },
+    videoHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 12,
+      paddingHorizontal: 5,
+    },
+    videoTitle: {
+      fontSize: moderateScale(16),
+      fontWeight: "700",
+      color: COLORS.error,
+      textTransform: "uppercase",
+      letterSpacing: 0.3,
+      marginRight: 10,
+    },
+    videoHeaderLine: {
+      flex: 1,
+      height: 1.5,
+      backgroundColor: COLORS.secondary,
+    },
+    videoWrapper: {
+      backgroundColor: COLORS.white,
+      borderRadius: 20,
+      padding: 2,
+      shadowColor: COLORS.black,
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 5,
+    },
+    rateWarningContainer: {
+      width: "90%",
+      backgroundColor: COLORS.error,
+      borderRadius: 16,
+      padding: 16,
+      marginVertical: 10,
+    },
+    rateWarningContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    rateWarningTextContainer: {
+      marginLeft: 12,
+      flex: 1,
+    },
+    rateWarningTitle: {
+      fontSize: moderateScale(16),
+      fontWeight: "700",
+      color: COLORS.white,
+      marginBottom: 4,
+    },
+    rateWarningSubtitle: {
+      fontSize: moderateScale(12),
+      color: COLORS.overlayLight,
+    },
+    rateWarningRates: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      backgroundColor: COLORS.overlay,
+      borderRadius: 12,
+      padding: 12,
+    },
+    rateWarningRateItem: {
+      flex: 1,
+      alignItems: "center",
+    },
+    rateWarningRateLabel: {
+      fontSize: moderateScale(12),
+      color: COLORS.overlayLight,
+      marginBottom: 4,
+    },
+    rateWarningRateValue: {
+      fontSize: moderateScale(18),
+      fontWeight: "bold",
+      color: COLORS.white,
+    },
+    rateWarningDivider: {
+      width: 1,
+      height: 30,
+      backgroundColor: COLORS.overlayLight,
+      marginHorizontal: 12,
+    },
+    viewDetailsContainer: {
+      marginTop: spacing.sm,
+      borderRadius: 12,
+      overflow: "hidden",
+      alignSelf: "center",
+      width: "100%",
+      maxWidth: 200,
+    },
+    viewDetailsGradient: {
+      padding: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    viewDetailsText: {
+      fontSize: moderateScale(10),
+      fontWeight: "bold",
+      color: COLORS.errorDark,
+      textAlign: "center",
+    },
+    doubleArrowContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginLeft: 4,
+    },
+    secondArrow: {
+      marginLeft: -8,
+    },
+    goldRateLabelContainer: {
+      width: "90%",
+      alignSelf: "center",
+    },
+    goldRateLabel: {
+      borderRadius: 10,
+      borderWidth: 3,
+      borderColor: theme.colors.secondary,
+      paddingVertical: 2,
+      paddingHorizontal: 0,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: COLORS.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 3,
+    },
+    goldRatePurity: {
+      color: COLORS.overlayLight,
+      fontWeight: "bold",
+      fontSize: 14,
+      textAlign: "center",
+      letterSpacing: 1,
+      marginLeft: 8,
+    },
+    liveDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: COLORS.success,
+      borderWidth: 1,
+      borderColor: COLORS.white,
+    },
+    goldRateTitle: {
+      color: COLORS.tan,
+      fontSize: 12,
+      fontWeight: "600",
+      marginTop: 2,
+      marginBottom: 0,
+      textAlign: "center",
+      letterSpacing: 0.5,
+    },
+    goldRateRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      marginTop: 2,
+      marginBottom: 0,
+    },
+    goldRatePrice: {
+      color: COLORS.tan,
+      fontWeight: "700",
+      fontSize: 18,
+      textAlign: "center",
+      letterSpacing: 0.5,
+    },
+    goldRateUpdatedAt: {
+      color: COLORS.tan + "BB",
+      fontSize: 10,
+      marginTop: 2,
+      textAlign: "center",
+      fontStyle: "italic",
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: theme.colors.bgBlackLight,
+    },
+    loginButton: {
+      backgroundColor: COLORS.gold,
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 8,
+      marginTop: 16,
+      shadowColor: COLORS.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    loginButtonText: {
+      color: COLORS.error,
+      fontSize: moderateScale(16),
+      fontWeight: "700",
+      textAlign: "center",
+    },
+
+    poweredByContainer: {
+      width: "100%",
+      paddingHorizontal: 20,
+      marginTop: 10,
+      marginBottom: 5,
+      alignItems: "center",
+    },
+    poweredByButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 20,
+      backgroundColor: theme.colors.bgWhiteLight,
+      borderWidth: 1,
+      borderColor: theme.colors.borderGoldMedium,
+    },
+    poweredByText: {
+      fontSize: moderateScale(12),
+      color: COLORS.mediumGrey,
+      marginRight: 4,
+    },
+    poweredByLink: {
+      fontSize: moderateScale(12),
+      color: COLORS.gold,
+      fontWeight: "600",
+      textDecorationLine: "underline",
+    },
+    debugButton: {
+      backgroundColor: theme.colors.secondary,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderRadius: 8,
+      marginBottom: 8,
+      alignItems: "center",
+    },
+    debugButtonText: {
+      color: "#fff",
+      fontSize: 14,
+      fontWeight: "600",
+    },
+
+    // Floating Chat Button Styles
+    floatingChatButton: {
+      position: "absolute",
+      bottom: 100,
+      right: 20,
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+      zIndex: 1000,
+    },
+    floatingButtonGradient: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+
+    // Chat Modal Styles
+    chatModalContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.backgroundSecondary,
+    },
+    chatHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 20,
+      paddingVertical: 20,
+      paddingTop: 50,
+    },
+    chatHeaderContent: {
+      flex: 1,
+    },
+    chatHeaderTitle: {
+      fontSize: moderateScale(20),
+      fontWeight: "bold",
+      color: "white",
+    },
+    chatHeaderSubtitle: {
+      fontSize: moderateScale(14),
+      color: "rgba(255,255,255,0.8)",
+      marginTop: 2,
+    },
+    closeButton: {
+      padding: 5,
+    },
+    chatContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.backgroundSecondary,
+    },
+    messagesList: {
+      flex: 1,
+    },
+    messagesContent: {
+      padding: 10,
+      paddingBottom: 20,
+    },
+    messageContainer: {
+      flexDirection: "row",
+      marginVertical: 4,
+      paddingHorizontal: 10,
+    },
+    botMessageContainer: {
+      justifyContent: "flex-start",
+    },
+    userMessageContainer: {
+      justifyContent: "flex-end",
+    },
+    avatar: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      justifyContent: "center",
+      alignItems: "center",
+      marginHorizontal: 8,
+    },
+    botAvatar: {
+      backgroundColor: "#007AFF",
+    },
+    userAvatarBackground: {
+      backgroundColor: theme.colors.primary,
+    },
+    avatarText: {
+      color: "white",
+      fontSize: moderateScale(14),
+      fontWeight: "bold",
+    },
+    bubble: {
+      maxWidth: "75%",
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 18,
+    },
+    botBubble: {
+      backgroundColor: "#e0e0e0",
+      borderBottomLeftRadius: 4,
+    },
+    userBubble: {
+      backgroundColor: theme.colors.primary,
+      borderBottomRightRadius: 4,
+    },
+    bubbleText: {
+      fontSize: moderateScale(14),
+      lineHeight: 20,
+    },
+    botBubbleText: {
+      color: "#333",
+    },
+    userBubbleText: {
+      color: "white",
+    },
+    messageTime: {
+      fontSize: moderateScale(10),
+      color: "#666",
+      marginTop: 4,
+      textAlign: "right",
+    },
+    typingContainer: {
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+    },
+    typingText: {
+      fontSize: moderateScale(12),
+      color: "#666",
+      fontStyle: "italic",
+    },
+    inputArea: {
+      backgroundColor: "white",
+      borderTopWidth: 1,
+      borderTopColor: "#e0e0e0",
+    },
+    faqButtonsContainer: {
+      paddingHorizontal: 10,
+      paddingVertical: 10,
+    },
+    faqButton: {
+      marginRight: 10,
+      borderRadius: 20,
+      overflow: "hidden",
+      minWidth: 120,
+      maxWidth: 200,
+    },
+    faqButtonGradient: {
+      paddingHorizontal: 15,
+      paddingVertical: 10,
+    },
+    faqButtonText: {
+      color: "white",
+      fontSize: moderateScale(12),
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    inputWrapper: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      paddingHorizontal: 15,
+      paddingVertical: 10,
+      gap: 10,
+    },
+    textInput: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: "#ddd",
+      borderRadius: 20,
+      paddingHorizontal: 15,
+      paddingVertical: 10,
+      fontSize: moderateScale(14),
+      color: "#333",
+      backgroundColor: "#f9f9f9",
+      maxHeight: 100,
+    },
+    sendButton: {
+      borderRadius: 20,
+      overflow: "hidden",
+      width: 40,
+      height: 40,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    sendButtonDisabled: {
+      opacity: 0.5,
+    },
+    sendButtonGradient: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    needHelpButton: {
+      marginHorizontal: 15,
+      marginBottom: 15,
+      borderRadius: 25,
+      overflow: "hidden",
+    },
+    needHelpGradient: {
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      alignItems: "center",
+    },
+    needHelpText: {
+      color: "white",
+      fontSize: moderateScale(16),
+      fontWeight: "bold",
+    },
+    needHelpSubtext: {
+      color: "rgba(255,255,255,0.8)",
+      fontSize: moderateScale(12),
+      marginTop: 2,
+    },
+    kycBannerContainer: {
+      width: "100%",
+      paddingHorizontal: rp(16),
+      marginTop: rp(10),
+      marginBottom: rp(5),
+      backgroundColor: theme.colors.error,
+    },
+    kycBanner: {
+      borderRadius: borderRadius.medium,
+      overflow: "hidden",
+      ...SHADOW_UTILS.card(),
+    },
+    kycBannerGradient: {
+      paddingVertical: rp(14),
+      paddingHorizontal: rp(16),
+    },
+    kycBannerContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: rp(12),
+    },
+    kycBannerText: {
+      flex: 1,
+      fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+      fontWeight: "600",
+      color: COLORS.white,
+      textAlign: "left",
+    },
+    // Scheme Info Modal Styles
+    schemeInfoModalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.65)",
+      justifyContent: "center", // Center vertically
+      alignItems: "center", // Center horizontally
+    },
+    schemeInfoModalBackdrop: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    schemeInfoModalContainer: {
+      backgroundColor: COLORS.white,
+      borderRadius: 24, // Rounded corners on all sides
+      width: responsiveUtils.isTabletDevice() ? "85%" : "90%",
+      maxWidth: responsiveUtils.isTabletDevice() ? 800 : 420,
+      height: responsiveUtils.isTabletDevice() ? "80%" : "75%",
+      maxHeight: responsiveUtils.isTabletDevice() ? 900 : 620,
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 10,
+      },
+      shadowOpacity: 0.3,
+      shadowRadius: 15,
+      elevation: 10,
+      overflow: "hidden", // Clip content inside rounded corners
+    },
+    schemeInfoModalContent: {
+      flex: 1,
+      flexDirection: "column",
+    },
+    schemeInfoModalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: rp(20),
+      paddingVertical: rp(16),
+      backgroundColor: theme.colors.primary,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+    },
+    schemeInfoModalTitle: {
+      flex: 1,
+      fontSize: rf(20, { minSize: 18, maxSize: 22 }),
+      fontWeight: "700",
+      color: COLORS.white,
+    },
+    schemeInfoModalCloseButton: {
+      padding: rp(8),
+    },
+    schemeInfoModalScrollView: {
+      flex: 1,
+      flexShrink: 1,
+    },
+    schemeInfoModalScrollContent: {
+      padding: rp(20),
+      paddingBottom: rp(100),
+    },
+    schemeInfoSection: {
+      marginBottom: rp(24),
+    },
+    schemeInfoSectionTitle: {
+      fontSize: rf(18, { minSize: 16, maxSize: 20 }),
+      fontWeight: "700",
+      color: theme.colors.textDark,
+      marginBottom: rp(12),
+    },
+    schemeInfoSectionText: {
+      fontSize: rf(15, { minSize: 13, maxSize: 17 }),
+      color: theme.colors.textSecondary,
+      lineHeight: 24,
+    },
+    benefitItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: rp(8),
+      gap: rp(8),
+    },
+    benefitText: {
+      flex: 1,
+      fontSize: rf(15, { minSize: 13, maxSize: 17 }),
+      color: theme.colors.textSecondary,
+      lineHeight: 22,
+    },
+    tableContainer: {
+      borderRadius: rb(12),
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: COLORS.border?.primary || "#e0e0e0",
+      marginTop: rp(8),
+      backgroundColor: COLORS.white,
+    },
+    tableHeader: {
+      flexDirection: "row",
+      backgroundColor: theme.colors.primary,
+      paddingVertical: rp(12),
+      paddingHorizontal: rp(16),
+    },
+    tableHeaderText: {
+      flex: 1,
+      fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+      fontWeight: "700",
+      color: COLORS.white,
+      textAlign: "center",
+    },
+    tableRow: {
+      flexDirection: "row",
+      paddingVertical: rp(12),
+      paddingHorizontal: rp(16),
+      borderBottomWidth: 1,
+      borderBottomColor: COLORS.border?.primary || "#f5f5f5",
+    },
+    tableRowEven: {
+      backgroundColor: COLORS.white,
+    },
+    tableRowOdd: {
+      backgroundColor: theme.colors.background,
+    },
+    tableCell: {
+      flex: 1,
+      fontSize: rf(13, { minSize: 11, maxSize: 15 }),
+      color: theme.colors.textSecondary,
+      textAlign: "center",
+    },
+    schemeInfoModalFooter: {
+      flexDirection: "row",
+      paddingHorizontal: rp(24),
+      paddingVertical: rp(20),
+      gap: rp(16),
+      backgroundColor: COLORS.white,
+      borderTopWidth: 1,
+      borderTopColor: COLORS.border?.primary || "#e5e5e5",
+      borderBottomLeftRadius: 24, // Align rounded corners at the bottom
+      borderBottomRightRadius: 24,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 10,
+      elevation: 10,
+    },
+    quickJoinButton: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      overflow: "hidden",
+      shadowColor: theme.colors.secondary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    quickJoinButtonGradient: {
+      width: 56,
+      height: 56,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    quickJoinButtonText: {
+      fontSize: rf(15, { minSize: 14, maxSize: 17 }),
+      fontWeight: "700",
+      color: COLORS.dark,
+      letterSpacing: 0.3,
+    },
+    joinSchemesButton: {
+      flex: 1,
+      borderRadius: 14,
+      overflow: "hidden",
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    joinSchemesButtonGradient: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: rp(16),
+      gap: rp(8),
+      height: 56,
+    },
+    joinSchemesButtonText: {
+      fontSize: rf(15, { minSize: 14, maxSize: 17 }),
+      fontWeight: "700",
+      color: COLORS.white,
+      letterSpacing: 0.3,
+    },
+    // Quick Join Modal Styles
+    quickJoinModalOverlay: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    quickJoinModalBackdrop: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+    },
+    quickJoinModalContainer: {
+      width: "90%",
+      maxWidth: 500,
+      maxHeight: "80%",
+      backgroundColor: COLORS.white,
+      borderRadius: 20,
+      ...SHADOW_UTILS.card(),
+    },
+    quickJoinModalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: rp(20),
+      paddingVertical: rp(16),
+      borderBottomWidth: 1,
+      borderBottomColor: COLORS.border?.primary || "#e5e5e5",
+    },
+    quickJoinModalTitle: {
+      fontSize: rf(20, { minSize: 18, maxSize: 22 }),
+      fontWeight: "700",
+      color: theme.colors.textDark,
+    },
+    quickJoinModalCloseButton: {
+      padding: rp(8),
+    },
+    quickJoinModalScrollView: {
+      maxHeight: 400,
+    },
+    quickJoinModalScrollContent: {
+      padding: rp(20),
+    },
+    quickJoinInputContainer: {
+      marginBottom: rp(20),
+    },
+    quickJoinInputLabel: {
+      fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+      fontWeight: "600",
+      color: theme.colors.textDark,
+      marginBottom: rp(8),
+    },
+    quickJoinInput: {
+      borderWidth: 1,
+      borderColor: COLORS.border?.primary || "#e5e5e5",
+      borderRadius: borderRadius.medium,
+      paddingHorizontal: rp(16),
+      paddingVertical: rp(12),
+      fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+      color: "#000000",
+      backgroundColor: COLORS.white,
+    },
+    quickJoinInputError: {
+      borderColor: COLORS.error,
+    },
+    quickJoinErrorText: {
+      fontSize: rf(12, { minSize: 10, maxSize: 14 }),
+      color: COLORS.error,
+      marginTop: rp(4),
+    },
+    quickJoinGoldWeightContainer: {
+      backgroundColor: "rgba(255, 200, 87, 0.1)",
+      borderRadius: borderRadius.medium,
+      padding: rp(16),
+      marginTop: rp(8),
+      borderWidth: 1,
+      borderColor: theme.colors.secondary,
+    },
+    quickJoinGoldWeightRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: rp(8),
+      marginBottom: rp(8),
+    },
+    quickJoinGoldWeightLabel: {
+      fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+      fontWeight: "600",
+      color: theme.colors.textDark,
+    },
+    quickJoinGoldWeightValue: {
+      fontSize: rf(18, { minSize: 16, maxSize: 20 }),
+      fontWeight: "700",
+      color: theme.colors.textDark,
+    },
+    quickJoinModalFooter: {
+      paddingHorizontal: rp(24),
+      paddingVertical: rp(20),
+      paddingBottom: Platform.OS === 'ios' ? rp(34) : rp(24),
+      borderTopWidth: 1,
+      borderTopColor: COLORS.border?.primary || "#e5e5e5",
+      backgroundColor: COLORS.white,
+    },
+    quickJoinSubmitButton: {
+      borderRadius: 14,
+      overflow: "hidden",
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    quickJoinSubmitButtonDisabled: {
+      opacity: 0.6,
+      shadowOpacity: 0,
+      elevation: 0,
+    },
+    quickJoinSubmitButtonGradient: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: rp(16),
+      paddingHorizontal: rp(16),
+      gap: rp(8),
+      height: 56,
+    },
+    quickJoinSubmitButtonText: {
+      fontSize: rf(16, { minSize: 14, maxSize: 18 }),
+      fontWeight: "700",
+      color: COLORS.white,
+      letterSpacing: 0.5,
+      textTransform: "uppercase",
+    },
+    quickJoinInputHint: {
+      fontSize: rf(12, { minSize: 10, maxSize: 14 }),
+      color: COLORS.mediumGrey,
+      fontWeight: "400",
+    },
+    quickJoinQuickAmountsContainer: {
+      marginTop: rp(8),
+      marginBottom: rp(16),
+    },
+    quickJoinQuickAmountsLabel: {
+      fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+      fontWeight: "600",
+      color: theme.colors.textDark,
+      marginBottom: rp(8),
+    },
+    quickJoinQuickAmountsRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: rp(8),
+    },
+    quickJoinQuickAmountButton: {
+      paddingHorizontal: rp(16),
+      paddingVertical: rp(10),
+      borderRadius: borderRadius.medium,
+      backgroundColor: COLORS.white,
+      borderWidth: 1,
+      borderColor: COLORS.border?.primary || "#e5e5e5",
+    },
+    quickJoinQuickAmountButtonActive: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+    },
+    quickJoinQuickAmountButtonText: {
+      fontSize: rf(14, { minSize: 12, maxSize: 16 }),
+      fontWeight: "600",
+      color: theme.colors.textDark,
+    },
+    quickJoinQuickAmountButtonTextActive: {
+      color: COLORS.white,
+    },
+
+    // Floating Offer Card Styles
+    floatingOfferContainer: {
+      position: "absolute",
+      bottom: Platform.OS === 'ios' ? 100 : 90,
+      right: 16,
+      width: 120,
+      height: 160,
+      borderRadius: 16,
+      backgroundColor: "white",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 6,
+      elevation: 8,
+      zIndex: 9999,
+      padding: 2,
+    },
+    floatingOfferCard: {
+      width: "100%",
+      height: "100%",
+      borderRadius: 14,
+      overflow: "hidden",
+    },
+    floatingOfferImage: {
+      width: "100%",
+      height: "100%",
+      borderRadius: 14,
+    },
+    floatingDiscountBadge: {
+      position: "absolute",
+      top: 6,
+      left: 6,
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: 6,
+      paddingVertical: 3,
+      borderRadius: 8,
+    },
+    floatingDiscountText: {
+      color: "white",
+      fontSize: 9,
+      fontWeight: "800",
+    },
+    floatingOfferCloseButton: {
+      position: "absolute",
+      top: -8,
+      right: -8,
+      backgroundColor: "white",
+      borderRadius: 12,
+      zIndex: 10000,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+      elevation: 4,
+    },
+
+    // Offer Details Modal Styles
+    offerModalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.6)",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 20,
+    },
+    offerModalContent: {
+      width: "100%",
+      maxWidth: 400,
+      backgroundColor: "white",
+      borderRadius: 24,
+      overflow: "hidden",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.3,
+      shadowRadius: 20,
+      elevation: 10,
+      maxHeight: "80%",
+    },
+    offerModalHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: "#F0F0F0",
+    },
+    offerModalTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: "#333",
+      flex: 1,
+      marginRight: 10,
+    },
+    offerModalCloseButton: {
+      padding: 4,
+    },
+    offerModalBody: {
+      padding: 20,
+    },
+    offerModalImage: {
+      width: "100%",
+      height: 180,
+      borderRadius: 16,
+      marginBottom: 16,
+    },
+    offerModalDiscountBadge: {
+      backgroundColor: theme.colors.primary,
+      alignSelf: "flex-start",
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 12,
+      marginBottom: 12,
+    },
+    offerModalDiscountText: {
+      color: "white",
+      fontWeight: "800",
+      fontSize: 12,
+      letterSpacing: 0.5,
+    },
+    offerModalSubtitle: {
+      fontSize: 15,
+      lineHeight: 22,
+      color: "#444",
+      marginBottom: 16,
+      fontWeight: "500",
+    },
+    offerModalValidityContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#F9F9F9",
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      borderRadius: 12,
+      marginBottom: 20,
+    },
+    offerModalValidityText: {
+      marginLeft: 8,
+      fontSize: 13,
+      color: "#666",
+      fontWeight: "600",
+    },
+    offerModalTermsContainer: {
+      marginBottom: 24,
+    },
+    offerModalTermsTitle: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: "#333",
+      marginBottom: 10,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    offerModalTermItem: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      marginBottom: 10,
+      gap: 8,
+    },
+    offerModalTermText: {
+      flex: 1,
+      fontSize: 13,
+      color: "#666",
+      lineHeight: 18,
+    },
+    floatingPill: {
+      position: "absolute",
+      bottom: Platform.OS === "ios" ? 100 : 80,
+      right: 16,
+      zIndex: 9999,
+      borderRadius: 20,
+      borderWidth: 1.5,
+      borderColor: "#D4AF37",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 5,
+      elevation: 8,
+      maxWidth: 200,
+    },
+    floatingPillGradient: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 18,
+    },
+    floatingPillTitle: {
+      color: "#fff",
+      fontSize: 10,
+      fontWeight: "bold",
+      maxWidth: 110,
+    },
+    floatingPillTime: {
+      color: "#FFD700",
+      fontSize: 11,
+      fontWeight: "bold",
+      marginTop: 1,
+    },
+    floatingPillClose: {
+      paddingLeft: 4,
+    },
+  })
+}
+
+var styles = getStyles(theme);;
 // Skeleton loading styles
 const skeletonStyles = StyleSheet.create({
   rateCardContainer: {
@@ -5610,7 +5510,7 @@ const styles2 = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.backgroundSecondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -5646,7 +5546,7 @@ const styles2 = StyleSheet.create({
   },
   amountHintText: {
     fontSize: 12,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginLeft: 4,
   },
   amountHeader: {
@@ -5657,13 +5557,13 @@ const styles2 = StyleSheet.create({
   },
   limitText: {
     fontSize: 12,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: '600',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
     borderColor: '#EFEFEF',
     borderRadius: 14,
@@ -5761,7 +5661,7 @@ const styles2 = StyleSheet.create({
     textAlign: 'center',
   },
   quickAmountTextActive: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: '600',
   },
   footer: {

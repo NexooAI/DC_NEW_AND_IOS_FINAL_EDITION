@@ -1,112 +1,43 @@
-import COLORS from './colors';
-import { theme } from './theme';
+import { themeConfig as baseThemeConfig } from './theme.config';
+
+interface ThemeConfig {
+  customerName?: string;
+  playStoreUrl?: string;
+  appStoreUrl?: string;
+  address?: string;
+  mobile?: string;
+  whatsapp?: string;
+  email?: string;
+  website?: string;
+  latitude?: number;
+  longitude?: number;
+  foundationYear?: number;
+  baseUrl?: string;
+  youtubeUrl?: string;
+}
+
+const themeConfig = baseThemeConfig as ThemeConfig;
 
 export const APP_CONFIG = {
-  // Theme Config
-  theme: theme,
-
-  // Centralized Colors
-  colors: COLORS,
-
-  // Centralized Typography Configuration
-  typography: {
-    fontFamily: {
-      regular: 'Inter-Regular',
-      medium: 'Inter-Medium',
-      bold: 'Inter-Bold',
-    },
-    fontSize: {
-      xs: 12,
-      sm: 14,
-      md: 16,
-      lg: 18,
-      xl: 20,
-      xxl: 24,
-      h1: 32,
-    },
-    fontWeight: {
-      regular: '400' as const,
-      medium: '500' as const,
-      bold: '700' as const,
-    },
-  },
-
-  // Centralized Spacing Token Definitions
-  spacing: {
-    xs: 4,
-    sm: 8,
-    md: 12,
-    lg: 16,
-    xl: 24,
-    xxl: 32,
-  },
-
-  // Centralized Radius Tokens
-  radius: {
-    xs: 4,
-    sm: 8,
-    md: 12,
-    lg: 16,
-    xl: 24,
-    round: 9999,
-  },
-
-  // Centralized Shadows Configuration
-  shadows: {
-    sm: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.18,
-      shadowRadius: 1.00,
-      elevation: 1,
-    },
-    md: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-      elevation: 5,
-    },
-    lg: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.30,
-      shadowRadius: 4.65,
-      elevation: 8,
-    },
-  },
-
-  // Centralized Image asset configuration
-  images: theme.images,
-
-  // Centralized Feature Flags configuration
-  featureFlags: {
-    enableBiometrics: true,
-    enableNotifications: true,
-    enableReferrals: true,
-    enableKyc: true,
-    enableLuckyDraw: true,
-  },
-
-  // Centralized URL endpoints
+  appName: themeConfig.customerName || "",
+  companyName: themeConfig.customerName || "",
+  companyNameUpper: (themeConfig.customerName || "").toUpperCase(),
+  copyright: themeConfig.customerName ? `${themeConfig.customerName}. All rights reserved.` : "",
+  playStoreUrl: themeConfig.playStoreUrl || "",
+  appStoreUrl: themeConfig.appStoreUrl || "",
+  address: themeConfig.address || "",
+  mobile: themeConfig.mobile || "",
+  whatsapp: themeConfig.whatsapp || "",
+  email: themeConfig.email || "",
+  website: themeConfig.website || "",
+  latitude: themeConfig.latitude || 0,
+  longitude: themeConfig.longitude || 0,
+  foundationYear: themeConfig.foundationYear || 0,
+  baseUrl: themeConfig.baseUrl || "",
   urls: {
-    baseUrl: theme.baseUrl,
-    youtubeUrl: theme.youtubeUrl,
-    website: theme.constants.website,
-    providerUrl: theme.constants.providerUrl,
+    baseUrl: themeConfig.baseUrl || "",
   },
-
-  // Centralized Support Details
-  support: {
-    customerName: theme.constants.customerName,
-    address: theme.constants.address,
-    mobile: theme.constants.mobile,
-    whatsapp: theme.constants.whatsapp,
-    email: theme.constants.email,
-    latitude: theme.constants.latitude,
-    longitude: theme.constants.longitude,
-    providerName: theme.constants.providerName,
-  },
+  youtubeUrl: themeConfig.youtubeUrl || "",
 };
 
 export default APP_CONFIG;

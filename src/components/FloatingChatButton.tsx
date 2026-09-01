@@ -25,7 +25,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { theme } from "@/constants/theme";
 import { moderateScale } from "react-native-size-matters";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { ticketsAPI } from "@/services/api";
 import { useRouter } from "expo-router";
 
@@ -50,6 +50,8 @@ const TICKET_SUBJECTS = [
 ];
 
 const FloatingChatButton = () => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const router = useRouter();
   const [isChatVisible, setIsChatVisible] = useState(false);
@@ -577,7 +579,7 @@ const FloatingChatButton = () => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   fabContainer: {
     position: "absolute",
     bottom: Platform.OS === "ios" ? 100 : 90,
@@ -624,7 +626,7 @@ const styles = StyleSheet.create({
   },
   chatModalContainer: {
     height: "85%",
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: 'hidden',
@@ -782,7 +784,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
@@ -851,7 +853,7 @@ const styles = StyleSheet.create({
     width: 160,
     height: 70,
     padding: 10,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     marginRight: 10,
     borderWidth: 1,
@@ -952,7 +954,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   readOnlyInput: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.backgroundSecondary,
     borderWidth: 1,
     borderColor: '#eee',
     borderRadius: 8,
@@ -971,7 +973,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 8,
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
   },
   subjectText: {
     fontSize: 14,
@@ -988,7 +990,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
     textAlignVertical: 'top',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
   },
   ticketLoading: {
     alignItems: 'center',
@@ -1045,6 +1047,8 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(13),
     fontWeight: "700",
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default FloatingChatButton;

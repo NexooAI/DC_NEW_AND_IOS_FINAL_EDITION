@@ -1,7 +1,6 @@
 import api from '@/services/api';
 import useGlobalStore from '@/store/global.store';
 import { logger } from '@/utils/logger';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Cache configuration
@@ -22,6 +21,10 @@ const CACHE_CONFIG = {
   ABOUT_PAGE: {
     MAX_AGE: 12 * 60 * 60 * 1000, // 12 hours
     ENDPOINT: '/about-page/latest',
+  },
+  APP_CONFIG: {
+    MAX_AGE: 12 * 60 * 60 * 1000, // 12 hours
+    ENDPOINT: '/config/settings',
   },
 };
 
@@ -280,54 +283,22 @@ export const clearAboutPageCache = () => {
 };
 
 /**
- * Fetch policies with caching (T&C, Privacy Policy, Advance Booking Terms, etc.)
- * @param type - The policy type (e.g. 'advance_booking_terms', 'our_policy', 'privacy_policy')
- * @param forceRefresh - If true, bypass cache and fetch fresh data
- * @returns Promise with policy data
+ * Fetch dynamic app configuration from the backend
  */
-export const fetchPolicyWithCache = async (type: string, forceRefresh: boolean = false) => {
-  const cacheKey = `@policy_cache_${type}`;
-  const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-
-  if (!forceRefresh) {
-    try {
-      const cached = await AsyncStorage.getItem(cacheKey);
-      if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        const age = Date.now() - timestamp;
-        if (age < maxAge) {
-          logger.log(`📦 [Cache] Using cached policy: ${type}`, { age });
-          return data;
-        }
-      }
-    } catch (cacheErr) {
-      logger.error(`Error reading policy cache for ${type}:`, cacheErr);
-    }
-  }
+export const fetchAppConfigWithCache = async (forceRefresh: boolean = false) => {
+  const store = useGlobalStore.getState();
 
   try {
-    logger.log(`📡 [API] Fetching policy from API: ${type}...`);
-    const response = await api.get(`/policies/type/${type}`);
-    if (response?.data?.data) {
-      const cacheData = {
-        data: response.data.data,
-        timestamp: Date.now()
-      };
-      await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
-      logger.log(`✅ [API] Policy fetched and cached: ${type}`);
+    const response = await api.get(CACHE_CONFIG.APP_CONFIG.ENDPOINT, { skipLoading: true } as any);
+    if (response?.data?.success && response?.data?.data) {
+      logger.log("✅ [Config] Syncing configuration from server success");
+      store.setAppConfig(response.data.data);
       return response.data.data;
     }
-  } catch (error) {
-    logger.error(`❌ [API] Error fetching policy ${type}:`, error);
-    // Fallback: try to return stale cache if available
-    try {
-      const cached = await AsyncStorage.getItem(cacheKey);
-      if (cached) {
-        logger.warn(`⚠️ [API] Using stale cached policy for ${type} as fallback`);
-        return JSON.parse(cached).data;
-      }
-    } catch (e) {}
-    throw error;
+  } catch (err) {
+    logger.log("⚠️ [Config] Failed to fetch server config, using local fallbacks", err);
   }
+
+  return null;
 };
 

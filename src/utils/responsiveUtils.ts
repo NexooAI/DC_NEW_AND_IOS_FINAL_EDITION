@@ -1,3 +1,4 @@
+import { theme } from "@/constants/theme";
 import { Dimensions, PixelRatio, Platform } from 'react-native';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
@@ -211,21 +212,21 @@ export const getFontSizes = () => ({
 // Get responsive shadows
 export const getShadows = () => ({
     small: {
-        shadowColor: '#000',
+        shadowColor: theme.colors.black,
         shadowOffset: { width: 0, height: rp(1) },
         shadowOpacity: 0.1,
         shadowRadius: rp(2),
         elevation: rp(2),
     },
     medium: {
-        shadowColor: '#000',
+        shadowColor: theme.colors.black,
         shadowOffset: { width: 0, height: rp(2) },
         shadowOpacity: 0.15,
         shadowRadius: rp(4),
         elevation: rp(4),
     },
     large: {
-        shadowColor: '#000',
+        shadowColor: theme.colors.black,
         shadowOffset: { width: 0, height: rp(4) },
         shadowOpacity: 0.2,
         shadowRadius: rp(8),

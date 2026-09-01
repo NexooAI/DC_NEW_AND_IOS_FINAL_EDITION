@@ -1,4 +1,3 @@
-import "@/services/networkInterceptor";
 import Constants from "expo-constants";
 import { Stack, useNavigation, useRouter, usePathname } from "expo-router";
 import { useFirstLaunch } from "@/common/hooks/useFirstLaunch";
@@ -11,23 +10,42 @@ import {
   StatusBar,
   View,
 } from "react-native";
-import * as Linking from "expo-linking";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../global.css";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { initializeAppLocale } from "@/i18n";
 import { LanguageProvider1 } from "@/contexts/LanguageContext";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import * as SecureStore from "expo-secure-store";
 import LoadingService from "@/services/loadingServices";
 import setupAppStateListener from "@/store/appState";
 import { theme } from "@/constants/theme";
 import { RootSiblingParent } from "react-native-root-siblings";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import GlobalLoadingProvider from "@/components/GlobalLoadingProvider";
 import { useForceUpdate } from "@/hooks/useForceUpdate";
 import ForceUpdateScreen from "@/components/ForceUpdateScreen";
 import { logger } from "@/utils/logger";
-import { fetchRemoteConfig } from "@/services/configService";
+
+const getSecureItemWithTimeout = async (key: string, timeoutMs = 1500): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      logger.warn(`⚠️ SecureStore.getItemAsync('${key}') timed out after ${timeoutMs}ms.`);
+      resolve(null);
+    }, timeoutMs);
+
+    SecureStore.getItemAsync(key)
+      .then((val) => {
+        clearTimeout(timer);
+        resolve(val);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        logger.error(`Error reading ${key} from SecureStore:`, err);
+        resolve(null);
+      });
+  });
+};
 
 interface NotificationData {
   type?: string;
@@ -36,7 +54,10 @@ interface NotificationData {
   [key: string]: any;
 }
 
+let pendingNotificationData: NotificationData | null = null;
+
 export default function RootLayout() {
+  const theme = useAppTheme();
   const isExpoGo = Constants.executionEnvironment === "storeClient";
   const { isFirstLaunch } = useFirstLaunch();
   const router = useRouter();
@@ -55,25 +76,15 @@ export default function RootLayout() {
     }
   }, [pathname, isLoggedIn]);
 
-  // Log login success when isLoggedIn transitions to true and process pending notifications
-  const pendingNotificationRef = useRef<any>(null);
+  // Log login success when isLoggedIn transitions to true
   const prevIsLoggedInRef = useRef(isLoggedIn);
   useEffect(() => {
     if (isLoggedIn && !prevIsLoggedInRef.current) {
       logAppEvent('login_success');
       logDeviceInfo(true); // Force device info log on login
-
-      if (pendingNotificationRef.current) {
-        const data = pendingNotificationRef.current;
-        logger.log("🔄 Processing pending notification navigation after login:", data);
-        pendingNotificationRef.current = null;
-        setTimeout(() => {
-          handleNotificationNavigation(data);
-        }, 1000);
-      }
     }
     prevIsLoggedInRef.current = isLoggedIn;
-  }, [isLoggedIn, handleNotificationNavigation]);
+  }, [isLoggedIn]);
 
   const notificationResponseRef = useRef<any>(null);
   const isNavigationReady = useRef(false);
@@ -98,8 +109,9 @@ export default function RootLayout() {
       logger.log("🔔 Handling notification navigation with data:", data);
 
       if (!isLoggedIn) {
-        logger.log("⚠️ User not logged in, storing notification for later navigation");
-        pendingNotificationRef.current = data;
+        logger.log("⚠️ User not logged in, storing notification for post-login navigation");
+        pendingNotificationData = data;
+        router.replace("/(auth)/login");
         return;
       }
 
@@ -127,14 +139,9 @@ export default function RootLayout() {
             router.push("/(app)/(tabs)/home/schemes");
             break;
           case "gold-rate":
-          case "gold_rate":
-          case "rate":
           case "ratechart":
+          case "rate-chart":
             router.push("/(app)/(tabs)/home/ratechart");
-            break;
-          case "lucky_draw":
-          case "luckydraw":
-            router.push("/(app)/lucky_draw");
             break;
           default:
             switch (notificationType) {
@@ -147,11 +154,9 @@ export default function RootLayout() {
                 break;
               case "rate":
               case "gold_rate":
+              case "ratechart":
+              case "rate_chart":
                 router.push("/(app)/(tabs)/home/ratechart");
-                break;
-              case "lucky_draw":
-              case "luckydraw":
-                router.push("/(app)/lucky_draw");
                 break;
               default:
                 router.push("/(app)/(tabs)/notifications");
@@ -160,13 +165,13 @@ export default function RootLayout() {
             break;
         }
 
-        logger.log("âœ… Navigated to screen based on notification");
+        logger.log("✅ Navigated to screen based on notification");
       } catch (error) {
-        logger.error("âŒ Error navigating from notification:", error);
+        logger.error("❌ Error navigating from notification:", error);
         try {
           router.push("/(app)/(tabs)/notifications");
         } catch (fallbackError) {
-          logger.error("âŒ Fallback navigation also failed:", fallbackError);
+          logger.error("❌ Fallback navigation also failed:", fallbackError);
         }
       }
     },
@@ -186,49 +191,6 @@ export default function RootLayout() {
 
     initLanguage();
   }, [setLanguage]);
-
-  const currentDeepLinkUrl = Linking.useURL();
-
-  // Deep link listener to capture and cache referral code across app cold starts/redirects
-  useEffect(() => {
-    if (!currentDeepLinkUrl) return;
-    logger.log("🔗 [_layout] Expo Linking useURL detected URL:", currentDeepLinkUrl);
-    
-    const parseAndSaveReferralCode = async (urlStr: string) => {
-      try {
-        let referralCode: string | null = null;
-        const regex = /[?&](code|emp_code|employee_code|referral_code|empCode)=([^&]+)/i;
-        
-        // Try direct matching
-        const match = urlStr.match(regex);
-        if (match && match[2]) {
-          referralCode = match[2];
-        } else {
-          // Check for nested link query parameter (e.g. Firebase Dynamic Links)
-          const nestedUrlMatch = urlStr.match(/[?&]link=([^&]+)/i);
-          if (nestedUrlMatch && nestedUrlMatch[1]) {
-            const decodedNestedUrl = decodeURIComponent(nestedUrlMatch[1]);
-            const nestedMatch = decodedNestedUrl.match(regex);
-            if (nestedMatch && nestedMatch[2]) {
-              referralCode = nestedMatch[2];
-            }
-          }
-        }
-
-        if (referralCode) {
-          const cleanCode = referralCode.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().trim();
-          if (cleanCode && cleanCode.length === 6) {
-            logger.log("✅ [_layout] Saved pending referral code to AsyncStorage:", cleanCode);
-            await AsyncStorage.setItem("pendingReferralCode", cleanCode);
-          }
-        }
-      } catch (error) {
-        logger.error("❌ [_layout] Error parsing deep link URL:", error);
-      }
-    };
-
-    parseAndSaveReferralCode(currentDeepLinkUrl);
-  }, [currentDeepLinkUrl]);
 
   useEffect(() => {
     if (isExpoGo) {
@@ -253,20 +215,23 @@ export default function RootLayout() {
       responseSubscription =
         Notifications.addNotificationResponseReceivedListener((response) => {
           logger.log(
-            "ðŸ”” Notification tapped:",
+            "🔔 Notification tapped:",
             response.notification.request.content
           );
 
           const data = response.notification.request.content
             .data as NotificationData;
 
-          if (isNavigationReady.current) {
+          if (isNavigationReady.current && isLoggedIn) {
             setTimeout(() => {
               handleNotificationNavigation(data);
             }, 500);
           } else {
-            notificationResponseRef.current = response;
-            logger.log("ðŸ“Œ Stored notification for later navigation");
+            pendingNotificationData = data;
+            logger.log("📌 Stored notification for later navigation (not logged in or not ready)");
+            if (!isLoggedIn) {
+              router.replace("/(auth)/login");
+            }
           }
         });
 
@@ -295,27 +260,7 @@ export default function RootLayout() {
     if (isExpoGo) {
       return;
     }
-
-    const checkInitialNotification = async () => {
-      try {
-        const Notifications = await import("expo-notifications");
-        const lastNotificationResponse =
-          await Notifications.getLastNotificationResponseAsync();
-
-        if (lastNotificationResponse) {
-          logger.log(
-            "ðŸš€ App launched from notification:",
-            lastNotificationResponse.notification.request.content
-          );
-          notificationResponseRef.current = lastNotificationResponse;
-        }
-      } catch (error) {
-        logger.error("Error checking initial notification:", error);
-      }
-    };
-
-    checkInitialNotification();
-  }, [isExpoGo]);
+  }, [isExpoGo, isLoggedIn]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -339,15 +284,20 @@ export default function RootLayout() {
   }, [handleNotificationNavigation, isFirstLaunch]);
 
   useEffect(() => {
+    if (isLoggedIn && isNavigationReady.current && pendingNotificationData) {
+      const data = pendingNotificationData;
+      pendingNotificationData = null; // Clear first to prevent double runs
+      logger.log("🔄 Processing pending notification after login:", data);
+      setTimeout(() => {
+        handleNotificationNavigation(data);
+      }, 1000);
+    }
+  }, [isLoggedIn, handleNotificationNavigation]);
+
+  useEffect(() => {
     const initializeUserData = async () => {
       try {
-        try {
-          await fetchRemoteConfig();
-        } catch (configErr) {
-          logger.error("Error fetching remote config:", configErr);
-        }
-
-        const token = await SecureStore.getItemAsync("authToken");
+        const token = await getSecureItemWithTimeout("authToken");
         const storedUserData = await AsyncStorage.getItem("userData");
 
         if (token && storedUserData) {
@@ -460,29 +410,31 @@ export default function RootLayout() {
   }
 
   return (
-    <RootSiblingParent>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor={theme.colors.primary}
-          translucent={false}
-        />
-        <LanguageProvider1>
-          <GlobalLoadingProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="intro" options={{ gestureEnabled: false }} />
-              <Stack.Screen name="login" options={{ gestureEnabled: false }} />
-              <Stack.Screen
-                name="[...missing]"
-                options={{
-                  gestureEnabled: false,
-                  animation: "fade",
-                }}
-              />
-            </Stack>
-          </GlobalLoadingProvider>
-        </LanguageProvider1>
-      </GestureHandlerRootView>
-    </RootSiblingParent>
+    <SafeAreaProvider style={{ flex: 1 }}>
+      <RootSiblingParent>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <StatusBar
+            barStyle="light-content"
+            backgroundColor={theme.colors.primary}
+            translucent={false}
+          />
+          <LanguageProvider1>
+            <GlobalLoadingProvider>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="intro" options={{ gestureEnabled: false }} />
+                <Stack.Screen name="login" options={{ gestureEnabled: false }} />
+                <Stack.Screen
+                  name="[...missing]"
+                  options={{
+                    gestureEnabled: false,
+                    animation: "fade",
+                  }}
+                />
+              </Stack>
+            </GlobalLoadingProvider>
+          </LanguageProvider1>
+        </GestureHandlerRootView>
+      </RootSiblingParent>
+    </SafeAreaProvider>
   );
 }

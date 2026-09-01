@@ -1,4 +1,5 @@
 // components/MaintenanceScreen.tsx - Maintenance Status Screen
+import { theme } from "@/constants/theme";
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -22,7 +23,7 @@ import MaintenanceService, {
 import { logger } from "@/utils/logger";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { responsiveUtils } from "@/utils/responsiveUtils";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -31,6 +32,8 @@ interface MaintenanceScreenProps {
 }
 
 export default function MaintenanceScreen({ onRetry }: MaintenanceScreenProps) {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const [maintenanceState, setMaintenanceState] = useState<MaintenanceState>(
     MaintenanceService.getInstance().getState()
@@ -72,7 +75,7 @@ export default function MaintenanceScreen({ onRetry }: MaintenanceScreenProps) {
   } = useResponsiveLayout();
 
   // Create responsive styles using the hook values
-  const styles = StyleSheet.create({
+  function getStyles(theme: any) { return StyleSheet.create({
     container: {
       flex: 1,
       width: responsiveWidth,
@@ -242,7 +245,9 @@ export default function MaintenanceScreen({ onRetry }: MaintenanceScreenProps) {
       color: "rgba(255, 255, 255, 0.7)",
       textAlign: "center",
     },
-  });
+  }) }
+
+var styles = getStyles(theme);;
 
   useEffect(() => {
     // Subscribe to maintenance state changes

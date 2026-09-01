@@ -5,33 +5,68 @@ import {
   Text,
   StyleSheet,
   Animated,
+  Platform,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useSegments } from "expo-router";
 import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { LinearGradient } from "expo-linear-gradient";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import ResponsiveText from "@/components/ResponsiveText";
+import { getFullImageUrl } from "@/utils/imageUtils";
 import { useNavigationState } from "@/hooks/useNavigationState";
 
 type Tab = {
   name: string;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  iconActive: keyof typeof Ionicons.glyphMap;
+  icon: any;
+  iconActive: any;
   badge?: number | null;
 };
 
+const TabProfileIcon = ({ source, defaultIcon, color, size, isActive, themeSecondary }: any) => {
+  const [hasError, setHasError] = React.useState(false);
+  if (source && !hasError) {
+    return (
+      <Image
+        source={source}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: isActive ? 1.5 : 0,
+          borderColor: themeSecondary,
+        }}
+        resizeMode="cover"
+        onError={() => setHasError(true)}
+      />
+    );
+  }
+  return <Ionicons name={defaultIcon} size={size} color={color} />;
+};
+
 export default function CustomBottomBar(props: BottomTabBarProps) {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const router = useRouter();
   const segments = useSegments();
-  const { language } = useGlobalStore();
+  const { language, user } = useGlobalStore();
   const { unreadCount } = useUnreadNotifications();
+  const { isVisible } = useAppVisibility();
+
+  const getProfileImageSource = () => {
+    if (user?.profileImage) {
+      return { uri: getFullImageUrl(user.profileImage) };
+    }
+    return undefined;
+  };
   const { navigate, isNavigating } = useNavigationState();
   const current = segments[segments.length - 1] || "home";
 
@@ -75,6 +110,8 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
     "payment-failure",
   ];
 
+  const hasDashboard = getAppConfig().constants.enableDashboard;
+
   const tabs: Tab[] = [
     {
       name: "home",
@@ -88,26 +125,31 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
       icon: "wallet-outline",
       iconActive: "wallet",
     },
-    // {
-    //   name: "home/gold_advance",
-    //   label: "bottom_nav_gold_advance",
-    //   icon: "diamond-outline",
-    //   iconActive: "diamond",
-    // },
-    // {
-    //   name: "notifications",
-    //   label: "bottom_nav_notifications",
-    //   icon: "notifications-outline",
-    //   iconActive: "notifications",
-    //   badge: unreadCount > 0 ? unreadCount : null,
-    // },
+    ...(hasDashboard ? [{
+      name: "dashboard_tab",
+      label: "dashboard",
+      icon: "grid-outline" as keyof typeof Ionicons.glyphMap,
+      iconActive: "grid" as keyof typeof Ionicons.glyphMap,
+    }] : []),
+    {
+      name: "rewards",
+      label: "rewards",
+      icon: "gift-outline" as keyof typeof Ionicons.glyphMap,
+      iconActive: "gift" as keyof typeof Ionicons.glyphMap,
+    },
     {
       name: "profile",
       label: "bottom_nav_profile",
       icon: "person-outline",
       iconActive: "person",
     },
-  ];
+  ].filter(tab => {
+    if (tab.name === "home") return isVisible("showTabHome");
+    if (tab.name === "savings") return isVisible("showTabSavings");
+    if (tab.name === "rewards") return isVisible("showTabRewards");
+    if (tab.name === "profile") return isVisible("showTabProfile");
+    return true;
+  });
 
   // Animate tab press
   const animateTabPress = (index: number) => {
@@ -158,8 +200,12 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
       animateBadge(index);
     }
 
-    // Use the navigation state manager to prevent Fragment management errors
-    navigate(`/(tabs)/${tab.name}`);
+    if (tab.name === "dashboard_tab") {
+      router.push("/(app)/dashboard");
+    } else {
+      // Use the navigation state manager to prevent Fragment management errors
+      navigate(`/(tabs)/${tab.name}`);
+    }
   };
 
   // Check if tab bar should be hidden - do this after all hooks are called
@@ -171,14 +217,14 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
     <View style={styles.container} pointerEvents="box-none">
       <LinearGradient
         colors={[
-          "rgba(26, 42, 57, 0.95)", // Primary color with transparency
-          "rgba(26, 42, 57, 0.98)", // Primary color with more opacity
-          "rgba(26, 42, 57, 0.95)", // Primary color with transparency
+          theme.colors.primary,
+          theme.colors.primary,
+          theme.colors.primary,
         ]}
         style={styles.gradientContainer}
       >
         {tabs.map((tab, index) => {
-          const isActive = current === tab.name;
+          const isActive = current === tab.name || (tab.name === "dashboard_tab" && current === "dashboard");
           return (
             <TouchableOpacity
               key={tab.name}
@@ -195,10 +241,13 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
                 ]}
               >
                 <View style={styles.iconContainer}>
-                  <Ionicons
-                    name={isActive ? tab.iconActive : tab.icon}
+                  <TabProfileIcon
+                    source={tab.name === "profile" ? getProfileImageSource() : undefined}
+                    defaultIcon={isActive ? tab.iconActive : tab.icon}
+                    color={isActive ? theme.colors.secondary : theme.colors.textLight || "#ffffff"}
                     size={26}
-                    color={isActive ? theme.colors.secondary : "#ffffff"}
+                    isActive={isActive}
+                    themeSecondary={theme.colors.secondary}
                   />
                   {tab.badge && (
                     <Animated.View
@@ -213,7 +262,7 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
                         variant="caption"
                         size="xs"
                         weight="bold"
-                        color="#fff"
+                        color={theme.colors.textLight || "#ffffff"}
                         align="center"
                         allowWrap={false}
                         maxLines={1}
@@ -230,7 +279,7 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
                   variant="caption"
                   size="xs"
                   weight="medium"
-                  color={isActive ? theme.colors.secondary : "#ffffff"}
+                  color={isActive ? theme.colors.secondary : theme.colors.textLight || "#ffffff"}
                   align="center"
                   allowWrap={false}
                   maxLines={1}
@@ -250,29 +299,20 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 80,
+    width: "100%",
     zIndex: 999, // High value
     elevation: 999, // Android
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    borderTopWidth: 1.5,
+    borderTopColor: theme.colors.borderGold || theme.colors.secondary || "rgba(255, 193, 12, 0.3)", // Gold accent border
   },
   gradientContainer: {
-    flex: 1,
     flexDirection: "row",
-    borderRadius: 25,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
-    elevation: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255, 193, 12, 0.3)", // Gold accent border
+    height: Platform.OS === "ios" ? 75 : 60,
+    paddingBottom: Platform.OS === "ios" ? 15 : 0,
+    alignItems: "center",
+    justifyContent: "space-around",
   },
   tab: {
     flex: 1,
@@ -327,4 +367,6 @@ const styles = StyleSheet.create({
     marginLeft: "auto",
     marginRight: "auto",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

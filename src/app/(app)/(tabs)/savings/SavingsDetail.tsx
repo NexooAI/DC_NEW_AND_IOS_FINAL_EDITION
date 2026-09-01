@@ -25,15 +25,15 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import api, { paymentAPI } from "@/services/api";
-import { initiatePayment } from "@/utils/paymentUtils";
+import { initiatePayment, initializeSocket } from "@/utils/paymentUtils";
 import { saveFileToPublicDirectory } from "@/utils/fileUtils";
 import { moderateScale } from "react-native-size-matters";
 import SupportContactCard from "@/components/SupportContactCard";
 import CustomAlert from "@/components/Alert";
 import Icon from "react-native-vector-icons/AntDesign";
-import { formatDate, formatDateTime, convertUTCToLocal } from "@/utils/dateTimeUtils";
+import Svg, { Path, Circle } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Clipboard from "expo-clipboard";
@@ -46,7 +46,7 @@ import {
   generatePaymentReceiptHTML,
   PaymentReceiptData,
 } from "@/templates/html";
-
+import { Socket } from "socket.io-client";
 import { CommonActions, useNavigationState } from "@react-navigation/native";
 import { formatGoldWeight } from "@/utils/imageUtils";
 import { theme } from "@/constants/theme";
@@ -109,6 +109,8 @@ interface DetailRowProps {
 
 
 const SavingsDetail = () => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const router = useRouter();
   const navigation = useNavigation();
@@ -119,7 +121,7 @@ const SavingsDetail = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
+  const [socket, setSocket] = useState<Socket | null>(null);
   const { height, width } = useWindowDimensions();
   const { bottom, top } = useSafeAreaInsets();
   const bottomPadding = height * 0.1 + bottom;
@@ -168,7 +170,7 @@ const SavingsDetail = () => {
         return s === "SUCCESS" || s === "ACTIVE" || s === "COMPLETED";
       })
       .sort((a, b) => {
-        return convertUTCToLocal(a.paymentDate).getTime() - convertUTCToLocal(b.paymentDate).getTime();
+        return new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime();
       });
   }, [paymentHistrory]);
 
@@ -417,7 +419,14 @@ const SavingsDetail = () => {
     }
   };
 
-
+  // Initialize socket connection
+  useEffect(() => {
+    const socketInstance = initializeSocket();
+    setSocket(socketInstance);
+    return () => {
+      socketInstance.disconnect();
+    };
+  }, []);
 
   const PaymentNow = async () => {
     if (!user) {
@@ -429,33 +438,12 @@ const SavingsDetail = () => {
 
     setIsLoading(true);
 
+    let payload = {
+      userId: user.id,
+      investmentId: params.id,
+    };
+
     try {
-      // Verify KYC status before proceeding to pay
-      const kycResponse = await api.get(`/kyc/status/${user.id}`);
-      const isKycCompleted = kycResponse.data && (kycResponse.data.kyc_status === "Completed" || kycResponse.data.data);
-      if (!isKycCompleted) {
-        setIsLoading(false);
-        Alert.alert(
-          t("kycRequired") || 'KYC Required',
-          t("kycNotCompleted") || 'Please complete your KYC details to continue with this payment.',
-          [
-            { text: t("cancel") || 'Cancel', style: 'cancel' },
-            {
-              text: t("completeKyc") || 'Complete KYC',
-              onPress: () => {
-                router.push('/home/kyc');
-              }
-            }
-          ]
-        );
-        return;
-      }
-
-      let payload = {
-        userId: user.id,
-        investmentId: params.id,
-      };
-
       let responce = await api.post("investments/check-payment", payload);
 
       if (responce?.data?.success === false) {
@@ -608,33 +596,12 @@ const SavingsDetail = () => {
 
     setIsLoading(true);
 
+    let payload = {
+      userId: user.id,
+      investmentId: params.id,
+    };
+
     try {
-      // Verify KYC status before proceeding to pay
-      const kycResponse = await api.get(`/kyc/status/${user.id}`);
-      const isKycCompleted = kycResponse.data && (kycResponse.data.kyc_status === "Completed" || kycResponse.data.data);
-      if (!isKycCompleted) {
-        setIsLoading(false);
-        Alert.alert(
-          t("kycRequired") || 'KYC Required',
-          t("kycNotCompleted") || 'Please complete your KYC details to continue with this payment.',
-          [
-            { text: t("cancel") || 'Cancel', style: 'cancel' },
-            {
-              text: t("completeKyc") || 'Complete KYC',
-              onPress: () => {
-                router.push('/home/kyc');
-              }
-            }
-          ]
-        );
-        return;
-      }
-
-      let payload = {
-        userId: user.id,
-        investmentId: params.id,
-      };
-
       let responce = await api.post("investments/check-payment", payload);
       logger.log(responce.data);
       if (responce?.data?.success === false) {
@@ -738,54 +705,117 @@ const SavingsDetail = () => {
 
   // New Component Renderers
 
-  const renderHeroCard = () => (
-    <View style={styles.heroContainer}>
-      <LinearGradient
-        colors={theme.colors.gradientPrimary}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.heroCard}
-      >
-        <View style={styles.heroBackground}>
-          <View style={styles.heroHeaderRow}>
-            <View>
-              <Text style={styles.heroSchemeName}>{params.schemeName}</Text>
-              <Text style={styles.heroSchemeCode}>{params.schemeCode}</Text>
-            </View>
-            {/* <View style={styles.heroStatusBadge}>
-               <View style={styles.heroStatusDot} />
-               <Text style={styles.heroStatusText}>{translations.statusActive || "Active"}</Text>
-             </View> */}
-          </View>
+  const renderHeroCard = () => {
+    const totalMonths = Number(params.noOfIns) || 12;
+    const monthsPaid = Number(params.monthsPaid) || 0;
+    const progressPercent = getProgressPercentage();
+    
+    // SVG radial configuration
+    const size = 95;
+    const radius = 38;
+    const strokeWidth = 5;
+    const cx = size / 2;
+    const cy = size / 2 + 10;
+    
+    // We will draw a semi-circle dial from -180 deg (left) to 0 deg (right)
+    // Semi-circle path: start at (cx - radius, cy), end at (cx + radius, cy)
+    const startX = cx - radius;
+    const endX = cx + radius;
+    const dialPath = `M ${startX} ${cy} A ${radius} ${radius} 0 0 1 ${endX} ${cy}`;
+    const circumference = Math.PI * radius; // Approx 119.38
+    const strokeDashoffset = circumference - (circumference * progressPercent) / 100;
 
-          <View style={styles.heroStatsRow}>
-            <View style={styles.heroStatItem}>
-              <Text style={styles.heroStatLabel}>{translations.totalInvested}</Text>
-              <Text style={styles.heroStatValue}>₹{Number(totalAmountandRewards).toLocaleString()}</Text>
-            </View>
-            {schemesData?.schemeType?.toLowerCase() === "weight" && (
-              <View style={styles.heroStatItem}>
-                <Text style={styles.heroStatLabel}>{translations.goldAccumulated}</Text>
-                <Text style={styles.heroStatValue}>{formatGoldWeight(parseFloat(params.goldWeight) || 0)}</Text>
-              </View>
-            )}
-          </View>
+    // Generate tick pointers (12 markers or based on totalMonths)
+    const ticks = [];
+    const maxTicks = Math.min(totalMonths, 12);
+    for (let i = 0; i < maxTicks; i++) {
+      const angle = 180 - (i * 180) / (maxTicks - 1); // 180 to 0 degrees
+      const rad = (angle * Math.PI) / 180;
+      const tx = cx + (radius + 6) * Math.cos(rad);
+      const ty = cy - (radius + 6) * Math.sin(rad);
+      const isReached = i < monthsPaid;
+      ticks.push(
+        <Circle
+          key={i}
+          cx={tx}
+          cy={ty}
+          r={2}
+          fill={isReached ? theme.colors.secondary : "rgba(255, 255, 255, 0.3)"}
+        />
+      );
+    }
 
-          {schemesData?.paymentFrequencyName !== "Flexi" && schemesData?.paymentFrequencyName !== "Hybrid" && schemesData?.paymentFrequencyName?.toLowerCase() !== "hybrid" && (
-            <View style={styles.progressContainer}>
-              <View style={styles.progressLabels}>
-                <Text style={styles.progressLabelText}>{translations.paymentProgress}</Text>
-                <Text style={styles.progressValueText}>{params.monthsPaid}/{params.noOfIns} {translations.months}</Text>
+    return (
+      <View style={styles.heroContainer}>
+        <LinearGradient
+          colors={theme.colors.gradientPrimary || ["#0b162c", "#16315c", "#d4af37"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroCard}
+        >
+          <View style={[styles.heroBackground, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
+            {/* Left Column: Stats */}
+            <View style={{ flex: 1.2, paddingRight: 10 }}>
+              <Text style={styles.heroSchemeName} numberOfLines={1}>{(params.schemeName || "").toUpperCase()}</Text>
+              <Text style={[styles.heroSchemeCode, { fontSize: 12, marginBottom: 8 }]}>{params.schemeCode}</Text>
+              
+              <View style={{ marginBottom: 6 }}>
+                <Text style={[styles.heroStatLabel, { fontSize: 10, marginBottom: 2 }]}>{translations.totalInvested}</Text>
+                <Text style={styles.heroStatValue}>₹{Number(totalAmountandRewards).toLocaleString()}</Text>
               </View>
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: `${getProgressPercentage()}%` }]} />
-              </View>
+              
+              {schemesData?.schemeType?.toLowerCase() === "weight" && (
+                <View>
+                  <Text style={[styles.heroStatLabel, { fontSize: 10, marginBottom: 2 }]}>{translations.goldAccumulated}</Text>
+                  <Text style={[styles.heroStatValue, { fontSize: 16 }]}>{formatGoldWeight(parseFloat(params.goldWeight) || 0)}</Text>
+                </View>
+              )}
             </View>
-          )}
-        </View>
-      </LinearGradient>
-    </View>
-  );
+
+            {/* Right Column: Speedometer Progress Gauge */}
+            {schemesData?.paymentFrequencyName !== "Flexi" && schemesData?.paymentFrequencyName !== "Hybrid" && schemesData?.paymentFrequencyName?.toLowerCase() !== "hybrid" ? (
+              <View style={{ flex: 0.8, alignItems: "center", justifyContent: "center" }}>
+                <View style={{ width: size, height: size - 10, position: "relative", alignItems: "center", justifyContent: "center" }}>
+                  <Svg width={size} height={size}>
+                    {/* Background Dial Track */}
+                    <Path
+                      d={dialPath}
+                      fill="none"
+                      stroke="rgba(255, 255, 255, 0.15)"
+                      strokeWidth={strokeWidth}
+                      strokeLinecap="round"
+                    />
+                    {/* Active Dial Fill */}
+                    <Path
+                      d={dialPath}
+                      fill="none"
+                      stroke={theme.colors.secondary}
+                      strokeWidth={strokeWidth}
+                      strokeLinecap="round"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={strokeDashoffset}
+                    />
+                    {/* Pointer Ticks */}
+                    {ticks}
+                  </Svg>
+                  
+                  {/* Central Text overlay */}
+                  <View style={{ position: "absolute", bottom: 12, alignItems: "center" }}>
+                    <Text style={{ color: "#FFF", fontSize: 14, fontWeight: "800" }}>
+                      {monthsPaid}/{totalMonths}
+                    </Text>
+                    <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      Months
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ) : null}
+          </View>
+        </LinearGradient>
+      </View>
+    );
+  };
 
   const renderInfoGrid = () => {
     const isFlexiOrHybrid = (schemesData?.paymentFrequencyName || params.paymentFrequency || "").toLowerCase().includes("flexi") ||
@@ -796,6 +826,22 @@ const SavingsDetail = () => {
     const schemeTypeDisplay = isFlexiOrHybrid
       ? (((schemesData?.paymentFrequencyName || params.paymentFrequency || "").toLowerCase().includes("hybrid") || (params.schemeName || "").toLowerCase().includes("hybrid")) ? "Hybrid" : "Flexi")
       : (schemesData?.paymentFrequencyName || params.paymentFrequency || "Fixed");
+
+    const getStartDate = () => {
+      const rawDate = inversement?.start_date || inversement?.joiningDate || params.joiningDate;
+      if (rawDate && rawDate !== "N/A" && rawDate !== "") {
+        try {
+          return new Date(rawDate).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          });
+        } catch (e) {
+          return rawDate;
+        }
+      }
+      return null;
+    };
 
     return (
       <View style={styles.sectionContainer}>
@@ -832,16 +878,33 @@ const SavingsDetail = () => {
                 <Ionicons name="time" size={20} color="#00838F" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.gridLabel}>{t("nextDueDate") || "Next Due Date"}</Text>
+                <Text style={styles.gridLabel}>Next Due Date</Text>
                 <Text style={styles.gridValue} numberOfLines={1}>
-                  {params.dueDate === "Pay Anytime"
-                    ? (t("payAnytime") || "Pay Anytime")
-                    : formatDate(params.dueDate, {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                  {(() => {
+                    const parsedDate = new Date(params.dueDate);
+                    if (isNaN(parsedDate.getTime())) {
+                      return params.dueDate;
+                    }
+                    return parsedDate.toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    });
+                  })()}
                 </Text>
+              </View>
+            </View>
+          ) : null}
+
+          {/* Start Date */}
+          {getStartDate() ? (
+            <View style={styles.gridItem}>
+              <View style={[styles.gridIcon, { backgroundColor: '#E8F5E9' }]}>
+                <Ionicons name="calendar-outline" size={20} color="#2E7D32" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.gridLabel}>Start Date</Text>
+                <Text style={styles.gridValue} numberOfLines={1}>{getStartDate()}</Text>
               </View>
             </View>
           ) : null}
@@ -858,13 +921,13 @@ const SavingsDetail = () => {
           </View>
 
           {/* Account Number */}
-          <View style={[styles.gridItem, { width: '100%' }]}>
+          <View style={[styles.gridItem, { width: "100%" }]}>
             <View style={[styles.gridIcon, { backgroundColor: '#F3E5F5' }]}>
               <Ionicons name="bookmark" size={20} color="#7B1FA2" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.gridLabel}>{translations.accountNo}</Text>
-              <Text style={styles.gridValue} numberOfLines={1}>{params.accNo}</Text>
+              <Text style={styles.gridValue} numberOfLines={1}>STT-{params.accNo}</Text>
             </View>
           </View>
 
@@ -996,7 +1059,7 @@ const SavingsDetail = () => {
                   <View style={styles.transactionHeader}>
                     <View>
                       <Text style={styles.transactionDate}>
-                        {formatDate(txn.paymentDate, {
+                        {new Date(txn.paymentDate).toLocaleDateString("en-GB", {
                           day: "2-digit",
                           month: "short",
                           year: "numeric",
@@ -1022,7 +1085,7 @@ const SavingsDetail = () => {
                   <View style={styles.transactionFooter}>
                     <Text style={styles.transactionId}>ID: {txn.transactionId}</Text>
                     <TouchableOpacity onPress={() => setSelectedTransaction(txn)} style={styles.receiptButton}>
-                      <Ionicons name="download-outline" size={16} color={theme.colors.primary} />
+                      <Ionicons name="download-outline" size={16} color={theme.colors.textDark} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1037,11 +1100,11 @@ const SavingsDetail = () => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
-      <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         {/* Header */}
-        <View style={[styles.header, { paddingTop: Platform.OS === 'android' ? top + 10 : top - 60 }]}>
+        <View style={[styles.header, { paddingTop: 10 }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.primary || "#850111"} />
+            <Ionicons name="arrow-back" size={24} color={theme.colors.textDark || "#850111"} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{translations.schemeDetails}</Text>
           <View style={{ width: 40 }} />
@@ -1113,7 +1176,7 @@ const SavingsDetail = () => {
               <View style={styles.modalBody}>
                 <View style={styles.receiptRow}>
                   <Text style={styles.receiptLabel}>Transaction ID</Text>
-                  <Text style={styles.receiptValue}>{selectedTransaction.transactionId}</Text>
+                  <Text style={styles.receiptValue}>STT-{selectedTransaction.transactionId}</Text>
                 </View>
                 {selectedTransaction.monthNumber && (
                   <View style={styles.receiptRow}>
@@ -1124,7 +1187,7 @@ const SavingsDetail = () => {
                 <View style={styles.receiptRow}>
                   <Text style={styles.receiptLabel}>Date</Text>
                   <Text style={styles.receiptValue}>
-                    {formatDateTime(selectedTransaction.paymentDate, {
+                    {new Date(selectedTransaction.paymentDate).toLocaleDateString("en-GB", {
                       day: "2-digit",
                       month: "short",
                       year: "numeric",
@@ -1177,7 +1240,7 @@ const SavingsDetail = () => {
                   style={[styles.modalButton, styles.downloadBtn]}
                   onPress={() => handleDownloadReceipt(selectedTransaction, inversement)}
                 >
-                  <Ionicons name="download-outline" size={18} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                  <Ionicons name="download-outline" size={18} color={theme.colors.textDark} style={{ marginRight: 6 }} />
                   <Text style={styles.downloadBtnText}>Download</Text>
                 </TouchableOpacity>
 
@@ -1198,7 +1261,7 @@ const SavingsDetail = () => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8F9FA",
@@ -1218,7 +1281,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   backButton: {
     padding: 8,
@@ -1244,19 +1307,20 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   heroBackground: {
-    padding: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
   heroHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 25,
+    marginBottom: 8,
   },
   heroSchemeName: {
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: '800',
     color: '#FFF',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   heroSchemeCode: {
     fontSize: 14,
@@ -1285,7 +1349,7 @@ const styles = StyleSheet.create({
   heroStatsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 25,
+    marginBottom: 8,
   },
   heroStatItem: {
     flex: 1,
@@ -1298,7 +1362,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   heroStatValue: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '700',
     color: '#FFF',
   },
@@ -1308,7 +1372,7 @@ const styles = StyleSheet.create({
   progressLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   progressLabelText: {
     color: 'rgba(255,255,255,0.8)',
@@ -1327,7 +1391,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#FFF',
+    backgroundColor: theme.colors.secondary,
     borderRadius: 3,
   },
 
@@ -1337,9 +1401,9 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.textDark || '#1A1A1A',
     marginBottom: 15,
   },
   sectionHeaderRow: {
@@ -1349,7 +1413,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   viewAllText: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -1359,7 +1423,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    backgroundColor: '#FFF',
+    backgroundColor: theme.colors.white,
     borderRadius: 20,
     padding: 15,
     shadowColor: "#000",
@@ -1397,7 +1461,7 @@ const styles = StyleSheet.create({
   searchBarContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF",
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 46,
@@ -1430,7 +1494,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: theme.colors.backgroundSecondary,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
@@ -1453,7 +1517,7 @@ const styles = StyleSheet.create({
   // New transaction card styles
   transactionCard: {
     flexDirection: "row",
-    backgroundColor: "#FFF",
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
@@ -1495,7 +1559,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600",
     color: "#777",
-    backgroundColor: "#F5F5F5",
+    backgroundColor: theme.colors.backgroundSecondary,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -1538,7 +1602,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: theme.colors.backgroundSecondary,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1549,7 +1613,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FFF',
+    backgroundColor: theme.colors.white,
     paddingTop: 15,
     paddingHorizontal: 20,
     borderTopLeftRadius: 24,
@@ -1590,7 +1654,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFF',
+    backgroundColor: theme.colors.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -1667,7 +1731,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary,
   },
   downloadBtnText: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     fontWeight: '700',
     fontSize: 14,
   },
@@ -1684,7 +1748,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 40,
-    backgroundColor: '#FFF',
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#eee',
@@ -1695,6 +1759,8 @@ const styles = StyleSheet.create({
     color: '#999',
     fontSize: 14,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
 
 export default SavingsDetail;

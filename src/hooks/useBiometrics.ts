@@ -4,6 +4,26 @@ import { useState, useEffect, useCallback } from 'react';
 import { Platform, Alert } from 'react-native';
 import { logger } from '@/utils/logger';
 
+const getSecureItemWithTimeout = async (key: string, timeoutMs = 1500): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      logger.warn(`⚠️ SecureStore.getItemAsync('${key}') timed out after ${timeoutMs}ms.`);
+      resolve(null);
+    }, timeoutMs);
+
+    SecureStore.getItemAsync(key)
+      .then((val) => {
+        clearTimeout(timer);
+        resolve(val);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        logger.error(`Error reading ${key} from SecureStore:`, err);
+        resolve(null);
+      });
+  });
+};
+
 const BIOMETRIC_MPIN_KEY = 'user_biometric_mpin';
 
 export const useBiometrics = () => {
@@ -29,7 +49,7 @@ export const useBiometrics = () => {
                 setIsEnrolled(enrolled);
 
                 // Check if user has previously enabled biometrics (by checking if MPIN is stored)
-                const storedMpin = await SecureStore.getItemAsync(BIOMETRIC_MPIN_KEY);
+                const storedMpin = await getSecureItemWithTimeout(BIOMETRIC_MPIN_KEY);
                 setIsEnabled(!!storedMpin);
             }
         } catch (error) {
@@ -54,7 +74,7 @@ export const useBiometrics = () => {
 
             if (result.success) {
                 // Retrieve stored MPIN
-                const mpin = await SecureStore.getItemAsync(BIOMETRIC_MPIN_KEY);
+                const mpin = await getSecureItemWithTimeout(BIOMETRIC_MPIN_KEY);
                 if (mpin) {
                     return { success: true, mpin };
                 } else {

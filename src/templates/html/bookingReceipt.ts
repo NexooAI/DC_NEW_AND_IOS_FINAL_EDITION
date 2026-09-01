@@ -69,10 +69,9 @@ export const generateBookingReceiptHTML = (data: BookingReceiptData): string => 
                 align-items: center;
                 margin-bottom: 15px;
                 padding: 10px 15px;
-                background-color: ${theme.colors.primary} !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-                color: #fff;
+                background: ${theme.colors.primary};
+                color: #ffffff;
+                border-bottom: 2px solid #ffd700;
             }
             .company-info { font-size: 12px; font-weight: bold; }
             .letter-title {
@@ -130,7 +129,7 @@ export const generateBookingReceiptHTML = (data: BookingReceiptData): string => 
                 ${theme.constants.customerName}
             </div>
             <div>
-                <img src="https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp" alt="Logo" style="max-width:90px; height:auto;">
+                <img src="https://srithangathamarai.com/assets/logo_trans.png" alt="Logo" style="max-width:90px; height:auto;">
             </div>
         </div>
 
@@ -143,7 +142,7 @@ export const generateBookingReceiptHTML = (data: BookingReceiptData): string => 
         <table class="details-table">
             <tr>
                 <th>Booking ID</th>
-                <td># ${bookingId}</td>
+                <td>#STT-B-${bookingId}</td>
             </tr>
             <tr>
                 <th>Gold Weight</th>
@@ -192,8 +191,8 @@ export const generateBookingReceiptHTML = (data: BookingReceiptData): string => 
             </div>
             <div class="footer-bottom">
                 <p>Date: ${new Date().toLocaleDateString("en-GB", {
-        day: "2-digit", month: "short", year: "numeric"
-    })}</p>
+            day: "2-digit", month: "short", year: "numeric"
+        })}</p>
                 <p class="signature">Authorized Signatory<br/>${theme.constants.customerName}</p>
             </div>
         </div>

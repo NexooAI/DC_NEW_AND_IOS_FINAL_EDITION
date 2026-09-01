@@ -21,16 +21,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Dropdown } from "react-native-element-dropdown";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import api from "@/services/api";
 import { theme } from "@/constants/theme";
 import { LinearGradient } from "expo-linear-gradient";
-import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useFocusEffect } from "@react-navigation/native";
-import { useTranslation } from "@/hooks/useTranslation";
+import { t } from "@/i18n";
 
 import { logger } from "@/utils/logger";
-import { formatDate as globalFormatDate } from "@/utils/dateTimeUtils";
 const idTypes = [
   { name: "Aadhar", value: "aadhar" },
   { name: "PAN", value: "pan" },
@@ -89,87 +87,13 @@ interface FormDatePickerProps {
   error?: string;
 }
 
-const formatDateToDDMMYYYY = (dateVal: string | Date | number | null | undefined): string => {
-  if (!dateVal) return "";
-  try {
-    const date = new Date(dateVal);
-    if (isNaN(date.getTime())) {
-      if (typeof dateVal === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(dateVal)) {
-        return dateVal;
-      }
-      return "";
-    }
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  } catch {
-    return "";
-  }
-};
-
 export default function KycForm() {
-  const { t } = useTranslation();
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const { from } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const { language, user } = useGlobalStore();
-  const { isVisible, visibleData } = useAppVisibility();
-  const isShortKyc = isVisible("shortKyc");
-
-  const [idTypesList, setIdTypesList] = useState(idTypes);
-
-  useEffect(() => {
-    let active = true;
-    const fetchIdTypes = async () => {
-      try {
-        logger.log("📡 [API] Fetching dynamic ID proof types...");
-        const response = await api.get("/config/kyc-doc-types");
-        if (!active) return;
-
-        let fetchedList = null;
-        if (response?.data?.data && Array.isArray(response.data.data)) {
-          fetchedList = response.data.data;
-        } else if (response?.data && Array.isArray(response.data)) {
-          fetchedList = response.data;
-        }
-
-        if (fetchedList && fetchedList.length > 0) {
-          const mapped = fetchedList.map((item: any) => ({
-            name: item.name || item.label || item.value,
-            value: item.value,
-          }));
-          setIdTypesList(mapped);
-          logger.log("✅ [API] Fetched ID proof types successfully:", mapped);
-          return;
-        }
-      } catch (err) {
-        logger.warn("⚠️ [API] Failed to fetch KYC proof types from /config/kyc-doc-types:", err);
-      }
-
-      try {
-        const docTypesFromVis = (visibleData as any)?.kycDocTypes || (visibleData as any)?.kyc_doc_types;
-        if (docTypesFromVis && Array.isArray(docTypesFromVis) && docTypesFromVis.length > 0) {
-          const mapped = docTypesFromVis.map((item: any) => ({
-            name: item.name || item.label || item.value,
-            value: item.value,
-          }));
-          setIdTypesList(mapped);
-          logger.log("✅ [Cache] Using ID proof types from visibility configuration:", mapped);
-          return;
-        }
-      } catch (err) {
-        logger.error("❌ Failed to parse doc types from visibility cache:", err);
-      }
-
-      logger.log("ℹ️ Using static fallback ID proof types");
-    };
-
-    fetchIdTypes();
-    return () => {
-      active = false;
-    };
-  }, [visibleData]);
 
   const [formData, setFormData] = useState<FormData>({
     doorno: "",
@@ -279,7 +203,11 @@ export default function KycForm() {
             state: kycData.state || "",
             country: kycData.country || "India",
             pincode: kycData.pincode || "",
-            dob: formatDateToDDMMYYYY(kycData.dob),
+            dob: new Date(kycData.dob).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            }),
             addressprooftype: kycData.addressproof || "",
             idNumber: kycData.enternumber || "",
             nominee_name: kycData.nominee_name || "",
@@ -328,7 +256,6 @@ export default function KycForm() {
         const firstResult = postOffices[0];
         setFormData((prev) => ({
           ...prev,
-          city: postOffices.length === 1 ? (firstResult.Name || firstResult.Block || firstResult.District) : "",
           district: firstResult.District,
           state: firstResult.State,
           country: firstResult.Country || "India",
@@ -396,15 +323,6 @@ export default function KycForm() {
     }
   };
 
-  // Toggle manual/automatic address mode
-  const toggleMode = () => {
-    const newMode = !pincodeLookupFailed;
-    setPincodeLookupFailed(newMode);
-    if (!newMode && formData.pincode.length === 6) {
-      fetchPincodeData(formData.pincode);
-    }
-  };
-
   // Update the FormDatePicker component with proper types
   const FormDatePicker: React.FC<FormDatePickerProps> = ({
     label,
@@ -414,19 +332,8 @@ export default function KycForm() {
   }) => {
     const [showPicker, setShowPicker] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(
-      value && value.length === 10 ? new Date(value.split("/").reverse().join("-")) : null
+      value ? new Date(value.split("/").reverse().join("-")) : null
     );
-
-    // Sync selectedDate state if value changes from parent (e.g. typing or loading)
-    useEffect(() => {
-      if (value && value.length === 10) {
-        const parts = value.split("/");
-        const dobDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-        if (!isNaN(dobDate.getTime())) {
-          setSelectedDate(dobDate);
-        }
-      }
-    }, [value]);
 
     const handleDateChange = (event: any, date?: Date) => {
       if (date) {
@@ -446,68 +353,50 @@ export default function KycForm() {
     };
 
     const formatDate = (date: Date): string => {
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = date.getFullYear();
-      return `${day}/${month}/${year}`;
-    };
-
-    const handleTextChange = (text: string) => {
-      // Remove any non-numeric characters
-      let cleaned = text.replace(/[^0-9]/g, "");
-
-      // Auto-format DD/MM/YYYY
-      let formatted = "";
-      if (cleaned.length > 0) {
-        formatted += cleaned.substring(0, 2);
-      }
-      if (cleaned.length > 2) {
-        formatted += "/" + cleaned.substring(2, 4);
-      }
-      if (cleaned.length > 4) {
-        formatted += "/" + cleaned.substring(4, 8);
-      }
-
-      onDateChange(formatted);
+      return date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
     };
 
     const minDate = new Date();
-    minDate.setFullYear(minDate.getFullYear() - 100);
+    minDate.setFullYear(minDate.getFullYear() - 100); // Optional, for past dates
 
+    // Calculate the maximum date (18 years ago)
     const maxDate = new Date();
-    maxDate.setFullYear(maxDate.getFullYear() - 18);
+    maxDate.setFullYear(maxDate.getFullYear() - 18); // 18 years before today
 
     return (
       <View style={styles.formGroup}>
-        <View style={styles.dateInputWrapper}>
+        <Text style={styles.label}>{label}</Text>
+
+        <TouchableOpacity
+          onPress={() => {
+            Keyboard.dismiss();
+            setShowPicker(true);
+          }}
+          style={styles.dateInputWrapper}
+        >
           <TextInput
             style={styles.dateInput}
-            value={value}
-            onChangeText={handleTextChange}
+            pointerEvents="none"
+            editable={false}
+            value={selectedDate ? formatDate(selectedDate) : ""}
             placeholder="DD/MM/YYYY"
-            keyboardType="number-pad"
-            maxLength={10}
-            placeholderTextColor="gray"
           />
-          <TouchableOpacity
-            onPress={() => {
-              Keyboard.dismiss();
-              setShowPicker(!showPicker);
-            }}
-          >
-            <Ionicons
-              name="calendar"
-              size={24}
-              color="#007AFF"
-              style={styles.calendarIcon}
-            />
-          </TouchableOpacity>
-        </View>
+          <Ionicons
+            name="calendar"
+            size={24}
+            color="#007AFF"
+            style={styles.calendarIcon}
+          />
+        </TouchableOpacity>
 
         {showPicker && (
           <View>
             <DateTimePicker
-              value={selectedDate || new Date(maxDate)}
+              value={selectedDate || new Date()}
               mode="date"
               display={Platform.OS === "ios" ? "inline" : "default"}
               onChange={handleDateChange}
@@ -586,27 +475,20 @@ export default function KycForm() {
       if (field === "nominee_name" || field === "nominee_relationship") {
         return; // Optional
       }
-      if (isShortKyc) {
-        // Only validate street (used for Full Address), dob, addressprooftype, idNumber
-        const allowedShortFields = ["street", "dob", "addressprooftype", "idNumber"];
-        if (!allowedShortFields.includes(field)) {
-          return; // Skip individual address field validation
-        }
-      }
       // If pincode lookup succeeded, district, state, and country are filled in state,
       // so they shouldn't trigger an error. If lookup failed, they're typed manually.
       const value = formData[field as keyof FormData];
       if (typeof value === "string" && !value.trim()) {
-        newErrors[field] = t("thisFieldIsRequired") || "This field is required";
+        newErrors[field] = "This field is required";
       }
     });
 
     // Validate nominee consistency: if one is filled, both must be filled
     if (formData.nominee_name.trim() && !formData.nominee_relationship.trim()) {
-      newErrors.nominee_relationship = t("pleaseSelectRelationship") || "Please select a relationship";
+      newErrors.nominee_relationship = "Please select a relationship";
     }
     if (!formData.nominee_name.trim() && formData.nominee_relationship.trim()) {
-      newErrors.nominee_name = t("pleaseEnterNomineeName") || "Please enter nominee name";
+      newErrors.nominee_name = "Please enter nominee name";
     }
 
     // Validate Date of Birth (DD/MM/YYYY)
@@ -614,7 +496,7 @@ export default function KycForm() {
       formData.dob &&
       !/^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/.test(formData.dob)
     ) {
-      newErrors.dob = t("dobFormatError") || "Date of Birth must be in DD/MM/YYYY format";
+      newErrors.dob = "Date of Birth must be in DD/MM/YYYY format";
     }
 
     // Validate age - must be 18 or older
@@ -634,16 +516,16 @@ export default function KycForm() {
             : age;
 
         if (actualAge < 18) {
-          newErrors.dob = t("ageLimitError") || "You must be at least 18 years old to proceed";
+          newErrors.dob = "You must be at least 18 years old to proceed";
         }
       } catch (error) {
-        newErrors.dob = t("invalidDateFormat") || "Invalid date format";
+        newErrors.dob = "Invalid date format";
       }
     }
 
     // Validate Pincode (must be 6 digits)
-    if (!isShortKyc && formData.pincode && !/^\d{6}$/.test(formData.pincode)) {
-      newErrors.pincode = t("pincodeLengthError") || "Pincode must be 6 digits";
+    if (formData.pincode && !/^\d{6}$/.test(formData.pincode)) {
+      newErrors.pincode = "Pincode must be 6 digits";
     }
 
     // Validate ID Number based on Address Proof Type
@@ -669,11 +551,11 @@ export default function KycForm() {
   // Update the getPlaceholderText function with proper typing
   const getPlaceholderText = (idType: string): string => {
     const placeholders: { [key: string]: string } = {
-      aadhar: t("kycAadhaarPlaceholder") || "Enter your 12-digit Aadhar number",
-      pan: t("kycPanPlaceholder") || "Enter your PAN number (e.g., ABCDE1234F)",
-      voterid: t("kycIdPlaceholderDefault") || "Enter your Voter ID number",
+      aadhar: "Enter your 12-digit Aadhar number",
+      pan: "Enter your PAN number (e.g., ABCDE1234F)",
+      voterid: "Enter your Voter ID number",
     };
-    return placeholders[idType] || t("kycIdPlaceholderDefault") || "Enter your ID number";
+    return placeholders[idType] || "Enter your ID number";
   };
 
   // Update the formatIdNumber function with proper typing
@@ -716,14 +598,14 @@ export default function KycForm() {
       try {
         const requestBody = {
           user_id: user?.id || 2,
-          doorno: isShortKyc ? "-" : formData.doorno,
+          doorno: formData.doorno,
           street: formData.street,
-          area: isShortKyc ? "-" : formData.area,
-          city: isShortKyc ? "-" : formData.city,
-          district: isShortKyc ? "-" : formData.district,
-          state: isShortKyc ? "-" : formData.state,
-          country: isShortKyc ? "India" : formData.country,
-          pincode: isShortKyc ? "000000" : formData.pincode,
+          area: formData.area,
+          city: formData.city,
+          district: formData.district,
+          state: formData.state,
+          country: formData.country,
+          pincode: formData.pincode,
           dob: formattedDob, // Use the formatted date here
           addressproof: formData.addressprooftype,
           enternumber: formData.idNumber,
@@ -742,24 +624,13 @@ export default function KycForm() {
         }
 
         if (response.data?.data?.affectedRows > 0 || response.data?.data?.id) {
-          const title = kycId 
-            ? (t("kycUpdatedTitle") || "KYC Updated") 
-            : (t("kycSubmittedTitle") || "KYC Submitted");
-
-          const responseMsg = response.data?.message;
-          let alertMsg = "";
-          if (responseMsg === "KYC record updated successfully") {
-            alertMsg = t("kycRecordUpdatedSuccess") || responseMsg;
-          } else if (responseMsg === "KYC record created successfully" || responseMsg === "KYC details submitted successfully") {
-            alertMsg = t("kycRecordSubmittedSuccess") || responseMsg;
-          } else {
-            alertMsg = responseMsg || 
-              (kycId
-                ? (t("kycUpdatedSuccess") || "Your KYC details have been updated successfully.")
-                : (t("kycSubmittedSuccess") || "Your KYC details have been submitted successfully."));
-          }
-
-          Alert.alert(title, alertMsg);
+          Alert.alert(
+            kycId ? "KYC Updated" : "KYC Submitted",
+            response.data?.message ||
+            (kycId
+              ? "Your KYC details have been updated successfully."
+              : "Your KYC details have been submitted successfully.")
+          );
 
           // Safe navigation with error handling
           try {
@@ -784,20 +655,20 @@ export default function KycForm() {
             }
           }
         } else {
-          Alert.alert(t("error") || "Error", t("kycSubmissionFailed") || "KYC submission failed. Please try again.");
+          Alert.alert("Error", "KYC submission failed. Please try again.");
         }
       } catch (error: any) {
         logger.error("KYC Submission Error:", error);
         if (isMountedRef.current) {
           const errorMessage =
             error.response?.data?.message ||
-            t("errorOccurred") || "An error occurred. Please try again.";
-          Alert.alert(t("error") || "Error", errorMessage);
+            "An error occurred. Please try again.";
+          Alert.alert("Error", errorMessage);
         }
       }
     } else {
       if (isMountedRef.current) {
-        Alert.alert(t("error") || "Error", t("pleaseFixTheErrorInTheForm") || "Please fix the errors in the form.");
+        Alert.alert("Error", "Please fix the errors in the form.");
       }
     }
   };
@@ -824,24 +695,24 @@ export default function KycForm() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["left", "right"]}>
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoid}
       >
         {/* Fixed Header */}
-        <View style={[styles.header, Platform.OS === 'android' && { paddingTop: insets.top }]}>
+        <View style={styles.header}>
           <View style={styles.headerContent}>
             <TouchableOpacity
               onPress={handleBack}
               style={styles.backButton}
             >
-              <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+              <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
             </TouchableOpacity>
             <View style={styles.headerInfo}>
               <Text style={styles.headerTitle}>{t("kycDetails")}</Text>
               <Text style={styles.headerSubtitle}>
-                {t("updateYourPersonalDetails") || "Update your personal details"}
+                Update your personal details
               </Text>
             </View>
             <View style={styles.headerRightPlaceholder} />
@@ -858,118 +729,295 @@ export default function KycForm() {
           keyboardShouldPersistTaps="handled"
         >
           {/* 1. Identity Details Section */}
-          <View style={[styles.sectionCard, styles.activeSectionCard]}>
-            <View style={styles.sectionHeaderClickable}>
+          <View style={[styles.sectionCard, activeSection === 'identity' && styles.activeSectionCard]}>
+            <TouchableOpacity
+              style={styles.sectionHeaderClickable}
+              onPress={() => setActiveSection(activeSection === 'identity' ? null : 'identity')}
+              activeOpacity={0.7}
+            >
               <View style={styles.sectionHeaderLeft}>
                 <Ionicons name="card-outline" size={24} color="#bfa14a" />
                 <View style={styles.sectionHeaderTitleContainer}>
                   <Text style={[styles.sectionTitle, { color: "#bfa14a" }]}>
                     Identity Details
                   </Text>
+                  {activeSection !== 'identity' && (
+                    <Text style={styles.sectionSummaryText} numberOfLines={1}>
+                      {getIdentitySummary()}
+                    </Text>
+                  )}
                 </View>
               </View>
-            </View>
+              <Ionicons
+                name={activeSection === 'identity' ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="#bfa14a"
+              />
+            </TouchableOpacity>
 
-            <View style={styles.formContent}>
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>{t("dateOfBirth") || "Date of Birth"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
-                <FormDatePicker
-                  label={t("dateOfBirth") || "Date of Birth"}
-                  value={formData.dob}
-                  onDateChange={(date) => handleChange("dob", date)}
-                  error={errors.dob}
-                />
-              </View>
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>{t("idProofType") || "ID Proof Type"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
-                <Dropdown
-                  style={[
-                    styles.dropdown,
-                    focusedField === "addressprooftype" &&
-                    styles.dropdownFocused,
-                  ]}
-                  placeholderStyle={styles.placeholderStyle}
-                  selectedTextStyle={styles.selectedTextStyle}
-                  data={idTypesList.map((id) => ({
-                    label: id.name,
-                    value: id.value,
-                  }))}
-                  maxHeight={300}
-                  labelField="label"
-                  valueField="value"
-                              placeholder={t("kycSelectIdProof") || "Select your ID proof"}
-                  value={formData.addressprooftype}
-                  onFocus={() => setFocusedField("addressprooftype")}
-                  onBlur={() => setFocusedField(null)}
-                  onChange={(item) => {
-                    handleChange("addressprooftype", item.value);
-                    setFocusedField(null);
-                  }}
-                />
-                {errors.addressprooftype && (
-                  <Text style={styles.errorText}>
-                    {errors.addressprooftype}
-                  </Text>
-                )}
-              </View>
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>{t("kycIdNumber") || "ID Number"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
-                <TextInput
-                  style={styles.input}
-                  placeholderTextColor="gray"
-                  placeholder={getPlaceholderText(
-                    formData.addressprooftype
+            {activeSection === 'identity' && (
+              <View style={styles.formContent}>
+                <View style={styles.formGroup}>
+                  <FormDatePicker
+                    label="Date of Birth"
+                    value={formData.dob}
+                    onDateChange={(date) => handleChange("dob", date)}
+                    error={errors.dob}
+                  />
+                </View>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Address Proof Type</Text>
+                  <Dropdown
+                    style={[
+                      styles.dropdown,
+                      focusedField === "addressprooftype" &&
+                      styles.dropdownFocused,
+                    ]}
+                    placeholderStyle={styles.placeholderStyle}
+                    selectedTextStyle={styles.selectedTextStyle}
+                    data={idTypes.map((id) => ({
+                      label: id.name,
+                      value: id.value,
+                    }))}
+                    maxHeight={300}
+                    labelField="label"
+                    valueField="value"
+                    placeholder="Select your ID proof"
+                    value={formData.addressprooftype}
+                    onFocus={() => setFocusedField("addressprooftype")}
+                    onBlur={() => setFocusedField(null)}
+                    onChange={(item) => {
+                      handleChange("addressprooftype", item.value);
+                      setFocusedField(null);
+                    }}
+                  />
+                  {errors.addressprooftype && (
+                    <Text style={styles.errorText}>
+                      {errors.addressprooftype}
+                    </Text>
                   )}
-                  value={formData.idNumber}
-                  onChangeText={(text) =>
-                    handleChange(
-                      "idNumber",
-                      formatIdNumber(text, formData.addressprooftype)
-                    )
-                  }
-                  autoCapitalize={
-                    formData.addressprooftype === "pan"
-                      ? "characters"
-                      : "none"
-                  }
-                  keyboardType={
-                    formData.addressprooftype === "pan"
-                      ? "default"
-                      : "number-pad"
-                  }
-                  maxLength={getMaxLength(formData.addressprooftype)}
-                />
-                {errors.idNumber && (
-                  <Text style={styles.errorText}>{errors.idNumber}</Text>
-                )}
+                </View>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>ID Number</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholderTextColor="gray"
+                    placeholder={getPlaceholderText(
+                      formData.addressprooftype
+                    )}
+                    value={formData.idNumber}
+                    onChangeText={(text) =>
+                      handleChange(
+                        "idNumber",
+                        formatIdNumber(text, formData.addressprooftype)
+                      )
+                    }
+                    autoCapitalize={
+                      formData.addressprooftype === "pan"
+                        ? "characters"
+                        : "none"
+                    }
+                    keyboardType={
+                      formData.addressprooftype === "pan"
+                        ? "default"
+                        : "number-pad"
+                    }
+                    maxLength={getMaxLength(formData.addressprooftype)}
+                  />
+                  {errors.idNumber && (
+                    <Text style={styles.errorText}>{errors.idNumber}</Text>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  style={styles.sectionContinueButton}
+                  onPress={() => setActiveSection('address')}
+                >
+                  <Text style={styles.sectionContinueButtonText}>Continue to Address</Text>
+                  <Ionicons name="arrow-forward" size={18} color="#fff" />
+                </TouchableOpacity>
               </View>
-            </View>
+            )}
           </View>
 
           {/* 2. Address Details Section */}
-          <View style={[styles.sectionCard, styles.activeSectionCard]}>
-            <View style={styles.sectionHeaderClickable}>
+          <View style={[styles.sectionCard, activeSection === 'address' && styles.activeSectionCard]}>
+            <TouchableOpacity
+              style={styles.sectionHeaderClickable}
+              onPress={() => setActiveSection(activeSection === 'address' ? null : 'address')}
+              activeOpacity={0.7}
+            >
               <View style={styles.sectionHeaderLeft}>
                 <Ionicons name="home-outline" size={24} color="#1976d2" />
                 <View style={styles.sectionHeaderTitleContainer}>
                   <Text style={[styles.sectionTitle, { color: "#1976d2" }]}>
-                    {t("kycAddressDetails") || "Address Details"}
+                    Address Details
                   </Text>
+                  {activeSection !== 'address' && (
+                    <Text style={styles.sectionSummaryText} numberOfLines={1}>
+                      {getAddressSummary()}
+                    </Text>
+                  )}
                 </View>
               </View>
-            </View>
+              <Ionicons
+                name={activeSection === 'address' ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="#1976d2"
+              />
+            </TouchableOpacity>
 
-            <View style={styles.formContent}>
-              {isShortKyc ? (
-                /* Short KYC Address Form */
+            {activeSection === 'address' && (
+              <View style={styles.formContent}>
+                {/* Pincode */}
                 <View style={styles.formGroup}>
-                  <Text style={styles.label}>{t("kycFullAddress") || "Full Address"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
+                  <Text style={styles.label}>Pincode</Text>
+                  <View style={styles.pincodeContainer}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter your 6-digit pincode"
+                      placeholderTextColor="gray"
+                      keyboardType="number-pad"
+                      value={formData.pincode}
+                      onChangeText={handlePincodeChange}
+                      maxLength={6}
+                    />
+                    {isLoadingPincode && (
+                      <View style={styles.loadingIndicator}>
+                        <Text style={styles.loadingText}>Loading...</Text>
+                      </View>
+                    )}
+                  </View>
+                  {errors.pincode && (
+                    <Text style={styles.errorText}>{errors.pincode}</Text>
+                  )}
+                  {formData.pincode.length === 6 &&
+                    pincodeData.length === 0 &&
+                    !isLoadingPincode &&
+                    !pincodeLookupFailed && (
+                      <Text style={styles.helpText}>
+                        No cities found for this pincode. Please verify the
+                        pincode.
+                      </Text>
+                    )}
+                  {formData.pincode.length === 6 &&
+                    pincodeLookupFailed &&
+                    !isLoadingPincode && (
+                      <Text style={styles.helpText}>
+                        Pincode lookup failed. Enter address details manually.
+                      </Text>
+                    )}
+                  {formData.pincode.length === 6 &&
+                    pincodeData.length > 0 && (
+                      <Text style={styles.helpText}>
+                        {pincodeData.length} cities found. Select one to
+                        auto-fill address details.
+                      </Text>
+                    )}
+                </View>
+
+                {/* City */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>City</Text>
+                  {pincodeData.length > 0 ? (
+                    <Dropdown
+                      style={[
+                        styles.dropdown,
+                        focusedField === "city" && styles.dropdownFocused,
+                      ]}
+                      placeholderStyle={styles.placeholderStyle}
+                      selectedTextStyle={styles.selectedTextStyle}
+                      data={pincodeData.map((city) => ({
+                        label: city.Name,
+                        value: city.Name,
+                      }))}
+                      maxHeight={300}
+                      labelField="label"
+                      valueField="value"
+                      placeholder="Select your city"
+                      value={formData.city}
+                      onFocus={() => setFocusedField("city")}
+                      onBlur={() => setFocusedField(null)}
+                      onChange={(item) => {
+                        handleCitySelection(item.value);
+                        setFocusedField(null);
+                      }}
+                    />
+                  ) : (
+                    <TextInput
+                      style={[
+                        styles.input,
+                        !pincodeLookupFailed && styles.disabledInput,
+                      ]}
+                      placeholder={
+                        pincodeLookupFailed
+                          ? "Enter your city"
+                          : "Enter pincode first to select city"
+                      }
+                      value={formData.city}
+                      editable={pincodeLookupFailed}
+                      onChangeText={(text) => handleChange("city", text)}
+                    />
+                  )}
+                  {errors.city && (
+                    <Text style={styles.errorText}>{errors.city}</Text>
+                  )}
+                </View>
+
+                {/* District (Only show if pincode lookup failed or explicitly entered) */}
+                {pincodeLookupFailed && (
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>District</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter your district"
+                      value={formData.district}
+                      onChangeText={(text) => handleChange("district", text)}
+                    />
+                    {errors.district && (
+                      <Text style={styles.errorText}>{errors.district}</Text>
+                    )}
+                  </View>
+                )}
+
+                {/* State (Only show if pincode lookup failed or explicitly entered) */}
+                {pincodeLookupFailed && (
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>State</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter your state"
+                      value={formData.state}
+                      onChangeText={(text) => handleChange("state", text)}
+                    />
+                    {errors.state && (
+                      <Text style={styles.errorText}>{errors.state}</Text>
+                    )}
+                  </View>
+                )}
+
+                {/* Door Number */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Door No.</Text>
                   <TextInput
-                    style={[styles.input, { height: 100, textAlignVertical: 'top', paddingTop: 10 }]}
-                    placeholder={t("kycFullAddressPlaceholder") || "Enter your full address (Door No, Street, City, Pincode)"}
+                    style={styles.input}
+                    placeholder="Enter your door number"
+                    value={formData.doorno}
                     placeholderTextColor="gray"
-                    multiline={true}
-                    numberOfLines={4}
+                    onChangeText={(text) => handleChange("doorno", text)}
+                  />
+                  {errors.doorno && (
+                    <Text style={styles.errorText}>{errors.doorno}</Text>
+                  )}
+                </View>
+
+                {/* Street */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Street</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your street name"
+                    placeholderTextColor="gray"
                     value={formData.street}
                     onChangeText={(text) => handleChange("street", text)}
                   />
@@ -977,262 +1025,113 @@ export default function KycForm() {
                     <Text style={styles.errorText}>{errors.street}</Text>
                   )}
                 </View>
-              ) : (
-                /* Standard KYC Address Form */
-                <>
-                  {/* Pincode */}
-                  <View style={styles.formGroup}>
-                    <Text style={styles.label}>{t("kycPincode") || "Pincode"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
-                    <View style={styles.pincodeContainer}>
-                      <TextInput
-                        style={styles.input}
-                        placeholder={t("kycPincodePlaceholder") || "Enter your 6-digit pincode"}
-                        placeholderTextColor="gray"
-                        keyboardType="number-pad"
-                        value={formData.pincode}
-                        onChangeText={handlePincodeChange}
-                        maxLength={6}
-                      />
-                      {isLoadingPincode && (
-                        <View style={styles.loadingIndicator}>
-                          <Text style={styles.loadingText}>Loading...</Text>
-                        </View>
-                      )}
-                    </View>
-                    {errors.pincode && (
-                      <Text style={styles.errorText}>{errors.pincode}</Text>
-                    )}
-                    <TouchableOpacity 
-                      onPress={toggleMode} 
-                      style={{ 
-                        flexDirection: 'row', 
-                        alignItems: 'center', 
-                        justifyContent: 'flex-end', 
-                        alignSelf: 'flex-end',
-                        marginTop: 8,
-                        paddingVertical: 4,
-                        paddingHorizontal: 8,
-                        borderRadius: 4,
-                        backgroundColor: 'rgba(25, 118, 210, 0.08)'
-                      }}
-                    >
-                      <Text style={{ color: "#1976d2", fontSize: 12, fontWeight: "600", marginRight: 4 }}>
-                        {pincodeLookupFailed 
-                          ? (t("switchToAutomaticMode") || "Switch to Automatic Mode") 
-                          : (t("switchToManualMode") || "Switch to Manual Mode")
-                        }
-                      </Text>
-                      <Ionicons 
-                        name={pincodeLookupFailed ? "refresh-circle-outline" : "create-outline"} 
-                        size={16} 
-                        color="#1976d2" 
-                      />
-                    </TouchableOpacity>
-                  </View>
 
-                  {/* City (Only show if pincode lookup succeeded or explicitly entered) */}
-                  {(!isLoadingPincode || pincodeLookupFailed) && (
-                    <View style={styles.formGroup}>
-                      <Text style={styles.label}>{t("kycCity") || "City"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
-                      {!pincodeLookupFailed && pincodeData && pincodeData.length > 1 ? (
-                        <Dropdown
-                          style={[
-                            styles.dropdown,
-                            focusedField === "city" && styles.dropdownFocused,
-                          ]}
-                          placeholderStyle={styles.placeholderStyle}
-                          selectedTextStyle={styles.selectedTextStyle}
-                          data={pincodeData.map((po) => ({
-                            label: po.Name,
-                            value: po.Name,
-                          }))}
-                          maxHeight={300}
-                          labelField="label"
-                          valueField="value"
-                          placeholder={t("kycCityPlaceholder") || "Select your city"}
-                          value={formData.city}
-                          onFocus={() => setFocusedField("city")}
-                          onBlur={() => setFocusedField(null)}
-                          onChange={(item) => {
-                            handleCitySelection(item.value);
-                            setFocusedField(null);
-                          }}
-                        />
-                      ) : (
-                        <TextInput
-                          style={[
-                            styles.input,
-                            !pincodeLookupFailed && { opacity: 0.7, backgroundColor: "#f9f9f9" }
-                          ]}
-                          placeholder={
-                            pincodeLookupFailed
-                              ? (t("kycCityPlaceholder") || "Enter your city")
-                              : (t("kycCityEnterPincodeFirst") || "Enter pincode first to select city")
-                          }
-                          value={formData.city}
-                          editable={pincodeLookupFailed}
-                          onChangeText={(text) => handleChange("city", text)}
-                        />
-                      )}
-                    </View>
+                {/* Area */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Area</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your area/locality"
+                    placeholderTextColor="gray"
+                    value={formData.area}
+                    onChangeText={(text) => handleChange("area", text)}
+                  />
+                  {errors.area && (
+                    <Text style={styles.errorText}>{errors.area}</Text>
                   )}
-                  {errors.city && (
-                    <Text style={styles.errorText}>{errors.city}</Text>
-                  )}
+                </View>
 
-                  {/* District (Only show if pincode lookup succeeded or explicitly entered) */}
-                  {(!isLoadingPincode || pincodeLookupFailed) && (
-                    <View style={styles.formGroup}>
-                      <Text style={styles.label}>{t("kycDistrict") || "District"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          !pincodeLookupFailed && { opacity: 0.7, backgroundColor: "#f9f9f9" }
-                        ]}
-                        placeholder={t("kycDistrictPlaceholder") || "Enter your district"}
-                        value={formData.district}
-                        editable={pincodeLookupFailed}
-                        onChangeText={(text) => handleChange("district", text)}
-                      />
-                      {errors.district && (
-                        <Text style={styles.errorText}>{errors.district}</Text>
-                      )}
-                    </View>
-                  )}
-
-                  {/* State (Only show if pincode lookup succeeded or explicitly entered) */}
-                  {(!isLoadingPincode || pincodeLookupFailed) && (
-                    <View style={styles.formGroup}>
-                      <Text style={styles.label}>{t("kycState") || "State"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          !pincodeLookupFailed && { opacity: 0.7, backgroundColor: "#f9f9f9" }
-                        ]}
-                        placeholder={t("kycStatePlaceholder") || "Enter your state"}
-                        value={formData.state}
-                        editable={pincodeLookupFailed}
-                        onChangeText={(text) => handleChange("state", text)}
-                      />
-                      {errors.state && (
-                        <Text style={styles.errorText}>{errors.state}</Text>
-                      )}
-                    </View>
-                  )}
-
-                  {/* Door Number */}
-                  <View style={styles.formGroup}>
-                    <Text style={styles.label}>{t("kycDoorNo") || "Door No."} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder={t("kycDoorNoPlaceholder") || "Enter your door number"}
-                      value={formData.doorno}
-                      placeholderTextColor="gray"
-                      onChangeText={(text) => handleChange("doorno", text)}
-                    />
-                    {errors.doorno && (
-                      <Text style={styles.errorText}>{errors.doorno}</Text>
-                    )}
-                  </View>
-
-                  {/* Street */}
-                  <View style={styles.formGroup}>
-                    <Text style={styles.label}>{t("kycStreet") || "Street"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder={t("kycStreetPlaceholder") || "Enter your street name"}
-                      placeholderTextColor="gray"
-                      value={formData.street}
-                      onChangeText={(text) => handleChange("street", text)}
-                    />
-                    {errors.street && (
-                      <Text style={styles.errorText}>{errors.street}</Text>
-                    )}
-                  </View>
-
-                  {/* Area */}
-                  <View style={styles.formGroup}>
-                    <Text style={styles.label}>{t("kycArea") || "Area"} <Text style={{ color: "#FF3B30" }}>*</Text></Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder={t("kycAreaPlaceholder") || "Enter your area/locality"}
-                      placeholderTextColor="gray"
-                      value={formData.area}
-                      onChangeText={(text) => handleChange("area", text)}
-                    />
-                    {errors.area && (
-                      <Text style={styles.errorText}>{errors.area}</Text>
-                    )}
-                  </View>
-                </>
-              )}
-            </View>
+                <TouchableOpacity
+                  style={styles.sectionContinueButton}
+                  onPress={() => setActiveSection('nominee')}
+                >
+                  <Text style={styles.sectionContinueButtonText}>Continue to Nominee</Text>
+                  <Ionicons name="arrow-forward" size={18} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* 3. Nominee Details Section */}
-          <View style={[styles.sectionCard, styles.activeSectionCard]}>
-            <View style={styles.sectionHeaderClickable}>
+          <View style={[styles.sectionCard, activeSection === 'nominee' && styles.activeSectionCard]}>
+            <TouchableOpacity
+              style={styles.sectionHeaderClickable}
+              onPress={() => setActiveSection(activeSection === 'nominee' ? null : 'nominee')}
+              activeOpacity={0.7}
+            >
               <View style={styles.sectionHeaderLeft}>
                 <Ionicons name="people-outline" size={24} color="#388e3c" />
                 <View style={styles.sectionHeaderTitleContainer}>
                   <Text style={[styles.sectionTitle, { color: "#388e3c" }]}>
-                    {t("kycNomineeDetails") || "Nominee Details (Optional)"}
+                    Nominee Details (Optional)
                   </Text>
+                  {activeSection !== 'nominee' && (
+                    <Text style={styles.sectionSummaryText} numberOfLines={1}>
+                      {getNomineeSummary()}
+                    </Text>
+                  )}
                 </View>
               </View>
-            </View>
+              <Ionicons
+                name={activeSection === 'nominee' ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="#388e3c"
+              />
+            </TouchableOpacity>
 
-            <View style={styles.formContent}>
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>{t("kycNomineeRelationship") || "Nominee Relationship"}</Text>
-                <Dropdown
-                  style={[
-                    styles.dropdown,
-                    focusedField === "nominee_relationship" &&
-                    styles.dropdownFocused,
-                  ]}
-                  placeholderStyle={styles.placeholderStyle}
-                  selectedTextStyle={styles.selectedTextStyle}
-                  data={nomineeRelationship.map((id) => ({
-                    label: id.name,
-                    value: id.value,
-                  }))}
-                  maxHeight={300}
-                  labelField="label"
-                  valueField="value"
-                  placeholder={t("kycSelectRelationship") || "Select relationship"}
-                  value={formData.nominee_relationship}
-                  onFocus={() => setFocusedField("nominee_relationship")}
-                  onBlur={() => setFocusedField(null)}
-                  onChange={(item) => {
-                    handleChange("nominee_relationship", item.value);
-                    setFocusedField(null);
-                  }}
-                />
-                {errors.nominee_relationship && (
-                  <Text style={styles.errorText}>
-                    {errors.nominee_relationship}
-                  </Text>
-                )}
+            {activeSection === 'nominee' && (
+              <View style={styles.formContent}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Nominee Relationship</Text>
+                  <Dropdown
+                    style={[
+                      styles.dropdown,
+                      focusedField === "nominee_relationship" &&
+                      styles.dropdownFocused,
+                    ]}
+                    placeholderStyle={styles.placeholderStyle}
+                    selectedTextStyle={styles.selectedTextStyle}
+                    data={nomineeRelationship.map((id) => ({
+                      label: id.name,
+                      value: id.value,
+                    }))}
+                    maxHeight={300}
+                    labelField="label"
+                    valueField="value"
+                    placeholder="Select relationship"
+                    value={formData.nominee_relationship}
+                    onFocus={() => setFocusedField("nominee_relationship")}
+                    onBlur={() => setFocusedField(null)}
+                    onChange={(item) => {
+                      handleChange("nominee_relationship", item.value);
+                      setFocusedField(null);
+                    }}
+                  />
+                  {errors.nominee_relationship && (
+                    <Text style={styles.errorText}>
+                      {errors.nominee_relationship}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Nominee Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your nominee's full name"
+                    placeholderTextColor="gray"
+                    value={formData.nominee_name}
+                    onChangeText={(text) =>
+                      handleChange("nominee_name", text)
+                    }
+                  />
+                  {errors.nominee_name && (
+                    <Text style={styles.errorText}>
+                      {errors.nominee_name}
+                    </Text>
+                  )}
+                </View>
               </View>
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>{t("kycNomineeName") || "Nominee Name"}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={t("kycNomineeNamePlaceholder") || "Enter your nominee's full name"}
-                  placeholderTextColor="gray"
-                  value={formData.nominee_name}
-                  onChangeText={(text) =>
-                    handleChange("nominee_name", text)
-                  }
-                />
-                {errors.nominee_name && (
-                  <Text style={styles.errorText}>
-                    {errors.nominee_name}
-                  </Text>
-                )}
-              </View>
-            </View>
+            )}
           </View>
 
           {/* Submit Button */}
@@ -1249,7 +1148,7 @@ export default function KycForm() {
                 style={styles.gradientButton}
               >
                 <Text style={styles.submitButtonText}>
-                  {kycId ? (t("updateKyc") || "Update KYC") : (t("submitKyc") || "Submit KYC")}
+                  {kycId ? "Update KYC" : "Submit KYC"}
                 </Text>
                 <Ionicons
                   name="arrow-forward"
@@ -1271,7 +1170,7 @@ export default function KycForm() {
 
 
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.quaternary || "#F2E6D2",
@@ -1309,11 +1208,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginTop: 2,
   },
   scrollView: {
@@ -1393,11 +1292,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.colors.white,
     color: "#333",
   },
   disabledInput: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: theme.colors.backgroundSecondary,
     color: "#666",
   },
   pincodeContainer: {
@@ -1437,32 +1336,30 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   buttonContainer: {
-    paddingVertical: 12,
-    marginTop: 12,
-    alignItems: "center",
+    paddingVertical: 16,
+    marginTop: 16,
   },
   submitButton: {
-    width: "70%",
-    borderRadius: 25,
+    borderRadius: 16,
     overflow: "hidden",
     shadowColor: "#850111",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   gradientButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
   },
   submitButtonText: {
-    color: "#FFD700",
-    fontSize: 16,
-    fontWeight: "800",
-    letterSpacing: 0.5,
+    color: "#FFC857",
+    fontSize: 18,
+    fontWeight: "bold",
+    letterSpacing: 1,
   },
   buttonIcon: {
     marginLeft: 8,
@@ -1490,7 +1387,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     height: 56,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.colors.white,
   },
   dateInput: {
     flex: 1,
@@ -1521,7 +1418,7 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     height: 55,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderColor: "#E0E0E0",
     borderWidth: 1,
     borderRadius: 12,
@@ -1603,4 +1500,6 @@ const styles = StyleSheet.create({
     zIndex: 100,
     elevation: 10,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

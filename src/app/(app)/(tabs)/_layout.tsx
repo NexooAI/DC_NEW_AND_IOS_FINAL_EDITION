@@ -9,17 +9,19 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useSegments, useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { BlurView } from "expo-blur";
-import { useAppVisibility } from "@/hooks/useAppVisibility";
+import CustomBottomBar from "@/common/components/navigation/CustomBottomBar";
 
 export default function TabsLayout() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const { isTabVisible } = useGlobalStore();
   const insets = useSafeAreaInsets();
   const segments = useSegments();
   const router = useRouter();
-  const { isVisible } = useAppVisibility();
+  const hasDashboard = getAppConfig().constants.enableDashboard;
 
   // Check if we're on the schemes page
   const fullPath = segments.join("/");
@@ -27,15 +29,16 @@ export default function TabsLayout() {
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
-      <NavigationErrorBoundary>
-        <Tabs
+      <Tabs
+        tabBar={(props) => <CustomBottomBar {...props} />}
           screenOptions={{
             headerShown: true,
-            tabBarActiveTintColor: theme.colors.primary || "#850111", // Primary active color
-            tabBarInactiveTintColor: "#666", // Inactive grey
+            /*
+            tabBarActiveTintColor: "#FFD700", // Gold color for active tabs
+            tabBarInactiveTintColor: "#cbd5e1", // Light silver/grey for inactive tabs
             tabBarBackground: () => (
               <BlurView
-                tint="light"
+                tint="dark"
                 intensity={85}
                 style={StyleSheet.absoluteFill}
               />
@@ -43,25 +46,27 @@ export default function TabsLayout() {
             tabBarStyle: {
               height: 60,
               overflow: 'hidden',
-              backgroundColor: 'rgba(255, 255, 255, 0.85)', // Light translucent base
+              backgroundColor: 'rgba(26, 2, 4, 0.90)', // Dark black-maroon base
               borderTopWidth: 1.5,
-              borderTopColor: 'rgba(0, 0, 0, 0.1)', // Light border line
+              borderTopColor: 'rgba(218, 165, 32, 0.25)', // Glowing gold top border line
               elevation: 10,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: -3 },
-              shadowOpacity: 0.08,
+              shadowOpacity: 0.15,
               shadowRadius: 6,
               paddingBottom: Platform.OS === 'ios' ? 12 : 8,
               paddingTop: 8,
               display: isTabVisible ? 'flex' : 'none',
             },
+            */
+            tabBarStyle: {
+              display: isTabVisible ? 'flex' : 'none',
+            },
             headerStyle: {
               backgroundColor: theme.colors.primary,
-              height: Platform.OS === 'android' ? 60 : 60, // Reduced height for Android, larger for iOS (includes status bar)
               elevation: 0,
               shadowOpacity: 0,
             },
-            headerStatusBarHeight: Platform.OS === 'ios' ? 0 : 0, // Let the safe area handle it or explicit height
             headerTitleContainerStyle: {
               paddingVertical: Platform.OS === 'android' ? 0 : undefined, // Remove vertical padding on Android to reduce height
             },
@@ -86,7 +91,6 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="home"
             options={{
-              href: isVisible("showTabHome") ? undefined : null,
               title: t("home") || "Home",
               tabBarIcon: ({ color, size, focused }) => {
                 // Make home tab inactive when on schemes page
@@ -95,7 +99,7 @@ export default function TabsLayout() {
                   <Ionicons
                     name={isActive ? "home" : "home-outline"}
                     size={size}
-                    color={isActive ? color : (focused ? "#666" : color)}
+                    color={isActive ? color : (focused ? "#cbd5e1" : color)}
                   />
                 );
               },
@@ -116,7 +120,6 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="savings"
             options={{
-              href: isVisible("showTabSavings") ? undefined : null,
               title: t("schemes.title") || "Schemes",
               tabBarIcon: ({ color, size, focused }) => (
                 <Ionicons
@@ -139,13 +142,14 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="dashboard_tab"
             options={{
+              href: hasDashboard ? undefined : null,
               title: t("dashboard") || "Dashboard",
               // Hide header because this is a fake tab
               headerShown: false,
               tabBarIcon: ({ color, size, focused }) => (
                 <Ionicons
                   name={focused ? "grid" : "grid-outline"}
-                  size={size + 4}
+                  size={size}
                   color={color}
                 />
               ),
@@ -154,14 +158,16 @@ export default function TabsLayout() {
             listeners={() => ({
               tabPress: (e) => {
                 e.preventDefault();
-                router.push("/(app)/dashboard");
+                if (hasDashboard) {
+                  router.push("/(app)/dashboard");
+                }
               },
             })}
           />
           <Tabs.Screen
             name="quick_join"
             options={{
-              href: isVisible("showTabQuickJoin") ? undefined : null,
+              href: null,
               title: t("quickJoin") || "Quick Join",
               tabBarLabel: () => null,
               headerShown: false,
@@ -204,7 +210,6 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="rewards"
             options={{
-              href: isVisible("showTabRewards") ? undefined : null,
               title: t("rewards") || "Rewards",
               tabBarIcon: ({ color, size, focused }) => {
                 return (
@@ -244,7 +249,6 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="profile"
             options={{
-              href: isVisible("showTabProfile") ? undefined : null,
               title: t("profile") || "Profile",
               tabBarIcon: ({ color, size, focused }) => (
                 <Ionicons
@@ -279,9 +283,10 @@ export default function TabsLayout() {
             }}
           />
         </Tabs>
-      </NavigationErrorBoundary>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({});
+function getStyles(theme: any) { return StyleSheet.create({}) }
+
+var styles = getStyles(theme);;

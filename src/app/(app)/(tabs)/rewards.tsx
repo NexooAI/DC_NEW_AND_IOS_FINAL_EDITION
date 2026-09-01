@@ -13,8 +13,6 @@ import {
     TextInput,
     Alert,
     ScrollView,
-    Share,
-    Linking,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -23,39 +21,20 @@ import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useRouter, useFocusEffect, useNavigation } from "expo-router";
 import { rewardsAPI, investmentAPI } from "@/services/api";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useEffect } from "react";
 
 
 const DISABLE_REDEMPTION_FORM = true; // Set to false to restore original redemption modal flow
 
 export default function RewardsScreen() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const navigation = useNavigation();
     const { user } = useGlobalStore();
-
-    const code = user?.referralCode || "DEFAULT123";
-    const shareMessage = (t("refer_earn_share_message") || "Use my referral code {code} to sign up and earn rewards! Click here to download the app: https://dcjewellers.org/refer?code={code}").replace(/{code}/g, code);
-
-    const onShare = async () => {
-        try {
-            await Share.share({
-                title: "Refer & Earn",
-                message: shareMessage,
-            });
-        } catch (error: any) {
-            Alert.alert(t("error") || "Error", error.message);
-        }
-    };
-
-    const onShareWhatsapp = () => {
-        const url = `whatsapp://send?text=${encodeURIComponent(shareMessage)}`;
-        Linking.openURL(url).catch(() => {
-            Alert.alert(t("error") || "Error", t("whatsappNotInstalled") || "WhatsApp is not installed on your device");
-        });
-    };
     const [totalPoints, setTotalPoints] = useState(0);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -103,9 +82,9 @@ export default function RewardsScreen() {
                 backgroundColor: "#F2E6D2",
                 elevation: 0,
                 shadowOpacity: 0,
-                height: Platform.OS === 'android' ? (60 + insets.top) : 60,
+                height: 60 + insets.top,
             },
-            headerStatusBarHeight: Platform.OS === 'android' ? insets.top : 0,
+            headerStatusBarHeight: insets.top,
             headerTintColor: "#1a1a1a",
             headerTitleStyle: {
                 fontWeight: "700",
@@ -128,7 +107,7 @@ export default function RewardsScreen() {
                         style={styles.historyPillButton}
                         onPress={() => router.push("/(app)/(tabs)/rewards_history")}
                     >
-                        <Text style={styles.historyPillText}>{t("history") || "History"}</Text>
+                        <Text style={styles.historyPillText}>History</Text>
                         <Ionicons name="receipt-outline" size={16} color="white" />
                     </TouchableOpacity>
                 </View>
@@ -373,7 +352,7 @@ export default function RewardsScreen() {
                             style={styles.referCardGradient}
                         >
                             <View style={styles.referIconContainer}>
-                                <Ionicons name="people" size={28} color={theme.colors.primary} />
+                                <Ionicons name="people" size={28} color={theme.colors.textDark} />
                             </View>
                             <View style={styles.referContent}>
                                 <Text style={styles.referTitle}>{t("referAndEarn") || "Refer & Earn"}</Text>
@@ -395,7 +374,7 @@ export default function RewardsScreen() {
                         {/* Step 1 */}
                         <View style={styles.stepCardItem}>
                             <View style={styles.stepIconContainer}>
-                                <Ionicons name="options-outline" size={24} color={theme.colors.primary} />
+                                <Ionicons name="options-outline" size={24} color={theme.colors.textDark} />
                             </View>
                             <View style={styles.stepContent}>
                                 <Text style={styles.stepTitle}>{t("chooseHowToRedeem") || "Choose How to Redeem"}</Text>
@@ -408,7 +387,7 @@ export default function RewardsScreen() {
                         {/* Step 2 */}
                         <View style={styles.stepCardItem}>
                             <View style={styles.stepIconContainer}>
-                                <Ionicons name="push-outline" size={24} color={theme.colors.primary} />
+                                <Ionicons name="push-outline" size={24} color={theme.colors.textDark} />
                             </View>
                             <View style={styles.stepContent}>
                                 <Text style={styles.stepTitle}>{t("submitYourRequest") || "Submit Your Request"}</Text>
@@ -421,7 +400,7 @@ export default function RewardsScreen() {
                         {/* Step 3 */}
                         <View style={styles.stepCardItem}>
                             <View style={styles.stepIconContainer}>
-                                <Ionicons name="storefront-outline" size={24} color={theme.colors.primary} />
+                                <Ionicons name="storefront-outline" size={24} color={theme.colors.textDark} />
                             </View>
                             <View style={styles.stepContent}>
                                 <Text style={styles.stepTitle}>{t("visitStoreRedeem") || "Visit the Store & Redeem"}</Text>
@@ -430,68 +409,32 @@ export default function RewardsScreen() {
                                 </Text>
                             </View>
                         </View>
-
-                        {/* Action buttons inside the card */}
-                        <View style={{ marginTop: 24, gap: 12 }}>
-                            {/* Redeem Points Button */}
-                            <TouchableOpacity
-                                style={{
-                                    width: "100%",
-                                    height: 48,
-                                    borderRadius: 12,
-                                    overflow: "hidden",
-                                }}
-                                activeOpacity={0.9}
-                                onPress={handleRedeemPress}
-                                disabled={loading}
-                            >
-                                <LinearGradient
-                                    colors={[theme.colors.primary, "#002b24"]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                    style={{
-                                        flex: 1,
-                                        flexDirection: "row",
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                    }}
-                                >
-                                    {loading ? (
-                                        <ActivityIndicator size="small" color="#fff" />
-                                    ) : (
-                                        <>
-                                            <Text style={{ color: "#fff", fontSize: 16, fontWeight: "bold" }}>
-                                                {t("redeemPoints") || "Redeem Points"}
-                                            </Text>
-                                            <Ionicons name="arrow-forward" size={16} color="#FFD700" style={{ marginLeft: 6 }} />
-                                        </>
-                                    )}
-                                </LinearGradient>
-                            </TouchableOpacity>
-
-                        </View>
                     </View>
                 </View>
 
             </ScrollView>
 
-            {/* Fixed Share Button at Bottom */}
-            <View style={styles.fixedShareFooter}>
+            {/* Floating Action Button */}
+            <View style={styles.bottomBar}>
                 <TouchableOpacity
-                    style={styles.fixedShareButton}
-                    activeOpacity={0.85}
-                    onPress={onShareWhatsapp}
+                    style={styles.redeemButton}
+                    activeOpacity={0.9}
+                    onPress={handleRedeemPress}
+                    disabled={loading}
                 >
                     <LinearGradient
-                        colors={['#25D366', '#128C7E']}
+                        colors={[theme.colors.primary, "#002b24"]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
-                        style={styles.fixedShareGradient}
+                        style={styles.redeemGradient}
                     >
-                        <Ionicons name="logo-whatsapp" size={20} color="#fff" />
-                        <Text style={styles.fixedShareText}>
-                            {t("inviteFriendsOnWhatsApp") || "Invite friends on WhatsApp"}
-                        </Text>
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.redeemButtonText}>{t("redeemPoints") || "Redeem Points"}</Text>
+                        )}
+                        <Ionicons name="sparkles" size={16} color="#FFD700" style={{ position: "absolute", top: 10, left: 20 }} />
+                        <Ionicons name="sparkles" size={24} color="#FFD700" style={{ position: "absolute", bottom: 10, right: 20 }} />
                     </LinearGradient>
                 </TouchableOpacity>
             </View>
@@ -546,7 +489,7 @@ export default function RewardsScreen() {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <Ionicons name="storefront-outline" size={48} color={theme.colors.primary} />
+                            <Ionicons name="storefront-outline" size={48} color={theme.colors.textDark} />
                             <Text style={styles.modalTitle}>{t("visitBranchToRedeemTitle") || "Visit Branch to Redeem"}</Text>
                         </View>
                         <Text style={styles.modalDescription}>
@@ -579,7 +522,7 @@ export default function RewardsScreen() {
                 <View style={styles.modalOverlay}>
                     <View style={[styles.modalContent, { maxWidth: 360 }]}>
                         <View style={styles.modalHeader}>
-                            <Ionicons name="gift" size={40} color={theme.colors.primary} />
+                            <Ionicons name="gift" size={40} color={theme.colors.textDark} />
                             <Text style={[styles.modalTitle, { fontSize: 20, marginTop: 8 }]}>
                                 {t("redeemPoints") || "Redeem Points"}
                             </Text>
@@ -688,13 +631,13 @@ export default function RewardsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "#F2E6D2",
     },
     scrollContent: {
-        paddingBottom: 220,
+        paddingBottom: 150,
     },
     modalOverlay: {
         flex: 1,
@@ -704,7 +647,7 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     modalContent: {
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.white,
         borderRadius: 24,
         padding: 24,
         width: "100%",
@@ -784,7 +727,7 @@ const styles = StyleSheet.create({
         position: "absolute",
         width: "200%",
         height: 40,
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.white,
     },
     headerContainer: {
         backgroundColor: "transparent",
@@ -886,7 +829,7 @@ const styles = StyleSheet.create({
         fontWeight: "800",
     },
     stepsCard: {
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.white,
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
         borderBottomLeftRadius: 10,
@@ -1011,7 +954,7 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.white,
         paddingHorizontal: 20,
         paddingTop: 16,
         paddingBottom: Platform.OS === "ios" ? 34 : 20,
@@ -1034,22 +977,6 @@ const styles = StyleSheet.create({
     },
     redeemButtonText: {
         color: "#fff",
-        fontSize: 18,
-        fontWeight: "700",
-        letterSpacing: 0.5,
-    },
-    sharePointsButton: {
-        paddingVertical: 18,
-        alignItems: "center",
-        justifyContent: "center",
-        flexDirection: "row",
-        borderWidth: 2,
-        borderColor: theme.colors.primary,
-        borderRadius: 16,
-        backgroundColor: "#fff",
-    },
-    sharePointsButtonText: {
-        color: theme.colors.primary,
         fontSize: 18,
         fontWeight: "700",
         letterSpacing: 0.5,
@@ -1096,7 +1023,7 @@ const styles = StyleSheet.create({
         borderColor: "#ccc",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.white,
     },
     methodButtonActive: {
         borderColor: theme.colors.primary,
@@ -1109,42 +1036,8 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
     methodTextActive: {
-        color: theme.colors.primary,
+        color: theme.colors.textDark,
     },
-    fixedShareFooter: {
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: "rgba(255, 255, 255, 0.95)",
-        paddingHorizontal: 20,
-        paddingTop: 12,
-        paddingBottom: Platform.OS === "ios" ? 34 : 16,
-        borderTopWidth: 1,
-        borderTopColor: "rgba(0, 0, 0, 0.05)",
-    },
-    fixedShareButton: {
-        width: "100%",
-        height: 52,
-        borderRadius: 16,
-        overflow: "hidden",
-        shadowColor: "#128C7E",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 6,
-        elevation: 8,
-    },
-    fixedShareGradient: {
-        flex: 1,
-        flexDirection: "row",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: 8,
-    },
-    fixedShareText: {
-        color: "#fff",
-        fontSize: 16,
-        fontWeight: "800",
-        letterSpacing: 0.5,
-    },
-});
+}) }
+
+var styles = getStyles(theme);;

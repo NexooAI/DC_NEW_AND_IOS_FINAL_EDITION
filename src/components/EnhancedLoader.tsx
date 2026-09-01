@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useEffect, useRef } from "react";
 import {
   View,
@@ -9,7 +10,6 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
-import { theme } from "@/constants/theme";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 
 interface EnhancedLoaderProps {
@@ -25,6 +25,8 @@ const EnhancedLoader: React.FC<EnhancedLoaderProps> = ({
   size = "medium",
   overlay = true,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -264,7 +266,7 @@ const EnhancedLoader: React.FC<EnhancedLoaderProps> = ({
           ]}
         >
           <LinearGradient
-            colors={["#2a5a8d", "#2a5a8d"]}
+            colors={theme.colors.gradientBlue || ["#1e293b", "#334155", "#475569"]}
             style={styles.ringGradient}
           />
         </Animated.View>
@@ -384,7 +386,7 @@ const EnhancedLoader: React.FC<EnhancedLoaderProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
@@ -460,7 +462,7 @@ const styles = StyleSheet.create({
     color: theme.colors.secondary,
     marginBottom: 8,
     textAlign: "center",
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
+    textShadowColor: theme.colors.overlay,
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
@@ -471,7 +473,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginBottom: 15,
     textAlign: "center",
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowColor: theme.colors.overlayMedium,
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
@@ -506,9 +508,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: "100%",
     height: "100%",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: theme.colors.whiteOverlayVeryLight,
     borderRadius: 1000,
   },
-});
+}) }
+
+var styles: any;
 
 export default EnhancedLoader;

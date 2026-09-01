@@ -20,17 +20,20 @@ export const fetchRemoteConfig = async (): Promise<typeof APP_CONFIG> => {
       await AsyncStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify(remoteConfig));
 
       // Apply the remote config values to APP_CONFIG in place
+      const appConfigAny = APP_CONFIG as any;
       if (remoteConfig.urls && remoteConfig.urls.baseUrl) {
-        APP_CONFIG.urls.baseUrl = remoteConfig.urls.baseUrl;
+        appConfigAny.urls.baseUrl = remoteConfig.urls.baseUrl;
       }
       if (remoteConfig.theme) {
+        if (!appConfigAny.theme) appConfigAny.theme = { colors: {} };
+        if (!appConfigAny.colors) appConfigAny.colors = {};
         if (remoteConfig.theme.primaryColor) {
-          APP_CONFIG.theme.colors.primary = remoteConfig.theme.primaryColor;
-          APP_CONFIG.colors.primary = remoteConfig.theme.primaryColor;
+          appConfigAny.theme.colors.primary = remoteConfig.theme.primaryColor;
+          appConfigAny.colors.primary = remoteConfig.theme.primaryColor;
         }
         if (remoteConfig.theme.secondaryColor) {
-          APP_CONFIG.theme.colors.secondary = remoteConfig.theme.secondaryColor;
-          APP_CONFIG.colors.secondary = remoteConfig.theme.secondaryColor;
+          appConfigAny.theme.colors.secondary = remoteConfig.theme.secondaryColor;
+          appConfigAny.colors.secondary = remoteConfig.theme.secondaryColor;
         }
       }
 
@@ -48,17 +51,20 @@ export const fetchRemoteConfig = async (): Promise<typeof APP_CONFIG> => {
       const cachedConfig = JSON.parse(cached);
 
       // Apply the cached config values to APP_CONFIG in place
+      const appConfigAny = APP_CONFIG as any;
       if (cachedConfig.urls && cachedConfig.urls.baseUrl) {
-        APP_CONFIG.urls.baseUrl = cachedConfig.urls.baseUrl;
+        appConfigAny.urls.baseUrl = cachedConfig.urls.baseUrl;
       }
       if (cachedConfig.theme) {
+        if (!appConfigAny.theme) appConfigAny.theme = { colors: {} };
+        if (!appConfigAny.colors) appConfigAny.colors = {};
         if (cachedConfig.theme.primaryColor) {
-          APP_CONFIG.theme.colors.primary = cachedConfig.theme.primaryColor;
-          APP_CONFIG.colors.primary = cachedConfig.theme.primaryColor;
+          appConfigAny.theme.colors.primary = cachedConfig.theme.primaryColor;
+          appConfigAny.colors.primary = cachedConfig.theme.primaryColor;
         }
         if (cachedConfig.theme.secondaryColor) {
-          APP_CONFIG.theme.colors.secondary = cachedConfig.theme.secondaryColor;
-          APP_CONFIG.colors.secondary = cachedConfig.theme.secondaryColor;
+          appConfigAny.theme.colors.secondary = cachedConfig.theme.secondaryColor;
+          appConfigAny.colors.secondary = cachedConfig.theme.secondaryColor;
         }
       }
 

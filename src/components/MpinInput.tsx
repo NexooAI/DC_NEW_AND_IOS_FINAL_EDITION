@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useRef, useEffect } from "react";
 import { View, TextInput, StyleSheet, NativeSyntheticEvent, TextInputKeyPressEventData } from "react-native";
 
@@ -16,6 +17,8 @@ const MpinInput: React.FC<MpinInputProps> = ({
   inputStyle = {},
   containerStyle = {},
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const [pins, setPins] = useState(Array(length).fill(""));
   const inputRefs = useRef<TextInput[]>([]);
 
@@ -69,11 +72,7 @@ const MpinInput: React.FC<MpinInputProps> = ({
           ref={(el) => {
             if (el) inputRefs.current[index] = el;
           }}
-          style={[
-            styles.input,
-            pin ? styles.inputFilled : styles.inputEmpty,
-            inputStyle,
-          ]}
+          style={[styles.input, inputStyle]}
           keyboardType="numeric"
           maxLength={1}
           secureTextEntry={secureTextEntry}
@@ -87,51 +86,24 @@ const MpinInput: React.FC<MpinInputProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    width: "100%",
-    maxWidth: 320,
-    alignSelf: "center",
   },
   input: {
-    width: 58,
-    height: 58,
-    borderWidth: 2,
-    borderRadius: 15,
+    width: 50,
+    height: 50,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 8,
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#1a1a1a",
-    textAlign: "center",
-    marginHorizontal: 4,
-    // Soft shadow
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    color: theme.colors.textDark,
+    backgroundColor: theme.colors.surfaceElevated,
   },
-  inputEmpty: {
-    borderColor: "#E2E8F0",
-    backgroundColor: "#F8FAFC",
-  },
-  inputFilled: {
-    borderColor: "#D4AF37", // Gold
-    backgroundColor: "#ffffff",
-    shadowColor: "#D4AF37", // Gold shadow
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-});
+}) }
+
+var styles: any;
 
 export default MpinInput;

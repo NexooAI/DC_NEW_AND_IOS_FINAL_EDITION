@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useEffect, useRef } from "react";
 import {
   View,
@@ -7,7 +8,6 @@ import {
   ViewStyle,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { theme } from "@/constants/theme";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 
@@ -91,18 +91,23 @@ const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
   variant = "rectangle",
   borderRadius,
   style,
-  shimmerColors = [
-    "rgba(255, 255, 255, 0)",
-    "rgba(255, 255, 255, 0.3)",
-    "rgba(255, 255, 255, 0.5)",
-    "rgba(255, 255, 255, 0.3)",
-    "rgba(255, 255, 255, 0)",
-  ],
-  backgroundColor = "#E1E9EE",
+  shimmerColors,
+  backgroundColor,
   animationDuration = 1500,
   isLoading = true,
   children,
 }) => {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
+  const activeShimmerColors =
+    shimmerColors || [
+      theme.colors.transparent,
+      theme.colors.whiteOverlayVeryLight,
+      theme.colors.whiteOverlayLight,
+      theme.colors.whiteOverlayVeryLight,
+      theme.colors.transparent,
+    ];
+  const activeBackgroundColor = backgroundColor || theme.colors.backgroundTertiary;
   const shimmerAnim = useRef(new Animated.Value(-1)).current;
 
   useEffect(() => {
@@ -164,7 +169,7 @@ const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
           width: getWidth() as any,
           height: height as any,
           borderRadius: getBorderRadius(),
-          backgroundColor,
+          backgroundColor: activeBackgroundColor,
         },
         style,
       ]}
@@ -178,7 +183,7 @@ const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
         ]}
       >
         <LinearGradient
-          colors={shimmerColors as any}
+          colors={activeShimmerColors as any}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           style={styles.shimmerGradient}
@@ -577,7 +582,7 @@ export const SkeletonHomePage: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   skeleton: {
     overflow: "hidden",
     position: "relative",
@@ -599,10 +604,10 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: 16,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -626,7 +631,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 12,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: 12,
     marginBottom: 8,
   },
@@ -640,10 +645,10 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   rateCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: 16,
     padding: 16,
-    shadowColor: "#000",
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -661,10 +666,10 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   schemeCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: 20,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 12,
@@ -697,7 +702,7 @@ const styles = StyleSheet.create({
   },
   userInfoStats: {
     flexDirection: "row",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: theme.colors.whiteOverlayVeryLight,
     borderRadius: 10,
     padding: 12,
     justifyContent: "space-between",
@@ -710,7 +715,7 @@ const styles = StyleSheet.create({
   userInfoStatDivider: {
     width: 1,
     height: 30,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: theme.colors.whiteOverlayLight,
     marginHorizontal: 8,
   },
   collectionContainer: {
@@ -752,7 +757,7 @@ const styles = StyleSheet.create({
   },
   // Savings specific styles
   savingsCard: {
-    backgroundColor: "rgba(133, 1, 17, 0.85)",
+    backgroundColor: theme.colors.primary,
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 16,
@@ -786,7 +791,7 @@ const styles = StyleSheet.create({
   savingsCardInfoDivider: {
     width: 1,
     height: 30,
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    backgroundColor: theme.colors.whiteOverlayLight,
     marginHorizontal: 12,
   },
   savingsCardActions: {
@@ -811,7 +816,7 @@ const styles = StyleSheet.create({
   savingsPortfolioStatDivider: {
     width: 1,
     height: 36,
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    backgroundColor: theme.colors.whiteOverlayLight,
     marginHorizontal: 16,
   },
   savingsPageContainer: {
@@ -819,7 +824,7 @@ const styles = StyleSheet.create({
   },
   savingsFilterToggle: {
     flexDirection: "row",
-    backgroundColor: "#1a2a39",
+    backgroundColor: theme.colors.primary,
     borderRadius: 40,
     padding: 6,
     marginHorizontal: 10,
@@ -829,7 +834,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   savingsDetailSummary: {
-    backgroundColor: "#1a2a39",
+    backgroundColor: theme.colors.primary,
     borderRadius: 16,
     padding: 14,
     marginBottom: 14,
@@ -841,7 +846,7 @@ const styles = StyleSheet.create({
   },
   savingsDetailStats: {
     flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: theme.colors.whiteOverlayVeryLight,
     borderRadius: 12,
     padding: 12,
   },
@@ -853,11 +858,11 @@ const styles = StyleSheet.create({
   savingsDetailStatDivider: {
     width: 1,
     height: 32,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: theme.colors.whiteOverlayLight,
     marginHorizontal: 12,
   },
   savingsDetailCard: {
-    backgroundColor: "#FFF8DC",
+    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: 20,
     padding: 20,
     marginBottom: 20,
@@ -870,19 +875,21 @@ const styles = StyleSheet.create({
   savingsDetailGridItem: {
     flex: 1,
     minWidth: "48%",
-    backgroundColor: "#F5DEB3",
+    backgroundColor: theme.colors.backgroundTertiary,
     padding: 12,
     borderRadius: 10,
   },
   savingsTransactionItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F5DEB3",
+    backgroundColor: theme.colors.backgroundTertiary,
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
   },
-});
+}) }
+
+var styles: any;
 
 // Skeleton Savings Card (for My Schemes page)
 export const SkeletonSavingsCard: React.FC<{ style?: ViewStyle }> = ({

@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/store/global.store";
 import React, { useState, useEffect, useMemo } from "react";
 import {
     View,
@@ -18,7 +19,6 @@ import { theme } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useNavigation, useRouter, useLocalSearchParams } from "expo-router";
-import { convertUTCToLocal, formatDate } from "@/utils/dateTimeUtils";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -41,6 +41,8 @@ type RateType = "gold" | "silver";
 type DateFilter = "all" | "thisWeek" | "thisMonth" | "lastMonth" | "last3Months" | "last6Months";
 
 export default function RateChart() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
     const { t } = useTranslation();
     const navigation = useNavigation();
     const router = useRouter();
@@ -61,7 +63,7 @@ export default function RateChart() {
                         onPress={() => router.replace("/(app)/(tabs)/profile")}
                         style={{ marginLeft: Platform.OS === 'ios' ? 10 : 0, paddingRight: 15 }}
                     >
-                        <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+                        <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
                     </TouchableOpacity>
                 ),
             });
@@ -107,7 +109,7 @@ export default function RateChart() {
             if (response.data && response.data.data) {
                 // Sort by created_at descending (newest first)
                 const sortedData = [...response.data.data].sort((a, b) =>
-                    convertUTCToLocal(b.created_at).getTime() - convertUTCToLocal(a.created_at).getTime()
+                    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
                 );
                 setRatesData(sortedData);
             }
@@ -147,7 +149,7 @@ export default function RateChart() {
         }
 
         return ratesData.filter((item) => {
-            const itemDate = convertUTCToLocal(item.created_at);
+            const itemDate = new Date(item.created_at);
             return itemDate >= filterDate;
         });
     }, [ratesData, selectedDateFilter]);
@@ -171,7 +173,7 @@ export default function RateChart() {
         const monthAbbreviations = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
         const labels = sortedForChart.map((item) => {
-            const date = convertUTCToLocal(item.created_at);
+            const date = new Date(item.created_at);
             const day = date.getDate();
             const month = monthAbbreviations[date.getMonth()];
             return `${day}-${month}`;
@@ -201,23 +203,23 @@ export default function RateChart() {
         decimalPlaces: 2,
         color: (opacity = 1) => {
             if (selectedRateType === "gold") {
-                return `rgba(218, 165, 32, ${opacity})`; // Pure gold color
+                return `rgba(255, 215, 0, ${opacity})`; // Gold color
             } else {
-                return `rgba(120, 130, 140, ${opacity})`; // Pure silver/slate color
+                return `rgba(192, 192, 192, ${opacity})`; // Silver color
             }
         },
-        labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+        labelColor: (opacity = 1) => theme.colors.textDark,
         style: {
             borderRadius: 16,
         },
         propsForDots: {
-            r: "5",
+            r: "4",
             strokeWidth: "2",
-            stroke: selectedRateType === "gold" ? "#DAA520" : "#78828c",
+            stroke: selectedRateType === "gold" ? "#FFD700" : "#C0C0C0",
         },
         propsForBackgroundLines: {
-            strokeDasharray: "4 4", // sleek dashed grid lines
-            stroke: theme.colors.borderLight || "rgba(0,0,0,0.06)",
+            strokeDasharray: "", // solid lines
+            stroke: theme.colors.borderLight,
             strokeWidth: 1,
         },
     };
@@ -249,7 +251,7 @@ export default function RateChart() {
         return (
             <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                    <ActivityIndicator size="large" color={theme.colors.secondary} />
                     <Text style={styles.loadingText}>{t("rateChart_loadingRates")}</Text>
                 </View>
             </SafeAreaView>
@@ -279,47 +281,48 @@ export default function RateChart() {
             >
                 {/* Header Section */}
                 <View style={styles.headerSection}>
-                    {/* Rate Type Selector Toggles */}
-                    <View style={styles.toggleContainer}>
+                    {/* Rate Type Tab Selector */}
+                    <View style={{
+                        flexDirection: "row",
+                        backgroundColor: "rgba(133, 1, 17, 0.06)",
+                        borderRadius: 14,
+                        padding: 4,
+                        marginBottom: 20,
+                        marginHorizontal: 16,
+                    }}>
                         <TouchableOpacity
-                            style={[
-                                styles.toggleButton,
-                                selectedRateType === "gold" && styles.toggleButtonActive,
-                            ]}
                             onPress={() => setSelectedRateType("gold")}
+                            style={{
+                                flex: 1,
+                                backgroundColor: selectedRateType === "gold" ? theme.colors.primary || "#850111" : "transparent",
+                                paddingVertical: 10,
+                                borderRadius: 10,
+                                alignItems: "center",
+                            }}
                         >
-                            <Ionicons
-                                name="ribbon"
-                                size={18}
-                                color={selectedRateType === "gold" ? "#fff" : theme.colors.textGrey || "#666"}
-                            />
-                            <Text
-                                style={[
-                                    styles.toggleButtonText,
-                                    selectedRateType === "gold" && styles.toggleButtonTextActive,
-                                ]}
-                            >
+                            <Text style={{
+                                fontSize: 14,
+                                fontWeight: "700",
+                                color: selectedRateType === "gold" ? "white" : theme.colors.textDark || "#666",
+                            }}>
                                 {t("rateChart_gold") || "Gold"}
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[
-                                styles.toggleButton,
-                                selectedRateType === "silver" && styles.toggleButtonActive,
-                            ]}
                             onPress={() => setSelectedRateType("silver")}
+                            style={{
+                                flex: 1,
+                                backgroundColor: selectedRateType === "silver" ? theme.colors.primary || "#850111" : "transparent",
+                                paddingVertical: 10,
+                                borderRadius: 10,
+                                alignItems: "center",
+                            }}
                         >
-                            <Ionicons
-                                name="shield"
-                                size={18}
-                                color={selectedRateType === "silver" ? "#fff" : theme.colors.textGrey || "#666"}
-                            />
-                            <Text
-                                style={[
-                                    styles.toggleButtonText,
-                                    selectedRateType === "silver" && styles.toggleButtonTextActive,
-                                ]}
-                            >
+                            <Text style={{
+                                fontSize: 14,
+                                fontWeight: "700",
+                                color: selectedRateType === "silver" ? "white" : theme.colors.textDark || "#666",
+                            }}>
                                 {t("rateChart_silver") || "Silver"}
                             </Text>
                         </TouchableOpacity>
@@ -437,13 +440,18 @@ export default function RateChart() {
                             <Text style={[styles.tableHeaderText, styles.tableStatusColumn]}>{t("rateChart_statusHeader")}</Text>
                         </View>
                         {filteredData.slice(0, 10).map((item) => {
+                            const date = new Date(item.created_at);
                             const rate = selectedRateType === "gold"
                                 ? parseFloat(item.gold_rate)
                                 : parseFloat(item.silver_rate);
                             return (
                                 <View key={item.id} style={styles.tableRow}>
                                     <Text style={[styles.tableCell, styles.tableDateColumn]}>
-                                        {formatDate(item.created_at)}
+                                        {date.toLocaleDateString("en-IN", {
+                                            day: "2-digit",
+                                            month: "short",
+                                            year: "numeric",
+                                        })}
                                     </Text>
                                     <Text style={[styles.tableCell, styles.tableRateColumn]}>
                                         ₹{rate.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -479,7 +487,7 @@ export default function RateChart() {
     );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
@@ -753,5 +761,7 @@ const styles = StyleSheet.create({
     statusTextInactive: {
         color: theme.colors.error,
     },
-});
+}) }
+
+var styles = getStyles(theme);;
 

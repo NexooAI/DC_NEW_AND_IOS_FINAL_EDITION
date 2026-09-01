@@ -16,9 +16,9 @@ import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { BackHandler, InteractionManager } from "react-native";
 import Slider from "@react-native-community/slider";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
-import { useRouter, useFocusEffect, Stack } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { theme } from "@/constants/theme";
 import api from "@/services/api";
 import paymentService from "../../../../services/payment.service";
@@ -99,12 +99,35 @@ const extractBookingId = (responseData: any) => {
 };
 
 export default function PaymentNewOverView() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const params = useLocalSearchParams();
   const paymentType = params.paymentType?.toString() || '';
   const router = useRouter();
   const { language, user } = useGlobalStore();
   const [userDetails, setUserDetails] = useState<any>(null);
+  const [branches, setBranches] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadBranches = async () => {
+      try {
+        const { fetchBranchesWithCache } = await import("@/utils/apiCache");
+        const branchData = await fetchBranchesWithCache() || [];
+        setBranches(branchData);
+      } catch (e) {
+        logger.error("Error loading branches in overview:", e);
+      }
+    };
+    loadBranches();
+  }, []);
+
+  const branchName = useMemo(() => {
+    const branchId = userDetails?.associated_branch || userDetails?.branchId || userDetails?.branch_id || (user as any)?.branch_id || "";
+    if (!branchId) return "";
+    const b = branches.find(item => String(item.id) === String(branchId));
+    return b ? b.branch_name : "";
+  }, [branches, userDetails, user]);
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [termsContent, setTermsContent] = useState("test");
@@ -120,8 +143,8 @@ export default function PaymentNewOverView() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [isMounted, setIsMounted] = useState(true); // Track component mount state
   const isNavigatingRef = useRef(false); // Prevent multiple simultaneous navigations
-  const isProcessingRef = useRef(false);
   const isMountedRef = useRef(true); // More reliable mount tracking for async operations
+  const isProcessingRef = useRef(false);
   // Check for Flexi type using both paymentFrequency and schemeType parameters
   const hybridStatus = useMemo(() => {
     if (params.hybridStatus) {
@@ -270,6 +293,7 @@ export default function PaymentNewOverView() {
     useCallback(() => {
       setIsProcessing(false);
       isNavigatingRef.current = false; // Reset navigation flag
+      isProcessingRef.current = false;
     }, [])
   );
 
@@ -684,7 +708,7 @@ export default function PaymentNewOverView() {
       if (response && response.data && response.data.success && response.data.data) {
         const policy = response.data.data;
         let selectedTerms = "";
-
+        
         // Match language with robust progressive fallback
         const targetKey = `description_${language}`;
         selectedTerms = policy[targetKey] || "";
@@ -830,15 +854,20 @@ export default function PaymentNewOverView() {
         const userId = userDetails.userId || user?.id;
 
         logger.log("[DEBUG Payment Flow Overview] Calling billsAPI.payBill with:", { billId, userId });
+        const startTime = Date.now();
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Posting to /bills/pay with billId = ${billId}, userId = ${userId}...`);
         const response = await api.post('/bills/pay', { billId, userId });
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] /bills/pay response received in ${Date.now() - startTime}ms`);
 
         logger.log("[DEBUG Payment Flow Overview] billsAPI.payBill response success:", response?.data?.success);
 
         const data = response?.data?.data;
         const paymentSession = data?.paymentSession;
         const paymentUrl = extractPaymentUrl(paymentSession);
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Extracted details from bill pay: orderId = ${data?.orderId || 'none'}, billId = ${billId || 'none'}, paymentUrl = ${paymentUrl || 'none'}`);
 
         if (!response?.data?.success || !data?.orderId || !paymentUrl) {
+          console.error(`[Payment Initiation] [${new Date().toISOString()}] Bill payment initiation failed: success = ${response?.data?.success}, has orderId = ${!!data?.orderId}, has paymentUrl = ${!!paymentUrl}, message = ${response?.data?.message}`);
           throw new Error(response?.data?.message || 'Payment session not available');
         }
 
@@ -858,7 +887,7 @@ export default function PaymentNewOverView() {
         };
         useGlobalStore.getState().storePaymentSession(sessionData);
 
-        router.push({
+        router.replace({
           pathname: '/(tabs)/home/PaymentWebView',
           params: {
             url: paymentUrl,
@@ -891,19 +920,25 @@ export default function PaymentNewOverView() {
           paymentMode: "UPI",
           accountNumber: userDetails.accountNo,
           source: "APP",
-          expiryDate: params.expiryDate as string
+          expiryDate: params.expiryDate as string,
+          branchId: userDetails.associated_branch || userDetails.branchId || userDetails.branch_id || user?.branch_id || 1,
         };
 
         logger.log("[DEBUG Payment Flow Overview] Calling advanceBookingAPI.createBooking with:", JSON.stringify(payload));
+        const startTime = Date.now();
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Posting to /advancebookings...`);
         const response = await api.post('/advancebookings', payload);
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] /advancebookings response received in ${Date.now() - startTime}ms`);
 
         logger.log("[DEBUG Payment Flow Overview] createBooking response success:", response?.data?.success);
 
         const paymentLink = extractPaymentLink(response?.data);
         const orderId = extractOrderId(response?.data);
         const bookingId = extractBookingId(response?.data);
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Extracted details from booking: orderId = ${orderId || 'none'}, bookingId = ${bookingId || 'none'}, paymentLink = ${paymentLink || 'none'}`);
 
         if (!response?.data?.success || !paymentLink) {
+          console.error(`[Payment Initiation] [${new Date().toISOString()}] Booking initiation failed: success = ${response?.data?.success}, has paymentLink = ${!!paymentLink}, message = ${response?.data?.message}`);
           throw new Error(response?.data?.message || 'Booking or payment session not available');
         }
 
@@ -928,7 +963,7 @@ export default function PaymentNewOverView() {
         };
         useGlobalStore.getState().storePaymentSession(sessionData);
 
-        router.push({
+        router.replace({
           pathname: '/(tabs)/home/PaymentWebView',
           params: {
             url: String(paymentLink),
@@ -961,18 +996,23 @@ export default function PaymentNewOverView() {
         };
 
         logger.log("[DEBUG Repayment Flow] Calling advancebookings pay with:", JSON.stringify(payload));
+        const startTime = Date.now();
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Posting to /advancebookings/${bookingId}/pay...`);
         const response = await api.post(`/advancebookings/${bookingId}/pay`, payload);
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] /advancebookings/${bookingId}/pay response received in ${Date.now() - startTime}ms`);
 
         logger.log("[DEBUG Repayment Flow] pay response success:", response?.data?.success);
 
         const paymentLink = extractPaymentLink(response?.data);
         const orderId = extractOrderId(response?.data);
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Extracted details from repayment: orderId = ${orderId || 'none'}, bookingId = ${bookingId || 'none'}, paymentLink = ${paymentLink || 'none'}`);
 
         if (!response?.data?.success || !paymentLink) {
+          console.error(`[Payment Initiation] [${new Date().toISOString()}] Repayment initiation failed: success = ${response?.data?.success}, has paymentLink = ${!!paymentLink}, message = ${response?.data?.message}`);
           throw new Error(response?.data?.message || 'Repayment session not available');
         }
 
-        router.push({
+        router.replace({
           pathname: '/(tabs)/home/PaymentWebView',
           params: {
             url: String(paymentLink),
@@ -1053,18 +1093,22 @@ export default function PaymentNewOverView() {
           userDetails?.chitId ||
           (Array.isArray(params.chitId) ? params.chitId[0] : params.chitId),
         paymentFrequency: params.paymentFrequency,
+        branchId: userDetails?.associated_branch || userDetails?.branchId || userDetails?.branch_id || user?.branch_id || 1,
       };
 
       logger.log("initialpayment ======>", payload);
-
+      const schemePaymentStartTime = Date.now();
+      console.log(`[Payment Initiation] [${new Date().toISOString()}] Initiating payment with payload:`, JSON.stringify(payload));
+      
       const response: any = await paymentService.initiatePayment(payload);
-      logger.log("response ======>", response);
+      console.log(`[Payment Initiation] [${new Date().toISOString()}] Payment response received in ${Date.now() - schemePaymentStartTime}ms:`, JSON.stringify(response));
 
       if (response?.success && response?.session?.payment_links?.web) {
         // Extract order ID from the payment response
         const orderId = response?.session?.order_id;
         const paymentUrl = response?.session?.payment_links?.web;
 
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Success: Extracted orderId = ${orderId || 'none'}, paymentUrl = ${paymentUrl || 'none'}`);
         console.log("Payment URL:", paymentUrl);
         console.log("Order ID:", orderId);
 
@@ -1091,7 +1135,7 @@ export default function PaymentNewOverView() {
         };
         useGlobalStore.getState().storePaymentSession(sessionData);
 
-        router.push({
+        router.replace({
           pathname: "/(tabs)/home/PaymentWebView",
           params: {
             url: paymentUrl,
@@ -1121,10 +1165,11 @@ export default function PaymentNewOverView() {
       }
       // Fallback for old response structure
       else if (response?.success && response?.data) {
-        console.log("Using fallback response structure");
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Using fallback response structure`);
         const orderId = response?.order_id || response?.session?.order_id;
         const paymentUrl = response?.data;
 
+        console.log(`[Payment Initiation] [${new Date().toISOString()}] Fallback Success: Extracted orderId = ${orderId || 'none'}, paymentUrl = ${paymentUrl || 'none'}`);
         console.log("Fallback Payment URL:", paymentUrl);
         console.log("Fallback Order ID:", orderId);
 
@@ -1151,7 +1196,7 @@ export default function PaymentNewOverView() {
         };
         useGlobalStore.getState().storePaymentSession(sessionData);
 
-        router.push({
+        router.replace({
           pathname: "/(tabs)/home/PaymentWebView",
           params: {
             url: paymentUrl,
@@ -1239,7 +1284,6 @@ export default function PaymentNewOverView() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: t("paymentProcess") || "Payment Process" }} />
       {/* Session Timer Banner */}
       <View style={styles.timerBanner}>
         <Ionicons name="time-outline" size={18} color="#d97706" />
@@ -1640,7 +1684,7 @@ export default function PaymentNewOverView() {
               <View style={styles.schemeDetailsRow}>
                 <Text style={styles.schemeDetailLabel}>{t("accountNo")}:</Text>
                 <Text style={styles.schemeDetailValue}>
-                  {params.accNo ? `${params.accNo}` : (userDetails?.accNo || "N/A")}
+                  {params.accNo ? `STT-${params.accNo}` : (userDetails?.accNo || "N/A")}
                 </Text>
               </View>
 
@@ -1709,6 +1753,12 @@ export default function PaymentNewOverView() {
                 <Text style={styles.schemeDetailLabel}>{t("schemeName")}:</Text>
                 <Text style={styles.schemeDetailValue}>{schemeName}</Text>
               </View>
+              {!!branchName && (
+                <View style={styles.schemeDetailsRow}>
+                  <Text style={styles.schemeDetailLabel}>{t("branchName") || "Branch Name"}:</Text>
+                  <Text style={styles.schemeDetailValue}>{branchName}</Text>
+                </View>
+              )}
             </Animated.View>
           </View>
         )}
@@ -1785,7 +1835,7 @@ export default function PaymentNewOverView() {
                 onPress={() => setShowTermsModal(false)}
                 style={styles.closeButton}
               >
-                <Ionicons name="close" size={24} color={theme.colors.primary} />
+                <Ionicons name="close" size={24} color={theme.colors.textDark} />
               </TouchableOpacity>
             </View>
             <ScrollView
@@ -1847,7 +1897,7 @@ export default function PaymentNewOverView() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8f9ff",
@@ -1936,7 +1986,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   detailsCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     padding: 20,
     marginBottom: 0,
@@ -1958,7 +2008,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     marginLeft: 8,
     flex: 1,
   },
@@ -1993,7 +2043,7 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 16,
     paddingBottom: 20, // Reduced padding since we moved the footer up
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderTopWidth: 1,
     borderTopColor: "#e5e5e5",
     shadowColor: "#000",
@@ -2030,7 +2080,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   termsLink: {
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
     textDecorationLine: "underline",
   },
   payButtonDisabled: {
@@ -2055,7 +2105,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     width: "90%",
     height: "70%",
@@ -2077,7 +2127,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   closeButton: {
     padding: 4,
@@ -2137,7 +2187,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   userDetailsCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 20,
     padding: 24,
     marginBottom: 20,
@@ -2166,7 +2216,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   schemeDetailsCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 20,
     padding: 24,
     marginBottom: 20,
@@ -2195,7 +2245,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   termsCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -2238,7 +2288,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderTopWidth: 1,
     borderTopColor: "#e5e5e5",
     shadowColor: "#000",
@@ -2287,7 +2337,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   exitModalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 16,
     padding: 24,
     margin: 20,
@@ -2345,7 +2395,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   schemeCalculationCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     borderRadius: 20,
     padding: 0,
     marginBottom: 16,
@@ -2416,7 +2466,7 @@ const styles = StyleSheet.create({
   schemeMainValueText: {
     fontSize: 28,
     fontWeight: "bold",
-    color: theme.colors.primary,
+    color: theme.colors.textDark,
   },
   sliderContainer: {
     paddingHorizontal: 20,
@@ -2576,4 +2626,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
     borderRadius: 3,
   },
-});
+}) }
+
+var styles = getStyles(theme);;

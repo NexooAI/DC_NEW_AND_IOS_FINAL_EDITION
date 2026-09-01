@@ -23,8 +23,7 @@ import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 import { shadowUtils } from "@/utils/shadowUtils";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
-import { formatDate } from "@/utils/dateTimeUtils";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import api, { ticketsAPI } from "@/services/api";
 import { theme } from "@/constants/theme";
 import DynamicSchemeCard from "@/components/DynamicSchemeCard";
@@ -69,6 +68,8 @@ const getSafeString = (textObj: any): string => {
 };
 
 export default function OldGoldScreen() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const params = useLocalSearchParams();
   const { t, locale } = useTranslation();
@@ -84,10 +85,6 @@ export default function OldGoldScreen() {
   useEffect(() => {
     if (params.tab === "schemes") {
       setActiveTab("schemes");
-    } else if (params.tab === "enquiry") {
-      setActiveTab("enquiry");
-    } else if (params.tab === "deposits") {
-      setActiveTab("deposits");
     }
     if (params.schemeId) {
       setExpandedSchemeId(Number(params.schemeId));
@@ -145,8 +142,12 @@ export default function OldGoldScreen() {
       if (response.data && response.data.success) {
         setDeposits(response.data.data || []);
       }
-    } catch (error) {
-      console.error("Error fetching old gold deposits:", error);
+    } catch (error: any) {
+      if (error?.response?.status === 404) {
+        console.log("ℹ️ Old gold deposits endpoint not found (404), skipping.");
+      } else {
+        console.error("Error fetching old gold deposits:", error);
+      }
     } finally {
       setLoading(false);
     }
@@ -161,14 +162,6 @@ export default function OldGoldScreen() {
       Alert.alert(
         t("error") || "Error",
         t("pleaseEnterEstWeight") || "Please enter estimated weight."
-      );
-      return;
-    }
-
-    if (description && description.length > 22) {
-      Alert.alert(
-        t("error") || "Error",
-        "Ornament description should be a maximum of 22 characters."
       );
       return;
     }
@@ -219,10 +212,10 @@ export default function OldGoldScreen() {
   const renderHeader = () => (
     <View style={[styles.header, { backgroundColor: theme.colors.quaternary }]}>
       <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.navigate('/(app)/(tabs)/home')}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
         </TouchableOpacity>
-        <ResponsiveText color={theme.colors.primary} size="lg" weight="bold" style={styles.headerTitle}>
+        <ResponsiveText color={theme.colors.textDark} size="lg" weight="bold" style={styles.headerTitle}>
           {t("oldGoldScheme") || "Old Gold Scheme"}
         </ResponsiveText>
         <View style={{ width: 40 }} />
@@ -367,7 +360,7 @@ export default function OldGoldScreen() {
                     {t("depositDate") || "Deposit Date"}
                   </ResponsiveText>
                   <ResponsiveText color="#FFF" size="sm">
-                    {formatDate(dep.depositDate)}
+                    {new Date(dep.depositDate).toLocaleDateString("en-IN")}
                   </ResponsiveText>
                 </View>
                 <View style={styles.infoCol}>
@@ -375,7 +368,7 @@ export default function OldGoldScreen() {
                     {t("maturityDate") || "Maturity Date"}
                   </ResponsiveText>
                   <ResponsiveText color="#FFF" size="sm">
-                    {formatDate(dep.maturityDate)}
+                    {new Date(dep.maturityDate).toLocaleDateString("en-IN")}
                   </ResponsiveText>
                 </View>
                 <View style={styles.infoCol}>
@@ -411,8 +404,8 @@ export default function OldGoldScreen() {
                           {t("photos") || "Photos"}
                         </ResponsiveText>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                           {images.map((photo, idx) => {
-                            const baseURL = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/$/, '') : 'https://api.dcjewellers.org';
+                          {images.map((photo, idx) => {
+                            const baseURL = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/$/, '') : 'https://api.srithangathamarai.com';
                             const cleanPhoto = photo.startsWith('/') ? photo : `/${photo}`;
                             const fullUrl = photo.startsWith('http') ? photo : `${baseURL}${cleanPhoto}`;
                             return (
@@ -439,7 +432,7 @@ export default function OldGoldScreen() {
                           {t("documents") || "Documents & Receipts"}
                         </ResponsiveText>
                         {docs.map((doc, idx) => {
-                          const baseURL = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/$/, '') : 'https://api.dcjewellers.org';
+                          const baseURL = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/$/, '') : 'https://api.srithangathamarai.com';
                           const cleanDoc = doc.startsWith('/') ? doc : `/${doc}`;
                           const fullUrl = doc.startsWith('http') ? doc : `${baseURL}${cleanDoc}`;
                           const fileName = doc.split('/').pop()?.split('-').slice(1).join('-') || doc.split('/').pop() || 'document.pdf';
@@ -542,7 +535,6 @@ export default function OldGoldScreen() {
             placeholderTextColor="#666"
             value={description}
             onChangeText={setDescription}
-            maxLength={22}
             multiline
           />
 
@@ -644,209 +636,212 @@ export default function OldGoldScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.quaternary,
-  },
-  header: {
-    paddingTop: Platform.OS === "ios" ? 12 : 20,
-    paddingBottom: 16,
-    paddingHorizontal: wp(4),
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-  },
-  tabsContainer: {
-    flexDirection: "row",
-    backgroundColor: CARD_BG,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(212, 175, 55, 0.2)",
-  },
-  tabBtn: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 6,
-  },
-  tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: GOLD,
-  },
-  scrollContent: {
-    padding: wp(4),
-    flexGrow: 1,
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: wp(10),
-  },
-  actionBtn: {
-    backgroundColor: GOLD,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 20,
-  },
-  depositCard: {
-    backgroundColor: CARD_BG,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.2)",
-    ...shadowUtils.SHADOW_PRESETS.small,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    marginVertical: 12,
-  },
-  cardBody: {},
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  infoCol: {
-    flex: 1,
-  },
-  ornamentImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginRight: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-  },
-  documentRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.2)",
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 6,
-  },
-  formContainer: {
-    backgroundColor: CARD_BG,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.2)",
-  },
-  label: {
-    marginBottom: 6,
-    marginTop: 12,
-  },
-  input: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.2)",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: Platform.OS === "ios" ? 12 : 8,
-    color: "#FFF",
-    fontSize: 14,
-  },
-  disabledInput: {
-    backgroundColor: "rgba(255, 255, 255, 0.02)",
-    borderColor: "rgba(255, 255, 255, 0.05)",
-    color: "#888",
-  },
-  purityRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 6,
-  },
-  purityBtn: {
-    flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.2)",
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: "center",
-    marginHorizontal: 4,
-  },
-  purityBtnActive: {
-    backgroundColor: GOLD,
-    borderColor: GOLD,
-  },
-  submitBtn: {
-    backgroundColor: GOLD,
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 24,
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  schemeDetailCard: {
-    backgroundColor: CARD_BG,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.2)",
-  },
-  benefitRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 16,
-  },
-  benefitTextCol: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  contactCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.03)",
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.1)",
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 20,
-  },
-  contactRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  contactBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: GOLD,
-    paddingVertical: 10,
-    borderRadius: 6,
-  },
-});
+function getStyles(theme: any) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.quaternary,
+    },
+    header: {
+      paddingTop: Platform.OS === "ios" ? 12 : 20,
+      paddingBottom: 16,
+      paddingHorizontal: wp(4),
+    },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    backBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    headerTitle: {
+      flex: 1,
+      textAlign: "center",
+    },
+    tabsContainer: {
+      flexDirection: "row",
+      backgroundColor: CARD_BG,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: "rgba(212, 175, 55, 0.2)",
+    },
+    tabBtn: {
+      flex: 1,
+      alignItems: "center",
+      paddingVertical: 6,
+    },
+    tabActive: {
+      borderBottomWidth: 2,
+      borderBottomColor: GOLD,
+    },
+    scrollContent: {
+      padding: wp(4),
+    },
+    loaderContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: wp(10),
+    },
+    actionBtn: {
+      backgroundColor: GOLD,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 8,
+      marginTop: 20,
+    },
+    depositCard: {
+      backgroundColor: CARD_BG,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: "rgba(212, 175, 55, 0.2)",
+      ...shadowUtils.SHADOW_PRESETS.small,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    statusBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: "rgba(255, 255, 255, 0.1)",
+      marginVertical: 12,
+    },
+    cardBody: {},
+    infoRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    infoCol: {
+      flex: 1,
+    },
+    ornamentImage: {
+      width: 80,
+      height: 80,
+      borderRadius: 8,
+      marginRight: 10,
+      backgroundColor: "rgba(255, 255, 255, 0.05)",
+    },
+    documentRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "rgba(255, 255, 255, 0.05)",
+      borderWidth: 1,
+      borderColor: "rgba(212, 175, 55, 0.2)",
+      borderRadius: 8,
+      padding: 10,
+      marginTop: 6,
+    },
+    formContainer: {
+      backgroundColor: CARD_BG,
+      borderRadius: 12,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: "rgba(212, 175, 55, 0.2)",
+    },
+    label: {
+      marginBottom: 6,
+      marginTop: 12,
+    },
+    input: {
+      backgroundColor: "rgba(255, 255, 255, 0.05)",
+      borderWidth: 1,
+      borderColor: "rgba(212, 175, 55, 0.2)",
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: Platform.OS === "ios" ? 12 : 8,
+      color: "#FFF",
+      fontSize: 14,
+    },
+    disabledInput: {
+      backgroundColor: "rgba(255, 255, 255, 0.02)",
+      borderColor: "rgba(255, 255, 255, 0.05)",
+      color: "#888",
+    },
+    purityRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 6,
+    },
+    purityBtn: {
+      flex: 1,
+      backgroundColor: "rgba(255, 255, 255, 0.05)",
+      borderWidth: 1,
+      borderColor: "rgba(212, 175, 55, 0.2)",
+      borderRadius: 8,
+      paddingVertical: 10,
+      alignItems: "center",
+      marginHorizontal: 4,
+    },
+    purityBtnActive: {
+      backgroundColor: GOLD,
+      borderColor: GOLD,
+    },
+    submitBtn: {
+      backgroundColor: GOLD,
+      borderRadius: 8,
+      paddingVertical: 14,
+      alignItems: "center",
+      marginTop: 24,
+    },
+    disabledButton: {
+      opacity: 0.6,
+    },
+    schemeDetailCard: {
+      backgroundColor: CARD_BG,
+      borderRadius: 12,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: "rgba(212, 175, 55, 0.2)",
+    },
+    benefitRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      marginBottom: 16,
+    },
+    benefitTextCol: {
+      marginLeft: 12,
+      flex: 1,
+    },
+    contactCard: {
+      backgroundColor: "rgba(255, 255, 255, 0.03)",
+      borderWidth: 1,
+      borderColor: "rgba(212, 175, 55, 0.1)",
+      borderRadius: 8,
+      padding: 12,
+      marginTop: 20,
+    },
+    contactRow: {
+      flexDirection: "row",
+      gap: 12,
+    },
+    contactBtn: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: GOLD,
+      paddingVertical: 10,
+      borderRadius: 6,
+    },
+  })
+}
+
+var styles = getStyles(theme);;

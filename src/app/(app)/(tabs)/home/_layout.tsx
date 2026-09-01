@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useEffect } from "react";
 import { Platform, StatusBar } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -8,6 +8,7 @@ import { COLORS } from "@/constants/colors";
 import { useIsFocused } from "@react-navigation/native";
 
 export default function HomeLayout() {
+  const theme = useAppTheme();
   const { setTabVisibility } = useGlobalStore();
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
@@ -31,7 +32,7 @@ export default function HomeLayout() {
           headerStyle: {
             backgroundColor: theme.colors.quaternary,
           },
-          headerTintColor: theme.colors.primary,
+          headerTintColor: theme.colors.textDark,
           headerTitleAlign: 'center', // Center align the header title
           headerTitleStyle: {
             fontWeight: "bold",
@@ -124,7 +125,7 @@ export default function HomeLayout() {
       <Stack.Screen
         name="payment-success"
         options={{
-          headerShown: false,
+          title: "Payment Success",
           headerBackVisible: false,
           gestureEnabled: false,
           headerLeft: () => null
@@ -133,7 +134,7 @@ export default function HomeLayout() {
       <Stack.Screen
         name="payment-failure"
         options={{
-          headerShown: false,
+          title: "Payment Failure",
           headerBackVisible: false,
           gestureEnabled: false,
           headerLeft: () => null

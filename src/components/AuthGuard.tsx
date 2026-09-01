@@ -1,12 +1,47 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import * as SecureStore from "expo-secure-store";
 import { theme } from "@/constants/theme";
 import { COLORS } from "src/constants/colors";
 
 import { logger } from "@/utils/logger";
+
+const decodeBase64 = (str: string): string => {
+  try {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+    let output = '';
+    str = String(str).replace(/=+$/, '');
+    for (let bc = 0, bs = 0, buffer, idx = 0; (buffer = str.charAt(idx++)); ~buffer && ((bs = bc % 4 ? bs * 64 + buffer : buffer), bc++ % 4) ? (output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6)))) : 0) {
+      buffer = chars.indexOf(buffer);
+    }
+    return output;
+  } catch {
+    return '';
+  }
+};
+
+const getSecureItemWithTimeout = async (key: string, timeoutMs = 1500): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      logger.warn(`⚠️ SecureStore.getItemAsync('${key}') timed out after ${timeoutMs}ms.`);
+      resolve(null);
+    }, timeoutMs);
+
+    SecureStore.getItemAsync(key)
+      .then((val) => {
+        clearTimeout(timer);
+        resolve(val);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        logger.error(`Error reading ${key} from SecureStore:`, err);
+        resolve(null);
+      });
+  });
+};
+
 interface AuthGuardProps {
   children: React.ReactNode;
   requireMpinVerification?: boolean;
@@ -16,6 +51,8 @@ export default function AuthGuard({
   children,
   requireMpinVerification = true,
 }: AuthGuardProps) {
+  const theme = useAppTheme();
+  const styles = getStyles(theme);
   const router = useRouter();
   const { isLoggedIn, user, logout } = useGlobalStore();
   const [isChecking, setIsChecking] = useState(true);
@@ -58,7 +95,7 @@ export default function AuthGuard({
         }
 
         // Check if auth token exists and is valid - be more lenient
-        const token = await SecureStore.getItemAsync("authToken");
+        const token = await getSecureItemWithTimeout("authToken");
         if (!token) {
           logger.log(
             "AuthGuard: No auth token, but not logging out automatically"
@@ -71,7 +108,7 @@ export default function AuthGuard({
         }
 
         // Check if user just completed registration (has fresh token)
-        const registrationTimestamp = await SecureStore.getItemAsync(
+        const registrationTimestamp = await getSecureItemWithTimeout(
           "registrationTimestamp"
         );
         if (registrationTimestamp) {
@@ -104,20 +141,7 @@ export default function AuthGuard({
         }
 
         try {
-          const decodeBase64 = (str: string): string => {
-            try {
-              const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
-              let output = '';
-              str = String(str).replace(/=+$/, '');
-              for (let bc = 0, bs = 0, buffer, idx = 0; (buffer = str.charAt(idx++)); ~buffer && ((bs = bc % 4 ? bs * 64 + buffer : buffer), bc++ % 4) ? (output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6)))) : 0) {
-                buffer = chars.indexOf(buffer);
-              }
-              return output;
-            } catch {
-              return '';
-            }
-          };
-          const payload = JSON.parse(decodeBase64(tokenParts[1].replace(/-/g, "+").replace(/_/g, "/")));
+          const payload = JSON.parse(decodeBase64(tokenParts[1]));
           const currentTime = Date.now() / 1000;
 
           // Check if token is expired (with 5 minute buffer for better UX)
@@ -186,7 +210,7 @@ export default function AuthGuard({
   return <>{children}</>;
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -199,4 +223,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-});
+}) }
+

@@ -14,7 +14,7 @@ import { router } from "expo-router";
 import { useFirstLaunch } from "@/common/hooks/useFirstLaunch";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { theme } from "@/constants/theme";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import api from "@/services/api";
@@ -43,6 +43,8 @@ const staticSlides = [
 ];
 
 export default function Intro() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const { t } = useTranslation();
   const { markAsLaunched } = useFirstLaunch();
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -119,8 +121,8 @@ export default function Intro() {
         >
           <LinearGradient
             colors={[
-              theme.colors.bgImageOverlayMedium,
-              theme.colors.bgImageOverlay,
+              theme.colors.bgImageOverlayMedium || "rgba(0,0,0,0.5)",
+              theme.colors.bgImageOverlay || "rgba(0,0,0,0.8)",
             ]}
             style={styles.overlay}
           />
@@ -245,7 +247,7 @@ export default function Intro() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.black,
@@ -285,25 +287,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   button: {
-    backgroundColor: theme.colors.secondary,
-    paddingVertical: 15,
+    backgroundColor: "transparent",
+    borderWidth: 1.5,
+    borderColor: theme.colors.secondary || "#d4af37",
+    paddingVertical: 14,
     borderRadius: 25,
     alignItems: "center",
-    shadowColor: theme.colors.shadowBlack,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   getStartedButton: {
-    backgroundColor: theme.colors.redDark,
+    backgroundColor: "transparent",
+    borderColor: theme.colors.secondary || "#d4af37",
   },
   buttonText: {
-    color: theme.colors.white,
+    color: theme.colors.white || "#ffffff",
     fontSize: 18,
     fontWeight: "bold",
   },
-});
+}) }
+
+var styles = getStyles(theme);;

@@ -20,6 +20,43 @@ const MAX_PERSISTENT_LOGS = 100;
 const PAYMENT_LOG_KEY = '@payment_crash_logs';
 const MAX_PAYMENT_LOGS = 50;
 
+const isNetworkError = (error: any): boolean => {
+  if (!error) return false;
+
+  // Check if it's an Axios network error or connection timeout
+  if (error.isAxiosError) {
+    if (error.message === 'Network Error' || error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
+      return true;
+    }
+  }
+
+  const msg = String(error.message || error).toLowerCase();
+  if (msg.includes('network error') || msg.includes('timeout of') || msg.includes('econnaborted')) {
+    return true;
+  }
+
+  return false;
+};
+
+const logToCrashlytics = (error: any) => {
+  try {
+    if (isNetworkError(error)) {
+      return; // Skip reporting standard network errors to Crashlytics
+    }
+    const { NativeModules } = require('react-native');
+    if (!NativeModules.RNFBAppModule) {
+      return;
+    }
+    const crashlytics = require('@react-native-firebase/crashlytics').default;
+    if (crashlytics) {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      crashlytics().recordError(errorObj);
+    }
+  } catch (e) {
+    // Silently fail if not running in a native environment with Firebase
+  }
+};
+
 const addToErrorLog = (error: any, context?: any) => {
   errorLog.push({
     timestamp: new Date().toISOString(),
@@ -36,35 +73,6 @@ const addToErrorLog = (error: any, context?: any) => {
   }
 };
 
-// Helper to recursively redact sensitive fields from logs
-const sanitizeData = (data: any): any => {
-  if (data === null || data === undefined) return data;
-  if (typeof data !== 'object') return data;
-  
-  if (Array.isArray(data)) {
-    return data.map(sanitizeData);
-  }
-  
-  const sanitized: any = {};
-  const sensitiveKeys = [
-    'cvv', 'cvc', 'card_number', 'cardnumber', 'pan', 'card_expiry', 
-    'otp', 'password', 'pin', 'mpin', 'token', 'authtoken', 
-    'accesstoken', 'refreshtoken', 'secret', 'key', 'apikey', 'api_key'
-  ];
-  
-  for (const [key, value] of Object.entries(data)) {
-    const lowerKey = key.toLowerCase();
-    if (sensitiveKeys.some(k => lowerKey.includes(k))) {
-      sanitized[key] = '[REDACTED]';
-    } else if (typeof value === 'object') {
-      sanitized[key] = sanitizeData(value);
-    } else {
-      sanitized[key] = value;
-    }
-  }
-  return sanitized;
-};
-
 // Save log to persistent storage (async, non-blocking)
 const savePersistentLog = async (level: string, message: string, data?: any) => {
   try {
@@ -76,7 +84,7 @@ const savePersistentLog = async (level: string, message: string, data?: any) => 
       timestamp: new Date().toISOString(),
       level,
       message,
-      data: data ? safeStringify(sanitizeData(data), 1000) : undefined,
+      data: data ? safeStringify(data, 1000) : undefined,
     });
 
     // Keep only last N logs
@@ -143,7 +151,7 @@ const savePaymentLog = async (event: string, data?: any) => {
     logs.push({
       timestamp: new Date().toISOString(),
       event,
-      data: data ? safeStringify(sanitizeData(data), 2000) : undefined,
+      data: data ? safeStringify(data, 2000) : undefined,
     });
 
     // Keep only last N payment logs
@@ -165,6 +173,7 @@ export const logger = {
     const error = args.find(arg => arg instanceof Error) || args[0];
     addToErrorLog(error || message, { message, args });
     console.error(`[ERROR] ${message}`, ...args);
+    logToCrashlytics(error || message);
   },
   warn: isDev ? console.warn : () => { },
   info: isDev ? console.info : () => { },
@@ -191,6 +200,7 @@ export const logger = {
       stack: errorObj.stack,
       context
     });
+    logToCrashlytics(errorObj);
   },
 
   // Payment-specific logging (persists to AsyncStorage)

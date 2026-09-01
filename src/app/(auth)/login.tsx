@@ -55,12 +55,34 @@ import { shadowUtils } from "@/utils/shadowUtils";
 import { animationUtils } from "@/utils/animationUtils";
 import Loader from "@/components/Loader";
 import { logger } from "@/utils/logger";
+
+const getSecureItemWithTimeout = async (key: string, timeoutMs = 1500): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      logger.warn(`⚠️ SecureStore.getItemAsync('${key}') timed out after ${timeoutMs}ms.`);
+      resolve(null);
+    }, timeoutMs);
+
+    SecureStore.getItemAsync(key)
+      .then((val) => {
+        clearTimeout(timer);
+        resolve(val);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        logger.error(`Error reading ${key} from SecureStore:`, err);
+        resolve(null);
+      });
+  });
+};
 import {
   getCommonStyles,
   getSpacingValues,
   getBorderRadius,
 } from "@/utils/responsiveUtils";
 import { useOtpAutoFetch } from "@/hooks/useOtpAutoFetch";
+import { getImageSource } from "@/utils/imageUtils";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 
 // Responsive constants
@@ -586,6 +608,49 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  const [loginImages, setLoginImages] = useState<(string | null)[]>([null, null, null]);
+
+  const { isVisible, visibleData } = useAppVisibility();
+  const [currentOffset, setCurrentOffset] = useState(0);
+
+  useEffect(() => {
+    if (!isVisible("enableLoginBackgroundMovement") || !loginImages || loginImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentOffset(prev => prev + 1);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [visibleData, loginImages]);
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      try {
+        const config = useGlobalStore.getState().appConfig;
+        if (config?.brand?.loginImages && Array.isArray(config.brand.loginImages) && config.brand.loginImages.length >= 3) {
+          setLoginImages(config.brand.loginImages);
+          return;
+        }
+
+        const res = await api.get("/config/settings");
+        if (res?.data?.success && res?.data?.data) {
+          const brand = res.data.data.brand;
+          if (brand?.loginImages && Array.isArray(brand.loginImages) && brand.loginImages.length >= 3) {
+            setLoginImages(brand.loginImages);
+            return;
+          }
+        }
+
+        const resImages = await api.get("/intro-screens/active");
+        if (resImages?.data?.success && Array.isArray(resImages.data.data) && resImages.data.data.length > 0) {
+          const imagePaths = resImages.data.data.map((item: any) => item.image || null);
+          setLoginImages(imagePaths);
+        }
+      } catch (err) {
+        logger.warn("Failed to fetch login images from API, using defaults", err);
+      }
+    };
+    fetchImages();
+  }, []);
+
   useEffect(() => {
     if (params && params.mobile) {
       setMobile(params.mobile as string);
@@ -625,7 +690,7 @@ export default function Login() {
 
   // OTP related state
   const [otpCode, setOtpCode] = useState("");
-  const [timer, setTimer] = useState(120);
+  const [timer, setTimer] = useState(30);
   const [resendAttempts, setResendAttempts] = useState(3);
   const [isShowOtp, setIsShowOtp] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
@@ -700,7 +765,7 @@ export default function Login() {
 
   const checkTokenValidity = async () => {
     try {
-      const token = await SecureStore.getItemAsync("authToken");
+      const token = await getSecureItemWithTimeout("authToken");
       if (!token) return;
     } catch (error) {
       logger.error("Error checking token:", error);
@@ -882,7 +947,7 @@ export default function Login() {
       if (response.ok) {
         // Show OTP screen
         setIsShowOtp(true);
-        setTimer(120);
+        setTimer(30);
         setResendAttempts(3); // Reset resend attempts when first OTP is sent
         // Auto-focus first OTP input
         setTimeout(() => inputRefs[0]?.current?.focus(), 100);
@@ -950,8 +1015,9 @@ export default function Login() {
       const data = await response.json();
 
       if (response.ok) {
+        const nextTimerVal = resendAttempts === 3 ? 60 : 120;
         setResendAttempts((prev) => prev - 1);
-        setTimer(120);
+        setTimer(nextTimerVal);
         setOtpCode("");
         Alert.alert(t("success"), t("otpResentSuccess"));
         // Auto-focus first OTP input
@@ -983,7 +1049,7 @@ export default function Login() {
       // If OTP fields are showing, hide them and go back to mobile input
       setIsShowOtp(false);
       setOtpCode("");
-      setTimer(120);
+      setTimer(30);
       setResendAttempts(3);
       setShowOtp(false); // Reset OTP visibility
       // Stop SMS listener when going back to mobile input
@@ -1014,7 +1080,7 @@ export default function Login() {
       const secureKeys = ["authToken", "accessToken", "token", "refreshToken"];
       for (const key of secureKeys) {
         try {
-          const value = await SecureStore.getItemAsync(key);
+          const value = await getSecureItemWithTimeout(key);
           if (value) {
             storageData[`secure_${key}`] = value;
           }
@@ -1027,7 +1093,7 @@ export default function Login() {
       const tokenAnalysis: { [key: string]: any } = {};
 
       // Check main token
-      const mainToken = await SecureStore.getItemAsync("token");
+      const mainToken = await getSecureItemWithTimeout("token");
       if (mainToken) {
         try {
           const tokenParts = mainToken.split(".");
@@ -1108,7 +1174,7 @@ export default function Login() {
   const handleRefreshToken = async () => {
     setIsRefreshingToken(true);
     try {
-      const refreshToken = await SecureStore.getItemAsync("refreshToken");
+      const refreshToken = await getSecureItemWithTimeout("refreshToken");
       if (!refreshToken) {
         Alert.alert("Error", "No refresh token available");
         return;
@@ -1151,6 +1217,12 @@ export default function Login() {
     }
   };
 
+  const getIndexImage = (boxIndex: number) => {
+    if (!loginImages || loginImages.length === 0) return null;
+    const index = (boxIndex + currentOffset) % loginImages.length;
+    return loginImages[index];
+  };
+
   if (isLoggedIn) return null;
 
   // Show loading while translations are being initialized
@@ -1170,131 +1242,155 @@ export default function Login() {
     <View
       style={{
         flex: 1,
-        backgroundColor: theme.colors.primary,
+        backgroundColor: '#FFFFFF',
       }}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#850111" />
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <View style={{ flex: 1 }}>
-          <LinearGradient
-            colors={[
-              "#FCF9F6",
-              "#FCF9F6",
-            ]}
-            style={StyleSheet.absoluteFill}
+        <View style={{ flex: 1, position: 'relative' }}>
+          <SimpleLanguageSwitcher />
+
+          {showError && (
+            <ErrorAlert message={errorMessage} onClose={hideErrorAlert} />
+          )}
+          <KeyboardAvoidingView
+            behavior={undefined}
+            style={{ flex: 1 }}
           >
-            {/* Curved wave header background */}
-            <View style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: Platform.OS === 'ios' ? hp(35) : hp(30),
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.22,
-              shadowRadius: 8,
-              elevation: 8,
-            }}>
-              <Svg
-                height="100%"
-                width="100%"
-                viewBox="0 0 375 320"
-                preserveAspectRatio="none"
-              >
-                <Defs>
-                  <SvgLinearGradient id="waveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <Stop offset="0%" stopColor="#850111" />
-                    <Stop offset="100%" stopColor="#5a000b" />
-                  </SvgLinearGradient>
-                </Defs>
-                {/* Wave Shape */}
-                <Path
-                  d="M0,0 L0,260 C100,325 180,185 270,265 C320,310 350,250 375,230 L375,0 Z"
-                  fill="url(#waveGrad)"
-                />
-                {/* Golden Outline Line */}
-                <Path
-                  d="M0,260 C100,325 180,185 270,265 C320,310 350,250 375,230"
-                  fill="none"
-                  stroke="#eca50b"
-                  strokeWidth="4"
-                />
-              </Svg>
-            </View>
-            <SimpleLanguageSwitcher />
-
-            {/* Debug Button */}
-
-
-            {showError && (
-              <ErrorAlert message={errorMessage} onClose={hideErrorAlert} />
-            )}
-            <KeyboardAvoidingView
-              behavior={undefined}
-              style={{ flex: 1 }}
+            <ScrollView
+              contentContainerStyle={[
+                registerStyles.scrollViewContent,
+                {
+                  flexGrow: 1,
+                  minHeight: screenHeight,
+                  paddingTop: 0,
+                  paddingBottom: insets.bottom + 40,
+                  position: "relative",
+                  backgroundColor: 'transparent',
+                },
+              ]}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
-              <ScrollView
-                contentContainerStyle={[
-                  registerStyles.scrollViewContent,
-                  {
-                    flexGrow: 1,
-                    minHeight: screenHeight,
-                    paddingTop: 0,
-                    paddingBottom: insets.bottom + 40,
-                    // Prevent any keyboard-related adjustments
-                    position: "relative",
-                  },
-                ]}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-              >
-                <Pressable onPress={Keyboard.dismiss} style={{ flex: 1, width: "100%" }}>
-                  <View
-                    style={{
-                      height: Platform.OS === 'ios' ? hp(35) : hp(30),
-                      paddingTop: insets.top,
-                      justifyContent: "center",
-                      alignItems: "center",
-                      width: "100%",
-                    }}
-                  >
-                    <Image
-                      source={require("../../../assets/images/logo_trans.png")}
-                      style={[
-                        registerStyles.logo,
-                        {
-                          width: 250,
-                          height: 250,
-                          aspectRatio: 1,
-                        },
-                      ]}
-                      resizeMode="contain"
-                    />
-                  </View>
+              <Pressable onPress={Keyboard.dismiss} style={{ flex: 1, width: "100%" }}>
+                <View
+                  style={{
+                    height: Platform.OS === 'ios' ? hp(38) : hp(36),
+                    paddingTop: insets.top,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    width: "100%",
+                    position: 'relative',
+                    zIndex: 1,
+                    backgroundColor: theme.colors.primary,
+                  }}
+                >
+                  {/* Background Models Grid Watermark Layer (1, 2, 3 Grid Models) */}
+                  {isVisible("showLoginBackgroundImages") && (
+                    <View style={{
+                      position: 'absolute',
+                      top: (insets.top || 20) + 10,
+                      left: 12,
+                      right: 12,
+                      bottom: 10,
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      opacity: 0.25,
+                      zIndex: 0,
+                    }}>
+                      <View style={{
+                        flex: 1,
+                        height: '100%',
+                        marginHorizontal: 4,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        borderWidth: 1,
+                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                      }}>
+                        <Image
+                          source={getIndexImage(0) ? getImageSource(getIndexImage(0)) : require("../../../assets/images/intro_1.png")}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      </View>
+                      <View style={{
+                        flex: 1,
+                        height: '100%',
+                        marginHorizontal: 4,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        borderWidth: 1,
+                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                      }}>
+                        <Image
+                          source={getIndexImage(1) ? getImageSource(getIndexImage(1)) : require("../../../assets/images/intro_2.png")}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      </View>
+                      <View style={{
+                        flex: 1,
+                        height: '100%',
+                        marginHorizontal: 4,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        borderWidth: 1,
+                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                      }}>
+                        <Image
+                          source={getIndexImage(2) ? getImageSource(getIndexImage(2)) : require("../../../assets/images/intro_3.png")}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      </View>
+                    </View>
+                  )}
 
+                  <Image
+                    source={require("../../../assets/images/logo_trans.png")}
+                    style={{
+                      width: 150,
+                      height: 150,
+                      aspectRatio: 1,
+                      zIndex: 1,
+                    }}
+                    resizeMode="contain"
+                  />
+                </View>
+
+                <View
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    paddingHorizontal: spacing.lg + 10,
+                    paddingTop: 30,
+                    paddingBottom: insets.bottom + 40,
+                    flex: 1,
+                    zIndex: 1,
+                    position: 'relative',
+                  }}
+                >
+                  {/* Custom wave curve at the top */}
+                  <View style={{ position: 'absolute', top: -39, left: 0, right: 0, height: 40, zIndex: 10, backgroundColor: 'transparent' }}>
+                    <Svg height="40" width={screenWidth} viewBox={`0 0 ${screenWidth} 40`} style={{ position: 'absolute', top: 0, left: 0 }}>
+                      <Path
+                        d={`M0,40 C${screenWidth * 0.3},40 ${screenWidth * 0.7},0 ${screenWidth},0 L${screenWidth},40 L0,40 Z`}
+                        fill="#FFFFFF"
+                      />
+                    </Svg>
+                  </View>
                   <View
                     style={[
-                      registerStyles.formContainer,
                       {
                         paddingHorizontal: spacing.lg,
+                        paddingBottom: spacing.lg,
                         paddingTop: 0,
-                        paddingBottom: spacing.xl,
+                        marginBottom: spacing.md,
+                        alignItems: "center",
+                        justifyContent: "center",
                       },
                     ]}
                   >
-                    <View
-                      style={[
-                        {
-                          paddingHorizontal: spacing.lg,
-                          paddingBottom: spacing.lg,
-                          paddingTop: 0,
-                          marginBottom: spacing.md,
-                          alignItems: "center",
-                          justifyContent: "center",
-                        },
-                      ]}
-                    >
                       {!isShowOtp ? (<>
                         <ResponsiveText
                           variant="title"
@@ -1349,7 +1445,7 @@ export default function Login() {
                       ) : null}
                       {!isShowOtp ? (
                         <>
-                          <View style={registerStyles.inputContainer}>
+                          <View style={[registerStyles.inputContainer, { borderWidth: 0, shadowColor: 'transparent', elevation: 0, paddingHorizontal: 0 }]}>
                             <PhoneInput
                               value={mobile}
                               label={t("registerMobileNumber")}
@@ -1359,6 +1455,7 @@ export default function Login() {
                               }}
                               loading={loading}
                               disableBlurAlert={isNavigatingToRegister}
+                              variant="line"
                             />
                             {mobileError ? (
                               <ResponsiveText
@@ -1375,6 +1472,8 @@ export default function Login() {
                           </View>
                           <ResponsiveButton
                             title={loading ? t("processing") : t("getOtp")}
+                            backgroundColor={theme.colors.primary}
+                            textColor="#FFFFFF"
                             variant="secondary"
                             size="md"
                             fullWidth={true}
@@ -1385,9 +1484,9 @@ export default function Login() {
                               {
                                 width: "100%",
                                 maxWidth: wp(75),
-                                height: 42,
-                                minHeight: 42,
-                                borderRadius: 21,
+                                height: 48,
+                                minHeight: 48,
+                                borderRadius: 8,
                                 overflow: "hidden",
                                 marginTop: spacing.md,
                               },
@@ -1575,23 +1674,6 @@ export default function Login() {
                                 </View>
                               ))}
                             </View>
-                            <TouchableOpacity
-                              onPress={() => setShowOtp((prev) => !prev)}
-                              style={[
-                                registerStyles.eyeButton,
-                                {
-                                  right: isSmallScreen ? -35 : -40,
-                                  top: isSmallScreen ? 15 : 20,
-                                  zIndex: 20, // Keep eye button clickable above hidden input
-                                },
-                              ]}
-                            >
-                              <Feather
-                                name={showOtp ? "eye-off" : "eye"}
-                                size={isSmallScreen ? 20 : 24}
-                                color={theme.colors.primary}
-                              />
-                            </TouchableOpacity>
                           </Pressable>
                           <View
                             style={[
@@ -1669,6 +1751,7 @@ export default function Login() {
                           <TouchableOpacity
                             style={[
                               registerStyles.loginButton,
+                              { borderRadius: 8 },
                               (loading ||
                                 otpCode.length !== 4) &&
                               registerStyles.loginButtonDisabled,
@@ -1679,14 +1762,14 @@ export default function Login() {
                             }
                           >
                             <LinearGradient
-                              colors={["#ffc90c", "#ffd700"]}
-                              style={registerStyles.gradientButton}
+                              colors={[theme.colors.primary, theme.colors.primary]}
+                              style={[registerStyles.gradientButton, { borderRadius: 8 }]}
                             >
                               <ResponsiveText
                                 variant="button"
                                 size="md"
                                 weight="bold"
-                                color={theme.colors.primary}
+                                color="#FFFFFF"
                                 align="center"
                                 truncateMode="single"
                                 style={registerStyles.loginButtonText}
@@ -1718,7 +1801,7 @@ export default function Login() {
                               inRow={true}
                               style={registerStyles.backButtonText}
                             >
-                              {t("backToMobile")}
+                              {t("back")}
                             </ResponsiveText>
                           </TouchableOpacity>
                         </View>
@@ -1751,7 +1834,6 @@ export default function Login() {
                 </Text>
               </TouchableOpacity>
             )}
-          </LinearGradient>
 
           {/* Invalid Mobile Modal */}
           <InvalidMobileModal

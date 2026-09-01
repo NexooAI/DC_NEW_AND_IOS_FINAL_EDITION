@@ -2,25 +2,13 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 import { themeConfig } from './src/constants/theme.config';
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-    // =========================================================================
-    // 🍎 iOS BUILD CONFIGURATION (ACTIVE DEFAULT FOR iOS BUILD)
-    // =========================================================================
-    const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "";
-    const bundleIdentifier = "com.dcjewellers.dcjewellers";
-    const projectId = "07310377-0452-4d15-8e38-d42462be6fd8";
-    const owner = "dcjewellers";
-    const version = "2.0.2";
+    const isIos = process.env.EAS_BUILD_PLATFORM === 'ios' || process.env.PLATFORM === 'ios';
 
-    /* 
-    // =========================================================================
-    // 🤖 ANDROID BUILD CONFIGURATION (Uncomment this block when building Android)
-    // =========================================================================
-    const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "";
-    const bundleIdentifier = "com.nexooai.dcjewellery";
-    const projectId = "9af1745a-105c-44f9-9e53-a111bc6ed9ce"
-    const owner =  "sudhakarg"
-    const version = "3.0.7";
-    */
+    const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "AIzaSyAkuOcNddEvozQR4D4yPdTrbwXCiPsuEFc";
+    const bundleIdentifier = themeConfig.bundleIdentifier || "com.nexooai.srithangathamarai";
+    const projectId = themeConfig.projectId || "912daab2-d11c-42ff-9072-62ddfb4489c0";
+    const owner = themeConfig.owner || "mnvgroups07";
+    const version = isIos ? ((themeConfig as any).iosVersion || "1.0.1") : ((themeConfig as any).androidVersion || "1.0.9");
 
     return {
         ...config,
@@ -29,13 +17,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         version: version,
         orientation: "portrait",
         userInterfaceStyle: "automatic",
-        scheme: "dcjewellers",
+        scheme: "acme",
         jsEngine: "hermes",
 
-        icon: "./assets/images/playstore-icon.png",
+        icon: themeConfig.icon || "./assets/images/logo_trans.png",
 
         splash: {
-            image: "./assets/images/playstore-icon.png",
+            image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
             resizeMode: "contain",
             backgroundColor: themeConfig.primaryColor,
         },
@@ -47,17 +35,20 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
 
         android: {
-            package: "com.nexooai.dcjewellery",
+            package: bundleIdentifier,
             googleServicesFile: "./google-services.json",
-            versionCode: 12,
-
+            versionCode: 10,
+            adaptiveIcon: {
+                foregroundImage: themeConfig.adaptiveIcon || "./assets/images/adaptive-icon.png",
+                backgroundColor: themeConfig.primaryColor,
+            },
             splash: {
-                image: "./assets/images/playstore-icon.png",
+                image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
                 resizeMode: "contain",
                 backgroundColor: themeConfig.primaryColor,
             },
 
-            // ✔ Google Maps API (IMPORTANT — must stay)
+            // ✔ Google Maps API
             config: {
                 googleMaps: {
                     apiKey: mapsApiKey,
@@ -78,18 +69,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         ios: {
             supportsTablet: true,
             splash: {
-                image: "./assets/images/logo_trans.png",
+                image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
                 resizeMode: "contain",
-                backgroundColor: "#850111",
-                tabletImage: "./assets/images/logo_trans.png",
+                backgroundColor: themeConfig.primaryColor,
+                tabletImage: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
             },
-            icon: "./assets/images/playstore-icon.png",
+            icon: themeConfig.icon || "./assets/images/logo_trans.png",
             bundleIdentifier: bundleIdentifier,
-            associatedDomains: [
-                "applinks:api.prod.dcjewellers.org",
-                "applinks:dcjewellers.org",
-                "applinks:dcjewellers.page.link"
-            ],
             googleServicesFile: "./GoogleService-Info.plist",
             buildNumber: "2",
             jsEngine: "hermes",
@@ -98,37 +84,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             },
             infoPlist: {
                 ITSAppUsesNonExemptEncryption: false,
-                // Privacy usage descriptions - Required by Apple App Store
-                NSPhotoLibraryUsageDescription: "This app needs access to your photo library so you can select and upload your profile picture, receipts, jewellery images, or documents for order verification and customer support. For example, you can upload a photo of a receipt to verify a purchase or share an image of jewellery for a support inquiry.",
-                NSCameraUsageDescription: "This app needs access to your camera so you can take photos of receipts, jewellery, or documents for order verification, profile pictures, and customer support. For example, you can take a photo of your receipt to verify a transaction.",
+                NSPhotoLibraryUsageDescription: "This app needs access to your photo library so you can select and upload your profile picture, receipts, jewellery images, or documents for order verification and customer support.",
+                NSCameraUsageDescription: "This app needs access to your camera so you can take photos of receipts, jewellery, or documents for order verification, profile pictures, and customer support.",
                 NSPhotoLibraryAddUsageDescription: "This app needs permission to save images to your photo library so you can keep copies of receipts, order confirmations, or jewellery images for your records.",
                 NSFaceIDUsageDescription: "This app uses Face ID / Touch ID to securely authenticate you without entering your MPIN.",
-                "NSAppTransportSecurity": {
-                    "NSAllowsArbitraryLoads": false,
-                    "NSAllowsArbitraryLoadsInWebContent": true,
-                    "NSExceptionDomains": {
-                        "smartgateway.hdfcuat.bank.in": {
-                            "NSExceptionAllowsInsecureHTTPLoads": false,
-                            "NSIncludesSubdomains": true
-                        },
-                        "hdfcbank.com": {
-                            "NSExceptionAllowsInsecureHTTPLoads": false,
-                            "NSIncludesSubdomains": true
-                        },
-                        "mastercard.com": {
-                            "NSExceptionAllowsInsecureHTTPLoads": false,
-                            "NSIncludesSubdomains": true
-                        },
-                        "visa.com": {
-                            "NSExceptionAllowsInsecureHTTPLoads": false,
-                            "NSIncludesSubdomains": true
-                        },
-                        "securecode.com": {
-                            "NSExceptionAllowsInsecureHTTPLoads": false,
-                            "NSIncludesSubdomains": true
-                        }
-                    }
-                },
                 LSApplicationQueriesSchemes: [
                     "phonepe",
                     "tez",
@@ -147,7 +106,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             "expo-secure-store",
             "expo-localization",
 
-            // ✔ MUST COME FIRST (SDK 54 requirement)
             [
                 "expo-build-properties",
                 {
@@ -156,7 +114,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                         targetSdkVersion: 36,
                         enableProguardInReleaseBuilds: true,
                         enableShrinkResources: true,
-                        // REMOVE ALL OLD MEDIA PERMISSIONS
                         blockedPermissions: [
                             "android.permission.READ_MEDIA_IMAGES",
                             "android.permission.READ_MEDIA_VIDEO",
@@ -168,7 +125,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                 },
             ],
 
-            // ✔ SDK 54 uses Native Photo Picker (NO ANDROID PERMISSIONS NEEDED)
             [
                 "expo-image-picker",
                 {

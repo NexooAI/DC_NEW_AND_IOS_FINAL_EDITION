@@ -41,19 +41,7 @@ jest.mock("expo-router", () => {
     };
 });
 
-jest.mock('@/services/api', () => ({
-    __esModule: true,
-    default: {
-        get: jest.fn(),
-        post: jest.fn(),
-        put: jest.fn(),
-        delete: jest.fn(),
-    },
-    offersAPI: {
-        getOffers: jest.fn(() => Promise.resolve({ data: { success: true, data: [] } })),
-        getOfferById: jest.fn(() => Promise.resolve({ data: { success: true, data: {} } })),
-    },
-}));
+jest.mock('@/services/api');
 
 
 
@@ -93,7 +81,7 @@ describe('Menu Navigation Integrity (Smoke Tests)', () => {
     it('renders the Home screen successfully', async () => {
         const { getByText } = render(<Home />);
         await waitFor(() => {
-            expect(getByText('goldRate')).toBeTruthy();
+            expect(getByText('liveGoldRates')).toBeTruthy();
         });
     });
 

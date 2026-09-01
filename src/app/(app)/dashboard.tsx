@@ -26,10 +26,9 @@ import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 import { shadowUtils } from "@/utils/shadowUtils";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore from "@/store/global.store";
+import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import api, { userAPI } from "@/services/api";
 import { theme } from "@/constants/theme";
-import { APP_CONFIG } from "@/constants";
 import LanguageSelector from "@/components/LanguageSelector";
 import { fetchGoldRatesWithCache } from "@/utils/apiCache";
 
@@ -44,6 +43,8 @@ const CARD = "#3B1F14";
 let hasShownPopup = false;
 
 export default function Dashboard() {
+  const theme = useAppTheme();
+  styles = getStyles(theme);
   const router = useRouter();
   const { t } = useTranslation();
   const { user, setChatOpen } = useGlobalStore();
@@ -59,10 +60,16 @@ export default function Dashboard() {
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupData, setPopupData] = useState<any>(null);
 
+  const hasDashboard = getAppConfig().constants.enableDashboard;
+
   useEffect(() => {
+    if (!hasDashboard) {
+      router.replace("/(app)/(tabs)/home");
+      return;
+    }
     loadData();
     fetchActivePopup();
-  }, [user]);
+  }, [hasDashboard, router]);
 
   const fetchActivePopup = async () => {
     if (hasShownPopup) return;
@@ -150,7 +157,7 @@ export default function Dashboard() {
       null;
 
     if (photo && !photo.startsWith("http")) {
-      return `${APP_CONFIG.urls.baseUrl}${photo.startsWith("/") ? "" : "/"}${photo}`;
+      return `${theme.baseUrl}${photo.startsWith("/") ? "" : "/"}${photo}`;
     }
     return photo;
   };
@@ -159,7 +166,7 @@ export default function Dashboard() {
     if (!popupData) return null;
     const photo = popupData.image || popupData.image_url || popupData.url || null;
     if (photo && !photo.startsWith("http")) {
-      return `${APP_CONFIG.urls.baseUrl}${photo.startsWith("/") ? "" : "/"}${photo}`;
+      return `${theme.baseUrl}${photo.startsWith("/") ? "" : "/"}${photo}`;
     }
     return photo;
   };
@@ -200,7 +207,7 @@ export default function Dashboard() {
 
   const cards = [
     {
-      title: t("joinSchemes") || "Join Schemes",
+      title: t("newSchemes") || "New Schemes",
       icon: "briefcase-outline",
       iconType: "ionicons",
       onPress: () => router.push("/(app)/(tabs)/home/schemes"),
@@ -249,7 +256,7 @@ export default function Dashboard() {
       onPress: () => router.push("/(app)/lucky_draw"),
     },
     {
-      title: t("oldGoldScheme") || "Old Gold Deposit Scheme",
+      title: t("oldGoldScheme") || "Old Gold Scheme",
       icon: "gold",
       iconType: "material",
       onPress: () => router.push("/(app)/old_gold"),
@@ -261,6 +268,10 @@ export default function Dashboard() {
       onPress: () => router.push("/(app)/(tabs)/home"),
     },
   ];
+
+  if (!hasDashboard) {
+    return null;
+  }
 
   return (
     <View
@@ -434,31 +445,31 @@ export default function Dashboard() {
                     activeOpacity={0.8}
                   >
                     {/* Premium Wave/Curve Design Accents */}
-                    <View style={styles.cardDecor1} pointerEvents="none" />
-                    <View style={styles.cardDecor2} pointerEvents="none" />
+                  <View style={styles.cardDecor1} pointerEvents="none" />
+                  <View style={styles.cardDecor2} pointerEvents="none" />
 
-                    {item.iconType === "material" ? (
-                      <MaterialCommunityIcons
-                        name={item.icon as any}
-                        size={rf(24)}
-                        color={GOLD}
-                      />
-                    ) : (
-                      <Ionicons
-                        name={item.icon as any}
-                        size={rf(24)}
-                        color={GOLD}
-                      />
-                    )}
+                  {item.iconType === "material" ? (
+                    <MaterialCommunityIcons
+                      name={item.icon as any}
+                      size={rf(24)}
+                      color={GOLD}
+                    />
+                  ) : (
+                    <Ionicons
+                      name={item.icon as any}
+                      size={rf(24)}
+                      color={GOLD}
+                    />
+                  )}
 
-                    <ResponsiveText
-                      style={styles.cardText}
-                      color="#fff"
-                      size="sm"
-                      weight="bold"
-                    >
-                      {item.title}
-                    </ResponsiveText>
+                  <ResponsiveText
+                    style={styles.cardText}
+                    color="#fff"
+                    size="sm"
+                    weight="bold"
+                  >
+                    {item.title}
+                  </ResponsiveText>
                   </TouchableOpacity>
                 );
               })}
@@ -485,7 +496,7 @@ export default function Dashboard() {
                     weight="bold"
                     style={{ marginLeft: 6 }}
                   >
-                    {t("chat") || "Chat"}
+                    Chat
                   </ResponsiveText>
                 </LinearGradient>
               </TouchableOpacity>
@@ -580,7 +591,7 @@ export default function Dashboard() {
   );
 }
 
-const styles = StyleSheet.create({
+function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -668,7 +679,7 @@ const styles = StyleSheet.create({
   divider: {
     width: 1,
     height: 12,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.white,
     marginHorizontal: 12,
   },
 
@@ -782,4 +793,6 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
   },
-});
+}) }
+
+var styles = getStyles(theme);;
