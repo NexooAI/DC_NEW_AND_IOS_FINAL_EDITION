@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import * as SecureStore from "expo-secure-store";
 import { theme } from "@/constants/theme";
-import { COLORS } from "src/constants/colors";
+import { COLORS } from "@/constants/colors";
 
 import { logger } from "@/utils/logger";
 

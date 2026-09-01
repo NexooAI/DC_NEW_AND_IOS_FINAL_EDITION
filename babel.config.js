@@ -17,17 +17,7 @@ module.exports = function (api) {
       },
     ],
 
-    // 4️⃣ Module aliasing (optional but useful)
-    [
-      "module-resolver",
-      {
-        root: ["./src"],
-        alias: {
-          "@": "./src",
-          "@assets": "./assets",
-        },
-      },
-    ],
+
 
     // 5️⃣ Reanimated plugin — must be the LAST one
     [

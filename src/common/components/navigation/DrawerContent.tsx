@@ -12,6 +12,7 @@ import {
   Animated,
   Switch,
   ScrollView,
+  StatusBar,
 } from "react-native";
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, usePathname } from "expo-router";
@@ -199,7 +200,9 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
   };
 
   const isRouteActive = (route: string) => {
-    return pathname === route || pathname?.startsWith(route + '/');
+    const cleanRoute = route.replace('/(app)', '');
+    const cleanPath = pathname?.replace('/(app)', '');
+    return cleanPath === cleanRoute || cleanPath?.startsWith(cleanRoute + '/');
   };
 
   const handleNavigation = useCallback(
@@ -215,16 +218,19 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
 
       navigationTimeoutRef.current = setTimeout(() => {
         try {
-          router.push(route);
+          router.push(route as any);
         } catch (error) {
-          console.error("Navigation error:", error);
-          Alert.alert(t("navigationError"), t("failedToNavigate"));
+          console.error("Navigation error, trying navigate:", error);
+          try {
+            router.navigate(route as any);
+          } catch (navErr) {
+            console.error("Secondary navigation error:", navErr);
+            Alert.alert(t("navigationError") || "Error", t("failedToNavigate") || "Failed to open page");
+          }
         } finally {
-          requestAnimationFrame(() => {
-            setIsNavigating(false);
-          });
+          setIsNavigating(false);
         }
-      }, 300);
+      }, 150);
     },
     [router, props.navigation, isNavigating, t]
   );
@@ -363,9 +369,9 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                 <DrawerMenuItem
                   label={t("referAndEarn")}
                   iconName="gift-outline"
-                  onPress={() => handleNavigation("/(tabs)/home/refer_earn")}
+                  onPress={() => handleNavigation("/(app)/(tabs)/home/refer_earn")}
                   disabled={isNavigating}
-                  isActive={isRouteActive("/(tabs)/home/refer_earn")}
+                  isActive={isRouteActive("/(app)/(tabs)/home/refer_earn")}
                   delay={150}
                   iconColor={theme.colors.secondary}
                 />
@@ -374,9 +380,9 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                 <DrawerMenuItem
                   label={t("ticketsAndEnquiries") || "Tickets & Enquiries"}
                   iconName="receipt-outline"
-                  onPress={() => handleNavigation("/tickets")}
+                  onPress={() => handleNavigation("/(app)/tickets")}
                   disabled={isNavigating}
-                  isActive={isRouteActive("/tickets")}
+                  isActive={isRouteActive("/(app)/tickets")}
                   delay={175}
                   iconColor={theme.colors.primary} // Primary Brand color
                 />
@@ -392,9 +398,9 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                 <DrawerMenuItem
                   label={t("offers") || "Our Offers"}
                   iconName="pricetag-outline"
-                  onPress={() => handleNavigation("/(tabs)/home/offers")}
+                  onPress={() => handleNavigation("/(app)/(tabs)/home/offers")}
                   disabled={isNavigating}
-                  isActive={isRouteActive("/(tabs)/home/offers")}
+                  isActive={isRouteActive("/(app)/(tabs)/home/offers")}
                   delay={190}
                   iconColor={theme.colors.error}
                 />
@@ -403,9 +409,9 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                 <DrawerMenuItem
                   label={t("ourStores")}
                   iconName="storefront-outline"
-                  onPress={() => handleNavigation("/(tabs)/home/our_stores")}
+                  onPress={() => handleNavigation("/(app)/(tabs)/home/our_stores")}
                   disabled={isNavigating}
-                  isActive={isRouteActive("/(tabs)/home/our_stores")}
+                  isActive={isRouteActive("/(app)/(tabs)/home/our_stores")}
                   delay={200}
                   iconColor={theme.colors.error}
                 />
@@ -414,9 +420,9 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                 <DrawerMenuItem
                   label={t("contactUs")}
                   iconName="call-outline"
-                  onPress={() => handleNavigation("/(tabs)/home/contact_us")}
+                  onPress={() => handleNavigation("/(app)/(tabs)/home/contact_us")}
                   disabled={isNavigating}
-                  isActive={isRouteActive("/(tabs)/home/contact_us")}
+                  isActive={isRouteActive("/(app)/(tabs)/home/contact_us")}
                   delay={250}
                   iconColor={theme.colors.success}
                 />
@@ -425,9 +431,9 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                 <DrawerMenuItem
                   label={t("faqAndHelp")}
                   iconName="help-circle-outline"
-                  onPress={() => handleNavigation("/(tabs)/home/faq")}
+                  onPress={() => handleNavigation("/(app)/(tabs)/home/faq")}
                   disabled={isNavigating}
-                  isActive={isRouteActive("/(tabs)/home/faq")}
+                  isActive={isRouteActive("/(app)/(tabs)/home/faq")}
                   delay={300}
                   iconColor={theme.colors.warning}
                 />
@@ -443,9 +449,9 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                 <DrawerMenuItem
                   label={t("privacyPolicy")}
                   iconName="lock-closed-outline"
-                  onPress={() => handleNavigation("/(tabs)/home/policies/privacyPolicy")}
+                  onPress={() => handleNavigation("/(app)/(tabs)/home/policies/privacyPolicy")}
                   disabled={isNavigating}
-                  isActive={isRouteActive("/(tabs)/home/policies/privacyPolicy")}
+                  isActive={isRouteActive("/(app)/(tabs)/home/policies/privacyPolicy")}
                   delay={350}
                   iconColor={theme.colors.info}
                 />
@@ -454,9 +460,9 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                 <DrawerMenuItem
                   label={t("termsAndConditions")}
                   iconName="document-text-outline"
-                  onPress={() => handleNavigation("/(tabs)/home/policies/termsAndConditionsPolicies")}
+                  onPress={() => handleNavigation("/(app)/(tabs)/home/policies/termsAndConditionsPolicies")}
                   disabled={isNavigating}
-                  isActive={isRouteActive("/(tabs)/home/policies/termsAndConditionsPolicies")}
+                  isActive={isRouteActive("/(app)/(tabs)/home/policies/termsAndConditionsPolicies")}
                   delay={400}
                   iconColor={theme.colors.info}
                 />
@@ -512,7 +518,7 @@ const getStyles = (
   },
   headerGradient: {
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 20 : 18,
+    paddingTop: Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 28) : 24) + 12,
     paddingBottom: 18,
     justifyContent: 'center',
   },

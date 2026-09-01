@@ -13,7 +13,7 @@ import useGlobalStore from "@/store/global.store";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { COLORS } from "src/constants/colors";
+import { COLORS } from "@/constants/colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { useFirstLaunch } from "@/common/hooks/useFirstLaunch";
 import apiClient from "@/services/api";

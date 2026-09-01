@@ -18,7 +18,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { COLORS } from "src/constants/colors";
+import { COLORS } from "@/constants/colors";
 import { theme } from "@/constants/theme";
 import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";

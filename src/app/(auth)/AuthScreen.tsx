@@ -7,7 +7,7 @@ import {
   Alert,
   StyleSheet,
 } from "react-native";
-import { COLORS } from "src/constants/colors";
+import { COLORS } from "@/constants/colors";
 import * as LocalAuthentication from "expo-local-authentication";
 import * as SecureStore from "expo-secure-store";
 

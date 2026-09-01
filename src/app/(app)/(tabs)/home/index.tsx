@@ -51,7 +51,7 @@ import NetInfo from "@react-native-community/netinfo";
 import { ScaledSheet, moderateScale } from "react-native-size-matters";
 import { theme } from "@/constants/theme";
 import { APP_CONFIG } from "@/constants";
-import { COLORS } from "src/constants/colors";
+import { COLORS } from "@/constants/colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import FlashBanner from "@/components/FlashBanner";
 import { Ionicons } from "@expo/vector-icons";

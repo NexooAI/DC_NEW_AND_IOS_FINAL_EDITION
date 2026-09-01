@@ -20,9 +20,24 @@ config.resolver.sourceExts.push("mjs");
 // Disable web support - native-only app
 config.resolver.platforms = ["ios", "android", "native"];
 
-// Configure path aliases
-config.resolver.alias = {
-  "@": path.resolve(__dirname, "src"),
+// Configure path aliases via resolveRequest
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName.startsWith("@/")) {
+    const subPath = moduleName.substring(2);
+    const resolvedPath = path.join(__dirname, "src", subPath);
+    return context.resolveRequest(context, resolvedPath, platform);
+  }
+  if (moduleName.startsWith("src/")) {
+    const subPath = moduleName.substring(4);
+    const resolvedPath = path.join(__dirname, "src", subPath);
+    return context.resolveRequest(context, resolvedPath, platform);
+  }
+  if (moduleName.startsWith("@assets/")) {
+    const subPath = moduleName.substring(8);
+    const resolvedPath = path.join(__dirname, "assets", subPath);
+    return context.resolveRequest(context, resolvedPath, platform);
+  }
+  return context.resolveRequest(context, moduleName, platform);
 };
 
 // Exclude web-specific modules
