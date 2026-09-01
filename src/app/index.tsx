@@ -17,8 +17,12 @@ import { COLORS } from "src/constants/colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { useFirstLaunch } from "@/common/hooks/useFirstLaunch";
 import apiClient from "@/services/api";
+import { resolveImageSource } from "@/utils/imageUtils";
 
 import { logger } from "@/utils/logger";
+
+const bgLoginImage = require("../../assets/images/bg_login.jpg");
+const logoTransImage = require("../../assets/images/logo_trans.png");
 
 const getSecureItemWithTimeout = async (key: string, timeoutMs = 1500): Promise<string | null> => {
   return new Promise((resolve) => {
@@ -322,11 +326,7 @@ export default function AuthGuard() {
 
     return (
       <ImageBackground
-        source={
-          typeof theme.image.bg_image === "string"
-            ? { uri: theme.image.bg_image }
-            : theme.image.bg_image
-        }
+        source={resolveImageSource(theme?.image?.bg_image, bgLoginImage)}
         style={styles.backgroundImage}
       >
         <LinearGradient
@@ -339,11 +339,7 @@ export default function AuthGuard() {
         >
           <View style={styles.container}>
             <Image
-              source={
-                typeof theme.images.auth.logo === "string"
-                  ? { uri: theme.images.auth.logo }
-                  : theme.images.auth.logo
-              }
+              source={resolveImageSource(theme?.images?.auth?.logo || theme?.image?.transparentLogo, logoTransImage)}
               style={[styles.logo, { width: logoWidth, aspectRatio: 1 }]}
               resizeMode="contain"
             />

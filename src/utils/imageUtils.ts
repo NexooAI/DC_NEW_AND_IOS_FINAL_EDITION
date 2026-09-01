@@ -39,6 +39,30 @@ export const getImageSource = (path: string | any) => {
 };
 
 /**
+ * Universal Image Source Resolver:
+ * - If string starts with http/https or data:, returns { uri: string }
+ * - If string is a server relative path (e.g. /uploads/logo.png), converts to full URL -> { uri: string }
+ * - If already a required number or object with uri, returns as is
+ * - If invalid or relative local path (../../), returns fallback
+ */
+export const resolveImageSource = (source: any, fallback?: any) => {
+  if (!source) return fallback;
+  if (typeof source === 'number') return source;
+  if (typeof source === 'object' && source?.uri) return source;
+  if (typeof source === 'string') {
+    const trimmed = source.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+      return { uri: trimmed };
+    }
+    if (!trimmed.startsWith('.') && !trimmed.startsWith('..') && trimmed.length > 0) {
+      const fullUrl = getFullImageUrl(trimmed);
+      return fullUrl ? { uri: fullUrl } : fallback;
+    }
+  }
+  return fallback;
+};
+
+/**
  * Formats gold weight with proper decimal formatting
  * Shows decimal only when weight is less than 1 gram
  * @param weight - The gold weight in grams
