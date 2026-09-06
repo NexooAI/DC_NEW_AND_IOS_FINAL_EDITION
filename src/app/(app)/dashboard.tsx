@@ -30,7 +30,7 @@ import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store"
 import api, { userAPI } from "@/services/api";
 import { theme } from "@/constants/theme";
 import LanguageSelector from "@/components/LanguageSelector";
-import { fetchGoldRatesWithCache } from "@/utils/apiCache";
+import { fetchGoldRatesWithCache, fetchAboutPageWithCache } from "@/utils/apiCache";
 
 const { wp, hp, rf } = responsiveUtils;
 const { width, height } = Dimensions.get("window");
@@ -130,6 +130,11 @@ export default function Dashboard() {
 
       if (social.data.success && social.data.data.length > 0) {
         setSocialLinks(social.data.data[0]);
+      } else {
+        const about = await fetchAboutPageWithCache(forceRefresh);
+        if (about) {
+          setSocialLinks(about);
+        }
       }
 
 
@@ -507,7 +512,9 @@ export default function Dashboard() {
                   openLink(
                     socialLinks?.intsa_url ||
                     socialLinks?.insta_url ||
-                    "https://www.instagram.com/dcjewellers.official/?hl=en"
+                    socialLinks?.instagram_url ||
+                    (theme.constants as any)?.instagram ||
+                    "https://www.instagram.com/"
                   )
                 }
               >
@@ -523,7 +530,8 @@ export default function Dashboard() {
                 onPress={() =>
                   openLink(
                     socialLinks?.facebook_url ||
-                    "https://www.facebook.com/dcjewellers.official/"
+                    (theme.constants as any)?.facebook ||
+                    "https://www.facebook.com/"
                   )
                 }
               >
@@ -541,7 +549,8 @@ export default function Dashboard() {
                     socialLinks?.youtube_url ||
                     socialLinks?.video_url ||
                     socialLinks?.url ||
-                    "https://www.youtube.com/@DCJewellersGoldandDiamonds?themeRefresh=1"
+                    theme.youtubeUrl ||
+                    "https://www.youtube.com/"
                   )
                 }
               >

@@ -162,8 +162,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         assetBundlePatterns: ["**/*"],
 
         updates: {
+            url: `https://u.expo.dev/${projectId}`,
             enabled: true,
             fallbackToCacheTimeout: 0,
+        },
+
+        runtimeVersion: {
+            policy: "appVersion",
         },
 
         newArchEnabled: true,

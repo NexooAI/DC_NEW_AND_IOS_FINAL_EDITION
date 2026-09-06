@@ -160,6 +160,8 @@ const SocialMediaOption: React.FC<SocialMediaOptionProps> = ({
   );
 };
 
+import { fetchAboutPageWithCache } from "@/utils/apiCache";
+
 const SocialMediaCard = ({
   socialMediaUrls,
   videos,
@@ -169,8 +171,27 @@ const SocialMediaCard = ({
 }) => {
   const theme = useAppTheme();
   styles = getStyles(theme);
+  const [aboutData, setAboutData] = useState<any>(null);
   const cardScaleAnim = useRef(new Animated.Value(0.8)).current;
   const headerGlowAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadSocialData = async () => {
+      try {
+        const data = await fetchAboutPageWithCache();
+        if (isMounted && data) {
+          setAboutData(data);
+        }
+      } catch (err) {
+        // Fallback to default
+      }
+    };
+    loadSocialData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     Animated.spring(cardScaleAnim, {
@@ -201,40 +222,43 @@ const SocialMediaCard = ({
   }, []);
 
   const handleFacebook = () => {
-    let facebookUrl = "https://www.facebook.com/dcjewellers.official/";
-    if (socialMediaUrls?.[0]?.facebook_url) {
-      facebookUrl = socialMediaUrls[0].facebook_url;
-    } else if (videos?.[0]?.facebook_url) {
-      facebookUrl = videos[0].facebook_url;
-    }
+    let facebookUrl =
+      socialMediaUrls?.[0]?.facebook_url ||
+      videos?.[0]?.facebook_url ||
+      aboutData?.facebook_url ||
+      (theme.constants as any)?.facebook ||
+      "https://www.facebook.com/";
+
     Linking.openURL(facebookUrl).catch((err) =>
       Alert.alert(t("error"), t("couldNotOpenFacebook"))
     );
   };
 
   const handleInstagram = () => {
-    let instagramUrl = "https://www.instagram.com/dcjewellers.official/?hl=en";
-    if (socialMediaUrls?.[0]?.intsa_url) {
-      instagramUrl = socialMediaUrls[0].intsa_url;
-    } else if (videos?.[0]?.insta_url) {
-      instagramUrl = videos[0].insta_url;
-    } else if (videos?.[0]?.intsa_url) {
-      instagramUrl = videos[0].intsa_url;
-    }
+    let instagramUrl =
+      socialMediaUrls?.[0]?.intsa_url ||
+      socialMediaUrls?.[0]?.insta_url ||
+      videos?.[0]?.insta_url ||
+      videos?.[0]?.intsa_url ||
+      aboutData?.instagram_url ||
+      (theme.constants as any)?.instagram ||
+      "https://www.instagram.com/";
+
     Linking.openURL(instagramUrl).catch((err) =>
       Alert.alert(t("error"), t("couldNotOpenInstagram"))
     );
   };
 
   const handleYouTube = () => {
-    let youtubeUrl = "https://www.youtube.com/@DCJewellersGoldandDiamonds?themeRefresh=1";
-    if (socialMediaUrls?.[0]?.youtube_url) {
-      youtubeUrl = socialMediaUrls[0].youtube_url;
-    } else if (videos?.[0]?.video_url) {
-      youtubeUrl = videos[0].video_url;
-    } else if (videos?.[0]?.url) {
-      youtubeUrl = videos[0].url;
-    }
+    let youtubeUrl =
+      socialMediaUrls?.[0]?.youtube_url ||
+      videos?.[0]?.youtube_url ||
+      videos?.[0]?.video_url ||
+      videos?.[0]?.url ||
+      aboutData?.youtube_url ||
+      theme.youtubeUrl ||
+      "https://www.youtube.com/";
+
     Linking.openURL(youtubeUrl).catch((err) =>
       Alert.alert(t("error"), t("couldNotOpenYouTube"))
     );

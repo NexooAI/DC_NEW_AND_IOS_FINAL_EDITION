@@ -132,9 +132,12 @@ const mockUseGlobalStore = jest.fn((selector) => {
 mockUseGlobalStore.getState = jest.fn(() => mockStoreState);
 
 jest.mock('@/store/global.store', () => {
+    const { theme } = require('./src/constants/theme');
     return {
         __esModule: true,
         default: mockUseGlobalStore,
+        useAppTheme: jest.fn(() => theme),
+        getAppConfig: jest.fn(() => ({})),
     };
 });
 

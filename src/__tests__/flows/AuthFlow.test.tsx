@@ -8,7 +8,8 @@ import useGlobalStore from '@/store/global.store';
 // Mock Dependencies
 jest.mock('expo-router', () => ({
   useRouter: jest.fn(),
-  useFocusEffect: (cb) => require('react').useEffect(cb, []),
+  useFocusEffect: (cb: any) => require('react').useEffect(cb, []),
+  useLocalSearchParams: jest.fn(() => ({})),
 }));
 
 // We need to mock fetch since Login uses fetch directly, not the api service for some calls

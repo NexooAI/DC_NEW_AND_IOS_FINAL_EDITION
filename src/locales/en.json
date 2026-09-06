@@ -1,6 +1,7 @@
 {
   "DC_Jewellers_Featured_Video": "Sri Thanga Thamarai - Featured Video",
   "all": "All Schemes",
+  "allOnly": "All",
   "allSchemes": "All Schemes",
   "Daily": "Daily",
   "Fixed": "Fixed",
@@ -543,6 +544,10 @@
   "goldRate": "Gold Rate",
   "goldRate22KT": "Gold Rate 22KT",
   "goldRateToday": "Today's Gold Rate",
+  "silverRateToday": "Today's Silver Rate",
+  "todayRate": "Today's Rate",
+  "todayRates": "Today's Rates",
+  "rateChartInfo": "Rate Chart Information",
   "goldRateUpdates": "Gold Rate Updates",
   "goldRushDeal": "Gold Rush Deal: Secure Your Future with Extra Savings!",
   "goldSavingsFlexible": "Gold Savings Flexible",

@@ -38,6 +38,12 @@ export const changeLocale = async (locale: AppLocale) => {
   i18n.locale = locale;
 };
 
-export const t = (key: string, options?: any) => i18n.t(key, options);
+export const t = (key: string, options?: any) => {
+  const result = i18n.t(key, options);
+  if (typeof result === 'string' && result.startsWith('[missing "') && result.endsWith('translation]')) {
+    return options?.defaultValue || '';
+  }
+  return result;
+};
 
 export default i18n;

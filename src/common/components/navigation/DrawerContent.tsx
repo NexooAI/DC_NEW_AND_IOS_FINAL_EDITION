@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getFullImageUrl } from "@/utils/imageUtils";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
+import { fetchAboutPageWithCache } from "@/utils/apiCache";
 
 const { width } = Dimensions.get("window");
 
@@ -270,25 +271,51 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
     );
   }, [logout, router, isNavigating, t]);
 
+  const [aboutData, setAboutData] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadAbout = async () => {
+      try {
+        const data = await fetchAboutPageWithCache();
+        if (isMounted && data) {
+          setAboutData(data);
+        }
+      } catch (err) {
+        // Fallback to default constants
+      }
+    };
+    loadAbout();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const rawWhatsapp = aboutData?.whatsapp_number || aboutData?.whatsapp || aboutData?.helpline || theme.constants.whatsapp || theme.constants.mobile;
+  const whatsappNumber = String(rawWhatsapp || "").replace(/[^\d]/g, "");
+  const youtubeLink = aboutData?.youtube_url || theme.youtubeUrl || "https://youtube.com";
+  const websiteLink = aboutData?.website_url || aboutData?.website || theme.constants.website;
+  const mobileNumber = aboutData?.helpline || aboutData?.mobile || aboutData?.phone || theme.constants.mobile;
+
   const socialLinks = [
     {
       name: "whatsapp",
-      url: `https://wa.me/${theme.constants.whatsapp?.replace(/\s/g, "") || theme.constants.mobile?.replace(/\s/g, "")}`,
+      url: `https://wa.me/${whatsappNumber}`,
       color: theme.colors.success
     },
     {
       name: "youtube",
-      url: theme.youtubeUrl || "https://youtube.com",
+      url: youtubeLink,
       color: theme.colors.error
     },
     {
       name: "globe",
-      url: theme.constants.website,
+      url: websiteLink,
       color: theme.colors.info
     },
     {
       name: "phone-alt",
-      url: `tel:${theme.constants.mobile}`,
+      url: `tel:${mobileNumber}`,
       color: theme.colors.primary
     },
   ];

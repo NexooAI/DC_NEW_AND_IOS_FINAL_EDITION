@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   PanResponder,
   Animated,
+  Easing,
   ImageBackground,
   Image,
   InteractionManager,
@@ -27,7 +28,8 @@ import { Picker } from "@react-native-picker/picker";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
 import api from "@/services/api";
 import { theme } from "@/constants/theme";
-import { fetchBranchesWithCache } from "@/utils/apiCache";
+import { fetchBranchesWithCache, fetchGoldRatesWithCache } from "@/utils/apiCache";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 import RNPickerSelect from "react-native-picker-select";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CustomAlert from "@/components/Alert";
@@ -61,6 +63,7 @@ interface Branch {
 export default function JoinSavings() {
   const theme = useAppTheme();
   styles = getStyles(theme);
+  const { isVisible } = useAppVisibility();
   const { t } = useTranslation();
   const { params } = useRoute();
   const { schemeId, step: stepParam, amount: amountParam, weight: weightParam, calculatedAmount: calculatedAmountParam, calculatedWeight: calculatedWeightParam } = useLocalSearchParams();
@@ -119,27 +122,75 @@ export default function JoinSavings() {
 
     const fetchSchemeDataFromAPI = async () => {
       try {
-        //logger.log('Fetching scheme data from API for schemeId:', schemeId);
-        // Add API call here if needed as fallback
-        // For now, set a basic structure
-        setSchemeData({
-          schemeId: schemeId,
-          name: "Gold Savings Scheme",
-          description: "Save gold with our flexible plan.",
-          type: "Monthly",
-          chits: [],
-          schemeType: "flexi",
-          savingType: "amount", // Default to amount-based
-          benefits: [
-            "Competitive rates",
-            "Flexible payments",
-            "Zero making charges",
-            "Free locker facility",
-          ],
-        });
+        if (schemeId) {
+          const response = await api.get(`/schemes/${schemeId}`);
+          const schemeObj = response.data?.data || response.data;
+          if (schemeObj) {
+            const chitsList = Array.isArray(schemeObj.chits) ? schemeObj.chits : [];
+            const schemeName =
+              typeof schemeObj.SCHEMENAME === "object"
+                ? schemeObj.SCHEMENAME?.en || ""
+                : schemeObj.SCHEMENAME || "Gold Savings Scheme";
+            const schemeDesc =
+              typeof schemeObj.DESCRIPTION === "object"
+                ? schemeObj.DESCRIPTION?.en || ""
+                : schemeObj.DESCRIPTION || "";
+
+            const formattedSchemeData = {
+              schemeId: schemeObj.SCHEMEID || Number(schemeId),
+              name: schemeName,
+              description: schemeDesc,
+              type: schemeObj.SCHEMETYPE || "Monthly",
+              chits: chitsList,
+              schemeType:
+                schemeObj.SCHEMETYPE?.toLowerCase()?.includes("flexi") ||
+                schemeObj.SCHEMETYPE?.toLowerCase()?.includes("flexible")
+                  ? "flexi"
+                  : "fixed",
+              savingType:
+                schemeObj.savingType ||
+                (schemeObj.SCHEMETYPE?.toLowerCase() === "weight"
+                  ? "weight"
+                  : "amount"),
+              benefits: schemeObj.BENEFITS || [
+                "Competitive rates",
+                "Flexible payments",
+                "Zero making charges",
+                "Free locker facility",
+              ],
+              ...schemeObj,
+            };
+
+            setSchemeData(formattedSchemeData);
+            if (chitsList.length > 0) {
+              setSelectedChit(chitsList[0]);
+            }
+            await AsyncStorage.setItem(
+              "@current_scheme_data",
+              JSON.stringify(formattedSchemeData)
+            );
+            return;
+          }
+        }
       } catch (error) {
-        logger.warn("Scheme data API fallback:", error);
+        logger.warn("Scheme data API fallback failed, using basic structure:", error);
       }
+
+      setSchemeData({
+        schemeId: schemeId,
+        name: "Gold Savings Scheme",
+        description: "Save gold with our flexible plan.",
+        type: "Monthly",
+        chits: [],
+        schemeType: "flexi",
+        savingType: "amount",
+        benefits: [
+          "Competitive rates",
+          "Flexible payments",
+          "Zero making charges",
+          "Free locker facility",
+        ],
+      });
     };
 
     if (schemeId) {
@@ -227,6 +278,20 @@ export default function JoinSavings() {
   const [inputValue, setInputValue] = useState("0");
   const [goldWeight, setGoldWeight] = useState(0);
   const [goldRate, setGoldRate] = useState(5847); // Default fallback
+  const [silverRate, setSilverRate] = useState(0);
+
+  // Check if silver is enabled for this customer/app
+  const isSilverEnabled = useMemo(() => {
+    return Boolean(isVisible("showSilverRate") || isVisible("showSilverScheme") || silverRate > 0);
+  }, [isVisible, silverRate]);
+
+  // Check if the current scheme is specifically a silver scheme
+  const isSilverScheme = useMemo(() => {
+    const name = (parsedData?.name || parsedData?.SCHEMENAME || "").toLowerCase();
+    const type = (parsedData?.schemeType || parsedData?.type || "").toLowerCase();
+    const metal = (parsedData?.metal || "").toLowerCase();
+    return name.includes("silver") || name.includes("வெள்ளி") || type.includes("silver") || metal.includes("silver");
+  }, [parsedData]);
 
 
   // State for collapsible KYC cards
@@ -284,6 +349,37 @@ export default function JoinSavings() {
 
   // Add this above the component return
   const goldIconOpacity = useRef(new Animated.Value(1)).current;
+
+  // Step transition animations (smooth horizontal slide)
+  const stepSlideAnim = useRef(new Animated.Value(0)).current;
+  const stepFadeAnim = useRef(new Animated.Value(1)).current;
+  const prevStepRef = useRef(step);
+
+  useEffect(() => {
+    if (prevStepRef.current !== step) {
+      const isForward = step > prevStepRef.current;
+      prevStepRef.current = step;
+
+      // Start slightly off to the side in direction of transition (right-to-left when forward)
+      stepSlideAnim.setValue(isForward ? 45 : -45);
+      stepFadeAnim.setValue(0.2);
+
+      Animated.parallel([
+        Animated.timing(stepSlideAnim, {
+          toValue: 0,
+          duration: 250,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(stepFadeAnim, {
+          toValue: 1,
+          duration: 220,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [step, stepSlideAnim, stepFadeAnim]);
 
   // Animation values for collapsible cards
   const addressChevronRotation = useRef(new Animated.Value(0)).current;
@@ -639,13 +735,15 @@ export default function JoinSavings() {
   };
 
   const calculateGoldWeight = (amt: number) => {
-    const weight = amt / goldRate;
+    const rateToUse = isSilverScheme && silverRate > 0 ? silverRate : (goldRate > 0 ? goldRate : 5847);
+    const weight = amt / rateToUse;
     // Return the raw number for calculations, formatting will be done when displaying
     return weight;
   };
 
   const calculateAmount = (weight: number) => {
-    return Math.round(weight * goldRate);
+    const rateToUse = isSilverScheme && silverRate > 0 ? silverRate : (goldRate > 0 ? goldRate : 5847);
+    return Math.round(weight * rateToUse);
   };
 
   const handleGoldWeightInput = (text: string) => {
@@ -985,43 +1083,123 @@ export default function JoinSavings() {
     validate(field, value);
   };
 
-  const renderGoldRateArea = () => (
-    <View style={styles.progressHeader}>
-      <View
-        style={[styles.goldRateCard, step > 1 ? styles.selectedGoldRateCard : undefined]}
-      >
-        <Animated.View
-          style={[styles.goldRateIcon, { opacity: goldIconOpacity }]}
+  const renderGoldRateArea = () => {
+    const hasSilver = isSilverEnabled && silverRate > 0;
+    const isStep2 = step > 1;
+
+    // In Step 2 (Summary / Details), display ONLY the scheme's metal rate to prevent multi-line wrapping
+    const showSilverOnlyInStep2 = isStep2 && isSilverScheme && silverRate > 0;
+
+    return (
+      <View style={styles.progressHeader}>
+        <View
+          style={[
+            styles.goldRateCard,
+            isStep2
+              ? (showSilverOnlyInStep2 ? styles.selectedSilverRateCard : styles.selectedGoldRateCard)
+              : undefined,
+          ]}
         >
-          <FontAwesome5 name="coins" size={16} color="#FFC857" />
-        </Animated.View>
-        <View style={styles.goldRateContent}>
-          <Text style={styles.goldRateLabel}>
-            Today's Gold Rate: <Text style={styles.goldRateValue}>
-              ₹{goldRate.toLocaleString("en-IN")}/gram
-            </Text>
-          </Text>
-        </View>
-        {step > 1 && (
-          <View style={styles.selectedAmountBadge}>
-            <Text style={styles.selectedAmountText}>
-              {formatAmount(amount)}
-            </Text>
+          <Animated.View
+            style={[styles.goldRateIcon, { opacity: goldIconOpacity }]}
+          >
+            <FontAwesome5
+              name="coins"
+              size={16}
+              color={showSilverOnlyInStep2 ? "#94A3B8" : "#FFC857"}
+            />
+          </Animated.View>
+
+          <View style={styles.goldRateContent}>
+            {isStep2 ? (
+              // STEP 2: Show single relevant metal rate alongside selected amount badge
+              <View style={styles.singleRateContainer}>
+                <Text style={styles.singleRateTitleText}>
+                  {t("todayRate") || "Today's Rate"}
+                </Text>
+                {showSilverOnlyInStep2 ? (
+                  <View style={styles.metalPillSilver}>
+                    <View style={styles.metalTagSilver}>
+                      <Text style={styles.metalTagTextSilver}>S</Text>
+                    </View>
+                    <Text style={styles.metalPillLabel}>{t("silver") || "Silver"}:</Text>
+                    <Text style={styles.silverRateValue}>
+                      ₹{silverRate.toLocaleString("en-IN")}/g
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.metalPillGold}>
+                    <View style={styles.metalTagGold}>
+                      <Text style={styles.metalTagTextGold}>G</Text>
+                    </View>
+                    <Text style={styles.metalPillLabel}>{t("gold") || "Gold"}:</Text>
+                    <Text style={styles.goldRateValue}>
+                      ₹{goldRate.toLocaleString("en-IN")}/g
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ) : hasSilver ? (
+              // STEP 1: Show both Gold and Silver rates side-by-side
+              <View style={styles.multiRateContainer}>
+                <View style={styles.multiRateTopRow}>
+                  <Text style={styles.multiRateTitleText}>
+                    {t("todayRates") || "Today's Rates"}
+                  </Text>
+                </View>
+                <View style={styles.multiRatePillsRow}>
+                  {/* Gold Pill */}
+                  <View style={styles.metalPillGold}>
+                    <View style={styles.metalTagGold}>
+                      <Text style={styles.metalTagTextGold}>G</Text>
+                    </View>
+                    <Text style={styles.metalPillLabel}>{t("gold") || "Gold"}:</Text>
+                    <Text style={styles.goldRateValue}>
+                      ₹{goldRate.toLocaleString("en-IN")}/g
+                    </Text>
+                  </View>
+
+                  {/* Silver Pill */}
+                  <View style={styles.metalPillSilver}>
+                    <View style={styles.metalTagSilver}>
+                      <Text style={styles.metalTagTextSilver}>S</Text>
+                    </View>
+                    <Text style={styles.metalPillLabel}>{t("silver") || "Silver"}:</Text>
+                    <Text style={styles.silverRateValue}>
+                      ₹{silverRate.toLocaleString("en-IN")}/g
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ) : (
+              <Text style={styles.goldRateLabel}>
+                {t("goldRateToday") || "Today's Gold Rate"}: <Text style={styles.goldRateValue}>
+                  ₹{goldRate.toLocaleString("en-IN")}/gram
+                </Text>
+              </Text>
+            )}
           </View>
-        )}
+
+          {isStep2 && (
+            <View style={styles.selectedAmountBadge}>
+              <Text style={styles.selectedAmountText}>
+                {formatAmount(amount)}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderProgressBar = () => (
     <View style={styles.progressContainer}>
       <View style={styles.progressWrapper}>
         {[1, 2].map((num) => {
-          // Disable step 1 if user came from calculator
-          const isDisabled = num > step || (cameFromCalculator && num === 1);
-          const isActive = step >= num;
           const isCurrent = step === num;
+          const isCompleted = step > num && !(cameFromCalculator && num === 1);
           const isLocked = num > step || (cameFromCalculator && num === 1);
+          const isDisabled = num > step || (cameFromCalculator && num === 1);
 
           return (
             <React.Fragment key={num}>
@@ -1029,7 +1207,7 @@ export default function JoinSavings() {
                 style={[
                   styles.progressStepCard,
                   isCurrent ? styles.progressStepCardActive : undefined,
-                  (isActive && !isLocked) ? styles.progressStepCardCompleted : undefined,
+                  isCompleted ? styles.progressStepCardCompleted : undefined,
                   isLocked ? styles.progressStepCardLocked : undefined,
                 ]}
                 onPress={() => {
@@ -1050,21 +1228,21 @@ export default function JoinSavings() {
                     style={[
                       styles.progressBadge,
                       isCurrent ? styles.progressBadgeActive : undefined,
-                      (isActive && !isCurrent && !isLocked) ? styles.progressBadgeCompleted : undefined,
+                      isCompleted ? styles.progressBadgeCompleted : undefined,
                       isLocked ? styles.progressBadgeLocked : undefined,
                     ]}
                   >
                     {isLocked ? (
                       <Ionicons
                         name="lock-closed"
-                        size={12}
+                        size={11}
                         color={theme.colors.primary}
                       />
-                    ) : isActive && !isCurrent ? (
+                    ) : isCompleted ? (
                       <Ionicons
                         name="checkmark"
-                        size={14}
-                        color={theme.colors.black}
+                        size={13}
+                        color="#FFFFFF"
                       />
                     ) : (
                       <Text
@@ -1083,11 +1261,14 @@ export default function JoinSavings() {
                     style={[
                       styles.progressStepLabel,
                       isCurrent ? styles.progressStepLabelActive : undefined,
-                      (isActive && !isCurrent && !isLocked) ? styles.progressStepLabelCompleted : undefined,
+                      isCompleted ? styles.progressStepLabelCompleted : undefined,
                       isLocked ? styles.progressStepLabelLocked : undefined,
                     ]}
+                    numberOfLines={1}
                   >
-                    {num === 1 ? "Amount" : "Details & Summary"}
+                    {num === 1
+                      ? (t("amount") || "Amount")
+                      : (t("details") ? `${t("details")} & Summary` : "Details & Summary")}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -1095,11 +1276,10 @@ export default function JoinSavings() {
               {/* Progress Connector (between steps) */}
               {num < 2 && (
                 <View style={styles.progressConnector}>
-                  <View
-                    style={[
-                      styles.progressConnectorLine,
-                      step > num ? styles.progressConnectorLineActive : undefined,
-                    ]}
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={step > 1 ? theme.colors.primary : "#CBD5E1"}
                   />
                 </View>
               )}
@@ -2075,7 +2255,7 @@ export default function JoinSavings() {
   };
 
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Step 1: Amount selection
     if (step === 1) {
       const minAmount = getMinAmount();
@@ -2230,17 +2410,37 @@ export default function JoinSavings() {
         setKycModalVisible(true);
         return;
       }
+
       logger.log("formData ,selectedChit", formData, selectedChit);
-      const activeChit = selectedChit || (parsedData?.chits && parsedData.chits[0]);
+      let activeChit = selectedChit || (parsedData?.chits && parsedData.chits[0]);
+
+      // If activeChit is missing or has no CHITID, attempt fallback fetch from API
+      if ((!activeChit || activeChit.CHITID == null) && schemeId) {
+        try {
+          const schemeRes = await api.get(`/schemes/${schemeId}`);
+          const fetchedScheme = schemeRes.data?.data || schemeRes.data;
+          if (fetchedScheme?.chits && Array.isArray(fetchedScheme.chits) && fetchedScheme.chits.length > 0) {
+            activeChit = fetchedScheme.chits[0];
+            setSelectedChit(activeChit);
+          }
+        } catch (fetchErr) {
+          logger.warn("Could not fetch scheme chits in submission fallback:", fetchErr);
+        }
+      }
+
+      const chitIdToSend = activeChit?.CHITID != null ? activeChit.CHITID : 0;
+      const paymentFrequencyIdToSend = activeChit?.PAYMENT_FREQUENCY_ID != null ? activeChit.PAYMENT_FREQUENCY_ID : 1;
+      const paymentFrequencyToSend = activeChit?.PAYMENT_FREQUENCY || "monthly";
+
       const payload = {
         userId: user.id,
         schemeId: Number(schemeId),
-        chitId: activeChit ? activeChit.CHITID : null,
+        chitId: chitIdToSend,
         accountName: formData.accountname,
-        associated_branch: formData.associated_branch,
-        payment_frequency_id: activeChit && activeChit.PAYMENT_FREQUENCY_ID,
+        associated_branch: formData.associated_branch || "1",
+        payment_frequency_id: paymentFrequencyIdToSend,
       };
-      logger.log(payload, selectedChit);
+      logger.log("Submitting investment payload:", payload, activeChit);
       api
         .post("/investments", payload)
         .then((data: any) => {
@@ -2274,7 +2474,7 @@ export default function JoinSavings() {
               userDetails: {
                 accountname: formData.accountname,
                 accNo: accountNo,
-                associated_branch: formData.associated_branch,
+                associated_branch: formData.associated_branch || "1",
                 name: formData.accountname,
                 mobile: String(user?.mobile || ""),
                 email: user?.email || "",
@@ -2282,10 +2482,8 @@ export default function JoinSavings() {
                 investmentId: investmentId,
                 schemeId: Number(schemeId),
                 schemeType: schemeType,
-                paymentFrequency: selectedChit
-                  ? selectedChit.PAYMENT_FREQUENCY
-                  : "",
-                chitId: selectedChit ? selectedChit.CHITID : null,
+                paymentFrequency: paymentFrequencyToSend,
+                chitId: chitIdToSend,
                 isRetryAttempt: false,
                 source: "join_savings",
               },
@@ -2312,7 +2510,7 @@ export default function JoinSavings() {
             const userDetailsObject = {
               accountname: formData.accountname,
               accNo: accountNo,
-              associated_branch: formData.associated_branch,
+              associated_branch: formData.associated_branch || "1",
               name: formData.accountname,
               mobile: String(user?.mobile || ""),
               email: user?.email || "",
@@ -2321,8 +2519,8 @@ export default function JoinSavings() {
               schemeId: Number(schemeId),
               schemeType: schemeType,
               schemeName: parsedData?.name || "",
-              paymentFrequency: selectedChit?.PAYMENT_FREQUENCY || "",
-              chitId: selectedChit?.CHITID || null,
+              paymentFrequency: paymentFrequencyToSend,
+              chitId: chitIdToSend,
               ...sanitizedApiData, // Only include sanitized fields
             };
 
@@ -2343,13 +2541,13 @@ export default function JoinSavings() {
                 const minimalUserDetails = {
                   accountname: formData.accountname,
                   accNo: accountNo,
-                  associated_branch: formData.associated_branch,
+                  associated_branch: formData.associated_branch || "1",
                   userId: user?.id || "",
                   investmentId: investmentId,
                   schemeId: Number(schemeId),
                   schemeType: schemeType,
-                  paymentFrequency: selectedChit?.PAYMENT_FREQUENCY || "",
-                  chitId: selectedChit?.CHITID || null,
+                  paymentFrequency: paymentFrequencyToSend,
+                  chitId: chitIdToSend,
                 };
                 userDetailsString = JSON.stringify(minimalUserDetails);
 
@@ -2377,8 +2575,8 @@ export default function JoinSavings() {
                 amount: String(formData.amount) || String(amount),
                 schemeName: parsedData?.name || "",
                 schemeId: String(parsedData?.schemeId || schemeId || ""),
-                chitId: selectedChit?.CHITID ? String(selectedChit.CHITID) : "",
-                paymentFrequency: selectedChit?.PAYMENT_FREQUENCY || "",
+                chitId: String(chitIdToSend),
+                paymentFrequency: paymentFrequencyToSend,
                 schemeType: schemeType || "",
                 savinsTypes: parsedData?.savingType || "amount",
                 userDetails: userDetailsString,
@@ -2464,17 +2662,35 @@ export default function JoinSavings() {
 
 
   useEffect(() => {
-    const fetchGoldRate = async () => {
+    let isMounted = true;
+    const fetchRates = async () => {
       try {
-        const storedRate = await AsyncStorage.getItem("gold_rate");
-        if (storedRate) {
-          setGoldRate(Number(storedRate));
+        const rateData = await fetchGoldRatesWithCache();
+        if (isMounted && rateData) {
+          if (rateData.gold_rate) {
+            setGoldRate(Number(rateData.gold_rate));
+          }
+          if (rateData.silver_rate) {
+            setSilverRate(Number(rateData.silver_rate));
+          }
         }
       } catch (e) {
-        // fallback to default
+        try {
+          const storedGold = await AsyncStorage.getItem("gold_rate");
+          const storedSilver = await AsyncStorage.getItem("silver_rate");
+          if (isMounted) {
+            if (storedGold) setGoldRate(Number(storedGold));
+            if (storedSilver) setSilverRate(Number(storedSilver));
+          }
+        } catch (storageErr) {
+          // fallback
+        }
       }
     };
-    fetchGoldRate();
+    fetchRates();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Fetch amount limits for a specific scheme from API
@@ -2759,7 +2975,7 @@ export default function JoinSavings() {
   return (
     <SafeAreaView
       style={styles.safeAreaContainer}
-      edges={["top", "left", "right"]}
+      edges={["left", "right"]}
     >
       <View style={styles.container}>
         {/* <View style={styles.header}>
@@ -2835,8 +3051,16 @@ export default function JoinSavings() {
             keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
           >
-            {step === 1 && renderStep1()}
-            {step === 2 && renderStep2()}
+            <Animated.View
+              style={{
+                flex: 1,
+                opacity: stepFadeAnim,
+                transform: [{ translateX: stepSlideAnim }],
+              }}
+            >
+              {step === 1 && renderStep1()}
+              {step === 2 && renderStep2()}
+            </Animated.View>
             {/* Footer when keyboard is visible - inside ScrollView */}
             {keyboardVisible && (
               <View style={styles.footerKeyboard}>
@@ -2985,138 +3209,106 @@ function getStyles(theme: any) {
       color: theme.colors.white,
     },
     progressContainer: {
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.white,
       borderBottomWidth: 1,
-      borderBottomColor: theme.colors.borderLight,
-      paddingVertical: 5,
-      paddingHorizontal: 12,
+      borderBottomColor: "#F1F5F9",
+      paddingVertical: 6,
+      paddingHorizontal: 14,
     },
     progressWrapper: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "center",
-      gap: 9,
+      justifyContent: "space-between",
+      gap: 10,
     },
     progressStepCard: {
       flex: 1,
-      backgroundColor: theme.colors.backgroundSecondary,
+      backgroundColor: "#F8FAFC",
       borderRadius: 10,
-      paddingVertical: 10,
-      paddingHorizontal: 12,
+      paddingVertical: 8,
+      paddingHorizontal: 10,
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 16,
+      minHeight: 38,
       borderWidth: 1.5,
-      borderColor: "transparent",
-      shadowColor: theme.colors.black,
-      shadowOffset: {
-        width: 0,
-        height: 1,
-      },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 1,
+      borderColor: "#E2E8F0",
     },
     progressStepCardActive: {
       backgroundColor: theme.colors.primary,
       borderColor: theme.colors.primary,
       shadowColor: theme.colors.primary,
-      shadowOpacity: 0.15,
-      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
       elevation: 3,
-      transform: [{ scale: 1.01 }],
     },
     progressStepCardCompleted: {
-      backgroundColor: theme.colors.secondary,
-      borderColor: theme.colors.secondary,
+      backgroundColor: "#F0FDF4",
+      borderColor: "#86EFAC",
     },
     progressStepCardLocked: {
-      backgroundColor: theme.colors.backgroundTertiary,
-      borderColor: theme.colors.borderLight,
-      opacity: 0.6,
+      backgroundColor: "#F8FAFC",
+      borderColor: "#E2E8F0",
+      opacity: 0.65,
     },
     progressStepInner: {
       alignItems: "center",
       justifyContent: "center",
-      gap: 6,
+      gap: 8,
       flexDirection: "row",
     },
     progressBadge: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: theme.colors.white,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: "#E2E8F0",
       justifyContent: "center",
       alignItems: "center",
-      borderWidth: 1.5,
-      borderColor: theme.colors.borderLight,
     },
     progressBadgeActive: {
-      backgroundColor: theme.colors.secondary,
-      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.white,
     },
     progressBadgeCompleted: {
-      backgroundColor: theme.colors.white,
-      borderColor: theme.colors.white,
+      backgroundColor: "#16A34A",
     },
     progressBadgeLocked: {
-      backgroundColor: theme.colors.backgroundSecondary,
-      borderColor: theme.colors.borderLight,
+      backgroundColor: "#E2E8F0",
     },
     progressBadgeText: {
       fontSize: 11,
       fontWeight: "700",
-      color: theme.colors.textDark,
+      color: "#64748B",
     },
     progressBadgeTextActive: {
-      color: theme.colors.white,
-      fontSize: 12,
+      color: theme.colors.primary,
+      fontWeight: "800",
+      fontSize: 11,
     },
     progressStepLabel: {
-      fontSize: 11,
+      fontSize: 12,
       fontWeight: "600",
-      color: theme.colors.textDark,
+      color: "#64748B",
       textAlign: "center",
-      lineHeight: 14,
-      flex: 1,
+      lineHeight: 16,
     },
     progressStepLabelActive: {
-      color: theme.colors.textDark,
+      color: theme.colors.white,
       fontWeight: "700",
       fontSize: 12,
     },
     progressStepLabelCompleted: {
-      color: theme.colors.black,
-      fontWeight: "600",
-      fontSize: 11,
+      color: "#166534",
+      fontWeight: "700",
+      fontSize: 12,
     },
     progressStepLabelLocked: {
-      color: theme.colors.textLightGrey,
-      fontSize: 10,
+      color: "#94A3B8",
+      fontSize: 11,
     },
     progressConnector: {
-      width: 24,
-      height: 2,
+      paddingHorizontal: 2,
       justifyContent: "center",
       alignItems: "center",
-      marginHorizontal: 2,
-    },
-    progressConnectorLine: {
-      width: "100%",
-      height: 2,
-      backgroundColor: theme.colors.borderLight,
-      borderRadius: 1,
-    },
-    progressConnectorLineActive: {
-      backgroundColor: theme.colors.primary,
-      shadowColor: theme.colors.primary,
-      shadowOffset: {
-        width: 0,
-        height: 0,
-      },
-      shadowOpacity: 0.4,
-      shadowRadius: 3,
-      elevation: 1,
     },
     content: {
       flex: 1,
@@ -3597,7 +3789,7 @@ function getStyles(theme: any) {
     },
     progressHeader: {
       paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingVertical: 8,
       marginBottom: 0,
     },
     progressTitle: {
@@ -3643,9 +3835,102 @@ function getStyles(theme: any) {
       fontWeight: "500",
     },
     goldRateValue: {
-      fontSize: 15,
+      fontSize: 13,
       fontWeight: "700",
       color: theme.colors.textDark,
+    },
+    silverRateValue: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: theme.colors.textDark,
+    },
+    multiRateContainer: {
+      flex: 1,
+    },
+    singleRateContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      flexWrap: "nowrap",
+    },
+    singleRateTitleText: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: "#854D0E",
+      textTransform: "uppercase",
+      letterSpacing: 0.3,
+    },
+    multiRateTopRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 3,
+    },
+    multiRateTitleText: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: "#854D0E",
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    multiRatePillsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: 6,
+    },
+    metalPillGold: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#FEF9C3",
+      paddingVertical: 2,
+      paddingHorizontal: 6,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: "#FDE047",
+    },
+    metalPillSilver: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#F1F5F9",
+      paddingVertical: 2,
+      paddingHorizontal: 6,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: "#CBD5E1",
+    },
+    metalTagGold: {
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: "#F59E0B",
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 4,
+    },
+    metalTagTextGold: {
+      fontSize: 10,
+      fontWeight: "900",
+      color: "#FFFFFF",
+    },
+    metalTagSilver: {
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: "#64748B",
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 4,
+    },
+    metalTagTextSilver: {
+      fontSize: 10,
+      fontWeight: "900",
+      color: "#FFFFFF",
+    },
+    metalPillLabel: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: "#4B5563",
+      marginRight: 3,
     },
     selectedAmountBadge: {
       backgroundColor: theme.colors.primary,
@@ -3773,6 +4058,13 @@ function getStyles(theme: any) {
       backgroundColor: "#fffbe6",
       shadowColor: theme.colors.primary,
       shadowOpacity: 0.2,
+    },
+    selectedSilverRateCard: {
+      borderColor: "#94A3B8",
+      borderWidth: 2,
+      backgroundColor: "#F8FAFC",
+      shadowColor: "#94A3B8",
+      shadowOpacity: 0.15,
     },
     summaryCardModern: {
       backgroundColor: "#fffbe6",

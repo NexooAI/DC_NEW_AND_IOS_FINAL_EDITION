@@ -6,18 +6,21 @@
       "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
+      "channel": "development",
       "android": { "buildType": "apk", "gradleCommand": ":app:assembleDebug" },
       "ios": { "resourceClass": "m-medium" }
     },
     "preview": {
       "extends": "development",
       "distribution": "internal",
+      "channel": "preview",
       "android": { "buildType": "apk", "gradleCommand": ":app:assembleRelease" },
       "ios": { "simulator": true }
     },
     "production": {
       "extends": "base",
       "distribution": "store",
+      "channel": "production",
       "android": { "buildType": "app-bundle", "image": "latest", "gradleCommand": ":app:bundleRelease" },
       "ios": { "resourceClass": "m-medium" }
     }

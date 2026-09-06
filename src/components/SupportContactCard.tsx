@@ -1,5 +1,5 @@
 import { useAppTheme } from "@/store/global.store";
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   TouchableOpacity,
@@ -17,6 +17,7 @@ import * as SecureStore from "expo-secure-store";
 import { theme } from "@/constants/theme";
 import { t } from "@/i18n";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import { fetchAboutPageWithCache } from "@/utils/apiCache";
 
 
 const CompactContactButton: React.FC<{
@@ -75,6 +76,26 @@ const CompactContactButton: React.FC<{
 const SupportContactCard = () => {
   const theme = useAppTheme();
   styles = getStyles(theme);
+  const [aboutData, setAboutData] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadContactData = async () => {
+      try {
+        const data = await fetchAboutPageWithCache();
+        if (isMounted && data) {
+          setAboutData(data);
+        }
+      } catch (err) {
+        // Fallback to theme constants gracefully
+      }
+    };
+    loadContactData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const {
     deviceScale,
     getResponsiveFontSize,
@@ -82,20 +103,23 @@ const SupportContactCard = () => {
   } = useResponsiveLayout();
 
   const handleCall = () => {
-    Linking.openURL(`tel:${theme.constants.mobile}`).catch((err) =>
+    const mobile = aboutData?.helpline || aboutData?.mobile || aboutData?.phone || theme.constants.mobile;
+    Linking.openURL(`tel:${mobile}`).catch((err) =>
       Alert.alert(t("error"), t("couldNotOpenDialer"))
     );
   };
 
   const handleEmail = () => {
-    Linking.openURL(`mailto:${theme.constants.email}`).catch((err) =>
+    const email = aboutData?.support_email || aboutData?.email || theme.constants.email;
+    Linking.openURL(`mailto:${email}`).catch((err) =>
       Alert.alert(t("error"), t("couldNotOpenEmail"))
     );
   };
 
   const handleWhatsApp = async () => {
-    const phoneNumber = theme.constants.whatsapp.replace(/[^\d]/g, "");
-    const text = "Hello, I need support.";
+    const rawNumber = aboutData?.whatsapp_number || aboutData?.whatsapp || aboutData?.helpline || theme.constants.whatsapp || theme.constants.mobile;
+    const phoneNumber = String(rawNumber || "").replace(/[^\d]/g, "");
+    const text = encodeURIComponent("Hello, I need support.");
     const whatsappUrl = `whatsapp://send?phone=${phoneNumber}&text=${text}`;
     const webUrl = `https://wa.me/${phoneNumber}?text=${text}`;
 

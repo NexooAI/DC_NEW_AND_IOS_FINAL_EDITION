@@ -79,21 +79,19 @@ describe('Menu Navigation Integrity (Smoke Tests)', () => {
     });
     
     it('renders the Home screen successfully', async () => {
-        const { getByText } = render(<Home />);
+        const { getAllByText } = render(<Home />);
         await waitFor(() => {
-            expect(getByText('liveGoldRates')).toBeTruthy();
+            expect(getAllByText(/Lucky Draw/i).length).toBeGreaterThan(0);
         });
     });
 
-    // TODO: Fix async state update issues causing flaky test
     it('renders the Savings screen successfully', async () => {
         (api.get as jest.Mock).mockResolvedValue({ data: { success: true, data: [] } });
         (api.post as jest.Mock).mockResolvedValue({ data: { success: true, rewards: [] } });
 
         const { getByText } = render(<Savings />);
         await waitFor(() => {
-            // Since we return empty data, expect the EmptyState text or button
-            expect(getByText('Start your gold savings journey today and build your wealth gradually')).toBeTruthy();
+            expect(getByText(/Start your gold savings journey today/i)).toBeTruthy();
         });
     });
 

@@ -177,16 +177,100 @@ const getTranslatedText = (
   }
 };
 
+export const getSchemeMetalType = (scheme: Scheme | any): "gold" | "silver" | "diamond" | "platinum" | "old_gold" => {
+  if (!scheme) return "gold";
+
+  const extractAllStrings = (val: any): string => {
+    if (!val) return "";
+    if (typeof val === "string") return val.toLowerCase();
+    if (typeof val === "object") {
+      return Object.values(val)
+        .map((v) => extractAllStrings(v))
+        .join(" ")
+        .toLowerCase();
+    }
+    return "";
+  };
+
+  const nameText = extractAllStrings(scheme.SCHEMENAME);
+  const sloganText = extractAllStrings(scheme.SLOGAN);
+  const schemeType = (scheme.SCHEMETYPE || "").toLowerCase();
+  const insType = (scheme.INS_TYPE || "").toLowerCase();
+  const savingType = (scheme.savingType || "").toLowerCase();
+  const metalField = (scheme.metal || scheme.METAL || scheme.metal_type || scheme.METATYPE || "").toLowerCase();
+
+  // Combine title, type, and metal attributes (do NOT use description to avoid generic jeweler keywords)
+  const primaryText = `${nameText} ${sloganText} ${metalField} ${schemeType} ${insType} ${savingType}`;
+
+  // 1. Old Gold check (must precede general gold)
+  if (
+    primaryText.includes("old gold") ||
+    primaryText.includes("oldgold") ||
+    primaryText.includes("old_gold") ||
+    primaryText.includes("பழைய தங்கம்") ||
+    primaryText.includes("பழைய") ||
+    primaryText.includes("పాత బంగారం") ||
+    primaryText.includes("पुराना सोना") ||
+    primaryText.includes("പഴയ സ്വർണം")
+  ) {
+    return "old_gold";
+  }
+
+  // 2. Silver check
+  if (
+    primaryText.includes("silver") ||
+    primaryText.includes("வெள்ளி") ||
+    primaryText.includes("వెండి") ||
+    primaryText.includes("चांदी")
+  ) {
+    return "silver";
+  }
+
+  // 3. Diamond check
+  if (
+    primaryText.includes("diamond") ||
+    primaryText.includes("வைரம்") ||
+    primaryText.includes("వజ్రం") ||
+    primaryText.includes("हीरा") ||
+    primaryText.includes("ഡയമണ്ട്")
+  ) {
+    return "diamond";
+  }
+
+  // 4. Platinum check
+  if (
+    primaryText.includes("platinum") ||
+    primaryText.includes("பிளாட்டினம்") ||
+    primaryText.includes("ప్లాటినం") ||
+    primaryText.includes("प्लैटिनम") ||
+    primaryText.includes("പ്ലാറ്റിനം")
+  ) {
+    return "platinum";
+  }
+
+  // 5. Default is Gold
+  return "gold";
+};
+
 export default function SchemeList({ isNested = false }: { isNested?: boolean }) {
   const { isVisible } = useAppVisibility();
   const theme = useAppTheme();
   styles = getStyles(theme);
-  const params = useLocalSearchParams<{ schemeId?: string; schemeType?: string; mode?: string; type?: string; category?: string }>();
+  const params = useLocalSearchParams<{ schemeId?: string; schemeType?: string; mode?: string; type?: string; category?: string; metal?: string }>();
   const { schemeId, schemeType, mode } = params;
 
-  const [selectedMetal, setSelectedMetal] = useState<string>("all");
+  const parseIncomingMetal = useCallback(() => {
+    const rawType = (params.type || params.category || params.metal || "").toLowerCase().trim();
+    if (rawType === "gold" || rawType === "silver" || rawType === "diamond" || rawType === "platinum" || rawType === "old_gold" || rawType === "oldgold") {
+      return rawType === "oldgold" ? "old_gold" : rawType;
+    }
+    if (rawType === "all") return "all";
+    return "gold"; // Default to Gold rather than All
+  }, [params.type, params.category, params.metal]);
 
-  const [schemePlanType, setSchemePlanType] = useState<"fixed" | "flexi" | "hybrid">("fixed");
+  const [selectedMetal, setSelectedMetal] = useState<string>(parseIncomingMetal);
+
+  const [schemePlanType, setSchemePlanType] = useState<"all" | "fixed" | "flexi" | "hybrid">("all");
   const [activeTab, setActiveTab] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [allSchemes, setAllSchemes] = useState<Scheme[]>([]);
@@ -197,6 +281,20 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
   const [branchModalVisible, setBranchModalVisible] = useState(false);
   const [selectedBranches, setSelectedBranches] = useState<any[]>([]);
+
+  // Update selectedMetal when navigation params change
+  useEffect(() => {
+    const incoming = parseIncomingMetal();
+    setSelectedMetal(incoming);
+    setUserSelectedTab(false);
+  }, [params.type, params.category, params.metal, parseIncomingMetal]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const incoming = parseIncomingMetal();
+      setSelectedMetal(incoming);
+    }, [parseIncomingMetal])
+  );
 
   const getEnquiryButtonText = (lang: string) => {
     const texts: Record<string, string> = {
@@ -233,24 +331,8 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
     allSchemes.forEach((scheme) => {
       if (scheme.ACTIVE !== "Y") return;
-      const schemeNameLower = (getTranslatedText(scheme.SCHEMENAME, "en") || "").toLowerCase();
-      const schemeTypeLower = (scheme.SCHEMETYPE || "").toLowerCase();
-      const insTypeLower = (scheme.INS_TYPE || "").toLowerCase();
-      const savingTypeLower = (scheme.savingType || "").toLowerCase();
-      const descLower = (getTranslatedText(scheme.DESCRIPTION as any, "en") || "").toLowerCase();
-      const combined = `${schemeNameLower} ${schemeTypeLower} ${insTypeLower} ${savingTypeLower} ${descLower}`;
-
-      if (combined.includes("old gold") || combined.includes("oldgold") || combined.includes("பழைய தங்கம்")) {
-        metals.old_gold = true;
-      } else if (combined.includes("silver") || combined.includes("வெள்ளி")) {
-        metals.silver = true;
-      } else if (combined.includes("diamond") || combined.includes("வைரம்")) {
-        metals.diamond = true;
-      } else if (combined.includes("platinum") || combined.includes("பிளாட்டினம்")) {
-        metals.platinum = true;
-      } else {
-        metals.gold = true;
-      }
+      const metalType = getSchemeMetalType(scheme);
+      metals[metalType] = true;
     });
 
     if (!metals.gold && !metals.silver && !metals.diamond && !metals.platinum && !metals.old_gold) {
@@ -281,6 +363,62 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
       if (first) setSelectedMetal(first);
     }
   }, [allSchemes, availableMetals, selectedMetal]);
+
+  const schemesForSelectedMetal = useMemo(() => {
+    if (!allSchemes || allSchemes.length === 0) return [];
+    if (selectedMetal === "all") return allSchemes.filter((s) => s.ACTIVE === "Y");
+
+    return allSchemes.filter((scheme: Scheme) => {
+      if (scheme.ACTIVE !== "Y") return false;
+      return getSchemeMetalType(scheme) === selectedMetal;
+    });
+  }, [allSchemes, selectedMetal]);
+
+  const metalHasFlexi = useMemo(() => {
+    return schemesForSelectedMetal.some((scheme) => {
+      const schemeTypeLower = (scheme.SCHEMETYPE || "").toLowerCase();
+      const schemeNameLower = (getTranslatedText(scheme.SCHEMENAME, "en") || "").toLowerCase();
+      const insTypeLower = (scheme.INS_TYPE || "").toLowerCase();
+      return (
+        schemeTypeLower.includes("flexi") ||
+        schemeTypeLower.includes("flexible") ||
+        schemeNameLower.includes("flexi") ||
+        insTypeLower.includes("flexi")
+      );
+    });
+  }, [schemesForSelectedMetal]);
+
+  const metalHasFixed = useMemo(() => {
+    return schemesForSelectedMetal.some((scheme) => {
+      const schemeTypeLower = (scheme.SCHEMETYPE || "").toLowerCase();
+      const schemeNameLower = (getTranslatedText(scheme.SCHEMENAME, "en") || "").toLowerCase();
+      const insTypeLower = (scheme.INS_TYPE || "").toLowerCase();
+      const isFlexi =
+        schemeTypeLower.includes("flexi") ||
+        schemeTypeLower.includes("flexible") ||
+        schemeNameLower.includes("flexi") ||
+        insTypeLower.includes("flexi");
+      return !isFlexi;
+    });
+  }, [schemesForSelectedMetal]);
+
+  // Adjust plan type if the selected metal only has one plan type available
+  useEffect(() => {
+    if (metalHasFlexi && !metalHasFixed) {
+      setSchemePlanType("flexi");
+    } else if (!metalHasFlexi && metalHasFixed) {
+      setSchemePlanType("fixed");
+    } else if (schemeType) {
+      if (schemeType.toLowerCase().includes("flexi") && metalHasFlexi) {
+        setSchemePlanType("flexi");
+      } else if (metalHasFixed) {
+        setSchemePlanType("fixed");
+      }
+    } else if (metalHasFlexi && metalHasFixed) {
+      setSchemePlanType("all");
+    }
+  }, [selectedMetal, metalHasFlexi, metalHasFixed, schemeType]);
+
   const [showShimmer, setShowShimmer] = useState(false);
 
   const getAvailableTabTypes = useCallback(
@@ -366,35 +504,10 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     return allSchemes.filter((scheme: Scheme) => {
       if (scheme.ACTIVE !== "Y") return false;
 
-      // Filter by selected metal category (gold, silver, diamond, platinum, all)
+      // Filter by selected metal category (gold, silver, diamond, platinum, old_gold, all)
       if (selectedMetal !== "all") {
-        const schemeNameLower = (getTranslatedText(scheme.SCHEMENAME, "en") || "").toLowerCase();
-        const schemeTypeLower = (scheme.SCHEMETYPE || "").toLowerCase();
-        const insTypeLower = (scheme.INS_TYPE || "").toLowerCase();
-        const savingTypeLower = (scheme.savingType || "").toLowerCase();
-        const descLower = (getTranslatedText(scheme.DESCRIPTION as any, "en") || "").toLowerCase();
-        const combined = `${schemeNameLower} ${schemeTypeLower} ${insTypeLower} ${savingTypeLower} ${descLower}`;
-
-        if (selectedMetal === "silver" && !(combined.includes("silver") || combined.includes("வெள்ளி"))) {
+        if (getSchemeMetalType(scheme) !== selectedMetal) {
           return false;
-        }
-        if (selectedMetal === "diamond" && !(combined.includes("diamond") || combined.includes("வைரம்"))) {
-          return false;
-        }
-        if (selectedMetal === "platinum" && !(combined.includes("platinum") || combined.includes("பிளாட்டினம்"))) {
-          return false;
-        }
-        if (selectedMetal === "old_gold" && !(combined.includes("old gold") || combined.includes("oldgold") || combined.includes("பழைய தங்கம்"))) {
-          return false;
-        }
-        if (selectedMetal === "gold") {
-          const isOtherMetalOrOldGold = combined.includes("silver") || combined.includes("diamond") || combined.includes("platinum") || combined.includes("old gold") || combined.includes("oldgold") || combined.includes("வெள்ளி") || combined.includes("வைரம்") || combined.includes("பிளாட்டினம்") || combined.includes("பழைய தங்கம்");
-          if (isOtherMetalOrOldGold && !combined.includes("gold") && !combined.includes("தங்கம்")) {
-            return false;
-          }
-          if (combined.includes("old gold") || combined.includes("oldgold") || combined.includes("பழைய தங்கம்")) {
-            return false;
-          }
         }
       }
 
@@ -420,9 +533,12 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         return isSchemeFlexi;
       } else if (schemePlanType === "hybrid") {
         return isSchemeHybrid;
-      } else {
+      } else if (schemePlanType === "fixed") {
         // fixed: matches anything that is NOT flexi and NOT hybrid
         return !isSchemeFlexi && !isSchemeHybrid;
+      } else {
+        // "all": shows all schemes (both fixed and flexi) of the selected metal
+        return true;
       }
     });
   }, [allSchemes, selectedMetal, schemePlanType]);
@@ -677,6 +793,8 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
         if (isFlexiParam && containsFlexi) {
           planType = "flexi";
+        } else if (containsFixed && containsFlexi) {
+          planType = "all";
         } else if (containsFixed) {
           planType = "fixed";
         } else if (containsFlexi) {
@@ -686,7 +804,9 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
       }
 
       let targetTab = tabs[0];
-      if (planType === "flexi") {
+      if (planType === "all") {
+        targetTab = t("allOnly") || "All";
+      } else if (planType === "flexi") {
         targetTab = tabs.find(t => t.toLowerCase() === "flexi") || "Flexi";
       } else {
         const firstFixed = tabs.find(t => t.toLowerCase() !== "flexi");
@@ -1069,11 +1189,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     const { min, max } = getMinMaxAmount(item);
 
     // Determine metal type details
-    const schemeNameLower = (getTranslatedText(item.SCHEMENAME, 'en') || "").toLowerCase();
-    const isSilver = schemeNameLower.includes('silver') || (item.SCHEMENAME as any)?.ta?.includes('வெள்ளி');
-    const isDiamond = schemeNameLower.includes('diamond') || (item.SCHEMENAME as any)?.ta?.includes('வைரம்');
-    const isPlatinum = schemeNameLower.includes('platinum') || (item.SCHEMENAME as any)?.ta?.includes('பிளாட்டினம்');
-    const isOldGold = schemeNameLower.includes('old gold') || schemeNameLower.includes('oldgold') || (item.SCHEMENAME as any)?.ta?.includes('பழைய தங்கம்');
+    const metalType = getSchemeMetalType(item);
+    const isSilver = metalType === "silver";
+    const isDiamond = metalType === "diamond";
+    const isPlatinum = metalType === "platinum";
+    const isOldGold = metalType === "old_gold";
     
     let metalLabel = t("gold") || "Gold";
     let metalColor = "#FFD700";
@@ -1098,9 +1218,9 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     }
 
     // Determine coin type
-    const coinSource = schemeNameLower.includes('silver')
+    const coinSource = isSilver
       ? require("../../../../../assets/images/silver_coin_badge.png")
-      : schemeNameLower.includes('diamond')
+      : isDiamond
         ? require("../../../../../assets/images/diamond_coin_badge.png")
         : require("../../../../../assets/images/gold_coin_badge.png");
 
@@ -1244,7 +1364,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
           >
             <Ionicons name="grid-outline" size={14} color={selectedMetal === "all" ? "#FFF" : "#666"} />
             <Text style={[styles.metalTabText, selectedMetal === "all" && { color: "#FFF" }]}>
-              {t("all") || "All Schemes"}
+              {t("allSchemes") || "All Schemes"}
             </Text>
           </TouchableOpacity>
 
@@ -1315,9 +1435,24 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         </ScrollView>
       </View>
 
-      {/* Plan Type Selector (Fixed vs Flexi) - Only shown if both are available and not All Schemes */}
-      {selectedMetal !== "all" && hasFlexiSchemes && hasFixedSchemes && (
+      {/* Plan Type Selector (All vs Fixed vs Flexi) - Only shown if both are available for the selected metal and not All Schemes */}
+      {selectedMetal !== "all" && metalHasFlexi && metalHasFixed && (
         <View style={styles.planTypeWrapper}>
+          <TouchableOpacity
+            onPress={() => {
+              setSchemePlanType("all");
+              setUserSelectedTab(true);
+              setActiveTab(t("allOnly") || "All");
+            }}
+            style={[styles.planTypeButton, schemePlanType === "all" && styles.planTypeButtonActive]}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="grid-outline" size={15} color={schemePlanType === "all" ? "#FFF" : "#4A0007"} />
+            <Text style={[styles.planTypeText, schemePlanType === "all" && styles.planTypeTextActive]}>
+              {t("allOnly") || "All"}
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             onPress={() => {
               setSchemePlanType("fixed");
@@ -1332,7 +1467,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
           >
             <Ionicons name="calendar-outline" size={15} color={schemePlanType === "fixed" ? "#FFF" : "#4A0007"} />
             <Text style={[styles.planTypeText, schemePlanType === "fixed" && styles.planTypeTextActive]}>
-              {t("Fixed") || "Fixed Scheme"}
+              {t("Fixed") || "Fixed"}
             </Text>
           </TouchableOpacity>
 
@@ -1347,7 +1482,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
           >
             <Ionicons name="infinite-outline" size={15} color={schemePlanType === "flexi" ? "#FFF" : "#4A0007"} />
             <Text style={[styles.planTypeText, schemePlanType === "flexi" && styles.planTypeTextActive]}>
-              {t("Flexi") || "Flexi Scheme"}
+              {t("Flexi") || "Flexi"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -1446,7 +1581,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
             ListHeaderComponent={
               selectedMetal === "all" ? null : (
                 <Text style={styles.resultsCount}>
-                  {schemesListData.length} {activeTab} Scheme{schemesListData.length !== 1 ? 's' : ''} Available
+                  {schemesListData.length} {schemePlanType === "all" ? "" : `${activeTab} `}Scheme{schemesListData.length !== 1 ? 's' : ''} Available
                 </Text>
               )
             }
