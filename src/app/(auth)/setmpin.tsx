@@ -227,7 +227,7 @@ export default function SetMpinPage() {
 
           // Navigate directly to home page after successful registration
           logger.log("🔍 Set MPIN successful, prompting biometric enrollment if supported");
-          
+
           const handlePostRegistrationRedirect = () => {
             router.replace("/(app)/(tabs)/home");
           };
@@ -370,7 +370,7 @@ export default function SetMpinPage() {
                       borderColor: 'rgba(255, 215, 0, 0.25)',
                     }}>
                       <Image
-                        source={require("../../../assets/images/intro_2.png")}
+                        source={require("../../../assets/images/intro_1.png")}
                         style={{ width: '100%', height: '100%' }}
                         resizeMode="cover"
                       />
@@ -385,7 +385,7 @@ export default function SetMpinPage() {
                       borderColor: 'rgba(255, 215, 0, 0.25)',
                     }}>
                       <Image
-                        source={require("../../../assets/images/intro_3.png")}
+                        source={require("../../../assets/images/intro_1.png")}
                         style={{ width: '100%', height: '100%' }}
                         resizeMode="cover"
                       />
@@ -513,7 +513,7 @@ export default function SetMpinPage() {
                     style={[
                       styles.submitButton,
                       (loading || !mpinValid || !confirmValid || matchError) &&
-                        styles.submitButtonDisabled,
+                      styles.submitButtonDisabled,
                     ]}
                     onPress={handleSubmit}
                     disabled={loading || !mpinValid || !confirmValid || matchError}

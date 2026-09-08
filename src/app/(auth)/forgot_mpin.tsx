@@ -1105,7 +1105,7 @@ export default function ForgotMpin() {
                     borderColor: 'rgba(255, 215, 0, 0.25)',
                   }}>
                     <Image
-                      source={require("../../../assets/images/intro_2.png")}
+                      source={require("../../../assets/images/intro_1.png")}
                       style={{ width: '100%', height: '100%' }}
                       resizeMode="cover"
                     />
@@ -1120,7 +1120,7 @@ export default function ForgotMpin() {
                     borderColor: 'rgba(255, 215, 0, 0.25)',
                   }}>
                     <Image
-                      source={require("../../../assets/images/intro_3.png")}
+                      source={require("../../../assets/images/intro_1.png")}
                       style={{ width: '100%', height: '100%' }}
                       resizeMode="cover"
                     />

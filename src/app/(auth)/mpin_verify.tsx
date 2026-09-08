@@ -1199,7 +1199,7 @@ export default function MpinVerify() {
                       borderColor: 'rgba(255, 215, 0, 0.25)',
                     }}>
                       <Image
-                        source={getIndexImage(1) ? getImageSource(getIndexImage(1)) : require("../../../assets/images/intro_2.png")}
+                        source={getIndexImage(1) ? getImageSource(getIndexImage(1)) : require("../../../assets/images/intro_1.png")}
                         style={{ width: '100%', height: '100%' }}
                         resizeMode="cover"
                       />
@@ -1214,7 +1214,7 @@ export default function MpinVerify() {
                       borderColor: 'rgba(255, 215, 0, 0.25)',
                     }}>
                       <Image
-                        source={getIndexImage(2) ? getImageSource(getIndexImage(2)) : require("../../../assets/images/intro_3.png")}
+                        source={getIndexImage(2) ? getImageSource(getIndexImage(2)) : require("../../../assets/images/intro_1.png")}
                         style={{ width: '100%', height: '100%' }}
                         resizeMode="cover"
                       />

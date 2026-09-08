@@ -49,12 +49,21 @@ export default function RateChart() {
     const { t } = useTranslation();
     const navigation = useNavigation();
     const router = useRouter();
-    const { from } = useLocalSearchParams();
+    const { from, type, rateType } = useLocalSearchParams<{ from?: string; type?: string; rateType?: string }>();
 
+    const targetType: RateType = (type === "silver" || rateType === "silver") ? "silver" : "gold";
     const [ratesData, setRatesData] = useState<RateData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [selectedRateType, setSelectedRateType] = useState<RateType>("gold");
+    const [selectedRateType, setSelectedRateType] = useState<RateType>(targetType);
+
+    useEffect(() => {
+        if (type === "silver" || rateType === "silver") {
+            setSelectedRateType("silver");
+        } else if (type === "gold" || rateType === "gold") {
+            setSelectedRateType("gold");
+        }
+    }, [type, rateType]);
     const [selectedDateFilter, setSelectedDateFilter] = useState<DateFilter>("thisWeek");
     const [isFocus, setIsFocus] = useState(false);
     const [infoModalVisible, setInfoModalVisible] = useState(false);

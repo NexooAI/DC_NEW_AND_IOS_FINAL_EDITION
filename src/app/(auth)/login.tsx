@@ -1324,7 +1324,7 @@ export default function Login() {
                         borderColor: 'rgba(255, 215, 0, 0.25)',
                       }}>
                         <Image
-                          source={getIndexImage(1) ? getImageSource(getIndexImage(1)) : require("../../../assets/images/intro_2.png")}
+                          source={getIndexImage(1) ? getImageSource(getIndexImage(1)) : require("../../../assets/images/intro_1.png")}
                           style={{ width: '100%', height: '100%' }}
                           resizeMode="cover"
                         />
@@ -1339,7 +1339,7 @@ export default function Login() {
                         borderColor: 'rgba(255, 215, 0, 0.25)',
                       }}>
                         <Image
-                          source={getIndexImage(2) ? getImageSource(getIndexImage(2)) : require("../../../assets/images/intro_3.png")}
+                          source={getIndexImage(2) ? getImageSource(getIndexImage(2)) : require("../../../assets/images/intro_1.png")}
                           style={{ width: '100%', height: '100%' }}
                           resizeMode="cover"
                         />
@@ -1391,19 +1391,19 @@ export default function Login() {
                       },
                     ]}
                   >
-                      {!isShowOtp ? (<>
-                        <ResponsiveText
-                          variant="title"
-                          size="lg"
-                          weight="bold"
-                          color={theme.colors.primary}
-                          align="center"
-                          truncateMode="double"
-                          style={[registerStyles.pageTitle, { marginBottom: 0 }]}
-                        >
-                          {safeT("welcome", "Welcome")}!
-                        </ResponsiveText>
-                        {/* <ResponsiveText
+                    {!isShowOtp ? (<>
+                      <ResponsiveText
+                        variant="title"
+                        size="lg"
+                        weight="bold"
+                        color={theme.colors.primary}
+                        align="center"
+                        truncateMode="double"
+                        style={[registerStyles.pageTitle, { marginBottom: 0 }]}
+                      >
+                        {safeT("welcome", "Welcome")}!
+                      </ResponsiveText>
+                      {/* <ResponsiveText
                           variant="subtitle"
                           size="md"
                           color={theme.colors.primary}
@@ -1413,427 +1413,427 @@ export default function Login() {
                         >
                           {safeT("signInToContinue", "Sign in to continue")}
                         </ResponsiveText> */}
-                        {__DEV__ && (
-                          <TouchableOpacity
-                            onPress={() => {
-                              try {
-                                const crashlytics = require('@react-native-firebase/crashlytics').default;
-                                crashlytics().log('Test crash triggered by developer');
-                                crashlytics().crash();
-                              } catch (error) {
-                                console.log('Crashlytics is not available in this environment:', error);
-                                Alert.alert('Not Available', 'Crashlytics is only available in a native Dev Client / Release build.');
-                              }
-                            }}
-                            style={{
-                              backgroundColor: "#E74C3C",
-                              paddingVertical: 8,
-                              paddingHorizontal: 16,
-                              borderRadius: 20,
-                              marginTop: 10,
-                              alignSelf: 'center',
-                              borderWidth: 1,
-                              borderColor: "rgba(255, 255, 255, 0.2)"
-                            }}
-                          >
-                            <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>
-                              💥 Trigger Test Crash (Dev Only)
-                            </Text>
-                          </TouchableOpacity>
-                        )}
-                      </>
-                      ) : null}
-                      {!isShowOtp ? (
-                        <>
-                          <View style={[registerStyles.inputContainer, { borderWidth: 0, shadowColor: 'transparent', elevation: 0, paddingHorizontal: 0 }]}>
-                            <PhoneInput
-                              value={mobile}
-                              label={t("registerMobileNumber")}
-                              onChangeText={(text) => {
-                                setMobile(text);
-                                setMobileError("");
-                              }}
-                              loading={loading}
-                              disableBlurAlert={isNavigatingToRegister}
-                              variant="line"
-                            />
-                            {mobileError ? (
-                              <ResponsiveText
-                                variant="caption"
-                                size="sm"
-                                color={theme.colors.error}
-                                align="left"
-                                truncateMode="double"
-                                style={registerStyles.errorText}
-                              >
-                                {mobileError}
-                              </ResponsiveText>
-                            ) : null}
-                          </View>
-                          <ResponsiveButton
-                            title={loading ? t("processing") : t("getOtp")}
-                            backgroundColor={theme.colors.primary}
-                            textColor="#FFFFFF"
-                            variant="secondary"
-                            size="md"
-                            fullWidth={true}
-                            loading={loading}
-                            disabled={loading}
-                            onPress={loginAxio}
-                            style={[
-                              {
-                                width: "100%",
-                                maxWidth: wp(75),
-                                height: 48,
-                                minHeight: 48,
-                                borderRadius: 8,
-                                overflow: "hidden",
-                                marginTop: spacing.md,
-                              },
-                              loading && registerStyles.loginButtonDisabled,
-                            ]}
-                          />
-                          <View style={registerStyles.registerContainer}>
-                            <ResponsiveText
-                              variant="body"
-                              size="md"
-                              color={theme.colors.primary}
-                              align="center"
-                              allowWrap={true}
-                              maxLines={2}
-                              adjustsFontSizeToFit={true}
-                              minimumFontScale={0.75}
-                              style={[
-                                registerStyles.registerText,
-                                { fontSize: 16 },
-                              ]}
-                            >
-                              {t("dontHaveAccount")}{" "}
-                            </ResponsiveText>
-                            <TouchableOpacity
-                              onPress={() => {
-                                setIsNavigatingToRegister(true);
-                                router.push("/userBasicDetails");
-                              }}
-                            >
-                              <ResponsiveText
-                                variant="body"
-                                size="md"
-                                weight="bold"
-                                color={theme.colors.primary}
-                                align="center"
-                                allowWrap={false}
-                                maxLines={1}
-                                adjustsFontSizeToFit={true}
-                                minimumFontScale={0.75}
-                                style={[
-                                  registerStyles.registerLink,
-                                  { fontSize: 16 },
-                                ]}
-                              >
-                                {t("register")}
-                              </ResponsiveText>
-                            </TouchableOpacity>
-                          </View>
-                        </>
-                      ) : (
-                        <View
-                          style={[
-                            registerStyles.otpContainer,
-                            {
-                              paddingVertical: 0,
-                              minHeight: isSmallScreen ? 200 : 220,
-                              alignItems: "center",
-                              justifyContent: "center",
-                            },
-                          ]}
+                      {__DEV__ && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            try {
+                              const crashlytics = require('@react-native-firebase/crashlytics').default;
+                              crashlytics().log('Test crash triggered by developer');
+                              crashlytics().crash();
+                            } catch (error) {
+                              console.log('Crashlytics is not available in this environment:', error);
+                              Alert.alert('Not Available', 'Crashlytics is only available in a native Dev Client / Release build.');
+                            }
+                          }}
+                          style={{
+                            backgroundColor: "#E74C3C",
+                            paddingVertical: 8,
+                            paddingHorizontal: 16,
+                            borderRadius: 20,
+                            marginTop: 10,
+                            alignSelf: 'center',
+                            borderWidth: 1,
+                            borderColor: "rgba(255, 255, 255, 0.2)"
+                          }}
                         >
+                          <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>
+                            💥 Trigger Test Crash (Dev Only)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
+                    ) : null}
+                    {!isShowOtp ? (
+                      <>
+                        <View style={[registerStyles.inputContainer, { borderWidth: 0, shadowColor: 'transparent', elevation: 0, paddingHorizontal: 0 }]}>
+                          <PhoneInput
+                            value={mobile}
+                            label={t("registerMobileNumber")}
+                            onChangeText={(text) => {
+                              setMobile(text);
+                              setMobileError("");
+                            }}
+                            loading={loading}
+                            disableBlurAlert={isNavigatingToRegister}
+                            variant="line"
+                          />
+                          {mobileError ? (
+                            <ResponsiveText
+                              variant="caption"
+                              size="sm"
+                              color={theme.colors.error}
+                              align="left"
+                              truncateMode="double"
+                              style={registerStyles.errorText}
+                            >
+                              {mobileError}
+                            </ResponsiveText>
+                          ) : null}
+                        </View>
+                        <ResponsiveButton
+                          title={loading ? t("processing") : t("getOtp")}
+                          backgroundColor={theme.colors.primary}
+                          textColor="#FFFFFF"
+                          variant="secondary"
+                          size="md"
+                          fullWidth={true}
+                          loading={loading}
+                          disabled={loading}
+                          onPress={loginAxio}
+                          style={[
+                            {
+                              width: "100%",
+                              maxWidth: wp(75),
+                              height: 48,
+                              minHeight: 48,
+                              borderRadius: 8,
+                              overflow: "hidden",
+                              marginTop: spacing.md,
+                            },
+                            loading && registerStyles.loginButtonDisabled,
+                          ]}
+                        />
+                        <View style={registerStyles.registerContainer}>
                           <ResponsiveText
-                            variant="title"
-                            size="lg"
-                            weight="bold"
+                            variant="body"
+                            size="md"
                             color={theme.colors.primary}
                             align="center"
                             allowWrap={true}
                             maxLines={2}
                             adjustsFontSizeToFit={true}
-                            minimumFontScale={0.8}
-                            style={[registerStyles.otpTitle, { marginBottom: 0 }]}
-                          >
-                            {safeT("enterOTP", "Enter OTP")}
-                          </ResponsiveText>
-                          <View style={registerStyles.otpSentContainer}>
-                            <ResponsiveText
-                              variant="body"
-                              size="sm"
-                              color={theme.colors.primary}
-                              align="center"
-                              allowWrap={true}
-                              maxLines={2}
-                              adjustsFontSizeToFit={true}
-                              minimumFontScale={0.7}
-                              style={registerStyles.otpSentText}
-                            >
-                              {t("otpSentTo")}{" "}
-                              {mobile.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")}
-                            </ResponsiveText>
-                            <TouchableOpacity
-                              onPress={() => setIsShowOtp(false)}
-                              style={registerStyles.editIconButton}
-                            >
-                              <Feather
-                                name="edit-2"
-                                size={18}
-                                color={theme.colors.primary}
-                              />
-                            </TouchableOpacity>
-                          </View>
-                          <Pressable
+                            minimumFontScale={0.75}
                             style={[
-                              registerStyles.otpInputsWrapper,
-                              { alignItems: "center", justifyContent: "center", position: "relative" },
+                              registerStyles.registerText,
+                              { fontSize: 16 },
                             ]}
+                          >
+                            {t("dontHaveAccount")}{" "}
+                          </ResponsiveText>
+                          <TouchableOpacity
                             onPress={() => {
-                              // Force focus on the input when the container is pressed
-                              inputRefs[0].current?.focus();
+                              setIsNavigatingToRegister(true);
+                              router.push("/userBasicDetails");
                             }}
                           >
-                            {/* Hidden TextInput for OTP Autofill */}
-                            <TextInput
-                              ref={inputRefs[0]}
-                              value={otpCode}
-                              onChangeText={(text) => {
-                                const numericValue = text.replace(/[^0-9]/g, "");
-                                setOtpCode(numericValue);
-                                if (numericValue.length === 4) {
-                                  verifyOtp(numericValue);
-                                }
-                              }}
-                              style={{
-                                position: "absolute",
-                                width: "100%",
-                                height: "100%",
-                                opacity: 0,
-                                zIndex: 10,
-                              }}
-                              keyboardType="numeric"
-                              maxLength={4}
-                              textContentType="oneTimeCode"
-                              autoComplete="sms-otp"
-                              editable={!loading}
-                              autoFocus={true}
-                              pointerEvents="none" // Pass touches to parent Pressable to ensure reliable focus on iOS
-                            />
-
-                            <View
-                              style={[
-                                registerStyles.otpInputsContainer,
-                                {
-                                  width: isSmallScreen ? "85%" : "80%",
-                                  maxWidth: isSmallScreen ? 280 : 320,
-                                  minWidth: isSmallScreen ? 160 : 180,
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  zIndex: 1, // Ensure visual elements are below the hidden input touch area
-                                },
-                              ]}
-                              pointerEvents="none" // Pass touches to the hidden input
-                            >
-                              {[0, 1, 2, 3].map((index) => (
-                                <View
-                                  key={index}
-                                  style={[
-                                    registerStyles.otpInput,
-                                    {
-                                      width: isSmallScreen ? 42 : 48,
-                                      height: isSmallScreen ? 42 : 48,
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      borderColor: otpCode.length === index ? theme.colors.primary : "rgba(133, 1, 17, 0.15)",
-                                      backgroundColor: theme.colors.white,
-                                      // 3D Shadow properties
-                                      shadowColor: "#000",
-                                      shadowOffset: { width: 0, height: 2 },
-                                      shadowOpacity: 0.08,
-                                      shadowRadius: 3,
-                                      elevation: 2,
-                                    },
-                                  ]}
-                                >
-                                  <ResponsiveText
-                                    variant="title"
-                                    size="lg"
-                                    weight="bold"
-                                    color={theme.colors.textDark}
-                                    style={{
-                                      fontSize: isSmallScreen ? 20 : 22,
-                                    }}
-                                  >
-                                    {otpCode[index] || ""}
-                                  </ResponsiveText>
-                                </View>
-                              ))}
-                            </View>
-                          </Pressable>
-                          <View
-                            style={[
-                              registerStyles.timerContainer,
-                              { alignItems: "center", justifyContent: "center" },
-                            ]}
-                          >
-                            <Ionicons
-                              name="time-outline"
-                              size={20}
-                              color={theme.colors.primary}
-                            />
                             <ResponsiveText
-                              variant="caption"
-                              size="sm"
+                              variant="body"
+                              size="md"
+                              weight="bold"
                               color={theme.colors.primary}
                               align="center"
-                              truncateMode="single"
-                              inRow={true}
-                              style={registerStyles.timerText}
+                              allowWrap={false}
+                              maxLines={1}
+                              adjustsFontSizeToFit={true}
+                              minimumFontScale={0.75}
+                              style={[
+                                registerStyles.registerLink,
+                                { fontSize: 16 },
+                              ]}
                             >
-                              {t("resendIn")} {timer}s
+                              {t("register")}
                             </ResponsiveText>
-                          </View>
-                          {timer === 0 && resendAttempts > 0 && (
-                            <TouchableOpacity
-                              onPress={handleResendOtp}
-                              style={[
-                                registerStyles.resendButton,
-                                { alignSelf: "center" },
-                              ]}
-                              disabled={loading}
-                            >
-                              <ResponsiveText
-                                variant="caption"
-                                size="sm"
-                                color={theme.colors.primary}
-                                align="center"
-                                truncateMode="double"
-                                style={registerStyles.resendText}
-                              >
-                                {loading ? t("resending") : t("resendOTP")} (
-                                {resendAttempts} {t("left")})
-                              </ResponsiveText>
-                            </TouchableOpacity>
-                          )}
-                          {timer === 0 && resendAttempts === 0 && (
-                            <View
-                              style={[
-                                registerStyles.timerContainer,
-                                {
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                },
-                              ]}
-                            >
-                              <Ionicons
-                                name="alert-circle"
-                                size={20}
-                                color={COLORS.errorLight}
-                              />
-                              <ResponsiveText
-                                variant="caption"
-                                size="sm"
-                                color={COLORS.errorLight}
-                                align="center"
-                                truncateMode="double"
-                                inRow={true}
-                                style={registerStyles.timerText}
-                              >
-                                {t("resendLimitReached")}
-                              </ResponsiveText>
-                            </View>
-                          )}
-                          <TouchableOpacity
-                            style={[
-                              registerStyles.loginButton,
-                              { borderRadius: 8 },
-                              (loading ||
-                                otpCode.length !== 4) &&
-                              registerStyles.loginButtonDisabled,
-                            ]}
-                            onPress={() => verifyOtp(otpCode)}
-                            disabled={
-                              loading || otpCode.length !== 4
-                            }
-                          >
-                            <LinearGradient
-                              colors={[theme.colors.primary, theme.colors.primary]}
-                              style={[registerStyles.gradientButton, { borderRadius: 8 }]}
-                            >
-                              <ResponsiveText
-                                variant="button"
-                                size="md"
-                                weight="bold"
-                                color="#FFFFFF"
-                                align="center"
-                                truncateMode="single"
-                                style={registerStyles.loginButtonText}
-                              >
-                                {loading ? t("verifying") : t("submit")}
-                              </ResponsiveText>
-                            </LinearGradient>
                           </TouchableOpacity>
-
-                          {/* Back Button */}
-                          <TouchableOpacity
-                            style={[
-                              registerStyles.backButton,
-                              { alignSelf: "center" },
-                            ]}
-                            onPress={handleBackButton}
+                        </View>
+                      </>
+                    ) : (
+                      <View
+                        style={[
+                          registerStyles.otpContainer,
+                          {
+                            paddingVertical: 0,
+                            minHeight: isSmallScreen ? 200 : 220,
+                            alignItems: "center",
+                            justifyContent: "center",
+                          },
+                        ]}
+                      >
+                        <ResponsiveText
+                          variant="title"
+                          size="lg"
+                          weight="bold"
+                          color={theme.colors.primary}
+                          align="center"
+                          allowWrap={true}
+                          maxLines={2}
+                          adjustsFontSizeToFit={true}
+                          minimumFontScale={0.8}
+                          style={[registerStyles.otpTitle, { marginBottom: 0 }]}
+                        >
+                          {safeT("enterOTP", "Enter OTP")}
+                        </ResponsiveText>
+                        <View style={registerStyles.otpSentContainer}>
+                          <ResponsiveText
+                            variant="body"
+                            size="sm"
+                            color={theme.colors.primary}
+                            align="center"
+                            allowWrap={true}
+                            maxLines={2}
+                            adjustsFontSizeToFit={true}
+                            minimumFontScale={0.7}
+                            style={registerStyles.otpSentText}
                           >
-                            <Ionicons
-                              name="arrow-back"
-                              size={isSmallScreen ? 18 : 20}
+                            {t("otpSentTo")}{" "}
+                            {mobile.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")}
+                          </ResponsiveText>
+                          <TouchableOpacity
+                            onPress={() => setIsShowOtp(false)}
+                            style={registerStyles.editIconButton}
+                          >
+                            <Feather
+                              name="edit-2"
+                              size={18}
                               color={theme.colors.primary}
                             />
+                          </TouchableOpacity>
+                        </View>
+                        <Pressable
+                          style={[
+                            registerStyles.otpInputsWrapper,
+                            { alignItems: "center", justifyContent: "center", position: "relative" },
+                          ]}
+                          onPress={() => {
+                            // Force focus on the input when the container is pressed
+                            inputRefs[0].current?.focus();
+                          }}
+                        >
+                          {/* Hidden TextInput for OTP Autofill */}
+                          <TextInput
+                            ref={inputRefs[0]}
+                            value={otpCode}
+                            onChangeText={(text) => {
+                              const numericValue = text.replace(/[^0-9]/g, "");
+                              setOtpCode(numericValue);
+                              if (numericValue.length === 4) {
+                                verifyOtp(numericValue);
+                              }
+                            }}
+                            style={{
+                              position: "absolute",
+                              width: "100%",
+                              height: "100%",
+                              opacity: 0,
+                              zIndex: 10,
+                            }}
+                            keyboardType="numeric"
+                            maxLength={4}
+                            textContentType="oneTimeCode"
+                            autoComplete="sms-otp"
+                            editable={!loading}
+                            autoFocus={true}
+                            pointerEvents="none" // Pass touches to parent Pressable to ensure reliable focus on iOS
+                          />
+
+                          <View
+                            style={[
+                              registerStyles.otpInputsContainer,
+                              {
+                                width: isSmallScreen ? "85%" : "80%",
+                                maxWidth: isSmallScreen ? 280 : 320,
+                                minWidth: isSmallScreen ? 160 : 180,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                zIndex: 1, // Ensure visual elements are below the hidden input touch area
+                              },
+                            ]}
+                            pointerEvents="none" // Pass touches to the hidden input
+                          >
+                            {[0, 1, 2, 3].map((index) => (
+                              <View
+                                key={index}
+                                style={[
+                                  registerStyles.otpInput,
+                                  {
+                                    width: isSmallScreen ? 42 : 48,
+                                    height: isSmallScreen ? 42 : 48,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    borderColor: otpCode.length === index ? theme.colors.primary : "rgba(133, 1, 17, 0.15)",
+                                    backgroundColor: theme.colors.white,
+                                    // 3D Shadow properties
+                                    shadowColor: "#000",
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.08,
+                                    shadowRadius: 3,
+                                    elevation: 2,
+                                  },
+                                ]}
+                              >
+                                <ResponsiveText
+                                  variant="title"
+                                  size="lg"
+                                  weight="bold"
+                                  color={theme.colors.textDark}
+                                  style={{
+                                    fontSize: isSmallScreen ? 20 : 22,
+                                  }}
+                                >
+                                  {otpCode[index] || ""}
+                                </ResponsiveText>
+                              </View>
+                            ))}
+                          </View>
+                        </Pressable>
+                        <View
+                          style={[
+                            registerStyles.timerContainer,
+                            { alignItems: "center", justifyContent: "center" },
+                          ]}
+                        >
+                          <Ionicons
+                            name="time-outline"
+                            size={20}
+                            color={theme.colors.primary}
+                          />
+                          <ResponsiveText
+                            variant="caption"
+                            size="sm"
+                            color={theme.colors.primary}
+                            align="center"
+                            truncateMode="single"
+                            inRow={true}
+                            style={registerStyles.timerText}
+                          >
+                            {t("resendIn")} {timer}s
+                          </ResponsiveText>
+                        </View>
+                        {timer === 0 && resendAttempts > 0 && (
+                          <TouchableOpacity
+                            onPress={handleResendOtp}
+                            style={[
+                              registerStyles.resendButton,
+                              { alignSelf: "center" },
+                            ]}
+                            disabled={loading}
+                          >
                             <ResponsiveText
                               variant="caption"
                               size="sm"
                               color={theme.colors.primary}
                               align="center"
                               truncateMode="double"
-                              inRow={true}
-                              style={registerStyles.backButtonText}
+                              style={registerStyles.resendText}
                             >
-                              {t("back")}
+                              {loading ? t("resending") : t("resendOTP")} (
+                              {resendAttempts} {t("left")})
                             </ResponsiveText>
                           </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
+                        )}
+                        {timer === 0 && resendAttempts === 0 && (
+                          <View
+                            style={[
+                              registerStyles.timerContainer,
+                              {
+                                alignItems: "center",
+                                justifyContent: "center",
+                              },
+                            ]}
+                          >
+                            <Ionicons
+                              name="alert-circle"
+                              size={20}
+                              color={COLORS.errorLight}
+                            />
+                            <ResponsiveText
+                              variant="caption"
+                              size="sm"
+                              color={COLORS.errorLight}
+                              align="center"
+                              truncateMode="double"
+                              inRow={true}
+                              style={registerStyles.timerText}
+                            >
+                              {t("resendLimitReached")}
+                            </ResponsiveText>
+                          </View>
+                        )}
+                        <TouchableOpacity
+                          style={[
+                            registerStyles.loginButton,
+                            { borderRadius: 8 },
+                            (loading ||
+                              otpCode.length !== 4) &&
+                            registerStyles.loginButtonDisabled,
+                          ]}
+                          onPress={() => verifyOtp(otpCode)}
+                          disabled={
+                            loading || otpCode.length !== 4
+                          }
+                        >
+                          <LinearGradient
+                            colors={[theme.colors.primary, theme.colors.primary]}
+                            style={[registerStyles.gradientButton, { borderRadius: 8 }]}
+                          >
+                            <ResponsiveText
+                              variant="button"
+                              size="md"
+                              weight="bold"
+                              color="#FFFFFF"
+                              align="center"
+                              truncateMode="single"
+                              style={registerStyles.loginButtonText}
+                            >
+                              {loading ? t("verifying") : t("submit")}
+                            </ResponsiveText>
+                          </LinearGradient>
+                        </TouchableOpacity>
+
+                        {/* Back Button */}
+                        <TouchableOpacity
+                          style={[
+                            registerStyles.backButton,
+                            { alignSelf: "center" },
+                          ]}
+                          onPress={handleBackButton}
+                        >
+                          <Ionicons
+                            name="arrow-back"
+                            size={isSmallScreen ? 18 : 20}
+                            color={theme.colors.primary}
+                          />
+                          <ResponsiveText
+                            variant="caption"
+                            size="sm"
+                            color={theme.colors.primary}
+                            align="center"
+                            truncateMode="double"
+                            inRow={true}
+                            style={registerStyles.backButtonText}
+                          >
+                            {t("back")}
+                          </ResponsiveText>
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
-                </Pressable>
-              </ScrollView>
-            </KeyboardAvoidingView>
-            {!isKeyboardVisible && (
-              <TouchableOpacity
-                onPress={() => Linking.openURL("https://nexoo.ai")}
-                style={{
-                  alignItems: "center",
-                  justifyContent: "center",
-                  position: "absolute",
-                  bottom: insets.bottom + 10,
-                  left: 0,
-                  right: 0,
-                  zIndex: 10,
-                }}
-              >
-                <Text style={{
-                  fontSize: 12,
-                  color: "rgba(0, 0, 0, 0.4)",
-                  fontWeight: "500",
-                  textDecorationLine: "underline",
-                }}>
-                  Powered by {theme.constants.providerName}
-                </Text>
-              </TouchableOpacity>
-            )}
+                </View>
+              </Pressable>
+            </ScrollView>
+          </KeyboardAvoidingView>
+          {!isKeyboardVisible && (
+            <TouchableOpacity
+              onPress={() => Linking.openURL("https://nexoo.ai")}
+              style={{
+                alignItems: "center",
+                justifyContent: "center",
+                position: "absolute",
+                bottom: insets.bottom + 10,
+                left: 0,
+                right: 0,
+                zIndex: 10,
+              }}
+            >
+              <Text style={{
+                fontSize: 12,
+                color: "rgba(0, 0, 0, 0.4)",
+                fontWeight: "500",
+                textDecorationLine: "underline",
+              }}>
+                Powered by {theme.constants.providerName}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {/* Invalid Mobile Modal */}
           <InvalidMobileModal

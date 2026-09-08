@@ -8,16 +8,13 @@ import { logger } from '@/utils/logger';
  */
 export const getFullImageUrl = (path: string): string => {
   if (!path) {
-    logger.log("⚠️ getFullImageUrl: Empty path provided");
     return "";
   }
   if (path.startsWith("http")) {
-    logger.log("🌐 getFullImageUrl: Already full URL:", path);
     return path;
   }
   // Remove trailing slash from baseUrl and leading slash from path
   const fullUrl = `${theme.baseUrl.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
-  logger.log("🔗 getFullImageUrl: Generated URL:", fullUrl, "from path:", path);
   return fullUrl;
 };
 

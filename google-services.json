@@ -7,9 +7,85 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:932187013222:android:156e50b2915011464ceda7",
+        "android_client_info": {
+          "package_name": "com.nexooai.dcjewellery"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:932187013222:android:1fe3a69e1ae0cfeb4ceda7",
+        "android_client_info": {
+          "package_name": "com.nexooai.kanisaajewellerydigigoldsavings"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:932187013222:android:5a98e96475e8bdc74ceda7",
+        "android_client_info": {
+          "package_name": "com.nexooai.srimurugangoldhouse"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:932187013222:android:10e8f8dc306a43ac4ceda7",
         "android_client_info": {
           "package_name": "com.nexooai.srithangathamarai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:932187013222:android:52009e7fdc7a6c124ceda7",
+        "android_client_info": {
+          "package_name": "com.nexooai.sureshfashionjewellery"
         }
       },
       "oauth_client": [],

@@ -545,19 +545,51 @@ import { useMemo } from 'react';
 
 export const getAppConfig = () => {
   const storeConfig = useGlobalStore.getState().appConfig;
+  const cachedVisibility = useGlobalStore.getState().cachedVisibility?.data;
   const themeMode = useGlobalStore.getState().themeMode;
   const basePalette = themeMode === 'dark' ? darkPalette : lightPalette;
-  
+
+  // Dynamic overrides from backend /app-visible API if present
+  const dynamicDashboard =
+    cachedVisibility?.enableDashboard === 1 || cachedVisibility?.showDashboard === 1
+      ? true
+      : cachedVisibility?.enableDashboard === 0 || cachedVisibility?.showDashboard === 0
+      ? false
+      : undefined;
+
+  const dynamicHomeVersion =
+    cachedVisibility?.homeVersion
+      ? cachedVisibility.homeVersion
+      : cachedVisibility?.enableHomeV2 === 1 || cachedVisibility?.showHomeV2 === 1
+      ? "v2"
+      : cachedVisibility?.enableHomeV2 === 0 || cachedVisibility?.showHomeV2 === 0
+      ? "v1"
+      : undefined;
+
+  const dynamicEnableHomeV2 =
+    cachedVisibility?.enableHomeV2 === 1 || cachedVisibility?.showHomeV2 === 1
+      ? true
+      : cachedVisibility?.enableHomeV2 === 0 || cachedVisibility?.showHomeV2 === 0
+      ? false
+      : undefined;
+
+  const mergedConstants = {
+    ...theme.constants,
+    ...(storeConfig?.brand || {}),
+    ...(storeConfig?.features || {}),
+    ...(dynamicDashboard !== undefined ? { enableDashboard: dynamicDashboard } : {}),
+    ...(dynamicHomeVersion !== undefined ? { homeVersion: dynamicHomeVersion } : {}),
+    ...(dynamicEnableHomeV2 !== undefined ? { enableHomeV2: dynamicEnableHomeV2 } : {}),
+  };
+
   if (storeConfig) {
     const colors = createThemeColors(basePalette, storeConfig.colors);
     return {
       ...theme,
       colors,
-      constants: {
-        ...theme.constants,
-        ...storeConfig.brand,
-        ...storeConfig.features,
-      },
+      constants: mergedConstants,
+      homeVersion: mergedConstants.homeVersion,
+      enableHomeV2: mergedConstants.enableHomeV2,
       gradients: {
         ...basePalette,
         ...storeConfig.gradients,
@@ -569,25 +601,60 @@ export const getAppConfig = () => {
   return {
     ...theme,
     colors: createThemeColors(basePalette),
+    constants: mergedConstants,
+    homeVersion: mergedConstants.homeVersion,
+    enableHomeV2: mergedConstants.enableHomeV2,
   };
 };
 
 // Dynamic hook (reactive to store changes)
 export const useAppTheme = () => {
   const appConfig = useGlobalStore((state) => state.appConfig);
+  const cachedVisibility = useGlobalStore((state) => state.cachedVisibility?.data);
   const themeMode = useGlobalStore((state) => state.themeMode);
-  
+
   return useMemo(() => {
     const basePalette = themeMode === 'dark' ? darkPalette : lightPalette;
+
+    const dynamicDashboard =
+      cachedVisibility?.enableDashboard === 1 || cachedVisibility?.showDashboard === 1
+        ? true
+        : cachedVisibility?.enableDashboard === 0 || cachedVisibility?.showDashboard === 0
+        ? false
+        : undefined;
+
+    const dynamicHomeVersion =
+      cachedVisibility?.homeVersion
+        ? cachedVisibility.homeVersion
+        : cachedVisibility?.enableHomeV2 === 1 || cachedVisibility?.showHomeV2 === 1
+        ? "v2"
+        : cachedVisibility?.enableHomeV2 === 0 || cachedVisibility?.showHomeV2 === 0
+        ? "v1"
+        : undefined;
+
+    const dynamicEnableHomeV2 =
+      cachedVisibility?.enableHomeV2 === 1 || cachedVisibility?.showHomeV2 === 1
+        ? true
+        : cachedVisibility?.enableHomeV2 === 0 || cachedVisibility?.showHomeV2 === 0
+        ? false
+        : undefined;
+
+    const mergedConstants = {
+      ...theme.constants,
+      ...(appConfig?.brand || {}),
+      ...(appConfig?.features || {}),
+      ...(dynamicDashboard !== undefined ? { enableDashboard: dynamicDashboard } : {}),
+      ...(dynamicHomeVersion !== undefined ? { homeVersion: dynamicHomeVersion } : {}),
+      ...(dynamicEnableHomeV2 !== undefined ? { enableHomeV2: dynamicEnableHomeV2 } : {}),
+    };
+
     if (appConfig) {
       return {
         ...theme,
         colors: createThemeColors(basePalette, appConfig.colors),
-        constants: {
-          ...theme.constants,
-          ...appConfig.brand,
-          ...appConfig.features,
-        },
+        constants: mergedConstants,
+        homeVersion: mergedConstants.homeVersion,
+        enableHomeV2: mergedConstants.enableHomeV2,
         gradients: {
           ...basePalette,
           ...appConfig.gradients,
@@ -599,6 +666,9 @@ export const useAppTheme = () => {
     return {
       ...theme,
       colors: createThemeColors(basePalette),
+      constants: mergedConstants,
+      homeVersion: mergedConstants.homeVersion,
+      enableHomeV2: mergedConstants.enableHomeV2,
     };
-  }, [appConfig, themeMode]);
+  }, [appConfig, cachedVisibility, themeMode]);
 };

@@ -124,10 +124,10 @@ const createThemeColors = (basePalette, overrides = {}) => {
 };
 
 const lightPalette = createThemeColors({
-  primary: "#0b162c",
-  secondary: "#d4af37",
+  primary: themeConfig.primaryColor || "#003c28",
+  secondary: "#d7b96e",
   tertiary: "#F2B8C6",
-  quaternary: "#F2E6D2",
+  quaternary: "#F8F5EC",
   bgBlackHeavy: "rgba(0, 0, 0, 0.85)",
   bgBlackMedium: "rgba(0, 0, 0, 0.5)",
   background: "#fafafa",
@@ -135,7 +135,7 @@ const lightPalette = createThemeColors({
   backgroundTertiary: "#f3f4f6",
   textPrimary: "#ffffff",
   textSecondary: "#1e293b",
-  textDark: "#0b162c",
+  textDark: themeConfig.primaryColor || "#003c28",
   textLight: "#ffffff",
   textGrey: "#64748b",
   textDarkGrey: "#1e293b",
@@ -153,14 +153,14 @@ const lightPalette = createThemeColors({
   white: "#ffffff",
   black: "#000000",
   transparent: "transparent",
-  gradientPrimary: ["#0b162c", "#16315c", "#d4af37"],
-  gradientPrimaryDark: ["#0b162c", "#081121", "#020408"],
+  gradientPrimary: [themeConfig.primaryColor || "#003c28", "#005539", "#d7b96e"],
+  gradientPrimaryDark: [themeConfig.primaryColor || "#003c28", "#002418", "#00150e"],
   gradientSuccess: ["#10b981", "#059669", "#047857"],
-  gradientGold: ["#d4af37", "#f4c961"],
+  gradientGold: ["#d7b96e", "#faeba0"],
   gradientRed: ["#ef4444", "#dc2626"],
   gradientBlue: ["#1e293b", "#334155", "#475569"],
   gradientSilver: ["#cbd5e1", "#94a3b8", "#64748b"],
-  support_container: ["#0b162c", "#16315c", "#1e3a6c"],
+  support_container: [themeConfig.primaryColor || "#003c28", "#005539", "#002418"],
   text: {
     primary: "#ffffff",
     secondary: "#1e293b",
@@ -417,8 +417,8 @@ const theme = {
     // Intro screen images
     intro: {
       intro1: "../../assets/images/intro_1.png",
-      intro2: "../../assets/images/intro_2.png",
-      intro3: "../../assets/images/intro_3.png",
+      intro2: "../../assets/images/intro_1.png",
+      intro3: "../../assets/images/intro_1.png",
     },
 
     // Error and utility images
@@ -462,7 +462,7 @@ const theme = {
   },
 
   constants: {
-    customerName: themeConfig.customerName || "Sri Thanga Thamarai",
+    customerName: themeConfig.customerName || "Suresh Fashion Jewellery",
     address: themeConfig.address || "2/59, Pacharisikara Street, Khansa Mettu Street, Madurai - 625001",
     mobile: themeConfig.mobile || "+919876543210",
     whatsapp: themeConfig.whatsapp || "+919876543210",
@@ -472,9 +472,13 @@ const theme = {
     longitude: themeConfig.longitude || 78.1192,
     foundationYear: themeConfig.foundationYear || 1995,
     enableDashboard: themeConfig.enableDashboard !== undefined ? themeConfig.enableDashboard : false,
+    homeVersion: themeConfig.homeVersion || "v2",
+    enableHomeV2: themeConfig.enableHomeV2 !== undefined ? themeConfig.enableHomeV2 : true,
     providerName: "Agnisofterp",
     providerUrl: "https://agnisofterp.com/",
   },
+  homeVersion: themeConfig.homeVersion || "v2",
+  enableHomeV2: themeConfig.enableHomeV2 !== undefined ? themeConfig.enableHomeV2 : true,
   baseUrl: themeConfig.baseUrl || "https://api.srithangathamarai.com",
   youtubeUrl: themeConfig.youtubeUrl || "https://youtu.be/8RAhdn5b9Bw",
 };

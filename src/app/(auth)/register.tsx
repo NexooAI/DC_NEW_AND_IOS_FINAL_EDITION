@@ -128,14 +128,14 @@ const axiosFetch = async (url: string, options: any = {}, retries = 2) => {
   const method = (options.method || 'GET').toLowerCase();
   const headers = options.headers || {};
   const body = options.body ? JSON.parse(options.body) : undefined;
-  
+
   // Trigger spy for Jest tests if running in test environment
   if (process.env.NODE_ENV === 'test') {
     try {
       global.fetch(url, options);
-    } catch {}
+    } catch { }
   }
-  
+
   const source = axios.CancelToken.source();
   if (options.signal) {
     options.signal.addEventListener('abort', () => {
@@ -191,7 +191,7 @@ const axiosFetch = async (url: string, options: any = {}, retries = 2) => {
       }
     }
   }
-  
+
   throw lastError || new Error('Request failed');
 };
 
@@ -507,7 +507,7 @@ export default function Register() {
                 borderColor: 'rgba(255, 215, 0, 0.25)',
               }}>
                 <Image
-                  source={require("../../../assets/images/intro_2.png")}
+                  source={require("../../../assets/images/intro_1.png")}
                   style={{ width: '100%', height: '100%' }}
                   resizeMode="cover"
                 />
@@ -522,7 +522,7 @@ export default function Register() {
                 borderColor: 'rgba(255, 215, 0, 0.25)',
               }}>
                 <Image
-                  source={require("../../../assets/images/intro_3.png")}
+                  source={require("../../../assets/images/intro_1.png")}
                   style={{ width: '100%', height: '100%' }}
                   resizeMode="cover"
                 />
@@ -655,128 +655,128 @@ export default function Register() {
                           </TouchableOpacity>
                         </View>
                       </>
-                      ) : (
-                        <View style={registerStyles.otpContainer}>
-                          <Text style={registerStyles.otpTitle}>
-                            {t("enterOtp")}
-                          </Text>
-                          <Text style={registerStyles.otpSentText}>
-                            {t("otpSentTo")}{" "}
-                            {mobile.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")}
-                          </Text>
+                    ) : (
+                      <View style={registerStyles.otpContainer}>
+                        <Text style={registerStyles.otpTitle}>
+                          {t("enterOtp")}
+                        </Text>
+                        <Text style={registerStyles.otpSentText}>
+                          {t("otpSentTo")}{" "}
+                          {mobile.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")}
+                        </Text>
 
-                          <View style={registerStyles.otpInputsWrapper}>
-                            <View style={registerStyles.otpInputsContainer}>
-                              {pins.map((pin, index) => (
-                                <TextInput
-                                  key={index}
-                                  ref={inputRefs[index]}
-                                  style={registerStyles.otpInput}
-                                  keyboardType="numeric"
-                                  maxLength={1}
-                                  value={pin}
-                                  onChangeText={(text) =>
-                                    handlePinChange(text, index)
-                                  }
-                                  onKeyPress={(e) => handleKeyPress(e, index)}
-                                  secureTextEntry={!showOtp}
-                                  textContentType="oneTimeCode"
-                                  autoComplete="sms-otp"
-                                />
-                              ))}
-                            </View>
-                            <TouchableOpacity
-                              onPress={() => setShowOtp((prev) => !prev)}
-                              style={registerStyles.eyeButton}
-                            >
-                              <Feather
-                                name={showOtp ? "eye-off" : "eye"}
-                                size={24}
-                                color={theme.colors.white}
+                        <View style={registerStyles.otpInputsWrapper}>
+                          <View style={registerStyles.otpInputsContainer}>
+                            {pins.map((pin, index) => (
+                              <TextInput
+                                key={index}
+                                ref={inputRefs[index]}
+                                style={registerStyles.otpInput}
+                                keyboardType="numeric"
+                                maxLength={1}
+                                value={pin}
+                                onChangeText={(text) =>
+                                  handlePinChange(text, index)
+                                }
+                                onKeyPress={(e) => handleKeyPress(e, index)}
+                                secureTextEntry={!showOtp}
+                                textContentType="oneTimeCode"
+                                autoComplete="sms-otp"
                               />
-                            </TouchableOpacity>
+                            ))}
                           </View>
-
-                          {clipboardOtp ? (
-                            <TouchableOpacity
-                              style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                backgroundColor: "rgba(255, 215, 0, 0.15)",
-                                paddingVertical: 6,
-                                paddingHorizontal: 12,
-                                borderRadius: 8,
-                                borderWidth: 1,
-                                borderColor: "rgba(255, 215, 0, 0.35)",
-                                marginTop: 12,
-                                marginBottom: 4,
-                                alignSelf: "center",
-                              }}
-                              onPress={() => {
-                                const digits = clipboardOtp.split("");
-                                setPins(digits);
-                                setClipboardOtp(""); // Clear hint after pasting
-                              }}
-                            >
-                              <Ionicons name="clipboard-outline" size={16} color={theme.colors.secondary} />
-                              <Text
-                                style={{
-                                  fontSize: 13,
-                                  color: "#b8860b",
-                                  marginLeft: 6,
-                                  fontWeight: "600",
-                                }}
-                              >
-                                Tap to paste OTP: {clipboardOtp}
-                              </Text>
-                            </TouchableOpacity>
-                          ) : null}
-
-                          <View style={registerStyles.timerContainer}>
-                            <Ionicons
-                              name="time-outline"
-                              size={20}
+                          <TouchableOpacity
+                            onPress={() => setShowOtp((prev) => !prev)}
+                            style={registerStyles.eyeButton}
+                          >
+                            <Feather
+                              name={showOtp ? "eye-off" : "eye"}
+                              size={24}
                               color={theme.colors.white}
                             />
-                            <Text style={registerStyles.timerText}>
-                              {t("resendIn")} {timer}s
-                            </Text>
-                          </View>
-
-                          {timer === 0 && resendCount > 0 && (
-                            <TouchableOpacity
-                              onPress={handleResendOtp}
-                              style={registerStyles.resendButton}
-                            >
-                              <Text style={registerStyles.resendText}>
-                                {t("resendOTP")} ({resendCount} {t("left")})
-                              </Text>
-                            </TouchableOpacity>
-                          )}
-
-                          <TouchableOpacity
-                            style={[
-                              registerStyles.loginButton,
-                              { borderRadius: 8 },
-                              loading && registerStyles.loginButtonDisabled,
-                            ]}
-                            onPress={handleVerifyOtp}
-                            disabled={loading || pins.includes("")}
-                          >
-                            <LinearGradient
-                              colors={[theme.colors.primary, theme.colors.primary]}
-                              style={[registerStyles.gradientButton, { borderRadius: 8 }]}
-                            >
-                              <Text style={registerStyles.loginButtonText}>
-                                {loading ? t("verifying") : t("verifyOtp")}
-                              </Text>
-                            </LinearGradient>
                           </TouchableOpacity>
                         </View>
-                      )}
-                    </View>
+
+                        {clipboardOtp ? (
+                          <TouchableOpacity
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              backgroundColor: "rgba(255, 215, 0, 0.15)",
+                              paddingVertical: 6,
+                              paddingHorizontal: 12,
+                              borderRadius: 8,
+                              borderWidth: 1,
+                              borderColor: "rgba(255, 215, 0, 0.35)",
+                              marginTop: 12,
+                              marginBottom: 4,
+                              alignSelf: "center",
+                            }}
+                            onPress={() => {
+                              const digits = clipboardOtp.split("");
+                              setPins(digits);
+                              setClipboardOtp(""); // Clear hint after pasting
+                            }}
+                          >
+                            <Ionicons name="clipboard-outline" size={16} color={theme.colors.secondary} />
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: "#b8860b",
+                                marginLeft: 6,
+                                fontWeight: "600",
+                              }}
+                            >
+                              Tap to paste OTP: {clipboardOtp}
+                            </Text>
+                          </TouchableOpacity>
+                        ) : null}
+
+                        <View style={registerStyles.timerContainer}>
+                          <Ionicons
+                            name="time-outline"
+                            size={20}
+                            color={theme.colors.white}
+                          />
+                          <Text style={registerStyles.timerText}>
+                            {t("resendIn")} {timer}s
+                          </Text>
+                        </View>
+
+                        {timer === 0 && resendCount > 0 && (
+                          <TouchableOpacity
+                            onPress={handleResendOtp}
+                            style={registerStyles.resendButton}
+                          >
+                            <Text style={registerStyles.resendText}>
+                              {t("resendOTP")} ({resendCount} {t("left")})
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+
+                        <TouchableOpacity
+                          style={[
+                            registerStyles.loginButton,
+                            { borderRadius: 8 },
+                            loading && registerStyles.loginButtonDisabled,
+                          ]}
+                          onPress={handleVerifyOtp}
+                          disabled={loading || pins.includes("")}
+                        >
+                          <LinearGradient
+                            colors={[theme.colors.primary, theme.colors.primary]}
+                            style={[registerStyles.gradientButton, { borderRadius: 8 }]}
+                          >
+                            <Text style={registerStyles.loginButtonText}>
+                              {loading ? t("verifying") : t("verifyOtp")}
+                            </Text>
+                          </LinearGradient>
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
+                </View>
               </Pressable>
             </ScrollView>
           </KeyboardAvoidingView>

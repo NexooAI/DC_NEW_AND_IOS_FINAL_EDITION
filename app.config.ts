@@ -8,7 +8,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     const bundleIdentifier = themeConfig.bundleIdentifier || "com.nexooai.srithangathamarai";
     const projectId = themeConfig.projectId || "912daab2-d11c-42ff-9072-62ddfb4489c0";
     const owner = themeConfig.owner || "mnvgroups07";
-    const version = isIos ? ((themeConfig as any).iosVersion || "1.0.1") : ((themeConfig as any).androidVersion || "1.0.9");
+    const version = isIos ? ((themeConfig as any).iosVersion || "1.0.0") : ((themeConfig as any).androidVersion || "1.0.0");
 
     return {
         ...config,
@@ -20,12 +20,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         scheme: "acme",
         jsEngine: "hermes",
 
-        icon: themeConfig.icon || "./assets/images/logo_trans.png",
+        icon: themeConfig.icon || "./assets/images/icon.png",
 
         splash: {
             image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
             resizeMode: "contain",
-            backgroundColor: themeConfig.primaryColor,
+            backgroundColor: (themeConfig as any).splashBackgroundColor || themeConfig.primaryColor,
         },
 
         androidStatusBar: {
@@ -37,15 +37,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         android: {
             package: bundleIdentifier,
             googleServicesFile: "./google-services.json",
-            versionCode: 10,
+            versionCode: (themeConfig as any).versionCode || 1,
             adaptiveIcon: {
                 foregroundImage: themeConfig.adaptiveIcon || "./assets/images/adaptive-icon.png",
-                backgroundColor: themeConfig.primaryColor,
+                backgroundColor: (themeConfig as any).adaptiveIconBackgroundColor || themeConfig.primaryColor,
             },
             splash: {
                 image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
                 resizeMode: "contain",
-                backgroundColor: themeConfig.primaryColor,
+                backgroundColor: (themeConfig as any).splashBackgroundColor || themeConfig.primaryColor,
             },
 
             // ✔ Google Maps API
@@ -71,13 +71,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             splash: {
                 image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
                 resizeMode: "contain",
-                backgroundColor: themeConfig.primaryColor,
+                backgroundColor: (themeConfig as any).splashBackgroundColor || themeConfig.primaryColor,
                 tabletImage: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
             },
-            icon: themeConfig.icon || "./assets/images/logo_trans.png",
+            icon: themeConfig.icon || "./assets/images/icon.png",
             bundleIdentifier: bundleIdentifier,
             googleServicesFile: "./GoogleService-Info.plist",
-            buildNumber: "2",
+            buildNumber: (themeConfig as any).buildNumber || "1",
             jsEngine: "hermes",
             config: {
                 googleMapsApiKey: mapsApiKey,

@@ -102,6 +102,7 @@ import { fetchSchemesWithCache, fetchBranchesWithCache } from "@/utils/apiCache"
 import UserInfoCard from "@/components/home/UserInfoCard";
 import AnimatedGoldRate from "@/components/home/AnimatedGoldRate";
 import MySchemesCards from "@/components/home/MySchemesCards";
+import HomePageV2 from "@/components/homeV2/HomePageV2";
 
 // Constants - Using responsive layout hook instead
 const REFRESH_INTERVAL = 15000; // 15 seconds
@@ -2794,6 +2795,45 @@ export default function Home() {
           </View>
         </SafeAreaView>
       </>
+    );
+  }
+
+  // Check whether to show HomePage Version 2 or Version 1
+  // Backend (/app-visible) takes highest priority; falls back to theme config
+  const isHomeV2Active = (() => {
+    if (visibleData?.homeVersion === "v2") return true;
+    if (visibleData?.homeVersion === "v1") return false;
+
+    if (visibleData?.enableHomeV2 === 1 || visibleData?.showHomeV2 === 1) return true;
+    if (visibleData?.enableHomeV2 === 0 || visibleData?.showHomeV2 === 0) return false;
+
+    return (
+      (theme?.constants as any)?.enableHomeV2 === true ||
+      (theme?.constants as any)?.homeVersion === "v2" ||
+      (theme as any)?.homeVersion === "v2" ||
+      (theme as any)?.enableHomeV2 === true ||
+      getAppConfig()?.constants?.enableHomeV2 === true ||
+      (getAppConfig()?.constants as any)?.homeVersion === "v2"
+    );
+  })();
+
+  if (__DEV__) {
+    logger.log("🏠 [Home] Active Home Version:", isHomeV2Active ? "V2 (Luxury)" : "V1 (Legacy)");
+  }
+
+  if (isHomeV2Active) {
+    return (
+      <AuthGuard>
+        <HomePageV2
+          homeData={homeData}
+          collectionsData={collectionsData}
+          sliderImages={sliderImages}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          totalGoldSavings={totalGoldSavings}
+          totalAmount={totalAmount}
+        />
+      </AuthGuard>
     );
   }
 

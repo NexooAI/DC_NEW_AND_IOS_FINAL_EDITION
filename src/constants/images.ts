@@ -5,8 +5,8 @@ export const images = {
     // Intro screen images
     intro: {
         intro1: "../../assets/images/intro_1.png",
-        intro2: "../../assets/images/intro_2.png",
-        intro3: "../../assets/images/intro_3.png",
+        intro2: "../../assets/images/intro_1.png",
+        intro3: "../../assets/images/intro_1.png",
     },
 
     // Background images

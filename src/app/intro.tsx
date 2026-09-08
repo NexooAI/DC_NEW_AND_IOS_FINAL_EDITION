@@ -23,8 +23,8 @@ import { logger } from "@/utils/logger";
 
 // Import images directly - correct path: src/app/intro.tsx -> assets/images/ (2 levels up)
 const intro1 = require("../../assets/images/intro_1.png");
-const intro2 = require("../../assets/images/intro_2.png");
-const intro3 = require("../../assets/images/intro_3.png");
+const intro2 = require("../../assets/images/intro_1.png");
+const intro3 = require("../../assets/images/intro_1.png");
 
 // Static data - will be replaced with API data
 const staticSlides = [
@@ -247,62 +247,64 @@ export default function Intro() {
   );
 }
 
-function getStyles(theme: any) { return StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.black,
-  },
-  loadingContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  slide: {
-    height: "100%",
-  },
-  backgroundImage: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-  },
-  overlay: {
-    flex: 1,
-  },
-  footer: {
-    position: "absolute",
-    bottom: 50,
-    width: "100%",
-  },
-  indicatorContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-  indicator: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: theme.colors.secondary,
-    marginHorizontal: 5,
-  },
-  buttonContainer: {
-    paddingHorizontal: 20,
-  },
-  button: {
-    backgroundColor: "transparent",
-    borderWidth: 1.5,
-    borderColor: theme.colors.secondary || "#d4af37",
-    paddingVertical: 14,
-    borderRadius: 25,
-    alignItems: "center",
-  },
-  getStartedButton: {
-    backgroundColor: "transparent",
-    borderColor: theme.colors.secondary || "#d4af37",
-  },
-  buttonText: {
-    color: theme.colors.white || "#ffffff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-}) }
+function getStyles(theme: any) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.black,
+    },
+    loadingContainer: {
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    slide: {
+      height: "100%",
+    },
+    backgroundImage: {
+      flex: 1,
+      width: "100%",
+      height: "100%",
+    },
+    overlay: {
+      flex: 1,
+    },
+    footer: {
+      position: "absolute",
+      bottom: 50,
+      width: "100%",
+    },
+    indicatorContainer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      marginBottom: 20,
+    },
+    indicator: {
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.colors.secondary,
+      marginHorizontal: 5,
+    },
+    buttonContainer: {
+      paddingHorizontal: 20,
+    },
+    button: {
+      backgroundColor: "transparent",
+      borderWidth: 1.5,
+      borderColor: theme.colors.secondary || "#d4af37",
+      paddingVertical: 14,
+      borderRadius: 25,
+      alignItems: "center",
+    },
+    getStartedButton: {
+      backgroundColor: "transparent",
+      borderColor: theme.colors.secondary || "#d4af37",
+    },
+    buttonText: {
+      color: theme.colors.white || "#ffffff",
+      fontSize: 18,
+      fontWeight: "bold",
+    },
+  })
+}
 
 var styles = getStyles(theme);;

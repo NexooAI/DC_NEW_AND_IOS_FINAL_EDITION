@@ -45,6 +45,13 @@ export interface AppVisibilityData {
     showTabQuickJoin?: number;
     showTabRewards?: number;
     showTabProfile?: number;
+    // Version 2 Home Screen & Dashboard controls
+    showHomeV2?: number;
+    enableHomeV2?: number;
+    homeVersion?: string;
+    showQuickActions?: number;
+    enableDashboard?: number;
+    showDashboard?: number;
     // Side Menu Drawer
     showSideReferEarn?: number;
     showSideTickets?: number;
