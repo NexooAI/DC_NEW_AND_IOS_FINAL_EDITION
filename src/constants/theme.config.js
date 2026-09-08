@@ -1,16 +1,17 @@
 
 const themeConfig = {
-  customerName: "Suresh Fashion Jewellery",
-  primaryColor: "#003c28",
+  customerName: "Sri Ganapathy Jewel City",
+  primaryColor: "#5B0E2D",
+  secondaryColor: "#D4AF37",
   splashBackgroundColor: "#ffffff",
   adaptiveIconBackgroundColor: "#ffffff",
   splashLogo: "./assets/images/splashscreen_logo.png",
   icon: "./assets/images/icon.png",
   adaptiveIcon: "./assets/images/adaptive-icon.png",
-  bundleIdentifier: "com.nexooai.sureshfashionjewellery",
+  bundleIdentifier: "com.nexooai.sriganapathyjewelcity",
   projectId: "b4458122-cebb-42a2-bacb-e0e0d9f72766",
   owner: "mnvgroups07",
-  slug: "suresh-fashion-jewellery-digi-gold",
+  slug: "sri-ganapathy-jewel-city",
   enableDashboard: false,
   homeVersion: "v2",
   enableHomeV2: true,
@@ -18,8 +19,18 @@ const themeConfig = {
   iosVersion: "1.0.0",
   versionCode: 1,
   buildNumber: "1",
-  playStoreUrl: "https://play.google.com/store/apps/details?id=com.nexooai.sureshfashionjewellery&hl=en_IN",
-  appStoreUrl: "https://apps.apple.com/us/app/suresh-fashion-jewellery/id6755081937",
+  address: "M245+HGH, Kadai veethi, Puliampatti, Pollachi, Tamil Nadu 642001",
+  mobile: "+919842230015",
+  whatsapp: "+919842230015",
+  email: "info@ganapathijewelcity.com",
+  website: "https://ganapathijewelcity.com",
+  latitude: 10.6582,
+  longitude: 77.0084,
+  foundationYear: 1998,
+  baseUrl: "https://api.sriganapathijewelcity.com",
+  playStoreUrl: "https://play.google.com/store/apps/details?id=com.nexooai.sriganapathyjewelcity&hl=en_IN",
+  appStoreUrl: "https://apps.apple.com/app/sri-ganapathy-jewel-city/id0000000000",
 };
 
 module.exports = { themeConfig };
+

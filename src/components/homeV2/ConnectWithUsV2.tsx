@@ -66,7 +66,8 @@ export const ConnectWithUsV2: React.FC<ConnectWithUsV2Props> = ({
       (theme.constants as any)?.mobile ||
       "919876543210";
     const cleanNumber = String(rawNumber).replace(/[^\d]/g, "");
-    const text = encodeURIComponent("Hello Suresh Fashion Jewellery, I would like to enquire about your chit schemes.");
+    const customerName = theme.constants.customerName || "Sri Ganapathy Jewel City";
+    const text = encodeURIComponent(`Hello ${customerName}, I would like to enquire about your chit schemes.`);
     const url = `whatsapp://send?phone=${cleanNumber}&text=${text}`;
     const webUrl = `https://wa.me/${cleanNumber}?text=${text}`;
 

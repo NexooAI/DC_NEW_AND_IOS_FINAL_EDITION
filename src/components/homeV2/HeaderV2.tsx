@@ -61,8 +61,8 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
           resizeMode="contain"
         />
         <View style={styles.brandTextContainer}>
-          <Text style={styles.brandTitle} numberOfLines={1}>
-            {appConfig.constants.customerName || "SURESH FASHION JEWELLERY"}
+          <Text style={[styles.brandTitle, { color: theme.colors.primary }]} numberOfLines={1}>
+            {appConfig.constants.customerName || "SRI GANAPATHY JEWEL CITY"}
           </Text>
           <Text style={styles.brandTagline}>Generations of Trust</Text>
         </View>
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   brandTitle: {
     fontSize: moderateScale(12.5),
     fontWeight: "800",
-    color: "#003C28", // Rich emerald brand primary
+    color: "#5B0E2D", // Sri Ganapathy Jewel City primary
     letterSpacing: 0.3,
     textTransform: "uppercase",
   },
