@@ -9,7 +9,7 @@ const themeConfig = {
   icon: "./assets/images/icon.png",
   adaptiveIcon: "./assets/images/adaptive-icon.png",
   bundleIdentifier: "com.nexooai.sriganapathyjewelcity",
-  projectId: "b4458122-cebb-42a2-bacb-e0e0d9f72766",
+  projectId: "dd876f0b-7798-48b3-b282-ea486ad8bfd4",
   owner: "mnvgroups07",
   slug: "sri-ganapathy-jewel-city",
   enableDashboard: false,
