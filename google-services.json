@@ -45,6 +45,25 @@
     },
     {
       "client_info": {
+        "mobilesdk_app_id": "1:932187013222:android:c91a0026689659914ceda7",
+        "android_client_info": {
+          "package_name": "com.nexooai.sriganapathyjewelcity"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:932187013222:android:5a98e96475e8bdc74ceda7",
         "android_client_info": {
           "package_name": "com.nexooai.srimurugangoldhouse"
