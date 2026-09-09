@@ -479,7 +479,7 @@ const theme = {
   },
   homeVersion: themeConfig.homeVersion || "v2",
   enableHomeV2: themeConfig.enableHomeV2 !== undefined ? themeConfig.enableHomeV2 : true,
-  baseUrl: themeConfig.baseUrl || "https://api.srithangathamarai.com",
+  baseUrl: themeConfig.baseUrl || themeConfig.baseURL || "https://app.api.mnvgroups.in",
   youtubeUrl: themeConfig.youtubeUrl || "https://youtu.be/8RAhdn5b9Bw",
 };
 

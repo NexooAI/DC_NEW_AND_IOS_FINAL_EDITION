@@ -11,6 +11,7 @@ const themeConfig = {
   projectId: "b4458122-cebb-42a2-bacb-e0e0d9f72766",
   owner: "mnvgroups07",
   slug: "suresh-fashion-jewellery-digi-gold",
+  baseURL: "https://app.api.mnvgroups.in",
   enableDashboard: false,
   homeVersion: "v2",
   enableHomeV2: true,
