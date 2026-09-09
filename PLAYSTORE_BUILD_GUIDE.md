@@ -107,3 +107,38 @@ Website: https://ganapathijewelcity.com
 * **Target Audience:** Age 18 and above
 * **App Access:** All functionality is available without special access (Login via Mobile OTP)
 * **Privacy Policy URL:** `https://sriganapathijewelcity.com/policies/#privacy`
+
+---
+
+## 📢 5. Google Play Console Release Notes (பதிப்பு குறிப்புகள்)
+
+Google Play Console-ல் பில்டை வெளியிடும் போது **"Release Notes"** (அதிகபட்சம் 500 எழுத்துக்கள்) கேட்கப்படும். அதற்கான உரை கீழே:
+
+### 🇺🇸 English (`en-IN` / `en-US` - Default)
+```text
+Welcome to Sri Ganapathy Jewel City!
+
+What's New in Version 1.0.0:
+• Live Gold & Silver Rates: Real-time 22K & 24K market rate updates.
+• Monthly Gold Savings Schemes: Flexible chit schemes with special maturity bonus.
+• Digital Gold Passbook: Track your accumulated gold weight and payments.
+• 100% BIS Hallmarked: Pure gold savings backed by certified physical gold.
+• Instant & Secure Payments: Pay installments via UPI, GPay, PhonePe & Cards.
+• Showroom Redemption: Redeem gold weight easily at our Pollachi showroom.
+```
+
+---
+
+### 🇮🇳 Tamil (`ta-IN`)
+```text
+ஸ்ரீ கணபதி ஜுவல் சிட்டி ஆப்பிற்கு உங்களை அன்போடு வரவேற்கிறோம்!
+
+பதிப்பு 1.0.0 சிறப்பம்சங்கள்:
+• நேரலை தங்கம் & வெள்ளி விலை நிலவரம் (Live 22K/24K Rates).
+• மாதாந்திர தங்க சேமிப்பு திட்டங்கள் & முதிர்வு போனஸ் சலுகைகள்.
+• டிஜிட்டல் தங்க பாஸ்புக் & சேமிப்பு விவரங்கள்.
+• 100% BIS ஹால்மார்க் சான்றளிக்கப்பட்ட தங்க சேமிப்பு.
+• UPI, GPay, PhonePe மூலம் பாதுகாப்பான ஆன்லைன் பேமெண்ட்.
+• சேமித்த தங்கத்தை பொள்ளாச்சி ஷோரூமில் நகைகளாக மாற்றும் வசதி.
+```
+
