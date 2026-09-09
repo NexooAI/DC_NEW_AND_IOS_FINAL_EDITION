@@ -106,4 +106,4 @@ Website: https://ganapathijewelcity.com
 * **Content Rating:** Everyone (3+)
 * **Target Audience:** Age 18 and above
 * **App Access:** All functionality is available without special access (Login via Mobile OTP)
-* **Privacy Policy URL:** `https://ganapathijewelcity.com/privacy-policy`
+* **Privacy Policy URL:** `https://sriganapathijewelcity.com/policies/#privacy`
