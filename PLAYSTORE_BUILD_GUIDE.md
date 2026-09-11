@@ -1,5 +1,5 @@
 # 🚀 Google Play Store Release & Build Guide
-## Sri Ganapathy Jewel City (ஸ்ரீ கணபதி ஜுவல் சிட்டி - Pollachi)
+## Kanisaa Jewellery (கனிசா ஜூவல்லரி - Thrissur)
 
 ---
 
@@ -9,13 +9,13 @@
 | :--- | :--- | :--- | :--- |
 | **Expo Doctor** | `npx expo-doctor` | 🟢 PASSED | **18/18 checks passed (0 issues)** |
 | **TypeScript Check** | `npx tsc --noEmit --skipLibCheck` | 🟢 PASSED | **0 type errors (Code 0)** |
-| **App Version** | In `theme.config.js` | 🟢 READY | **Version `1.0.0`** (Reset cleanly) |
-| **Version Code** | In `theme.config.js` | 🟢 READY | **`versionCode: 1`** (First Store Release) |
-| **Package Name** | In `app.config.ts` | 🟢 READY | **`com.nexooai.sriganapathyjewelcity`** |
-| **EAS Slug** | In `app.config.ts` | 🟢 READY | **`sriganapathyjewelcity`** |
-| **EAS Project ID** | In `app.config.ts` | 🟢 READY | **`dd876f0b-7798-48b3-b282-ea486ad8bfd4`** |
-| **EAS Owner** | In `app.config.ts` | 🟢 READY | **`nexooai`** |
-| **Google Services** | `google-services.json` | 🟢 READY | Validated with `com.nexooai.sriganapathyjewelcity` block |
+| **App Version** | In `theme.config.js` | 🟢 READY | **Version `1.0.0`** |
+| **Version Code** | In `theme.config.js` | 🟢 READY | **`versionCode: 1`** |
+| **Package Name** | In `app.config.ts` | 🟢 READY | **`com.nexooai.kanisaajewellerydigigoldsavings`** |
+| **EAS Slug** | In `app.config.ts` | 🟢 READY | **`kanisaajewellerydigigold`** |
+| **EAS Project ID** | In `app.config.ts` | 🟢 READY | **`aeef6800-eac4-4ba3-b14d-a09d7342f537`** |
+| **EAS Owner** | In `app.config.ts` | 🟢 READY | **`mnvgroups07`** |
+| **Google Services** | `google-services.json` | 🟢 READY | Validated with `com.nexooai.kanisaajewellerydigigoldsavings` client |
 
 ---
 
@@ -41,16 +41,17 @@ eas build --platform android --profile preview
 
 ---
 
-## 🎨 3. Play Store Graphic Assets (அனைத்தும் தயார்!)
+## 🎨 3. Play Store Graphic Assets
 
-அனைத்து கிராஃபிக் பைல்களும் `assets/playstore/` ஃபோல்டரில் சரியான அளவுகளில் உருவாக்கப்பட்டுள்ளன:
+அனைத்து கிராஃபிக் பைல்களும் `playstore_assets/` மற்றும் `assets/playstore/` ஃபோல்டரில் சரியான அளவுகளில் உள்ளன:
 
-### Files Directory: `assets/playstore/`
-1. **App Icon:** `app_icon_512.png` (`512 x 512 px`, PNG 32-bit, < 1MB)
+### Files Directory: `assets/playstore/` & `playstore_assets/`
+1. **App Icon:** `app_icon.png` / `app_icon_512.png` (`512 x 512 px`, PNG 32-bit, < 1MB)
 2. **Feature Graphic Banner:** `feature_graphic.png` (`1024 x 500 px`, RGB, No transparency)
-3. **Screenshot 1:** `screenshot_1_rates.png` (`1080 x 1920 px` - Live 22K/24K Rates & Quick Buy)
-4. **Screenshot 2:** `screenshot_2_schemes.png` (`1080 x 1920 px` - Monthly Gold Schemes & Bonus)
-5. **Screenshot 3:** `screenshot_3_locker.png` (`1080 x 1920 px` - Digital Gold Passbook & Pollachi Showroom Redemption)
+3. **Screenshots:**
+   - `screenshot_1_welcome.png`
+   - `screenshot_2_dashboard.png`
+   - `screenshot_3_schemes.png`
 
 ---
 
@@ -58,87 +59,103 @@ eas build --platform android --profile preview
 
 ### 📌 App Title (பெயர்)
 ```text
-Sri Ganapathy Jewel City
+Kanisaa Jewellery Digi Gold
 ```
-*(24 / 30 எழுத்துக்கள்)*
+*(27 / 30 எழுத்துக்கள்)*
 
 ---
 
 ### 📌 Short Description (குறு விபரம்)
 ```text
-Save in 100% BIS Hallmarked DigiGold & Monthly Chit Schemes easily in Pollachi.
+Save in Digital Gold, pay scheme installments, and book gold advance securely.
 ```
-*(78 / 80 எழுத்துக்கள்)*
+*(79 / 80 எழுத்துக்கள்)*
 
 ---
 
 ### 📌 Full Description (முழு விபரம்)
 ```text
-Welcome to the official mobile application of Sri Ganapathy Jewel City (ஸ்ரீ கணபதி ஜுவல் சிட்டி), Pollachi – Your trusted destination for exquisite gold, diamond, and silver jewellery.
+Secure your future with gold! The Kanisaa Jewellery Digital Gold Savings app is your premium companion for smart, flexible, and transparent gold accumulation. Brought to you by Kanisaa Jewellery, Thrissur, Kerala, this app enables you to save, track, and build your gold savings from the comfort of your home.
 
-Our DigiGold and Monthly Gold Savings application empowers you to save and accumulate 100% BIS Hallmarked certified 22K & 24K gold conveniently from anywhere. Whether you want to invest small amounts regularly or join our exclusive monthly gold schemes, Sri Ganapathy Jewel City provides a transparent, secure, and rewarding gold savings experience.
+Key Features:
 
-✨ Key Features of Sri Ganapathy Jewel City App:
+✨ Digital Gold Savings Schemes
+Start accumulating pure gold in small fractions or monthly installments. Choose the plan that fits your financial goals:
+• Save Gold: Save in terms of gold weight (grams).
+• Save as Money: Save in terms of monetary value.
 
-• Real-Time Market Gold Rates: Instant daily updates for 22K gold, 24K pure gold, and fine silver rates in Pollachi.
-• Flexible Gold Chit Schemes: Join monthly gold savings plans with ease. Accumulate gold weight month after month with special bonus benefits upon completion.
-• Digital Gold Passbook & Locker: Access your complete payment history, past transactions, weight accumulation, and live gold portfolio value anytime.
-• 100% Certified & Insured: Your savings are backed by certified physical 24K hallmarked gold stored safely in high-security insured vault lockers.
-• Seamless Online Payments: Pay your monthly scheme dues in seconds using UPI, Google Pay, PhonePe, Paytm, Debit/Credit Cards, or Net Banking.
-• Easy In-Store Redemption: Redeem your saved gold weight against breathtaking gold jewellery, bridal ornaments, coins, or diamond articles directly at our Pollachi showroom.
-• Festival & Auspicious Offers: Stay notified of special Akshaya Tritiya, Diwali, and festive gold booking offers with zero making charge benefits.
+🔒 Gold Advance Booking
+Plan for your wedding or special occasions by booking gold in advance. Lock in gold prices to shield yourself from market fluctuations and redeem at the best rate.
 
-Begin your smart gold savings journey with Sri Ganapathy Jewel City today!
+💳 Quick & Secure Online Payments
+Pay your monthly scheme installments instantly. The app supports secure, seamless integrations with:
+• UPI (Google Pay, PhonePe, Paytm, BHIM)
+• Credit and Debit Cards (Visa, Mastercard, RuPay)
+• Netbanking and Secure Bank Gateways
+
+📈 Real-Time Gold Rate & Weight Tracker
+Keep track of daily live gold rates. Monitor your accumulated gold weight, payment history, and scheme status with absolute transparency.
+
+🎁 Lucky Draw & Rewards
+Participate in exciting customer lucky draws, earn rewards, and track your contest tickets directly in the app.
+
+🔄 Old Gold Exchange Setup
+Easily register or inquire about exchanging your old gold jewellery for new schemes and stunning designs at Kanisaa Jewellery.
+
+🛡️ Industry-Standard Security
+Your account is fully protected. Securely login using your personalized MPIN or Biometrics (Face ID/Touch ID).
+
+📞 24/7 Customer Support
+Need assistance? Raise support tickets or contact us directly via WhatsApp/Call in just a tap.
+
+Download the Kanisaa Jewellery app today and start your journey towards smart gold savings!
 
 Showroom Address & Customer Support:
-Sri Ganapathy Jewel City,
-M245+HGH, Kadai Veethi, Puliampatti, Pollachi, Tamil Nadu 642001.
-Phone / WhatsApp: +91 98422 30015
-Email: info@ganapathijewelcity.com
-Website: https://ganapathijewelcity.com
+Kanisaa Jewellery,
+Road Fathima Nagar, Mission Quarters, Anchery, Thrissur, Kerala 680005.
+Phone / WhatsApp: +91 90618 03999
+Email: dcjewellerstcr@gmail.com
+Website: https://www.dcjewellers.org
 ```
 
 ---
 
 ### 📌 Store Categorization & Setup Details
 * **Application Category:** Shopping / Finance
-* **Tags:** Jewellery, Gold Scheme, DigiGold, Savings, Gold Rate, Pollachi
+* **Tags:** Jewellery, Gold Scheme, DigiGold, Savings, Gold Rate, Thrissur
 * **Content Rating:** Everyone (3+)
 * **Target Audience:** Age 18 and above
 * **App Access:** All functionality is available without special access (Login via Mobile OTP)
-* **Privacy Policy URL:** `https://sriganapathijewelcity.com/policies/#privacy`
+* **Privacy Policy URL:** `https://api.prod.kanisaajewellery.com/policies/#privacy`
 
 ---
 
 ## 📢 5. Google Play Console Release Notes (பதிப்பு குறிப்புகள்)
 
-Google Play Console-ல் பில்டை வெளியிடும் போது **"Release Notes"** (அதிகபட்சம் 500 எழுத்துக்கள்) கேட்கப்படும். அதற்கான உரை கீழே:
-
 ### 🇺🇸 English (`en-IN` / `en-US` - Default)
 ```text
-Welcome to Sri Ganapathy Jewel City!
+Welcome to Kanisaa Jewellery Digi Gold!
 
 What's New in Version 1.0.0:
 • Live Gold & Silver Rates: Real-time 22K & 24K market rate updates.
-• Monthly Gold Savings Schemes: Flexible chit schemes with special maturity bonus.
+• Monthly Gold Savings Schemes: Flexible chit schemes with special bonus benefits.
 • Digital Gold Passbook: Track your accumulated gold weight and payments.
-• 100% BIS Hallmarked: Pure gold savings backed by certified physical gold.
+• Gold Advance Booking: Lock in gold prices for future purchases.
 • Instant & Secure Payments: Pay installments via UPI, GPay, PhonePe & Cards.
-• Showroom Redemption: Redeem gold weight easily at our Pollachi showroom.
+• Showroom Redemption: Redeem gold weight easily at our Thrissur showroom.
 ```
 
 ---
 
 ### 🇮🇳 Tamil (`ta-IN`)
 ```text
-ஸ்ரீ கணபதி ஜுவல் சிட்டி ஆப்பிற்கு உங்களை அன்போடு வரவேற்கிறோம்!
+கனிசா ஜூவல்லரி டிஜிட்டல் கோல்ட் ஆப்பிற்கு உங்களை அன்போடு வரவேற்கிறோம்!
 
 பதிப்பு 1.0.0 சிறப்பம்சங்கள்:
 • நேரலை தங்கம் & வெள்ளி விலை நிலவரம் (Live 22K/24K Rates).
-• மாதாந்திர தங்க சேமிப்பு திட்டங்கள் & முதிர்வு போனஸ் சலுகைகள்.
+• மாதாந்திர தங்க சேமிப்பு திட்டங்கள் & போனஸ் சலுகைகள்.
 • டிஜிட்டல் தங்க பாஸ்புக் & சேமிப்பு விவரங்கள்.
-• 100% BIS ஹால்மார்க் சான்றளிக்கப்பட்ட தங்க சேமிப்பு.
+• தங்கம் முன்பதிவு (Gold Advance Booking) வசதி.
 • UPI, GPay, PhonePe மூலம் பாதுகாப்பான ஆன்லைன் பேமெண்ட்.
-• சேமித்த தங்கத்தை பொள்ளாச்சி ஷோரூமில் நகைகளாக மாற்றும் வசதி.
+• சேமித்த தங்கத்தை திருச்சூர் ஷோரூமில் நகைகளாக மாற்றும் வசதி.
 ```
-

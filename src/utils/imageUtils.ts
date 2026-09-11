@@ -69,4 +69,36 @@ export const formatGoldWeight = (weight: any): string => {
   const parsedWeight = parseFloat(weight);
   if (isNaN(parsedWeight) || parsedWeight === 0) return "0.000 g";
   return `${parsedWeight.toFixed(3)} g`;
+};
+
+import { Asset } from 'expo-asset';
+import * as FileSystem from 'expo-file-system/legacy';
+
+let cachedLogoBase64: string | null = null;
+
+/**
+ * Loads the local logo asset and converts it to a base64 Data URL.
+ * Falls back to the remote URL if file operations fail.
+ */
+export const loadLogoAsBase64 = async (): Promise<string> => {
+  if (cachedLogoBase64) {
+    return cachedLogoBase64;
+  }
+  const fallbackUrl = "https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp";
+  try {
+    const asset = Asset.fromModule(require("../../assets/images/logo.png"));
+    await asset.downloadAsync();
+    const uri = asset.localUri || asset.uri;
+    if (!uri) {
+      throw new Error("Asset URI is not available");
+    }
+    const base64Data = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    cachedLogoBase64 = `data:image/png;base64,${base64Data}`;
+    return cachedLogoBase64;
+  } catch (error) {
+    logger.error("❌ Failed to load local logo as base64:", error);
+    return fallbackUrl;
+  }
 }; 

@@ -4,9 +4,9 @@ import { themeConfig } from './src/constants/theme.config';
 export default ({ config }: ConfigContext): ExpoConfig => {
     const isIos = process.env.EAS_BUILD_PLATFORM === 'ios' || process.env.PLATFORM === 'ios';
 
-    const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "AIzaSyAkuOcNddEvozQR4D4yPdTrbwXCiPsuEFc";
-    const bundleIdentifier = themeConfig.bundleIdentifier || "com.nexooai.srithangathamarai";
-    const projectId = themeConfig.projectId || "912daab2-d11c-42ff-9072-62ddfb4489c0";
+    const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44";
+    const bundleIdentifier = themeConfig.bundleIdentifier || "com.nexooai.kanisaajewellerydigigoldsavings";
+    const projectId = themeConfig.projectId || "aeef6800-eac4-4ba3-b14d-a09d7342f537";
     const owner = themeConfig.owner || "mnvgroups07";
     const version = isIos ? ((themeConfig as any).iosVersion || "1.0.0") : ((themeConfig as any).androidVersion || "1.0.0");
 
@@ -17,7 +17,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         version: version,
         orientation: "portrait",
         userInterfaceStyle: "automatic",
-        scheme: "acme",
+        scheme: themeConfig.slug || "kanisaajewellerydigigold",
         jsEngine: "hermes",
 
         icon: themeConfig.icon || "./assets/images/icon.png",
@@ -76,6 +76,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             },
             icon: themeConfig.icon || "./assets/images/icon.png",
             bundleIdentifier: bundleIdentifier,
+            associatedDomains: [
+                "applinks:api.prod.kanisaajewellery.com",
+                "applinks:kanisaajewellery.com",
+                "applinks:kanisaajewellery.page.link"
+            ],
             googleServicesFile: "./GoogleService-Info.plist",
             buildNumber: (themeConfig as any).buildNumber || "1",
             jsEngine: "hermes",
@@ -88,6 +93,32 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                 NSCameraUsageDescription: "This app needs access to your camera so you can take photos of receipts, jewellery, or documents for order verification, profile pictures, and customer support.",
                 NSPhotoLibraryAddUsageDescription: "This app needs permission to save images to your photo library so you can keep copies of receipts, order confirmations, or jewellery images for your records.",
                 NSFaceIDUsageDescription: "This app uses Face ID / Touch ID to securely authenticate you without entering your MPIN.",
+                "NSAppTransportSecurity": {
+                    "NSAllowsArbitraryLoads": false,
+                    "NSAllowsArbitraryLoadsInWebContent": true,
+                    "NSExceptionDomains": {
+                        "smartgateway.hdfcuat.bank.in": {
+                            "NSExceptionAllowsInsecureHTTPLoads": false,
+                            "NSIncludesSubdomains": true
+                        },
+                        "hdfcbank.com": {
+                            "NSExceptionAllowsInsecureHTTPLoads": false,
+                            "NSIncludesSubdomains": true
+                        },
+                        "mastercard.com": {
+                            "NSExceptionAllowsInsecureHTTPLoads": false,
+                            "NSIncludesSubdomains": true
+                        },
+                        "visa.com": {
+                            "NSExceptionAllowsInsecureHTTPLoads": false,
+                            "NSIncludesSubdomains": true
+                        },
+                        "securecode.com": {
+                            "NSExceptionAllowsInsecureHTTPLoads": false,
+                            "NSIncludesSubdomains": true
+                        }
+                    }
+                },
                 LSApplicationQueriesSchemes: [
                     "phonepe",
                     "tez",

@@ -35,6 +35,7 @@ export interface PaymentReceiptData {
         totalgoldweight: number;
         current_goldrate: number;
     };
+    logoBase64?: string;
 }
 
 export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => {
@@ -51,11 +52,12 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         userName,
         rewardAmount,
         rewardGoldGrams,
-        inversement
+        inversement,
+        logoBase64
     } = data;
 
     const statusText = status || "Success";
-    
+
     // Get weight directly or fall back to 0
     let weight = Number(goldWeight || 0);
 
@@ -91,9 +93,10 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
             align-items: center;
             margin-bottom: 15px;
             padding: 10px 15px;
-            background: ${theme.colors.primary};
-            color: #ffffff;
-            border-bottom: 2px solid #ffd700;
+            background-color: ${theme.colors.primary} !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            color: #fff;
         }
         .company-info { font-size: 12px; font-weight: bold; }
         .letter-title {
@@ -156,7 +159,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
 <body>
     <div class="header" style="justify-content: center;">
         <div>
-            <img src="https://srithangathamarai.com/assets/logo_trans.png" alt="Logo" style="max-width:90px; height:auto;">
+            <img src="${logoBase64 || 'https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp'}" alt="Logo" style="max-width:90px; height:auto;">
         </div>
     </div>
 
@@ -169,7 +172,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
     <table class="details-table">
         <tr>
             <th>Transaction ID</th>
-            <td>STT-${transactionId}</td>
+            <td>${transactionId}</td>
         </tr>
         <tr>
             <th>Payment ID</th>

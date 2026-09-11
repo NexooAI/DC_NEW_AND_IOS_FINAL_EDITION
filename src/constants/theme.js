@@ -124,7 +124,7 @@ const createThemeColors = (basePalette, overrides = {}) => {
 };
 
 const lightPalette = createThemeColors({
-  primary: themeConfig.primaryColor || "#5B0E2D",
+  primary: themeConfig.primaryColor || "#a3203a",
   secondary: themeConfig.secondaryColor || "#D4AF37",
   tertiary: "#F2B8C6",
   quaternary: "#F8F5EC",
@@ -135,7 +135,7 @@ const lightPalette = createThemeColors({
   backgroundTertiary: "#f3f4f6",
   textPrimary: "#ffffff",
   textSecondary: "#1e293b",
-  textDark: themeConfig.primaryColor || "#5B0E2D",
+  textDark: themeConfig.primaryColor || "#a3203a",
   textLight: "#ffffff",
   textGrey: "#64748b",
   textDarkGrey: "#1e293b",
@@ -462,15 +462,15 @@ const theme = {
   },
 
   constants: {
-    customerName: themeConfig.customerName || "Sri Ganapathy Jewel City",
-    address: themeConfig.address || "M245+HGH, Kadai veethi, Puliampatti, Pollachi, Tamil Nadu 642001",
-    mobile: themeConfig.mobile || "+919842230015",
-    whatsapp: themeConfig.whatsapp || "+919842230015",
-    email: themeConfig.email || "info@ganapathijewelcity.com",
-    website: themeConfig.website || "https://ganapathijewelcity.com",
-    latitude: themeConfig.latitude || 10.6582,
-    longitude: themeConfig.longitude || 77.0084,
-    foundationYear: themeConfig.foundationYear || 1998,
+    customerName: themeConfig.customerName || "Kanisaa Jewellery",
+    address: themeConfig.address || "Road Fathima Nagar, Mission Quarters, Anchery, Thrissur, Kerala 680005",
+    mobile: themeConfig.mobile || "+919061803999",
+    whatsapp: themeConfig.whatsapp || "+919061803999",
+    email: themeConfig.email || "dcjewellerstcr@gmail.com",
+    website: themeConfig.website || "https://www.dcjewellers.org",
+    latitude: themeConfig.latitude || 8.427828080550306,
+    longitude: themeConfig.longitude || 78.02855977120382,
+    foundationYear: themeConfig.foundationYear || 2020,
     enableDashboard: themeConfig.enableDashboard !== undefined ? themeConfig.enableDashboard : false,
     homeVersion: themeConfig.homeVersion || "v2",
     enableHomeV2: themeConfig.enableHomeV2 !== undefined ? themeConfig.enableHomeV2 : true,
@@ -479,7 +479,7 @@ const theme = {
   },
   homeVersion: themeConfig.homeVersion || "v2",
   enableHomeV2: themeConfig.enableHomeV2 !== undefined ? themeConfig.enableHomeV2 : true,
-  baseUrl: themeConfig.baseUrl || themeConfig.baseURL || "https://api.sriganapathijewelcity.com",
+  baseUrl: themeConfig.baseUrl || themeConfig.baseURL || "https://api.prod.kanisaajewellery.com",
   youtubeUrl: themeConfig.youtubeUrl || "https://youtu.be/8RAhdn5b9Bw",
 };
 
