@@ -305,7 +305,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
                       {images.map((photo, idx) => {
                         const baseURL = api.defaults.baseURL
                           ? api.defaults.baseURL.replace(/\/$/, "")
-                          : "https://api.srithangathamarai.com";
+                          : (theme?.baseUrl || "https://api.prod.kanisaajewellery.com");
                         const cleanPhoto = photo.startsWith("/") ? photo : `/${photo}`;
                         const fullUrl = photo.startsWith("http") ? photo : `${baseURL}${cleanPhoto}`;
                         return (
@@ -333,7 +333,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
                     {docs.map((doc, idx) => {
                       const baseURL = api.defaults.baseURL
                         ? api.defaults.baseURL.replace(/\/$/, "")
-                        : "https://api.srithangathamarai.com";
+                        : (theme?.baseUrl || "https://api.prod.kanisaajewellery.com");
                       const cleanDoc = doc.startsWith("/") ? doc : `/${doc}`;
                       const fullUrl = doc.startsWith("http") ? doc : `${baseURL}${cleanDoc}`;
                       const fileName =

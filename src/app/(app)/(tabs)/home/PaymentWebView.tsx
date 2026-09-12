@@ -751,8 +751,10 @@ export default function PaymentWebView() {
     const currentUrl = url.toLowerCase();
     const apiDomain = themeConstants.baseUrl 
       ? themeConstants.baseUrl.toLowerCase().replace("http://", "").replace("https://", "").split("/")[0] 
-      : "api.srithangathamarai.com";
-    const isOurDomain = currentUrl.includes(apiDomain) || currentUrl.includes("srithangathamarai.com");
+      : "kanisaajewellery.com";
+    const domainParts = apiDomain.split(".");
+    const rootDomain = domainParts.length >= 2 ? domainParts.slice(-2).join(".") : apiDomain;
+    const isOurDomain = (apiDomain && currentUrl.includes(apiDomain)) || (rootDomain && currentUrl.includes(rootDomain));
 
     const isSuccessUrl = isOurDomain && (currentUrl.includes("status=success") || currentUrl.includes("payment=success") || currentUrl.includes("/success"));
     const isCancelUrl = isOurDomain && (currentUrl.includes("status=cancelled") || currentUrl.includes("/cancel"));
@@ -1001,8 +1003,10 @@ export default function PaymentWebView() {
                   const currentUrl = navState.url.toLowerCase();
                   const apiDomain = themeConstants.baseUrl 
                     ? themeConstants.baseUrl.toLowerCase().replace("http://", "").replace("https://", "").split("/")[0] 
-                    : "api.srithangathamarai.com";
-                  const isOurDomain = currentUrl.includes(apiDomain) || currentUrl.includes("srithangathamarai.com");
+                    : "kanisaajewellery.com";
+                  const domainParts = apiDomain.split(".");
+                  const rootDomain = domainParts.length >= 2 ? domainParts.slice(-2).join(".") : apiDomain;
+                  const isOurDomain = (apiDomain && currentUrl.includes(apiDomain)) || (rootDomain && currentUrl.includes(rootDomain));
                   
                   // Check for landing URLs
                   const isSuccessUrl = isOurDomain && (currentUrl.includes("status=success") || currentUrl.includes("payment=success") || currentUrl.includes("/success"));

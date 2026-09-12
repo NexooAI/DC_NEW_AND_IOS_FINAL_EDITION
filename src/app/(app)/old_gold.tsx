@@ -405,7 +405,7 @@ export default function OldGoldScreen() {
                         </ResponsiveText>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                           {images.map((photo, idx) => {
-                            const baseURL = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/$/, '') : 'https://api.srithangathamarai.com';
+                            const baseURL = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/$/, '') : (theme?.baseUrl || 'https://api.prod.kanisaajewellery.com');
                             const cleanPhoto = photo.startsWith('/') ? photo : `/${photo}`;
                             const fullUrl = photo.startsWith('http') ? photo : `${baseURL}${cleanPhoto}`;
                             return (
@@ -432,7 +432,7 @@ export default function OldGoldScreen() {
                           {t("documents") || "Documents & Receipts"}
                         </ResponsiveText>
                         {docs.map((doc, idx) => {
-                          const baseURL = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/$/, '') : 'https://api.srithangathamarai.com';
+                          const baseURL = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/$/, '') : (theme?.baseUrl || 'https://api.prod.kanisaajewellery.com');
                           const cleanDoc = doc.startsWith('/') ? doc : `/${doc}`;
                           const fullUrl = doc.startsWith('http') ? doc : `${baseURL}${cleanDoc}`;
                           const fileName = doc.split('/').pop()?.split('-').slice(1).join('-') || doc.split('/').pop() || 'document.pdf';

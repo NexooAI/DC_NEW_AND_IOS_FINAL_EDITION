@@ -8,6 +8,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Device from 'expo-device';
 
 import { logger } from '@/utils/logger';
+import { themeConfig } from '@/constants/theme.config';
 
 // Check if running in Expo Go
 const isExpoGo = Constants.executionEnvironment === 'storeClient';
@@ -337,11 +338,12 @@ class NotificationService {
         if (!fcmData) {
           logger.log('⚠️ No captured getExpoPushToken payload found, using fallback construction');
 
+          const fallbackAppId = themeConfig?.bundleIdentifier || 'com.nexooai.kanisaajewellerydigigoldsavings';
           const dynamicAppId = Platform.OS === 'ios'
-            ? (Constants.expoConfig?.ios?.bundleIdentifier || 'com.nexooai.srithangathamarai')
-            : (Constants.expoConfig?.android?.package || 'com.nexooai.srithangathamarai');
+            ? (Constants.expoConfig?.ios?.bundleIdentifier || fallbackAppId)
+            : (Constants.expoConfig?.android?.package || fallbackAppId);
 
-          const dynamicProjectId = Constants.expoConfig?.extra?.eas?.projectId || '912daab2-d11c-42ff-9072-62ddfb4489c0';
+          const dynamicProjectId = Constants.expoConfig?.extra?.eas?.projectId || '405b0b14-c15c-4234-a28d-56034f559bc8';
 
           fcmData = {
             type: "fcm",

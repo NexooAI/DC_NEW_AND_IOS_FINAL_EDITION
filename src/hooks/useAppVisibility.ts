@@ -51,7 +51,9 @@ export interface AppVisibilityData {
     homeVersion?: string;
     showQuickActions?: number;
     enableDashboard?: number;
+    enableDashboardV2?: number;
     showDashboard?: number;
+    dashboardVersion?: string;
     // Side Menu Drawer
     showSideReferEarn?: number;
     showSideTickets?: number;

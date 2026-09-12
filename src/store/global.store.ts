@@ -549,27 +549,43 @@ export const getAppConfig = () => {
   const themeMode = useGlobalStore.getState().themeMode;
   const basePalette = themeMode === 'dark' ? darkPalette : lightPalette;
 
-  // Dynamic overrides from backend /app-visible API if present
+  // Dynamic overrides from backend /app-visible and /config/settings API if present
   const dynamicDashboard =
-    cachedVisibility?.enableDashboard === 1 || cachedVisibility?.showDashboard === 1
+    cachedVisibility?.enableDashboardV2 === 1 ||
+    cachedVisibility?.enableDashboard === 1 ||
+    cachedVisibility?.showDashboard === 1 ||
+    storeConfig?.layout_dashboard_version === 'v2' ||
+    storeConfig?.theme?.dashboardVersion === 'v2'
       ? true
-      : cachedVisibility?.enableDashboard === 0 || cachedVisibility?.showDashboard === 0
+      : cachedVisibility?.enableDashboardV2 === 0 ||
+        cachedVisibility?.enableDashboard === 0 ||
+        cachedVisibility?.showDashboard === 0 ||
+        storeConfig?.layout_dashboard_version === 'v1' ||
+        storeConfig?.theme?.dashboardVersion === 'v1'
       ? false
       : undefined;
 
   const dynamicHomeVersion =
     cachedVisibility?.homeVersion
       ? cachedVisibility.homeVersion
-      : cachedVisibility?.enableHomeV2 === 1 || cachedVisibility?.showHomeV2 === 1
+      : cachedVisibility?.enableHomeV2 === 1 ||
+        cachedVisibility?.showHomeV2 === 1 ||
+        storeConfig?.layout_home_version === 'v2' ||
+        storeConfig?.home_version === 'v2' ||
+        storeConfig?.theme?.homeVersion === 'v2'
       ? "v2"
-      : cachedVisibility?.enableHomeV2 === 0 || cachedVisibility?.showHomeV2 === 0
+      : cachedVisibility?.enableHomeV2 === 0 ||
+        cachedVisibility?.showHomeV2 === 0 ||
+        storeConfig?.layout_home_version === 'v1' ||
+        storeConfig?.home_version === 'v1' ||
+        storeConfig?.theme?.homeVersion === 'v1'
       ? "v1"
       : undefined;
 
   const dynamicEnableHomeV2 =
-    cachedVisibility?.enableHomeV2 === 1 || cachedVisibility?.showHomeV2 === 1
+    dynamicHomeVersion === "v2"
       ? true
-      : cachedVisibility?.enableHomeV2 === 0 || cachedVisibility?.showHomeV2 === 0
+      : dynamicHomeVersion === "v1"
       ? false
       : undefined;
 
@@ -617,25 +633,41 @@ export const useAppTheme = () => {
     const basePalette = themeMode === 'dark' ? darkPalette : lightPalette;
 
     const dynamicDashboard =
-      cachedVisibility?.enableDashboard === 1 || cachedVisibility?.showDashboard === 1
+      cachedVisibility?.enableDashboardV2 === 1 ||
+      cachedVisibility?.enableDashboard === 1 ||
+      cachedVisibility?.showDashboard === 1 ||
+      appConfig?.layout_dashboard_version === 'v2' ||
+      appConfig?.theme?.dashboardVersion === 'v2'
         ? true
-        : cachedVisibility?.enableDashboard === 0 || cachedVisibility?.showDashboard === 0
+        : cachedVisibility?.enableDashboardV2 === 0 ||
+          cachedVisibility?.enableDashboard === 0 ||
+          cachedVisibility?.showDashboard === 0 ||
+          appConfig?.layout_dashboard_version === 'v1' ||
+          appConfig?.theme?.dashboardVersion === 'v1'
         ? false
         : undefined;
 
     const dynamicHomeVersion =
       cachedVisibility?.homeVersion
         ? cachedVisibility.homeVersion
-        : cachedVisibility?.enableHomeV2 === 1 || cachedVisibility?.showHomeV2 === 1
+        : cachedVisibility?.enableHomeV2 === 1 ||
+          cachedVisibility?.showHomeV2 === 1 ||
+          appConfig?.layout_home_version === 'v2' ||
+          appConfig?.home_version === 'v2' ||
+          appConfig?.theme?.homeVersion === 'v2'
         ? "v2"
-        : cachedVisibility?.enableHomeV2 === 0 || cachedVisibility?.showHomeV2 === 0
+        : cachedVisibility?.enableHomeV2 === 0 ||
+          cachedVisibility?.showHomeV2 === 0 ||
+          appConfig?.layout_home_version === 'v1' ||
+          appConfig?.home_version === 'v1' ||
+          appConfig?.theme?.homeVersion === 'v1'
         ? "v1"
         : undefined;
 
     const dynamicEnableHomeV2 =
-      cachedVisibility?.enableHomeV2 === 1 || cachedVisibility?.showHomeV2 === 1
+      dynamicHomeVersion === "v2"
         ? true
-        : cachedVisibility?.enableHomeV2 === 0 || cachedVisibility?.showHomeV2 === 0
+        : dynamicHomeVersion === "v1"
         ? false
         : undefined;
 

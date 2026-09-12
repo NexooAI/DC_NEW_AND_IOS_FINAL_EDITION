@@ -343,6 +343,28 @@ export const COLORS = {
   get whiteOverlayLight() { return getActiveColors().whiteOverlayLight; },
   get whiteOverlayVeryLight() { return getActiveColors().whiteOverlayVeryLight; },
   get blackOverlayLight() { return getActiveColors().blackOverlayLight; },
+
+  // Status & semantic colors
+  get error() { return getActiveColors().error || "#ef4444"; },
+  get errorLight() { return getActiveColors().errorLight || "#fee2e2"; },
+  get errorDark() { return getActiveColors().errorDark || "#dc2626"; },
+  get warning() { return getActiveColors().warning || "#f59e0b"; },
+  get warningLight() { return getActiveColors().warningLight || "#fef3c7"; },
+  get success() { return getActiveColors().success || "#10b981"; },
+  get successLight() { return getActiveColors().successLight || "#d1fae5"; },
+  get successDark() { return getActiveColors().successDark || "#047857"; },
+  get info() { return getActiveColors().info || "#3b82f6"; },
+  get dark() { return getActiveColors().textDark || getActiveColors().primary; },
+  get red() { return getActiveColors().error || "#ef4444"; },
+  get goldDark() { return getActiveColors().goldDark || "#B8860B"; },
+  get accent() { return getActiveColors().accent || getActiveColors().secondary || "#FFD700"; },
+  get bgPrimaryHeavy() { return getActiveColors().bgPrimaryHeavy || getActiveColors().primary; },
+  get bgPrimaryMedium() { return getActiveColors().bgPrimaryMedium || getActiveColors().primary; },
+  get primaryDark() { return getActiveColors().primaryDark || getActiveColors().primary; },
+  get redDarker() { return getActiveColors().redDarker || "#5a000b"; },
+  get redBurgundyLight() { return getActiveColors().redBurgundyLight || "#B31313"; },
+  get redBurgundyDark() { return getActiveColors().redBurgundyDark || "#700B0B"; },
+  get support() { return getActiveColors().support_container || [getActiveColors().primary, getActiveColors().primary, getActiveColors().secondary]; },
 };
 
 export default COLORS;

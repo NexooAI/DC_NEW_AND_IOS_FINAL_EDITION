@@ -2976,7 +2976,7 @@ export default function Home() {
                   activeOpacity={0.8}
                 >
                   <LinearGradient
-                    colors={[COLORS.error, "#a0000f"]}
+                    colors={[COLORS.error || "#ef4444", "#a0000f"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.kycBannerGradient}
@@ -3582,7 +3582,7 @@ export default function Home() {
                         activeOpacity={0.8}
                       >
                         <LinearGradient
-                          colors={[theme.colors.primary, theme.colors.bgPrimaryHeavy]}
+                          colors={[theme.colors.primary || "#a3203a", theme.colors.bgPrimaryHeavy || theme.colors.primary || "#850111"]}
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 0 }}
                           style={styles.joinSchemesButtonGradient}

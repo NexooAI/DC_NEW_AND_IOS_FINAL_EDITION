@@ -33,6 +33,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "@/constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
+import Constants from "expo-constants";
+import { themeConfig } from "@/constants/theme.config";
 import AuthGuard from "@/components/AuthGuard";
 import { userAPI } from "@/services/api";
 import apiWithLoader from "@/services/apiWithLoader";
@@ -105,10 +107,11 @@ const ProfileScreen = () => {
 
   // Function to open Rate Us URL directly
   const openRateUs = () => {
-    const packageName = "com.nexooai.srithangathamarai"; // Correct Application ID
+    const packageName = Constants.expoConfig?.android?.package || themeConfig?.bundleIdentifier || "com.nexooai.kanisaajewellerydigigoldsavings";
+    const appleId = (Constants.expoConfig?.extra as any)?.appleAppId || "6755081937";
     const url = Platform.OS === 'android'
       ? `market://details?id=${packageName}`
-      : `https://apps.apple.com/us/app/dc-jewellers-gold-diamonds/id6755081937`; // Replace with actual iOS ID if available
+      : `https://apps.apple.com/us/app/id${appleId}`;
 
     Linking.canOpenURL(url).then(supported => {
       if (supported) {
@@ -442,8 +445,9 @@ const ProfileScreen = () => {
 
   const handleShareApp = async () => {
     try {
+      const packageName = Constants.expoConfig?.android?.package || themeConfig?.bundleIdentifier || "com.nexooai.kanisaajewellerydigigoldsavings";
       const playStoreLink =
-        "https://play.google.com/store/apps/details?id=com.nexooai.srithangathamarai&hl=en_IN";
+        `https://play.google.com/store/apps/details?id=${packageName}&hl=en_IN`;
       const message = `Join me on ${theme.constants.customerName} Gold and Diamonds! Download the app from: ${playStoreLink}`;
 
       const result = await Share.share({

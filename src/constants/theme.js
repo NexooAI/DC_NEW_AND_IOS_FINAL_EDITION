@@ -120,6 +120,18 @@ const createThemeColors = (basePalette, overrides = {}) => {
     outlineButtonText: colors.outlineButtonText || colors.primary,
     outlineButtonBorder: colors.outlineButtonBorder || colors.primary,
     inverseText,
+    // Legacy and gradient compatibility colors
+    redDarker: colors.redDarker || withAlpha(colors.primary, 0.9) || "#5a000b",
+    redBurgundyLight: colors.redBurgundyLight || colors.primary || "#B31313",
+    redBurgundyDark: colors.redBurgundyDark || colors.primary || "#700B0B",
+    bgPrimaryHeavy: colors.bgPrimaryHeavy || withAlpha(colors.primary, 0.85),
+    bgPrimaryMedium: colors.bgPrimaryMedium || withAlpha(colors.primary, 0.5),
+    primaryDark: colors.primaryDark || withAlpha(colors.primary, 0.9),
+    goldDark: colors.goldDark || "#B8860B",
+    goldDarker: colors.goldDarker || "#8B4513",
+    accent: colors.accent || colors.secondary || "#FFD700",
+    dark: colors.dark || colors.textDark || colors.primary,
+    red: colors.red || colors.error || "#ef4444",
   };
 };
 
