@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, DrawerActions } from "@react-navigation/native";
-import { useRouter } from "expo-router";
+import { DrawerActions } from "@react-navigation/native";
+import { useRouter, useNavigation } from "expo-router";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { moderateScale } from "react-native-size-matters";

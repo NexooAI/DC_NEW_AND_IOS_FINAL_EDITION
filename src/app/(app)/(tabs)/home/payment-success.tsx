@@ -87,13 +87,24 @@ export default function PaymentSuccess() {
     return () => clearTimeout(ratingTimer);
   }, []);
   
+  const hasLoggedParams = useRef(false);
   useEffect(() => {
-    logger.log("Payment Success Params:", params);
+    if (!hasLoggedParams.current && params && Object.keys(params).length > 0) {
+      hasLoggedParams.current = true;
+      logger.log("Payment Success Params:", params);
+    }
   }, [params]);
   const { user, setTabVisibility } = useGlobalStore();
 
   const [fetchedInvestment, setFetchedInvestment] = useState<any>(null);
+  const [latestTxnId, setLatestTxnId] = useState<string>("");
   const userId = Array.isArray(params.userId) ? params.userId[0] : (params.userId || user?.id?.toString() || "");
+
+  const effectiveTxnId =
+    (Array.isArray(params.txnId) ? params.txnId[0] : params.txnId) ||
+    latestTxnId ||
+    (Array.isArray(params.orderId) ? params.orderId[0] : params.orderId) ||
+    "";
 
   useEffect(() => {
     const fetchInvestmentDetails = async () => {
@@ -102,7 +113,19 @@ export default function PaymentSuccess() {
       try {
         const response = await investmentAPI.getInvestmentDetails(investmentId);
         if (response.data && response.data.success && response.data.data) {
+          console.log("🔍 [PaymentSuccess] FULL INVESTMENT API RESPONSE:\n", JSON.stringify(response.data.data, null, 2));
           setFetchedInvestment(response.data.data.investmentList);
+          const history = response.data.data.paymentHistory;
+          console.log("🔍 [PaymentSuccess] PAYMENT HISTORY ARRAY:\n", JSON.stringify(history, null, 2));
+          if (Array.isArray(history) && history.length > 0) {
+            const latest = history[0];
+            console.log("🔍 [PaymentSuccess] LATEST PAYMENT RECORD:\n", JSON.stringify(latest, null, 2));
+            const foundId = latest?.transactionId || latest?.transaction_id || latest?.tracking_id || latest?.txnId || "";
+            if (foundId) {
+              console.log("🔍 [PaymentSuccess] Found Transaction ID from history:", foundId);
+              setLatestTxnId(String(foundId));
+            }
+          }
           logger.log("Successfully fetched investment details for receipt:", response.data.data.investmentList);
         }
       } catch (error) {
@@ -263,8 +286,8 @@ export default function PaymentSuccess() {
     if (isSharing) return;
     setIsSharing(true);
     try {
-      const transactionId = Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || "");
-      if (!transactionId) {
+      const transactionId = effectiveTxnId || (Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || "N/A"));
+      if (!transactionId || transactionId === "N/A") {
         Alert.alert("Error", "Transaction ID is missing");
         setIsSharing(false);
         return;
@@ -272,7 +295,7 @@ export default function PaymentSuccess() {
 
       const receiptData: PaymentReceiptData = {
         transactionId: transactionId,
-        paymentId: Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || ""),
+        paymentId: transactionId,
         amountPaid: Number(Array.isArray(params.amount) ? params.amount[0] : params.amount) || 0,
         paymentDate: new Date().toISOString(),
         paymentMode: "UPI/Card",
@@ -452,10 +475,10 @@ export default function PaymentSuccess() {
               <Text style={styles.detailLabel}>{t("transactionId")}</Text>
               <TouchableOpacity 
                 style={styles.copyRow} 
-                onPress={() => handleCopy(Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || ""), t("transactionId"))}
+                onPress={() => handleCopy(effectiveTxnId, t("transactionId"))}
               >
                 <Text style={styles.detailValue}>
-                  {Array.isArray(params.txnId) ? params.txnId[0] : (params.txnId || "N/A")}
+                  {effectiveTxnId || (Array.isArray(params.orderId) ? params.orderId[0] : params.orderId) || "N/A"}
                 </Text>
                 <Ionicons name="copy-outline" size={16} color={theme.colors.textDark} style={{ marginLeft: 8 }} />
               </TouchableOpacity>

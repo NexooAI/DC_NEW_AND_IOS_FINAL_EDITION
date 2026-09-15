@@ -20,7 +20,7 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import { useFocusEffect } from "expo-router";
 
 import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";
@@ -49,8 +49,7 @@ export default function Dashboard() {
   const { t } = useTranslation();
   const { user, setChatOpen } = useGlobalStore();
   const insets = useSafeAreaInsets();
-  const isFocused = useIsFocused();
-  const headerPaddingTop = Platform.OS === "ios" ? 10 : (insets.top > 0 ? insets.top + 10 : 10);
+  const headerPaddingTop = insets.top > 0 ? insets.top + 10 : 10;
 
   const [rates, setRates] = useState<any>(null);
   const [socialLinks, setSocialLinks] = useState<any>(null);
@@ -285,13 +284,11 @@ export default function Dashboard() {
         { backgroundColor: theme.colors.quaternary },
       ]}
     >
-      {isFocused && (
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor={DARK}
-          translucent={false}
-        />
-      )}
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={DARK}
+        translucent={false}
+      />
 
       <View style={{ flex: 1, backgroundColor: theme.colors.quaternary }}>
         <ScrollView

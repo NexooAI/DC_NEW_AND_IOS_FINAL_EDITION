@@ -21,8 +21,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { useFocusEffect } from "@react-navigation/native";
-import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { useLocalSearchParams, useNavigation, useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
@@ -47,7 +46,6 @@ import {
   PaymentReceiptData,
 } from "@/templates/html";
 import { Socket } from "socket.io-client";
-import { CommonActions, useNavigationState } from "@react-navigation/native";
 import { formatGoldWeight } from "@/utils/imageUtils";
 import { theme } from "@/constants/theme";
 import COLORS from "@/constants/colors";
@@ -238,7 +236,6 @@ const SavingsDetail = () => {
     }),
     [language]
   );
-  const state = useNavigationState((state) => state);
   const [advancePayments, setAdvancePayments] = useState<any[]>([]);
 
   const totalSelectedAmount = useMemo(() => {
@@ -927,7 +924,7 @@ const SavingsDetail = () => {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.gridLabel}>{translations.accountNo}</Text>
-              <Text style={styles.gridValue} numberOfLines={1}>STT-{params.accNo}</Text>
+              <Text style={styles.gridValue} numberOfLines={1}>{params.accNo}</Text>
             </View>
           </View>
 
@@ -1176,7 +1173,7 @@ const SavingsDetail = () => {
               <View style={styles.modalBody}>
                 <View style={styles.receiptRow}>
                   <Text style={styles.receiptLabel}>Transaction ID</Text>
-                  <Text style={styles.receiptValue}>STT-{selectedTransaction.transactionId}</Text>
+                  <Text style={styles.receiptValue}>{selectedTransaction.transactionId}</Text>
                 </View>
                 {selectedTransaction.monthNumber && (
                   <View style={styles.receiptRow}>

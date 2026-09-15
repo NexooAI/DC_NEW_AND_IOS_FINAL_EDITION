@@ -181,9 +181,8 @@ export default function TicketsScreen() {
   if (!userId) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.quaternary || '#F2E6D2' }]} />
-        <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
+        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background || '#fafafa'} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.background || '#fafafa' }]} />
 
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
@@ -269,9 +268,8 @@ export default function TicketsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.quaternary || '#F2E6D2' }]} />
-      <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background || '#fafafa'} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.background || '#fafafa' }]} />
 
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
@@ -355,7 +353,7 @@ export default function TicketsScreen() {
 const getStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.quaternary || '#F2E6D2',
+    backgroundColor: theme.colors.background || '#fafafa',
   },
   header: {
     flexDirection: 'row',

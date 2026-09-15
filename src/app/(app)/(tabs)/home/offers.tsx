@@ -25,6 +25,8 @@ import { logger } from "@/utils/logger";
 
 const { width, height } = Dimensions.get("window");
 
+import ScreenHeader from "@/components/ScreenHeader";
+
 export default function Offers() {
   const theme = useAppTheme();
   styles = getStyles(theme);
@@ -68,7 +70,8 @@ export default function Offers() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <ScreenHeader title={t("offers") || "Our Offers"} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={

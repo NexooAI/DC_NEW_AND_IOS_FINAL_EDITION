@@ -14,7 +14,8 @@ import { Ionicons, FontAwesome5, MaterialIcons, Feather } from "@expo/vector-ico
 import { useRouter } from "expo-router";
 import { useTranslation } from "@/hooks/useTranslation";
 import { LinearGradient } from "expo-linear-gradient";
-import AppLayoutWrapper from "@/components/AppLayoutWrapper";
+import { SafeAreaView } from "react-native-safe-area-context";
+import ScreenHeader from "@/components/ScreenHeader";
 import { theme } from "@/constants/theme";
 import { APP_CONFIG } from "@/constants";
 import api from "@/services/api";
@@ -151,7 +152,8 @@ const ContactUs = () => {
   };
 
   return (
-    <AppLayoutWrapper showHeader={false} showBottomBar={false}>
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <ScreenHeader title={t("contactUs") || "Contact Us"} />
       <View style={styles.container}>
         <ScrollView
           style={styles.scrollView}
@@ -319,7 +321,7 @@ const ContactUs = () => {
           </View>
         </ScrollView>
       </View>
-    </AppLayoutWrapper>
+    </SafeAreaView>
   );
 };
 
@@ -327,7 +329,7 @@ function getStyles(theme: any) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.colors.quaternary,
+      backgroundColor: theme.colors.background,
     },
     scrollView: {
       flex: 1,

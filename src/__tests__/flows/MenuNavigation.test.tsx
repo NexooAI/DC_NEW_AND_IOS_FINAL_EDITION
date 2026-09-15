@@ -37,6 +37,12 @@ jest.mock("expo-router", () => {
         useLocalSearchParams: jest.fn(() => ({})),
         useFocusEffect: (cb) => require('react').useEffect(cb, []),
         usePathname: jest.fn(() => ''),
+        useNavigation: () => ({
+            navigate: jest.fn(),
+            dispatch: jest.fn(),
+            openDrawer: jest.fn(),
+            closeDrawer: jest.fn(),
+        }),
         Stack: innerMockStack,
     };
 });
@@ -81,7 +87,7 @@ describe('Menu Navigation Integrity (Smoke Tests)', () => {
     it('renders the Home screen successfully', async () => {
         const { getAllByText } = render(<Home />);
         await waitFor(() => {
-            expect(getAllByText(/Lucky Draw/i).length).toBeGreaterThan(0);
+            expect(getAllByText(/TEST USER/i).length).toBeGreaterThan(0);
         });
     });
 

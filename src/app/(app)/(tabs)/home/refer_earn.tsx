@@ -26,6 +26,8 @@ import { rewardsAPI } from "@/services/api";
 
 const { width } = Dimensions.get("window");
 
+import ScreenHeader from "@/components/ScreenHeader";
+
 export default function ReferCodeScreen() {
   const theme = useAppTheme();
   const styles = getStyles(theme);
@@ -455,17 +457,9 @@ export default function ReferCodeScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      {/* <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{activeTab}</Text>
-        <TouchableOpacity style={styles.historyButton}>
-          <Text style={styles.historyText}>{t("refer_earn_history") || "History"}</Text>
-        </TouchableOpacity>
-      </View> */}
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background || "#fff"} />
+      <ScreenHeader title={t("referAndEarn") || "Refer & Earn"} />
 
       <View style={[styles.tabsContainer, { backgroundColor: theme.colors.white, zIndex: 10 }]}>
         {[
@@ -517,7 +511,7 @@ export default function ReferCodeScreen() {
           <Ionicons name="share-social-outline" size={22} color="#128C7E" />
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

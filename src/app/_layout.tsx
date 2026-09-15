@@ -7,10 +7,16 @@ import {
   ActivityIndicator,
   Alert,
   BackHandler,
+  LogBox,
   StatusBar,
   View,
 } from "react-native";
+
+LogBox.ignoreLogs([
+  "SafeAreaView has been deprecated and will be removed in a future release",
+]);
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+// @ts-ignore
 import "../global.css";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { initializeAppLocale } from "@/i18n";

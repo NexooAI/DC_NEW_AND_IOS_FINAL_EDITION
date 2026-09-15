@@ -17,7 +17,8 @@ import {
 } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter, Stack } from "expo-router";
+import { useRouter } from "expo-router";
+import ScreenHeader from "@/components/ScreenHeader";
 import LanguageSelector from "@/components/LanguageSelector";
 // AppHeader is now handled by the layout wrapper
 import { useTranslation } from "@/hooks/useTranslation";
@@ -147,21 +148,20 @@ export default function OurPolicy() {
   }
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <TouchableOpacity onPress={() => setIsLanguageSelectorVisible(true)} style={{ marginRight: 16 }}>
-              <Ionicons name="language" size={24} color={theme.colors.textDark} />
-            </TouchableOpacity>
-          ),
-        }}
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <ScreenHeader
+        title={t("ourPolicies") || "Our Policies"}
+        rightElement={
+          <TouchableOpacity onPress={() => setIsLanguageSelectorVisible(true)} style={{ width: 40, height: 40, justifyContent: 'center', alignItems: 'center' }}>
+            <Ionicons name="language" size={24} color={theme.colors.textDark} />
+          </TouchableOpacity>
+        }
       />
       <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={styles.container}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
-    >
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.container}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+      >
       <ImageBackground
         source={require("../../../../../../assets/images/bg_new.jpg")}
         style={styles.backgroundImage}
@@ -229,7 +229,7 @@ export default function OurPolicy() {
         visible={isLanguageSelectorVisible}
         onClose={() => setIsLanguageSelectorVisible(false)}
       />
-    </>
+    </SafeAreaView>
   );
 }
 

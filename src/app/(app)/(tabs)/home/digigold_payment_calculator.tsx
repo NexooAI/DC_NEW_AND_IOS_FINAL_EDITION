@@ -15,9 +15,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect } from "@react-navigation/native";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 import { theme } from "@/constants/theme";

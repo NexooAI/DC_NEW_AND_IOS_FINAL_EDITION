@@ -529,7 +529,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                   A/C Name / No
                 </Text>
                 <Text style={styles.paymentInfoValue}>
-                  {item.accountHolder?.toUpperCase()} / STT-{item.accNo}
+                  {item.accountHolder?.toUpperCase()} / {item.accNo}
                 </Text>
               </View>
             </View>

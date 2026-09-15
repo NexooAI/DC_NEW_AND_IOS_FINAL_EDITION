@@ -26,9 +26,8 @@ import {
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter, Stack } from "expo-router";
+import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from "expo-router";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAppVisibility } from "@/hooks/useAppVisibility";

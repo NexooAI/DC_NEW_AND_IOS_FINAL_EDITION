@@ -18,15 +18,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         orientation: "portrait",
         userInterfaceStyle: "automatic",
         scheme: themeConfig.slug || "kanisaajewellerydigigold",
-        jsEngine: "hermes",
 
         icon: themeConfig.icon || "./assets/images/icon.png",
 
-        splash: {
-            image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
-            resizeMode: "contain",
-            backgroundColor: (themeConfig as any).splashBackgroundColor || themeConfig.primaryColor,
-        },
 
         androidStatusBar: {
             backgroundColor: themeConfig.primaryColor,
@@ -41,11 +35,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             adaptiveIcon: {
                 foregroundImage: themeConfig.adaptiveIcon || "./assets/images/adaptive-icon.png",
                 backgroundColor: (themeConfig as any).adaptiveIconBackgroundColor || themeConfig.primaryColor,
-            },
-            splash: {
-                image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
-                resizeMode: "contain",
-                backgroundColor: (themeConfig as any).splashBackgroundColor || themeConfig.primaryColor,
             },
 
             // ✔ Google Maps API
@@ -68,12 +57,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
         ios: {
             supportsTablet: true,
-            splash: {
-                image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
-                resizeMode: "contain",
-                backgroundColor: (themeConfig as any).splashBackgroundColor || themeConfig.primaryColor,
-                tabletImage: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
-            },
             icon: themeConfig.icon || "./assets/images/icon.png",
             bundleIdentifier: bundleIdentifier,
             associatedDomains: [
@@ -83,7 +66,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             ],
             googleServicesFile: "./GoogleService-Info.plist",
             buildNumber: (themeConfig as any).buildNumber || "1",
-            jsEngine: "hermes",
             config: {
                 googleMapsApiKey: mapsApiKey,
             },
@@ -136,6 +118,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             "expo-router",
             "expo-secure-store",
             "expo-localization",
+            "expo-sharing",
+            [
+                "expo-splash-screen",
+                {
+                    image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
+                    resizeMode: "contain",
+                    backgroundColor: (themeConfig as any).splashBackgroundColor || themeConfig.primaryColor,
+                }
+            ],
 
             [
                 "expo-build-properties",
@@ -202,7 +193,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             policy: "appVersion",
         },
 
-        newArchEnabled: true,
         owner,
     };
 };

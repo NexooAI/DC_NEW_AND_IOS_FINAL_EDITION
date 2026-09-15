@@ -50,7 +50,7 @@ export default function AppLayout() {
   return (
     <SafeAreaView 
       style={{ flex: 1, backgroundColor: safeAreaBackgroundColor }} 
-      edges={Platform.OS === "ios" ? ["top", "left", "right"] : ["left", "right"]}
+      edges={["left", "right"]}
     >
       <NavigationErrorBoundary>
         <Drawer

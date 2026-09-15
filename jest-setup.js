@@ -21,10 +21,17 @@ jest.mock('expo-modules-core', () => ({
     NativeModulesProxy: {},
     ProxyNativeModule: {},
     requireOptionalNativeModule: jest.fn(),
-    requireNativeModule: jest.fn(),
+    requireNativeModule: jest.fn(() => ({
+        NativeResponse: class NativeResponse {},
+        NativeRequest: class NativeRequest {},
+        NativeHeaders: class NativeHeaders {},
+    })),
     createPermissionHook: jest.fn(() => ({ status: 'granted', canAskAgain: true, granted: true, expires: 'never' })),
     requireNativeViewManager: jest.fn(),
-}));
+    NativeResponse: class NativeResponse {},
+    NativeRequest: class NativeRequest {},
+    NativeHeaders: class NativeHeaders {},
+}), { virtual: true });
 
 // Mock Expo Asset
 jest.mock('expo-asset', () => ({

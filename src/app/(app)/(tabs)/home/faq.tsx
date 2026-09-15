@@ -1,5 +1,5 @@
-import AppLayoutWrapper from "@/components/AppLayoutWrapper";
 import { theme } from "@/constants/theme";
+import ScreenHeader from "@/components/ScreenHeader";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import React, { useState, useRef, useMemo, useCallback } from "react";
@@ -15,13 +15,11 @@ import {
   useWindowDimensions,
   Dimensions,
 } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useFocusEffect } from "expo-router";
 import LanguageSelector from "@/components/LanguageSelector";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { moderateScale } from "react-native-size-matters";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect } from "@react-navigation/native";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 // Types
@@ -329,15 +327,14 @@ export default function FAQScreen() {
   );
 
   return (
-    <AppLayoutWrapper showHeader={false} showBottomBar={false}>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <TouchableOpacity onPress={() => setIsLanguageSelectorVisible(true)} style={{ marginRight: 16 }}>
-              <Ionicons name="language" size={24} color={theme.colors.textDark} />
-            </TouchableOpacity>
-          ),
-        }}
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <ScreenHeader
+        title={t("faqAndHelp") || "FAQ & Help"}
+        rightElement={
+          <TouchableOpacity onPress={() => setIsLanguageSelectorVisible(true)} style={{ width: 40, height: 40, justifyContent: 'center', alignItems: 'center' }}>
+            <Ionicons name="language" size={24} color={theme.colors.textDark} />
+          </TouchableOpacity>
+        }
       />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -422,7 +419,7 @@ export default function FAQScreen() {
         visible={isLanguageSelectorVisible}
         onClose={() => setIsLanguageSelectorVisible(false)}
       />
-    </AppLayoutWrapper>
+    </SafeAreaView>
   );
 }
 
@@ -431,7 +428,7 @@ const { width, height } = Dimensions.get("window");
 function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.quaternary,
+    backgroundColor: theme.colors.background,
   },
   safeArea: {
     flex: 1,

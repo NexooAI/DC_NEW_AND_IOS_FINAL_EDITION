@@ -435,8 +435,8 @@ const useGlobalStore = create<GlobalStore>()(
         return age < maxAge;
       },
 
-      isVisibilityCacheValid: (maxAge: number = 15 * 60 * 1000) => {
-        // Default 15 minutes cache for visibility config
+      isVisibilityCacheValid: (maxAge: number = 60 * 1000) => {
+        // Default 1 minute cache for visibility config so admin changes reflect quickly
         const state = get();
         if (!state.cachedVisibility) return false;
         const age = Date.now() - state.cachedVisibility.timestamp;

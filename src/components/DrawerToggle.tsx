@@ -1,4 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
 import { Entypo } from '@expo/vector-icons';
 import { DrawerNavigationProp } from '@react-navigation/drawer';

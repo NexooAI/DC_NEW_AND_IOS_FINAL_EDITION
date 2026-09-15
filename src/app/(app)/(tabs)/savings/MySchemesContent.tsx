@@ -24,8 +24,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient"; // For gradient background
 // AppHeader is now handled by the layout wrapper
 import { useTranslation } from "@/hooks/useTranslation";
@@ -321,14 +320,16 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
           // Calculate installment amount based on scheme type with validation
           let installmentAmount = 0;
           try {
-            installmentAmount = parseFloat(item.amount) || 0;
+            installmentAmount =
+              parseFloat(item.amount) ||
+              parseFloat((item as any)?.chitAmount || "0") ||
+              parseFloat(item.chits?.amount || "0") ||
+              parseFloat((item as any)?.installment_amount || "0") ||
+              parseFloat((item as any)?.firstMonthAmount || "0") ||
+              0;
 
-            // Validate installment amount
-            if (isNaN(installmentAmount) || installmentAmount <= 0) {
-              logger.warn(
-                `Invalid installment amount for investment ${item.investmentId}:`,
-                installmentAmount
-              );
+            // Ensure non-negative number
+            if (isNaN(installmentAmount) || installmentAmount < 0) {
               installmentAmount = 0;
             }
           } catch (error) {

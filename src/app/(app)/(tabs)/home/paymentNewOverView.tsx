@@ -13,8 +13,7 @@ import {
   Animated,
 } from "react-native";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
-import { BackHandler, InteractionManager } from "react-native";
-import Slider from "@react-native-community/slider";
+import { BackHandler } from "react-native";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
@@ -330,37 +329,34 @@ export default function PaymentNewOverView() {
     }, [handleBackButtonPress])
   );
 
-  // Parse user details only once when component mounts
+  // Sync currentAmount with latest route params
   useEffect(() => {
-    if (params.userDetails && !userDetails) {
-      try {
-        if (typeof params.userDetails !== 'string') {
-          throw new Error("userDetails is not a string");
-        }
+    if (params.amount) {
+      const parsedAmount = Number(params.amount);
+      if (!isNaN(parsedAmount) && parsedAmount > 0) {
+        setCurrentAmount(parsedAmount);
+      }
+    }
+  }, [params.amount]);
 
-        // Check if userDetails string is too large or empty
-        if (!params.userDetails || params.userDetails.length === 0) {
-          throw new Error("userDetails is empty");
+  // Parse user details whenever params change
+  useEffect(() => {
+    if (params.userDetails) {
+      try {
+        let details: any;
+        if (typeof params.userDetails !== "string") {
+          details = params.userDetails;
+        } else {
+          if (!params.userDetails || params.userDetails.length === 0) {
+            throw new Error("userDetails is empty");
+          }
+          details = JSON.parse(params.userDetails as string);
         }
 
         if (params.userDetails.length > 2000) {
           logger.warn("userDetails string is very large", {
             size: params.userDetails.length,
           });
-        }
-
-        let details: any;
-        try {
-          details = JSON.parse(params.userDetails as string);
-        } catch (parseError) {
-          const userDetailsStr = Array.isArray(params.userDetails)
-            ? params.userDetails[0]
-            : params.userDetails;
-          logger.error("JSON parse error", {
-            error: parseError,
-            userDetailsPreview: typeof userDetailsStr === 'string' ? userDetailsStr.substring(0, 200) : "not a string",
-          });
-          throw new Error(`Failed to parse userDetails JSON: ${(parseError as Error).message}`);
         }
 
         // Validate required fields
@@ -426,10 +422,12 @@ export default function PaymentNewOverView() {
         }
 
         setUserDetails(details);
-        logger.log("User details parsed successfully", {
+        logger.log("User details parsed successfully for scheme:", {
           hasUserId: !!details.userId,
           hasInvestmentId: !!details.investmentId,
-          hasAccountNo: !!details.accountNo,
+          investmentId: details.investmentId,
+          accountNo: details.accountNo,
+          schemeId: details.schemeId || params.schemeId,
           keys: Object.keys(details),
         });
       } catch (error) {
@@ -476,7 +474,7 @@ export default function PaymentNewOverView() {
         logger.error("No userDetails in params or global store", { params });
       }
     }
-  }, []); // Empty dependency array to run only once
+  }, [params.userDetails, params.schemeId, params.chitId, params.amount]);
 
   // Fetch amount limits for flexi/hybrid schemes
   const fetchAmountLimits = async () => {
@@ -708,7 +706,7 @@ export default function PaymentNewOverView() {
       if (response && response.data && response.data.success && response.data.data) {
         const policy = response.data.data;
         let selectedTerms = "";
-        
+
         // Match language with robust progressive fallback
         const targetKey = `description_${language}`;
         selectedTerms = policy[targetKey] || "";
@@ -1099,7 +1097,7 @@ export default function PaymentNewOverView() {
       logger.log("initialpayment ======>", payload);
       const schemePaymentStartTime = Date.now();
       console.log(`[Payment Initiation] [${new Date().toISOString()}] Initiating payment with payload:`, JSON.stringify(payload));
-      
+
       const response: any = await paymentService.initiatePayment(payload);
       console.log(`[Payment Initiation] [${new Date().toISOString()}] Payment response received in ${Date.now() - schemePaymentStartTime}ms:`, JSON.stringify(response));
 
@@ -1684,7 +1682,7 @@ export default function PaymentNewOverView() {
               <View style={styles.schemeDetailsRow}>
                 <Text style={styles.schemeDetailLabel}>{t("accountNo")}:</Text>
                 <Text style={styles.schemeDetailValue}>
-                  {params.accNo ? `STT-${params.accNo}` : (userDetails?.accNo || "N/A")}
+                  {params.accNo || userDetails?.accNo || "N/A"}
                 </Text>
               </View>
 
@@ -1897,735 +1895,737 @@ export default function PaymentNewOverView() {
   );
 }
 
-function getStyles(theme: any) { return StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9ff",
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 16,
-    gap: 16,
-    paddingBottom: 120, // Add bottom padding to prevent content from being hidden behind fixed card
-  },
-  amountCard: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 20,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-  },
-  amountHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  amountTitle: {
-    fontSize: 16,
-    color: theme.colors.secondary, // Keep gold for title or change to white if preferred
-    marginLeft: 12,
-    fontWeight: "600",
-    flex: 1,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  amountAdjustmentContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  arrowButton: {
-    padding: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    borderRadius: 8,
-  },
-  amountDisplay: {
-    flex: 1,
-    alignItems: "center",
-  },
-  amountValue: {
-    fontSize: 42,
-    fontWeight: "800",
-    color: theme.colors.white,
-    textAlign: "center",
-    fontVariant: ["tabular-nums"],
-    textShadowColor: "rgba(0, 0, 0, 0.2)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  weightText: {
-    fontSize: 14,
-    color: theme.colors.secondary,
-    marginTop: 8,
-    opacity: 0.9,
-    fontWeight: "500",
-  },
-  quickAdjustButtons: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 12,
-  },
-  quickButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  quickButtonText: {
-    fontSize: 12,
-    color: theme.colors.secondary,
-    fontWeight: "600",
-  },
-  detailsCard: {
-    backgroundColor: theme.colors.white,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 0,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: "#e5e5e5",
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 0,
-    paddingBottom: 12,
-    paddingHorizontal: 0,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: theme.colors.textDark,
-    marginLeft: 8,
-    flex: 1,
-  },
-  cardContent: {
-    overflow: "hidden",
-    paddingTop: 12,
-  },
-  cardHeaderWithBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e5e5",
-  },
-  detailsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "500",
-  },
-  detailValue: {
-    fontSize: 14,
-    color: "#333",
-    fontWeight: "600",
-  },
-  footer: {
-    position: "absolute",
-    bottom: 0, // Lift the footer up to avoid tab bar overlap
-    left: 0,
-    right: 0,
-    padding: 16,
-    paddingBottom: 20, // Reduced padding since we moved the footer up
-    backgroundColor: theme.colors.white,
-    borderTopWidth: 1,
-    borderTopColor: "#e5e5e5",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 20,
-    zIndex: 20,
-  },
-  termsContainer: {
-    marginBottom: 16,
-  },
-  checkboxContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 2,
-    borderColor: theme.colors.primary,
-    borderRadius: 4,
-    marginRight: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkboxChecked: {
-    backgroundColor: theme.colors.primary,
-  },
-  termsText: {
-    fontSize: 14,
-    color: "#666",
-    flex: 1,
-  },
-  termsLink: {
-    color: theme.colors.textDark,
-    textDecorationLine: "underline",
-  },
-  payButtonDisabled: {
-    opacity: 0.6,
-  },
-  payButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: "center",
-  },
-  payButtonText: {
-    color: theme.colors.white,
-    fontSize: 16,
-    fontWeight: "bold",
-    letterSpacing: 0.5,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: theme.colors.white,
-    borderRadius: 16,
-    width: "90%",
-    height: "70%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    flexDirection: "column",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e5e5",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: theme.colors.textDark,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  modalBody: {
-    flex: 1,
-    padding: 16,
-    maxHeight: 'auto',
-  },
-  modalBodyContent: {
-    flexGrow: 1,
-    paddingBottom: 2,
-  },
-  modalFooter: {
-    padding: 5,
-    borderTopWidth: 1,
-    borderTopColor: "#e5e5e5",
-  },
-  acceptButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: "center",
-  },
-  acceptButtonText: {
-    color: theme.colors.white, // Ensure white text on primary button
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  editButton: {
-    padding: 8,
-    marginLeft: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 20,
-  },
-  amountInput: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: theme.colors.white,
-    textAlign: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.2)",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minWidth: 160,
-    borderWidth: 1,
-    borderColor: theme.colors.secondary,
-  },
-  errorText: {
-    fontSize: 12,
-    color: "#ff4444",
-    marginTop: 4,
-    textAlign: "center",
-    fontWeight: "500",
-  },
-  disabledText: {
-    opacity: 0.4,
-  },
-  userDetailsCard: {
-    backgroundColor: theme.colors.white,
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.05)",
-  },
-  userDetailsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  userDetailLabel: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "500",
-  },
-  userDetailValue: {
-    fontSize: 14,
-    color: "#333",
-    fontWeight: "600",
-  },
-  schemeDetailsCard: {
-    backgroundColor: theme.colors.white,
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.05)",
-  },
-  schemeDetailsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  schemeDetailLabel: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "500",
-  },
-  schemeDetailValue: {
-    fontSize: 14,
-    color: "#333",
-    fontWeight: "600",
-  },
-  termsCard: {
-    backgroundColor: theme.colors.white,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: "#e5e5e5",
-  },
-  termsHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e5e5",
-    paddingBottom: 12,
-  },
-  termsCheckbox: {
-    padding: 8,
-  },
-  paymentButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: "center",
-  },
-  paymentButtonDisabled: {
-    opacity: 0.6,
-  },
-  paymentButtonText: {
-    color: theme.colors.white,
-    fontSize: 16,
-    fontWeight: "bold",
-    letterSpacing: 0.5,
-  },
-  fixedBottomCard: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: theme.colors.white,
-    borderTopWidth: 1,
-    borderTopColor: "#e5e5e5",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 8,
-    zIndex: 100,
-  },
-  bottomCardContent: {
-    padding: 20,
-    paddingBottom: 10, // Extra padding to avoid tab bar overlap
-  },
-  bottomTermsSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  bottomTermsCheckbox: {
-    padding: 2,
-    marginRight: 12,
-  },
-  bottomTermsText: {
-    fontSize: 14,
-    color: "#666",
-    flex: 1,
-    lineHeight: 20,
-  },
-  bottomTermsLink: {
-    color: 'blue',
-    textDecorationLine: "underline",
-  },
-  bottomPaymentButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: "center",
-  },
-  bottomPaymentButtonDisabled: {
-    opacity: 0.6,
-  },
-  bottomPaymentButtonText: {
-    color: theme.colors.white,
-    fontSize: 16,
-    fontWeight: "bold",
-    letterSpacing: 0.5,
-  },
-  exitModalContent: {
-    backgroundColor: theme.colors.white,
-    borderRadius: 16,
-    padding: 24,
-    margin: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
-    maxWidth: 400,
-    zIndex: 1000,
-  },
-  exitModalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  exitModalMessage: {
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 22,
-  },
-  exitModalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  exitModalCancelButton: {
-    flex: 1,
-    backgroundColor: "#95a5a6",
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  exitModalCancelButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  exitModalConfirmButton: {
-    flex: 1,
-    backgroundColor: "#e74c3c",
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  exitModalConfirmButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  schemeCalculationCard: {
-    backgroundColor: theme.colors.white,
-    borderRadius: 20,
-    padding: 0,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: "#e5e5e5",
-    overflow: "hidden",
-  },
-  schemeCardHeader: {
-    backgroundColor: theme.colors.primary,
-    padding: 20,
-    paddingBottom: 16,
-  },
-  schemeHeaderGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  schemeCardTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#fff",
-    flex: 1,
-  },
-  expandIcon: {
-    marginLeft: "auto",
-  },
-  schemeDateText: {
-    fontSize: 14,
-    color: "#fff",
-    opacity: 0.9,
-    marginTop: 8,
-    fontWeight: "500",
-  },
-  calculationContent: {
-    overflow: "hidden",
-  },
-  schemeMainValueContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    padding: 20,
-    paddingTop: 24,
-    gap: 12,
-  },
-  schemeMainValueBox: {
-    flex: 1,
-  },
-  schemeMainValueGradient: {
-    backgroundColor: theme.colors.primary + "10",
-    borderRadius: 16,
-    padding: 20,
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: theme.colors.primary + "30",
-  },
-  schemeMainValueLabel: {
-    fontSize: 13,
-    color: "#666",
-    fontWeight: "600",
-    marginBottom: 8,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  schemeMainValueText: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: theme.colors.textDark,
-  },
-  sliderContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: "#f8f9fa",
-    position: "relative",
-  },
-  bonusTrackContainer: {
-    flexDirection: "row",
-    height: 36,
-    borderRadius: 18,
-    overflow: "hidden",
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  bonusTrackSegment: {
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100%",
-  },
-  bonusTrackLabel: {
-    fontSize: 11,
-    fontWeight: "bold",
-    color: "#fff",
-    textShadowColor: "rgba(0, 0, 0, 0.4)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  sliderWrapper: {
-    position: "absolute",
-    top: 0,
-    left: 20,
-    right: 20,
-    height: 40,
-    zIndex: 10,
-    justifyContent: "center",
-  },
-  slider: {
-    width: "100%",
-    height: 40,
-  },
-  rangeMarkersContainer: {
-    position: "relative",
-    height: 30,
-    marginTop: 36,
-    marginBottom: 8,
-  },
-  rangeMarker: {
-    position: "absolute",
-    alignItems: "center",
-    transform: [{ translateX: -15 }],
-  },
-  markerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#333",
-    marginBottom: 4,
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  markerLabel: {
-    fontSize: 10,
-    color: "#666",
-    fontWeight: "700",
-  },
-  sliderLabels: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 4,
-  },
-  sliderLabel: {
-    fontSize: 12,
-    color: "#666",
-    fontWeight: "600",
-  },
-  bonusAmountContainer: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.3)",
-  },
-  bonusAmountRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  bonusLabel: {
-    fontSize: 14,
-    color: theme.colors.secondary,
-    fontWeight: "600",
-    opacity: 0.9,
-  },
-  bonusAmount: {
-    fontSize: 16,
-    color: "#4CAF50",
-    fontWeight: "bold",
-  },
-  totalAmountRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 4,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.2)",
-  },
-  totalAmountLabel: {
-    fontSize: 15,
-    color: theme.colors.secondary,
-    fontWeight: "700",
-  },
-  totalAmountValue: {
-    fontSize: 20,
-    color: theme.colors.secondary,
-    fontWeight: "bold",
-  },
-  timerBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fffbeb",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#fef3c7",
-    gap: 8,
-  },
-  timerText: {
-    fontSize: 14,
-    color: "#78350f",
-    fontWeight: "500",
-  },
-  timerCountdown: {
-    fontWeight: "700",
-    color: "#d97706",
-  },
-  progressRowContainer: {
-    marginBottom: 16,
-    width: "100%",
-  },
-  progressBarBackground: {
-    width: "100%",
-    height: 6,
-    backgroundColor: "#e2e8f0",
-    borderRadius: 3,
-    marginTop: 6,
-    overflow: "hidden",
-  },
-  progressBarFill: {
-    height: "100%",
-    backgroundColor: theme.colors.primary,
-    borderRadius: 3,
-  },
-}) }
+function getStyles(theme: any) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: "#f8f9ff",
+    },
+    content: {
+      flex: 1,
+    },
+    contentContainer: {
+      padding: 16,
+      gap: 16,
+      paddingBottom: 120, // Add bottom padding to prevent content from being hidden behind fixed card
+    },
+    amountCard: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: 24,
+      padding: 24,
+      marginBottom: 20,
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
+      elevation: 8,
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.1)",
+    },
+    amountHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    amountTitle: {
+      fontSize: 16,
+      color: theme.colors.secondary, // Keep gold for title or change to white if preferred
+      marginLeft: 12,
+      fontWeight: "600",
+      flex: 1,
+      letterSpacing: 0.5,
+      textTransform: "uppercase",
+    },
+    amountAdjustmentContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 12,
+    },
+    arrowButton: {
+      padding: 8,
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      borderRadius: 8,
+    },
+    amountDisplay: {
+      flex: 1,
+      alignItems: "center",
+    },
+    amountValue: {
+      fontSize: 42,
+      fontWeight: "800",
+      color: theme.colors.white,
+      textAlign: "center",
+      fontVariant: ["tabular-nums"],
+      textShadowColor: "rgba(0, 0, 0, 0.2)",
+      textShadowOffset: { width: 0, height: 2 },
+      textShadowRadius: 4,
+    },
+    weightText: {
+      fontSize: 14,
+      color: theme.colors.secondary,
+      marginTop: 8,
+      opacity: 0.9,
+      fontWeight: "500",
+    },
+    quickAdjustButtons: {
+      flexDirection: "row",
+      justifyContent: "space-around",
+      marginTop: 12,
+    },
+    quickButton: {
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 6,
+    },
+    quickButtonText: {
+      fontSize: 12,
+      color: theme.colors.secondary,
+      fontWeight: "600",
+    },
+    detailsCard: {
+      backgroundColor: theme.colors.white,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 0,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+      borderWidth: 1,
+      borderColor: "#e5e5e5",
+    },
+    cardHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 0,
+      paddingBottom: 12,
+      paddingHorizontal: 0,
+    },
+    cardTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      color: theme.colors.textDark,
+      marginLeft: 8,
+      flex: 1,
+    },
+    cardContent: {
+      overflow: "hidden",
+      paddingTop: 12,
+    },
+    cardHeaderWithBorder: {
+      borderBottomWidth: 1,
+      borderBottomColor: "#e5e5e5",
+    },
+    detailsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    detailLabel: {
+      fontSize: 14,
+      color: "#666",
+      fontWeight: "500",
+    },
+    detailValue: {
+      fontSize: 14,
+      color: "#333",
+      fontWeight: "600",
+    },
+    footer: {
+      position: "absolute",
+      bottom: 0, // Lift the footer up to avoid tab bar overlap
+      left: 0,
+      right: 0,
+      padding: 16,
+      paddingBottom: 20, // Reduced padding since we moved the footer up
+      backgroundColor: theme.colors.white,
+      borderTopWidth: 1,
+      borderTopColor: "#e5e5e5",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: -2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 20,
+      zIndex: 20,
+    },
+    termsContainer: {
+      marginBottom: 16,
+    },
+    checkboxContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    checkbox: {
+      width: 20,
+      height: 20,
+      borderWidth: 2,
+      borderColor: theme.colors.primary,
+      borderRadius: 4,
+      marginRight: 8,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    checkboxChecked: {
+      backgroundColor: theme.colors.primary,
+    },
+    termsText: {
+      fontSize: 14,
+      color: "#666",
+      flex: 1,
+    },
+    termsLink: {
+      color: theme.colors.textDark,
+      textDecorationLine: "underline",
+    },
+    payButtonDisabled: {
+      opacity: 0.6,
+    },
+    payButton: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: 8,
+      padding: 16,
+      alignItems: "center",
+    },
+    payButtonText: {
+      color: theme.colors.white,
+      fontSize: 16,
+      fontWeight: "bold",
+      letterSpacing: 0.5,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    modalContent: {
+      backgroundColor: theme.colors.white,
+      borderRadius: 16,
+      width: "90%",
+      height: "70%",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 5,
+      flexDirection: "column",
+    },
+    modalHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: "#e5e5e5",
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      color: theme.colors.textDark,
+    },
+    closeButton: {
+      padding: 4,
+    },
+    modalBody: {
+      flex: 1,
+      padding: 16,
+      maxHeight: 'auto',
+    },
+    modalBodyContent: {
+      flexGrow: 1,
+      paddingBottom: 2,
+    },
+    modalFooter: {
+      padding: 5,
+      borderTopWidth: 1,
+      borderTopColor: "#e5e5e5",
+    },
+    acceptButton: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: 8,
+      padding: 12,
+      alignItems: "center",
+    },
+    acceptButtonText: {
+      color: theme.colors.white, // Ensure white text on primary button
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    editButton: {
+      padding: 8,
+      marginLeft: 8,
+      backgroundColor: "rgba(255, 255, 255, 0.1)",
+      borderRadius: 20,
+    },
+    amountInput: {
+      fontSize: 36,
+      fontWeight: "bold",
+      color: theme.colors.white,
+      textAlign: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.2)",
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      minWidth: 160,
+      borderWidth: 1,
+      borderColor: theme.colors.secondary,
+    },
+    errorText: {
+      fontSize: 12,
+      color: "#ff4444",
+      marginTop: 4,
+      textAlign: "center",
+      fontWeight: "500",
+    },
+    disabledText: {
+      opacity: 0.4,
+    },
+    userDetailsCard: {
+      backgroundColor: theme.colors.white,
+      borderRadius: 20,
+      padding: 24,
+      marginBottom: 20,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 12,
+      elevation: 3,
+      borderWidth: 1,
+      borderColor: "rgba(0,0,0,0.05)",
+    },
+    userDetailsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    userDetailLabel: {
+      fontSize: 14,
+      color: "#666",
+      fontWeight: "500",
+    },
+    userDetailValue: {
+      fontSize: 14,
+      color: "#333",
+      fontWeight: "600",
+    },
+    schemeDetailsCard: {
+      backgroundColor: theme.colors.white,
+      borderRadius: 20,
+      padding: 24,
+      marginBottom: 20,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 12,
+      elevation: 3,
+      borderWidth: 1,
+      borderColor: "rgba(0,0,0,0.05)",
+    },
+    schemeDetailsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    schemeDetailLabel: {
+      fontSize: 14,
+      color: "#666",
+      fontWeight: "500",
+    },
+    schemeDetailValue: {
+      fontSize: 14,
+      color: "#333",
+      fontWeight: "600",
+    },
+    termsCard: {
+      backgroundColor: theme.colors.white,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 16,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+      borderWidth: 1,
+      borderColor: "#e5e5e5",
+    },
+    termsHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: "#e5e5e5",
+      paddingBottom: 12,
+    },
+    termsCheckbox: {
+      padding: 8,
+    },
+    paymentButton: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: 8,
+      padding: 16,
+      alignItems: "center",
+    },
+    paymentButtonDisabled: {
+      opacity: 0.6,
+    },
+    paymentButtonText: {
+      color: theme.colors.white,
+      fontSize: 16,
+      fontWeight: "bold",
+      letterSpacing: 0.5,
+    },
+    fixedBottomCard: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: theme.colors.white,
+      borderTopWidth: 1,
+      borderTopColor: "#e5e5e5",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: -2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 8,
+      zIndex: 100,
+    },
+    bottomCardContent: {
+      padding: 20,
+      paddingBottom: 10, // Extra padding to avoid tab bar overlap
+    },
+    bottomTermsSection: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 5,
+    },
+    bottomTermsCheckbox: {
+      padding: 2,
+      marginRight: 12,
+    },
+    bottomTermsText: {
+      fontSize: 14,
+      color: "#666",
+      flex: 1,
+      lineHeight: 20,
+    },
+    bottomTermsLink: {
+      color: 'blue',
+      textDecorationLine: "underline",
+    },
+    bottomPaymentButton: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: 8,
+      padding: 16,
+      alignItems: "center",
+    },
+    bottomPaymentButtonDisabled: {
+      opacity: 0.6,
+    },
+    bottomPaymentButtonText: {
+      color: theme.colors.white,
+      fontSize: 16,
+      fontWeight: "bold",
+      letterSpacing: 0.5,
+    },
+    exitModalContent: {
+      backgroundColor: theme.colors.white,
+      borderRadius: 16,
+      padding: 24,
+      margin: 20,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 8,
+      elevation: 5,
+      maxWidth: 400,
+      zIndex: 1000,
+    },
+    exitModalTitle: {
+      fontSize: 20,
+      fontWeight: "bold",
+      color: "#333",
+      textAlign: "center",
+      marginBottom: 16,
+    },
+    exitModalMessage: {
+      fontSize: 16,
+      color: "#666",
+      textAlign: "center",
+      marginBottom: 24,
+      lineHeight: 22,
+    },
+    exitModalButtons: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+    exitModalCancelButton: {
+      flex: 1,
+      backgroundColor: "#95a5a6",
+      paddingVertical: 14,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      alignItems: "center",
+    },
+    exitModalCancelButtonText: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    exitModalConfirmButton: {
+      flex: 1,
+      backgroundColor: "#e74c3c",
+      paddingVertical: 14,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      alignItems: "center",
+    },
+    exitModalConfirmButtonText: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    schemeCalculationCard: {
+      backgroundColor: theme.colors.white,
+      borderRadius: 20,
+      padding: 0,
+      marginBottom: 16,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 5,
+      borderWidth: 1,
+      borderColor: "#e5e5e5",
+      overflow: "hidden",
+    },
+    schemeCardHeader: {
+      backgroundColor: theme.colors.primary,
+      padding: 20,
+      paddingBottom: 16,
+    },
+    schemeHeaderGradient: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    schemeCardTitle: {
+      fontSize: 20,
+      fontWeight: "bold",
+      color: "#fff",
+      flex: 1,
+    },
+    expandIcon: {
+      marginLeft: "auto",
+    },
+    schemeDateText: {
+      fontSize: 14,
+      color: "#fff",
+      opacity: 0.9,
+      marginTop: 8,
+      fontWeight: "500",
+    },
+    calculationContent: {
+      overflow: "hidden",
+    },
+    schemeMainValueContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      padding: 20,
+      paddingTop: 24,
+      gap: 12,
+    },
+    schemeMainValueBox: {
+      flex: 1,
+    },
+    schemeMainValueGradient: {
+      backgroundColor: theme.colors.primary + "10",
+      borderRadius: 16,
+      padding: 20,
+      alignItems: "center",
+      borderWidth: 2,
+      borderColor: theme.colors.primary + "30",
+    },
+    schemeMainValueLabel: {
+      fontSize: 13,
+      color: "#666",
+      fontWeight: "600",
+      marginBottom: 8,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    schemeMainValueText: {
+      fontSize: 28,
+      fontWeight: "bold",
+      color: theme.colors.textDark,
+    },
+    sliderContainer: {
+      paddingHorizontal: 20,
+      paddingVertical: 20,
+      backgroundColor: "#f8f9fa",
+      position: "relative",
+    },
+    bonusTrackContainer: {
+      flexDirection: "row",
+      height: 36,
+      borderRadius: 18,
+      overflow: "hidden",
+      marginBottom: 8,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    bonusTrackSegment: {
+      justifyContent: "center",
+      alignItems: "center",
+      height: "100%",
+    },
+    bonusTrackLabel: {
+      fontSize: 11,
+      fontWeight: "bold",
+      color: "#fff",
+      textShadowColor: "rgba(0, 0, 0, 0.4)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
+    },
+    sliderWrapper: {
+      position: "absolute",
+      top: 0,
+      left: 20,
+      right: 20,
+      height: 40,
+      zIndex: 10,
+      justifyContent: "center",
+    },
+    slider: {
+      width: "100%",
+      height: 40,
+    },
+    rangeMarkersContainer: {
+      position: "relative",
+      height: 30,
+      marginTop: 36,
+      marginBottom: 8,
+    },
+    rangeMarker: {
+      position: "absolute",
+      alignItems: "center",
+      transform: [{ translateX: -15 }],
+    },
+    markerDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: "#333",
+      marginBottom: 4,
+      borderWidth: 2,
+      borderColor: "#fff",
+    },
+    markerLabel: {
+      fontSize: 10,
+      color: "#666",
+      fontWeight: "700",
+    },
+    sliderLabels: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingHorizontal: 4,
+    },
+    sliderLabel: {
+      fontSize: 12,
+      color: "#666",
+      fontWeight: "600",
+    },
+    bonusAmountContainer: {
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: "rgba(255, 255, 255, 0.3)",
+    },
+    bonusAmountRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    bonusLabel: {
+      fontSize: 14,
+      color: theme.colors.secondary,
+      fontWeight: "600",
+      opacity: 0.9,
+    },
+    bonusAmount: {
+      fontSize: 16,
+      color: "#4CAF50",
+      fontWeight: "bold",
+    },
+    totalAmountRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: 4,
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: "rgba(255, 255, 255, 0.2)",
+    },
+    totalAmountLabel: {
+      fontSize: 15,
+      color: theme.colors.secondary,
+      fontWeight: "700",
+    },
+    totalAmountValue: {
+      fontSize: 20,
+      color: theme.colors.secondary,
+      fontWeight: "bold",
+    },
+    timerBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#fffbeb",
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: "#fef3c7",
+      gap: 8,
+    },
+    timerText: {
+      fontSize: 14,
+      color: "#78350f",
+      fontWeight: "500",
+    },
+    timerCountdown: {
+      fontWeight: "700",
+      color: "#d97706",
+    },
+    progressRowContainer: {
+      marginBottom: 16,
+      width: "100%",
+    },
+    progressBarBackground: {
+      width: "100%",
+      height: 6,
+      backgroundColor: "#e2e8f0",
+      borderRadius: 3,
+      marginTop: 6,
+      overflow: "hidden",
+    },
+    progressBarFill: {
+      height: "100%",
+      backgroundColor: theme.colors.primary,
+      borderRadius: 3,
+    },
+  })
+}
 
 var styles = getStyles(theme);;

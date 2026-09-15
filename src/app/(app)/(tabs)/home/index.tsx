@@ -30,9 +30,8 @@ import {
 } from "react-native";
 import { Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { useFocusEffect, useNavigation, DrawerActions } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter, useLocalSearchParams, useNavigation, useFocusEffect } from "expo-router";
 import LanguageSwitcher from "@/contexts/LanguageSwitcher";
 import LanguageSelector from "@/components/LanguageSelector";
 import LiveRateCard from "@/components/LiveRateCard";
@@ -1617,7 +1616,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state) => {
+    const unsubscribe = NetInfo.addEventListener((state: any) => {
       if (!state.isConnected) {
         Alert.alert(
           t("noInternetTitle"),
@@ -2804,8 +2803,8 @@ export default function Home() {
     if (visibleData?.homeVersion === "v2") return true;
     if (visibleData?.homeVersion === "v1") return false;
 
-    if (visibleData?.enableHomeV2 === 1 || visibleData?.showHomeV2 === 1) return true;
     if (visibleData?.enableHomeV2 === 0 || visibleData?.showHomeV2 === 0) return false;
+    if (visibleData?.enableHomeV2 === 1 || visibleData?.showHomeV2 === 1) return true;
 
     return (
       (theme?.constants as any)?.enableHomeV2 === true ||
@@ -3942,7 +3941,7 @@ export default function Home() {
         onRequestClose={() => setIsLocalDrawerOpen(false)}
       >
         <View style={{ flex: 1, flexDirection: "row", backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <SafeAreaView 
+          <SafeAreaView
             style={{ width: "82%", height: "100%", backgroundColor: theme.colors.background }}
             edges={Platform.OS === "ios" ? ["top", "bottom", "left"] : ["bottom", "left"]}
           >

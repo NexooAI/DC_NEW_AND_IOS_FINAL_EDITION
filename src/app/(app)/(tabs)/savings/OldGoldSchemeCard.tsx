@@ -168,7 +168,7 @@ const OldGoldSchemeCard: React.FC<OldGoldSchemeCardProps> = ({
                 A/C Name / No
               </Text>
               <Text style={styles.paymentInfoValue}>
-                {(item.accountHolder || "N/A").toUpperCase()} / STT-OG-{item.id}
+                {(item.accountHolder || "N/A").toUpperCase()} / OG-{item.id}
               </Text>
             </View>
           </View>

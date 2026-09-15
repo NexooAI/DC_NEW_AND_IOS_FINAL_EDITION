@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { InteractionManager } from 'react-native';
+import { runAfterInteractions } from '@/utils/interactionUtils';
 
 import { logger } from '@/utils/logger';
 interface NavigationState {
@@ -33,9 +33,9 @@ export const useNavigationState = () => {
         state.currentRoute = route;
 
         try {
-            // Use InteractionManager to ensure UI is ready
+            // Ensure UI is ready before navigation
             await new Promise(resolve => {
-                InteractionManager.runAfterInteractions(() => {
+                runAfterInteractions(() => {
                     resolve(true);
                 });
             });

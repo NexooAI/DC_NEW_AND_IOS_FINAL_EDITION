@@ -10,7 +10,8 @@
       "android": { "buildType": "apk", "gradleCommand": ":app:assembleDebug" },
       "ios": { "resourceClass": "m-medium" },
       "env": {
-        "GOOGLE_MAPS_API_KEY": "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44"
+        "GOOGLE_MAPS_API_KEY": "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44",
+        "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
       }
     },
     "preview": {
@@ -20,7 +21,8 @@
       "android": { "buildType": "apk", "gradleCommand": ":app:assembleRelease" },
       "ios": { "simulator": true },
       "env": {
-        "GOOGLE_MAPS_API_KEY": "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44"
+        "GOOGLE_MAPS_API_KEY": "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44",
+        "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
       }
     },
     "production": {
@@ -30,7 +32,8 @@
       "android": { "buildType": "app-bundle", "image": "latest", "gradleCommand": ":app:bundleRelease" },
       "ios": { "resourceClass": "m-medium" },
       "env": {
-        "GOOGLE_MAPS_API_KEY": "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44"
+        "GOOGLE_MAPS_API_KEY": "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44",
+        "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
       }
     }
   }

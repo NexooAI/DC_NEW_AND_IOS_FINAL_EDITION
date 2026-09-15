@@ -12,8 +12,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import AppLayoutWrapper from "@/components/AppLayoutWrapper";
-import { useRouter, Stack } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import ScreenHeader from "@/components/ScreenHeader";
+import { useRouter } from "expo-router";
 import LanguageSelector from "@/components/LanguageSelector";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
@@ -145,21 +146,11 @@ export default function PrivacyPolicy() {
   );
 
   const renderMainContent = () => (
-    <>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <TouchableOpacity onPress={() => setIsLanguageSelectorVisible(true)} style={{ marginRight: 16 }}>
-              <Ionicons name="language" size={24} color={theme.colors.textDark} />
-            </TouchableOpacity>
-          ),
-        }}
-      />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.container}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
-      >
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={styles.container}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+    >
         <View style={styles.container}>
         {/* Hero Section */}
         {/* <LinearGradient
@@ -276,11 +267,18 @@ export default function PrivacyPolicy() {
         </ScrollView>
       </View>
     </KeyboardAvoidingView>
-    </>
   );
 
   return (
-    <AppLayoutWrapper showHeader={false} showBottomBar={false}>
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <ScreenHeader
+        title={t("privacyPolicy") || "Privacy Policy"}
+        rightElement={
+          <TouchableOpacity onPress={() => setIsLanguageSelectorVisible(true)} style={{ width: 40, height: 40, justifyContent: 'center', alignItems: 'center' }}>
+            <Ionicons name="language" size={24} color={theme.colors.textDark} />
+          </TouchableOpacity>
+        }
+      />
       <View style={{ flex: 1 }}>
         {loading
           ? renderLoadingState()
@@ -292,7 +290,7 @@ export default function PrivacyPolicy() {
         visible={isLanguageSelectorVisible}
         onClose={() => setIsLanguageSelectorVisible(false)}
       />
-    </AppLayoutWrapper>
+    </SafeAreaView>
   );
 }
 
@@ -343,7 +341,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 36,
+    paddingTop: 12,
     paddingBottom: 40,
   },
   // New Card Styles

@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from "react";
 import {
   View,
   TouchableOpacity,
-  Text,
   StyleSheet,
   Animated,
   Platform,
@@ -10,14 +9,11 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useSegments } from "expo-router";
-import { theme } from "@/constants/theme";
 import { useTranslation } from "@/hooks/useTranslation";
-import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
+import useGlobalStore, { useAppTheme } from "@/store/global.store";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { LinearGradient } from "expo-linear-gradient";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
-import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
-import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import ResponsiveText from "@/components/ResponsiveText";
 import { getFullImageUrl } from "@/utils/imageUtils";
 import { useNavigationState } from "@/hooks/useNavigationState";
@@ -51,15 +47,15 @@ const TabProfileIcon = ({ source, defaultIcon, color, size, isActive, themeSecon
   return <Ionicons name={defaultIcon} size={size} color={color} />;
 };
 
-export default function CustomBottomBar(props: BottomTabBarProps) {
+export default function CustomBottomBar(_props?: any) {
   const theme = useAppTheme();
-  styles = getStyles(theme);
+  const styles = getStyles(theme);
   const { t } = useTranslation();
   const router = useRouter();
   const segments = useSegments();
-  const { language, user } = useGlobalStore();
+  const { user } = useGlobalStore();
   const { unreadCount } = useUnreadNotifications();
-  const { isVisible } = useAppVisibility();
+  const { isVisible, visibleData } = useAppVisibility();
 
   const getProfileImageSource = () => {
     if (user?.profileImage) {
@@ -70,26 +66,12 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
   const { navigate, isNavigating } = useNavigationState();
   const current = segments[segments.length - 1] || "home";
 
-  const {
-    screenWidth,
-    screenHeight,
-    deviceScale,
-    getResponsiveFontSize,
-    getResponsivePadding,
-    spacing,
-    fontSize,
-    padding,
-    getCardWidth,
-    getGridColumns,
-    getListItemHeight,
-  } = useResponsiveLayout();
-
-  // Animation refs for each tab
+  // Animation refs for each tab (supports up to 6 tabs)
   const tabAnimations = useRef(
-    [0, 1, 2, 3, 4].map(() => new Animated.Value(1))
+    [0, 1, 2, 3, 4, 5].map(() => new Animated.Value(1))
   ).current;
   const badgeAnimations = useRef(
-    [0, 1, 2, 3, 4].map(() => new Animated.Value(1))
+    [0, 1, 2, 3, 4, 5].map(() => new Animated.Value(1))
   ).current;
 
   // List of special pages where the tab bar should be hidden
@@ -110,7 +92,11 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
     "payment-failure",
   ];
 
-  const hasDashboard = getAppConfig().constants.enableDashboard;
+  const hasDashboard = Boolean(
+    theme?.constants?.enableDashboard ||
+    visibleData?.enableDashboardV2 === 1 ||
+    visibleData?.enableDashboard === 1
+  );
 
   const tabs: Tab[] = [
     {
@@ -131,6 +117,12 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
       icon: "grid-outline" as keyof typeof Ionicons.glyphMap,
       iconActive: "grid" as keyof typeof Ionicons.glyphMap,
     }] : []),
+    ...(isVisible("showTabQuickJoin") ? [{
+      name: "quick_join",
+      label: "quickJoin",
+      icon: "flash-outline" as keyof typeof Ionicons.glyphMap,
+      iconActive: "flash" as keyof typeof Ionicons.glyphMap,
+    }] : []),
     {
       name: "rewards",
       label: "rewards",
@@ -146,6 +138,15 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
   ].filter(tab => {
     if (tab.name === "home") return isVisible("showTabHome");
     if (tab.name === "savings") return isVisible("showTabSavings");
+    if (tab.name === "quick_join") return isVisible("showTabQuickJoin");
+    if (tab.name === "dashboard_tab") {
+      return Boolean(
+        hasDashboard &&
+        visibleData?.enableDashboardV2 !== 0 &&
+        visibleData?.enableDashboard !== 0 &&
+        (visibleData?.enableDashboardV2 === 1 || visibleData?.enableDashboard === 1 || isVisible("enableDashboardV2" as any))
+      );
+    }
     if (tab.name === "rewards") return isVisible("showTabRewards");
     if (tab.name === "profile") return isVisible("showTabProfile");
     return true;
@@ -153,6 +154,7 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
 
   // Animate tab press
   const animateTabPress = (index: number) => {
+    if (!tabAnimations[index]) return;
     Animated.sequence([
       Animated.timing(tabAnimations[index], {
         toValue: 0.8,
@@ -169,6 +171,7 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
 
   // Animate badge
   const animateBadge = (index: number) => {
+    if (!badgeAnimations[index]) return;
     Animated.sequence([
       Animated.timing(badgeAnimations[index], {
         toValue: 1.2,
@@ -202,6 +205,8 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
 
     if (tab.name === "dashboard_tab") {
       router.push("/(app)/dashboard");
+    } else if (tab.name === "quick_join") {
+      router.push("/(app)/(tabs)/quick_join");
     } else {
       // Use the navigation state manager to prevent Fragment management errors
       navigate(`/(tabs)/${tab.name}`);
@@ -367,6 +372,5 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginLeft: "auto",
     marginRight: "auto",
   },
-}) }
-
-var styles = getStyles(theme);;
+});
+}
