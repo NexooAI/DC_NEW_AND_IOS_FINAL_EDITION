@@ -342,19 +342,25 @@ export default function PaymentSuccess() {
       const customerName = sanitizeFileName(user?.name || 'Customer');
       const fileName = `Receipt_${customerName}_${transactionId}.pdf`;
 
-      const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
-      const targetUri = `${targetDir}${fileName}`;
-      await FileSystem.copyAsync({ from: uri, to: targetUri });
+      let fileToUse = uri;
+      try {
+        const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+        const targetUri = `${targetDir}${fileName}`;
+        await FileSystem.copyAsync({ from: uri, to: targetUri });
+        fileToUse = targetUri;
+      } catch (e) {
+        logger.warn("Could not copy PDF file, using original URI:", e);
+      }
 
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(targetUri, {
+        await Sharing.shareAsync(fileToUse, {
           mimeType: "application/pdf",
           dialogTitle: "Share Receipt",
           UTI: "com.adobe.pdf",
         });
       } else {
-        Alert.alert("Success", `Receipt generated at: ${targetUri}`);
+        Alert.alert("Success", `Receipt generated at: ${fileToUse}`);
       }
     } catch (error) {
       logger.error("Error sharing receipt:", error);

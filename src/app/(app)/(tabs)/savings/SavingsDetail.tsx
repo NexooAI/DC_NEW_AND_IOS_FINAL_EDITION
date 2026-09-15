@@ -331,24 +331,30 @@ const SavingsDetail = () => {
       );
       const fileName = `Payment_${customerName}_${accountNo}_${paymentId}.pdf`;
 
-      const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
-      const targetUri = `${targetDir}${fileName}`;
-      await FileSystem.copyAsync({ from: uri, to: targetUri });
+      let fileToUse = uri;
+      try {
+        const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+        const targetUri = `${targetDir}${fileName}`;
+        await FileSystem.copyAsync({ from: uri, to: targetUri });
+        fileToUse = targetUri;
+      } catch (e) {
+        console.warn("Could not copy payment receipt file, using original URI:", e);
+      }
 
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(targetUri, {
+        await Sharing.shareAsync(fileToUse, {
           UTI: "com.adobe.pdf",
           mimeType: "application/pdf",
           dialogTitle: "Share payment receipt",
         });
       } else {
         if (Platform.OS === "ios") {
-          await WebBrowser.openBrowserAsync(targetUri);
+          await WebBrowser.openBrowserAsync(fileToUse);
         } else {
           Alert.alert(
             "Saved",
-            `Receipt saved successfully!\n\nLocation:\n${targetUri}\n\nYou can access it from your device's Files/Documents folder: On My Device -> ${fileName}`
+            `Receipt saved successfully!\n\nLocation:\n${fileToUse}\n\nYou can access it from your device's Files/Documents folder: On My Device -> ${fileName}`
           );
         }
       }
@@ -405,11 +411,17 @@ const SavingsDetail = () => {
       );
       const fileName = `Payment_${customerName}_${accountNo}_${paymentId}.pdf`;
 
-      const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
-      const targetUri = `${targetDir}${fileName}`;
-      await FileSystem.copyAsync({ from: uri, to: targetUri });
+      let fileToUse = uri;
+      try {
+        const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+        const targetUri = `${targetDir}${fileName}`;
+        await FileSystem.copyAsync({ from: uri, to: targetUri });
+        fileToUse = targetUri;
+      } catch (e) {
+        console.warn("Could not copy payment receipt file, using original URI:", e);
+      }
 
-      await saveFileToPublicDirectory(targetUri, fileName, "Payment receipt saved to your chosen folder successfully!");
+      await saveFileToPublicDirectory(fileToUse, fileName, "Payment receipt saved to your chosen folder successfully!");
     } catch (e) {
       console.error("Receipt download failed", e);
       Alert.alert("Error", "Failed to download receipt");

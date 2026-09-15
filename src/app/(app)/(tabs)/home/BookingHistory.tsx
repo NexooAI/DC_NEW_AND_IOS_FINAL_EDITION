@@ -109,24 +109,30 @@ export default function BookingHistory() {
       const accountNo = sanitizeFileName(user?.id?.toString() || '000000');
       const fileName = `Booking_${customerName}_${accountNo}_${booking.id}.pdf`;
 
-      const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
-      const targetUri = `${targetDir}${fileName}`;
-      await FileSystem.copyAsync({ from: uri, to: targetUri });
+      let fileToUse = uri;
+      try {
+        const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+        const targetUri = `${targetDir}${fileName}`;
+        await FileSystem.copyAsync({ from: uri, to: targetUri });
+        fileToUse = targetUri;
+      } catch (e) {
+        console.warn('Could not copy booking receipt file, using original URI:', e);
+      }
 
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(targetUri, {
+        await Sharing.shareAsync(fileToUse, {
           UTI: 'com.adobe.pdf',
           mimeType: 'application/pdf',
           dialogTitle: 'Share booking receipt',
         });
       } else {
         if (Platform.OS === 'ios') {
-          await WebBrowser.openBrowserAsync(targetUri);
+          await WebBrowser.openBrowserAsync(fileToUse);
         } else {
           Alert.alert(
             'Saved',
-            `Receipt saved successfully!\n\nLocation:\n${targetUri}\n\nYou can access it from your device's Files/Documents folder: On My Device -> ${fileName}`
+            `Receipt saved successfully!\n\nLocation:\n${fileToUse}\n\nYou can access it from your device's Files/Documents folder: On My Device -> ${fileName}`
           );
         }
       }
@@ -161,11 +167,17 @@ export default function BookingHistory() {
       const accountNo = sanitizeFileName(user?.id?.toString() || '000000');
       const fileName = `Booking_${customerName}_${accountNo}_${booking.id}.pdf`;
 
-      const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
-      const targetUri = `${targetDir}${fileName}`;
-      await FileSystem.copyAsync({ from: uri, to: targetUri });
+      let fileToUse = uri;
+      try {
+        const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+        const targetUri = `${targetDir}${fileName}`;
+        await FileSystem.copyAsync({ from: uri, to: targetUri });
+        fileToUse = targetUri;
+      } catch (e) {
+        console.warn('Could not copy booking receipt file, using original URI:', e);
+      }
 
-      await saveFileToPublicDirectory(targetUri, fileName, "Booking receipt saved to your chosen folder successfully!");
+      await saveFileToPublicDirectory(fileToUse, fileName, "Booking receipt saved to your chosen folder successfully!");
     } catch (e) {
       console.error('Booking receipt download failed', e);
       Alert.alert('Error', 'Failed to download booking receipt');
