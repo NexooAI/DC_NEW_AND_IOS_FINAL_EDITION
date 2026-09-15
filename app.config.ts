@@ -118,6 +118,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             "expo-router",
             "expo-secure-store",
             "expo-localization",
+            "expo-sharing",
+            "@react-native-community/datetimepicker",
             [
                 "expo-splash-screen",
                 {
