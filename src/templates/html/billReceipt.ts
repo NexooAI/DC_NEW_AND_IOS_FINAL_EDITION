@@ -1,6 +1,6 @@
 /**
  * Bill Receipt HTML Template
- * Generates HTML content for bill payments
+ * Generates HTML content for customer bills (Single Page A4 Layout)
  */
 
 import { theme } from '../../constants/theme';
@@ -8,7 +8,7 @@ import { theme } from '../../constants/theme';
 export interface BillReceiptData {
     billId: string | number;
     billNumber: string;
-    description: string;
+    description?: string;
     totalAmount: number | string;
     paidAmount: number | string;
     pendingAmount: number | string;
@@ -40,7 +40,8 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
         const parsed = new Date(val);
         if (Number.isNaN(parsed.getTime())) return val;
         return parsed.toLocaleDateString("en-GB", {
-            day: "2-digit", month: "short", year: "numeric"
+            day: "2-digit", month: "short", year: "numeric",
+            hour: "2-digit", minute: "2-digit"
         });
     };
 
@@ -52,45 +53,50 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Bill Receipt - Kanisaa Jewellers</title>
         <style>
-            body {
+            @page {
+                size: A4 portrait;
+                margin: 6mm 8mm;
+            }
+            html, body {
+                margin: 0;
+                padding: 0;
                 font-family: 'Times New Roman', serif;
                 color: #000;
                 background: #fff;
-                margin: 20px;
-                line-height: 1.4;
-                font-size: 12px;
+                line-height: 1.3;
+                font-size: 11px;
             }
             .header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 15px;
-                padding: 10px 15px;
+                margin-bottom: 10px;
+                padding: 8px 12px;
                 background-color: ${theme.colors.primary} !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
                 color: #fff;
+                page-break-inside: avoid;
             }
-            .company-info { font-size: 12px; font-weight: bold; }
             .letter-title {
                 text-align: center;
                 font-weight: bold;
-                font-size: 14px;
-                margin: 15px 0;
+                font-size: 13px;
+                margin: 10px 0;
                 text-decoration: underline;
             }
             .details-table {
                 width: 100%;
-                min-width: 360px;
                 border-collapse: collapse;
-                margin: 15px 0;
-                font-size: 11px;
+                margin: 10px 0;
+                font-size: 10.5px;
                 table-layout: fixed;
+                page-break-inside: avoid;
             }
             .details-table th, .details-table td {
                 width: 50%;
                 text-align: left;
-                padding: 5px 6px;
+                padding: 4px 6px;
                 border: 1px solid #000;
                 word-break: break-word;
             }
@@ -98,39 +104,39 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
                 background: #eee;
             }
             .footer {
-                margin-top: 20px;
-                font-size: 11px;
+                margin-top: 12px;
+                font-size: 10.5px;
                 border-top: 1px solid #000;
-                padding-top: 8px;
+                padding-top: 6px;
+                page-break-inside: avoid;
             }
             .footer .address {
                 text-align: center;
-                margin-bottom: 6px;
-                line-height: 1.3;
+                margin-bottom: 4px;
+                line-height: 1.2;
             }
             .footer-bottom {
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
-                font-size: 11px;
+                font-size: 10.5px;
             }
             .signature { font-weight: bold; text-align: right; }
             .status-badge { font-weight: bold; text-transform: uppercase; }
-            .status-paid { color: green; }
-            .status-partial { color: #DAA520; }
-            .status-expired { color: red; }
+            .status-completed { color: green; }
+            .status-pending { color: orange; }
         </style>
     </head>
     <body>
         <div class="header" style="justify-content: center; text-align: center;">
             <div class="logo-container">
                 ${logoBase64
-            ? `<img src="${logoBase64}" alt="Kanisaa Logo" style="max-height: 60px; width: auto;" />`
-            : `<div class="brand-name" style="font-size: 20px; font-weight: bold; color: #FFD700; letter-spacing: 1px;">${theme.constants.customerName}</div>
-                       <div class="brand-tagline" style="font-size: 11px; color: #fff; letter-spacing: 2px;">GOLD & DIAMONDS</div>`
+            ? `<img src="${logoBase64}" alt="Kanisaa Logo" style="max-height: 50px; width: auto;" />`
+            : `<div class="brand-name" style="font-size: 18px; font-weight: bold; color: #FFD700; letter-spacing: 1px;">${theme.constants.customerName}</div>
+                       <div class="brand-tagline" style="font-size: 10px; color: #fff; letter-spacing: 2px;">GOLD & DIAMONDS</div>`
         }
             </div>
-            <div class="company-address" style="font-size: 11px; opacity: 0.9; margin-top: 4px;">
+            <div class="company-address" style="font-size: 10px; opacity: 0.9; margin-top: 3px;">
                 ${theme.constants.address}<br/>
                 <strong>Mobile:</strong> ${theme.constants.mobile} | <strong>Email:</strong> ${theme.constants.email}
             </div>
@@ -138,25 +144,18 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
 
         <div class="letter-title">BILL PAYMENT RECEIPT</div>
 
-        <p>Dear ${userName || "Customer"},</p>
-        <p>We acknowledge your payment receipt details for the following invoice:</p>
+        <p style="margin: 4px 0;">Dear ${userName || "Customer"},</p>
+        <p style="margin: 4px 0;">We acknowledge with thanks the receipt of your bill payment as detailed below:</p>
 
         <!-- Bill Details -->
         <table class="details-table">
             <tr>
-                <th>Bill Reference ID</th>
-                <td># ${billId}</td>
-            </tr>
-            <tr>
                 <th>Bill Number</th>
-                <td>${billNumber}</td>
+                <td># ${billNumber}</td>
             </tr>
+            ${description ? `<tr><th>Description</th><td>${description}</td></tr>` : ""}
             <tr>
-                <th>Description</th>
-                <td>${description}</td>
-            </tr>
-            <tr>
-                <th>Total Bill Amount</th>
+                <th>Total Amount</th>
                 <td>₹${Number(totalAmount).toLocaleString()}</td>
             </tr>
             <tr>
@@ -179,19 +178,19 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
             ${userEmail ? `<tr><th>Customer Email</th><td>${userEmail}</td></tr>` : ""}
         </table>
 
-        <p>Thank you for choosing <strong>${theme.constants.customerName}</strong>. This receipt serves as official proof of payment details.</p>
+        <p style="margin: 4px 0;">Thank you for your business with <strong>${theme.constants.customerName}</strong>. This receipt serves as official proof of payment.</p>
 
         <!-- Footer -->
         <div class="footer">
             <div class="address">
-                <p>${theme.constants.address}</p>
-                <p>Mobile: ${theme.constants.mobile} | Email: ${theme.constants.email}</p>
+                <p style="margin: 2px 0;">${theme.constants.address}</p>
+                <p style="margin: 2px 0;">Mobile: ${theme.constants.mobile} | Email: ${theme.constants.email}</p>
             </div>
             <div class="footer-bottom">
-                <p>Date: ${new Date().toLocaleDateString("en-GB", {
-        day: "2-digit", month: "short", year: "numeric"
-    })}</p>
-                <p class="signature">Authorized Signatory<br/>${theme.constants.customerName}</p>
+                <p style="margin: 2px 0;">Date: ${new Date().toLocaleDateString("en-GB", {
+            day: "2-digit", month: "short", year: "numeric"
+        })}</p>
+                <p class="signature" style="margin: 2px 0;">Authorized Signatory<br/>${theme.constants.customerName}</p>
             </div>
         </div>
     </body>

@@ -28,6 +28,7 @@ import * as SecureStore from "expo-secure-store";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as Print from "expo-print";
+import { getPdfFileUri } from "@/utils/fileUtils";
 import { generatePaymentReceiptHTML, PaymentReceiptData } from "@/templates/html";
 import { investmentAPI, billsAPI } from "@/services/api";
 
@@ -336,31 +337,21 @@ export default function PaymentSuccess() {
       };
 
       const htmlContent = generatePaymentReceiptHTML(receiptData);
-      const { uri } = await Print.printToFileAsync({ html: htmlContent });
-
       const sanitizeFileName = (str: string) => str.replace(/[^a-zA-Z0-9]/g, '_');
       const customerName = sanitizeFileName(user?.name || 'Customer');
       const fileName = `Receipt_${customerName}_${transactionId}.pdf`;
 
-      let fileToUse = uri;
-      try {
-        const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
-        const targetUri = `${targetDir}${fileName}`;
-        await FileSystem.copyAsync({ from: uri, to: targetUri });
-        fileToUse = targetUri;
-      } catch (e) {
-        logger.warn("Could not copy PDF file, using original URI:", e);
-      }
+      const targetUri = await getPdfFileUri(htmlContent, fileName);
 
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(fileToUse, {
+        await Sharing.shareAsync(targetUri, {
           mimeType: "application/pdf",
           dialogTitle: "Share Receipt",
           UTI: "com.adobe.pdf",
         });
       } else {
-        Alert.alert("Success", `Receipt generated at: ${fileToUse}`);
+        Alert.alert("Success", `Receipt generated at: ${targetUri}`);
       }
     } catch (error) {
       logger.error("Error sharing receipt:", error);

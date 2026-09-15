@@ -29,7 +29,7 @@ import { responsiveUtils } from '@/utils/responsiveUtils';
 import apiClient, { billsAPI } from '@/services/api';
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { logAppEvent } from '@/services/appEventService';
-import { saveFileToPublicDirectory } from '@/utils/fileUtils';
+import { saveFileToPublicDirectory, getPdfFileUri } from '@/utils/fileUtils';
 
 const { wp, hp, rf } = responsiveUtils;
 
@@ -238,36 +238,26 @@ export default function BillPayment() {
 
     try {
       const htmlContent = generateBillReceiptHTML(receiptData);
-      const { uri } = await Print.printToFileAsync({ html: htmlContent });
-
       const customerName = sanitizeFileName(user?.name || 'Customer');
       const accountNo = sanitizeFileName(user?.id?.toString() || '000000');
       const fileName = `Bill_${customerName}_${accountNo}_${bill.billNumber}.pdf`;
 
-      let fileToUse = uri;
-      try {
-        const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
-        const targetUri = `${targetDir}${fileName}`;
-        await FileSystem.copyAsync({ from: uri, to: targetUri });
-        fileToUse = targetUri;
-      } catch (e) {
-        console.warn('Could not copy bill receipt file, using original URI:', e);
-      }
+      const targetUri = await getPdfFileUri(htmlContent, fileName);
 
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(fileToUse, {
+        await Sharing.shareAsync(targetUri, {
           UTI: 'com.adobe.pdf',
           mimeType: 'application/pdf',
           dialogTitle: 'Share bill receipt',
         });
       } else {
         if (Platform.OS === 'ios') {
-          await WebBrowser.openBrowserAsync(fileToUse);
+          await WebBrowser.openBrowserAsync(targetUri);
         } else {
           Alert.alert(
             'Saved',
-            `Receipt saved successfully!\n\nLocation:\n${fileToUse}\n\nYou can access it from your device's Files/Documents folder: On My Device -> ${fileName}`
+            `Receipt saved successfully!\n\nLocation:\n${targetUri}\n\nYou can access it from your device's Files/Documents folder: On My Device -> ${fileName}`
           );
         }
       }
@@ -294,23 +284,13 @@ export default function BillPayment() {
 
     try {
       const htmlContent = generateBillReceiptHTML(receiptData);
-      const { uri } = await Print.printToFileAsync({ html: htmlContent });
-
       const customerName = sanitizeFileName(user?.name || 'Customer');
       const accountNo = sanitizeFileName(user?.id?.toString() || '000000');
       const fileName = `Bill_${customerName}_${accountNo}_${bill.billNumber}.pdf`;
 
-      let fileToUse = uri;
-      try {
-        const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
-        const targetUri = `${targetDir}${fileName}`;
-        await FileSystem.copyAsync({ from: uri, to: targetUri });
-        fileToUse = targetUri;
-      } catch (e) {
-        console.warn('Could not copy bill receipt file, using original URI:', e);
-      }
+      const targetUri = await getPdfFileUri(htmlContent, fileName);
 
-      await saveFileToPublicDirectory(fileToUse, fileName, 'Bill receipt saved to your chosen folder successfully!');
+      await saveFileToPublicDirectory(targetUri, fileName, 'Bill receipt saved to your chosen folder successfully!');
     } catch (e) {
       console.error('Bill receipt download failed', e);
       Alert.alert('Error', 'Failed to download bill receipt');

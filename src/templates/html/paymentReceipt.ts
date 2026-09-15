@@ -1,13 +1,13 @@
 /**
  * Payment Receipt HTML Template
- * Generates HTML content for payment receipts
+ * Generates HTML content for savings & scheme payments (Single Page A4 Layout)
  */
 
 import { theme } from '../../constants/theme';
 
 export interface PaymentReceiptData {
-    transactionId: string;
-    paymentId: string;
+    transactionId: string | number;
+    paymentId: string | number;
     amountPaid: number;
     paymentDate: string;
     paymentMode?: string;
@@ -27,13 +27,13 @@ export interface PaymentReceiptData {
         accountName: string;
         accountNo: string;
         schemeName: string;
-        paymentFrequencyName: string;
+        paymentFrequencyName?: string;
         joiningDate: string;
-        end_date: string;
-        paymentStatus: string;
-        total_paid: number;
-        totalgoldweight: number;
-        current_goldrate: number;
+        paymentStatus?: string;
+        total_paid?: number;
+        totalgoldweight?: number;
+        current_goldrate?: number;
+        end_date?: string;
     };
     logoBase64?: string;
 }
@@ -57,8 +57,6 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         inversement,
         logoBase64
     } = data;
-
-    const statusText = status || "Success";
 
     // Get weight directly or fall back to 0
     let weight = Number(goldWeight || 0);
@@ -90,100 +88,107 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Receipt - Kanisaa Jewellery</title>
     <style>
-        body {
+        @page {
+            size: A4 portrait;
+            margin: 6mm 8mm;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             color: #1a1a2e;
             background: #ffffff;
-            margin: 0;
-            padding: 20px;
-            font-size: 12px;
-            line-height: 1.5;
+            font-size: 11px;
+            line-height: 1.3;
         }
         .container {
-            max-width: 650px;
+            max-width: 100%;
             margin: 0 auto;
-            border: 2px solid #a3203a;
-            border-radius: 12px;
+            border: 1.5px solid #a3203a;
+            border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            box-shadow: none;
+            page-break-inside: avoid;
         }
         .header {
             background: linear-gradient(135deg, #7A143C 0%, #a3203a 50%, #5B0E2D 100%);
             color: #ffffff;
-            padding: 20px;
+            padding: 12px 16px;
             text-align: center;
-            border-bottom: 3px solid #D4AF37;
+            border-bottom: 2px solid #D4AF37;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
         .logo-container {
-            margin-bottom: 10px;
+            margin-bottom: 4px;
         }
         .brand-name {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 800;
-            letter-spacing: 1.5px;
+            letter-spacing: 1px;
             color: #FFD700;
             text-transform: uppercase;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
         .brand-tagline {
-            font-size: 11px;
+            font-size: 10px;
             letter-spacing: 2px;
             color: #ffffff;
             opacity: 0.9;
             text-transform: uppercase;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
         .company-address {
-            font-size: 11px;
+            font-size: 10px;
             color: rgba(255,255,255,0.9);
-            line-height: 1.4;
+            line-height: 1.3;
             max-width: 480px;
             margin: 0 auto;
         }
         .receipt-body {
-            padding: 20px 24px;
+            padding: 12px 16px;
         }
         .title-badge {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         .receipt-title {
             display: inline-block;
             background: #FAF5E8;
             color: #a3203a;
             border: 1px solid #D4AF37;
-            padding: 6px 20px;
-            border-radius: 20px;
-            font-size: 13px;
+            padding: 4px 16px;
+            border-radius: 16px;
+            font-size: 12px;
             font-weight: bold;
             letter-spacing: 1px;
             text-transform: uppercase;
         }
         .greeting {
-            font-size: 13px;
+            font-size: 11px;
             color: #333;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
         }
         .table-section-heading {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             color: #a3203a;
             background-color: #F8F9FA;
-            padding: 8px 12px;
-            border-left: 4px solid #D4AF37;
-            margin-top: 15px;
-            margin-bottom: 8px;
+            padding: 5px 10px;
+            border-left: 3px solid #D4AF37;
+            margin-top: 8px;
+            margin-bottom: 4px;
             border-radius: 4px;
         }
         .details-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 16px;
+            margin-bottom: 8px;
         }
         .details-table th, .details-table td {
-            padding: 8px 12px;
+            padding: 4px 8px;
             border-bottom: 1px solid #EAEAEA;
-            font-size: 11.5px;
+            font-size: 10.5px;
             text-align: left;
         }
         .details-table th {
@@ -198,7 +203,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
             word-break: break-word;
         }
         .highlight-amount {
-            font-size: 15px;
+            font-size: 13px;
             font-weight: bold;
             color: #a3203a;
         }
@@ -207,29 +212,30 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
             background-color: #FFF9E6;
             color: #B8860B;
             border: 1px solid #FFE082;
-            padding: 2px 8px;
-            border-radius: 10px;
+            padding: 1px 6px;
+            border-radius: 8px;
             font-weight: bold;
         }
         .footer {
             background-color: #FDFBF7;
             border-top: 1px dashed #D4AF37;
-            padding: 16px 24px;
-            font-size: 11px;
+            padding: 10px 16px;
+            font-size: 10px;
             color: #555;
+            page-break-inside: avoid;
         }
         .footer-thankyou {
             text-align: center;
-            font-size: 12px;
+            font-size: 10.5px;
             color: #333;
-            margin-bottom: 12px;
-            line-height: 1.4;
+            margin-bottom: 6px;
+            line-height: 1.3;
         }
         .footer-flex {
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            margin-top: 12px;
+            margin-top: 6px;
         }
         .signature-box {
             text-align: right;
@@ -237,7 +243,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         .signature-title {
             font-weight: bold;
             color: #a3203a;
-            margin-top: 25px;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -247,7 +253,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         <div class="header">
             <div class="logo-container">
                 ${logoBase64
-            ? `<img src="${logoBase64}" alt="Kanisaa Logo" style="max-height: 60px; width: auto;" />`
+            ? `<img src="${logoBase64}" alt="Kanisaa Logo" style="max-height: 50px; width: auto;" />`
             : `<div class="brand-name">${theme.constants.customerName}</div>
                        <div class="brand-tagline">Gold & Diamonds</div>`
         }
@@ -267,7 +273,6 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
             <!-- Greeting -->
             <div class="greeting">
                 Dear <strong>${userName || "Valued Customer"}</strong>,
-                <br/>
                 We acknowledge with thanks the receipt of your payment as detailed below:
             </div>
 
@@ -332,7 +337,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
                 </div>
                 <div class="signature-box">
                     <div class="signature-title">For ${theme.constants.customerName}</div>
-                    <div style="font-size: 10px; color: #888; margin-top: 4px;">(Authorized Signatory)</div>
+                    <div style="font-size: 9px; color: #888; margin-top: 2px;">(Authorized Signatory)</div>
                 </div>
             </div>
         </div>
@@ -341,4 +346,3 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
 </html>
     `;
 };
-
