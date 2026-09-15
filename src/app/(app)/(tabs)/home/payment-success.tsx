@@ -344,7 +344,7 @@ export default function PaymentSuccess() {
 
       const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
       const targetUri = `${targetDir}${fileName}`;
-      await FileSystem.moveAsync({ from: uri, to: targetUri });
+      await FileSystem.copyAsync({ from: uri, to: targetUri });
 
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {

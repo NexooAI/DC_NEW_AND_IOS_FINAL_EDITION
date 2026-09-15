@@ -333,7 +333,7 @@ const SavingsDetail = () => {
 
       const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
       const targetUri = `${targetDir}${fileName}`;
-      await FileSystem.moveAsync({ from: uri, to: targetUri });
+      await FileSystem.copyAsync({ from: uri, to: targetUri });
 
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
@@ -407,7 +407,7 @@ const SavingsDetail = () => {
 
       const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
       const targetUri = `${targetDir}${fileName}`;
-      await FileSystem.moveAsync({ from: uri, to: targetUri });
+      await FileSystem.copyAsync({ from: uri, to: targetUri });
 
       await saveFileToPublicDirectory(targetUri, fileName, "Payment receipt saved to your chosen folder successfully!");
     } catch (e) {
