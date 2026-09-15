@@ -115,6 +115,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         plugins: [
             "expo-font",
             "expo-asset",
+            "expo-file-system",
             "expo-router",
             "expo-secure-store",
             "expo-localization",
