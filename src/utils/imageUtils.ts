@@ -84,7 +84,7 @@ export const loadLogoAsBase64 = async (): Promise<string> => {
   if (cachedLogoBase64) {
     return cachedLogoBase64;
   }
-  const fallbackUrl = "https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp";
+  const fallbackUrl = "https://api.prod.kanisaajewellery.com/uploads/logo.png";
   try {
     const asset = Asset.fromModule(require("../../assets/images/logo.png"));
     await asset.downloadAsync();

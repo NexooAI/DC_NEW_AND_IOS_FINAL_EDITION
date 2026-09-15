@@ -122,12 +122,17 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
         </style>
     </head>
     <body>
-        <div class="header">
-            <div class="company-info">
-                ${theme.constants.customerName}
+        <div class="header" style="justify-content: center; text-align: center;">
+            <div class="logo-container">
+                ${logoBase64
+            ? `<img src="${logoBase64}" alt="Kanisaa Logo" style="max-height: 60px; width: auto;" />`
+            : `<div class="brand-name" style="font-size: 20px; font-weight: bold; color: #FFD700; letter-spacing: 1px;">${theme.constants.customerName}</div>
+                       <div class="brand-tagline" style="font-size: 11px; color: #fff; letter-spacing: 2px;">GOLD & DIAMONDS</div>`
+        }
             </div>
-            <div>
-                <img src="${logoBase64 || 'https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp'}" alt="Logo" style="max-width:90px; height:auto;">
+            <div class="company-address" style="font-size: 11px; opacity: 0.9; margin-top: 4px;">
+                ${theme.constants.address}<br/>
+                <strong>Mobile:</strong> ${theme.constants.mobile} | <strong>Email:</strong> ${theme.constants.email}
             </div>
         </div>
 

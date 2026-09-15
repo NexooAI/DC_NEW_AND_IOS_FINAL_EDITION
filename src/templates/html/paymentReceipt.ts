@@ -50,6 +50,8 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         goldRate,
         goldWeight,
         userName,
+        userMobile,
+        userEmail,
         rewardAmount,
         rewardGoldGrams,
         inversement,
@@ -71,167 +73,272 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         weight = Number((amountPaid / rate).toFixed(3));
     }
 
+    const formattedDate = (val: string) => {
+        const parsed = new Date(val);
+        if (Number.isNaN(parsed.getTime())) return val;
+        return parsed.toLocaleDateString("en-GB", {
+            day: "2-digit", month: "short", year: "numeric",
+            hour: "2-digit", minute: "2-digit"
+        });
+    };
+
     return `
-   <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Receipt - DigiGold Savings</title>
+    <title>Payment Receipt - Kanisaa Jewellery</title>
     <style>
         body {
-            font-family: 'Times New Roman', serif;
-            color: #000;
-            background: #fff;
-            margin: 20px;
-            line-height: 1.4;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #1a1a2e;
+            background: #ffffff;
+            margin: 0;
+            padding: 20px;
             font-size: 12px;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            border: 2px solid #a3203a;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding: 10px 15px;
-            background-color: ${theme.colors.primary} !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-            color: #fff;
-        }
-        .company-info { font-size: 12px; font-weight: bold; }
-        .letter-title {
+            background: linear-gradient(135deg, #7A143C 0%, #a3203a 50%, #5B0E2D 100%);
+            color: #ffffff;
+            padding: 20px;
             text-align: center;
+            border-bottom: 3px solid #D4AF37;
+        }
+        .logo-container {
+            margin-bottom: 10px;
+        }
+        .brand-name {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            color: #FFD700;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+        .brand-tagline {
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: #ffffff;
+            opacity: 0.9;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .company-address {
+            font-size: 11px;
+            color: rgba(255,255,255,0.9);
+            line-height: 1.4;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+        .receipt-body {
+            padding: 20px 24px;
+        }
+        .title-badge {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .receipt-title {
+            display: inline-block;
+            background: #FAF5E8;
+            color: #a3203a;
+            border: 1px solid #D4AF37;
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-size: 13px;
             font-weight: bold;
-            font-size: 14px;
-            margin: 15px 0;
-            text-decoration: underline;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .greeting {
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .table-section-heading {
+            font-size: 12px;
+            font-weight: bold;
+            color: #a3203a;
+            background-color: #F8F9FA;
+            padding: 8px 12px;
+            border-left: 4px solid #D4AF37;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            border-radius: 4px;
         }
         .details-table {
             width: 100%;
-            min-width: 360px;
             border-collapse: collapse;
-            margin: 15px 0;
-            font-size: 11px;
-            table-layout: fixed;
+            margin-bottom: 16px;
         }
         .details-table th, .details-table td {
-            width: 50%;
+            padding: 8px 12px;
+            border-bottom: 1px solid #EAEAEA;
+            font-size: 11.5px;
             text-align: left;
-            padding: 5px 6px;
-            border: 1px solid #000;
-            word-break: break-word;
         }
         .details-table th {
-            background: #eee;
+            width: 42%;
+            color: #555;
+            font-weight: 600;
+            background-color: #FAFAFA;
         }
-        .details-table .section-heading {
-            text-align: center;
+        .details-table td {
+            color: #111;
+            font-weight: 500;
+            word-break: break-word;
+        }
+        .highlight-amount {
+            font-size: 15px;
             font-weight: bold;
-            background: #f4f4f4;
-            color: #222;
-            padding: 8px 0;
-            font-size: 12px;
+            color: #a3203a;
+        }
+        .gold-badge {
+            display: inline-block;
+            background-color: #FFF9E6;
+            color: #B8860B;
+            border: 1px solid #FFE082;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
         }
         .footer {
-            margin-top: 20px;
+            background-color: #FDFBF7;
+            border-top: 1px dashed #D4AF37;
+            padding: 16px 24px;
             font-size: 11px;
-            border-top: 1px solid #000;
-            padding-top: 8px;
+            color: #555;
         }
-        .footer .address {
+        .footer-thankyou {
             text-align: center;
-            margin-bottom: 6px;
-            line-height: 1.3;
+            font-size: 12px;
+            color: #333;
+            margin-bottom: 12px;
+            line-height: 1.4;
         }
-        .footer-bottom {
+        .footer-flex {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            font-size: 11px;
+            align-items: flex-end;
+            margin-top: 12px;
         }
-        .signature { font-weight: bold; text-align: right; }
-        .status-badge { font-weight: bold; text-transform: uppercase; }
-        .status-active { color: green; }
-        .status-pending { color: orange; }
-        .status-failed { color: red; }
+        .signature-box {
+            text-align: right;
+        }
+        .signature-title {
+            font-weight: bold;
+            color: #a3203a;
+            margin-top: 25px;
+        }
     </style>
 </head>
 <body>
-    <div class="header" style="justify-content: center;">
-        <div>
-            <img src="${logoBase64 || 'https://dcjewellers.org/wp-content/uploads/2025/05/logo_bg_dark.webp'}" alt="Logo" style="max-width:90px; height:auto;">
+    <div class="container">
+        <!-- Brand Header -->
+        <div class="header">
+            <div class="logo-container">
+                ${logoBase64
+            ? `<img src="${logoBase64}" alt="Kanisaa Logo" style="max-height: 60px; width: auto;" />`
+            : `<div class="brand-name">${theme.constants.customerName}</div>
+                       <div class="brand-tagline">Gold & Diamonds</div>`
+        }
+            </div>
+            <div class="company-address">
+                ${theme.constants.address}<br/>
+                <strong>Mobile:</strong> ${theme.constants.mobile} | <strong>Email:</strong> ${theme.constants.email}
+            </div>
         </div>
-    </div>
 
-    <div class="letter-title">PAYMENT RECEIPT</div>
+        <div class="receipt-body">
+            <!-- Title -->
+            <div class="title-badge">
+                <span class="receipt-title">Official Payment Receipt</span>
+            </div>
 
-    <p>Dear ${userName || "Customer"},</p>
-    <p>We acknowledge the receipt of your payment as per the details below:</p>
+            <!-- Greeting -->
+            <div class="greeting">
+                Dear <strong>${userName || "Valued Customer"}</strong>,
+                <br/>
+                We acknowledge with thanks the receipt of your payment as detailed below:
+            </div>
 
-    <!-- Transaction Details -->
-    <table class="details-table">
-        <tr>
-            <th>Transaction ID</th>
-            <td>${transactionId}</td>
-        </tr>
-        <tr>
-            <th>Payment ID</th>
-            <td>${paymentId}</td>
-        </tr>
-        <tr>
-            <th>Amount Paid</th>
-            <td>₹${Number(amountPaid).toLocaleString()}</td>
-        </tr>
-        <tr>
-            <th>Payment Date</th>
-            <td>${new Date(paymentDate).toLocaleDateString("en-GB", {
-        day: "2-digit", month: "short", year: "numeric",
-        hour: "2-digit", minute: "2-digit"
-    })}</td>
-        </tr>
-        <tr>
-            <th>Payment Mode</th>
-            <td>${(paymentMode || "NB").toUpperCase()}${paymentModeType ? ` (${paymentModeType.toUpperCase()})` : ""}</td>
-        </tr>
-        ${data.orderId ? `<tr><th>Order ID</th><td>${data.orderId}</td></tr>` : ""}
-        ${data.utrReference ? `<tr><th>UTR Reference</th><td>${data.utrReference}</td></tr>` : ""}
-        ${goldRate ? `<tr><th>Gold Rate</th><td>₹${goldRate}/gram</td></tr>` : ""}
-        ${rewardAmount ? `<tr><th>Reward Amount</th><td>₹${Number(rewardAmount).toLocaleString()}</td></tr>` : ""}
-        ${rewardGoldGrams ? `<tr><th>Reward Gold</th><td>${Number(rewardGoldGrams).toFixed(3)} grams</td></tr>` : ""}
-    </table>
+            <!-- Transaction Details Table -->
+            <div class="table-section-heading">Payment & Transaction Summary</div>
+            <table class="details-table">
+                <tr>
+                    <th>Transaction ID</th>
+                    <td><strong>${transactionId}</strong></td>
+                </tr>
+                ${data.orderId ? `<tr><th>Order ID</th><td>${data.orderId}</td></tr>` : ""}
+                <tr>
+                    <th>Payment Reference ID</th>
+                    <td>${paymentId}</td>
+                </tr>
+                <tr>
+                    <th>Amount Paid</th>
+                    <td><span class="highlight-amount">₹${Number(amountPaid).toLocaleString('en-IN')}</span></td>
+                </tr>
+                <tr>
+                    <th>Payment Date & Time</th>
+                    <td>${formattedDate(paymentDate)}</td>
+                </tr>
+                <tr>
+                    <th>Payment Method</th>
+                    <td>${(paymentMode || "UPI / NetBanking").toUpperCase()}${paymentModeType ? ` (${paymentModeType.toUpperCase()})` : ""}</td>
+                </tr>
+                ${data.utrReference ? `<tr><th>Bank UTR Ref No</th><td>${data.utrReference}</td></tr>` : ""}
+                ${userMobile ? `<tr><th>Registered Mobile</th><td>${userMobile}</td></tr>` : ""}
+                ${userEmail ? `<tr><th>Registered Email</th><td>${userEmail}</td></tr>` : ""}
+                ${rewardAmount ? `<tr><th>Reward Amount Credited</th><td>₹${Number(rewardAmount).toLocaleString('en-IN')}</td></tr>` : ""}
+                ${rewardGoldGrams ? `<tr><th>Reward Gold Weight</th><td><span class="gold-badge">+${Number(rewardGoldGrams).toFixed(3)} grams</span></td></tr>` : ""}
+            </table>
 
-    <!-- Investment Details -->
-    ${inversement ? `
-    <table class="details-table">
-        <tr>
-            <td class="section-heading" colspan="2">Investment Details</td>
-        </tr>
-        <tr><th>Account Name</th><td>${inversement.accountName}</td></tr>
-        <tr><th>Account No</th><td>${inversement.accountNo}</td></tr>
-        <tr><th>Scheme</th><td>${inversement.schemeName}</td></tr>
-        <tr><th>Joining Date</th><td>${new Date(inversement.joiningDate).toLocaleDateString("en-GB")}</td></tr>
-        <tr><th>Payment Status</th><td>${(inversement.paymentStatus && inversement.paymentStatus.toLowerCase() === 'charged') ? 'Paid' : (inversement.paymentStatus || '')}</td></tr>
-        <tr><th>Maturity Date</th><td>${data.maturityDate || (inversement.end_date ? new Date(inversement.end_date).toLocaleDateString("en-GB") : '')}</td></tr>
-        <tr><th>Board Rate</th><td>₹${rate || "N/A"}/g</td></tr>
-        ${weight > 0 ? `<tr><th>Gold Weight</th><td>${weight.toFixed(3)} grams</td></tr>` : ""}
-    </table>` : ""}
-
-    <p>Thank you for your trust and investment with <strong>${theme.constants.customerName}</strong>. This receipt serves as official proof of payment.</p>
-
-    <!-- Footer -->
-    <div class="footer">
-        <div class="address">
-            <p>${theme.constants.address}</p>
-            <p>Mobile: ${theme.constants.mobile} | Email: ${theme.constants.email}</p>
+            <!-- Investment Details Table -->
+            ${inversement ? `
+            <div class="table-section-heading">Savings Scheme & Account Details</div>
+            <table class="details-table">
+                <tr><th>Account Holder Name</th><td>${inversement.accountName}</td></tr>
+                <tr><th>Account Number</th><td><strong>${inversement.accountNo}</strong></td></tr>
+                <tr><th>Savings Scheme</th><td>${inversement.schemeName}</td></tr>
+                <tr><th>Payment Frequency</th><td>${inversement.paymentFrequencyName || "Monthly"}</td></tr>
+                <tr><th>Joining Date</th><td>${formattedDate(inversement.joiningDate)}</td></tr>
+                <tr><th>Payment Status</th><td><span style="color: #2e7d32; font-weight: bold;">${(inversement.paymentStatus && inversement.paymentStatus.toLowerCase() === 'charged') ? 'Paid' : (inversement.paymentStatus || 'Paid')}</span></td></tr>
+                <tr><th>Maturity Date</th><td>${data.maturityDate || (inversement.end_date ? formattedDate(inversement.end_date) : 'N/A')}</td></tr>
+                ${rate > 0 ? `<tr><th>Live Gold Rate</th><td>₹${rate.toLocaleString('en-IN')}/gram</td></tr>` : ""}
+                ${weight > 0 ? `<tr><th>Gold Weight Credited</th><td><span class="gold-badge">${weight.toFixed(3)} grams</span></td></tr>` : ""}
+            </table>` : ""}
         </div>
-        <div class="footer-bottom">
-            <p>Date: ${new Date().toLocaleDateString("en-GB", {
-        day: "2-digit", month: "short", year: "numeric"
-    })}</p>
-            <p class="signature">Authorized Signatory<br/>${theme.constants.customerName}</p>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-thankyou">
+                Thank you for choosing <strong>${theme.constants.customerName}</strong> for your gold savings journey.
+                <br/>
+                This receipt serves as official electronic proof of your transaction.
+            </div>
+            <div class="footer-flex">
+                <div>
+                    <strong>Issued On:</strong> ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}<br/>
+                    <strong>Website:</strong> ${theme.constants.website}
+                </div>
+                <div class="signature-box">
+                    <div class="signature-title">For ${theme.constants.customerName}</div>
+                    <div style="font-size: 10px; color: #888; margin-top: 4px;">(Authorized Signatory)</div>
+                </div>
+            </div>
         </div>
     </div>
 </body>
 </html>
     `;
 };
+
