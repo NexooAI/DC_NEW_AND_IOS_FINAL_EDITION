@@ -1,0 +1,14 @@
+# EAS Build Ignore Configuration
+.expo/
+node_modules/
+android/
+ios/
+dist/
+web-build/
+*.apk
+*.aab
+*.zip
+*.tar.gz
+*.log
+playstore_assets/
+.git/
