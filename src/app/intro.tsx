@@ -116,7 +116,7 @@ export default function Intro() {
           style={styles.backgroundImage}
           resizeMode="cover"
           onError={(error) => {
-            logger.error("Image loading error for slide", item.id, ":", error);
+            logger.warn("Image loading error for slide", item.id, ":", error);
           }}
         >
           <LinearGradient

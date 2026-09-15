@@ -118,7 +118,7 @@ const ImageSlider = React.memo(
               ]}
               resizeMode="contain"
               onError={(error) => {
-                logger.error("Image load error:", error);
+                logger.warn("Image load error:", error);
               }}
             />
           </View>

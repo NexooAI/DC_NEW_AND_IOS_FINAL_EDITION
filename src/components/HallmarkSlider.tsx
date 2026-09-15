@@ -77,7 +77,7 @@ const HallmarkSlider: React.FC<HallmarkSliderProps> = () => {
             style={styles.hallmarkImage}
             resizeMode="contain"
             onError={(error) => {
-              logger.error("Hallmark image loading error:", error);
+              logger.warn("Hallmark image loading error:", error);
             }}
             onLoad={() => {
               logger.log("Hallmark image loaded successfully");
