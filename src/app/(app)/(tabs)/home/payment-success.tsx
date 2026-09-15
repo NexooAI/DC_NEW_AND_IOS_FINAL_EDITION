@@ -29,6 +29,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as Print from "expo-print";
 import { getPdfFileUri } from "@/utils/fileUtils";
+import { loadLogoAsBase64 } from "@/utils/imageUtils";
 import { generatePaymentReceiptHTML, PaymentReceiptData } from "@/templates/html";
 import { investmentAPI, billsAPI } from "@/services/api";
 
@@ -336,7 +337,8 @@ export default function PaymentSuccess() {
         }
       };
 
-      const htmlContent = generatePaymentReceiptHTML(receiptData);
+      const logoBase64 = await loadLogoAsBase64();
+      const htmlContent = generatePaymentReceiptHTML({ ...receiptData, logoBase64 });
       const sanitizeFileName = (str: string) => str.replace(/[^a-zA-Z0-9]/g, '_');
       const customerName = sanitizeFileName(user?.name || 'Customer');
       const fileName = `Receipt_${customerName}_${transactionId}.pdf`;

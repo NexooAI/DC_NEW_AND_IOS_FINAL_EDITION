@@ -1,6 +1,6 @@
 /**
  * Bill Receipt HTML Template
- * Generates HTML content for customer bills (Single Page A4 Layout)
+ * Generates HTML content for customer bills (Single Page A4 Layout with Brand Logo)
  */
 
 import { theme } from '../../constants/theme';
@@ -64,39 +64,63 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
                 color: #000;
                 background: #fff;
                 line-height: 1.3;
-                font-size: 11px;
+                font-size: 10.5px;
             }
             .header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
                 margin-bottom: 10px;
-                padding: 8px 12px;
+                padding: 10px 14px;
                 background-color: ${theme.colors.primary} !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
                 color: #fff;
                 page-break-inside: avoid;
             }
+            .header-flex {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+            }
+            .brand-name {
+                font-size: 17px;
+                font-weight: bold;
+                color: #FFD700;
+                letter-spacing: 1px;
+                text-transform: uppercase;
+                margin-bottom: 1px;
+            }
+            .brand-tagline {
+                font-size: 9.5px;
+                color: #ffffff;
+                opacity: 0.9;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+                margin-bottom: 2px;
+            }
+            .company-address {
+                font-size: 9.5px;
+                color: rgba(255,255,255,0.95);
+                line-height: 1.25;
+            }
             .letter-title {
                 text-align: center;
                 font-weight: bold;
                 font-size: 13px;
-                margin: 10px 0;
+                margin: 8px 0;
                 text-decoration: underline;
             }
             .details-table {
                 width: 100%;
                 border-collapse: collapse;
-                margin: 10px 0;
-                font-size: 10.5px;
+                margin: 8px 0;
+                font-size: 10px;
                 table-layout: fixed;
                 page-break-inside: avoid;
             }
             .details-table th, .details-table td {
                 width: 50%;
                 text-align: left;
-                padding: 4px 6px;
+                padding: 3.5px 6px;
                 border: 1px solid #000;
                 word-break: break-word;
             }
@@ -104,8 +128,8 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
                 background: #eee;
             }
             .footer {
-                margin-top: 12px;
-                font-size: 10.5px;
+                margin-top: 10px;
+                font-size: 10px;
                 border-top: 1px solid #000;
                 padding-top: 6px;
                 page-break-inside: avoid;
@@ -119,7 +143,7 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
-                font-size: 10.5px;
+                font-size: 10px;
             }
             .signature { font-weight: bold; text-align: right; }
             .status-badge { font-weight: bold; text-transform: uppercase; }
@@ -128,24 +152,26 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
         </style>
     </head>
     <body>
-        <div class="header" style="justify-content: center; text-align: center;">
-            <div class="logo-container">
-                ${logoBase64
-            ? `<img src="${logoBase64}" alt="Kanisaa Logo" style="max-height: 50px; width: auto;" />`
-            : `<div class="brand-name" style="font-size: 18px; font-weight: bold; color: #FFD700; letter-spacing: 1px;">${theme.constants.customerName}</div>
-                       <div class="brand-tagline" style="font-size: 10px; color: #fff; letter-spacing: 2px;">GOLD & DIAMONDS</div>`
-        }
-            </div>
-            <div class="company-address" style="font-size: 10px; opacity: 0.9; margin-top: 3px;">
-                ${theme.constants.address}<br/>
-                <strong>Mobile:</strong> ${theme.constants.mobile} | <strong>Email:</strong> ${theme.constants.email}
+        <div class="header">
+            <div class="header-flex">
+                <div style="flex: 0 0 auto;">
+                    ${logoBase64 ? `<img src="${logoBase64}" alt="Kanisaa Logo" style="max-height: 52px; width: auto; max-width: 140px; object-fit: contain;" />` : ''}
+                </div>
+                <div style="flex: 1; text-align: right;">
+                    <div class="brand-name">${theme.constants.customerName}</div>
+                    <div class="brand-tagline">Gold & Diamonds</div>
+                    <div class="company-address">
+                        ${theme.constants.address}<br/>
+                        <strong>Mobile:</strong> ${theme.constants.mobile} | <strong>Email:</strong> ${theme.constants.email}
+                    </div>
+                </div>
             </div>
         </div>
 
         <div class="letter-title">BILL PAYMENT RECEIPT</div>
 
-        <p style="margin: 4px 0;">Dear ${userName || "Customer"},</p>
-        <p style="margin: 4px 0;">We acknowledge with thanks the receipt of your bill payment as detailed below:</p>
+        <p style="margin: 3px 0;">Dear ${userName || "Customer"},</p>
+        <p style="margin: 3px 0;">We acknowledge with thanks the receipt of your bill payment as detailed below:</p>
 
         <!-- Bill Details -->
         <table class="details-table">
@@ -178,7 +204,7 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
             ${userEmail ? `<tr><th>Customer Email</th><td>${userEmail}</td></tr>` : ""}
         </table>
 
-        <p style="margin: 4px 0;">Thank you for your business with <strong>${theme.constants.customerName}</strong>. This receipt serves as official proof of payment.</p>
+        <p style="margin: 3px 0;">Thank you for your business with <strong>${theme.constants.customerName}</strong>. This receipt serves as official proof of payment.</p>
 
         <!-- Footer -->
         <div class="footer">

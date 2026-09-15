@@ -1,6 +1,6 @@
 /**
  * Payment Receipt HTML Template
- * Generates HTML content for savings & scheme payments (Single Page A4 Layout)
+ * Generates HTML content for savings & scheme payments (Single Page A4 Layout with Brand Logo)
  */
 
 import { theme } from '../../constants/theme';
@@ -113,17 +113,19 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         .header {
             background: linear-gradient(135deg, #7A143C 0%, #a3203a 50%, #5B0E2D 100%);
             color: #ffffff;
-            padding: 12px 16px;
-            text-align: center;
+            padding: 10px 16px;
             border-bottom: 2px solid #D4AF37;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
-        .logo-container {
-            margin-bottom: 4px;
+        .header-flex {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
         }
         .brand-name {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 800;
             letter-spacing: 1px;
             color: #FFD700;
@@ -131,64 +133,62 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
             margin-bottom: 1px;
         }
         .brand-tagline {
-            font-size: 10px;
+            font-size: 9.5px;
             letter-spacing: 2px;
             color: #ffffff;
             opacity: 0.9;
             text-transform: uppercase;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         .company-address {
-            font-size: 10px;
-            color: rgba(255,255,255,0.9);
-            line-height: 1.3;
-            max-width: 480px;
-            margin: 0 auto;
+            font-size: 9.5px;
+            color: rgba(255,255,255,0.95);
+            line-height: 1.25;
         }
         .receipt-body {
-            padding: 12px 16px;
+            padding: 10px 16px;
         }
         .title-badge {
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .receipt-title {
             display: inline-block;
             background: #FAF5E8;
             color: #a3203a;
             border: 1px solid #D4AF37;
-            padding: 4px 16px;
-            border-radius: 16px;
-            font-size: 12px;
+            padding: 3px 14px;
+            border-radius: 14px;
+            font-size: 11.5px;
             font-weight: bold;
             letter-spacing: 1px;
             text-transform: uppercase;
         }
         .greeting {
-            font-size: 11px;
+            font-size: 10.5px;
             color: #333;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .table-section-heading {
-            font-size: 11px;
+            font-size: 10.5px;
             font-weight: bold;
             color: #a3203a;
             background-color: #F8F9FA;
-            padding: 5px 10px;
+            padding: 4px 8px;
             border-left: 3px solid #D4AF37;
-            margin-top: 8px;
+            margin-top: 6px;
             margin-bottom: 4px;
             border-radius: 4px;
         }
         .details-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .details-table th, .details-table td {
-            padding: 4px 8px;
+            padding: 3.5px 8px;
             border-bottom: 1px solid #EAEAEA;
-            font-size: 10.5px;
+            font-size: 10px;
             text-align: left;
         }
         .details-table th {
@@ -203,7 +203,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
             word-break: break-word;
         }
         .highlight-amount {
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: bold;
             color: #a3203a;
         }
@@ -219,23 +219,23 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         .footer {
             background-color: #FDFBF7;
             border-top: 1px dashed #D4AF37;
-            padding: 10px 16px;
-            font-size: 10px;
+            padding: 8px 16px;
+            font-size: 9.5px;
             color: #555;
             page-break-inside: avoid;
         }
         .footer-thankyou {
             text-align: center;
-            font-size: 10.5px;
+            font-size: 10px;
             color: #333;
-            margin-bottom: 6px;
-            line-height: 1.3;
+            margin-bottom: 4px;
+            line-height: 1.25;
         }
         .footer-flex {
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            margin-top: 6px;
+            margin-top: 4px;
         }
         .signature-box {
             text-align: right;
@@ -243,24 +243,26 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         .signature-title {
             font-weight: bold;
             color: #a3203a;
-            margin-top: 10px;
+            margin-top: 6px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Brand Header -->
+        <!-- Brand Header with Logo -->
         <div class="header">
-            <div class="logo-container">
-                ${logoBase64
-            ? `<img src="${logoBase64}" alt="Kanisaa Logo" style="max-height: 50px; width: auto;" />`
-            : `<div class="brand-name">${theme.constants.customerName}</div>
-                       <div class="brand-tagline">Gold & Diamonds</div>`
-        }
-            </div>
-            <div class="company-address">
-                ${theme.constants.address}<br/>
-                <strong>Mobile:</strong> ${theme.constants.mobile} | <strong>Email:</strong> ${theme.constants.email}
+            <div class="header-flex">
+                <div style="flex: 0 0 auto;">
+                    ${logoBase64 ? `<img src="${logoBase64}" alt="Kanisaa Logo" style="max-height: 52px; width: auto; max-width: 140px; object-fit: contain;" />` : ''}
+                </div>
+                <div style="flex: 1; text-align: right;">
+                    <div class="brand-name">${theme.constants.customerName}</div>
+                    <div class="brand-tagline">Gold & Diamonds</div>
+                    <div class="company-address">
+                        ${theme.constants.address}<br/>
+                        <strong>Mobile:</strong> ${theme.constants.mobile} | <strong>Email:</strong> ${theme.constants.email}
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -337,7 +339,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
                 </div>
                 <div class="signature-box">
                     <div class="signature-title">For ${theme.constants.customerName}</div>
-                    <div style="font-size: 9px; color: #888; margin-top: 2px;">(Authorized Signatory)</div>
+                    <div style="font-size: 8.5px; color: #888; margin-top: 2px;">(Authorized Signatory)</div>
                 </div>
             </div>
         </div>

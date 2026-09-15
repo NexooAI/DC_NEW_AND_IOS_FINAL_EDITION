@@ -86,7 +86,12 @@ export const loadLogoAsBase64 = async (): Promise<string> => {
   }
   const fallbackUrl = "https://api.prod.kanisaajewellery.com/uploads/logo.png";
   try {
-    const asset = Asset.fromModule(require("../../assets/images/logo.png"));
+    let asset;
+    try {
+      asset = Asset.fromModule(require("../../assets/images/kanisaa-logo-header.png"));
+    } catch {
+      asset = Asset.fromModule(require("../../assets/images/logo.png"));
+    }
     await asset.downloadAsync();
     const uri = asset.localUri || asset.uri;
     if (!uri) {

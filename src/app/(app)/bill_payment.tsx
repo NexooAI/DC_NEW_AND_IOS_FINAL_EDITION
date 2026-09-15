@@ -30,6 +30,7 @@ import apiClient, { billsAPI } from '@/services/api';
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { logAppEvent } from '@/services/appEventService';
 import { saveFileToPublicDirectory, getPdfFileUri } from '@/utils/fileUtils';
+import { loadLogoAsBase64 } from '@/utils/imageUtils';
 
 const { wp, hp, rf } = responsiveUtils;
 
@@ -237,7 +238,8 @@ export default function BillPayment() {
     };
 
     try {
-      const htmlContent = generateBillReceiptHTML(receiptData);
+      const logoBase64 = await loadLogoAsBase64();
+      const htmlContent = generateBillReceiptHTML({ ...receiptData, logoBase64 });
       const customerName = sanitizeFileName(user?.name || 'Customer');
       const accountNo = sanitizeFileName(user?.id?.toString() || '000000');
       const fileName = `Bill_${customerName}_${accountNo}_${bill.billNumber}.pdf`;
@@ -283,7 +285,8 @@ export default function BillPayment() {
     };
 
     try {
-      const htmlContent = generateBillReceiptHTML(receiptData);
+      const logoBase64 = await loadLogoAsBase64();
+      const htmlContent = generateBillReceiptHTML({ ...receiptData, logoBase64 });
       const customerName = sanitizeFileName(user?.name || 'Customer');
       const accountNo = sanitizeFileName(user?.id?.toString() || '000000');
       const fileName = `Bill_${customerName}_${accountNo}_${bill.billNumber}.pdf`;

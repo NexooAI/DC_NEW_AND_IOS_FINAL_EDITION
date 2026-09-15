@@ -27,6 +27,7 @@ import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store"
 import { logAppEvent } from '@/services/appEventService';
 import { logger } from '@/utils/logger';
 import { saveFileToPublicDirectory, getPdfFileUri } from '@/utils/fileUtils';
+import { loadLogoAsBase64 } from '@/utils/imageUtils';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
@@ -102,7 +103,8 @@ export default function BookingHistory() {
     };
 
     try {
-      const htmlContent = generateBookingReceiptHTML(receiptData);
+      const logoBase64 = await loadLogoAsBase64();
+      const htmlContent = generateBookingReceiptHTML({ ...receiptData, logoBase64 });
       const customerName = sanitizeFileName(user?.name || 'Customer');
       const accountNo = sanitizeFileName(user?.id?.toString() || '000000');
       const fileName = `Booking_${customerName}_${accountNo}_${booking.id}.pdf`;
@@ -150,7 +152,8 @@ export default function BookingHistory() {
     };
 
     try {
-      const htmlContent = generateBookingReceiptHTML(receiptData);
+      const logoBase64 = await loadLogoAsBase64();
+      const htmlContent = generateBookingReceiptHTML({ ...receiptData, logoBase64 });
       const customerName = sanitizeFileName(user?.name || 'Customer');
       const accountNo = sanitizeFileName(user?.id?.toString() || '000000');
       const fileName = `Booking_${customerName}_${accountNo}_${booking.id}.pdf`;

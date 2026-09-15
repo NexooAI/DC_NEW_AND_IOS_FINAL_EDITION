@@ -28,6 +28,7 @@ import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store"
 import api, { paymentAPI } from "@/services/api";
 import { initiatePayment, initializeSocket } from "@/utils/paymentUtils";
 import { saveFileToPublicDirectory, getPdfFileUri } from "@/utils/fileUtils";
+import { loadLogoAsBase64 } from "@/utils/imageUtils";
 import { moderateScale } from "react-native-size-matters";
 import SupportContactCard from "@/components/SupportContactCard";
 import CustomAlert from "@/components/Alert";
@@ -321,7 +322,8 @@ const SavingsDetail = () => {
     };
 
     try {
-      const htmlContent = generatePaymentReceiptHTML(receiptData);
+      const logoBase64 = await loadLogoAsBase64();
+      const htmlContent = generatePaymentReceiptHTML({ ...receiptData, logoBase64 });
       const customerName = sanitizeFileName(user?.name || "Customer");
       const accountNo = sanitizeFileName(user?.id?.toString() || "000000");
       const paymentId = sanitizeFileName(
@@ -391,7 +393,8 @@ const SavingsDetail = () => {
     };
 
     try {
-      const htmlContent = generatePaymentReceiptHTML(receiptData);
+      const logoBase64 = await loadLogoAsBase64();
+      const htmlContent = generatePaymentReceiptHTML({ ...receiptData, logoBase64 });
       const customerName = sanitizeFileName(user?.name || "Customer");
       const accountNo = sanitizeFileName(user?.id?.toString() || "000000");
       const paymentId = sanitizeFileName(
