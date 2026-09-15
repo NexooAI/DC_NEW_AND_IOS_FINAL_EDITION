@@ -29,6 +29,15 @@ const PosterCard: React.FC<{
   theme: any;
 }> = ({ item, index, itemWidth, itemHeight, itemGap, theme }) => {
   const [loading, setLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  const fallbackImage = require("../../assets/images/slider.png");
+
+  const imageSource = hasError || !item.image
+    ? fallbackImage
+    : typeof item.image === "string"
+      ? { uri: item.image }
+      : item.image;
 
   return (
     <View
@@ -45,7 +54,7 @@ const PosterCard: React.FC<{
         },
       ]}
     >
-      {loading && (
+      {loading && !hasError && (
         <View
           style={[
             StyleSheet.absoluteFill,
@@ -60,18 +69,15 @@ const PosterCard: React.FC<{
         </View>
       )}
       <Image
-        source={
-          typeof item.image === "string"
-            ? { uri: item.image }
-            : item.image
-        }
+        source={imageSource}
         style={styles.image}
         resizeMode="stretch"
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => setLoading(false)}
-        onError={(error) => {
+        onError={() => {
           setLoading(false);
-          logger.error("Poster image loading error:", error);
+          setHasError(true);
+          logger.warn("Poster image failed to load, displaying default banner:", item.image);
         }}
       />
     </View>
