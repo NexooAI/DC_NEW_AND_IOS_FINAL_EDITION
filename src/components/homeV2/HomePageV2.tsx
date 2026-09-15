@@ -80,6 +80,10 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
     homeData?.data?.currentRates?.gold_rate_22 ||
     "6,485";
   const silverRate = homeData?.data?.currentRates?.silver_rate || "78.50";
+  const updatedAt =
+    homeData?.data?.currentRates?.updated_at ||
+    homeData?.data?.currentRates?.created_at ||
+    homeData?.data?.currentRates?.date;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -109,6 +113,7 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
             goldChange="+12"
             silverChange="+0.50"
             goldPurity="22K"
+            updatedAt={updatedAt}
           />
         )}
 

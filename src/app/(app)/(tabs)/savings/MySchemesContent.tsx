@@ -196,10 +196,16 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
 
       // Accept both 'data' and 'investments' as possible array fields
       let investments: any[] = [];
+      const backendMessage = response?.data?.message || (typeof response?.data?.data === "object" && response?.data?.data?.message) || "";
+      const isNoInvestments = typeof backendMessage === "string" && (backendMessage.toLowerCase().includes("no active investments") || backendMessage.toLowerCase().includes("no investments"));
+
       if (Array.isArray(response?.data?.data)) {
         investments = response.data.data;
       } else if (Array.isArray(response?.data?.investments)) {
         investments = response.data.investments;
+      } else if (isNoInvestments) {
+        // Normal user state: user has no active investments yet
+        investments = [];
       } else if (response?.data?.data) {
         // Unexpected structure, log for debugging
         logger.error(
@@ -718,12 +724,10 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
       );
     },
     [translations, params.investmentId]
-  );
-
-  // Component definitions - moved before early returns
+  );  // Component definitions - moved before early returns
   const ListHeader = () => (
     <View style={styles.headerContainer}>
-      {!hasAmountType && (
+      {!hasAmountType && savings.length > 0 && (
         <LinearGradient
           colors={theme.colors.gradientPrimary || ["#0b162c", "#16315c", "#d4af37"]}
           start={{ x: 0, y: 0 }}
@@ -761,10 +765,11 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
               </View>
             </View>
           </View>
-
-
         </LinearGradient>
       )}
+
+      {/* Top Filter Tabs: Active / Matured / Claimed / Dropped */}
+      <FilterToggle />
     </View>
   );
 
@@ -855,40 +860,41 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
     }
   };
 
-  // Filter Toggle UI (4 Status Tabs + Flexi/Fixed SubToggle)
+  // Filter Toggle UI (4 Status Tabs + Flexi/Fixed SubToggle) placed at TOP
   const FilterToggle = () => (
-    <View style={styles.bottomTabBarContainer}>
+    <View style={styles.topTabBarContainer}>
       {/* Main Status Pill Tabs */}
-      <View style={styles.bottomTabBar}>
-        {["Active", "Matured", "Claimed", "Drop"].map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[
-              styles.bottomTabItem,
-              selectedType === tab && styles.bottomTabActive
-            ]}
-            onPress={() => setSelectedType(tab as any)}
-            activeOpacity={0.9}
-          >
-            <Ionicons
-              name={getTabIcon(tab) as any}
-              size={18}
-              color={selectedType === tab ? (theme.colors.secondary || "#FFD700") : (isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)")}
-              style={{ marginBottom: 2 }}
-            />
-            <Text
+      <View style={styles.topTabBar}>
+        {["Active", "Matured", "Claimed", "Drop"].map((tab) => {
+          const isActive = selectedType === tab;
+          return (
+            <TouchableOpacity
+              key={tab}
               style={[
-                styles.bottomTabText,
-                selectedType === tab && styles.bottomTabActiveText,
+                styles.topTabItem,
+                isActive && styles.topTabActive
               ]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
+              onPress={() => setSelectedType(tab as any)}
+              activeOpacity={0.8}
             >
-              {getTabLabel(tab)}
-            </Text>
-            {selectedType === tab && <View style={styles.activeIndicator} />}
-          </TouchableOpacity>
-        ))}
+              <Ionicons
+                name={getTabIcon(tab) as any}
+                size={14}
+                color={isActive ? (theme.colors.secondary || "#FFD700") : (isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.45)")}
+              />
+              <Text
+                style={[
+                  styles.topTabText,
+                  isActive && styles.topTabActiveText,
+                ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {getTabLabel(tab)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* Sub Filter: Flexi vs Fixed Pill Tabs */}
@@ -916,7 +922,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
                 <Text
                   style={[
                     styles.pillTabText,
-                    { fontSize: 12 },
+                    { fontSize: 11.5, fontWeight: subFilter === filterOpt ? "700" : "500" },
                     subFilter === filterOpt && styles.pillTabActiveText,
                   ]}
                 >
@@ -944,39 +950,31 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
             {t("mySchemes") || "My Schemes"}
           </Text>
         </View>
-
-        <ScrollView
-          contentContainerStyle={{
-            paddingBottom: bottomPadding,
-          }}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Portfolio Skeleton */}
-          <View style={styles.headerContainer}>
-            <SkeletonSavingsPortfolio />
-
-            {/* Section Title Skeleton */}
-            <View style={{ alignItems: "center", marginVertical: 20 }}>
-              <View style={{ width: 180, height: 22, backgroundColor: "#E1E9EE", borderRadius: 4 }} />
+        {/* Cards Skeleton */}
+        <ScrollView style={{ flex: 1, padding: 16 }}>
+          {[1, 2, 3].map((key) => (
+            <View
+              key={key}
+              style={{
+                backgroundColor: isDark ? "#1E293B" : "#F1F5F9",
+                height: 140,
+                borderRadius: 16,
+                marginBottom: 16,
+                padding: 16,
+                justifyContent: "space-between",
+              }}
+            >
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <View style={{ width: 120, height: 20, backgroundColor: isDark ? "#334155" : "#CBD5E1", borderRadius: 4 }} />
+                <View style={{ width: 60, height: 20, backgroundColor: isDark ? "#334155" : "#CBD5E1", borderRadius: 4 }} />
+              </View>
+              <View style={{ width: 180, height: 24, backgroundColor: isDark ? "#334155" : "#CBD5E1", borderRadius: 4 }} />
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <View style={{ width: 80, height: 16, backgroundColor: isDark ? "#334155" : "#CBD5E1", borderRadius: 4 }} />
+                <View style={{ width: 80, height: 16, backgroundColor: isDark ? "#334155" : "#CBD5E1", borderRadius: 4 }} />
+              </View>
             </View>
-
-            {/* Filter Toggle Skeleton */}
-            <View style={{
-              flexDirection: "row",
-              backgroundColor: "#1a2a39",
-              borderRadius: 40,
-              padding: 6,
-              marginVertical: 10,
-            }}>
-              <View style={{ flex: 1, height: 40, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 30, marginHorizontal: 2 }} />
-              <View style={{ flex: 1, height: 40, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 30, marginHorizontal: 2 }} />
-            </View>
-          </View>
-
-          {/* Savings Card Skeletons */}
-          <SkeletonSavingsCard />
-          <SkeletonSavingsCard style={{ marginTop: 16 }} />
-          <SkeletonSavingsCard style={{ marginTop: 16 }} />
+          ))}
         </ScrollView>
       </View>
     </View>
@@ -1021,7 +1019,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
             return `${type}_${id}`;
           }}
           renderItem={renderSchemeItem}
-          ListHeaderComponent={savings.length > 0 ? <ListHeader /> : null}
+          ListHeaderComponent={<ListHeader />}
           ListEmptyComponent={<EmptyState isPageEmpty={savings.length === 0} />}
           contentContainerStyle={{
             paddingBottom: bottomPadding,
@@ -1039,7 +1037,6 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
             });
           }}
         />
-        <FilterToggle />
       </View>
     </View>
   );
@@ -1057,15 +1054,15 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
   );
 }
 
-function getStyles(theme: any) {
+const getStyles = (theme: any) => {
+  const isDark = theme.dark;
   return StyleSheet.create({
     sectionHeaderContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 16,
+      marginBottom: 8,
       paddingHorizontal: 16,
-      paddingTop: 16,
-      paddingBottom: 12,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
     },
     sectionHeaderTitle: {
       fontSize: 16,
@@ -1913,58 +1910,49 @@ function getStyles(theme: any) {
       borderRadius: 18,
       overflow: 'hidden',
     },
-    bottomTabBarContainer: {
-      backgroundColor: theme.colors.background || "#fafafa",
-      borderTopWidth: 1.5,
-      borderTopColor: theme.colors.borderLight || "rgba(0,0,0,0.05)",
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      paddingTop: 10,
-      paddingBottom: Platform.OS === 'ios' ? 24 : 10,
+    topTabBarContainer: {
       paddingHorizontal: 16,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: -4 },
-      shadowOpacity: 0.08,
-      shadowRadius: 6,
-      elevation: 10,
+      paddingTop: 6,
+      paddingBottom: 10,
+      backgroundColor: "transparent",
     },
-    bottomTabBar: {
+    topTabBar: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      backgroundColor: theme.colors.backgroundSecondary || "rgba(0,0,0,0.03)",
-      borderRadius: 18,
-      padding: 4,
+      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+      borderRadius: 14,
+      padding: 3,
       borderWidth: 1,
-      borderColor: theme.colors.borderLight || "rgba(0,0,0,0.04)",
+      borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)",
     },
-    bottomTabItem: {
+    topTabItem: {
       flex: 1,
-      paddingVertical: 10,
+      flexDirection: "row",
+      paddingVertical: 7,
+      paddingHorizontal: 4,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 14,
+      borderRadius: 11,
       position: "relative",
     },
-    bottomTabActive: {
+    topTabActive: {
       backgroundColor: theme.colors.primary || "#0b162c",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 3,
+      elevation: 2,
     },
-    bottomTabText: {
-      fontSize: moderateScale(12.5),
-      fontWeight: "700",
+    topTabText: {
+      fontSize: moderateScale(11.5),
+      fontWeight: "600",
       color: theme.colors.textSecondary || "rgba(0,0,0,0.5)",
+      marginLeft: 4,
     },
-    bottomTabActiveText: {
+    topTabActiveText: {
       color: theme.colors.secondary || "#FFD700",
-      fontWeight: "900",
-    },
-    activeIndicator: {
-      position: "absolute",
-      top: 2,
-      width: 12,
-      height: 3,
-      backgroundColor: theme.colors.secondary || "#FFD700",
-      borderRadius: 1.5,
+      fontWeight: "800",
     },
   })
 }

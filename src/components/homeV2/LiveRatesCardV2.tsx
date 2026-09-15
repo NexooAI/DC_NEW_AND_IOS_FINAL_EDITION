@@ -17,6 +17,7 @@ interface LiveRatesCardV2Props {
   goldChange?: string | number;
   silverChange?: string | number;
   goldPurity?: string;
+  updatedAt?: string;
   onGoldPress?: () => void;
   onSilverPress?: () => void;
   onPress?: () => void;
@@ -28,6 +29,7 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
   goldChange = "+12",
   silverChange = "+0.50",
   goldPurity = "22K",
+  updatedAt,
   onGoldPress,
   onSilverPress,
   onPress,
@@ -69,6 +71,26 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
     });
   };
 
+  const formatUpdatedDate = (rawDate?: string): string => {
+    if (!rawDate) return "Today";
+    try {
+      const d = new Date(rawDate);
+      if (isNaN(d.getTime())) return String(rawDate);
+      const day = d.getDate();
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const month = monthNames[d.getMonth()];
+      let hours = d.getHours();
+      const minutes = d.getMinutes().toString().padStart(2, "0");
+      const ampm = hours >= 12 ? "PM" : "AM";
+      hours = hours % 12 || 12;
+      return `${day} ${month}, ${hours}:${minutes} ${ampm}`;
+    } catch {
+      return String(rawDate);
+    }
+  };
+
+  const formattedTime = updatedAt ? formatUpdatedDate(updatedAt) : null;
+
   return (
     <View style={styles.container}>
       {/* Gold Rate Card */}
@@ -94,7 +116,6 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
               <View style={styles.changeBadge}>
                 <Ionicons name="caret-up" size={10} color="#16A34A" />
                 <Text style={styles.changeText}>{goldChange}</Text>
-                <Text style={styles.todayText}>Today</Text>
               </View>
             </View>
           </View>
@@ -104,6 +125,10 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
               ₹ {formatRate(goldRate)}
               <Text style={styles.unitText}> / gm</Text>
             </Text>
+            <View style={styles.timeBadgeContainer}>
+              <Ionicons name="time-outline" size={10} color="#94A3B8" />
+              <Text style={styles.todayText}>{formattedTime || "Today"}</Text>
+            </View>
           </View>
         </LinearGradient>
       </TouchableOpacity>
@@ -131,7 +156,6 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
               <View style={styles.changeBadge}>
                 <Ionicons name="caret-up" size={10} color="#16A34A" />
                 <Text style={styles.changeText}>{silverChange}</Text>
-                <Text style={styles.todayText}>Today</Text>
               </View>
             </View>
           </View>
@@ -141,6 +165,10 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
               ₹ {formatRate(silverRate)}
               <Text style={styles.unitText}> / gm</Text>
             </Text>
+            <View style={styles.timeBadgeContainer}>
+              <Ionicons name="time-outline" size={10} color="#94A3B8" />
+              <Text style={styles.todayText}>{formattedTime || "Today"}</Text>
+            </View>
           </View>
         </LinearGradient>
       </TouchableOpacity>
@@ -208,6 +236,14 @@ const styles = StyleSheet.create({
   },
   bottomRow: {
     marginTop: moderateScale(4),
+    flexDirection: "column",
+    justifyContent: "space-between",
+  },
+  timeBadgeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    marginTop: 2,
   },
   rateValue: {
     fontSize: moderateScale(15),

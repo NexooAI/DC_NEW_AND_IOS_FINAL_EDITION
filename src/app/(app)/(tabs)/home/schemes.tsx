@@ -33,6 +33,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { theme } from "@/constants/theme";
 import api from "@/services/api";
+import { fetchBranchesWithCache } from "@/utils/apiCache";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -280,6 +281,21 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
   const [branchModalVisible, setBranchModalVisible] = useState(false);
   const [selectedBranches, setSelectedBranches] = useState<any[]>([]);
+  const [allBranches, setAllBranches] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadBranches = async () => {
+      try {
+        const branchesData = await fetchBranchesWithCache();
+        if (Array.isArray(branchesData) && branchesData.length > 0) {
+          setAllBranches(branchesData);
+        }
+      } catch (err) {
+        logger.error("Error fetching branches in schemes.tsx", err);
+      }
+    };
+    loadBranches();
+  }, []);
 
   // Update selectedMetal when navigation params change
   useEffect(() => {
@@ -342,9 +358,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
   useEffect(() => {
     if (!allSchemes || allSchemes.length === 0) return;
+    // If user explicitly selected a metal tab or passed it in route params, preserve their selection
+    if (userSelectedTab || params.type || params.category || params.metal) return;
     const current = selectedMetal.toLowerCase();
     if (current === "all") return;
-    
+
     if (current === "gold" && !availableMetals.gold) {
       const first = Object.keys(availableMetals).find((k) => (availableMetals as any)[k]);
       if (first) setSelectedMetal(first);
@@ -361,7 +379,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
       const first = Object.keys(availableMetals).find((k) => (availableMetals as any)[k]);
       if (first) setSelectedMetal(first);
     }
-  }, [allSchemes, availableMetals, selectedMetal]);
+  }, [allSchemes, availableMetals, selectedMetal, userSelectedTab, params.type, params.category, params.metal]);
 
   const schemesForSelectedMetal = useMemo(() => {
     if (!allSchemes || allSchemes.length === 0) return [];
@@ -1805,43 +1823,146 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 30 }}
             >
-              {selectedBranches && selectedBranches.length > 0 ? (
-                selectedBranches.map((branch, idx) => (
-                  <View key={idx} style={styles.branchCard}>
-                    <View style={styles.branchHeaderRow}>
-                      <Ionicons name="business" size={22} color="#DAA520" />
-                      <Text style={styles.branchNameText}>
-                        {branch.branchName || "Branch"}
-                      </Text>
+              {(() => {
+                const displayBranches = (selectedBranches && selectedBranches.length > 0) ? selectedBranches : allBranches;
+                
+                if (displayBranches && displayBranches.length > 0) {
+                  return displayBranches.map((branch: any, idx: number) => {
+                    const bName = branch.branchName || branch.branch_name || branch.name || (language === "ta" ? "கிளை" : "Branch");
+                    const bAddress = branch.branchAddress || branch.address || [branch.city, branch.state].filter(Boolean).join(", ");
+                    const bPhone = branch.branchPhone || branch.phone || branch.mobile || "9842112345";
+                    const bCity = branch.branchCity || branch.city || "";
+                    const bLocation = branch.location || branch.location_url || "";
+
+                    return (
+                      <View key={idx} style={styles.branchCardModern}>
+                        <View style={styles.branchCardHeader}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(218, 165, 32, 0.15)', justifyContent: 'center', alignItems: 'center' }}>
+                              <Ionicons name="business" size={22} color="#DAA520" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.branchNameTextModern}>
+                                {bName}
+                              </Text>
+                              {!!bCity && (
+                                <Text style={{ fontSize: 12, color: '#DAA520', fontWeight: '700', marginTop: 2 }}>
+                                  📍 {bCity}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                        </View>
+
+                        {!!bAddress && (
+                          <Text style={styles.branchAddressTextModern}>
+                            {bAddress}
+                          </Text>
+                        )}
+
+                        <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                          {!!bPhone && (
+                            <TouchableOpacity 
+                              style={[styles.branchActionButton, { backgroundColor: '#850111' }]}
+                              onPress={() => {
+                                try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch(e) {}
+                                Linking.openURL(`tel:${bPhone}`);
+                              }}
+                            >
+                              <Ionicons name="call" size={14} color="#fff" />
+                              <Text style={styles.branchActionButtonText}>
+                                {language === "ta" ? "அழைக்க" : "Call"}
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+
+                          {!!bPhone && (
+                            <TouchableOpacity 
+                              style={[styles.branchActionButton, { backgroundColor: '#25D366' }]}
+                              onPress={() => {
+                                try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch(e) {}
+                                const cleanNum = bPhone.replace(/[^0-9]/g, "");
+                                const num = cleanNum.length === 10 ? `91${cleanNum}` : cleanNum;
+                                const schemeTitle = selectedScheme ? (getTranslatedText(selectedScheme.SCHEMENAME, language) || "Old Gold Scheme") : "Old Gold Scheme";
+                                const msg = language === "ta" 
+                                  ? `வணக்கம், ${schemeTitle} பற்றிய விவரங்களை அறிந்துகொள்ள விரும்புகிறேன்.`
+                                  : `Hello, I would like to enquire about ${schemeTitle}.`;
+                                Linking.openURL(`https://api.whatsapp.com/send?phone=${num}&text=${encodeURIComponent(msg)}`);
+                              }}
+                            >
+                              <Ionicons name="logo-whatsapp" size={14} color="#fff" />
+                              <Text style={styles.branchActionButtonText}>
+                                WhatsApp
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+
+                          <TouchableOpacity 
+                            style={[styles.branchActionButton, { backgroundColor: '#F1F5F9' }]}
+                            onPress={() => {
+                              setBranchModalVisible(false);
+                              if (bLocation) {
+                                Linking.openURL(bLocation);
+                              } else {
+                                router.push("/(app)/(tabs)/home/our_stores");
+                              }
+                            }}
+                          >
+                            <Ionicons name="navigate" size={14} color="#0F172A" />
+                            <Text style={[styles.branchActionButtonText, { color: '#0F172A' }]}>
+                              {language === "ta" ? "வழித்தடம்" : "Directions"}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    );
+                  });
+                }
+
+                return (
+                  <View style={styles.fallbackHelplineCard}>
+                    <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(133, 1, 17, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 12 }}>
+                      <Ionicons name="headset" size={28} color="#850111" />
                     </View>
-                    
-                    <Text style={styles.branchAddressText}>
-                      {branch.branchAddress}, {branch.branchCity}, {branch.branchState}
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: '#0B162C', textAlign: 'center', marginBottom: 6 }}>
+                      {language === "ta" ? "வாடிக்கையாளர் சேவை மையம்" : "Customer Support & Enquiry"}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center', marginBottom: 16, lineHeight: 18 }}>
+                      {language === "ta" 
+                        ? "பழைய தங்க மாற்றம் மற்றும் திட்ட விவரங்களுக்கு நேரடியாக தொடர்பு கொள்ளவும்:"
+                        : "For Old Gold exchange and scheme details, please contact our helpline:"
+                      }
                     </Text>
 
-                    {branch.branchPhone && (
+                    <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
                       <TouchableOpacity 
-                        style={styles.branchCallButton}
+                        style={{ flex: 1, backgroundColor: '#850111', paddingVertical: 12, borderRadius: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}
                         onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                          Linking.openURL(`tel:${branch.branchPhone}`);
+                          try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch(e) {}
+                          Linking.openURL("tel:9842112345");
                         }}
                       >
-                        <Ionicons name="call" size={16} color="#fff" />
-                        <Text style={styles.branchCallButtonText}>
-                          {branch.branchPhone}
+                        <Ionicons name="call" size={16} color="#FFF" />
+                        <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>
+                          {language === "ta" ? "அழைக்க" : "Call Helpline"}
                         </Text>
                       </TouchableOpacity>
-                    )}
+
+                      <TouchableOpacity 
+                        style={{ flex: 1, backgroundColor: '#25D366', paddingVertical: 12, borderRadius: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}
+                        onPress={() => {
+                          try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch(e) {}
+                          const msg = language === "ta" ? "வணக்கம், திட்டம் பற்றிய விவரங்கள் தேவை." : "Hello, I need details about scheme enquiry.";
+                          Linking.openURL(`https://api.whatsapp.com/send?phone=919842112345&text=${encodeURIComponent(msg)}`);
+                        }}
+                      >
+                        <Ionicons name="logo-whatsapp" size={16} color="#FFF" />
+                        <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>WhatsApp</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                ))
-              ) : (
-                <View style={{ padding: 20, alignItems: 'center' }}>
-                  <Text style={{ color: '#666' }}>
-                    {language === "ta" ? "கிளை விவரங்கள் கிடைக்கவில்லை" : "No branch details available"}
-                  </Text>
-                </View>
-              )}
+                );
+              })()}
             </ScrollView>
           </View>
         </View>
@@ -2689,6 +2810,58 @@ function getStyles(theme: any) { return StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 5,
     elevation: 2,
+  },
+  branchCardModern: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  branchCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  branchNameTextModern: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  branchAddressTextModern: {
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 19,
+    marginVertical: 4,
+  },
+  branchActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    gap: 6,
+  },
+  branchActionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  fallbackHelplineCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginVertical: 10,
   },
   branchHeaderRow: {
     flexDirection: 'row',

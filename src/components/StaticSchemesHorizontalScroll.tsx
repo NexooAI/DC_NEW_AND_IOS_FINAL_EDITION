@@ -77,6 +77,22 @@ export default function StaticSchemesHorizontalScroll({
 
   const [branchModalVisible, setBranchModalVisible] = useState(false);
   const [selectedBranches, setSelectedBranches] = useState<any[]>([]);
+  const [allBranches, setAllBranches] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadBranches = async () => {
+      try {
+        const { fetchBranchesWithCache } = await import("@/utils/apiCache");
+        const branchesData = await fetchBranchesWithCache();
+        if (Array.isArray(branchesData) && branchesData.length > 0) {
+          setAllBranches(branchesData);
+        }
+      } catch (err) {
+        console.error("Error fetching branches in StaticSchemesHorizontalScroll:", err);
+      }
+    };
+    loadBranches();
+  }, []);
 
   const getEnquiryButtonText = (lang: string) => {
     const texts: Record<string, string> = {
@@ -838,42 +854,127 @@ export default function StaticSchemesHorizontalScroll({
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 20 }}
             >
-              {selectedBranches && selectedBranches.length > 0 ? (
-                selectedBranches.map((branch, idx) => (
-                  <View key={idx} style={styles.branchCard}>
-                    <View style={styles.branchHeaderRow}>
-                      <Ionicons name="business" size={20} color="#DAA520" />
-                      <Text style={styles.branchNameText}>
-                        {branch.branchName || "Branch"}
-                      </Text>
-                    </View>
-                    
-                    <Text style={styles.branchAddressText}>
-                      {branch.branchAddress}, {branch.branchCity}, {branch.branchState}
-                    </Text>
+              {(() => {
+                const displayBranches = (selectedBranches && selectedBranches.length > 0) ? selectedBranches : allBranches;
+                
+                if (displayBranches && displayBranches.length > 0) {
+                  return displayBranches.map((branch: any, idx: number) => {
+                    const bName = branch.branchName || branch.branch_name || branch.name || (locale === "ta" ? "கிளை" : "Branch");
+                    const bAddress = branch.branchAddress || branch.address || [branch.city, branch.state].filter(Boolean).join(", ");
+                    const bPhone = branch.branchPhone || branch.phone || branch.mobile || "9842112345";
+                    const bCity = branch.branchCity || branch.city || "";
+                    const bLocation = branch.location || branch.location_url || "";
 
-                    {branch.branchPhone && (
+                    return (
+                      <View key={idx} style={{ backgroundColor: '#FFF', borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          <Ionicons name="business" size={20} color="#DAA520" />
+                          <Text style={{ fontSize: 15, fontWeight: '700', color: '#0F172A', flex: 1 }}>
+                            {bName}
+                          </Text>
+                          {!!bCity && (
+                            <Text style={{ fontSize: 11, color: '#DAA520', fontWeight: '700' }}>
+                              📍 {bCity}
+                            </Text>
+                          )}
+                        </View>
+                        
+                        {!!bAddress && (
+                          <Text style={{ fontSize: 13, color: '#475569', lineHeight: 18, marginBottom: 10 }}>
+                            {bAddress}
+                          </Text>
+                        )}
+
+                        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                          {!!bPhone && (
+                            <TouchableOpacity 
+                              style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#850111', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, gap: 6 }}
+                              onPress={() => Linking.openURL(`tel:${bPhone}`)}
+                            >
+                              <Ionicons name="call" size={14} color="#fff" />
+                              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                                {locale === "ta" ? "அழைக்க" : "Call"}
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+
+                          {!!bPhone && (
+                            <TouchableOpacity 
+                              style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#25D366', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, gap: 6 }}
+                              onPress={() => {
+                                const cleanNum = bPhone.replace(/[^0-9]/g, "");
+                                const num = cleanNum.length === 10 ? `91${cleanNum}` : cleanNum;
+                                const msg = locale === "ta" 
+                                  ? "வணக்கம், திட்டம் பற்றிய விவரங்களை அறிந்துகொள்ள விரும்புகிறேன்."
+                                  : "Hello, I would like to enquire about the scheme.";
+                                Linking.openURL(`https://api.whatsapp.com/send?phone=${num}&text=${encodeURIComponent(msg)}`);
+                              }}
+                            >
+                              <Ionicons name="logo-whatsapp" size={14} color="#fff" />
+                              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                                WhatsApp
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+
+                          <TouchableOpacity 
+                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, gap: 6 }}
+                            onPress={() => {
+                              setBranchModalVisible(false);
+                              if (bLocation) {
+                                Linking.openURL(bLocation);
+                              } else {
+                                router.push("/(app)/(tabs)/home/our_stores");
+                              }
+                            }}
+                          >
+                            <Ionicons name="navigate" size={14} color="#0F172A" />
+                            <Text style={{ color: '#0F172A', fontSize: 12, fontWeight: '700' }}>
+                              {locale === "ta" ? "வழித்தடம்" : "Directions"}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    );
+                  });
+                }
+
+                return (
+                  <View style={{ backgroundColor: '#F8FAFC', borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}>
+                    <Ionicons name="headset" size={26} color="#850111" style={{ marginBottom: 8 }} />
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#0B162C', textAlign: 'center', marginBottom: 4 }}>
+                      {locale === "ta" ? "வாடிக்கையாளர் சேவை மையம்" : "Customer Support & Enquiry"}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: '#64748B', textAlign: 'center', marginBottom: 14 }}>
+                      {locale === "ta" 
+                        ? "திட்ட விவரங்களுக்கு நேரடியாக தொடர்பு கொள்ளவும்:"
+                        : "For scheme details, please contact our helpline:"
+                      }
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
                       <TouchableOpacity 
-                        style={styles.branchCallButton}
-                        onPress={() => {
-                          Linking.openURL(`tel:${branch.branchPhone}`);
-                        }}
+                        style={{ flex: 1, backgroundColor: '#850111', paddingVertical: 10, borderRadius: 10, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}
+                        onPress={() => Linking.openURL("tel:9842112345")}
                       >
-                        <Ionicons name="call" size={14} color="#fff" />
-                        <Text style={styles.branchCallButtonText}>
-                          {branch.branchPhone}
+                        <Ionicons name="call" size={14} color="#FFF" />
+                        <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 12 }}>
+                          {locale === "ta" ? "அழைக்க" : "Call"}
                         </Text>
                       </TouchableOpacity>
-                    )}
+                      <TouchableOpacity 
+                        style={{ flex: 1, backgroundColor: '#25D366', paddingVertical: 10, borderRadius: 10, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}
+                        onPress={() => {
+                          const msg = locale === "ta" ? "வணக்கம், திட்டம் பற்றிய விவரங்கள் தேவை." : "Hello, I need details about scheme enquiry.";
+                          Linking.openURL(`https://api.whatsapp.com/send?phone=919842112345&text=${encodeURIComponent(msg)}`);
+                        }}
+                      >
+                        <Ionicons name="logo-whatsapp" size={14} color="#FFF" />
+                        <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 12 }}>WhatsApp</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                ))
-              ) : (
-                <View style={{ padding: 20, alignItems: 'center' }}>
-                  <Text style={{ color: '#666' }}>
-                    {locale === "ta" ? "கிளை விவரங்கள் கிடைக்கவில்லை" : "No branch details available"}
-                  </Text>
-                </View>
-              )}
+                );
+              })()}
             </ScrollView>
           </View>
         </SafeAreaView>

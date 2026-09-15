@@ -72,6 +72,10 @@ export interface AppVisibilityData {
     showProfileRateUs?: number;
     showProfilePaymentHistory?: number;
     showProfileDeleteAccount?: number;
+    // Bottom Navigation Customization
+    bottomNavStyle?: 'v1_classic' | 'v2_floating' | 'v3_center_fab' | 'v4_curved' | string;
+    bottomNavTabsOrder?: string;
+    bottomNavCenterTab?: string;
     updated_at: string;
 }
 

@@ -9,21 +9,29 @@ import {
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { moderateScale } from "react-native-size-matters";
+import useGlobalStore from "@/store/global.store";
 
 interface QuickActionsV2Props {
   onMyChitsPress?: () => void;
+  onQuickPayPress?: () => void;
   onReceiptsPress?: () => void;
+  onRateChartPress?: () => void;
+  onStoresPress?: () => void;
   onStatementsPress?: () => void;
   onViewAllPress?: () => void;
 }
 
 export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
   onMyChitsPress,
+  onQuickPayPress,
   onReceiptsPress,
+  onRateChartPress,
+  onStoresPress,
   onStatementsPress,
   onViewAllPress,
 }) => {
   const router = useRouter();
+  const { language } = useGlobalStore();
 
   const handleMyChits = () => {
     if (onMyChitsPress) {
@@ -33,20 +41,37 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
     }
   };
 
+  const handleQuickPay = () => {
+    if (onQuickPayPress) {
+      onQuickPayPress();
+    } else {
+      router.push("/(app)/(tabs)/quick_join");
+    }
+  };
+
   const handleReceipts = () => {
     if (onReceiptsPress) {
       onReceiptsPress();
+    } else if (onStatementsPress) {
+      onStatementsPress();
     } else {
       router.push("/(app)/payment-history");
     }
   };
 
-
-  const handleStatements = () => {
-    if (onStatementsPress) {
-      onStatementsPress();
+  const handleRateChart = () => {
+    if (onRateChartPress) {
+      onRateChartPress();
     } else {
-      router.push("/(app)/payment-history");
+      router.push("/(app)/(tabs)/home/ratechart");
+    }
+  };
+
+  const handleStores = () => {
+    if (onStoresPress) {
+      onStoresPress();
+    } else {
+      router.push("/(app)/(tabs)/home/our_stores");
     }
   };
 
@@ -62,13 +87,17 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
     <View style={styles.container}>
       {/* Header Row */}
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Quick Actions</Text>
+        <Text style={styles.title}>
+          {language === "ta" ? "விரைவு செயல்கள்" : "Quick Actions"}
+        </Text>
         <TouchableOpacity
           onPress={handleViewAll}
           activeOpacity={0.7}
           style={styles.viewAllBtn}
         >
-          <Text style={styles.viewAllText}>View All</Text>
+          <Text style={styles.viewAllText}>
+            {language === "ta" ? "அனைத்தும்" : "View All"}
+          </Text>
           <Ionicons name="arrow-forward" size={13} color="#003C28" />
         </TouchableOpacity>
       </View>
@@ -79,45 +108,73 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.actionsRow}
       >
-        {/* 1. My Chits */}
+        {/* 1. My Schemes */}
         <TouchableOpacity
           style={styles.actionCard}
           onPress={handleMyChits}
           activeOpacity={0.85}
         >
           <View style={styles.iconWrapper}>
-            <Ionicons name="people" size={22} color="#003C28" />
+            <Ionicons name="wallet-outline" size={22} color="#003C28" />
           </View>
           <Text style={styles.actionText} numberOfLines={1}>
-            My Chits
+            {language === "ta" ? "எனது திட்டங்கள்" : "My Schemes"}
           </Text>
         </TouchableOpacity>
 
-        {/* 2. Receipts */}
+        {/* 2. Quick Pay */}
+        <TouchableOpacity
+          style={styles.actionCard}
+          onPress={handleQuickPay}
+          activeOpacity={0.85}
+        >
+          <View style={styles.iconWrapper}>
+            <Ionicons name="flash-outline" size={22} color="#850111" />
+          </View>
+          <Text style={styles.actionText} numberOfLines={1}>
+            {language === "ta" ? "உடனடி தவணை" : "Quick Pay"}
+          </Text>
+        </TouchableOpacity>
+
+        {/* 3. Receipts */}
         <TouchableOpacity
           style={styles.actionCard}
           onPress={handleReceipts}
           activeOpacity={0.85}
         >
           <View style={styles.iconWrapper}>
-            <Ionicons name="receipt" size={22} color="#003C28" />
+            <Ionicons name="receipt-outline" size={22} color="#003C28" />
           </View>
           <Text style={styles.actionText} numberOfLines={1}>
-            Receipts
+            {language === "ta" ? "ரசீதுகள்" : "Receipts"}
           </Text>
         </TouchableOpacity>
 
-        {/* 3. Statements */}
+        {/* 4. Gold Rate Chart */}
         <TouchableOpacity
           style={styles.actionCard}
-          onPress={handleStatements}
+          onPress={handleRateChart}
           activeOpacity={0.85}
         >
           <View style={styles.iconWrapper}>
-            <MaterialCommunityIcons name="chart-pie" size={24} color="#003C28" />
+            <Ionicons name="trending-up-outline" size={22} color="#DAA520" />
           </View>
           <Text style={styles.actionText} numberOfLines={1}>
-            Statements
+            {language === "ta" ? "தங்க விலை" : "Gold Rate"}
+          </Text>
+        </TouchableOpacity>
+
+        {/* 5. Our Stores */}
+        <TouchableOpacity
+          style={styles.actionCard}
+          onPress={handleStores}
+          activeOpacity={0.85}
+        >
+          <View style={styles.iconWrapper}>
+            <Ionicons name="location-outline" size={22} color="#003C28" />
+          </View>
+          <Text style={styles.actionText} numberOfLines={1}>
+            {language === "ta" ? "எங்கள் கிளைகள்" : "Our Stores"}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -177,7 +234,7 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(4),
   },
   actionText: {
-    fontSize: moderateScale(10),
+    fontSize: moderateScale(10.5),
     fontWeight: "600",
     color: "#334155",
     textAlign: "center",

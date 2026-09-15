@@ -659,7 +659,7 @@ export default function RateChart() {
                             </TouchableOpacity>
                         </View>
                         <Text style={styles.modalBodyText}>
-                            Gold and Silver rates displayed are live market benchmark prices updated daily by Sri Thanga Thamarai.
+                            Gold and Silver rates displayed are live market benchmark prices updated daily by Kanisaa Jewellery.
                         </Text>
                         <Text style={[styles.modalBodyText, { marginTop: 8 }]}>
                             Rates are per gram and subject to applicable GST taxes at the time of purchase or advance booking.

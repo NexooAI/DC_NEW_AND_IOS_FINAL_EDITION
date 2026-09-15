@@ -1059,23 +1059,32 @@ export default function Home() {
     }
 
     try {
-      let investments = existingInvestments;
+      let investments: any = existingInvestments;
 
-      if (!investments) {
+      // If existingInvestments is an error object like { error: true, message: 'No active investments...' }, treat as empty
+      if (investments && !Array.isArray(investments)) {
+        if (investments.error || (investments.message && typeof investments.message === 'string' && investments.message.includes("No active investments"))) {
+          investments = [];
+        }
+      }
+
+      if (!investments || !Array.isArray(investments)) {
         logger.log("🔍 Fetching investment data for user:", user.id);
         const response = await api.get(`investments/user_investments/${user.id}`, { skipLoading: true } as any);
         logger.log("Investment API response:", response.data);
 
         // Handle different possible response structures
-        if (response.data && response.data.data) {
-          // If response has data.data structure
+        if (response.data && Array.isArray(response.data.data)) {
           investments = response.data.data;
         } else if (response.data && Array.isArray(response.data)) {
-          // If response.data is directly an array
           investments = response.data;
-        } else if (response.data && response.data.investments) {
-          // If response has investments property
+        } else if (response.data && Array.isArray(response.data.investments)) {
           investments = response.data.investments;
+        } else if (response.data?.error || (response.data?.message && typeof response.data.message === 'string' && response.data.message.includes("No active investments"))) {
+          // User has no active investments - completely normal
+          investments = [];
+        } else {
+          investments = [];
         }
       } else {
         logger.log("📦 Using pre-fetched investments data count:", investments.length);
@@ -1083,7 +1092,6 @@ export default function Home() {
 
       // Ensure investments is an array
       if (!Array.isArray(investments)) {
-        logger.warn("Expected investments to be an array, got:", investments);
         investments = [];
       }
 

@@ -592,7 +592,7 @@ apiClient.request = function <T = any, R = AxiosResponse<T>, D = any>(config: Ax
   const method = (config.method || 'get').toLowerCase();
   // Only merge GET requests to avoid side effects on POST/PUT/DELETE
   if (method !== 'get') {
-    return originalRequest(config);
+    return originalRequest(config) as Promise<R>;
   }
 
   const key = getRequestKey(config);

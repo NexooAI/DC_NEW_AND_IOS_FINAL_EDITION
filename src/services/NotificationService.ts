@@ -184,8 +184,8 @@ class NotificationService {
       // Check Google Services configuration
       await this.checkGoogleServicesConfig();
 
-      // Get project ID from Expo config
-      const projectId = Constants?.expoConfig?.extra?.eas?.projectId;
+      // Get project ID from Expo config or themeConfig fallback
+      const projectId = Constants?.expoConfig?.extra?.eas?.projectId || themeConfig?.projectId || 'aeef6800-eac4-4ba3-b14d-a09d7342f537';
 
       if (!projectId) {
         logger.error('❌ Project ID not found in Expo config');
@@ -343,7 +343,7 @@ class NotificationService {
             ? (Constants.expoConfig?.ios?.bundleIdentifier || fallbackAppId)
             : (Constants.expoConfig?.android?.package || fallbackAppId);
 
-          const dynamicProjectId = Constants.expoConfig?.extra?.eas?.projectId || '405b0b14-c15c-4234-a28d-56034f559bc8';
+          const dynamicProjectId = Constants.expoConfig?.extra?.eas?.projectId || themeConfig?.projectId || 'aeef6800-eac4-4ba3-b14d-a09d7342f537';
 
           fcmData = {
             type: "fcm",

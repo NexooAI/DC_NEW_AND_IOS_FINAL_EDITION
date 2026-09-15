@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { moderateScale } from "react-native-size-matters";
+import api from "@/services/api";
 
 interface SchemeItem {
   id: string | number;
@@ -18,6 +19,8 @@ interface SchemeItem {
   subtitle: string;
   image: any;
   type?: string;
+  metal?: string;
+  mode?: string;
 }
 
 interface PopularSchemesV2Props {
@@ -26,47 +29,276 @@ interface PopularSchemesV2Props {
   onViewAllPress?: () => void;
 }
 
+const detectMetalType = (scheme: any): "gold" | "silver" | "diamond" | "platinum" | "old_gold" => {
+  if (!scheme) return "gold";
+
+  const extractAllStrings = (val: any): string => {
+    if (!val) return "";
+    if (typeof val === "string") return val.toLowerCase();
+    if (typeof val === "object") {
+      return Object.values(val)
+        .map((v) => extractAllStrings(v))
+        .join(" ")
+        .toLowerCase();
+    }
+    return "";
+  };
+
+  const nameText = extractAllStrings(scheme.SCHEMENAME || scheme.title || scheme.name);
+  const sloganText = extractAllStrings(scheme.SLOGAN || scheme.subtitle || scheme.description);
+  const schemeType = (scheme.SCHEMETYPE || "").toLowerCase();
+  const insType = (scheme.INS_TYPE || "").toLowerCase();
+  const savingType = (scheme.savingType || "").toLowerCase();
+  const metalField = (scheme.metal || scheme.METAL || scheme.metal_type || scheme.METATYPE || "").toLowerCase();
+
+  const primaryText = `${nameText} ${sloganText} ${metalField} ${schemeType} ${insType} ${savingType}`;
+
+  if (
+    primaryText.includes("old gold") ||
+    primaryText.includes("oldgold") ||
+    primaryText.includes("old_gold") ||
+    primaryText.includes("பழைய தங்கம்") ||
+    primaryText.includes("பழைய") ||
+    primaryText.includes("పాత బంగారం") ||
+    primaryText.includes("पुराना सोना") ||
+    primaryText.includes("പഴയ സ്വർണം")
+  ) {
+    return "old_gold";
+  }
+
+  if (
+    primaryText.includes("silver") ||
+    primaryText.includes("வெள்ளி") ||
+    primaryText.includes("వెండి") ||
+    primaryText.includes("चांदी")
+  ) {
+    return "silver";
+  }
+
+  if (
+    primaryText.includes("diamond") ||
+    primaryText.includes("வைரம்") ||
+    primaryText.includes("వజ్రం") ||
+    primaryText.includes("हीरा") ||
+    primaryText.includes("ഡയമണ്ട്")
+  ) {
+    return "diamond";
+  }
+
+  if (
+    primaryText.includes("platinum") ||
+    primaryText.includes("பிளாட்டினம்") ||
+    primaryText.includes("ప్లాటినం") ||
+    primaryText.includes("प्लैटिनम") ||
+    primaryText.includes("പ്ലാറ്റിനം")
+  ) {
+    return "platinum";
+  }
+
+  return "gold";
+};
+
 export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
   schemes,
   onSchemePress,
   onViewAllPress,
 }) => {
   const router = useRouter();
+  const [fetchedSchemes, setFetchedSchemes] = useState<any[]>([]);
 
-  const defaultSchemes: SchemeItem[] = [
-    {
-      id: "monthly_chit",
-      title: "Monthly Chit",
-      subtitle: "Build your wealth regularly",
-      image: require("../../../assets/images/luxury_gold_coin.png"),
-      type: "chit",
-    },
-    {
-      id: "gold_savings",
-      title: "Gold Savings",
-      subtitle: "Save Gold for future",
-      image: require("../../../assets/images/gold.png"),
-      type: "gold",
-    },
-    {
-      id: "silver_savings",
-      title: "Silver Savings",
-      subtitle: "Small savings Big security",
-      image: require("../../../assets/images/silver.png"),
-      type: "silver",
-    },
-  ];
+  useEffect(() => {
+    if (!schemes || schemes.length === 0) {
+      let isMounted = true;
+      api
+        .get("/schemes/active", { skipLoading: true } as any)
+        .then((res: any) => {
+          if (!isMounted) return;
+          if (res.data && Array.isArray(res.data.data)) {
+            setFetchedSchemes(res.data.data);
+          } else if (res.data && Array.isArray(res.data)) {
+            setFetchedSchemes(res.data);
+          }
+        })
+        .catch(() => {
+          api
+            .get("/schemes", { skipLoading: true } as any)
+            .then((res2: any) => {
+              if (!isMounted) return;
+              if (res2.data && Array.isArray(res2.data.data)) {
+                setFetchedSchemes(res2.data.data);
+              } else if (res2.data && Array.isArray(res2.data)) {
+                setFetchedSchemes(res2.data);
+              }
+            })
+            .catch(() => {});
+        });
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [schemes]);
 
-  const items: SchemeItem[] =
-    schemes && schemes.length > 0
-      ? schemes.slice(0, 5).map((s, i) => ({
-          id: s.SCHEMEID || s.id || `s_${i}`,
-          title: typeof s.SCHEMENAME === "object" ? s.SCHEMENAME.en : s.SCHEMENAME || s.name || defaultSchemes[i % 3].title,
-          subtitle: typeof s.DESCRIPTION === "object" ? s.DESCRIPTION.en : s.DESCRIPTION || s.subtitle || defaultSchemes[i % 3].subtitle,
-          image: defaultSchemes[i % 3].image,
-          type: s.TYPE || defaultSchemes[i % 3].type,
-        }))
-      : defaultSchemes;
+  const activeSchemesSource = schemes && schemes.length > 0 ? schemes : fetchedSchemes;
+
+  const items = useMemo(() => {
+    const defaultFullCards: SchemeItem[] = [
+      {
+        id: "monthly_chit",
+        title: "Monthly Gold Chit",
+        subtitle: "Fixed monthly installment scheme",
+        image: require("../../../assets/images/luxury_gold_coin.png"),
+        type: "gold",
+        metal: "gold",
+        mode: "fixed",
+      },
+      {
+        id: "gold_savings",
+        title: "Gold Savings",
+        subtitle: "Save Gold for future",
+        image: require("../../../assets/images/gold.png"),
+        type: "gold",
+        metal: "gold",
+      },
+      {
+        id: "silver_savings",
+        title: "Silver Savings",
+        subtitle: "Small savings Big security",
+        image: require("../../../assets/images/silver.png"),
+        type: "silver",
+        metal: "silver",
+      },
+      {
+        id: "diamond_savings",
+        title: "Diamond Savings",
+        subtitle: "Sparkle with your savings",
+        image: require("../../../assets/images/diamond_coin_badge.png"),
+        type: "diamond",
+        metal: "diamond",
+      },
+      {
+        id: "old_gold_savings",
+        title: "Old Gold Deposit",
+        subtitle: "Convert old gold into savings",
+        image: require("../../../assets/images/gold.png"),
+        type: "old_gold",
+        metal: "old_gold",
+      },
+    ];
+
+    if (!activeSchemesSource || activeSchemesSource.length === 0) {
+      return defaultFullCards;
+    }
+
+    const availableCategories: Record<string, boolean> = {
+      gold_fixed: false,
+      gold_flexi: false,
+      silver: false,
+      diamond: false,
+      platinum: false,
+      old_gold: false,
+    };
+
+    activeSchemesSource.forEach((s) => {
+      if (s.ACTIVE && s.ACTIVE !== "Y") return;
+      const metal = detectMetalType(s);
+      const st = (s.SCHEMETYPE || s.INS_TYPE || "").toLowerCase();
+      const sn = (
+        typeof s.SCHEMENAME === "object"
+          ? s.SCHEMENAME.en || s.SCHEMENAME.ta || ""
+          : s.SCHEMENAME || ""
+      ).toLowerCase();
+      const isFlexi =
+        st.includes("flexi") || st.includes("flexible") || sn.includes("flexi");
+
+      if (metal === "gold") {
+        if (isFlexi) {
+          availableCategories.gold_flexi = true;
+        } else {
+          availableCategories.gold_fixed = true;
+        }
+      } else if (metal === "silver") {
+        availableCategories.silver = true;
+      } else if (metal === "diamond") {
+        availableCategories.diamond = true;
+      } else if (metal === "platinum") {
+        availableCategories.platinum = true;
+      } else if (metal === "old_gold") {
+        availableCategories.old_gold = true;
+      }
+    });
+
+    const generatedCards: SchemeItem[] = [];
+
+    if (availableCategories.gold_fixed) {
+      generatedCards.push({
+        id: "monthly_chit",
+        title: "Monthly Gold Chit",
+        subtitle: "Fixed monthly installment scheme",
+        image: require("../../../assets/images/luxury_gold_coin.png"),
+        type: "gold",
+        metal: "gold",
+        mode: "fixed",
+      });
+    }
+
+    if (availableCategories.gold_flexi) {
+      generatedCards.push({
+        id: "gold_flexi",
+        title: "Gold Flexi Savings",
+        subtitle: "Flexible gold accumulation scheme",
+        image: require("../../../assets/images/gold.png"),
+        type: "gold",
+        metal: "gold",
+        mode: "flexi",
+      });
+    }
+
+    if (availableCategories.silver) {
+      generatedCards.push({
+        id: "silver_savings",
+        title: "Silver Savings",
+        subtitle: "Small savings Big security",
+        image: require("../../../assets/images/silver.png"),
+        type: "silver",
+        metal: "silver",
+      });
+    }
+
+    if (availableCategories.diamond) {
+      generatedCards.push({
+        id: "diamond_savings",
+        title: "Diamond Savings",
+        subtitle: "Sparkle with your savings",
+        image: require("../../../assets/images/diamond_coin_badge.png"),
+        type: "diamond",
+        metal: "diamond",
+      });
+    }
+
+    if (availableCategories.platinum) {
+      generatedCards.push({
+        id: "platinum_savings",
+        title: "Platinum Savings",
+        subtitle: "Precious metals for life",
+        image: require("../../../assets/images/luxury_gold_coin.png"),
+        type: "platinum",
+        metal: "platinum",
+      });
+    }
+
+    if (availableCategories.old_gold) {
+      generatedCards.push({
+        id: "old_gold_savings",
+        title: "Old Gold Deposit",
+        subtitle: "Convert old gold into savings",
+        image: require("../../../assets/images/gold.png"),
+        type: "old_gold",
+        metal: "old_gold",
+      });
+    }
+
+    return generatedCards.length > 0 ? generatedCards : defaultFullCards;
+  }, [activeSchemesSource]);
 
   const handleSchemePress = (item: SchemeItem) => {
     if (onSchemePress) {
@@ -74,7 +306,12 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     } else {
       router.push({
         pathname: "/(app)/(tabs)/home/schemes",
-        params: { type: item.type || "gold" },
+        params: {
+          type: item.metal || item.type || "gold",
+          metal: item.metal || item.type || "gold",
+          category: item.metal || item.type || "gold",
+          ...(item.mode ? { mode: item.mode } : {}),
+        },
       });
     }
   };
