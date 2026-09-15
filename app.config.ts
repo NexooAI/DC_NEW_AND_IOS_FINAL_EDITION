@@ -8,7 +8,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     const bundleIdentifier = themeConfig.bundleIdentifier || "com.nexooai.kanisaajewellerydigigoldsavings";
     const projectId = themeConfig.projectId || "aeef6800-eac4-4ba3-b14d-a09d7342f537";
     const owner = themeConfig.owner || "mnvgroups07";
-    const version = isIos ? ((themeConfig as any).iosVersion || "1.0.0") : ((themeConfig as any).androidVersion || "1.0.0");
+    const version = isIos ? ((themeConfig as any).iosVersion) : ((themeConfig as any).androidVersion);
 
     return {
         ...config,
@@ -31,7 +31,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         android: {
             package: bundleIdentifier,
             googleServicesFile: "./google-services.json",
-            versionCode: (themeConfig as any).versionCode || 1,
+            versionCode: (themeConfig as any).versionCode,
             adaptiveIcon: {
                 foregroundImage: themeConfig.adaptiveIcon || "./assets/images/adaptive-icon.png",
                 backgroundColor: (themeConfig as any).adaptiveIconBackgroundColor || themeConfig.primaryColor,
@@ -65,7 +65,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                 "applinks:kanisaajewellery.page.link"
             ],
             googleServicesFile: "./GoogleService-Info.plist",
-            buildNumber: (themeConfig as any).buildNumber || "1",
+            buildNumber: (themeConfig as any).buildNumber,
             config: {
                 googleMapsApiKey: mapsApiKey,
             },
