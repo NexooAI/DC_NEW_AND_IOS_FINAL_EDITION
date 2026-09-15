@@ -3,11 +3,12 @@ const fs = require('fs');
 const path = require('path');
 
 const CUSTOM_PROGUARD_RULES = `
+# Ignore missing reflection/interface warnings globally for R8
+-ignorewarnings
+
 # react-native-webview
 -keep class com.reactnativecommunity.webview.** { *; }
--keepclassmembers class com.reactnativecommunity.webview.** {
-   *;
-}
+-keepclassmembers class com.reactnativecommunity.webview.** { *; }
 -keepattributes JavascriptInterface
 -keepclassmembers class * {
     @android.webkit.JavascriptInterface <methods>;
@@ -25,17 +26,20 @@ const CUSTOM_PROGUARD_RULES = `
 -keep class me.furtado.smsretriever.** { *; }
 -dontwarn com.google.android.gms.auth.api.credentials.**
 
-# Expo Modules & Sharing / FileSystem R8 rules
+# Expo Modules, Kotlin Reflection & Sharing / FileSystem R8 rules
 -keep class expo.modules.** { *; }
 -keepclassmembers class expo.modules.** { *; }
+-keep interface expo.modules.** { *; }
+-keepclassmembers interface expo.modules.** { *; }
 -dontwarn expo.modules.**
+-dontwarn expo.modules.interfaces.**
 -dontwarn expo.modules.interfaces.filesystem.**
 -dontwarn expo.modules.kotlin.**
 -dontwarn expo.modules.sharing.**
 `;
 
 module.exports = function withProguard(config) {
-  // 1. Disable R8 Full Mode in gradle.properties
+  // 1. Disable R8 Full Mode in gradle.properties to avoid aggressive stripping
   config = withGradleProperties(config, (config) => {
     config.modResults.push({
       type: "property",
