@@ -98,13 +98,24 @@ export default function PaymentSuccess() {
 
   const [fetchedInvestment, setFetchedInvestment] = useState<any>(null);
   const [latestTxnId, setLatestTxnId] = useState<string>("");
+  const [latestOrderId, setLatestOrderId] = useState<string>("");
   const userId = Array.isArray(params.userId) ? params.userId[0] : (params.userId || user?.id?.toString() || "");
 
+  const rawTxnId = (Array.isArray(params.txnId) ? params.txnId[0] : params.txnId) || "";
+  const rawOrderId = (Array.isArray(params.orderId) ? params.orderId[0] : params.orderId) || "";
+
+  // Order of precedence for Transaction ID:
+  // 1. If latestTxnId from payment history API is available (e.g. "114826241505"), use it!
+  // 2. Else if rawTxnId is available and NOT identical to rawOrderId, use rawTxnId!
+  // 3. Otherwise, fallback to rawTxnId or rawOrderId.
   const effectiveTxnId =
-    (Array.isArray(params.txnId) ? params.txnId[0] : params.txnId) ||
     latestTxnId ||
-    (Array.isArray(params.orderId) ? params.orderId[0] : params.orderId) ||
-    "";
+    (rawTxnId && rawTxnId !== rawOrderId ? rawTxnId : null) ||
+    rawTxnId ||
+    rawOrderId ||
+    "N/A";
+
+  const effectiveOrderId = rawOrderId || latestOrderId || "N/A";
 
   useEffect(() => {
     const fetchInvestmentDetails = async () => {
@@ -120,10 +131,15 @@ export default function PaymentSuccess() {
           if (Array.isArray(history) && history.length > 0) {
             const latest = history[0];
             console.log("🔍 [PaymentSuccess] LATEST PAYMENT RECORD:\n", JSON.stringify(latest, null, 2));
-            const foundId = latest?.transactionId || latest?.transaction_id || latest?.tracking_id || latest?.txnId || "";
-            if (foundId) {
-              console.log("🔍 [PaymentSuccess] Found Transaction ID from history:", foundId);
-              setLatestTxnId(String(foundId));
+            const foundTxnId = latest?.transactionId || latest?.transaction_id || latest?.tracking_id || latest?.txnId || latest?.utrReference || latest?.utr_reference || "";
+            const foundOrderId = latest?.orderId || latest?.order_id || "";
+            if (foundTxnId) {
+              console.log("🔍 [PaymentSuccess] Found Transaction ID from history:", foundTxnId);
+              setLatestTxnId(String(foundTxnId));
+            }
+            if (foundOrderId) {
+              console.log("🔍 [PaymentSuccess] Found Order ID from history:", foundOrderId);
+              setLatestOrderId(String(foundOrderId));
             }
           }
           logger.log("Successfully fetched investment details for receipt:", response.data.data.investmentList);
@@ -478,7 +494,7 @@ export default function PaymentSuccess() {
                 onPress={() => handleCopy(effectiveTxnId, t("transactionId"))}
               >
                 <Text style={styles.detailValue}>
-                  {effectiveTxnId || (Array.isArray(params.orderId) ? params.orderId[0] : params.orderId) || "N/A"}
+                  {effectiveTxnId}
                 </Text>
                 <Ionicons name="copy-outline" size={16} color={theme.colors.textDark} style={{ marginLeft: 8 }} />
               </TouchableOpacity>
@@ -499,10 +515,10 @@ export default function PaymentSuccess() {
               <Text style={styles.detailLabel}>{t("orderId")}</Text>
               <TouchableOpacity 
                 style={styles.copyRow} 
-                onPress={() => handleCopy(Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || ""), t("orderId"))}
+                onPress={() => handleCopy(effectiveOrderId, t("orderId"))}
               >
                 <Text style={styles.detailValue}>
-                  {Array.isArray(params.orderId) ? params.orderId[0] : (params.orderId || "N/A")}
+                  {effectiveOrderId}
                 </Text>
                 <Ionicons name="copy-outline" size={16} color={theme.colors.textDark} style={{ marginLeft: 8 }} />
               </TouchableOpacity>
