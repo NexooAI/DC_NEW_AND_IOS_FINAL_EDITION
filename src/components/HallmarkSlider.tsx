@@ -16,7 +16,7 @@ import { logger } from "@/utils/logger";
 
 // Import hallmark images
 const hallmark1Image = require("../../assets/images/halmark1.jpg");
-const hallmark2Image = require("../../assets/images/halmark2.jpg");
+const hallmark2Image = require("../../assets/images/halmark1.jpg");
 
 interface HallmarkSliderProps {
   // Add any props if needed in the future

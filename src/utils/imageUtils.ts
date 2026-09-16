@@ -88,9 +88,9 @@ export const loadLogoAsBase64 = async (): Promise<string> => {
   try {
     let asset;
     try {
-      asset = Asset.fromModule(require("../../assets/images/kanisaa-logo-header.png"));
-    } catch {
       asset = Asset.fromModule(require("../../assets/images/logo.png"));
+    } catch {
+      asset = Asset.fromModule(require("../../assets/images/splashscreen_logo.png"));
     }
     await asset.downloadAsync();
     const uri = asset.localUri || asset.uri;

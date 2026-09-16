@@ -56,7 +56,7 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
       {/* Left / Center Branding: Logo + Name + Tagline */}
       <View style={styles.brandContainer}>
         <Image
-          source={require("../../../assets/images/kanisaa-logo-header.png")}
+          source={require("../../../assets/images/logo.png")}
           style={styles.logo}
           resizeMode="contain"
         />

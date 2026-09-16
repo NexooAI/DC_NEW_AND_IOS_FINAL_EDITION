@@ -49,7 +49,7 @@ export const BannerSliderV2: React.FC<BannerSliderV2Props> = ({
       subtitle: "Pure Jewellery | Trusted Schemes\nA Brighter Tomorrow",
       ctaText: "Explore Now",
       link: "/(app)/(tabs)/home/schemes",
-      image: require("../../../assets/images/slider.png"),
+      image: require("../../../assets/images/slider1.png"),
     },
     {
       id: "featured_2",
@@ -141,8 +141,8 @@ export const BannerSliderV2: React.FC<BannerSliderV2Props> = ({
             <Image
               source={
                 typeof item.image === "string"
-                  ? getImageSource(item.image) ?? require("../../../assets/images/slider.png")
-                  : item.image || require("../../../assets/images/slider.png")
+                  ? getImageSource(item.image) ?? require("../../../assets/images/slider1.png")
+                  : item.image || require("../../../assets/images/slider1.png")
               }
               style={styles.bannerImage}
               resizeMode="cover"

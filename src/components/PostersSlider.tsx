@@ -31,7 +31,7 @@ const PosterCard: React.FC<{
   const [loading, setLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  const fallbackImage = require("../../assets/images/slider.png");
+  const fallbackImage = require("../../assets/images/slider1.png");
 
   const imageSource = hasError || !item.image
     ? fallbackImage

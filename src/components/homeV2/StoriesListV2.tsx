@@ -42,7 +42,7 @@ export const StoriesListV2: React.FC<StoriesListV2Props> = ({
     {
       id: "new_arrivals",
       name: "New Arrivals",
-      thumbnail: require("../../../assets/images/slider.png"),
+      thumbnail: require("../../../assets/images/slider1.png"),
     },
     {
       id: "festivals",
