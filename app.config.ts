@@ -136,8 +136,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                     android: {
                         compileSdkVersion: 36,
                         targetSdkVersion: 36,
-                        enableProguardInReleaseBuilds: true,
-                        enableShrinkResources: true,
+                        enableProguardInReleaseBuilds: false,
+                        enableShrinkResources: false,
                         blockedPermissions: [
                             "android.permission.READ_MEDIA_IMAGES",
                             "android.permission.READ_MEDIA_VIDEO",
