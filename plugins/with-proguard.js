@@ -1,4 +1,4 @@
-const { withGradleProperties, withDangerousMod } = require('@expo/config-plugins');
+const { withGradleProperties, withDangerousMod, withAppBuildGradle } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -39,17 +39,37 @@ const CUSTOM_PROGUARD_RULES = `
 `;
 
 module.exports = function withProguard(config) {
-  // 1. Disable R8 Full Mode in gradle.properties to avoid aggressive stripping
+  // 1. Disable R8 Full Mode & Disable Crashlytics Mapping File Upload (which causes Groovy XmlSlurper crash)
   config = withGradleProperties(config, (config) => {
     config.modResults.push({
       type: "property",
       key: "android.enableR8.fullMode",
       value: "false",
     });
+    config.modResults.push({
+      type: "property",
+      key: "firebaseCrashlytics.mappingFileUploadEnabled",
+      value: "false",
+    });
     return config;
   });
 
-  // 2. Append Proguard Keep Rules to android/app/proguard-rules.pro dynamically
+  // 2. Configure app/build.gradle to disable mappingFileUploadEnabled for release build type
+  config = withAppBuildGradle(config, (config) => {
+    if (config.modResults.language === 'groovy') {
+      let content = config.modResults.contents;
+      if (!content.includes('mappingFileUploadEnabled false')) {
+        content = content.replace(
+          /buildTypes\s*\{[\s\S]*?release\s*\{/,
+          (match) => `${match}\n            firebaseCrashlytics { mappingFileUploadEnabled false }`
+        );
+        config.modResults.contents = content;
+      }
+    }
+    return config;
+  });
+
+  // 3. Append Proguard Keep Rules to android/app/proguard-rules.pro dynamically
   config = withDangerousMod(config, [
     'android',
     async (config) => {
