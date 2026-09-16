@@ -84,7 +84,7 @@ export const loadLogoAsBase64 = async (): Promise<string> => {
   if (cachedLogoBase64) {
     return cachedLogoBase64;
   }
-  const fallbackUrl = "https://api.prod.kanisaajewellery.com/uploads/logo.png";
+  const fallbackUrl = `${theme.baseUrl}/uploads/logo.png`;
   try {
     let asset;
     try {
