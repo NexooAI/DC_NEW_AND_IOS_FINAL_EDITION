@@ -26,7 +26,7 @@ const themeConfig = {
   latitude: 8.427828080550306,
   longitude: 78.02855977120382,
   foundationYear: 2020,
-  baseUrl: "https://api.prod.srimurugangoldhouse.com",
+  baseUrl: "https://api.prod.srimurugangoldhouse.in",
   playStoreUrl: "https://play.google.com/store/apps/details?id=com.nexooai.srimurugangoldhouse&hl=en_IN",
   appStoreUrl: "https://apps.apple.com/us/app/sri-murugan-gold-house/id6755081937",
 };
