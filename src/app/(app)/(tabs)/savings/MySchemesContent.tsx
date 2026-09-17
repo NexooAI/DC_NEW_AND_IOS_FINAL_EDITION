@@ -777,7 +777,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
     <View style={[styles.emptyStateContainer, isPageEmpty ? { flex: 1, justifyContent: "center" } : { minHeight: 280, paddingVertical: 20 }]}>
       <View style={styles.emptyStateCard}>
         <Image
-          source={require("../../../../../assets/images/no-data2.png")}
+          source={require("../../../../../assets/images/no-data.png")}
           style={styles.emptyStateImage}
           resizeMode="contain"
         />
