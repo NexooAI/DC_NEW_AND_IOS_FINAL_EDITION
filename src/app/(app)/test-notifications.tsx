@@ -1,5 +1,5 @@
 import { useAppTheme } from "@/store/global.store";
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NotificationTester from '@/components/NotificationTester';
 import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
@@ -9,6 +9,16 @@ import { Ionicons } from '@expo/vector-icons';
 export default function TestNotificationsScreen() {
     const theme = useAppTheme();
     const styles = useMemo(() => getStyles(theme), [theme]);
+
+    useEffect(() => {
+        if (!__DEV__) {
+            router.back();
+        }
+    }, []);
+
+    if (!__DEV__) {
+        return null;
+    }
 
     return (
         <SafeAreaView style={styles.container}>

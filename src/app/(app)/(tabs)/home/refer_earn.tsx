@@ -27,14 +27,22 @@ import { rewardsAPI } from "@/services/api";
 const { width } = Dimensions.get("window");
 
 import ScreenHeader from "@/components/ScreenHeader";
+import RewardsReferPageV2 from "@/components/rewardsV2";
+
+const USE_REFER_EARN_V2 = true; // Version 2 Unified Screen (Set to false to use Version 1)
 
 export default function ReferCodeScreen() {
+  const router = useRouter();
+
+  if (USE_REFER_EARN_V2) {
+    return <RewardsReferPageV2 onBack={() => router.back()} />;
+  }
+
   const theme = useAppTheme();
   const styles = getStyles(theme);
   const { t } = useTranslation();
   const { user } = useGlobalStore();
   const code = user?.referralCode || "DEFAULT123";
-  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState(t("refer_earn_tab_refer") || "Refer & Earn");
   const [referrals, setReferrals] = useState<any[]>([]);
