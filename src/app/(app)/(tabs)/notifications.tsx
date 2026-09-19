@@ -25,7 +25,7 @@ import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { logger } from '@/utils/logger';
 
 // Utility function to format date
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string, t?: (key: string) => string) => {
   if (!dateString) return "";
   // Ensure valid ISO parsing across Android and iOS
   const normalizedDateStr =
@@ -46,7 +46,7 @@ const formatDate = (dateString: string) => {
     date.getFullYear() === now.getFullYear();
 
   if (isToday) {
-    return "Today";
+    return t ? t("today") || "Today" : "Today";
   }
 
   const yesterday = new Date(now);
@@ -57,7 +57,7 @@ const formatDate = (dateString: string) => {
     date.getFullYear() === yesterday.getFullYear();
 
   if (isYesterday) {
-    return "Yesterday";
+    return t ? t("yesterday") || "Yesterday" : "Yesterday";
   }
 
   return date.toLocaleDateString("en-US", {
@@ -190,6 +190,7 @@ const NotificationItem = React.memo(
     showSilver: boolean;
     liveRates: any;
   }) => {
+    const { t } = useTranslation();
     const isUnread = item.status === "unread";
     const categoryColors = getCategoryColors(item.type);
     const isRateType = item.type?.toLowerCase() === "rate" || item.type?.toLowerCase() === "rates";
@@ -304,7 +305,7 @@ const NotificationItem = React.memo(
               <>
                 <View style={{ width: 1, height: 24, backgroundColor: '#FEF08A' }} />
                 <View style={{ alignItems: 'center', flex: 1 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#854D0E', marginBottom: 2 }}>Silver</Text>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#854D0E', marginBottom: 2 }}>{t("silver") || "Silver"}</Text>
                   <Text style={{ fontSize: 14, fontWeight: '800', color: '#0F1D3A' }}>₹{silver}/g</Text>
                 </View>
               </>
@@ -316,12 +317,12 @@ const NotificationItem = React.memo(
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="time-outline" size={13} color="#9CA3AF" />
               <Text style={{ fontSize: 11, color: "#9CA3AF", marginLeft: 4 }}>
-                {formatDate(item.created_at)}
+                {formatDate(item.created_at, t)}
               </Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text style={{ fontSize: 12, fontWeight: '700', color: '#D4AF37', marginRight: 4 }}>
-                View Gold Rates
+                {t("viewGoldRates") || "View Gold Rates"}
               </Text>
               <Ionicons name="arrow-forward" size={14} color="#D4AF37" />
             </View>
@@ -385,7 +386,7 @@ const NotificationItem = React.memo(
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Ionicons name="time-outline" size={13} color="#9CA3AF" />
               <Text style={{ fontSize: 11, color: "#9CA3AF", marginLeft: 4 }}>
-                {formatDate(item.created_at)}
+                {formatDate(item.created_at, t)}
               </Text>
             </View>
           </View>
@@ -425,7 +426,7 @@ const NotificationItem = React.memo(
               alignSelf: "flex-start",
               marginBottom: 8,
             }}>
-              <Text style={{ fontSize: 9, color: '#854D0E', fontWeight: "800" }}>NEW</Text>
+              <Text style={{ fontSize: 9, color: '#854D0E', fontWeight: "800" }}>{t("new") || "NEW"}</Text>
             </View>
           )}
 
@@ -440,6 +441,7 @@ const NotificationItem = React.memo(
 export default function NotificationsScreen() {
   const theme = useAppTheme();
   const router = useRouter();
+  const { t } = useTranslation();
   const { user } = useGlobalStore();
   const { isVisible } = useAppVisibility();
   const { refreshCount } = useUnreadNotifications();
@@ -457,12 +459,12 @@ export default function NotificationsScreen() {
   const showSilver = isVisible("showSilverRate");
   const unreadCount = notifications.filter((n) => n.status === "unread").length;
 
-  const filterOptions = [
-    { label: "Gold Rates", value: "rates", icon: "trending-up-outline" },
-    { label: "All", value: "all", icon: "grid-outline" },
-    { label: "Offers", value: "offers", icon: "gift-outline" },
-    { label: "Rewards", value: "rewards", icon: "trophy-outline" },
-  ];
+  const filterOptions = useMemo(() => [
+    { label: t("goldRates") || "Gold Rates", value: "rates", icon: "trending-up-outline" },
+    { label: t("all") || "All", value: "all", icon: "grid-outline" },
+    { label: t("offers") || "Offers", value: "offers", icon: "gift-outline" },
+    { label: t("rewards") || "Rewards", value: "rewards", icon: "trophy-outline" },
+  ], [t]);
 
   // Fetch Fallback Gold & Silver Rates from API (Checking both /home and /rates with separate try-catch)
   const fetchLiveRates = async () => {
@@ -521,7 +523,7 @@ export default function NotificationsScreen() {
 
       if (!user?.id) {
         logger.error("❌ No user ID available for fetching notifications");
-        setError("User not authenticated");
+        setError(t("userNotAuthenticated") || "User not authenticated");
         return;
       }
 
@@ -569,7 +571,7 @@ export default function NotificationsScreen() {
       setNotifications(notificationsList);
     } catch (error: any) {
       logger.error("Error fetching notifications:", error);
-      setError(error.response?.data?.message || "Failed to load notifications");
+      setError(error.response?.data?.message || t("failedToLoadNotifications") || "Failed to load notifications");
       setNotifications([]);
       setCategorizedNotifications({});
     } finally {
@@ -639,14 +641,14 @@ export default function NotificationsScreen() {
   // Group filtered notifications by Date
   const groupedByDate = useMemo(() => {
     return filteredNotifications.reduce((acc: { [date: string]: Notification[] }, n) => {
-      const date = formatDate(n.created_at);
+      const date = formatDate(n.created_at, t);
       if (!acc[date]) {
         acc[date] = [];
       }
       acc[date].push(n);
       return acc;
     }, {});
-  }, [filteredNotifications]);
+  }, [filteredNotifications, t]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -682,7 +684,7 @@ export default function NotificationsScreen() {
                 color: "#0F1D3A", // Dark navy title
                 fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
               }}>
-                Notifications
+                {t("notifications") || "Notifications"}
               </Text>
               {/* Thick gold underline left-aligned */}
               <View style={{
@@ -818,7 +820,7 @@ export default function NotificationsScreen() {
               <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 80 }}>
                 <ActivityIndicator size="large" color="#D4AF37" />
                 <Text style={{ marginTop: 16, fontSize: 14, color: "#666" }}>
-                  Loading notifications...
+                  {t("loadingNotifications") || "Loading notifications..."}
                 </Text>
               </View>
             )}
@@ -838,7 +840,7 @@ export default function NotificationsScreen() {
                     borderRadius: 12,
                   }}
                 >
-                  <Text style={{ color: "white", fontWeight: "700" }}>Try Again</Text>
+                  <Text style={{ color: "white", fontWeight: "700" }}>{t("tryAgain") || "Try Again"}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -890,10 +892,10 @@ export default function NotificationsScreen() {
                   <Ionicons name="notifications-off-outline" size={44} color="#D4AF37" />
                 </View>
                 <Text style={{ fontSize: 18, fontWeight: "700", color: "#0F1D3A", marginBottom: 6 }}>
-                  No Notifications
+                  {t("noNotifications") || "No Notifications"}
                 </Text>
                 <Text style={{ fontSize: 13, color: "#6B7280", textAlign: "center", maxWidth: "80%", lineHeight: 20 }}>
-                  You don't have any notifications in this section. We will notify you when new rates or offers are live.
+                  {t("noNotificationsDesc") || "You don't have any notifications in this section. We will notify you when new rates or offers are live."}
                 </Text>
               </View>
             )}
@@ -941,7 +943,7 @@ export default function NotificationsScreen() {
                   {selectedNotification?.title}
                 </Text>
                 <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>
-                  {selectedNotification && formatDate(selectedNotification.created_at)}
+                  {selectedNotification && formatDate(selectedNotification.created_at, t)}
                 </Text>
                 <TouchableOpacity
                   onPress={closeModal}
@@ -974,7 +976,7 @@ export default function NotificationsScreen() {
                           marginTop: 20,
                         }}
                       >
-                        <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>View Rate Chart</Text>
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>{t("viewRateChart") || "View Rate Chart"}</Text>
                       </TouchableOpacity>
                     )}
                     {(selectedNotification.type?.toLowerCase() === "offer" || selectedNotification.type?.toLowerCase() === "offers") && (
@@ -991,7 +993,7 @@ export default function NotificationsScreen() {
                           marginTop: 20,
                         }}
                       >
-                        <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>View Offers</Text>
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>{t("viewOffers") || "View Offers"}</Text>
                       </TouchableOpacity>
                     )}
                     {(selectedNotification.type?.toLowerCase() === "reward" || selectedNotification.type?.toLowerCase() === "rewards") && (
@@ -1008,7 +1010,7 @@ export default function NotificationsScreen() {
                           marginTop: 20,
                         }}
                       >
-                        <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>View Rewards</Text>
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>{t("viewRewards") || "View Rewards"}</Text>
                       </TouchableOpacity>
                     )}
                   </>
@@ -1024,7 +1026,7 @@ export default function NotificationsScreen() {
                     marginTop: 12,
                   }}
                 >
-                  <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>Dismiss</Text>
+                  <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>{t("dismiss") || "Dismiss"}</Text>
                 </TouchableOpacity>
               </View>
             </View>

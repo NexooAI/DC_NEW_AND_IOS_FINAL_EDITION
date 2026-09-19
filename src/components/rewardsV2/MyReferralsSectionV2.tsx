@@ -48,7 +48,7 @@ export const MyReferralsSectionV2: React.FC<MyReferralsSectionV2Props> = ({
           <View style={styles.statRow}>
             <FontAwesome5 name="coins" size={16} color="#FFD54F" style={{ marginRight: 6 }} />
             <Text style={styles.statValue}>
-              {walletTotalEarned.toLocaleString("en-IN")} <Text style={styles.statUnit}>Pts</Text>
+              {walletTotalEarned.toLocaleString("en-IN")} <Text style={styles.statUnit}>{t("pts") || "Pts"}</Text>
             </Text>
           </View>
         </View>
@@ -86,7 +86,7 @@ export const MyReferralsSectionV2: React.FC<MyReferralsSectionV2Props> = ({
 
             const pointsEarned = item.points || item.reward_earned || 0;
             const displayName =
-              item.description || item.friend_name || item.name || `Friend #${index + 1}`;
+              item.description || item.friend_name || item.name || `${t("friend") || "Friend"} #${index + 1}`;
             const mobile = item.mobile_number || item.phone || "";
             const status = item.status || "Active";
 

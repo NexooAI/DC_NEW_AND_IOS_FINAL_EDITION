@@ -72,12 +72,12 @@ export const WalletHeroCardV2: React.FC<WalletHeroCardV2Props> = ({
               <Text style={styles.valueText}>
                 {t("worth_value") || "Worth"}: <Text style={styles.valueBold}>₹{worthValue.toLocaleString("en-IN")}</Text>
               </Text>
-              <Text style={styles.conversionNote}> (1 Pt = ₹{currentPointRate})</Text>
+              <Text style={styles.conversionNote}> (1 {t("pt") || "Pt"} = ₹{currentPointRate})</Text>
             </View>
 
             {totalEarned > 0 && (
               <Text style={styles.totalEarnedText}>
-                {t("total_earned") || "Total Earned"}: {totalEarned.toLocaleString("en-IN")} Pts
+                {t("total_earned") || "Total Earned"}: {totalEarned.toLocaleString("en-IN")} {t("pts") || "Pts"}
               </Text>
             )}
 
