@@ -51,7 +51,7 @@ export const generateBillReceiptHTML = (data: BillReceiptData): string => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bill Receipt - Kanisaa Jewellers</title>
+        <title>Bill Receipt - ${theme.constants.customerName}</title>
         <style>
             @page {
                 size: A4 portrait;

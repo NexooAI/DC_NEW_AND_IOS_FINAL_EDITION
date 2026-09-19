@@ -5,9 +5,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     const isIos = process.env.EAS_BUILD_PLATFORM === 'ios' || process.env.PLATFORM === 'ios';
 
     const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44";
-    const bundleIdentifier = themeConfig.bundleIdentifier || "com.nexooai.kanisaajewellerydigigoldsavings";
-    const projectId = themeConfig.projectId || "aeef6800-eac4-4ba3-b14d-a09d7342f537";
-    const owner = themeConfig.owner || "mnvgroups07";
+    const bundleIdentifier = themeConfig.bundleIdentifier || "com.nexooai.srimurugangoldhouse";
+    const projectId = themeConfig.projectId || "18a93bd7-51d4-4464-ba6c-a7cb4533c799";
+    const owner = themeConfig.owner || "sudhakarg";
     const version = isIos ? ((themeConfig as any).iosVersion) : ((themeConfig as any).androidVersion);
 
     return {
@@ -17,7 +17,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         version: version,
         orientation: "portrait",
         userInterfaceStyle: "automatic",
-        scheme: themeConfig.slug || "kanisaajewellerydigigold",
+        scheme: themeConfig.slug || "sri-murugan-gold-house",
 
         icon: themeConfig.icon || "./assets/images/icon.png",
 
@@ -60,9 +60,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             icon: themeConfig.icon || "./assets/images/icon.png",
             bundleIdentifier: bundleIdentifier,
             associatedDomains: [
-                "applinks:api.prod.kanisaajewellery.com",
-                "applinks:kanisaajewellery.com",
-                "applinks:kanisaajewellery.page.link"
+                "applinks:api.prod.srimurugangoldhouse.in",
+                "applinks:srimurugangoldhouse.in",
+                "applinks:srimurugangoldhouse.com",
             ],
             googleServicesFile: "./GoogleService-Info.plist",
             buildNumber: (themeConfig as any).buildNumber,

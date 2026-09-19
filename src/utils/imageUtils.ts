@@ -84,13 +84,13 @@ export const loadLogoAsBase64 = async (): Promise<string> => {
   if (cachedLogoBase64) {
     return cachedLogoBase64;
   }
-  const fallbackUrl = "https://api.prod.kanisaajewellery.com/uploads/logo.png";
+  const fallbackUrl = `${theme.baseUrl}/uploads/logo.png`;
   try {
     let asset;
     try {
-      asset = Asset.fromModule(require("../../assets/images/kanisaa-logo-header.png"));
-    } catch {
       asset = Asset.fromModule(require("../../assets/images/logo.png"));
+    } catch {
+      asset = Asset.fromModule(require("../../assets/images/logo_trans.png"));
     }
     await asset.downloadAsync();
     const uri = asset.localUri || asset.uri;

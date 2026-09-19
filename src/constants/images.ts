@@ -42,9 +42,9 @@ export const images = {
     // Slider and banner images
     banners: {
         slider1: "../../assets/images/slider.png",
-        slider2: "../../assets/images/slider2.png",
-        slider3: "../../assets/images/slider3.png",
-        slider4: "../../assets/images/slider4.png",
+        slider2: "../../assets/images/slider.png",
+        slider3: "../../assets/images/slider.png",
+        slider4: "../../assets/images/slider.png",
         banner: "../../assets/images/banner.png",
         banner2: "../../assets/images/banner2.png",
         flashBanner: "../../assets/images/flashbanner.png",
@@ -53,25 +53,25 @@ export const images = {
     // Status and collection images
     status: {
         status1: "../../assets/images/status1.jpg",
-        status2: "../../assets/images/status2.jpg",
-        status3: "../../assets/images/status3.jpg",
-        status4: "../../assets/images/status4.jpg",
-        status5: "../../assets/images/status5.jpg",
-        status6: "../../assets/images/status6.jpg",
+        status2: "../../assets/images/status1.jpg",
+        status3: "../../assets/images/status1.jpg",
+        status4: "../../assets/images/status1.jpg",
+        status5: "../../assets/images/status1.jpg",
+        status6: "../../assets/images/status1.jpg",
     },
 
     // Scheme images
     schemes: {
         scheme1: "../../assets/images/scheme1.jpg",
-        scheme2: "../../assets/images/scheme2.jpg",
-        scheme3: "../../assets/images/scheme3.jpg",
-        scheme4: "../../assets/images/scheme4.jpg",
+        scheme2: "../../assets/images/scheme1.jpg",
+        scheme3: "../../assets/images/scheme1.jpg",
+        scheme4: "../../assets/images/scheme1.jpg",
     },
 
     // Store and location images
     store: {
         storeIcon: "../../assets/images/store.png",
-        shopIcon: "../../assets/images/shop.jpg",
+        shopIcon: "../../assets/images/shop.png",
         mapPin: "../../assets/images/map-pin.png",
         centerLocation: "../../assets/images/center-location.png",
         centralPark: "../../assets/images/central-park.jpg",

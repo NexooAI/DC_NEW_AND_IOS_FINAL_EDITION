@@ -21,7 +21,8 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const segments = useSegments();
   const router = useRouter();
-  const hasDashboard = getAppConfig().constants.enableDashboard;
+  // Temporarily disabled for bottom navigation bar as requested (can be re-enabled for final build)
+  const hasDashboard = false;
 
   // Check if we're on the schemes page
   const fullPath = segments.join("/");

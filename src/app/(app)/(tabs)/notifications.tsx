@@ -26,22 +26,45 @@ import { logger } from '@/utils/logger';
 
 // Utility function to format date
 const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 1) {
-    return "Yesterday";
-  } else if (diffDays === 0) {
-    return "Today";
-  } else {
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+  if (!dateString) return "";
+  // Ensure valid ISO parsing across Android and iOS
+  const normalizedDateStr =
+    dateString.includes(" ") && !dateString.includes("T")
+      ? dateString.replace(" ", "T") + (dateString.endsWith("Z") ? "" : "Z")
+      : dateString;
+  const date = new Date(normalizedDateStr);
+  if (isNaN(date.getTime())) {
+    return dateString;
   }
+
+  const now = new Date();
+
+  // Compare calendar day in local device timezone
+  const isToday =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+
+  if (isToday) {
+    return "Today";
+  }
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday =
+    date.getDate() === yesterday.getDate() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getFullYear() === yesterday.getFullYear();
+
+  if (isYesterday) {
+    return "Yesterday";
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 };
 
 // Regex rates parser

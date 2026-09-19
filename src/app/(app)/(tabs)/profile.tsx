@@ -107,7 +107,7 @@ const ProfileScreen = () => {
 
   // Function to open Rate Us URL directly
   const openRateUs = () => {
-    const packageName = Constants.expoConfig?.android?.package || themeConfig?.bundleIdentifier || "com.nexooai.kanisaajewellerydigigoldsavings";
+    const packageName = Constants.expoConfig?.android?.package || themeConfig?.bundleIdentifier || "com.nexooai.srimurugangoldhouse";
     const appleId = (Constants.expoConfig?.extra as any)?.appleAppId || "6755081937";
     const url = Platform.OS === 'android'
       ? `market://details?id=${packageName}`
@@ -445,7 +445,7 @@ const ProfileScreen = () => {
 
   const handleShareApp = async () => {
     try {
-      const packageName = Constants.expoConfig?.android?.package || themeConfig?.bundleIdentifier || "com.nexooai.kanisaajewellerydigigoldsavings";
+      const packageName = Constants.expoConfig?.android?.package || themeConfig?.bundleIdentifier || "com.nexooai.srimurugangoldhouse";
       const playStoreLink =
         `https://play.google.com/store/apps/details?id=${packageName}&hl=en_IN`;
       const message = `Join me on ${theme.constants.customerName} Gold and Diamonds! Download the app from: ${playStoreLink}`;

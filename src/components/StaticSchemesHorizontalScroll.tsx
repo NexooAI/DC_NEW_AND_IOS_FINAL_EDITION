@@ -291,17 +291,8 @@ export default function StaticSchemesHorizontalScroll({
     }
   };
 
-  const getSchemeImage = (schemeType: string) => {
-    switch (schemeType) {
-      case "weight":
-        return require("../../assets/images/scheme1.jpg");
-      case "amount":
-        return require("../../assets/images/scheme2.jpg");
-      case "flexible":
-        return require("../../assets/images/scheme3.jpg");
-      default:
-        return require("../../assets/images/scheme1.jpg");
-    }
+  const getSchemeImage = (_schemeType: string) => {
+    return require("../../assets/images/scheme1.jpg");
   };
 
   const getSchemeIcon = (schemeType: string): string => {

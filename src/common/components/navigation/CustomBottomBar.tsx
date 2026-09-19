@@ -103,11 +103,8 @@ export default function CustomBottomBar(_props?: any) {
     "payment-failure",
   ];
 
-  const hasDashboard = Boolean(
-    theme?.constants?.enableDashboard ||
-    visibleData?.enableDashboardV2 === 1 ||
-    visibleData?.enableDashboard === 1
-  );
+  // Temporarily disabled for bottom navigation bar as requested (can be re-enabled for final build)
+  const hasDashboard = false;
 
   const tabs: Tab[] = useMemo(() => {
     const rawTabs: Tab[] = [
@@ -151,14 +148,7 @@ export default function CustomBottomBar(_props?: any) {
       if (tab.name === "home") return isVisible("showTabHome");
       if (tab.name === "savings") return isVisible("showTabSavings");
       if (tab.name === "quick_join") return isVisible("showTabQuickJoin");
-      if (tab.name === "dashboard_tab") {
-        return Boolean(
-          hasDashboard &&
-          visibleData?.enableDashboardV2 !== 0 &&
-          visibleData?.enableDashboard !== 0 &&
-          (visibleData?.enableDashboardV2 === 1 || visibleData?.enableDashboard === 1 || isVisible("enableDashboardV2" as any))
-        );
-      }
+      if (tab.name === "dashboard_tab") return false;
       if (tab.name === "rewards") return isVisible("showTabRewards");
       if (tab.name === "profile") return isVisible("showTabProfile");
       return true;
