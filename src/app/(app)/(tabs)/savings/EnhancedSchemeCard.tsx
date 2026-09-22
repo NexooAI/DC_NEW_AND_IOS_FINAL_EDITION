@@ -399,6 +399,49 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
     return "#EAB308"; // Gold
   };
 
+  const getCardTheme = () => {
+    const metal = (getLocalizedText(item.metalType) || "").toLowerCase();
+    const saving = (getLocalizedText(item.savingType) || "").toLowerCase();
+
+    if (saving === "old_gold") {
+      return {
+        gradientColors: ["#FFFDF0", "#FEF3C7", "#FDE68A"],
+        borderAccent: "#D97706",
+      };
+    }
+    if (metal.includes("silver")) {
+      return {
+        gradientColors: ["#F8FAFC", "#F1F5F9", "#E2E8F0"],
+        borderAccent: "#64748B",
+      };
+    }
+    if (metal.includes("diamond") || metal.includes("platinum")) {
+      return {
+        gradientColors: ["#F0FDF4", "#ECFDF5", "#D1FAE5"],
+        borderAccent: "#059669",
+      };
+    }
+    if (isHybrid) {
+      return {
+        gradientColors: ["#FAF5FF", "#F3E8FF", "#E9D5FF"],
+        borderAccent: "#7C3AED",
+      };
+    }
+    if (isFlexiOrHybrid) {
+      return {
+        gradientColors: ["#F0F9FF", "#E0F2FE", "#BAE6FD"],
+        borderAccent: "#0284C7",
+      };
+    }
+    // Default Gold Scheme - Warm Champagne Amber
+    return {
+      gradientColors: ["#FFFDF5", "#FEF9E7", "#FEF3C7"],
+      borderAccent: "#D97706",
+    };
+  };
+
+  const cardTheme = getCardTheme();
+
   return (
     <View
       style={[
@@ -406,13 +449,16 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
         isActive && styles.cardWrapperActive,
         {
           borderLeftWidth: 6,
-          borderLeftColor: getLeftAccentColor(),
+          borderLeftColor: cardTheme.borderAccent || getLeftAccentColor(),
           borderWidth: isExpanded ? 1.5 : 1,
           borderColor: isExpanded ? (theme.colors.gold || "#D97706") : "rgba(0, 0, 0, 0.08)",
         }
       ]}
     >
-      <View
+      <LinearGradient
+        colors={cardTheme.gradientColors as [string, string, ...string[]]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={styles.cardBackgroundImage}
       >
         <TouchableOpacity activeOpacity={0.9} onPress={toggleExpand}>
@@ -855,7 +901,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </LinearGradient>
 
       <CustomAlert
         visible={alertConfig.visible}
@@ -895,7 +941,6 @@ function getStyles(theme: any) { return StyleSheet.create({
     width: "100%",
     minHeight: 200,
     borderRadius: 16,
-    backgroundColor: theme.colors.white,
   },
   cardHeader: {
     flexDirection: "row",
@@ -912,10 +957,11 @@ function getStyles(theme: any) { return StyleSheet.create({
     marginBottom: 8,
   },
   schemeTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 20,
+    fontWeight: "800",
     color: theme.colors.textDark,
     marginBottom: 8,
+    letterSpacing: 0.3,
   },
   schemeSubtitleContainer: {
     flexDirection: "row",
@@ -923,23 +969,23 @@ function getStyles(theme: any) { return StyleSheet.create({
     gap: 8,
   },
   metalTypeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 12,
   },
   metalTypeText: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "700",
     color: "#000",
   },
   savingTypeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 12,
   },
   savingTypeText: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "700",
     color: theme.colors.textDark,
   },
   headerRight: {
@@ -959,7 +1005,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(0, 0, 0, 0.06)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -984,16 +1030,17 @@ function getStyles(theme: any) { return StyleSheet.create({
     alignItems: "center",
   },
   accountLabel: {
-    fontSize: 12,
+    fontSize: 13,
     color: theme.colors.textSecondary,
+    fontWeight: "600",
   },
   accountValuesRow: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
   accountValue: {
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
     color: theme.colors.textDark,
   },
   paymentInfoRow: {
@@ -1009,8 +1056,8 @@ function getStyles(theme: any) { return StyleSheet.create({
     gap: 8,
   },
   paymentInfoIconContainer: {
-    width: 20,
-    height: 20,
+    width: 22,
+    height: 22,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1018,19 +1065,20 @@ function getStyles(theme: any) { return StyleSheet.create({
     flex: 1,
   },
   paymentInfoLabel: {
-    fontSize: 12,
+    fontSize: 13,
     color: theme.colors.textSecondary,
     marginBottom: 2,
+    fontWeight: "600",
   },
   paymentInfoValue: {
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "800",
     color: theme.colors.textDark,
   },
   paymentInfoDivider: {
     width: 1,
     height: 30,
-    backgroundColor: theme.colors.border,
+    backgroundColor: "rgba(0, 0, 0, 0.1)",
     marginHorizontal: 12,
   },
   actionButtonsContainer: {
@@ -1056,8 +1104,8 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   detailsButtonText: {
     color: theme.colors.white,
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
   },
   payNowButtonLarge: {
     flex: 1,
@@ -1074,8 +1122,8 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   payNowButtonTextLarge: {
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
   },
   disabledButton: {
     opacity: 0.7,

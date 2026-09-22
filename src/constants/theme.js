@@ -472,9 +472,13 @@ const theme = {
     longitude: themeConfig.longitude || 78.1192,
     foundationYear: themeConfig.foundationYear || 1995,
     enableDashboard: themeConfig.enableDashboard !== undefined ? themeConfig.enableDashboard : false,
+    homeVersion: themeConfig.homeVersion || "v1",
+    enableHomeV2: themeConfig.enableHomeV2 !== undefined ? themeConfig.enableHomeV2 : false,
     providerName: "Agnisofterp",
     providerUrl: "https://agnisofterp.com/",
   },
+  homeVersion: themeConfig.homeVersion || "v1",
+  enableHomeV2: themeConfig.enableHomeV2 !== undefined ? themeConfig.enableHomeV2 : false,
   baseUrl: themeConfig.baseUrl || "https://api.srithangathamarai.com",
   youtubeUrl: themeConfig.youtubeUrl || "https://youtu.be/8RAhdn5b9Bw",
 };

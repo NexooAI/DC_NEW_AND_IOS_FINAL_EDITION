@@ -28,13 +28,17 @@ import { logger } from '@/utils/logger';
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 1) {
-    return "Yesterday";
-  } else if (diffDays === 0) {
+  // Compare calendar days (ignoring hours/minutes)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const notifDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffTime = today.getTime() - notifDate.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
     return "Today";
+  } else if (diffDays === 1) {
+    return "Yesterday";
   } else {
     return date.toLocaleDateString("en-US", {
       month: "short",
@@ -672,8 +676,7 @@ export default function NotificationsScreen() {
           </View>
 
           {/* Floating Bell Button with Gold Badge */}
-          <TouchableOpacity
-            onPress={() => router.push("/test-notifications")} // Direct routing placeholder or settings
+          <View
             style={{
               width: 46,
               height: 46,
@@ -709,7 +712,7 @@ export default function NotificationsScreen() {
                 </Text>
               </View>
             )}
-          </TouchableOpacity>
+          </View>
         </View>
 
         {/* Filter Chips Scrollbar */}

@@ -30,9 +30,8 @@ import {
 } from "react-native";
 import { Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { useFocusEffect, useNavigation, DrawerActions } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter, useLocalSearchParams, useNavigation, useFocusEffect } from "expo-router";
 import LanguageSwitcher from "@/contexts/LanguageSwitcher";
 import LanguageSelector from "@/components/LanguageSelector";
 import LiveRateCard from "@/components/LiveRateCard";
@@ -102,6 +101,7 @@ import { fetchSchemesWithCache, fetchBranchesWithCache } from "@/utils/apiCache"
 import UserInfoCard from "@/components/home/UserInfoCard";
 import AnimatedGoldRate from "@/components/home/AnimatedGoldRate";
 import MySchemesCards from "@/components/home/MySchemesCards";
+import HomePageV2 from "@/components/homeV2/HomePageV2";
 
 // Constants - Using responsive layout hook instead
 const REFRESH_INTERVAL = 15000; // 15 seconds
@@ -1059,23 +1059,32 @@ export default function Home() {
     }
 
     try {
-      let investments = existingInvestments;
+      let investments: any = existingInvestments;
 
-      if (!investments) {
+      // If existingInvestments is an error object like { error: true, message: 'No active investments...' }, treat as empty
+      if (investments && !Array.isArray(investments)) {
+        if (investments.error || (investments.message && typeof investments.message === 'string' && investments.message.includes("No active investments"))) {
+          investments = [];
+        }
+      }
+
+      if (!investments || !Array.isArray(investments)) {
         logger.log("🔍 Fetching investment data for user:", user.id);
         const response = await api.get(`investments/user_investments/${user.id}`, { skipLoading: true } as any);
         logger.log("Investment API response:", response.data);
 
         // Handle different possible response structures
-        if (response.data && response.data.data) {
-          // If response has data.data structure
+        if (response.data && Array.isArray(response.data.data)) {
           investments = response.data.data;
         } else if (response.data && Array.isArray(response.data)) {
-          // If response.data is directly an array
           investments = response.data;
-        } else if (response.data && response.data.investments) {
-          // If response has investments property
+        } else if (response.data && Array.isArray(response.data.investments)) {
           investments = response.data.investments;
+        } else if (response.data?.error || (response.data?.message && typeof response.data.message === 'string' && response.data.message.includes("No active investments"))) {
+          // User has no active investments - completely normal
+          investments = [];
+        } else {
+          investments = [];
         }
       } else {
         logger.log("📦 Using pre-fetched investments data count:", investments.length);
@@ -1083,7 +1092,6 @@ export default function Home() {
 
       // Ensure investments is an array
       if (!Array.isArray(investments)) {
-        logger.warn("Expected investments to be an array, got:", investments);
         investments = [];
       }
 
@@ -1616,7 +1624,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state) => {
+    const unsubscribe = NetInfo.addEventListener((state: any) => {
       if (!state.isConnected) {
         Alert.alert(
           t("noInternetTitle"),
@@ -2797,6 +2805,45 @@ export default function Home() {
     );
   }
 
+  // Check whether to show HomePage Version 2 or Version 1
+  // Backend (/app-visible) takes highest priority; falls back to theme config
+  const isHomeV2Active = (() => {
+    if (visibleData?.homeVersion === "v2") return true;
+    if (visibleData?.homeVersion === "v1") return false;
+
+    if (visibleData?.enableHomeV2 === 0 || visibleData?.showHomeV2 === 0) return false;
+    if (visibleData?.enableHomeV2 === 1 || visibleData?.showHomeV2 === 1) return true;
+
+    return (
+      (theme?.constants as any)?.enableHomeV2 === true ||
+      (theme?.constants as any)?.homeVersion === "v2" ||
+      (theme as any)?.homeVersion === "v2" ||
+      (theme as any)?.enableHomeV2 === true ||
+      getAppConfig()?.constants?.enableHomeV2 === true ||
+      (getAppConfig()?.constants as any)?.homeVersion === "v2"
+    );
+  })();
+
+  if (__DEV__) {
+    logger.log("🏠 [Home] Active Home Version:", isHomeV2Active ? "V2 (Luxury)" : "V1 (Legacy)");
+  }
+
+  if (isHomeV2Active) {
+    return (
+      <AuthGuard>
+        <HomePageV2
+          homeData={homeData}
+          collectionsData={collectionsData}
+          sliderImages={sliderImages}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          totalGoldSavings={totalGoldSavings}
+          totalAmount={totalAmount}
+        />
+      </AuthGuard>
+    );
+  }
+
   return (
     <AuthGuard>
       <SafeAreaView style={styles.fullHeightBackground} edges={["top", "left", "right"]}>
@@ -2936,7 +2983,7 @@ export default function Home() {
                   activeOpacity={0.8}
                 >
                   <LinearGradient
-                    colors={[COLORS.error, "#a0000f"]}
+                    colors={[COLORS.error || "#ef4444", "#a0000f"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.kycBannerGradient}
@@ -3542,7 +3589,7 @@ export default function Home() {
                         activeOpacity={0.8}
                       >
                         <LinearGradient
-                          colors={[theme.colors.primary, theme.colors.bgPrimaryHeavy]}
+                          colors={[theme.colors.primary || "#a3203a", theme.colors.bgPrimaryHeavy || theme.colors.primary || "#850111"]}
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 0 }}
                           style={styles.joinSchemesButtonGradient}
@@ -3902,7 +3949,7 @@ export default function Home() {
         onRequestClose={() => setIsLocalDrawerOpen(false)}
       >
         <View style={{ flex: 1, flexDirection: "row", backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <SafeAreaView 
+          <SafeAreaView
             style={{ width: "82%", height: "100%", backgroundColor: theme.colors.background }}
             edges={Platform.OS === "ios" ? ["top", "bottom", "left"] : ["bottom", "left"]}
           >

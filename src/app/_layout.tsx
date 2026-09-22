@@ -1,5 +1,5 @@
 import Constants from "expo-constants";
-import { Stack, useNavigation, useRouter, usePathname } from "expo-router";
+import { Stack, useRouter, usePathname } from "expo-router";
 import { useFirstLaunch } from "@/common/hooks/useFirstLaunch";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { logAppEvent, logDeviceInfo } from "@/services/appEventService";
@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+// @ts-ignore
 import "../global.css";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { initializeAppLocale } from "@/i18n";
@@ -61,7 +62,6 @@ export default function RootLayout() {
   const isExpoGo = Constants.executionEnvironment === "storeClient";
   const { isFirstLaunch } = useFirstLaunch();
   const router = useRouter();
-  const navigation = useNavigation();
   const pathname = usePathname();
   const [overallLoading, setOverallLoading] = useState<boolean>(false);
   const { updateUser, setLanguage, isLoggedIn } = useGlobalStore();
@@ -354,40 +354,37 @@ export default function RootLayout() {
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
       () => {
-        const state = navigation.getState?.();
-        const currentRoute = state?.routes?.[state.index];
+        const isRootScreen =
+          !pathname ||
+          pathname === "/" ||
+          pathname === "/home" ||
+          pathname === "/(app)/dashboard" ||
+          pathname === "/dashboard" ||
+          pathname === "/(auth)/login" ||
+          pathname === "/login" ||
+          pathname === "/(app)/(tabs)/home";
 
-        const allowedBackScreens = [
-          "home",
-          "savings",
-          "transactions",
-          "profile",
-          "login",
-        ];
+        const canBack = router && typeof router.canGoBack === "function" && router.canGoBack();
 
-        if (currentRoute && allowedBackScreens.includes(currentRoute.name)) {
+        if (canBack && !isRootScreen) {
           return false;
         }
 
-        if (currentRoute?.name === "(tabs)" || currentRoute?.name === "index") {
-          Alert.alert(
-            "Exit App",
-            "Are you sure you want to exit?",
-            [
-              { text: "Cancel", onPress: () => null, style: "cancel" },
-              { text: "Exit", onPress: () => BackHandler.exitApp() },
-            ],
-            { cancelable: false }
-          );
-          return true;
-        }
-
-        return false;
+        Alert.alert(
+          "Exit App",
+          "Are you sure you want to exit?",
+          [
+            { text: "Cancel", onPress: () => null, style: "cancel" },
+            { text: "Exit", onPress: () => BackHandler.exitApp() },
+          ],
+          { cancelable: false }
+        );
+        return true;
       }
     );
 
     return () => backHandler.remove();
-  }, [navigation]);
+  }, [pathname, router]);
 
   console.log("🎨 RootLayout render state:", { needsUpdate, hasUpdateInfo: !!updateInfo, isCheckingUpdate });
   if (needsUpdate && updateInfo) {

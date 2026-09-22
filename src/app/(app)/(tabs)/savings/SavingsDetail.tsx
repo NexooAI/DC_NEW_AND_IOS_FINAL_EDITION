@@ -21,8 +21,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { useFocusEffect } from "@react-navigation/native";
-import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
@@ -47,7 +46,6 @@ import {
   PaymentReceiptData,
 } from "@/templates/html";
 import { Socket } from "socket.io-client";
-import { CommonActions, useNavigationState } from "@react-navigation/native";
 import { formatGoldWeight } from "@/utils/imageUtils";
 import { theme } from "@/constants/theme";
 import COLORS from "@/constants/colors";
@@ -238,7 +236,6 @@ const SavingsDetail = () => {
     }),
     [language]
   );
-  const state = useNavigationState((state) => state);
   const [advancePayments, setAdvancePayments] = useState<any[]>([]);
 
   const totalSelectedAmount = useMemo(() => {

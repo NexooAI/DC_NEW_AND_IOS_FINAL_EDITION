@@ -1,5 +1,5 @@
 import { useAppTheme } from "@/store/global.store";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -57,8 +57,8 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
     onImageError,
     onImageLoad,
   }) => {
-  const theme = useAppTheme();
-  styles = getStyles(theme);
+    const theme = useAppTheme();
+    const styles = useMemo(() => getStyles(theme), [theme]);
     const { t } = useTranslation();
     const [isExpanded, setIsExpanded] = useState(true);
     const arrowOpacity = useRef(new Animated.Value(1)).current;
@@ -129,16 +129,6 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
           end={{ x: 1, y: 1 }}
           style={styles.cardGradient}
         >
-          {/* Subtle Background Pattern */}
-          <View style={styles.patternOverlay}>
-            <MaterialCommunityIcons
-              name="crown"
-              size={120} // Reduced size
-              color="rgba(255, 215, 0, 0.03)"
-              style={styles.bgIcon}
-            />
-          </View>
-
           <TouchableOpacity
             style={styles.mainContent}
             onPress={handleExpandCollapse}
@@ -150,7 +140,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
                   colors={[theme.colors.secondary || "#FFD700", "#B8860B"]}
                   style={styles.avatarPlaceholder}
                 >
-                  <MaterialCommunityIcons name="wallet-membership" size={20} color="#3E2723" />
+                  <MaterialCommunityIcons name="wallet-membership" size={15} color="#3E2723" />
                 </LinearGradient>
               </View>
 
@@ -163,7 +153,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
               <View style={styles.expandButtonContainer}>
                  <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
                     <View style={styles.expandIcon}>
-                         <Ionicons name="chevron-down" size={20} color={theme.colors.secondary} />
+                         <Ionicons name="chevron-down" size={16} color={theme.colors.secondary} />
                     </View>
                  </Animated.View>
               </View>
@@ -248,7 +238,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = React.memo(
 function getStyles(theme: any) { return StyleSheet.create({
   container: {
     paddingHorizontal: moderateScale(16),
-    paddingVertical: moderateScale(8),
+    paddingVertical: moderateScale(4),
     width: responsiveUtils.isTabletDevice() ? 632 : "100%",
     maxWidth: "100%",
     alignSelf: responsiveUtils.isTabletDevice() ? "center" : "stretch",
@@ -259,24 +249,16 @@ function getStyles(theme: any) { return StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.secondary ? `${theme.colors.secondary}33` : "rgba(255, 215, 0, 0.2)", // Subtle gold border
     ...SHADOW_UTILS.card(),
-    elevation: 8,
+    elevation: 6,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-  },
-  patternOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "flex-end",
-    alignItems: "flex-end",
-    paddingRight: -20,
-    paddingBottom: -20,
-  },
-  bgIcon: {
-    transform: [{ rotate: "-15deg" }],
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
   },
   mainContent: {
-    padding: moderateScale(12),
+    paddingHorizontal: moderateScale(12),
+    paddingTop: moderateScale(8),
+    paddingBottom: moderateScale(8),
   },
   headerRow: {
     flexDirection: "row",
@@ -284,26 +266,26 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   avatarContainer: {
     position: "relative",
-    marginRight: spacing.md,
+    marginRight: moderateScale(8),
   },
   avatar: {
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: moderateScale(20),
-    borderWidth: 2,
+    width: moderateScale(28),
+    height: moderateScale(28),
+    borderRadius: moderateScale(14),
+    borderWidth: 1.5,
     borderColor: theme.colors.secondary,
   },
   avatarPlaceholder: {
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: moderateScale(20),
+    width: moderateScale(28),
+    height: moderateScale(28),
+    borderRadius: moderateScale(14),
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: "#FFF",
   },
   avatarInitials: {
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(12),
     fontWeight: "bold",
     color: "#3E2723",
   },
@@ -312,7 +294,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     bottom: 0,
     right: 0,
     backgroundColor: theme.colors.white,
-    borderRadius: 10,
+    borderRadius: 8,
     overflow: "hidden",
   },
   userInfo: {
@@ -320,21 +302,21 @@ function getStyles(theme: any) { return StyleSheet.create({
     justifyContent: "center",
   },
   welcomeLabel: {
-    fontSize: moderateScale(10),
+    fontSize: moderateScale(9),
     color: "rgba(255, 255, 255, 0.6)",
     marginBottom: 2,
     letterSpacing: 0.5,
     textTransform: 'uppercase'
   },
   userName: {
-    fontSize: moderateScale(13),
+    fontSize: moderateScale(12.5),
     fontWeight: "800",
     color: "#FFFFFF",
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
     textTransform: 'uppercase',
     textShadowColor: "rgba(0,0,0,0.5)",
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    textShadowRadius: 2,
   },
   idContainer: {
     flexDirection: "row",
@@ -361,12 +343,12 @@ function getStyles(theme: any) { return StyleSheet.create({
   expandButtonContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingLeft: spacing.sm,
+    paddingLeft: moderateScale(4),
   },
   expandIcon: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
+      width: moderateScale(24),
+      height: moderateScale(24),
+      borderRadius: moderateScale(12),
       backgroundColor: 'rgba(255,255,255,0.05)',
       justifyContent: 'center',
       alignItems: 'center',
@@ -379,7 +361,8 @@ function getStyles(theme: any) { return StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: "rgba(255, 255, 255, 0.15)",
-    marginVertical: moderateScale(8),
+    marginTop: moderateScale(6),
+    marginBottom: moderateScale(8),
     width: '100%'
   },
   statsGrid: {
@@ -462,8 +445,7 @@ function getStyles(theme: any) { return StyleSheet.create({
       textTransform: "uppercase",
       letterSpacing: 0.5
   }
-}) }
-
-var styles = getStyles(theme);;
+});
+}
 
 export default UserInfoCard;

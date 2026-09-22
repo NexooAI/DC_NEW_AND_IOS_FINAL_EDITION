@@ -24,8 +24,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient"; // For gradient background
 // AppHeader is now handled by the layout wrapper
 import { useTranslation } from "@/hooks/useTranslation";
@@ -197,10 +196,16 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
 
       // Accept both 'data' and 'investments' as possible array fields
       let investments: any[] = [];
+      const backendMessage = response?.data?.message || (typeof response?.data?.data === "object" && response?.data?.data?.message) || "";
+      const isNoInvestments = typeof backendMessage === "string" && (backendMessage.toLowerCase().includes("no active investments") || backendMessage.toLowerCase().includes("no investments"));
+
       if (Array.isArray(response?.data?.data)) {
         investments = response.data.data;
       } else if (Array.isArray(response?.data?.investments)) {
         investments = response.data.investments;
+      } else if (isNoInvestments) {
+        // Normal user state: user has no active investments yet
+        investments = [];
       } else if (response?.data?.data) {
         // Unexpected structure, log for debugging
         logger.error(
@@ -218,6 +223,8 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
         );
         setLoading(false);
         return;
+      } else if (isNoInvestments) {
+        investments = [];
       } else {
         // No data field or data is undefined
         logger.error("No investments data found in response:", response.data);

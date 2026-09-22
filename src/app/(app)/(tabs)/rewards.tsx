@@ -23,11 +23,25 @@ import { useRouter, useFocusEffect, useNavigation } from "expo-router";
 import { rewardsAPI, investmentAPI } from "@/services/api";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useEffect } from "react";
-
+import RewardsReferPageV2 from "@/components/rewardsV2";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 const DISABLE_REDEMPTION_FORM = true; // Set to false to restore original redemption modal flow
 
 export default function RewardsScreen() {
+  const { visibleData } = useAppVisibility();
+  const isRewardsV2Active = (() => {
+    if (visibleData?.rewardsVersion === "v2") return true;
+    if (visibleData?.rewardsVersion === "v1") return false;
+    if (visibleData?.enableRewardsV2 === 0) return false;
+    if (visibleData?.enableRewardsV2 === 1) return true;
+    return true;
+  })();
+
+  if (isRewardsV2Active) {
+    return <RewardsReferPageV2 />;
+  }
+
   const theme = useAppTheme();
   styles = getStyles(theme);
     const { t } = useTranslation();

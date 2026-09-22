@@ -16,16 +16,14 @@ import {
   Easing,
   ImageBackground,
   Image,
-  InteractionManager,
 } from "react-native";
+import { runAfterInteractions } from "@/utils/interactionUtils";
 import { useKeyboardVisibility } from "@/hooks/useKeyboardVisibility";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
-import { Picker } from "@react-native-picker/picker";
-import { useFocusEffect, useRoute } from "@react-navigation/native";
 import api from "@/services/api";
 import { theme } from "@/constants/theme";
 import { fetchBranchesWithCache, fetchGoldRatesWithCache } from "@/utils/apiCache";
@@ -65,8 +63,8 @@ export default function JoinSavings() {
   styles = getStyles(theme);
   const { isVisible } = useAppVisibility();
   const { t } = useTranslation();
-  const { params } = useRoute();
-  const { schemeId, step: stepParam, amount: amountParam, weight: weightParam, calculatedAmount: calculatedAmountParam, calculatedWeight: calculatedWeightParam } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const { schemeId, step: stepParam, amount: amountParam, weight: weightParam, calculatedAmount: calculatedAmountParam, calculatedWeight: calculatedWeightParam } = params;
   const router = useRouter();
   const { language, user } = useGlobalStore();
   const { keyboardVisible } = useKeyboardVisibility();
@@ -144,7 +142,7 @@ export default function JoinSavings() {
               chits: chitsList,
               schemeType:
                 schemeObj.SCHEMETYPE?.toLowerCase()?.includes("flexi") ||
-                schemeObj.SCHEMETYPE?.toLowerCase()?.includes("flexible")
+                  schemeObj.SCHEMETYPE?.toLowerCase()?.includes("flexible")
                   ? "flexi"
                   : "fixed",
               savingType:
@@ -2452,8 +2450,9 @@ export default function JoinSavings() {
               throw new Error("Invalid API response structure");
             }
 
-            // Store payment session data in global store
-            const { storePaymentSession } = useGlobalStore.getState();
+            // Clear previous session and store new payment session data in global store
+            const { storePaymentSession, clearPaymentSession } = useGlobalStore.getState();
+            clearPaymentSession();
 
             // Safely extract accountNo and investmentId
             const accountNo = data.data?.data?.accountNo || data.data?.accountNo || data.accountNo || null;
@@ -2597,8 +2596,8 @@ export default function JoinSavings() {
                 userDetailsSize: navigationParams.params.userDetails?.length || 0,
               });
 
-              // Use InteractionManager to ensure UI is ready before navigation
-              InteractionManager.runAfterInteractions(() => {
+              // Use runAfterInteractions to ensure UI is ready before navigation
+              runAfterInteractions(() => {
                 try {
                   // Use replace instead of push to prevent stack buildup and crashes
                   router.replace(navigationParams);

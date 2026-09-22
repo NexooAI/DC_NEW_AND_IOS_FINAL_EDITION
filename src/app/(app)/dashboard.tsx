@@ -16,11 +16,10 @@ import {
   Alert,
   Modal,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect, useIsFocused } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 
 import ResponsiveText from "@/components/ResponsiveText";
 import { responsiveUtils } from "@/utils/responsiveUtils";
@@ -50,7 +49,7 @@ export default function Dashboard() {
   const { user, setChatOpen } = useGlobalStore();
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
-  const headerPaddingTop = Platform.OS === "ios" ? 10 : (insets.top > 0 ? insets.top + 10 : 10);
+  const headerPaddingTop = insets.top > 0 ? insets.top + 10 : 10;
 
   const [rates, setRates] = useState<any>(null);
   const [socialLinks, setSocialLinks] = useState<any>(null);

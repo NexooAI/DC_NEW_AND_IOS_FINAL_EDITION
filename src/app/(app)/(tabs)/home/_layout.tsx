@@ -5,13 +5,10 @@ import { Platform, StatusBar } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
-import { useIsFocused } from "@react-navigation/native";
-
 export default function HomeLayout() {
   const theme = useAppTheme();
   const { setTabVisibility } = useGlobalStore();
   const insets = useSafeAreaInsets();
-  const isFocused = useIsFocused();
 
   useEffect(() => {
     // Default to showing tabs when entering the home stack
@@ -20,17 +17,15 @@ export default function HomeLayout() {
 
   return (
     <>
-      {isFocused && (
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor={theme.colors.quaternary || '#F2E6D2'}
-        />
-      )}
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={theme.colors.background || '#fafafa'}
+      />
       <Stack
         screenOptions={{
           headerShown: true,
           headerStyle: {
-            backgroundColor: theme.colors.quaternary,
+            backgroundColor: theme.colors.background || '#fafafa',
           },
           headerTintColor: theme.colors.textDark,
           headerTitleAlign: 'center', // Center align the header title
@@ -65,37 +60,43 @@ export default function HomeLayout() {
       <Stack.Screen
         name="policies/termsAndConditionsPolicies"
         options={{
-          title: "Terms & Conditions",
+          headerShown: false,
         }}
       />
       <Stack.Screen
         name="policies/ourPolicies"
         options={{
-          title: "Our Policies",
+          headerShown: false,
         }}
       />
       <Stack.Screen
         name="policies/privacyPolicy"
         options={{
-          title: "Privacy Policy",
+          headerShown: false,
         }}
       />
       <Stack.Screen
         name="faq"
         options={{
-          title: "FAQ",
+          headerShown: false,
         }}
       />
       <Stack.Screen
         name="(storeInfo)/contact_us"
         options={{
-          title: "Contact Us",
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="(storeInfo)/about_us"
+        options={{
+          headerShown: false,
         }}
       />
       <Stack.Screen
         name="offers"
         options={{
-          title: "Our Offers",
+          headerShown: false,
         }}
       />
       <Stack.Screen
@@ -105,13 +106,13 @@ export default function HomeLayout() {
       <Stack.Screen
         name="our_stores"
         options={{
-          title: "Our Stores",
+          headerShown: false,
         }}
       />
       <Stack.Screen
         name="refer_earn"
         options={{
-          title: "Refer & Earn",
+          headerShown: false,
         }}
       />
       <Stack.Screen

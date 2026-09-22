@@ -26,13 +26,23 @@ import { rewardsAPI } from "@/services/api";
 
 const { width } = Dimensions.get("window");
 
+import ScreenHeader from "@/components/ScreenHeader";
+import RewardsReferPageV2 from "@/components/rewardsV2";
+
+const USE_REFER_EARN_V2 = true; // Version 2 Unified Screen (Set to false to use Version 1)
+
 export default function ReferCodeScreen() {
+  const router = useRouter();
+
+  if (USE_REFER_EARN_V2) {
+    return <RewardsReferPageV2 onBack={() => router.back()} />;
+  }
+
   const theme = useAppTheme();
   const styles = getStyles(theme);
   const { t } = useTranslation();
   const { user } = useGlobalStore();
   const code = user?.referralCode || "DEFAULT123";
-  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState(t("refer_earn_tab_refer") || "Refer & Earn");
   const [referrals, setReferrals] = useState<any[]>([]);
@@ -91,7 +101,8 @@ export default function ReferCodeScreen() {
     Alert.alert(t("copied") || "Copied", t("referral_code_copied") || "Referral Code Copied");
   };
 
-  const shareMessage = (t("refer_earn_share_message") || "Use my referral code {code} to sign up and earn rewards! Click here to download the app: https://api.srithangathamarai.com/refer?code={code}").replace(/{code}/g, code);
+  const referBaseUrl = theme?.baseUrl || "https://api.prod.kanisaajewellery.com";
+  const shareMessage = (t("refer_earn_share_message") || `Use my referral code {code} to sign up and earn rewards! Click here to download the app: ${referBaseUrl}/refer?code={code}`).replace(/{code}/g, code);
 
   const onShare = async () => {
     try {
@@ -454,17 +465,9 @@ export default function ReferCodeScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      {/* <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{activeTab}</Text>
-        <TouchableOpacity style={styles.historyButton}>
-          <Text style={styles.historyText}>{t("refer_earn_history") || "History"}</Text>
-        </TouchableOpacity>
-      </View> */}
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background || "#fff"} />
+      <ScreenHeader title={t("referAndEarn") || "Refer & Earn"} />
 
       <View style={[styles.tabsContainer, { backgroundColor: theme.colors.white, zIndex: 10 }]}>
         {[
@@ -516,7 +519,7 @@ export default function ReferCodeScreen() {
           <Ionicons name="share-social-outline" size={22} color="#128C7E" />
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

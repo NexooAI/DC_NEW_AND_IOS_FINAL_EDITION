@@ -26,9 +26,8 @@ import {
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter, Stack } from "expo-router";
+import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from "expo-router";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
@@ -889,8 +888,10 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
     try {
       const chits = item.chits || [];
+      const { label: planLabel, isFlexi } = getSchemeDisplayPlanType(item);
+      const targetFrequency = (activeTab && activeTab.toLowerCase() !== "all") ? activeTab : planLabel;
       const relevantChits = chits.filter(
-        (chit) => chit && chit.PAYMENT_FREQUENCY === activeTab
+        (chit) => chit && chit.PAYMENT_FREQUENCY === targetFrequency
       );
 
       const schemeDataToStore = {
@@ -899,10 +900,10 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         description:
           getTranslatedText(item.DESCRIPTION as any, language) ||
           "No description available",
-        type: activeTab,
-        chits: relevantChits,
-        schemeType: activeTab.toLowerCase() === "flexi" ? "flexi" : "fixed",
-        activeTab: activeTab,
+        type: targetFrequency,
+        chits: relevantChits.length > 0 ? relevantChits : chits,
+        schemeType: isFlexi ? "flexi" : "fixed",
+        activeTab: targetFrequency,
         benefits: item.BENEFITS || [],
         slogan: getTranslatedText(item.SLOGAN || { en: "" }, language) || "",
         image: item.IMAGE || "",
@@ -1180,11 +1181,51 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     };
   };
 
+  const getSchemeDisplayPlanType = (scheme: Scheme | null | undefined): { label: string; isFlexi: boolean; isHybrid: boolean } => {
+    if (!scheme) return { label: "Monthly", isFlexi: false, isHybrid: false };
+
+    const schemeTypeLower = (scheme.SCHEMETYPE || "").toLowerCase();
+    const schemeNameLower = (getTranslatedText(scheme.SCHEMENAME, "en") || "").toLowerCase();
+    const insTypeLower = (scheme.INS_TYPE || "").toLowerCase();
+    const savingTypeLower = (scheme.savingType || "").toLowerCase();
+    const combined = `${schemeTypeLower} ${schemeNameLower} ${insTypeLower} ${savingTypeLower}`;
+
+    if (combined.includes("flexi") || combined.includes("flexible")) {
+      return { label: "Flexi", isFlexi: true, isHybrid: false };
+    }
+    if (combined.includes("hybrid") || scheme.scheme_plan_type_id === 3 || scheme.SCHEME_PLAN_TYPE_ID === 3) {
+      return { label: "Hybrid", isFlexi: false, isHybrid: true };
+    }
+    if (combined.includes("daily")) {
+      return { label: "Daily", isFlexi: false, isHybrid: false };
+    }
+    if (combined.includes("weekly")) {
+      return { label: "Weekly", isFlexi: false, isHybrid: false };
+    }
+    if (combined.includes("monthly") || combined.includes("fixed")) {
+      return { label: "Monthly", isFlexi: false, isHybrid: false };
+    }
+    if (scheme.SCHEMETYPE && scheme.SCHEMETYPE.trim() !== "" && scheme.SCHEMETYPE.trim().toLowerCase() !== "all") {
+      return { label: scheme.SCHEMETYPE.trim(), isFlexi: false, isHybrid: false };
+    }
+    if (scheme.chits && scheme.chits.length > 0) {
+      const activeChit = scheme.chits.find((c) => c && c.ACTIVE === "Y" && c.PAYMENT_FREQUENCY);
+      if (activeChit?.PAYMENT_FREQUENCY) {
+        const freq = activeChit.PAYMENT_FREQUENCY.trim();
+        return {
+          label: freq,
+          isFlexi: freq.toLowerCase().includes("flexi"),
+          isHybrid: freq.toLowerCase().includes("hybrid"),
+        };
+      }
+    }
+    return { label: "Monthly", isFlexi: false, isHybrid: false };
+  };
+
   const renderSchemeItem = ({ item, index }: { item: Scheme; index: number }) => {
     if (!item) return null;
 
-    const type = (item.SCHEMETYPE || activeTab || "").toLowerCase();
-    const isFlexi = type.includes('flexi') || type.includes('flexible');
+    const { label: planLabel, isFlexi, isHybrid } = getSchemeDisplayPlanType(item);
     const gradientColors = getPremiumGradient(index);
     const { min, max } = getMinMaxAmount(item);
 
@@ -1295,8 +1336,8 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                   </Text>
                 </View>
                 <View style={[styles.infoPill, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
-                  <Ionicons name={isFlexi ? "options-outline" : "timer-outline"} size={12} color="#FFF" />
-                  <Text style={[styles.infoPillText, { color: '#FFF' }]}>{activeTab}</Text>
+                  <Ionicons name={isFlexi ? "options-outline" : isHybrid ? "git-network-outline" : "timer-outline"} size={12} color="#FFF" />
+                  <Text style={[styles.infoPillText, { color: '#FFF' }]}>{planLabel}</Text>
                 </View>
               </View>
             </View>
@@ -1721,7 +1762,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
                   <View style={styles.pillBadgesContainer}>
                     <View style={styles.pillBadge}>
-                      <Text style={styles.pillBadgeText}>{activeTab}</Text>
+                      <Text style={styles.pillBadgeText}>{getSchemeDisplayPlanType(selectedScheme).label}</Text>
                     </View>
                     {selectedScheme.DURATION_MONTHS && (
                       <View style={styles.pillBadge}>
@@ -2159,8 +2200,8 @@ function getStyles(theme: any) { return StyleSheet.create({
     elevation: 10,
   },
   schemeCardGradient: {
-    padding: 12,
-    minHeight: 115,
+    padding: 16,
+    minHeight: 135,
   },
   cardHeader: {
     flexDirection: "row",
@@ -2171,13 +2212,13 @@ function getStyles(theme: any) { return StyleSheet.create({
     gap: 8,
   },
   newSchemeName: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "900",
     color: "#fff",
     letterSpacing: 0.5,
   },
   minAmountLabel: {
-    fontSize: 14,
+    fontSize: 15,
     color: "rgba(255,255,255,0.9)",
     fontWeight: "600",
   },
@@ -2195,8 +2236,8 @@ function getStyles(theme: any) { return StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.3)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,215,0,0.3)',
@@ -2204,7 +2245,7 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   infoPillText: {
     color: '#FFD700',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
   },
   cardSideInfo: {
@@ -2213,13 +2254,13 @@ function getStyles(theme: any) { return StyleSheet.create({
     gap: 12,
   },
   coinIcon: {
-    width: 42,
-    height: 42,
+    width: 48,
+    height: 48,
     resizeMode: 'contain',
     opacity: 0.9,
   },
   cardActionRow: {
-    marginTop: 6,
+    marginTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
@@ -2228,13 +2269,13 @@ function getStyles(theme: any) { return StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 20,
     gap: 8,
   },
   knowMoreButtonTextClean: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '800',
     color: '#FFD700',
     textTransform: 'uppercase',

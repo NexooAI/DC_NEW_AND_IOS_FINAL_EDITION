@@ -7,13 +7,13 @@ import {
   Animated,
   Easing,
   BackHandler,
-  InteractionManager,
   Alert,
   ToastAndroid,
   Platform,
   Linking,
   ScrollView
 } from "react-native";
+import { runAfterInteractions } from "@/utils/interactionUtils";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -289,8 +289,8 @@ export default function PaymentFailure() {
           }
           navigationParams.params.source = userDetails.source || "payment_retry";
 
-          // Use InteractionManager to ensure UI is ready before navigation
-          InteractionManager.runAfterInteractions(() => {
+          // Use runAfterInteractions to ensure UI is ready before navigation
+          runAfterInteractions(() => {
             try {
               router.replace(navigationParams);
               logger.log("Navigated to paymentNewOverView for retry", {

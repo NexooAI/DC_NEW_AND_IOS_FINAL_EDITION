@@ -12,6 +12,7 @@ const themeConfig = {
   enableDashboard: false,
   playStoreUrl: "https://play.google.com/store/apps/details?id=com.nexooai.srithangathamarai&hl=en_IN",
   appStoreUrl: "https://apps.apple.com/us/app/dc-jewellers-gold-diamonds/id6755081937",
+  googleMapsApiKey: "AIzaSyCPb1RSui6PdGojpxvYB9LXZJ6F4UfLqHs",
 };
 
 module.exports = { themeConfig };

@@ -4,7 +4,7 @@ import { themeConfig } from './src/constants/theme.config';
 export default ({ config }: ConfigContext): ExpoConfig => {
     const isIos = process.env.EAS_BUILD_PLATFORM === 'ios' || process.env.PLATFORM === 'ios';
 
-    const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "AIzaSyAkuOcNddEvozQR4D4yPdTrbwXCiPsuEFc";
+    const mapsApiKey = (themeConfig as any).googleMapsApiKey || process.env.GOOGLE_MAPS_API_KEY || "AIzaSyCPb1RSui6PdGojpxvYB9LXZJ6F4UfLqHs";
     const bundleIdentifier = themeConfig.bundleIdentifier || "com.nexooai.srithangathamarai";
     const projectId = themeConfig.projectId || "912daab2-d11c-42ff-9072-62ddfb4489c0";
     const owner = themeConfig.owner || "mnvgroups07";
@@ -18,15 +18,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         orientation: "portrait",
         userInterfaceStyle: "automatic",
         scheme: "acme",
-        jsEngine: "hermes",
 
         icon: themeConfig.icon || "./assets/images/logo_trans.png",
-
-        splash: {
-            image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
-            resizeMode: "contain",
-            backgroundColor: themeConfig.primaryColor,
-        },
 
         androidStatusBar: {
             backgroundColor: themeConfig.primaryColor,
@@ -42,11 +35,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                 foregroundImage: themeConfig.adaptiveIcon || "./assets/images/adaptive-icon.png",
                 backgroundColor: themeConfig.primaryColor,
             },
-            splash: {
-                image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
-                resizeMode: "contain",
-                backgroundColor: themeConfig.primaryColor,
-            },
 
             // ✔ Google Maps API
             config: {
@@ -54,6 +42,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                     apiKey: mapsApiKey,
                 },
             },
+            permissions: [
+                "ACCESS_FINE_LOCATION",
+                "ACCESS_COARSE_LOCATION",
+            ],
             intentFilters: [
                 {
                     action: "VIEW",
@@ -68,17 +60,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
         ios: {
             supportsTablet: true,
-            splash: {
-                image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
-                resizeMode: "contain",
-                backgroundColor: themeConfig.primaryColor,
-                tabletImage: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
-            },
             icon: themeConfig.icon || "./assets/images/logo_trans.png",
             bundleIdentifier: bundleIdentifier,
             googleServicesFile: "./GoogleService-Info.plist",
             buildNumber: "2",
-            jsEngine: "hermes",
             config: {
                 googleMapsApiKey: mapsApiKey,
             },
@@ -102,9 +87,20 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         plugins: [
             "expo-font",
             "expo-asset",
+            "expo-file-system",
             "expo-router",
             "expo-secure-store",
             "expo-localization",
+            "expo-sharing",
+            "@react-native-community/datetimepicker",
+            [
+                "expo-splash-screen",
+                {
+                    image: themeConfig.splashLogo || "./assets/images/splashscreen_logo.png",
+                    resizeMode: "contain",
+                    backgroundColor: (themeConfig as any).splashBackgroundColor || themeConfig.primaryColor,
+                }
+            ],
 
             [
                 "expo-build-properties",
@@ -171,7 +167,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             policy: "appVersion",
         },
 
-        newArchEnabled: true,
         owner,
     };
 };

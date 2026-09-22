@@ -29,7 +29,6 @@ import { responsiveUtils } from "@/utils/responsiveUtils";
 import { APP_CONFIG } from "@/constants";
 
 const { width: screenWidth } = Dimensions.get("window");
-console.log('DynamicSchemeCard', useAppVisibility);
 
 // Type guard functions for better null/undefined handling
 const isValidScheme = (scheme: any): scheme is Scheme => {

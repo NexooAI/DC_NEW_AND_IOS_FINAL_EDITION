@@ -1,4 +1,4 @@
-import { useAppTheme } from "@/store/global.store";
+import { useAppTheme, getAppConfig } from "@/store/global.store";
 import { Text, Platform } from "react-native";
 import CustomDrawerContent from "@/common/components/navigation/DrawerContent";
 import { Drawer } from "expo-router/drawer";
@@ -21,6 +21,7 @@ export default function AppLayout() {
   const theme = useAppTheme();
   const { isVisible } = useAppVisibility();
   const segments = useSegments();
+  const hasDashboard = getAppConfig().constants.enableDashboard;
 
   useEffect(() => {
     logDeviceInfo();
@@ -50,10 +51,12 @@ export default function AppLayout() {
   return (
     <SafeAreaView 
       style={{ flex: 1, backgroundColor: safeAreaBackgroundColor }} 
-      edges={Platform.OS === "ios" ? ["top", "left", "right"] : ["left", "right"]}
+      edges={["left", "right"]}
     >
       <NavigationErrorBoundary>
         <Drawer
+          initialRouteName={hasDashboard ? "dashboard" : "(tabs)"}
+          backBehavior={hasDashboard ? "initialRoute" : "none"}
           screenOptions={{
             headerShown: false,
             swipeEnabled: false, // Disable swipe gesture
@@ -81,6 +84,7 @@ export default function AppLayout() {
               freezeOnBlur: false,
               drawerLabel: "Dashboard",
               title: "Dashboard",
+              drawerItemStyle: hasDashboard ? undefined : { display: 'none' }
             }}
           />
           <Drawer.Screen
@@ -101,6 +105,16 @@ export default function AppLayout() {
               freezeOnBlur: false,
               drawerLabel: "Lucky Draw",
               title: "Lucky Draw",
+              drawerItemStyle: { display: 'none' } // Hide from drawer menu but keep as valid route
+            }}
+          />
+          <Drawer.Screen
+            name="payment-history"
+            options={{
+              lazy: true,
+              freezeOnBlur: false,
+              drawerLabel: "Payment History",
+              title: "Payment History",
               drawerItemStyle: { display: 'none' } // Hide from drawer menu but keep as valid route
             }}
           />

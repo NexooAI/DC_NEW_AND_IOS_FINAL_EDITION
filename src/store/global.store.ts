@@ -532,7 +532,12 @@ const useGlobalStore = create<GlobalStore>()(
         language: state.language,
         user: state.user,
         themeMode: state.themeMode,
-      })
+      }),
+      merge: (persistedState: any, currentState) => ({
+        ...currentState,
+        ...persistedState,
+        themeMode: 'light', // Temporarily enforce light theme while dark mode is hidden
+      }),
     }
   )
 );

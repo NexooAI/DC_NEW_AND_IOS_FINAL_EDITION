@@ -13,7 +13,7 @@ import {
   Animated,
 } from "react-native";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
-import { BackHandler, InteractionManager } from "react-native";
+import { BackHandler } from "react-native";
 import Slider from "@react-native-community/slider";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";

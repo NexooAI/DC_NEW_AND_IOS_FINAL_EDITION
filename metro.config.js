@@ -1,5 +1,5 @@
-// Learn more https://docs.expo.io/guides/customizing-metro
-// Learn more https://docs.expo.io/guides/customizing-metro
+process.env.EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK = "1";
+
 // Polyfill for Array.prototype.toReversed (required by Metro in newer Expo versions on Node < 20)
 if (!Array.prototype.toReversed) {
   Array.prototype.toReversed = function () {

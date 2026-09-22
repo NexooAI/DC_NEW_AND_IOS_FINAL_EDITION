@@ -1,5 +1,5 @@
 import { useAppTheme } from "@/store/global.store";
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     View,
     Text,
@@ -9,10 +9,22 @@ import {
     ScrollView,
     Platform,
 } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { theme } from '@/constants/theme';
 import { logger } from '@/utils/logger';
+
+// Check if running inside Expo Go
+const isExpoGo = Constants.executionEnvironment === 'storeClient';
+
+// Lazy/safe require of expo-notifications to prevent crash on Android Expo Go
+let Notifications: any = null;
+if (!isExpoGo) {
+    try {
+        Notifications = require('expo-notifications');
+    } catch (e) {
+        logger.warn('Could not load expo-notifications:', e);
+    }
+}
 
 interface TestNotification {
     title: string;
@@ -68,14 +80,18 @@ const testNotifications: TestNotification[] = [
 ];
 
 export default function NotificationTester() {
-  const theme = useAppTheme();
-  styles = getStyles(theme);
+    const theme = useAppTheme();
+    const styles = useMemo(() => getStyles(theme), [theme]);
     const [fcmToken, setFcmToken] = useState<string | null>(null);
     const [showToken, setShowToken] = useState(false);
 
     const scheduleTestNotification = async (notification: TestNotification) => {
+        if (!Notifications || isExpoGo) {
+            Alert.alert('Expo Go Notice', 'Remote push notifications are disabled in Expo Go on SDK 53+. Please use a Development Build to test.');
+            return;
+        }
+
         try {
-            // Schedule a notification with 3 second delay
             await Notifications.scheduleNotificationAsync({
                 content: {
                     title: notification.title,
@@ -109,6 +125,11 @@ export default function NotificationTester() {
     };
 
     const scheduleImmediateNotification = async (notification: TestNotification) => {
+        if (!Notifications || isExpoGo) {
+            Alert.alert('Expo Go Notice', 'Remote push notifications are disabled in Expo Go on SDK 53+. Please use a Development Build to test.');
+            return;
+        }
+
         try {
             await Notifications.scheduleNotificationAsync({
                 content: {
@@ -120,7 +141,7 @@ export default function NotificationTester() {
                     },
                     sound: 'notification.wav',
                 },
-                trigger: null, // Immediate
+                trigger: null,
             });
 
             logger.log(`📤 Sent immediate notification: ${notification.title}`);
@@ -164,31 +185,45 @@ export default function NotificationTester() {
     };
 
     const checkPermissions = async () => {
-        const { status } = await Notifications.getPermissionsAsync();
+        if (!Notifications || isExpoGo) {
+            Alert.alert('Expo Go Notice', 'Remote push notifications are not available in Expo Go. Please use a development build.');
+            return;
+        }
 
-        if (status === 'granted') {
-            Alert.alert('✅ Permissions Granted', 'Notification permissions are enabled.');
-        } else {
-            Alert.alert(
-                '⚠️ Permissions Not Granted',
-                `Current status: ${status}\n\nWould you like to request permissions?`,
-                [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                        text: 'Request',
-                        onPress: async () => {
-                            const { status: newStatus } = await Notifications.requestPermissionsAsync();
-                            Alert.alert('Permission Status', `New status: ${newStatus}`);
+        try {
+            const { status } = await Notifications.getPermissionsAsync();
+
+            if (status === 'granted') {
+                Alert.alert('✅ Permissions Granted', 'Notification permissions are enabled.');
+            } else {
+                Alert.alert(
+                    '⚠️ Permissions Not Granted',
+                    `Current status: ${status}\n\nWould you like to request permissions?`,
+                    [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                            text: 'Request',
+                            onPress: async () => {
+                                const { status: newStatus } = await Notifications.requestPermissionsAsync();
+                                Alert.alert('Permission Status', `New status: ${newStatus}`);
+                            }
                         }
-                    }
-                ]
-            );
+                    ]
+                );
+            }
+        } catch (e) {
+            logger.error('Error checking permissions:', e);
         }
     };
 
     const cancelAllNotifications = async () => {
-        await Notifications.cancelAllScheduledNotificationsAsync();
-        Alert.alert('✅ Cancelled', 'All scheduled notifications have been cancelled.');
+        if (!Notifications || isExpoGo) return;
+        try {
+            await Notifications.cancelAllScheduledNotificationsAsync();
+            Alert.alert('✅ Cancelled', 'All scheduled notifications have been cancelled.');
+        } catch (e) {
+            logger.error('Error cancelling notifications:', e);
+        }
     };
 
     return (
@@ -197,6 +232,15 @@ export default function NotificationTester() {
             <Text style={styles.subtitle}>
                 Test push notification tap → navigation
             </Text>
+
+            {isExpoGo && (
+                <View style={styles.expoGoBanner}>
+                    <Text style={styles.expoGoBannerTitle}>ℹ️ Running in Expo Go</Text>
+                    <Text style={styles.expoGoBannerText}>
+                        Remote push notifications functionality was removed from Expo Go in SDK 53. To test push notifications, build an EAS Development Client (`npx eas build --profile development`).
+                    </Text>
+                </View>
+            )}
 
             {/* Utility Buttons */}
             <View style={styles.utilitySection}>
@@ -265,126 +309,144 @@ export default function NotificationTester() {
     );
 }
 
-function getStyles(theme: any) { return StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.backgroundSecondary,
-    },
-    content: {
-        padding: 16,
-        paddingBottom: 40,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#1a2a39',
-        textAlign: 'center',
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontSize: 14,
-        color: '#666',
-        textAlign: 'center',
-        marginBottom: 24,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#333',
-        marginTop: 16,
-        marginBottom: 8,
-    },
-    hint: {
-        fontSize: 12,
-        color: '#888',
-        marginBottom: 16,
-        fontStyle: 'italic',
-    },
-    utilitySection: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        marginBottom: 16,
-    },
-    utilityButton: {
-        flex: 1,
-        minWidth: '30%',
-        paddingVertical: 12,
-        paddingHorizontal: 8,
-        borderRadius: 8,
-        marginHorizontal: 4,
-        marginBottom: 8,
-    },
-    utilityButtonText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: '600',
-        textAlign: 'center',
-    },
-    testButton: {
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    buttonContent: {
-        flexDirection: 'column',
-    },
-    buttonTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: 'white',
-        marginBottom: 4,
-    },
-    buttonBody: {
-        fontSize: 14,
-        color: 'rgba(255,255,255,0.9)',
-        marginBottom: 8,
-    },
-    buttonScreen: {
-        fontSize: 12,
-        color: 'rgba(255,255,255,0.7)',
-        fontWeight: '600',
-    },
-    instructions: {
-        backgroundColor: '#e3f2fd',
-        borderRadius: 12,
-        padding: 16,
-        marginTop: 24,
-    },
-    instructionsTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#1565C0',
-        marginBottom: 8,
-    },
-    instructionText: {
-        fontSize: 14,
-        color: '#1976D2',
-        lineHeight: 22,
-    },
-    tokenContainer: {
-        backgroundColor: '#fff3e0',
-        borderRadius: 12,
-        padding: 16,
-        marginTop: 16,
-    },
-    tokenTitle: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#E65100',
-        marginBottom: 8,
-    },
-    tokenText: {
-        fontSize: 10,
-        color: '#333',
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    },
-}) }
-
-var styles = getStyles(theme);;
-
+function getStyles(theme: any) {
+    return StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: theme.colors.backgroundSecondary,
+        },
+        content: {
+            padding: 16,
+            paddingBottom: 40,
+        },
+        expoGoBanner: {
+            backgroundColor: '#FFF3E0',
+            borderColor: '#FFE082',
+            borderWidth: 1,
+            borderRadius: 12,
+            padding: 14,
+            marginBottom: 16,
+        },
+        expoGoBannerTitle: {
+            fontSize: 14,
+            fontWeight: '700',
+            color: '#E65100',
+            marginBottom: 4,
+        },
+        expoGoBannerText: {
+            fontSize: 12,
+            color: '#BF360C',
+            lineHeight: 18,
+        },
+        title: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: '#1a2a39',
+            textAlign: 'center',
+            marginBottom: 8,
+        },
+        subtitle: {
+            fontSize: 14,
+            color: '#666',
+            textAlign: 'center',
+            marginBottom: 24,
+        },
+        sectionTitle: {
+            fontSize: 18,
+            fontWeight: '600',
+            color: '#333',
+            marginTop: 16,
+            marginBottom: 8,
+        },
+        hint: {
+            fontSize: 12,
+            color: '#888',
+            marginBottom: 16,
+            fontStyle: 'italic',
+        },
+        utilitySection: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            marginBottom: 16,
+        },
+        utilityButton: {
+            flex: 1,
+            minWidth: '30%',
+            paddingVertical: 12,
+            paddingHorizontal: 8,
+            borderRadius: 8,
+            marginHorizontal: 4,
+            marginBottom: 8,
+        },
+        utilityButtonText: {
+            color: 'white',
+            fontSize: 12,
+            fontWeight: '600',
+            textAlign: 'center',
+        },
+        testButton: {
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 12,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+        },
+        buttonContent: {
+            flexDirection: 'column',
+        },
+        buttonTitle: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: 'white',
+            marginBottom: 4,
+        },
+        buttonBody: {
+            fontSize: 14,
+            color: 'rgba(255,255,255,0.9)',
+            marginBottom: 8,
+        },
+        buttonScreen: {
+            fontSize: 12,
+            color: 'rgba(255,255,255,0.7)',
+            fontWeight: '600',
+        },
+        instructions: {
+            backgroundColor: '#e3f2fd',
+            borderRadius: 12,
+            padding: 16,
+            marginTop: 24,
+        },
+        instructionsTitle: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: '#1565C0',
+            marginBottom: 8,
+        },
+        instructionText: {
+            fontSize: 14,
+            color: '#1976D2',
+            lineHeight: 22,
+        },
+        tokenContainer: {
+            backgroundColor: '#fff3e0',
+            borderRadius: 12,
+            padding: 16,
+            marginTop: 16,
+        },
+        tokenTitle: {
+            fontSize: 14,
+            fontWeight: 'bold',
+            color: '#E65100',
+            marginBottom: 8,
+        },
+        tokenText: {
+            fontSize: 10,
+            color: '#333',
+            fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+        },
+    });
+}

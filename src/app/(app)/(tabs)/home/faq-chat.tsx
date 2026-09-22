@@ -18,13 +18,12 @@ import {
   FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { theme } from "@/constants/theme";
 import { moderateScale } from "react-native-size-matters";
 import { LinearGradient } from "expo-linear-gradient";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import AppLayoutWrapper from "@/components/AppLayoutWrapper";
-import { useFocusEffect } from "@react-navigation/native";
 import FAQService, { FAQQuestion } from "@/services/faqService";
 import { useTranslation } from "@/hooks/useTranslation";
 

@@ -1,0 +1,12 @@
+export { HeaderV2 } from "./HeaderV2";
+export { LiveRatesCardV2 } from "./LiveRatesCardV2";
+export { StoriesListV2 } from "./StoriesListV2";
+export { BannerSliderV2 } from "./BannerSliderV2";
+export { QuickActionsV2 } from "./QuickActionsV2";
+export { PopularSchemesV2 } from "./PopularSchemesV2";
+export { YourSavingsCardV2 } from "./YourSavingsCardV2";
+export { ConnectWithUsV2 } from "./ConnectWithUsV2";
+export { SupportCardV2 } from "./SupportCardV2";
+export { ChatCardV2 } from "./ChatCardV2";
+export { HomePageV2 } from "./HomePageV2";
+export { default } from "./HomePageV2";
