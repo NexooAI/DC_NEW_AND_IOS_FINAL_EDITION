@@ -63,6 +63,18 @@ export interface AppVisibilityData {
     showProfileRateUs?: number;
     showProfilePaymentHistory?: number;
     showProfileDeleteAccount?: number;
+    // Home Page V2 Keys & Order
+    showV2LiveRates?: number;
+    showV2Stories?: number;
+    showV2Poster?: number;
+    showV2QuickActions?: number;
+    showV2PopularSchemes?: number;
+    showV2Savings?: number;
+    showV2SocialMedia?: number;
+    showV2SupportCard?: number;
+    showV2LiveChatBox?: number;
+    homeV2SectionsOrder?: string;
+    homeSectionsOrder?: string;
     updated_at: string;
 }
 
@@ -130,7 +142,10 @@ export function useAppVisibility() {
                 'showSideContactUs', 'showSideFaq', 'showSidePrivacy', 'showSideTerms',
                 // Profile Settings
                 'showProfileKyc', 'showProfileMpin', 'showProfileBiometrics', 'showProfileLanguage',
-                'showProfileRateChart', 'showProfileRateUs', 'showProfilePaymentHistory', 'showProfileDeleteAccount'
+                'showProfileRateChart', 'showProfileRateUs', 'showProfilePaymentHistory', 'showProfileDeleteAccount',
+                // Home V2 Sections
+                'showV2LiveRates', 'showV2Stories', 'showV2Poster', 'showV2QuickActions',
+                'showV2PopularSchemes', 'showV2Savings', 'showV2SocialMedia', 'showV2SupportCard', 'showV2LiveChatBox'
             ];
             return defaultVisible.includes(componentName);
         }
@@ -157,7 +172,13 @@ export function useAppVisibility() {
             componentName === 'showProfileKyc' || componentName === 'showProfileMpin' || 
             componentName === 'showProfileBiometrics' || componentName === 'showProfileLanguage' || 
             componentName === 'showProfileRateChart' || componentName === 'showProfileRateUs' || 
-            componentName === 'showProfilePaymentHistory' || componentName === 'showProfileDeleteAccount'
+            componentName === 'showProfilePaymentHistory' || componentName === 'showProfileDeleteAccount' ||
+            // Home V2 Sections
+            componentName === 'showV2LiveRates' || componentName === 'showV2Stories' ||
+            componentName === 'showV2Poster' || componentName === 'showV2QuickActions' ||
+            componentName === 'showV2PopularSchemes' || componentName === 'showV2Savings' ||
+            componentName === 'showV2SocialMedia' || componentName === 'showV2SupportCard' ||
+            componentName === 'showV2LiveChatBox'
         ) {
             return (visibleData as any)[componentName] !== 0;
         }

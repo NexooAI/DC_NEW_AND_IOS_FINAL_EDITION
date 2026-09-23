@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   ScrollView,
@@ -66,12 +66,117 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
     setShowStatus(false);
   };
 
+  // Default section sequence
+  const DEFAULT_V2_SECTIONS = [
+    "liveRates",
+    "stories",
+    "posters",
+    "quickActions",
+    "popularSchemes",
+    "savings",
+    "socialMedia",
+    "supportCard",
+    "liveChat",
+  ];
+
+  // Dynamic section order based on admin configuration
+  const sectionsOrder = useMemo(() => {
+    const rawOrder = visibleData?.homeV2SectionsOrder;
+    if (!rawOrder) return DEFAULT_V2_SECTIONS;
+    const parsed = rawOrder
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    // Append any default sections not present in custom order
+    DEFAULT_V2_SECTIONS.forEach((s) => {
+      if (!parsed.includes(s)) {
+        parsed.push(s);
+      }
+    });
+    return parsed;
+  }, [visibleData?.homeV2SectionsOrder]);
+
   // Helper for cascading V2 visibility
   const checkVisible = (v2Key: string, fallbackKey: string): boolean => {
     if (visibleData && (visibleData as any)[v2Key] !== undefined) {
       return (visibleData as any)[v2Key] === 1;
     }
     return isVisible(fallbackKey as any);
+  };
+
+  // Render individual section dynamically
+  const renderSection = (sectionId: string) => {
+    switch (sectionId) {
+      case "liveRates":
+        return checkVisible("showV2LiveRates", "showGoldRate") ? (
+          <LiveRatesCardV2
+            key="liveRates"
+            goldRate={goldRate}
+            silverRate={silverRate}
+            goldChange="+12"
+            silverChange="+0.50"
+            goldPurity="22K"
+            updatedAt={updatedAt}
+          />
+        ) : null;
+
+      case "stories":
+        return checkVisible("showV2Stories", "showCollection") ? (
+          <StoriesListV2
+            key="stories"
+            collections={collectionsData}
+            onStoryPress={handleStoryPress}
+          />
+        ) : null;
+
+      case "posters":
+        return checkVisible("showV2Poster", "showPoster") ? (
+          <BannerSliderV2 key="posters" banners={sliderImages} />
+        ) : null;
+
+      case "quickActions":
+        return checkVisible("showV2QuickActions", "showCustomerCard") ? (
+          <QuickActionsV2 key="quickActions" />
+        ) : null;
+
+      case "popularSchemes":
+        return checkVisible("showV2PopularSchemes", "showSchemes") ? (
+          <PopularSchemesV2
+            key="popularSchemes"
+            schemes={homeData?.data?.schemes}
+          />
+        ) : null;
+
+      case "savings":
+        return checkVisible("showV2Savings", "showCustomerCard") ? (
+          <YourSavingsCardV2
+            key="savings"
+            totalAmount={totalAmount ?? 0}
+            totalGoldGrams={totalGoldSavings}
+          />
+        ) : null;
+
+      case "socialMedia":
+        return checkVisible("showV2SocialMedia", "showSocialMedia") ? (
+          <ConnectWithUsV2
+            key="socialMedia"
+            socialMediaUrls={homeData?.data?.socialmedia}
+          />
+        ) : null;
+
+      case "supportCard":
+        return checkVisible("showV2SupportCard", "showSupportCard") ? (
+          <SupportCardV2 key="supportCard" />
+        ) : null;
+
+      case "liveChat":
+        return checkVisible("showV2LiveChatBox", "showLiveChatBox") ? (
+          <ChatCardV2 key="liveChat" />
+        ) : null;
+
+      default:
+        return null;
+    }
   };
 
   // Extract Rates
@@ -105,63 +210,8 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
           />
         }
       >
-        {/* 2. Live Rates Section */}
-        {checkVisible("showV2LiveRates", "showGoldRate") && (
-          <LiveRatesCardV2
-            goldRate={goldRate}
-            silverRate={silverRate}
-            goldChange="+12"
-            silverChange="+0.50"
-            goldPurity="22K"
-            updatedAt={updatedAt}
-          />
-        )}
-
-        {/* 3. Status / Updates (Stories) Section */}
-        {checkVisible("showV2Stories", "showCollection") && (
-          <StoriesListV2
-            collections={collectionsData}
-            onStoryPress={handleStoryPress}
-          />
-        )}
-
-        {/* 4. Banner / Posters Section */}
-        {checkVisible("showV2Poster", "showPoster") && (
-          <BannerSliderV2 banners={sliderImages} />
-        )}
-
-        {/* 5. Quick Actions Section */}
-        {checkVisible("showV2QuickActions", "showCustomerCard") && (
-          <QuickActionsV2 />
-        )}
-
-        {/* 6. Popular Schemes Section */}
-        {checkVisible("showV2PopularSchemes", "showSchemes") && (
-          <PopularSchemesV2 schemes={homeData?.data?.schemes} />
-        )}
-
-        {/* 7. Your Savings / Our Savings Section */}
-        {checkVisible("showV2Savings", "showCustomerCard") && (
-          <YourSavingsCardV2
-            totalAmount={totalAmount ?? 0}
-            totalGoldGrams={totalGoldSavings}
-          />
-        )}
-
-        {/* 8. Social Media (Connect With Us) Section */}
-        {checkVisible("showV2SocialMedia", "showSocialMedia") && (
-          <ConnectWithUsV2 socialMediaUrls={homeData?.data?.socialmedia} />
-        )}
-
-        {/* 9. Support Card (Need Help?) Section */}
-        {checkVisible("showV2SupportCard", "showSupportCard") && (
-          <SupportCardV2 />
-        )}
-
-        {/* 10. Chat Card (Chat With Us) Section */}
-        {checkVisible("showV2LiveChatBox", "showLiveChatBox") && (
-          <ChatCardV2 />
-        )}
+        {/* Dynamic V2 Sections rendered in configured order */}
+        {sectionsOrder.map((sectionId) => renderSection(sectionId))}
 
         {/* Powered By Footer */}
         <View style={styles.poweredByContainer}>
