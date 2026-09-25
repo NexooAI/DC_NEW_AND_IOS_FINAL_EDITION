@@ -19,6 +19,8 @@ import { resolveRateChange, syncRateHistory } from "@/utils/rateComparison";
 
 // Home V2 Modular Components
 import HeaderV2 from "./HeaderV2";
+import FlashNewsV2 from "./FlashNewsV2";
+import KycPendingActionCardV2 from "./KycPendingActionCardV2";
 import LiveRatesCardV2 from "./LiveRatesCardV2";
 import StoriesListV2 from "./StoriesListV2";
 import BannerSliderV2 from "./BannerSliderV2";
@@ -37,6 +39,9 @@ export interface HomePageV2Props {
   onRefresh?: () => void;
   totalGoldSavings?: number;
   totalAmount?: number;
+  kycStatus?: boolean | null;
+  isKycLoading?: boolean;
+  flashNews?: string[];
 }
 
 export const HomePageV2: React.FC<HomePageV2Props> = ({
@@ -47,6 +52,9 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
   onRefresh,
   totalGoldSavings = 0,
   totalAmount = 0,
+  kycStatus = null,
+  isKycLoading = false,
+  flashNews = [],
 }) => {
   const router = useRouter();
   const { t } = useTranslation();
@@ -67,8 +75,48 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
     setShowStatus(false);
   };
 
-  // Default section sequence
+  // Helper for cascading V2 visibility
+  const checkVisible = (v2Key: string, fallbackKey: string): boolean => {
+    if (visibleData && (visibleData as any)[v2Key] !== undefined) {
+      return (visibleData as any)[v2Key] === 1;
+    }
+    return isVisible(fallbackKey as any);
+  };
+
+  // Extract Flash News messages
+  const showFlashNews = checkVisible("showV2FlashNews", "showFlashnews");
+  const flashNewsMessages = useMemo(() => {
+    if (flashNews && flashNews.length > 0) return flashNews;
+    const raw = homeData?.data?.flashNews;
+    if (Array.isArray(raw)) {
+      return raw
+        .map((item: any) =>
+          typeof item === "string" ? item : item?.title || item?.description || ""
+        )
+        .filter(Boolean);
+    }
+    return [];
+  }, [flashNews, homeData?.data?.flashNews]);
+
+  // Determine if KYC is pending
+  const isKycPending = useMemo(() => {
+    if (isKycLoading) return false;
+    if (kycStatus === false) return true;
+    if (kycStatus === true) return false;
+    // Fallback to homeData pre-fetched KYC status
+    const kycData = homeData?.data?.kycStatus;
+    if (kycData) {
+      const status = kycData.kyc_status;
+      const hasData = kycData.data;
+      if (status === "Completed" || hasData) return false;
+      return true;
+    }
+    return false;
+  }, [kycStatus, isKycLoading, homeData?.data?.kycStatus]);
+
+  // Default section sequence (pendingAction is placed at the top of content)
   const DEFAULT_V2_SECTIONS = [
+    "pendingAction",
     "liveRates",
     "stories",
     "posters",
@@ -88,6 +136,10 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
       .split(",")
       .map((s: string) => s.trim())
       .filter(Boolean);
+    // Ensure pendingAction is always evaluated at top if not explicitly placed
+    if (!parsed.includes("pendingAction")) {
+      parsed.unshift("pendingAction");
+    }
     // Append any default sections not present in custom order
     DEFAULT_V2_SECTIONS.forEach((s) => {
       if (!parsed.includes(s)) {
@@ -144,17 +196,14 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
     );
   }, [silverRate, currentRates?.silver_change, currentRates?.previous_silver_rate, cachedPrevRates.previousSilver]);
 
-  // Helper for cascading V2 visibility
-  const checkVisible = (v2Key: string, fallbackKey: string): boolean => {
-    if (visibleData && (visibleData as any)[v2Key] !== undefined) {
-      return (visibleData as any)[v2Key] === 1;
-    }
-    return isVisible(fallbackKey as any);
-  };
-
   // Render individual section dynamically
   const renderSection = (sectionId: string) => {
     switch (sectionId) {
+      case "pendingAction":
+        return isKycPending ? (
+          <KycPendingActionCardV2 key="pendingAction" />
+        ) : null;
+
       case "liveRates":
         return checkVisible("showV2LiveRates", "showGoldRate") ? (
           <LiveRatesCardV2
@@ -234,6 +283,11 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
       {/* 1. Header (Always visible) */}
       <HeaderV2 />
 
+      {/* 2. Flash News Marquee Ticker (Right below Header if enabled & has messages) */}
+      {showFlashNews && flashNewsMessages.length > 0 && (
+        <FlashNewsV2 messages={flashNewsMessages} />
+      )}
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -247,7 +301,7 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
           />
         }
       >
-        {/* Dynamic V2 Sections rendered in configured order */}
+        {/* Dynamic V2 Sections rendered in configured order (Pending Action, Live Rates, etc.) */}
         {sectionsOrder.map((sectionId: string) => renderSection(sectionId))}
 
         {/* Powered By Footer */}
