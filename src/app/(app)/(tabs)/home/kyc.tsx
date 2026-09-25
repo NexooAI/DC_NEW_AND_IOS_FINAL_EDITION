@@ -26,6 +26,8 @@ import api from "@/services/api";
 import { theme } from "@/constants/theme";
 import { LinearGradient } from "expo-linear-gradient";
 import { t } from "@/i18n";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
+import KycFormV2 from "@/components/kycV2/KycFormV2";
 
 import { logger } from "@/utils/logger";
 const idTypes = [
@@ -93,6 +95,7 @@ export default function KycForm() {
   const { from } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const { language, user } = useGlobalStore();
+  const { isKycV2 } = useAppVisibility();
 
   const [formData, setFormData] = useState<FormData>({
     doorno: "",
@@ -692,6 +695,31 @@ export default function KycForm() {
   const handleRetryPayment = async () => {
     // ... existing code ...
   };
+
+  if (isKycV2) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#FAF9F6" }} edges={["top", "left", "right"]}>
+        <KycFormV2
+          formData={formData}
+          handleChange={handleChange}
+          handleSubmit={handleSubmit}
+          handleBack={handleBack}
+          activeSection={activeSection}
+          setActiveSection={setActiveSection}
+          errors={errors}
+          pincodeData={pincodeData}
+          isLoadingPincode={isLoadingPincode}
+          pincodeLookupFailed={pincodeLookupFailed}
+          handlePincodeChange={handlePincodeChange}
+          handleCitySelection={handleCitySelection}
+          idTypes={idTypes}
+          nomineeRelationship={nomineeRelationship}
+          kycId={kycId}
+          keyboardVisible={keyboardVisible}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>

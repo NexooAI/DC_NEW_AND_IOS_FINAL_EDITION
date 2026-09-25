@@ -89,6 +89,9 @@ export interface AppVisibilityData {
     schemesVersion?: 'v1' | 'v2' | string;
     schemes_version?: string;
     enableSchemesV2?: number | boolean;
+    kycScreenVersion?: number | string;
+    kycVersion?: number | string;
+    enableKycV2?: number | boolean;
     updated_at: string;
 }
 
@@ -217,6 +220,8 @@ export function useAppVisibility() {
         isVisible,
         isSchemesV2: isSchemesV2Active(visibleData),
         loginVersion: resolveLoginVersion(visibleData),
+        isKycV2: resolveKycVersion(visibleData) === 2,
+        kycVersion: resolveKycVersion(visibleData),
         getVisibleComponents,
         refetch: fetchVisibilityData,
     };
@@ -275,5 +280,36 @@ export function resolveLoginVersion(visibleData?: any): number {
 
     // 3. Default to 1 (Classic Legacy)
     return 1;
+}
+
+/**
+ * Resolves the active KYC screen version (1 = Classic, 2 = Luxury Accordion V2).
+ * Checks API visibleData first (from Admin Panel /app-visible), then fallback to theme.config.js, defaulting to 2.
+ */
+export function resolveKycVersion(visibleData?: any): number {
+    const { themeConfig } = require('@/constants/theme.config');
+
+    // 1. Check API visibleData first
+    if (visibleData) {
+        const apiVer = visibleData?.kycScreenVersion ?? visibleData?.kyc_screen_version ?? visibleData?.kycVersion;
+        if (apiVer !== undefined && apiVer !== null && apiVer !== '') {
+            const parsed = typeof apiVer === 'string' ? parseInt(apiVer.replace(/^v/i, ''), 10) : Number(apiVer);
+            if (!isNaN(parsed) && parsed >= 1) {
+                return parsed;
+            }
+        }
+    }
+
+    // 2. Fallback to theme.config.js
+    const configVer = (themeConfig as any)?.kycVersion ?? (themeConfig as any)?.kyc_version ?? (themeConfig as any)?.kycScreenVersion;
+    if (configVer !== undefined && configVer !== null && configVer !== '') {
+        const parsedConfig = typeof configVer === 'string' ? parseInt(configVer.replace(/^v/i, ''), 10) : Number(configVer);
+        if (!isNaN(parsedConfig) && parsedConfig >= 1) {
+            return parsedConfig;
+        }
+    }
+
+    // 3. Default to 2 (Luxury Accordion V2)
+    return 2;
 }
 
