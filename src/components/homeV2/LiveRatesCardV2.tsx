@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
@@ -10,12 +10,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { moderateScale } from "react-native-size-matters";
+import { formatChangeValue, RateChangeInfo } from "@/utils/rateComparison";
 
-interface LiveRatesCardV2Props {
+export interface LiveRatesCardV2Props {
   goldRate?: string | number;
   silverRate?: string | number;
-  goldChange?: string | number;
-  silverChange?: string | number;
+  goldChange?: string | number | RateChangeInfo | null;
+  silverChange?: string | number | RateChangeInfo | null;
   goldPurity?: string;
   updatedAt?: string;
   onGoldPress?: () => void;
@@ -26,8 +27,8 @@ interface LiveRatesCardV2Props {
 export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
   goldRate = "6,485",
   silverRate = "78.50",
-  goldChange = "+12",
-  silverChange = "+0.50",
+  goldChange = null,
+  silverChange = null,
   goldPurity = "22K",
   updatedAt,
   onGoldPress,
@@ -35,6 +36,24 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
   onPress,
 }) => {
   const router = useRouter();
+
+  // Resolve dynamic change metadata (color, icon, direction, formatted text)
+  // No fake defaults: returns null if there is no previous comparison data
+  const goldChangeInfo = useMemo(() => {
+    if (!goldChange) return null;
+    if (typeof goldChange === "object" && "direction" in goldChange) {
+      return goldChange as RateChangeInfo;
+    }
+    return formatChangeValue(goldChange);
+  }, [goldChange]);
+
+  const silverChangeInfo = useMemo(() => {
+    if (!silverChange) return null;
+    if (typeof silverChange === "object" && "direction" in silverChange) {
+      return silverChange as RateChangeInfo;
+    }
+    return formatChangeValue(silverChange);
+  }, [silverChange]);
 
   const handleGoldPress = () => {
     if (onGoldPress) {
@@ -113,10 +132,14 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
             />
             <View style={styles.rateHeaderContainer}>
               <Text style={styles.rateType}>Gold Rate ({goldPurity})</Text>
-              <View style={styles.changeBadge}>
-                <Ionicons name="caret-up" size={10} color="#16A34A" />
-                <Text style={styles.changeText}>{goldChange}</Text>
-              </View>
+              {goldChangeInfo && (
+                <View style={[styles.changeBadge, { backgroundColor: goldChangeInfo.bgColor }]}>
+                  <Ionicons name={goldChangeInfo.iconName} size={10} color={goldChangeInfo.color} />
+                  <Text style={[styles.changeText, { color: goldChangeInfo.color }]}>
+                    {goldChangeInfo.formattedChange}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 
@@ -153,10 +176,14 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
             />
             <View style={styles.rateHeaderContainer}>
               <Text style={styles.rateType}>Silver Rate</Text>
-              <View style={styles.changeBadge}>
-                <Ionicons name="caret-up" size={10} color="#16A34A" />
-                <Text style={styles.changeText}>{silverChange}</Text>
-              </View>
+              {silverChangeInfo && (
+                <View style={[styles.changeBadge, { backgroundColor: silverChangeInfo.bgColor }]}>
+                  <Ionicons name={silverChangeInfo.iconName} size={10} color={silverChangeInfo.color} />
+                  <Text style={[styles.changeText, { color: silverChangeInfo.color }]}>
+                    {silverChangeInfo.formattedChange}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 
@@ -222,11 +249,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 2,
+    alignSelf: "flex-start",
+    paddingHorizontal: moderateScale(5),
+    paddingVertical: moderateScale(1),
+    borderRadius: moderateScale(4),
+    marginTop: 1,
   },
   changeText: {
     fontSize: moderateScale(10),
-    fontWeight: "800",
-    color: "#16A34A",
+    fontWeight: "700",
   },
   todayText: {
     fontSize: moderateScale(9),
