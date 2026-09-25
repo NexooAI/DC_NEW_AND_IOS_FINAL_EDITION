@@ -17,9 +17,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         version: version,
         orientation: "portrait",
         userInterfaceStyle: "automatic",
-        scheme: "acme",
+        scheme: themeConfig.slug || "kanisaajewellerydigigold",
 
-        icon: themeConfig.icon || "./assets/images/logo_trans.png",
+        icon: themeConfig.icon || "./assets/images/icon.png",
 
         androidStatusBar: {
             backgroundColor: themeConfig.primaryColor,
@@ -30,10 +30,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         android: {
             package: bundleIdentifier,
             googleServicesFile: "./google-services.json",
-            versionCode: 10,
+            versionCode: (themeConfig as any).versionCode || 10,
             adaptiveIcon: {
                 foregroundImage: themeConfig.adaptiveIcon || "./assets/images/adaptive-icon.png",
-                backgroundColor: themeConfig.primaryColor,
+                backgroundColor: (themeConfig as any).adaptiveIconBackgroundColor || themeConfig.primaryColor,
             },
 
             // ✔ Google Maps API
@@ -60,10 +60,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
         ios: {
             supportsTablet: true,
-            icon: themeConfig.icon || "./assets/images/logo_trans.png",
+            icon: themeConfig.icon || "./assets/images/icon.png",
             bundleIdentifier: bundleIdentifier,
+            associatedDomains: [
+                "applinks:api.prod.kanisaajewellery.com",
+                "applinks:kanisaajewellery.com",
+                "applinks:kanisaajewellery.page.link"
+            ],
             googleServicesFile: "./GoogleService-Info.plist",
-            buildNumber: "2",
+            buildNumber: (themeConfig as any).buildNumber || "2",
             config: {
                 googleMapsApiKey: mapsApiKey,
             },

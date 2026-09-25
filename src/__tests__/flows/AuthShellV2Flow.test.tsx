@@ -183,7 +183,8 @@ describe("AuthShellV2 Flow with SmoothPinInput", () => {
       <RegisterShellV2 initialMobile="9876543210" />
     );
 
-    expect(getByText("Sri Thanga Thamarai")).toBeTruthy();
+    const { themeConfig } = require("@/constants/theme.config");
+    expect(getByText(themeConfig.customerName)).toBeTruthy();
     expect(getByText(/Agnisofterp/i)).toBeTruthy();
     expect(getByPlaceholderText(/fullNamePlaceholder/i)).toBeTruthy();
   });
