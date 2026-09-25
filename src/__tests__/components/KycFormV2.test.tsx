@@ -146,3 +146,30 @@ describe("KycFormV2 Component", () => {
     expect(mockHandleSubmit).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("resolveKycVersion logic", () => {
+  const { resolveKycVersion } = require("../../hooks/useAppVisibility");
+
+  it("prioritizes explicit toggle switch enableKycV2 / showKycV2", () => {
+    expect(resolveKycVersion({ enableKycV2: 0 })).toBe(1);
+    expect(resolveKycVersion({ enableKycV2: 1 })).toBe(2);
+    expect(resolveKycVersion({ showKycV2: 0 })).toBe(1);
+    expect(resolveKycVersion({ showKycV2: 1 })).toBe(2);
+    expect(resolveKycVersion({ enable_kyc_v2: 0 })).toBe(1);
+    expect(resolveKycVersion({ enable_kyc_v2: 1 })).toBe(2);
+  });
+
+  it("handles version strings and numbers from API", () => {
+    expect(resolveKycVersion({ kycScreenVersion: "v1" })).toBe(1);
+    expect(resolveKycVersion({ kycScreenVersion: "v2" })).toBe(2);
+    expect(resolveKycVersion({ kycVersion: 1 })).toBe(1);
+    expect(resolveKycVersion({ kycVersion: 2 })).toBe(2);
+    expect(resolveKycVersion({ kyc_version: "v1" })).toBe(1);
+    expect(resolveKycVersion({ kyc_version: "v2" })).toBe(2);
+  });
+
+  it("falls back to theme config default (2) when visibleData has no kyc settings", () => {
+    expect(resolveKycVersion({})).toBe(2);
+    expect(resolveKycVersion(null)).toBe(2);
+  });
+});

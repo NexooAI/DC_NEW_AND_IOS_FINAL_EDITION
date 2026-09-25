@@ -92,6 +92,7 @@ export interface AppVisibilityData {
     kycScreenVersion?: number | string;
     kycVersion?: number | string;
     enableKycV2?: number | boolean;
+    showKycV2?: number | boolean;
     updated_at: string;
 }
 
@@ -160,6 +161,8 @@ export function useAppVisibility() {
                 // Profile Settings
                 'showProfileKyc', 'showProfileMpin', 'showProfileBiometrics', 'showProfileLanguage',
                 'showProfileRateChart', 'showProfileRateUs', 'showProfilePaymentHistory', 'showProfileDeleteAccount',
+                // KYC V2
+                'showKycV2',
                 // Home V2 Sections
                 'showV2LiveRates', 'showV2Stories', 'showV2Poster', 'showV2QuickActions',
                 'showV2PopularSchemes', 'showV2Savings', 'showV2SocialMedia', 'showV2SupportCard', 'showV2LiveChatBox'
@@ -190,6 +193,8 @@ export function useAppVisibility() {
             componentName === 'showProfileBiometrics' || componentName === 'showProfileLanguage' || 
             componentName === 'showProfileRateChart' || componentName === 'showProfileRateUs' || 
             componentName === 'showProfilePaymentHistory' || componentName === 'showProfileDeleteAccount' ||
+            // KYC V2
+            componentName === 'showKycV2' ||
             // Home V2 Sections
             componentName === 'showV2LiveRates' || componentName === 'showV2Stories' ||
             componentName === 'showV2Poster' || componentName === 'showV2QuickActions' ||
@@ -289,9 +294,31 @@ export function resolveLoginVersion(visibleData?: any): number {
 export function resolveKycVersion(visibleData?: any): number {
     const { themeConfig } = require('@/constants/theme.config');
 
-    // 1. Check API visibleData first
+    // 1. Check API visibleData first (from Admin Panel /app-visible)
     if (visibleData) {
-        const apiVer = visibleData?.kycScreenVersion ?? visibleData?.kyc_screen_version ?? visibleData?.kycVersion;
+        // Explicit toggle switches from backend:
+        // 0 / false / '0' -> disable V2, use Classic V1
+        if (
+            visibleData.enableKycV2 === 0 || visibleData.enableKycV2 === false || visibleData.enableKycV2 === '0' ||
+            visibleData.enable_kyc_v2 === 0 || visibleData.enable_kyc_v2 === false || visibleData.enable_kyc_v2 === '0' ||
+            visibleData.showKycV2 === 0 || visibleData.showKycV2 === false || visibleData.showKycV2 === '0' ||
+            visibleData.show_kyc_v2 === 0 || visibleData.show_kyc_v2 === false || visibleData.show_kyc_v2 === '0'
+        ) {
+            return 1;
+        }
+
+        // 1 / true / '1' -> enable Luxury V2
+        if (
+            visibleData.enableKycV2 === 1 || visibleData.enableKycV2 === true || visibleData.enableKycV2 === '1' ||
+            visibleData.enable_kyc_v2 === 1 || visibleData.enable_kyc_v2 === true || visibleData.enable_kyc_v2 === '1' ||
+            visibleData.showKycV2 === 1 || visibleData.showKycV2 === true || visibleData.showKycV2 === '1' ||
+            visibleData.show_kyc_v2 === 1 || visibleData.show_kyc_v2 === true || visibleData.show_kyc_v2 === '1'
+        ) {
+            return 2;
+        }
+
+        // Version string or number (e.g. "v1", "v2", 1, 2)
+        const apiVer = visibleData?.kycScreenVersion ?? visibleData?.kyc_screen_version ?? visibleData?.kycVersion ?? visibleData?.kyc_version;
         if (apiVer !== undefined && apiVer !== null && apiVer !== '') {
             const parsed = typeof apiVer === 'string' ? parseInt(apiVer.replace(/^v/i, ''), 10) : Number(apiVer);
             if (!isNaN(parsed) && parsed >= 1) {
@@ -301,7 +328,7 @@ export function resolveKycVersion(visibleData?: any): number {
     }
 
     // 2. Fallback to theme.config.js
-    const configVer = (themeConfig as any)?.kycVersion ?? (themeConfig as any)?.kyc_version ?? (themeConfig as any)?.kycScreenVersion;
+    const configVer = (themeConfig as any)?.kycVersion ?? (themeConfig as any)?.kyc_version ?? (themeConfig as any)?.kycScreenVersion ?? (themeConfig as any)?.kyc_screen_version;
     if (configVer !== undefined && configVer !== null && configVer !== '') {
         const parsedConfig = typeof configVer === 'string' ? parseInt(configVer.replace(/^v/i, ''), 10) : Number(configVer);
         if (!isNaN(parsedConfig) && parsedConfig >= 1) {
