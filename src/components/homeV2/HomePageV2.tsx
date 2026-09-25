@@ -85,7 +85,7 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
     if (!rawOrder) return DEFAULT_V2_SECTIONS;
     const parsed = rawOrder
       .split(",")
-      .map((s) => s.trim())
+      .map((s: string) => s.trim())
       .filter(Boolean);
     // Append any default sections not present in custom order
     DEFAULT_V2_SECTIONS.forEach((s) => {
@@ -211,7 +211,7 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
         }
       >
         {/* Dynamic V2 Sections rendered in configured order */}
-        {sectionsOrder.map((sectionId) => renderSection(sectionId))}
+        {sectionsOrder.map((sectionId: string) => renderSection(sectionId))}
 
         {/* Powered By Footer */}
         <View style={styles.poweredByContainer}>

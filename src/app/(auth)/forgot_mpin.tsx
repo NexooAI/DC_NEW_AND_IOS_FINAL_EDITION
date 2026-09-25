@@ -23,7 +23,10 @@ import {
   Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import AuthShellV2 from "@/components/auth/AuthShellV2";
+import AuthShellV3 from "@/components/auth/AuthShellV3";
+import AuthShellV4 from "@/components/auth/AuthShellV4";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import { theme } from "@/constants/theme";
@@ -343,7 +346,7 @@ const MpinInput = ({
   );
 };
 
-export default function ForgotMpin() {
+function ForgotMpinV1() {
   const { isVisible } = useAppVisibility();
   const [step, setStep] = useState<"verifyOtp" | "createMpin">("verifyOtp");
   const [mobileNumber, setMobileNumber] = useState("");
@@ -1569,3 +1572,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+
+export default function ForgotMpin() {
+  const params = useLocalSearchParams();
+  const { visibleData } = useAppVisibility();
+  const { themeConfig } = require("@/constants/theme.config");
+  const loginVersion = Number((themeConfig as any)?.loginVersion || visibleData?.loginScreenVersion || 1);
+
+  if (loginVersion === 2) {
+    return <AuthShellV2 initialStep="phone" initialMobile={(params?.mobile as string) || ""} />;
+  }
+  if (loginVersion === 3) {
+    return <AuthShellV3 initialStep="phone" initialMobile={(params?.mobile as string) || ""} />;
+  }
+  if (loginVersion === 4) {
+    return <AuthShellV4 initialStep="phone" initialMobile={(params?.mobile as string) || ""} />;
+  }
+  return <ForgotMpinV1 />;
+}

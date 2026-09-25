@@ -5,6 +5,11 @@ jest.setTimeout(30000);
 import 'react-native-gesture-handler/jestSetup';
 import mockSafeAreaContext from 'react-native-safe-area-context/jest/mock';
 
+jest.mock('expo/src/winter/fetch/FetchResponse', () => ({
+  NativeResponse: class {},
+  FetchResponse: class {},
+}));
+
 // Mock SafeAreaContext
 jest.mock('react-native-safe-area-context', () => ({
     ...mockSafeAreaContext,
@@ -24,6 +29,24 @@ jest.mock('expo-modules-core', () => ({
     requireNativeModule: jest.fn(),
     createPermissionHook: jest.fn(() => ({ status: 'granted', canAskAgain: true, granted: true, expires: 'never' })),
     requireNativeViewManager: jest.fn(),
+    UnavailabilityError: class UnavailabilityError extends Error {},
+}));
+
+// Mock Expo Haptics
+jest.mock('expo-haptics', () => ({
+    impactAsync: jest.fn(),
+    notificationAsync: jest.fn(),
+    selectionAsync: jest.fn(),
+    ImpactFeedbackStyle: {
+        Light: 'light',
+        Medium: 'medium',
+        Heavy: 'heavy',
+    },
+    NotificationFeedbackType: {
+        Success: 'success',
+        Warning: 'warning',
+        Error: 'error',
+    },
 }));
 
 // Mock Expo Asset
@@ -61,6 +84,14 @@ jest.mock('expo-router', () => {
             push: jest.fn(),
             replace: jest.fn(),
             back: jest.fn(),
+        }),
+        useNavigation: () => ({
+            navigate: jest.fn(),
+            goBack: jest.fn(),
+            addListener: jest.fn(() => jest.fn()),
+            setOptions: jest.fn(),
+            isFocused: jest.fn(() => true),
+            dispatch: jest.fn(),
         }),
         useLocalSearchParams: jest.fn(() => ({})),
         useFocusEffect: (cb) => require('react').useEffect(cb, []),
@@ -123,6 +154,8 @@ const mockStoreState = {
     getCachedVisibility: jest.fn(() => ({ data: {}, timestamp: Date.now() })),
     setCachedVisibility: jest.fn(),
     cachedVisibility: { data: {}, timestamp: Date.now() },
+    isTabVisible: true,
+    setTabVisibility: jest.fn(),
     debugState: jest.fn(() => ({})),
 };
 
@@ -225,16 +258,32 @@ jest.mock('@/hooks/useOtpAutoFetch', () => ({
 // Mock Expo File System
 jest.mock('expo-file-system/legacy', () => ({
     documentDirectory: 'test-directory/',
+    cacheDirectory: 'test-cache/',
     writeAsStringAsync: jest.fn(),
     readAsStringAsync: jest.fn(),
     deleteAsync: jest.fn(),
+    downloadAsync: jest.fn(() => Promise.resolve({ status: 200, uri: 'test-download-uri.pdf' })),
+    moveAsync: jest.fn(() => Promise.resolve()),
 }));
 
 jest.mock('expo-file-system', () => ({
     documentDirectory: 'test-directory/',
+    cacheDirectory: 'test-cache/',
     writeAsStringAsync: jest.fn(),
     readAsStringAsync: jest.fn(),
     deleteAsync: jest.fn(),
+    downloadAsync: jest.fn(() => Promise.resolve({ status: 200, uri: 'test-download-uri.pdf' })),
+    moveAsync: jest.fn(() => Promise.resolve()),
+}));
+
+// Mock Expo Print & Sharing
+jest.mock('expo-print', () => ({
+    printToFileAsync: jest.fn(() => Promise.resolve({ uri: 'test-print-uri.pdf' })),
+}));
+
+jest.mock('expo-sharing', () => ({
+    isAvailableAsync: jest.fn(() => Promise.resolve(true)),
+    shareAsync: jest.fn(() => Promise.resolve()),
 }));
 
 // Mock Expo Blur (Override)
@@ -297,5 +346,23 @@ jest.mock('@react-native-firebase/crashlytics', () => {
         sendUnsentReports: jest.fn(),
     });
 });
+
+// Mock Expo Print, Sharing, and FileSystem
+jest.mock('expo-print', () => ({
+    printToFileAsync: jest.fn(() => Promise.resolve({ uri: 'file:///mock/generated_brochure.pdf' })),
+}));
+
+jest.mock('expo-sharing', () => ({
+    isAvailableAsync: jest.fn(() => Promise.resolve(true)),
+    shareAsync: jest.fn(() => Promise.resolve()),
+}));
+
+jest.mock('expo-file-system/legacy', () => ({
+    documentDirectory: 'file:///mock/documents/',
+    cacheDirectory: 'file:///mock/cache/',
+    downloadAsync: jest.fn(() => Promise.resolve({ status: 200, uri: 'file:///mock/downloaded.pdf' })),
+    moveAsync: jest.fn(() => Promise.resolve()),
+}));
+
 
 

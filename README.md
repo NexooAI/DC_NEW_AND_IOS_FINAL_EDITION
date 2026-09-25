@@ -1,2 +1,2 @@
-# akila_mobileApp_final_edition
+# Sri Thanga Thamarai Mobile Application
 this version recently cloned form DC Jewls

@@ -1107,37 +1107,39 @@ const SavingsDetail = () => {
           <View style={{ width: 40 }} />
         </View>
 
-        {loading ? (
-          <SkeletonSavingsDetailPage />
-        ) : (
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          >
-            {renderHeroCard()}
-            {renderInfoGrid()}
-            {renderTransactionHistory()}
-            <View style={{ height: bottomPadding + 60 }} />
-          </ScrollView>
-        )}
+        <View style={styles.bodyContainer}>
+          {loading ? (
+            <SkeletonSavingsDetailPage />
+          ) : (
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            >
+              {renderHeroCard()}
+              {renderInfoGrid()}
+              {renderTransactionHistory()}
+              <View style={{ height: bottomPadding + 60 }} />
+            </ScrollView>
+          )}
 
-        {/* Floating Bottom Bar for Payment */}
-        <View style={[styles.bottomBar, { paddingBottom: bottom || 20 }]}>
-          <TouchableOpacity
-            style={[styles.payButton, isLoading && styles.payButtonDisabled]}
-            onPress={PaymentNow}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <>
-                <Text style={styles.payButtonText}>{translations.payNow}</Text>
-                <Ionicons name="arrow-forward" size={20} color="#FFF" />
-              </>
-            )}
-          </TouchableOpacity>
+          {/* Floating Bottom Bar for Payment */}
+          <View style={[styles.bottomBar, { paddingBottom: bottom || 20 }]}>
+            <TouchableOpacity
+              style={[styles.payButton, isLoading && styles.payButtonDisabled]}
+              onPress={PaymentNow}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <>
+                  <Text style={styles.payButtonText}>{translations.payNow}</Text>
+                  <Ionicons name="arrow-forward" size={20} color="#FFF" />
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
       </SafeAreaView>
@@ -1261,10 +1263,16 @@ const SavingsDetail = () => {
 function getStyles(theme: any) { return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: theme.colors.quaternary || "#F2E6D2",
   },
   safeArea: {
     flex: 1,
+    backgroundColor: theme.colors.quaternary || "#F2E6D2",
+  },
+  bodyContainer: {
+    flex: 1,
+    backgroundColor: "#F8F9FA",
+    position: "relative",
   },
   header: {
     flexDirection: 'row',

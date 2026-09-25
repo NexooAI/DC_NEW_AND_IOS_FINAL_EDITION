@@ -11,7 +11,8 @@ import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { BlurView } from "expo-blur";
-import CustomBottomBar from "@/common/components/navigation/CustomBottomBar";
+import CustomBottomBar, { resolveShowDashboardTab } from "@/common/components/navigation/CustomBottomBar";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 export default function TabsLayout() {
   const theme = useAppTheme();
@@ -21,16 +22,18 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const segments = useSegments();
   const router = useRouter();
-  const hasDashboard = getAppConfig().constants.enableDashboard;
+  const { visibleData: apiVisibility } = useAppVisibility();
+  const appConfig = getAppConfig();
+  const hasDashboard = resolveShowDashboardTab(apiVisibility, appConfig);
 
   // Check if we're on the schemes page
   const fullPath = segments.join("/");
   const isOnSchemesPage = fullPath.includes("home/schemes") || (segments.includes("schemes") && segments.includes("home"));
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
+    <SafeAreaView style={{ flex: 1 }} edges={isTabVisible ? ["bottom"] : []}>
       <Tabs
-        tabBar={(props: any) => <CustomBottomBar {...props} />}
+        tabBar={(props: any) => (isTabVisible ? <CustomBottomBar {...props} /> : null)}
           screenOptions={{
             headerShown: true,
             /*

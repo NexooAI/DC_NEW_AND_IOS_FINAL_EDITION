@@ -54,6 +54,22 @@ export const resolveImageSource = (source: any, fallback?: any) => {
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
       return { uri: trimmed };
     }
+    // Handle bundled asset path references from config
+    if (trimmed.includes('splashscreen_logo')) {
+      return require('../../assets/images/logo_trans.png');
+    }
+    if (trimmed.includes('logo_trans') || trimmed.includes('logo.png')) {
+      return require('../../assets/images/logo_trans.png');
+    }
+    if (trimmed.includes('adaptive-icon') || trimmed.includes('icon.png')) {
+      return require('../../assets/images/adaptive-icon.png');
+    }
+    if (trimmed.includes('bg_new')) {
+      return require('../../assets/images/bg_new.jpg');
+    }
+    if (trimmed.includes('jewelry_pattern')) {
+      return require('../../assets/images/jewelry_pattern.png');
+    }
     if (!trimmed.startsWith('.') && !trimmed.startsWith('..') && trimmed.length > 0) {
       const fullUrl = getFullImageUrl(trimmed);
       return fullUrl ? { uri: fullUrl } : fallback;

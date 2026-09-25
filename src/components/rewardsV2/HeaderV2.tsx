@@ -37,7 +37,7 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({ onBack, onHistoryPress }) =>
   const textColor = theme?.colors?.textDark || "#1A1A1A";
 
   return (
-    <View style={[styles.headerContainer, { paddingTop: insets.top + (Platform.OS === "android" ? 6 : 2), backgroundColor: headerBg }]}>
+    <View style={[styles.headerContainer, { backgroundColor: headerBg }]}>
       <View style={styles.headerContent}>
         <TouchableOpacity
           style={styles.backButton}
@@ -68,7 +68,8 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({ onBack, onHistoryPress }) =>
 const styles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingTop: Platform.OS === "ios" ? 4 : 8,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(0, 0, 0, 0.05)",
   },

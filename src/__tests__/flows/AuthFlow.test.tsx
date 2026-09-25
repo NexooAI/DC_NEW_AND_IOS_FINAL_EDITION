@@ -12,6 +12,12 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: jest.fn(() => ({})),
 }));
 
+jest.mock('@/constants/theme.config', () => ({
+  themeConfig: {
+    loginVersion: 1,
+  },
+}));
+
 // We need to mock fetch since Login uses fetch directly, not the api service for some calls
 global.fetch = jest.fn();
 
@@ -59,8 +65,8 @@ describe('E2E Auth Flow: Login -> OTP -> Verify', () => {
         const mobileInput = getByPlaceholderText('enterMobileNumber');
         fireEvent.changeText(mobileInput, '9876543210');
 
-        // 2. Click "Get OTP"
-        const getOtpBtn = getByText('getOtp');
+        // 2. Click "Get OTP" / "Send OTP"
+        const getOtpBtn = getByText(/sendOtp|getOtp/i);
         fireEvent.press(getOtpBtn);
 
         // 3. Verify OTP Screen appears (Wait for state update)

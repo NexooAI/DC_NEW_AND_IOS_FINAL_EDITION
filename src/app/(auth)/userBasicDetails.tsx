@@ -38,6 +38,7 @@ import ResponsiveButton from "@/components/ResponsiveButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
+import { RegisterShellV2, RegisterShellV3, RegisterShellV4 } from "@/components/auth";
 const { hp } = responsiveUtils;
 import Svg, { Path } from 'react-native-svg';
 
@@ -156,7 +157,7 @@ const axiosFetch = async (url: string, options: any = {}, retries = 2) => {
   throw lastError || new Error('Request failed');
 };
 
-export default function BasicDetailsForm() {
+function BasicDetailsFormV1() {
   const { t } = useTranslation();
   const { isVisible } = useAppVisibility();
   const [name, setName] = useState("");
@@ -3134,3 +3135,47 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.02)",
   },
 });
+
+export default function UserBasicDetails() {
+  const params = useLocalSearchParams();
+  const { visibleData } = useAppVisibility();
+  const { themeConfig } = require("@/constants/theme.config");
+  const loginVersion = Number(
+    (themeConfig as any)?.loginVersion || visibleData?.loginScreenVersion || 1
+  );
+  const mobileStr = Array.isArray(params?.mobile)
+    ? params.mobile[0]
+    : (params?.mobile as string) || "";
+  const referralStr = Array.isArray(params?.referral_code)
+    ? params.referral_code[0]
+    : (params?.referral_code as string) ||
+      (params?.emp_code as string) ||
+      "";
+
+  if (loginVersion === 2) {
+    return (
+      <RegisterShellV2
+        initialMobile={mobileStr}
+        initialReferral={referralStr}
+      />
+    );
+  }
+  if (loginVersion === 3) {
+    return (
+      <RegisterShellV3
+        initialMobile={mobileStr}
+        initialReferral={referralStr}
+      />
+    );
+  }
+  if (loginVersion === 4) {
+    return (
+      <RegisterShellV4
+        initialMobile={mobileStr}
+        initialReferral={referralStr}
+      />
+    );
+  }
+  return <BasicDetailsFormV1 />;
+}
+

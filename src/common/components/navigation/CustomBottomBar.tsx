@@ -1,90 +1,129 @@
 import React, { useEffect, useRef } from "react";
-import {
-  View,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Animated,
-  Platform,
-  Image,
-} from "react-native";
+import { Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useSegments } from "expo-router";
-import { theme } from "@/constants/theme";
-import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
-import { useAppVisibility } from "@/hooks/useAppVisibility";
-import { LinearGradient } from "expo-linear-gradient";
+import { useAppVisibility, isSchemesV2Active } from "@/hooks/useAppVisibility";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
-import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import ResponsiveText from "@/components/ResponsiveText";
 import { getFullImageUrl } from "@/utils/imageUtils";
 import { useNavigationState } from "@/hooks/useNavigationState";
 
-type Tab = {
-  name: string;
-  label: string;
-  icon: any;
-  iconActive: any;
-  badge?: number | null;
-};
+import BottomBarV1Classic from "./bars/BottomBarV1Classic";
+import BottomBarV2Floating from "./bars/BottomBarV2Floating";
+import BottomBarV3CenterFab from "./bars/BottomBarV3CenterFab";
+import BottomBarV4Curved from "./bars/BottomBarV4Curved";
+import { TabItem, BottomBarProps } from "./bars/types";
 
-const TabProfileIcon = ({ source, defaultIcon, color, size, isActive, themeSecondary }: any) => {
-  const [hasError, setHasError] = React.useState(false);
-  if (source && !hasError) {
+export type BottomNavStyleType =
+  | "v1_classic"
+  | "v2_floating"
+  | "v3_center_fab"
+  | "v4_curved";
+
+/**
+ * Resolves which bottom bar style should be rendered.
+ * Priority:
+ * 1. Admin API (useAppVisibility.bottomNavStyle)
+ * 2. Admin API numeric version (useAppVisibility.bottomNavVersion: 1..4)
+ * 3. Local Config (theme.config.js / getAppConfig().bottomNavStyle)
+ * 4. Local Config numeric version (theme.config.js / getAppConfig().bottomNavVersion: 1..4)
+ * 5. Default Fallback ("v1_classic")
+ */
+export function resolveBottomNavStyle(
+  apiVisibility?: any,
+  appConfig?: any
+): BottomNavStyleType {
+  // 1. API string style
+  const apiStyle = apiVisibility?.bottomNavStyle?.toString()?.toLowerCase()?.trim();
+  if (apiStyle) {
+    if (apiStyle.includes("v2") || apiStyle.includes("float")) return "v2_floating";
+    if (apiStyle.includes("v3") || apiStyle.includes("fab") || apiStyle.includes("center"))
+      return "v3_center_fab";
+    if (apiStyle.includes("v4") || apiStyle.includes("curve")) return "v4_curved";
+    if (apiStyle.includes("v1") || apiStyle.includes("classic")) return "v1_classic";
+  }
+
+  // 2. API numeric version
+  const apiVersion = Number(apiVisibility?.bottomNavVersion);
+  if (apiVersion === 2) return "v2_floating";
+  if (apiVersion === 3) return "v3_center_fab";
+  if (apiVersion === 4) return "v4_curved";
+  if (apiVersion === 1) return "v1_classic";
+
+  // 3. Local config string style
+  const configStyle = (
+    appConfig?.bottomNavStyle ||
+    appConfig?.constants?.bottomNavStyle
+  )
+    ?.toString()
+    ?.toLowerCase()
+    ?.trim();
+
+  if (configStyle) {
+    if (configStyle.includes("v2") || configStyle.includes("float")) return "v2_floating";
+    if (configStyle.includes("v3") || configStyle.includes("fab") || configStyle.includes("center"))
+      return "v3_center_fab";
+    if (configStyle.includes("v4") || configStyle.includes("curve")) return "v4_curved";
+    if (configStyle.includes("v1") || configStyle.includes("classic")) return "v1_classic";
+  }
+
+  // 4. Local config numeric version
+  const configVersion = Number(
+    appConfig?.bottomNavVersion || appConfig?.constants?.bottomNavVersion
+  );
+  if (configVersion === 2) return "v2_floating";
+  if (configVersion === 3) return "v3_center_fab";
+  if (configVersion === 4) return "v4_curved";
+  if (configVersion === 1) return "v1_classic";
+
+  return "v1_classic";
+}
+
+/**
+ * Resolves whether the 5th Dashboard tab should be displayed in the bottom bar.
+ */
+export function resolveShowDashboardTab(
+  apiVisibility?: any,
+  appConfig?: any
+): boolean {
+  if (
+    apiVisibility?.showBottomNavDashboard !== undefined &&
+    apiVisibility?.showBottomNavDashboard !== null
+  ) {
     return (
-      <Image
-        source={source}
-        style={{
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderWidth: isActive ? 1.5 : 0,
-          borderColor: themeSecondary,
-        }}
-        resizeMode="cover"
-        onError={() => setHasError(true)}
-      />
+      Number(apiVisibility.showBottomNavDashboard) === 1 ||
+      apiVisibility.showBottomNavDashboard === true
     );
   }
-  return <Ionicons name={defaultIcon} size={size} color={color} />;
-};
+  if (
+    apiVisibility?.showTabDashboard !== undefined &&
+    apiVisibility?.showTabDashboard !== null
+  ) {
+    return Number(apiVisibility.showTabDashboard) === 1;
+  }
+  if (appConfig?.showBottomNavDashboard !== undefined) {
+    return Boolean(appConfig.showBottomNavDashboard);
+  }
+  if (appConfig?.constants?.showBottomNavDashboard !== undefined) {
+    return Boolean(appConfig.constants.showBottomNavDashboard);
+  }
+  return Boolean(appConfig?.constants?.enableDashboard);
+}
 
 export default function CustomBottomBar(props: BottomTabBarProps) {
   const theme = useAppTheme();
-  styles = getStyles(theme);
-  const { t } = useTranslation();
   const router = useRouter();
   const segments = useSegments();
-  const { language, user } = useGlobalStore();
+  const { user, isTabVisible } = useGlobalStore();
   const { unreadCount } = useUnreadNotifications();
-  const { isVisible } = useAppVisibility();
-
-  const getProfileImageSource = () => {
-    if (user?.profileImage) {
-      return { uri: getFullImageUrl(user.profileImage) };
-    }
-    return undefined;
-  };
+  const { isVisible, visibleData: apiVisibility } = useAppVisibility();
   const { navigate, isNavigating } = useNavigationState();
+  const appConfig = getAppConfig();
+
   const current = segments[segments.length - 1] || "home";
 
-  const {
-    screenWidth,
-    screenHeight,
-    deviceScale,
-    getResponsiveFontSize,
-    getResponsivePadding,
-    spacing,
-    fontSize,
-    padding,
-    getCardWidth,
-    getGridColumns,
-    getListItemHeight,
-  } = useResponsiveLayout();
-
-  // Animation refs for each tab
+  // Animation refs for up to 5 tabs
   const tabAnimations = useRef(
     [0, 1, 2, 3, 4].map(() => new Animated.Value(1))
   ).current;
@@ -108,11 +147,15 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
     "policies/termsAndConditionsPolicies",
     "payment-success",
     "payment-failure",
+    "SavingsDetail",
+    "savings/SavingsDetail",
   ];
 
-  const hasDashboard = getAppConfig().constants.enableDashboard;
+  // Resolve style and 4 vs 5 tabs dashboard inclusion
+  const effectiveStyle = resolveBottomNavStyle(apiVisibility, appConfig);
+  const hasDashboard = resolveShowDashboardTab(apiVisibility, appConfig);
 
-  const tabs: Tab[] = [
+  const tabs: TabItem[] = [
     {
       name: "home",
       label: "bottom_nav_home",
@@ -125,12 +168,16 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
       icon: "wallet-outline",
       iconActive: "wallet",
     },
-    ...(hasDashboard ? [{
-      name: "dashboard_tab",
-      label: "dashboard",
-      icon: "grid-outline" as keyof typeof Ionicons.glyphMap,
-      iconActive: "grid" as keyof typeof Ionicons.glyphMap,
-    }] : []),
+    ...(hasDashboard
+      ? [
+          {
+            name: "dashboard_tab",
+            label: "dashboard",
+            icon: "grid-outline" as keyof typeof Ionicons.glyphMap,
+            iconActive: "grid" as keyof typeof Ionicons.glyphMap,
+          },
+        ]
+      : []),
     {
       name: "rewards",
       label: "rewards",
@@ -143,9 +190,10 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
       icon: "person-outline",
       iconActive: "person",
     },
-  ].filter(tab => {
+  ].filter((tab) => {
     if (tab.name === "home") return isVisible("showTabHome");
     if (tab.name === "savings") return isVisible("showTabSavings");
+    if (tab.name === "dashboard_tab") return isVisible("showTabDashboard");
     if (tab.name === "rewards") return isVisible("showTabRewards");
     if (tab.name === "profile") return isVisible("showTabProfile");
     return true;
@@ -153,15 +201,16 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
 
   // Animate tab press
   const animateTabPress = (index: number) => {
+    if (!tabAnimations[index]) return;
     Animated.sequence([
       Animated.timing(tabAnimations[index], {
-        toValue: 0.8,
-        duration: 100,
+        toValue: 0.82,
+        duration: 90,
         useNativeDriver: true,
       }),
       Animated.timing(tabAnimations[index], {
         toValue: 1,
-        duration: 100,
+        duration: 90,
         useNativeDriver: true,
       }),
     ]).start();
@@ -169,15 +218,16 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
 
   // Animate badge
   const animateBadge = (index: number) => {
+    if (!badgeAnimations[index]) return;
     Animated.sequence([
       Animated.timing(badgeAnimations[index], {
-        toValue: 1.2,
-        duration: 200,
+        toValue: 1.25,
+        duration: 180,
         useNativeDriver: true,
       }),
       Animated.timing(badgeAnimations[index], {
         toValue: 1,
-        duration: 200,
+        duration: 180,
         useNativeDriver: true,
       }),
     ]).start();
@@ -192,8 +242,8 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
     });
   }, [unreadCount]);
 
-  const handleTabPress = (tab: Tab, index: number) => {
-    if (isNavigating) return; // Prevent multiple simultaneous navigations
+  const handleTabPress = (tab: TabItem, index: number) => {
+    if (isNavigating) return;
 
     animateTabPress(index);
     if (tab.badge && tab.badge > 0) {
@@ -203,170 +253,47 @@ export default function CustomBottomBar(props: BottomTabBarProps) {
     if (tab.name === "dashboard_tab") {
       router.push("/(app)/dashboard");
     } else {
-      // Use the navigation state manager to prevent Fragment management errors
       navigate(`/(tabs)/${tab.name}`);
     }
   };
 
-  // Check if tab bar should be hidden - do this after all hooks are called
-  if (hideTabBarRoutes.includes(current)) {
+  const isSavingsDetail =
+    segments.some((s) => s?.toString()?.toLowerCase() === "savingsdetail") ||
+    current?.toString()?.toLowerCase() === "savingsdetail";
+
+  const isSchemesV2 = isSchemesV2Active(apiVisibility);
+  const isOnSchemesPage =
+    segments.some((s) => s?.toString()?.toLowerCase() === "schemes") ||
+    current?.toString()?.toLowerCase() === "schemes" ||
+    current?.toString()?.toLowerCase() === "scheme_detail_v2";
+
+  // If tab visibility is turned off globally, or if in Schemes on Version 2, hide the bottom bar completely
+  if (!isTabVisible || (isSchemesV2 && isOnSchemesPage) || hideTabBarRoutes.includes(current) || isSavingsDetail) {
     return null;
   }
 
-  return (
-    <View style={styles.container} pointerEvents="box-none">
-      <LinearGradient
-        colors={[
-          theme.colors.primary,
-          theme.colors.primary,
-          theme.colors.primary,
-        ]}
-        style={styles.gradientContainer}
-      >
-        {tabs.map((tab, index) => {
-          const isActive = current === tab.name || (tab.name === "dashboard_tab" && current === "dashboard");
-          return (
-            <TouchableOpacity
-              key={tab.name}
-              style={styles.tab}
-              onPress={() => handleTabPress(tab, index)}
-              activeOpacity={0.7}
-            >
-              <Animated.View
-                style={[
-                  styles.tabContent,
-                  {
-                    transform: [{ scale: tabAnimations[index] }],
-                  },
-                ]}
-              >
-                <View style={styles.iconContainer}>
-                  <TabProfileIcon
-                    source={tab.name === "profile" ? getProfileImageSource() : undefined}
-                    defaultIcon={isActive ? tab.iconActive : tab.icon}
-                    color={isActive ? theme.colors.secondary : theme.colors.textLight || "#ffffff"}
-                    size={26}
-                    isActive={isActive}
-                    themeSecondary={theme.colors.secondary}
-                  />
-                  {tab.badge && (
-                    <Animated.View
-                      style={[
-                        styles.badge,
-                        {
-                          transform: [{ scale: badgeAnimations[index] }],
-                        },
-                      ]}
-                    >
-                      <ResponsiveText
-                        variant="caption"
-                        size="xs"
-                        weight="bold"
-                        color={theme.colors.textLight || "#ffffff"}
-                        align="center"
-                        allowWrap={false}
-                        maxLines={1}
-                        adjustsFontSizeToFit={true}
-                        minimumFontScale={0.6}
-                        style={styles.badgeText}
-                      >
-                        {tab.badge > 99 ? "99+" : tab.badge}
-                      </ResponsiveText>
-                    </Animated.View>
-                  )}
-                </View>
-                <ResponsiveText
-                  variant="caption"
-                  size="xs"
-                  weight="medium"
-                  color={isActive ? theme.colors.secondary : theme.colors.textLight || "#ffffff"}
-                  align="center"
-                  allowWrap={false}
-                  maxLines={1}
-                  adjustsFontSizeToFit={true}
-                  minimumFontScale={0.7}
-                  style={styles.label}
-                >
-                  {t(tab.label)}
-                </ResponsiveText>
-                {isActive && <View style={styles.activeIndicator} />}
-              </Animated.View>
-            </TouchableOpacity>
-          );
-        })}
-      </LinearGradient>
-    </View>
-  );
+  const commonProps: BottomBarProps = {
+    tabs,
+    current,
+    onTabPress: handleTabPress,
+    primaryColor: theme?.colors?.primary || "#0e1e38",
+    secondaryColor: theme?.colors?.secondary || "#d4af37",
+    userProfileImage: user?.profileImage
+      ? getFullImageUrl(user.profileImage)
+      : undefined,
+    tabAnimations,
+    badgeAnimations,
+  };
+
+  switch (effectiveStyle) {
+    case "v2_floating":
+      return <BottomBarV2Floating {...commonProps} />;
+    case "v3_center_fab":
+      return <BottomBarV3CenterFab {...commonProps} />;
+    case "v4_curved":
+      return <BottomBarV4Curved {...commonProps} />;
+    case "v1_classic":
+    default:
+      return <BottomBarV1Classic {...commonProps} />;
+  }
 }
-
-function getStyles(theme: any) { return StyleSheet.create({
-  container: {
-    width: "100%",
-    zIndex: 999, // High value
-    elevation: 999, // Android
-    borderTopWidth: 1.5,
-    borderTopColor: theme.colors.borderGold || theme.colors.secondary || "rgba(255, 193, 12, 0.3)", // Gold accent border
-  },
-  gradientContainer: {
-    flexDirection: "row",
-    height: Platform.OS === "ios" ? 75 : 60,
-    paddingBottom: Platform.OS === "ios" ? 15 : 0,
-    alignItems: "center",
-    justifyContent: "space-around",
-  },
-  tab: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-    position: "relative",
-  },
-  tabContent: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 8,
-  },
-  iconContainer: {
-    position: "relative",
-    marginBottom: 4,
-  },
-  label: {
-    fontSize: 11,
-    fontWeight: "600",
-    textAlign: "center",
-    marginTop: 2,
-  },
-  badge: {
-    position: "absolute",
-    top: -8,
-    right: -8,
-    backgroundColor: "#FF4444",
-    borderRadius: 12,
-    minWidth: 20,
-    height: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 4,
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  activeIndicator: {
-    position: "absolute",
-    bottom: -2,
-    left: 0,
-    right: 0,
-    width: "auto",
-    height: 3,
-    backgroundColor: theme.colors.secondary, // Gold accent for active indicator
-    borderRadius: 2,
-    marginLeft: "auto",
-    marginRight: "auto",
-  },
-}) }
-
-var styles = getStyles(theme);;

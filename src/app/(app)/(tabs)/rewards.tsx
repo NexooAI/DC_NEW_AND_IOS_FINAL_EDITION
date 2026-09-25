@@ -30,12 +30,34 @@ const DISABLE_REDEMPTION_FORM = true; // Set to false to restore original redemp
 
 export default function RewardsScreen() {
   const { visibleData } = useAppVisibility();
+  const appConfig = getAppConfig();
   const isRewardsV2Active = (() => {
-    if (visibleData?.rewardsVersion === "v2") return true;
-    if (visibleData?.rewardsVersion === "v1") return false;
-    if (visibleData?.enableRewardsV2 === 0) return false;
-    if (visibleData?.enableRewardsV2 === 1) return true;
-    return true;
+    // 1. Check API visibility data
+    const apiVersion = (
+      visibleData?.rewardScreenVersion ||
+      visibleData?.rewardsVersion ||
+      (visibleData as any)?.reward_screen_version ||
+      (visibleData as any)?.rewards_version
+    )?.toString()?.toLowerCase()?.trim();
+
+    if (apiVersion === "v1") return false;
+    if (apiVersion === "v2") return true;
+
+    if (visibleData?.enableRewardsV2 === 0 || (visibleData as any)?.enable_rewards_v2 === 0) return false;
+    if (visibleData?.enableRewardsV2 === 1 || (visibleData as any)?.enable_rewards_v2 === 1) return true;
+
+    // 2. Check local theme / app configuration
+    const configVersion = (
+      (appConfig as any)?.rewardScreenVersion ||
+      (appConfig as any)?.rewardsVersion ||
+      (appConfig as any)?.constants?.rewardScreenVersion ||
+      (appConfig as any)?.constants?.rewardsVersion
+    )?.toString()?.toLowerCase()?.trim();
+
+    if (configVersion === "v1") return false;
+    if (configVersion === "v2") return true;
+
+    return true; // Default to modern V2
   })();
 
   if (isRewardsV2Active) {

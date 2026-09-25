@@ -83,6 +83,7 @@ import {
 import { useOtpAutoFetch } from "@/hooks/useOtpAutoFetch";
 import { getImageSource } from "@/utils/imageUtils";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
+import { AuthShellV2, AuthShellV3, AuthShellV4 } from "@/components/auth";
 
 
 // Responsive constants
@@ -601,7 +602,7 @@ const axiosFetch = async (url: string, options: any = {}, retries = 2) => {
   throw lastError || new Error('Request failed');
 };
 
-export default function Login() {
+function LoginV1() {
   const params = useLocalSearchParams();
   // State for mobile number and OTP
   const [mobile, setMobile] = useState("");
@@ -2083,3 +2084,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
+export default function Login() {
+  const params = useLocalSearchParams();
+  const { visibleData } = useAppVisibility();
+  const { themeConfig } = require("@/constants/theme.config");
+  const loginVersion = Number((themeConfig as any)?.loginVersion || visibleData?.loginScreenVersion || 1);
+
+  if (loginVersion === 2) {
+    return <AuthShellV2 initialMobile={(params?.mobile as string) || ""} />;
+  }
+  if (loginVersion === 3) {
+    return <AuthShellV3 initialMobile={(params?.mobile as string) || ""} />;
+  }
+  if (loginVersion === 4) {
+    return <AuthShellV4 initialMobile={(params?.mobile as string) || ""} />;
+  }
+  return <LoginV1 />;
+}

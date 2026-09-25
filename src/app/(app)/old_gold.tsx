@@ -513,7 +513,7 @@ export default function OldGoldScreen() {
             {t("purityCarats") || "Purity (Carats)"}
           </ResponsiveText>
           <View style={styles.purityRow}>
-            {["18K", "22K", "24K"].map((c) => (
+            {["22K", "18K"].map((c) => (
               <TouchableOpacity
                 key={c}
                 style={[styles.purityBtn, purity === c && styles.purityBtnActive]}

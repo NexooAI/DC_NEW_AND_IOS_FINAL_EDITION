@@ -1,5 +1,6 @@
 module.exports = {
-    preset: "react-native",
+    preset: "jest-expo",
+    cache: false,
     transformIgnorePatterns: [
         "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@rneui/.*|@gluestack-ui/.*|nativewind|expo-router|expo-.*|@expo/.*)",
     ],

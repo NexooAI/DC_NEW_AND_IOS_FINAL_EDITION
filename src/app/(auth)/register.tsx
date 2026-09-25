@@ -37,6 +37,7 @@ import useGlobalStore from "@/store/global.store";
 import * as Clipboard from "expo-clipboard";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { APP_CONFIG } from "@/constants";
+import { AuthShellV2, AuthShellV3, AuthShellV4, RegisterShellV2, RegisterShellV3, RegisterShellV4 } from "@/components/auth";
 
 import api from "@/services/api";
 import axios from "axios";
@@ -195,7 +196,7 @@ const axiosFetch = async (url: string, options: any = {}, retries = 2) => {
   throw lastError || new Error('Request failed');
 };
 
-export default function Register() {
+function RegisterV1() {
   const { t } = useTranslation();
   const { isVisible } = useAppVisibility();
   const [mobile, setMobile] = useState("");
@@ -798,4 +799,42 @@ export default function Register() {
       </TouchableWithoutFeedback>
     </View>
   );
+}
+
+export default function Register() {
+  const params = useLocalSearchParams();
+  const { visibleData } = useAppVisibility();
+  const { themeConfig } = require("@/constants/theme.config");
+  const loginVersion = Number(
+    (themeConfig as any)?.loginVersion || visibleData?.loginScreenVersion || 1
+  );
+  const mobileStr = (params?.mobile as string) || "";
+  const referralStr =
+    (params?.referral_code as string) || (params?.emp_code as string) || "";
+
+  if (loginVersion === 2) {
+    return (
+      <RegisterShellV2
+        initialMobile={mobileStr}
+        initialReferral={referralStr}
+      />
+    );
+  }
+  if (loginVersion === 3) {
+    return (
+      <RegisterShellV3
+        initialMobile={mobileStr}
+        initialReferral={referralStr}
+      />
+    );
+  }
+  if (loginVersion === 4) {
+    return (
+      <RegisterShellV4
+        initialMobile={mobileStr}
+        initialReferral={referralStr}
+      />
+    );
+  }
+  return <RegisterV1 />;
 }

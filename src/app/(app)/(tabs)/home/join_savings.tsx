@@ -97,9 +97,33 @@ export default function JoinSavings() {
 
           //logger.log('Loaded scheme data from storage:', parsedData);
 
-          // Verify that the stored data matches the current schemeId
-          if (parsedData.schemeId.toString() === schemeId?.toString()) {
-            setSchemeData(parsedData);
+          // Safely extract scheme ID across naming variations (schemeId, id, SCHEMEID, scheme_id)
+          const storedSchemeId =
+            parsedData?.schemeId ??
+            parsedData?.id ??
+            parsedData?.SCHEMEID ??
+            parsedData?.scheme_id;
+          const currentParamId = Array.isArray(schemeId) ? schemeId[0] : schemeId;
+
+          const matches =
+            storedSchemeId != null &&
+            currentParamId != null &&
+            String(storedSchemeId) === String(currentParamId);
+
+          if (matches || (storedSchemeId != null && (!currentParamId || currentParamId === "undefined"))) {
+            setSchemeData({
+              ...parsedData,
+              schemeId: storedSchemeId,
+              id: storedSchemeId,
+              SCHEMEID: storedSchemeId,
+            });
+          } else if (parsedData && !storedSchemeId && currentParamId) {
+            setSchemeData({
+              ...parsedData,
+              schemeId: currentParamId,
+              id: currentParamId,
+              SCHEMEID: currentParamId,
+            });
           } else {
             logger.warn("Stored scheme data does not match current schemeId");
             // Fallback: try to fetch from API
@@ -111,7 +135,7 @@ export default function JoinSavings() {
           await fetchSchemeDataFromAPI();
         }
       } catch (error) {
-        logger.error("Error loading scheme data:", error);
+        logger.warn("Error loading scheme data from storage:", error);
         await fetchSchemeDataFromAPI();
       } finally {
         setSchemeDataLoading(false);

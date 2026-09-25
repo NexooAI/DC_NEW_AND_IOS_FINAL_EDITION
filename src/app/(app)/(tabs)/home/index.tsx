@@ -119,7 +119,7 @@ const getDummyData = (t: (key: string) => string) => ({
   rates: {
     gold: {
       price: "7,315",
-      purity: "24K",
+      purity: "22K",
       image: theme.images.products.gold,
     },
     silver: {

@@ -24,6 +24,7 @@ import {
   Modal,
   Linking,
   StatusBar,
+  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -40,6 +41,7 @@ import { logger } from "@/utils/logger";
 const { width, height } = Dimensions.get("window");
 import * as Haptics from "expo-haptics";
 import { COLORS } from "@/constants/colors";
+import { SchemesScreenV2, SchemeDetailV2, ParsedSchemeV2 } from "@/components/schemesV2";
 
 interface Chit {
   CHITID: number | null | undefined;
@@ -251,7 +253,7 @@ export const getSchemeMetalType = (scheme: Scheme | any): "gold" | "silver" | "d
   return "gold";
 };
 
-export default function SchemeList({ isNested = false }: { isNested?: boolean }) {
+function SchemeListV1({ isNested = false }: { isNested?: boolean }) {
   const { isVisible } = useAppVisibility();
   const theme = useAppTheme();
   styles = getStyles(theme);
@@ -2765,4 +2767,210 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
 }) }
 
-var styles = getStyles(theme);;
+var styles = getStyles(theme);
+
+interface SchemeListV2Props {
+  isNested?: boolean;
+  onDetailChange?: (isOpen: boolean) => void;
+  detailBackRef?: React.MutableRefObject<(() => boolean) | null>;
+}
+
+function SchemesV2Wrapper(props: SchemeListV2Props) {
+  const router = useRouter();
+  const { language, setTabVisibility } = useGlobalStore();
+  const [allSchemes, setAllSchemes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedSchemeDetail, setSelectedSchemeDetail] = useState<ParsedSchemeV2 | null>(null);
+
+  // When Schemes V2 is viewed standalone (not nested), hide the bottom tab bar completely
+  useFocusEffect(
+    useCallback(() => {
+      if (!props.isNested) {
+        setTabVisibility(false);
+      }
+      return () => {
+        if (!props.isNested) {
+          setTabVisibility(true);
+        }
+      };
+    }, [props.isNested, setTabVisibility])
+  );
+
+  // Notify parent component when detail view opens or closes
+  useEffect(() => {
+    props.onDetailChange?.(Boolean(selectedSchemeDetail));
+  }, [selectedSchemeDetail, props.onDetailChange]);
+
+  // Expose back action to parent container (e.g. SchemesHub)
+  useEffect(() => {
+    if (props.detailBackRef) {
+      props.detailBackRef.current = () => {
+        if (selectedSchemeDetail) {
+          setSelectedSchemeDetail(null);
+          return true;
+        }
+        return false;
+      };
+    }
+    return () => {
+      if (props.detailBackRef) {
+        props.detailBackRef.current = null;
+      }
+    };
+  }, [selectedSchemeDetail, props.detailBackRef]);
+
+  // Handle Android hardware back press when detail is open
+  useEffect(() => {
+    if (!selectedSchemeDetail) return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      setSelectedSchemeDetail(null);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [selectedSchemeDetail]);
+
+  const fetchSchemes = async () => {
+    try {
+      const { fetchSchemesWithCache } = await import("@/utils/apiCache");
+      const data = await fetchSchemesWithCache(true);
+      setAllSchemes(data || []);
+    } catch (err) {
+      logger.error("Error fetching schemes in V2:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSchemes();
+  }, []);
+
+  const handleKnowMore = async (scheme: ParsedSchemeV2) => {
+    try {
+      await AsyncStorage.setItem(
+        "@current_scheme_data",
+        JSON.stringify({
+          schemeId: scheme.id,
+          id: scheme.id,
+          SCHEMEID: scheme.id,
+          name: scheme.name,
+          description: scheme.description,
+          slogan: scheme.slogan,
+          rawScheme: scheme.rawScheme,
+        })
+      );
+    } catch (err) {
+      logger.error("Error storing scheme for V2 detail:", err);
+    }
+    setSelectedSchemeDetail(scheme);
+  };
+
+  const handleJoinScheme = async (scheme: ParsedSchemeV2) => {
+    try {
+      const schemeId = scheme.id;
+      const targetFrequency = scheme.type === "Flexi" ? "Flexi" : "Monthly";
+      const schemeDataToStore = {
+        schemeId: schemeId,
+        id: schemeId,
+        SCHEMEID: schemeId,
+        name: scheme.name,
+        description: scheme.description || scheme.aboutParagraph,
+        type: targetFrequency,
+        chits: scheme.rawScheme?.chits || [],
+        schemeType: scheme.type.toLowerCase() === "flexi" ? "flexi" : "fixed",
+        activeTab: targetFrequency,
+        benefits: scheme.rawScheme?.BENEFITS || [],
+        slogan: scheme.slogan,
+        image: scheme.rawScheme?.IMAGE || "",
+        icon: scheme.rawScheme?.ICON || "",
+        durationMonths: scheme.tenureMonths,
+        metaData: scheme.rawScheme?.table_meta || scheme.rawScheme?.meta_data || null,
+        instant_intrest: scheme.rawScheme?.instant_intrest || false,
+        timestamp: new Date().toISOString(),
+        savingType: scheme.savingType,
+        rawScheme: scheme.rawScheme,
+      };
+
+      await AsyncStorage.setItem(
+        "@current_scheme_data",
+        JSON.stringify(schemeDataToStore)
+      );
+
+      router.push({
+        pathname: "/home/join_savings",
+        params: {
+          schemeId: String(schemeId),
+        },
+      });
+    } catch (err) {
+      logger.error("Error preparing join savings from V2:", err);
+      Alert.alert("Error", "Unable to start joining scheme at this moment.");
+    }
+  };
+
+  if (selectedSchemeDetail) {
+    return (
+      <SchemeDetailV2
+        scheme={selectedSchemeDetail}
+        onBack={() => setSelectedSchemeDetail(null)}
+        onJoinScheme={handleJoinScheme}
+        isNested={props.isNested}
+        language={language}
+      />
+    );
+  }
+
+  return (
+    <SchemesScreenV2
+      rawSchemes={allSchemes}
+      isLoading={loading}
+      onRefresh={fetchSchemes}
+      onBack={() => router.back()}
+      onKnowMore={handleKnowMore}
+      onJoinScheme={handleJoinScheme}
+      language={language}
+      isNested={props.isNested}
+    />
+  );
+}
+
+export default function SchemeList(props: SchemeListV2Props) {
+  const { visibleData } = useAppVisibility();
+  const { themeConfig } = require("@/constants/theme.config");
+  const { t } = useTranslation();
+
+  const isV2Active = (() => {
+    const apiVer = (
+      visibleData?.schemesVersion ||
+      visibleData?.schemes_version ||
+      (visibleData as any)?.enable_schemes_v2
+    )?.toString()?.toLowerCase()?.trim();
+
+    if (apiVer === "v2" || apiVer === "1" || visibleData?.enableSchemesV2 === 1) return true;
+    if (apiVer === "v1" || apiVer === "0" || visibleData?.enableSchemesV2 === 0) return false;
+
+    const configVer = (
+      (themeConfig as any)?.schemesVersion ||
+      (themeConfig as any)?.schemes_version
+    )?.toString()?.toLowerCase()?.trim();
+
+    if (configVer === "v2") return true;
+    return false;
+  })();
+
+  if (isV2Active) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <SchemesV2Wrapper {...props} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Stack.Screen options={{ headerShown: true, title: t("schemes.title") || "Schemes" }} />
+      <SchemeListV1 {...props} />
+    </>
+  );
+}

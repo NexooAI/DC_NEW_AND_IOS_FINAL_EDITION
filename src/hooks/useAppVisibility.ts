@@ -45,6 +45,12 @@ export interface AppVisibilityData {
     showTabQuickJoin?: number;
     showTabRewards?: number;
     showTabProfile?: number;
+    showTabDashboard?: number;
+    showBottomNavDashboard?: number | boolean;
+    bottomNavStyle?: 'v1_classic' | 'v2_floating' | 'v3_center_fab' | 'v4_curved' | string;
+    bottomNavVersion?: number | string;
+    bottomNavCenterTab?: string;
+    bottomNavTabsOrder?: string;
     // Side Menu Drawer
     showSideReferEarn?: number;
     showSideTickets?: number;
@@ -75,6 +81,14 @@ export interface AppVisibilityData {
     showV2LiveChatBox?: number;
     homeV2SectionsOrder?: string;
     homeSectionsOrder?: string;
+    rewardScreenVersion?: 'v1' | 'v2' | string;
+    rewardsVersion?: 'v1' | 'v2' | string;
+    enableRewardsV2?: number | boolean;
+    loginScreenVersion?: number;
+    loginVersion?: string | number;
+    schemesVersion?: 'v1' | 'v2' | string;
+    schemes_version?: string;
+    enableSchemesV2?: number | boolean;
     updated_at: string;
 }
 
@@ -201,7 +215,32 @@ export function useAppVisibility() {
         isLoading,
         error,
         isVisible,
+        isSchemesV2: isSchemesV2Active(visibleData),
         getVisibleComponents,
         refetch: fetchVisibilityData,
     };
+}
+
+/**
+ * Resolves whether Schemes Version 2 is active.
+ * Checks API visibleData first, then fallback to theme.config.js
+ */
+export function isSchemesV2Active(visibleData?: any): boolean {
+    const { themeConfig } = require('@/constants/theme.config');
+    const apiVer = (
+        visibleData?.schemesVersion ||
+        visibleData?.schemes_version ||
+        (visibleData as any)?.enable_schemes_v2
+    )?.toString()?.toLowerCase()?.trim();
+
+    if (apiVer === "v2" || apiVer === "1" || visibleData?.enableSchemesV2 === 1) return true;
+    if (apiVer === "v1" || apiVer === "0" || visibleData?.enableSchemesV2 === 0) return false;
+
+    const configVer = (
+        (themeConfig as any)?.schemesVersion ||
+        (themeConfig as any)?.schemes_version
+    )?.toString()?.toLowerCase()?.trim();
+
+    if (configVer === "v2") return true;
+    return false;
 }

@@ -69,6 +69,7 @@ import ResponsiveText from "@/components/ResponsiveText";
 import { useBiometrics } from "@/hooks/useBiometrics";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { getImageSource } from "@/utils/imageUtils";
+import { AuthShellV2, AuthShellV3, AuthShellV4 } from "@/components/auth";
 
 
 const borderRadius = getBorderRadius();
@@ -326,7 +327,7 @@ const CustomModal = ({
   );
 };
 
-export default function MpinVerify() {
+function MpinVerifyV1() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const [mpinPins, setMpinPins] = useState(["", "", "", ""]);
@@ -2033,3 +2034,21 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
 });
+
+export default function MpinVerify() {
+  const params = useLocalSearchParams();
+  const { visibleData } = useAppVisibility();
+  const { themeConfig } = require("@/constants/theme.config");
+  const loginVersion = Number((themeConfig as any)?.loginVersion || visibleData?.loginScreenVersion || 1);
+
+  if (loginVersion === 2) {
+    return <AuthShellV2 initialStep="mpin" initialMobile={(params?.mobile as string) || ""} />;
+  }
+  if (loginVersion === 3) {
+    return <AuthShellV3 initialStep="mpin" initialMobile={(params?.mobile as string) || ""} />;
+  }
+  if (loginVersion === 4) {
+    return <AuthShellV4 initialStep="mpin" initialMobile={(params?.mobile as string) || ""} />;
+  }
+  return <MpinVerifyV1 />;
+}

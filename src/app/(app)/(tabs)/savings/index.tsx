@@ -1,4 +1,4 @@
-import { useAppTheme } from "@/store/global.store";
+import useGlobalStore, { useAppTheme } from "@/store/global.store";
 import React, { useState } from "react";
 import {
     View,
@@ -9,14 +9,16 @@ import {
     Dimensions,
     Platform,
     StatusBar,
+    BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
 import { useTranslation } from "@/hooks/useTranslation";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useAppVisibility, isSchemesV2Active } from "@/hooks/useAppVisibility";
 
 import MySchemesContent from "./MySchemesContent";
 import JoinSchemesContent from "../home/schemes";
@@ -34,9 +36,49 @@ export default function SchemesHub() {
     const [activeTab, setActiveTab] = useState<"My Schemes" | "Join Schemes">(
         initialTab
     );
+    const [isSchemeDetailOpen, setIsSchemeDetailOpen] = useState(false);
+    const joinSchemesBackRef = React.useRef<(() => boolean) | null>(null);
+
     const slideAnim = React.useRef(new Animated.Value(initialTab === "My Schemes" ? 0 : -width)).current;
 
+    const { visibleData } = useAppVisibility();
+    const isV2 = isSchemesV2Active(visibleData);
+    const { setTabVisibility } = useGlobalStore();
+
+    // Bottom tab bar removal in Version 2 ONLY:
+    // When in Join Schemes or viewing Scheme Details in Version 2, completely remove the bottom tab bar and all spaces.
+    // When switched to Version 1, preserve the exact existing behavior (bottom tab bar remains visible).
+    React.useEffect(() => {
+        if (!isV2) {
+            setTabVisibility(true);
+            return;
+        }
+
+        if (activeTab === "Join Schemes" || isSchemeDetailOpen) {
+            setTabVisibility(false);
+        } else {
+            setTabVisibility(true);
+        }
+    }, [isV2, activeTab, isSchemeDetailOpen, setTabVisibility]);
+
+    // Restore bottom tab bar when leaving Savings
+    useFocusEffect(
+        React.useCallback(() => {
+            if (isV2 && (activeTab === "Join Schemes" || isSchemeDetailOpen)) {
+                setTabVisibility(false);
+            } else {
+                setTabVisibility(true);
+            }
+            return () => {
+                setTabVisibility(true);
+            };
+        }, [isV2, activeTab, isSchemeDetailOpen, setTabVisibility])
+    );
+
     const navigateTab = (tab: "My Schemes" | "Join Schemes") => {
+        if (tab === "My Schemes" && isSchemeDetailOpen) {
+            joinSchemesBackRef.current?.();
+        }
         setActiveTab(tab);
         Animated.timing(slideAnim, {
             toValue: tab === "My Schemes" ? 0 : -width,
@@ -46,12 +88,34 @@ export default function SchemesHub() {
     };
 
     const handleBackPress = () => {
+        // Step 1: If scheme detail is open, back goes to Join Schemes list
+        if (isSchemeDetailOpen && joinSchemesBackRef.current?.()) {
+            return;
+        }
+        // Step 2: If on Join Schemes list, back goes to My Schemes tab
         if (activeTab === "Join Schemes") {
             navigateTab("My Schemes");
         } else {
+            // Step 3: If on My Schemes tab, back goes to Home
             router.push("/(app)/(tabs)/home");
         }
     };
+
+    // Hardware back button support for step-by-step navigation
+    React.useEffect(() => {
+        const onHardwareBack = () => {
+            if (isSchemeDetailOpen && joinSchemesBackRef.current?.()) {
+                return true;
+            }
+            if (activeTab === "Join Schemes") {
+                navigateTab("My Schemes");
+                return true;
+            }
+            return false;
+        };
+        const sub = BackHandler.addEventListener("hardwareBackPress", onHardwareBack);
+        return () => sub.remove();
+    }, [isSchemeDetailOpen, activeTab]);
 
     React.useEffect(() => {
         if (params.tab === "join" && activeTab !== "Join Schemes") {
@@ -64,10 +128,17 @@ export default function SchemesHub() {
     const isDark = theme.colors.background === '#121212';
     const barStyle = isDark ? "light-content" : "dark-content";
 
+    const headerTitle = isSchemeDetailOpen
+        ? (t("schemeDetails") || "Scheme Details")
+        : (activeTab === "My Schemes" ? (t("mySchemes") || "My Schemes") : (t("joinSchemes") || "Join Schemes"));
+
+    const headerBg = theme.colors.background || "#FFFFFF";
+    const headerTextColor = theme.colors.primary || theme.colors.textDark || "#0e1e38";
+
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
-            <View style={[styles.headerArea, { backgroundColor: theme.colors.quaternary || '#F2E6D2' }]}>
+            <StatusBar barStyle={barStyle} backgroundColor={headerBg} />
+            <View style={[styles.headerArea, { backgroundColor: headerBg }]}>
                 <SafeAreaView edges={["top"]} style={{ backgroundColor: "transparent" }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10 }}>
                         <TouchableOpacity
@@ -75,18 +146,18 @@ export default function SchemesHub() {
                             style={{ padding: 4 }}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                            <Ionicons name="arrow-back" size={24} color={theme.colors.textDark || "#850111"} />
+                            <Ionicons name="arrow-back" size={24} color={headerTextColor} />
                         </TouchableOpacity>
-                        <Text style={{ fontSize: 20, fontWeight: "700", color: theme.colors.textDark || "#850111", flex: 1, textAlign: 'center' }}>
-                            {activeTab === "My Schemes" ? (t("mySchemes") || "My Schemes") : (t("joinSchemes") || "Join Schemes")}
+                        <Text style={{ fontSize: 20, fontWeight: "700", color: headerTextColor, flex: 1, textAlign: 'center' }}>
+                            {headerTitle}
                         </Text>
-                        {activeTab === "My Schemes" ? (
+                        {activeTab === "My Schemes" && !isSchemeDetailOpen ? (
                             <TouchableOpacity
                                 onPress={() => navigateTab("Join Schemes")}
                                 style={{ padding: 4 }}
                                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                             >
-                                <Ionicons name="add" size={28} color={theme.colors.textDark || "#850111"} />
+                                <Ionicons name="add" size={28} color={headerTextColor} />
                             </TouchableOpacity>
                         ) : (
                             <View style={{ width: 32 }} />
@@ -110,7 +181,11 @@ export default function SchemesHub() {
 
                     {/* Tab 2: Join Schemes */}
                     <View style={{ width, flex: 1 }}>
-                        <JoinSchemesContent isNested={true} />
+                        <JoinSchemesContent
+                            isNested={true}
+                            onDetailChange={setIsSchemeDetailOpen}
+                            detailBackRef={joinSchemesBackRef}
+                        />
                     </View>
                 </Animated.View>
             </View>

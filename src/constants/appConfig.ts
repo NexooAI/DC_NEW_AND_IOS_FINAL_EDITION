@@ -33,9 +33,9 @@ export const APP_CONFIG = {
   latitude: themeConfig.latitude || 0,
   longitude: themeConfig.longitude || 0,
   foundationYear: themeConfig.foundationYear || 0,
-  baseUrl: themeConfig.baseUrl || "",
+  baseUrl: themeConfig.baseUrl || "https://api.srithangathamarai.com",
   urls: {
-    baseUrl: themeConfig.baseUrl || "",
+    baseUrl: themeConfig.baseUrl || "https://api.srithangathamarai.com",
   },
   youtubeUrl: themeConfig.youtubeUrl || "",
 };
