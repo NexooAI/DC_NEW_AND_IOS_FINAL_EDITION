@@ -29,7 +29,7 @@ const themeConfig = {
   playStoreUrl: "https://play.google.com/store/apps/details?id=com.nexooai.kanisaajewellerydigigoldsavings&hl=en_IN",
   appStoreUrl: "https://apps.apple.com/us/app/kanisaa-jewellers-gold-diamonds/id6755081937",
   googleMapsApiKey: "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44",
-  loginVersion: 2,
+  loginVersion: 1,
   bottomNavStyle: "v2_floating", // Options: "v1_classic" | "v2_floating" | "v3_center_fab" | "v4_curved"
   bottomNavVersion: 2, // 1 = Classic, 2 = Floating Capsule, 3 = Center FAB Hero, 4 = Curved Contour
   rewardScreenVersion: "v2", // Options: "v1" | "v2"

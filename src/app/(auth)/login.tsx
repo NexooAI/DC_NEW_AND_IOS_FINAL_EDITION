@@ -2087,9 +2087,7 @@ const styles = StyleSheet.create({
 
 export default function Login() {
   const params = useLocalSearchParams();
-  const { visibleData } = useAppVisibility();
-  const { themeConfig } = require("@/constants/theme.config");
-  const loginVersion = Number((themeConfig as any)?.loginVersion || visibleData?.loginScreenVersion || 1);
+  const { loginVersion } = useAppVisibility();
 
   if (loginVersion === 2) {
     return <AuthShellV2 initialMobile={(params?.mobile as string) || ""} />;

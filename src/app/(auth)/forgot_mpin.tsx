@@ -1575,9 +1575,7 @@ const styles = StyleSheet.create({
 
 export default function ForgotMpin() {
   const params = useLocalSearchParams();
-  const { visibleData } = useAppVisibility();
-  const { themeConfig } = require("@/constants/theme.config");
-  const loginVersion = Number((themeConfig as any)?.loginVersion || visibleData?.loginScreenVersion || 1);
+  const { loginVersion } = useAppVisibility();
 
   if (loginVersion === 2) {
     return <AuthShellV2 initialStep="phone" initialMobile={(params?.mobile as string) || ""} />;

@@ -216,6 +216,7 @@ export function useAppVisibility() {
         error,
         isVisible,
         isSchemesV2: isSchemesV2Active(visibleData),
+        loginVersion: resolveLoginVersion(visibleData),
         getVisibleComponents,
         refetch: fetchVisibilityData,
     };
@@ -244,3 +245,35 @@ export function isSchemesV2Active(visibleData?: any): boolean {
     if (configVer === "v2") return true;
     return false;
 }
+
+/**
+ * Resolves the active Login screen version (1 = Classic Legacy, 2 = Luxury Gold / Modern, 3 = Center Fab, 4 = Amber).
+ * Checks API visibleData first (from Admin App Visual Status), then fallback to theme.config.js, defaulting to 1.
+ */
+export function resolveLoginVersion(visibleData?: any): number {
+    const { themeConfig } = require('@/constants/theme.config');
+
+    // 1. Check API visibleData first (from Admin Panel /app-visible)
+    if (visibleData) {
+        const apiVer = visibleData?.loginScreenVersion ?? visibleData?.login_screen_version ?? visibleData?.loginVersion;
+        if (apiVer !== undefined && apiVer !== null && apiVer !== '') {
+            const parsed = typeof apiVer === 'string' ? parseInt(apiVer.replace(/^v/i, ''), 10) : Number(apiVer);
+            if (!isNaN(parsed) && parsed >= 1) {
+                return parsed;
+            }
+        }
+    }
+
+    // 2. Fallback to theme.config.js
+    const configVer = (themeConfig as any)?.loginVersion ?? (themeConfig as any)?.login_version;
+    if (configVer !== undefined && configVer !== null && configVer !== '') {
+        const parsedConfig = typeof configVer === 'string' ? parseInt(configVer.replace(/^v/i, ''), 10) : Number(configVer);
+        if (!isNaN(parsedConfig) && parsedConfig >= 1) {
+            return parsedConfig;
+        }
+    }
+
+    // 3. Default to 1 (Classic Legacy)
+    return 1;
+}
+
