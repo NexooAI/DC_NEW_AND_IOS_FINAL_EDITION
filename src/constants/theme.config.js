@@ -19,6 +19,8 @@ const themeConfig = {
   rewardScreenVersion: "v2", // Options: "v1" | "v2"
   rewardsVersion: "v2",
   schemesVersion: "v2", // Options: "v1" | "v2"
+  kycVersion: 2, // Options: 1 (Classic) | 2 (Luxury Accordion V2)
+  kycScreenVersion: "v2",
   showBottomNavDashboard: false, // true = 5 Tabs (includes Dashboard), false = 4 Tabs (Home, Savings, Rewards, Profile)
   baseUrl: "https://api.srithangathamarai.com",
   providerName: "Agnisofterp",
