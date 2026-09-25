@@ -203,7 +203,9 @@ describe("AuthShellV2 Flow with SmoothPinInput", () => {
     expect(resolveLoginVersion({ loginVersion: "v4" })).toBe(4);
 
     // When API is undefined or empty, fallback to themeConfig.loginVersion (which is 1 for Kanisaa)
-    expect(resolveLoginVersion(null)).toBe(1);
-    expect(resolveLoginVersion({})).toBe(1);
+    const { themeConfig } = require("@/constants/theme.config");
+    const expectedFallback = Number((themeConfig as any)?.loginVersion || 1);
+    expect(resolveLoginVersion(null)).toBe(expectedFallback);
+    expect(resolveLoginVersion({})).toBe(expectedFallback);
   });
 });
