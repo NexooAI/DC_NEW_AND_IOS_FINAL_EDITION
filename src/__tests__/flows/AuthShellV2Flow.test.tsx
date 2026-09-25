@@ -183,8 +183,29 @@ describe("AuthShellV2 Flow with SmoothPinInput", () => {
       <RegisterShellV2 initialMobile="9876543210" />
     );
 
-    expect(getByText("Sri Thanga Thamarai")).toBeTruthy();
+    const { themeConfig } = require("@/constants/theme.config");
+    expect(getByText(themeConfig.customerName)).toBeTruthy();
     expect(getByText(/Agnisofterp/i)).toBeTruthy();
     expect(getByPlaceholderText(/fullNamePlaceholder/i)).toBeTruthy();
+  });
+
+  it("correctly prioritizes API visibleData over local themeConfig in resolveLoginVersion", () => {
+    const { resolveLoginVersion } = require("@/hooks/useAppVisibility");
+    const { themeConfig } = require("@/constants/theme.config");
+
+    // When API returns loginScreenVersion = 1, it MUST return 1 even if themeConfig was different
+    expect(resolveLoginVersion({ loginScreenVersion: 1 })).toBe(1);
+    expect(resolveLoginVersion({ login_screen_version: 1 })).toBe(1);
+    expect(resolveLoginVersion({ loginVersion: "v1" })).toBe(1);
+
+    // When API returns version 2, 3, or 4
+    expect(resolveLoginVersion({ loginScreenVersion: 2 })).toBe(2);
+    expect(resolveLoginVersion({ login_screen_version: 3 })).toBe(3);
+    expect(resolveLoginVersion({ loginVersion: "v4" })).toBe(4);
+
+    // When API is undefined or empty, fallback to themeConfig.loginVersion
+    const expectedFallback = Number((themeConfig as any)?.loginVersion || 1);
+    expect(resolveLoginVersion(null)).toBe(expectedFallback);
+    expect(resolveLoginVersion({})).toBe(expectedFallback);
   });
 });

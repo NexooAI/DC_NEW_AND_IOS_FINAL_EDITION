@@ -803,11 +803,7 @@ function RegisterV1() {
 
 export default function Register() {
   const params = useLocalSearchParams();
-  const { visibleData } = useAppVisibility();
-  const { themeConfig } = require("@/constants/theme.config");
-  const loginVersion = Number(
-    (themeConfig as any)?.loginVersion || visibleData?.loginScreenVersion || 1
-  );
+  const { loginVersion } = useAppVisibility();
   const mobileStr = (params?.mobile as string) || "";
   const referralStr =
     (params?.referral_code as string) || (params?.emp_code as string) || "";

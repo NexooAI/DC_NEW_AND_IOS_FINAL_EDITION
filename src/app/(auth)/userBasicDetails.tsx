@@ -3138,11 +3138,7 @@ const styles = StyleSheet.create({
 
 export default function UserBasicDetails() {
   const params = useLocalSearchParams();
-  const { visibleData } = useAppVisibility();
-  const { themeConfig } = require("@/constants/theme.config");
-  const loginVersion = Number(
-    (themeConfig as any)?.loginVersion || visibleData?.loginScreenVersion || 1
-  );
+  const { loginVersion } = useAppVisibility();
   const mobileStr = Array.isArray(params?.mobile)
     ? params.mobile[0]
     : (params?.mobile as string) || "";
