@@ -121,7 +121,7 @@ export const KycPendingActionCardV2: React.FC<KycPendingActionCardV2Props> = ({
           <View style={styles.contentRow}>
             <View style={styles.iconCircle}>
               <Ionicons
-                name="shield-alert"
+                name="alert-circle"
                 size={moderateScale(22)}
                 color="#DC2626"
               />
