@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   ScrollView,
@@ -15,6 +15,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import useGlobalStore, { useAppTheme } from "@/store/global.store";
 import StatusView from "@/components/StatusView";
+import { resolveRateChange, syncRateHistory } from "@/utils/rateComparison";
 
 // Home V2 Modular Components
 import HeaderV2 from "./HeaderV2";
@@ -96,6 +97,53 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
     return parsed;
   }, [visibleData?.homeV2SectionsOrder]);
 
+  // Extract Rates & Rate Comparison
+  const currentRates = homeData?.data?.currentRates;
+  const goldRate =
+    currentRates?.gold_rate ||
+    currentRates?.gold_rate_22 ||
+    "6,485";
+  const silverRate = currentRates?.silver_rate || "78.50";
+  const updatedAt =
+    currentRates?.updated_at ||
+    currentRates?.created_at ||
+    currentRates?.date;
+
+  // Track cached previous rates from local storage
+  const [cachedPrevRates, setCachedPrevRates] = useState<{
+    previousGold: number | null;
+    previousSilver: number | null;
+  }>({ previousGold: null, previousSilver: null });
+
+  useEffect(() => {
+    if (goldRate && silverRate) {
+      syncRateHistory(goldRate, silverRate, updatedAt).then((prev) => {
+        if (prev.previousGold !== null || prev.previousSilver !== null) {
+          setCachedPrevRates(prev);
+        }
+      });
+    }
+  }, [goldRate, silverRate, updatedAt]);
+
+  // Accurately resolve change comparing today vs yesterday rate without fake defaults
+  const goldChange = useMemo(() => {
+    return resolveRateChange(
+      goldRate,
+      currentRates?.gold_change,
+      currentRates?.previous_gold_rate,
+      cachedPrevRates.previousGold
+    );
+  }, [goldRate, currentRates?.gold_change, currentRates?.previous_gold_rate, cachedPrevRates.previousGold]);
+
+  const silverChange = useMemo(() => {
+    return resolveRateChange(
+      silverRate,
+      currentRates?.silver_change,
+      currentRates?.previous_silver_rate,
+      cachedPrevRates.previousSilver
+    );
+  }, [silverRate, currentRates?.silver_change, currentRates?.previous_silver_rate, cachedPrevRates.previousSilver]);
+
   // Helper for cascading V2 visibility
   const checkVisible = (v2Key: string, fallbackKey: string): boolean => {
     if (visibleData && (visibleData as any)[v2Key] !== undefined) {
@@ -113,8 +161,8 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
             key="liveRates"
             goldRate={goldRate}
             silverRate={silverRate}
-            goldChange="+12"
-            silverChange="+0.50"
+            goldChange={goldChange}
+            silverChange={silverChange}
             goldPurity="22K"
             updatedAt={updatedAt}
           />
@@ -178,17 +226,6 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
         return null;
     }
   };
-
-  // Extract Rates
-  const goldRate =
-    homeData?.data?.currentRates?.gold_rate ||
-    homeData?.data?.currentRates?.gold_rate_22 ||
-    "6,485";
-  const silverRate = homeData?.data?.currentRates?.silver_rate || "78.50";
-  const updatedAt =
-    homeData?.data?.currentRates?.updated_at ||
-    homeData?.data?.currentRates?.created_at ||
-    homeData?.data?.currentRates?.date;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
