@@ -341,6 +341,66 @@ describe('JoinSavings Business Logic & Calculations', () => {
       expect(row2Buttons('en')).toEqual(['All', 'Fixed', 'Flexi']);
       expect(row2Buttons('ta')).toEqual(['அனைத்தும்', 'நிலையான', 'நெகிழ்வான']);
     });
+
+    test('Plan Type Selector filters Deposit schemes when Deposit tab is selected and includes them in All', () => {
+      const fixedGoldScheme = {
+        SCHEMEID: 101,
+        SCHEMENAME: { en: 'Fixed Gold Scheme' },
+        SCHEMETYPE: 'fixed',
+        ACTIVE: 'Y',
+      };
+      const flexiGoldScheme = {
+        SCHEMEID: 102,
+        SCHEMENAME: { en: 'Flexi Gold Scheme' },
+        SCHEMETYPE: 'flexi',
+        ACTIVE: 'Y',
+      };
+      const depositGoldScheme = {
+        SCHEMEID: 103,
+        SCHEMENAME: { en: 'Gold Term Deposit' },
+        SCHEMETYPE: 'deposit',
+        scheme_plan_type_id: 5,
+        ACTIVE: 'Y',
+      };
+
+      const goldSchemes = [fixedGoldScheme, flexiGoldScheme, depositGoldScheme];
+
+      const isSchemeFlexi = (s: any) => (s.SCHEMETYPE || '').toLowerCase().includes('flexi');
+      const isSchemeDeposit = (s: any) => (s.SCHEMETYPE || '').toLowerCase().includes('deposit') || s.scheme_plan_type_id === 5;
+      const isSchemeFixed = (s: any) => !isSchemeFlexi(s) && !isSchemeDeposit(s);
+
+      const metalHasFlexi = goldSchemes.some(isSchemeFlexi);
+      const metalHasDeposit = goldSchemes.some(isSchemeDeposit);
+      const metalHasFixed = goldSchemes.some(isSchemeFixed);
+
+      expect(metalHasFlexi).toBe(true);
+      expect(metalHasDeposit).toBe(true);
+      expect(metalHasFixed).toBe(true);
+
+      const filterByPlanType = (schemes: any[], planType: 'all' | 'fixed' | 'flexi' | 'deposit') => {
+        return schemes.filter(scheme => {
+          if (planType === 'flexi') return isSchemeFlexi(scheme);
+          if (planType === 'deposit') return isSchemeDeposit(scheme);
+          if (planType === 'fixed') return isSchemeFixed(scheme);
+          return true; // 'all' returns all three
+        });
+      };
+
+      // 'all' includes Fixed, Flexi, and Deposit
+      const allResults = filterByPlanType(goldSchemes, 'all');
+      expect(allResults.length).toBe(3);
+      expect(allResults.map(s => s.SCHEMEID)).toEqual([101, 102, 103]);
+
+      // 'deposit' shows only deposit scheme
+      const depositResults = filterByPlanType(goldSchemes, 'deposit');
+      expect(depositResults.length).toBe(1);
+      expect(depositResults[0].SCHEMEID).toBe(103);
+
+      // 'fixed' does not accidentally include deposit
+      const fixedResults = filterByPlanType(goldSchemes, 'fixed');
+      expect(fixedResults.length).toBe(1);
+      expect(fixedResults[0].SCHEMEID).toBe(101);
+    });
   });
 });
 

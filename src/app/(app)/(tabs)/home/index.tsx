@@ -2839,6 +2839,9 @@ export default function Home() {
           onRefresh={handleRefresh}
           totalGoldSavings={totalGoldSavings}
           totalAmount={totalAmount}
+          kycStatus={kycStatus}
+          isKycLoading={isKycLoading}
+          flashNews={flashNews}
         />
       </AuthGuard>
     );

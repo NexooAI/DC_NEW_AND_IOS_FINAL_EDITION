@@ -12,10 +12,11 @@ import {
   ScrollView,
   UIManager,
   StatusBar,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '@/constants/theme';
 import COLORS from '@/constants/colors';
@@ -79,8 +80,42 @@ export default function PaymentHistoryScreen() {
   const theme = useAppTheme();
   styles = getStyles(theme);
   const router = useRouter();
+  const params = useLocalSearchParams<{ from?: string }>();
   const { t } = useTranslation();
   const { user } = useGlobalStore();
+
+  const handleBack = useCallback(() => {
+    try {
+      if (params.from === 'home') {
+        router.replace('/(app)/(tabs)/home');
+      } else if (params.from === 'profile') {
+        router.replace('/(app)/(tabs)/profile');
+      } else if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(app)/(tabs)/profile');
+      }
+    } catch {
+      router.replace('/(app)/(tabs)/profile');
+    }
+  }, [router, params.from]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        handleBack();
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        onBackPress
+      );
+
+      return () => subscription.remove();
+    }, [handleBack])
+  );
+
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -272,7 +307,7 @@ export default function PaymentHistoryScreen() {
         <LinearGradient colors={[theme.colors.quaternary, theme.colors.quaternary]} style={StyleSheet.absoluteFill} />
 
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
           </TouchableOpacity>
           <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.textDark}>
@@ -370,7 +405,7 @@ export default function PaymentHistoryScreen() {
       <LinearGradient colors={['rgba(133,1,17,0.05)', 'transparent']} style={StyleSheet.absoluteFill} />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.textDark} />
         </TouchableOpacity>
         <ResponsiveText variant="title" size="md" weight="bold" color={theme.colors.textDark}>

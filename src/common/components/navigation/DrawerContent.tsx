@@ -170,6 +170,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
 
   const showRefer = isVisible("showSideReferEarn");
   const showTickets = isVisible("showSideTickets");
+  const showGifts = isVisible("showSideGifts") && isVisible("showGifts");
   const showOffers = isVisible("showSideOffers");
   const showStores = isVisible("showSideStores");
   const showContactUs = isVisible("showSideContactUs");
@@ -389,13 +390,13 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
       >
         <View style={styles.menuContainer}>
           {/* General Section */}
-          {(showRefer || showTickets) && (
+          {(showRefer || showTickets || showGifts) && (
             <>
               <SectionHeader title={t("general") || "General"} />
               {showRefer && (
                 <DrawerMenuItem
                   label={t("referAndEarn")}
-                  iconName="gift-outline"
+                  iconName="share-social-outline"
                   onPress={() => handleNavigation("/(app)/(tabs)/home/refer_earn")}
                   disabled={isNavigating}
                   isActive={isRouteActive("/(app)/(tabs)/home/refer_earn")}
@@ -412,6 +413,17 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                   isActive={isRouteActive("/(app)/tickets")}
                   delay={175}
                   iconColor={theme.colors.primary} // Primary Brand color
+                />
+              )}
+              {showGifts && (
+                <DrawerMenuItem
+                  label={t("schemeGifts") || "Gifts"}
+                  iconName="gift-outline"
+                  onPress={() => handleNavigation("/(app)/gifts")}
+                  disabled={isNavigating}
+                  isActive={isRouteActive("/(app)/gifts")}
+                  delay={185}
+                  iconColor="#E6A100"
                 />
               )}
             </>

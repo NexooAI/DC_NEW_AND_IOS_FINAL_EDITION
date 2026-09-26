@@ -88,6 +88,15 @@ interface Scheme {
   instant_intrest?: boolean | null | undefined;
   scheme_plan_type_id?: number | null | undefined;
   SCHEME_PLAN_TYPE_ID?: number | null | undefined;
+  interest_slabs?: InterestSlab[] | null | undefined;
+  interest_slab?: InterestSlab[] | null | undefined;
+  interestSlabs?: InterestSlab[] | null | undefined;
+}
+
+export interface InterestSlab {
+  from_day: number;
+  to_day: number;
+  percentage: number;
 }
 
 const DEFAULT_SCHEME_TYPE = "Monthly";
@@ -252,6 +261,136 @@ export const getSchemeMetalType = (scheme: Scheme | any): "gold" | "silver" | "d
   return "gold";
 };
 
+export const getSchemeInterestSlabs = (scheme: Scheme | any): InterestSlab[] => {
+  if (!scheme) return [];
+  const raw = scheme.interest_slabs || scheme.interest_slab || scheme.interestSlabs;
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  return [];
+};
+
+export const getSchemeTypeLabel = (scheme: Scheme | any, defaultVal = "Monthly"): string => {
+  if (!scheme) return defaultVal;
+  const typeStr = (scheme.SCHEMETYPE || scheme.INS_TYPE || scheme.savingType || "").toLowerCase();
+  const nameStr = (
+    typeof scheme.SCHEMENAME === "object"
+      ? scheme.SCHEMENAME.en || scheme.SCHEMENAME.ta || ""
+      : scheme.SCHEMENAME || ""
+  ).toLowerCase();
+
+  if (
+    typeStr.includes("deposit") ||
+    typeStr.includes("lumpsum") ||
+    typeStr.includes("one-time") ||
+    typeStr.includes("onetime") ||
+    nameStr.includes("deposit") ||
+    nameStr.includes("lumpsum") ||
+    scheme.scheme_plan_type_id === 5 ||
+    scheme.SCHEME_PLAN_TYPE_ID === 5
+  ) {
+    return "Deposit";
+  }
+  if (typeStr.includes("flexi") || typeStr.includes("flexible") || nameStr.includes("flexi")) {
+    return "Flexi";
+  }
+  if (typeStr.includes("hybrid") || nameStr.includes("hybrid") || scheme.scheme_plan_type_id === 3 || scheme.SCHEME_PLAN_TYPE_ID === 3) {
+    return "Hybrid";
+  }
+  if (typeStr.includes("daily") || nameStr.includes("daily")) {
+    return "Daily";
+  }
+  if (typeStr.includes("weekly") || nameStr.includes("weekly")) {
+    return "Weekly";
+  }
+  if (typeStr.includes("fixed") || nameStr.includes("fixed")) {
+    return "Fixed";
+  }
+  return "Monthly";
+};
+
+export const checkIsSchemeDeposit = (scheme: Scheme | any): boolean => {
+  if (!scheme) return false;
+  if (
+    String(scheme.scheme_plan_type_id) === "5" ||
+    String(scheme.SCHEME_PLAN_TYPE_ID) === "5"
+  ) {
+    return true;
+  }
+  const typeStr = (scheme.SCHEMETYPE || scheme.INS_TYPE || scheme.savingType || "").toLowerCase();
+  const nameStr = (
+    typeof scheme.SCHEMENAME === "object"
+      ? scheme.SCHEMENAME.en || scheme.SCHEMENAME.ta || ""
+      : scheme.SCHEMENAME || ""
+  ).toLowerCase();
+  const pFreq = (scheme.chits?.[0]?.PAYMENT_FREQUENCY || "").toLowerCase();
+  return (
+    typeStr.includes("deposit") ||
+    typeStr.includes("lumpsum") ||
+    typeStr.includes("one-time") ||
+    typeStr.includes("onetime") ||
+    nameStr.includes("deposit") ||
+    nameStr.includes("lumpsum") ||
+    pFreq.includes("deposit") ||
+    pFreq.includes("lumpsum") ||
+    pFreq.includes("one-time")
+  );
+};
+
+export const checkIsSchemeFlexi = (scheme: Scheme | any): boolean => {
+  if (!scheme) return false;
+  if (
+    String(scheme.scheme_plan_type_id) === "2" ||
+    String(scheme.SCHEME_PLAN_TYPE_ID) === "2"
+  ) {
+    return true;
+  }
+  const typeStr = (scheme.SCHEMETYPE || scheme.INS_TYPE || scheme.savingType || "").toLowerCase();
+  const nameStr = (
+    typeof scheme.SCHEMENAME === "object"
+      ? scheme.SCHEMENAME.en || scheme.SCHEMENAME.ta || ""
+      : scheme.SCHEMENAME || ""
+  ).toLowerCase();
+  const pFreq = (scheme.chits?.[0]?.PAYMENT_FREQUENCY || "").toLowerCase();
+  return (
+    typeStr.includes("flexi") ||
+    typeStr.includes("flexible") ||
+    nameStr.includes("flexi") ||
+    pFreq.includes("flexi")
+  );
+};
+
+export const checkIsSchemeHybrid = (scheme: Scheme | any): boolean => {
+  if (!scheme) return false;
+  if (
+    String(scheme.scheme_plan_type_id) === "3" ||
+    String(scheme.SCHEME_PLAN_TYPE_ID) === "3"
+  ) {
+    return true;
+  }
+  const typeStr = (scheme.SCHEMETYPE || scheme.INS_TYPE || scheme.savingType || "").toLowerCase();
+  const nameStr = (
+    typeof scheme.SCHEMENAME === "object"
+      ? scheme.SCHEMENAME.en || scheme.SCHEMENAME.ta || ""
+      : scheme.SCHEMENAME || ""
+  ).toLowerCase();
+  const pFreq = (scheme.chits?.[0]?.PAYMENT_FREQUENCY || "").toLowerCase();
+  return (
+    typeStr.includes("hybrid") ||
+    nameStr.includes("hybrid") ||
+    pFreq.includes("hybrid")
+  );
+};
+
+export const checkIsSchemeFixed = (scheme: Scheme | any): boolean => {
+  return !checkIsSchemeDeposit(scheme) && !checkIsSchemeFlexi(scheme) && !checkIsSchemeHybrid(scheme);
+};
+
 export default function SchemeList({ isNested = false }: { isNested?: boolean }) {
   const { isVisible } = useAppVisibility();
   const theme = useAppTheme();
@@ -270,7 +409,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
   const [selectedMetal, setSelectedMetal] = useState<string>(parseIncomingMetal);
 
-  const [schemePlanType, setSchemePlanType] = useState<"all" | "fixed" | "flexi" | "hybrid">("all");
+  const [schemePlanType, setSchemePlanType] = useState<"all" | "fixed" | "flexi" | "hybrid" | "deposit" | "one-time">("all");
   const [activeTab, setActiveTab] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [allSchemes, setAllSchemes] = useState<Scheme[]>([]);
@@ -392,49 +531,51 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
   }, [allSchemes, selectedMetal]);
 
   const metalHasFlexi = useMemo(() => {
-    return schemesForSelectedMetal.some((scheme) => {
-      const schemeTypeLower = (scheme.SCHEMETYPE || "").toLowerCase();
-      const schemeNameLower = (getTranslatedText(scheme.SCHEMENAME, "en") || "").toLowerCase();
-      const insTypeLower = (scheme.INS_TYPE || "").toLowerCase();
-      return (
-        schemeTypeLower.includes("flexi") ||
-        schemeTypeLower.includes("flexible") ||
-        schemeNameLower.includes("flexi") ||
-        insTypeLower.includes("flexi")
-      );
-    });
+    return schemesForSelectedMetal.some(checkIsSchemeFlexi);
+  }, [schemesForSelectedMetal]);
+
+  const metalHasDeposit = useMemo(() => {
+    return schemesForSelectedMetal.some(checkIsSchemeDeposit);
+  }, [schemesForSelectedMetal]);
+
+  const metalHasHybrid = useMemo(() => {
+    return schemesForSelectedMetal.some(checkIsSchemeHybrid);
   }, [schemesForSelectedMetal]);
 
   const metalHasFixed = useMemo(() => {
-    return schemesForSelectedMetal.some((scheme) => {
-      const schemeTypeLower = (scheme.SCHEMETYPE || "").toLowerCase();
-      const schemeNameLower = (getTranslatedText(scheme.SCHEMENAME, "en") || "").toLowerCase();
-      const insTypeLower = (scheme.INS_TYPE || "").toLowerCase();
-      const isFlexi =
-        schemeTypeLower.includes("flexi") ||
-        schemeTypeLower.includes("flexible") ||
-        schemeNameLower.includes("flexi") ||
-        insTypeLower.includes("flexi");
-      return !isFlexi;
-    });
+    return schemesForSelectedMetal.some(checkIsSchemeFixed);
   }, [schemesForSelectedMetal]);
 
   // Adjust plan type if the selected metal only has one plan type available
   useEffect(() => {
-    if (metalHasFlexi && !metalHasFixed) {
-      setSchemePlanType("flexi");
-    } else if (!metalHasFlexi && metalHasFixed) {
-      setSchemePlanType("fixed");
-    } else if (schemeType) {
-      if (schemeType.toLowerCase().includes("flexi") && metalHasFlexi) {
+    const availableTypes = [
+      metalHasFixed ? "fixed" : null,
+      metalHasFlexi ? "flexi" : null,
+      metalHasDeposit ? "deposit" : null,
+      metalHasHybrid ? "hybrid" : null,
+    ].filter(Boolean);
+
+    if (schemeType) {
+      const sType = schemeType.toLowerCase();
+      if (sType.includes("flexi") && metalHasFlexi) {
         setSchemePlanType("flexi");
+      } else if ((sType.includes("deposit") || sType.includes("lumpsum") || sType.includes("one-time")) && metalHasDeposit) {
+        setSchemePlanType("deposit");
+      } else if (sType.includes("hybrid") && metalHasHybrid) {
+        setSchemePlanType("hybrid");
       } else if (metalHasFixed) {
         setSchemePlanType("fixed");
+      } else {
+        setSchemePlanType("all");
       }
-    } else if (metalHasFlexi && metalHasFixed) {
+    } else if (availableTypes.length > 1) {
+      setSchemePlanType("all");
+    } else if (availableTypes.length === 1) {
+      setSchemePlanType(availableTypes[0] as any);
+    } else {
       setSchemePlanType("all");
     }
-  }, [selectedMetal, metalHasFlexi, metalHasFixed, schemeType]);
+  }, [selectedMetal, metalHasFlexi, metalHasFixed, metalHasDeposit, metalHasHybrid, schemeType]);
 
   const [showShimmer, setShowShimmer] = useState(false);
 
@@ -446,29 +587,19 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
       schemesData.forEach((scheme) => {
         if (scheme.ACTIVE === "Y") {
-          // Check scheme-level fields
-          const schemeTypeLower = (scheme.SCHEMETYPE || "").toLowerCase();
-          const schemeNameLower = (getTranslatedText(scheme.SCHEMENAME, "en") || "").toLowerCase();
-          const insTypeLower = (scheme.INS_TYPE || "").toLowerCase();
-
-          const isSchemeFlexi =
-            schemeTypeLower.includes("flexi") ||
-            schemeTypeLower.includes("flexible") ||
-            schemeNameLower.includes("flexi") ||
-            insTypeLower.includes("flexi");
-
-          const isSchemeHybrid =
-            schemeTypeLower.includes("hybrid") ||
-            schemeNameLower.includes("hybrid") ||
-            insTypeLower.includes("hybrid") ||
-            scheme.scheme_plan_type_id === 3 ||
-            scheme.SCHEME_PLAN_TYPE_ID === 3;
+          const isSchemeFlexi = checkIsSchemeFlexi(scheme);
+          const isSchemeHybrid = checkIsSchemeHybrid(scheme);
+          const isSchemeDeposit = checkIsSchemeDeposit(scheme);
 
           if (isSchemeFlexi) {
             tabTypes.add("Flexi");
           }
           if (isSchemeHybrid) {
             tabTypes.add("Hybrid");
+          }
+          if (isSchemeDeposit) {
+            tabTypes.add("Deposit");
+            tabTypes.add("One-Time");
           }
 
           // Fallback to chit-level fields
@@ -492,6 +623,12 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                 if (normalizedFreq.toLowerCase().includes("hybrid")) {
                   tabTypes.add("Hybrid");
                 }
+                if (
+                  normalizedFreq.toLowerCase().includes("deposit") ||
+                  normalizedFreq.toLowerCase().includes("one-time")
+                ) {
+                  tabTypes.add("Deposit");
+                }
               }
             });
           }
@@ -505,6 +642,8 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
           Monthly: 3,
           Flexi: 4,
           Hybrid: 5,
+          Deposit: 6,
+          "One-Time": 7,
         };
         return (order[a] || 999) - (order[b] || 999);
       });
@@ -528,33 +667,22 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         }
       }
 
-      // Filter by plan type (fixed, flexi, hybrid)
-      const schemeTypeLower = (scheme.SCHEMETYPE || "").toLowerCase();
-      const schemeNameLower = (getTranslatedText(scheme.SCHEMENAME, "en") || "").toLowerCase();
-      const insTypeLower = (scheme.INS_TYPE || "").toLowerCase();
-
-      const isSchemeFlexi =
-        schemeTypeLower.includes("flexi") ||
-        schemeTypeLower.includes("flexible") ||
-        schemeNameLower.includes("flexi") ||
-        insTypeLower.includes("flexi");
-
-      const isSchemeHybrid =
-        schemeTypeLower.includes("hybrid") ||
-        schemeNameLower.includes("hybrid") ||
-        insTypeLower.includes("hybrid") ||
-        scheme.scheme_plan_type_id === 3 ||
-        scheme.SCHEME_PLAN_TYPE_ID === 3;
+      // Filter by plan type (fixed, flexi, hybrid, deposit)
+      const isSchemeFlexi = checkIsSchemeFlexi(scheme);
+      const isSchemeHybrid = checkIsSchemeHybrid(scheme);
+      const isSchemeDeposit = checkIsSchemeDeposit(scheme);
 
       if (schemePlanType === "flexi") {
         return isSchemeFlexi;
       } else if (schemePlanType === "hybrid") {
         return isSchemeHybrid;
+      } else if (schemePlanType === "deposit" || schemePlanType === "one-time") {
+        return isSchemeDeposit;
       } else if (schemePlanType === "fixed") {
-        // fixed: matches anything that is NOT flexi and NOT hybrid
-        return !isSchemeFlexi && !isSchemeHybrid;
+        // fixed: matches anything that is NOT flexi, NOT hybrid, and NOT deposit
+        return !isSchemeFlexi && !isSchemeHybrid && !isSchemeDeposit;
       } else {
-        // "all": shows all schemes (both fixed and flexi) of the selected metal
+        // "all": shows all schemes (both fixed, flexi, hybrid, deposit) of the selected metal
         return true;
       }
     });
@@ -569,16 +697,18 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
       const tab = (scheme.SCHEMETYPE || "Monthly");
       let groupName = "Monthly";
-      if (tab.toLowerCase().includes("flexi") || tab.toLowerCase().includes("flexible")) {
+      if (checkIsSchemeDeposit(scheme)) {
+        groupName = "Deposit";
+      } else if (checkIsSchemeFlexi(scheme)) {
         groupName = "Flexi";
+      } else if (checkIsSchemeHybrid(scheme)) {
+        groupName = "Hybrid";
       } else if (tab.toLowerCase().includes("daily")) {
         groupName = "Daily";
       } else if (tab.toLowerCase().includes("weekly")) {
         groupName = "Weekly";
       } else if (tab.toLowerCase().includes("monthly")) {
         groupName = "Monthly";
-      } else if (tab.toLowerCase().includes("hybrid")) {
-        groupName = "Hybrid";
       }
 
       if (!groups[groupName]) {
@@ -805,13 +935,19 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
       
       if (!userSelectedTab) {
         const isFlexiParam = schemeType?.toLowerCase().includes("flexi");
+        const isDepositParam = schemeType?.toLowerCase().includes("deposit") || schemeType?.toLowerCase().includes("lumpsum");
         const containsFlexi = tabs.some(t => t.toLowerCase() === "flexi");
-        const containsFixed = tabs.some(t => t.toLowerCase() !== "flexi");
+        const containsDeposit = tabs.some(t => t.toLowerCase() === "deposit" || t.toLowerCase() === "one-time");
+        const containsFixed = tabs.some(t => t.toLowerCase() !== "flexi" && t.toLowerCase() !== "deposit" && t.toLowerCase() !== "one-time");
 
         if (isFlexiParam && containsFlexi) {
           planType = "flexi";
-        } else if (containsFixed && containsFlexi) {
+        } else if (isDepositParam && containsDeposit) {
+          planType = "deposit";
+        } else if ([containsFixed, containsFlexi, containsDeposit].filter(Boolean).length > 1) {
           planType = "all";
+        } else if (containsDeposit) {
+          planType = "deposit";
         } else if (containsFixed) {
           planType = "fixed";
         } else if (containsFlexi) {
@@ -825,8 +961,10 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         targetTab = t("allOnly") || "All";
       } else if (planType === "flexi") {
         targetTab = tabs.find(t => t.toLowerCase() === "flexi") || "Flexi";
+      } else if (planType === "deposit") {
+        targetTab = tabs.find(t => t.toLowerCase() === "deposit" || t.toLowerCase() === "one-time") || "Deposit";
       } else {
-        const firstFixed = tabs.find(t => t.toLowerCase() !== "flexi");
+        const firstFixed = tabs.find(t => t.toLowerCase() !== "flexi" && t.toLowerCase() !== "deposit" && t.toLowerCase() !== "one-time");
         if (schemeType && schemeType.toLowerCase() !== "flexi" && tabs.includes(schemeType) && !userSelectedTab) {
           targetTab = schemeType;
         } else if (activeTab && activeTab.toLowerCase() !== "flexi" && tabs.includes(activeTab)) {
@@ -929,6 +1067,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         instant_intrest: item.instant_intrest || false,
         timestamp: new Date().toISOString(),
         savingType: item.savingType || (item.SCHEMETYPE?.toLowerCase() === "weight" ? "weight" : "amount"),
+        interest_slabs: getSchemeInterestSlabs(item),
       };
 
       await AsyncStorage.setItem(
@@ -1172,12 +1311,12 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
   const getPremiumGradient = (index: number): [string, string] => {
     const gradients: [string, string][] = [
-      ['#000000', '#1A1A1A'], // Onyx Black
-      ['#020818', '#0A1A44'], // Midnight Sapphire
-      ['#240505', '#550A0A'], // Royal Ruby
-      ['#041408', '#0D3315'], // Forest Emerald
-      ['#120418', '#330D44'], // Imperial Plum
-      ['#0F172A', '#1E293B'], // Charcoal Slate
+      ['#5B0E2D', '#2B0413'], // Deep Royal Burgundy / Wine (Brand aligned)
+      ['#1E1B4B', '#0F172A'], // Deep Midnight Indigo / Sapphire
+      ['#064E3B', '#022C22'], // Emerald Forest Jewel
+      ['#4C1D95', '#1E1B4B'], // Royal Amethyst Plum
+      ['#78350F', '#451A03'], // Warm Amber Bronze
+      ['#0F172A', '#1E293B'], // Charcoal Slate Obsidian
     ];
     return gradients[index % gradients.length];
   };
@@ -1200,8 +1339,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
   const renderSchemeItem = ({ item, index }: { item: Scheme; index: number }) => {
     if (!item) return null;
 
-    const type = (item.SCHEMETYPE || activeTab || "").toLowerCase();
-    const isFlexi = type.includes('flexi') || type.includes('flexible');
+    const schemeTypeLabel = getSchemeTypeLabel(item);
+    const itemIsFlexi = schemeTypeLabel.toLowerCase() === "flexi";
+    const typeDisplay = t(schemeTypeLabel) || schemeTypeLabel;
+    const interestSlabs = getSchemeInterestSlabs(item);
+    const isBonusScheme = interestSlabs.length > 0;
     const gradientColors = getPremiumGradient(index);
     const { min, max } = getMinMaxAmount(item);
 
@@ -1267,11 +1409,17 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
           end={{ x: 1, y: 1 }}
           style={styles.schemeCardGradient}
         >
-          <Image
-            source={require("../../../../../assets/images/jewelry_pattern.png")}
-            style={styles.cardWatermark}
-            resizeMode="contain"
-          />
+          {/* Top Row: Bonus Scheme Tag if interest_slabs has values */}
+          {isBonusScheme && (
+            <View style={styles.bonusBadgeRow}>
+              <View style={styles.bonusBadgePill}>
+                <Ionicons name="gift" size={12} color="#FFD700" />
+                <Text style={styles.bonusBadgeText}>
+                  {language === "ta" ? "போனஸ் திட்டம் • BONUS SCHEME" : "BONUS SCHEME"}
+                </Text>
+              </View>
+            </View>
+          )}
 
           <View style={styles.cardHeader}>
             <View style={styles.cardMainInfo}>
@@ -1311,9 +1459,9 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                     {item.DURATION_MONTHS || "11"} {t("schemes.months") || "Months"}
                   </Text>
                 </View>
-                <View style={[styles.infoPill, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
-                  <Ionicons name={isFlexi ? "options-outline" : "timer-outline"} size={12} color="#FFF" />
-                  <Text style={[styles.infoPillText, { color: '#FFF' }]}>{activeTab}</Text>
+                <View style={[styles.infoPill, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
+                  <Ionicons name={itemIsFlexi ? "options-outline" : "timer-outline"} size={12} color="#FFF" />
+                  <Text style={[styles.infoPillText, { color: '#FFF' }]}>{typeDisplay}</Text>
                 </View>
               </View>
             </View>
@@ -1452,8 +1600,8 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         </ScrollView>
       </View>
 
-      {/* Plan Type Selector (All vs Fixed vs Flexi) - Only shown if both are available for the selected metal and not All Schemes */}
-      {selectedMetal !== "all" && metalHasFlexi && metalHasFixed && (
+      {/* Plan Type Selector (All vs Fixed vs Flexi vs Deposit) - Shown if multiple plan types are available */}
+      {selectedMetal !== "all" && ([metalHasFixed, metalHasFlexi, metalHasDeposit, metalHasHybrid].filter(Boolean).length > 1 || metalHasDeposit) && (
         <View style={styles.planTypeWrapper}>
           <TouchableOpacity
             onPress={() => {
@@ -1470,38 +1618,76 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => {
-              setSchemePlanType("fixed");
-              setUserSelectedTab(true);
-              const firstFixed = availableTabs.find(t => t.toLowerCase() !== "flexi");
-              if (firstFixed) {
-                setActiveTab(firstFixed);
-              }
-            }}
-            style={[styles.planTypeButton, schemePlanType === "fixed" && styles.planTypeButtonActive]}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="calendar-outline" size={15} color={schemePlanType === "fixed" ? "#FFF" : "#4A0007"} />
-            <Text style={[styles.planTypeText, schemePlanType === "fixed" && styles.planTypeTextActive]}>
-              {t("Fixed") || "Fixed"}
-            </Text>
-          </TouchableOpacity>
+          {metalHasFixed && (
+            <TouchableOpacity
+              onPress={() => {
+                setSchemePlanType("fixed");
+                setUserSelectedTab(true);
+                const firstFixed = availableTabs.find(t => t.toLowerCase() !== "flexi" && t.toLowerCase() !== "deposit" && t.toLowerCase() !== "one-time");
+                if (firstFixed) {
+                  setActiveTab(firstFixed);
+                }
+              }}
+              style={[styles.planTypeButton, schemePlanType === "fixed" && styles.planTypeButtonActive]}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="calendar-outline" size={15} color={schemePlanType === "fixed" ? "#FFF" : "#4A0007"} />
+              <Text style={[styles.planTypeText, schemePlanType === "fixed" && styles.planTypeTextActive]}>
+                {t("Fixed") || "Fixed"}
+              </Text>
+            </TouchableOpacity>
+          )}
 
-          <TouchableOpacity
-            onPress={() => {
-              setSchemePlanType("flexi");
-              setUserSelectedTab(true);
-              setActiveTab("Flexi");
-            }}
-            style={[styles.planTypeButton, schemePlanType === "flexi" && styles.planTypeButtonActive]}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="infinite-outline" size={15} color={schemePlanType === "flexi" ? "#FFF" : "#4A0007"} />
-            <Text style={[styles.planTypeText, schemePlanType === "flexi" && styles.planTypeTextActive]}>
-              {t("Flexi") || "Flexi"}
-            </Text>
-          </TouchableOpacity>
+          {metalHasFlexi && (
+            <TouchableOpacity
+              onPress={() => {
+                setSchemePlanType("flexi");
+                setUserSelectedTab(true);
+                setActiveTab("Flexi");
+              }}
+              style={[styles.planTypeButton, schemePlanType === "flexi" && styles.planTypeButtonActive]}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="infinite-outline" size={15} color={schemePlanType === "flexi" ? "#FFF" : "#4A0007"} />
+              <Text style={[styles.planTypeText, schemePlanType === "flexi" && styles.planTypeTextActive]}>
+                {t("Flexi") || "Flexi"}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {metalHasDeposit && (
+            <TouchableOpacity
+              onPress={() => {
+                setSchemePlanType("deposit");
+                setUserSelectedTab(true);
+                setActiveTab(t("Deposit") || "Deposit");
+              }}
+              style={[styles.planTypeButton, schemePlanType === "deposit" && styles.planTypeButtonActive]}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="cash-outline" size={15} color={schemePlanType === "deposit" ? "#FFF" : "#4A0007"} />
+              <Text style={[styles.planTypeText, schemePlanType === "deposit" && styles.planTypeTextActive]}>
+                {t("Deposit") || "Deposit"}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {metalHasHybrid && (
+            <TouchableOpacity
+              onPress={() => {
+                setSchemePlanType("hybrid");
+                setUserSelectedTab(true);
+                setActiveTab("Hybrid");
+              }}
+              style={[styles.planTypeButton, schemePlanType === "hybrid" && styles.planTypeButtonActive]}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="git-branch-outline" size={15} color={schemePlanType === "hybrid" ? "#FFF" : "#4A0007"} />
+              <Text style={[styles.planTypeText, schemePlanType === "hybrid" && styles.planTypeTextActive]}>
+                {t("Hybrid") || "Hybrid"}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -1738,7 +1924,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
                   <View style={styles.pillBadgesContainer}>
                     <View style={styles.pillBadge}>
-                      <Text style={styles.pillBadgeText}>{activeTab}</Text>
+                      <Text style={styles.pillBadgeText}>{t(getSchemeTypeLabel(selectedScheme)) || getSchemeTypeLabel(selectedScheme)}</Text>
                     </View>
                     {selectedScheme.DURATION_MONTHS && (
                       <View style={styles.pillBadge}>
@@ -1781,6 +1967,56 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                       {renderTableMeta(selectedScheme)}
                     </View>
                   )}
+
+                  {/* Bonus Table Section */}
+                  {(() => {
+                    const slabs = getSchemeInterestSlabs(selectedScheme);
+                    if (!slabs || slabs.length === 0) return null;
+                    return (
+                      <View style={styles.modernSection}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                          <Ionicons name="gift" size={20} color="#D4AF37" />
+                          <Text style={styles.modernSectionTitle}>
+                            {language === "ta" ? "போனஸ் அட்டவணை (Bonus Table)" : "Bonus Table"}
+                          </Text>
+                        </View>
+                        <View style={styles.tableRefinedContainer}>
+                          {/* Table Header */}
+                          <View style={[styles.tableRefinedHeader, { backgroundColor: "#8A1830" }]}>
+                            <Text style={[styles.tableRefinedHeaderText, { flex: 1.2 }]}>
+                              {language === "ta" ? "நாட்கள் வரம்பு (Days)" : "Days Range"}
+                            </Text>
+                            <Text style={[styles.tableRefinedHeaderText, { flex: 0.8, textAlign: "right" }]}>
+                              {language === "ta" ? "போனஸ் % (Bonus %)" : "Bonus %"}
+                            </Text>
+                          </View>
+                          {/* Table Rows */}
+                          {slabs.map((slab, sIdx) => (
+                            <View
+                              key={sIdx}
+                              style={[
+                                styles.tableRefinedRow,
+                                sIdx % 2 !== 0 && styles.tableRowAlt,
+                                { justifyContent: "space-between" },
+                              ]}
+                            >
+                              <Text style={[styles.tableRefinedCell, { flex: 1.2, fontWeight: "600", color: "#1E293B" }]}>
+                                {slab.from_day} - {slab.to_day} {language === "ta" ? "நாட்கள்" : "Days"}
+                              </Text>
+                              <Text
+                                style={[
+                                  styles.tableRefinedCell,
+                                  { flex: 0.8, textAlign: "right", color: "#16A34A", fontWeight: "800", fontSize: 14 },
+                                ]}
+                              >
+                                {slab.percentage}%
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    );
+                  })()}
                   
                   <View style={{ height: 100 }} />
                 </>
@@ -1974,6 +2210,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 function getStyles(theme: any) { return StyleSheet.create({
   planTypeWrapper: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     backgroundColor: '#F1F5F9',
     padding: 4,
     borderRadius: 8,
@@ -1987,7 +2224,7 @@ function getStyles(theme: any) { return StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     borderRadius: 6,
     backgroundColor: 'transparent',
     gap: 4,
@@ -2290,11 +2527,36 @@ function getStyles(theme: any) { return StyleSheet.create({
     flex: 1,
     gap: 8,
   },
+  bonusBadgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  bonusBadgePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(212, 175, 55, 0.22)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 215, 0, 0.55)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+  bonusBadgeText: {
+    color: "#FFD700",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
   newSchemeName: {
-    fontSize: 22,
-    fontWeight: "900",
+    fontSize: 16,
+    fontWeight: "800",
     color: "#fff",
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
+    lineHeight: 22,
   },
   minAmountLabel: {
     fontSize: 14,

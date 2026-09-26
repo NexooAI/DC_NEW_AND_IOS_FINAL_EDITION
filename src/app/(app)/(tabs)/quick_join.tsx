@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -11,284 +10,523 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { moderateScale } from 'react-native-size-matters';
+import * as Haptics from 'expo-haptics';
 import { useTranslation } from '@/hooks/useTranslation';
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { theme } from '@/constants/theme';
 import { COLORS } from '@/constants/colors';
 import api from '@/services/api';
+import { fetchSchemesWithCache, fetchBranchesWithCache } from '@/utils/apiCache';
+import { formatGoldWeight } from '@/utils/imageUtils';
+import { logger } from '@/utils/logger';
+import {
+  getSchemeMetalType,
+  getSchemeInterestSlabs,
+  getSchemeTypeLabel,
+} from './home/schemes';
+
 const ENDPOINTS = {
   HOME: '/home',
   SCHEME_AMOUNT_LIMIT: '/amount-limits/scheme',
   BRANCHES: '/branches',
   INVESTMENTS: '/investments'
 };
-import { fetchSchemesWithCache, fetchBranchesWithCache } from '@/utils/apiCache';
-import { formatGoldWeight } from '@/utils/imageUtils';
-import { logger } from '@/utils/logger';
 
-// Reuse styles from home/index.tsx (styles2)
-function getStyles(theme: any) { return StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContainer: {
-    height: '92%',
-    backgroundColor: COLORS.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    backgroundColor: COLORS.white,
-  },
-  headerContent: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: COLORS.text.dark,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: COLORS.text.mediumGrey,
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  closeButton: {
-    marginLeft: 16,
-  },
-  closeButtonContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: theme.colors.backgroundSecondary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  inputSection: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.darkGrey,
-    marginBottom: 8,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.background,
-    borderWidth: 1,
-    borderColor: '#EFEFEF',
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    height: 56,
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 16,
-    color: COLORS.darkGrey,
-    marginLeft: 12,
-    paddingVertical: 8,
-  },
-  inputError: {
-    borderColor: COLORS.error,
-  },
-  errorText: {
-    color: COLORS.error,
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  amountHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  limitText: {
-    fontSize: 12,
-    color: theme.colors.textDark,
-    fontWeight: '600',
-  },
-  currencySymbol: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.mediumGrey,
-    marginLeft: 8,
-  },
-  goldWeightCard: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.3)',
-  },
-  goldWeightHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  goldIconBg: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  goldWeightLabel: {
-    fontSize: 14,
-    color: COLORS.mediumGrey,
-    marginLeft: 8,
-  },
-  goldWeightValue: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: COLORS.text.dark,
-    letterSpacing: 0.5,
-  },
-  quickSelectSection: {
-    marginBottom: 20,
-  },
-  quickSelectLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.darkGrey,
-    marginBottom: 12,
-  },
-  quickSelectGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  quickAmountButton: {
-    backgroundColor: theme.colors.bgWhiteLight,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  quickAmountButtonActive: {
-    backgroundColor: theme.colors.primary + '15',
-    borderColor: theme.colors.primary,
-  },
-  quickAmountText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.mediumGrey,
-    textAlign: 'center',
-  },
-  quickAmountTextActive: {
-    color: theme.colors.textDark,
-    fontWeight: '600',
-  },
-  footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.lightGrey,
-    backgroundColor: COLORS.white,
-  },
-  submitButton: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  submitButtonDisabled: {
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  submitGradient: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.white,
-  },
-  schemeSelectorContainer: {
-    marginBottom: 20,
-  },
-  schemeSelectorLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.darkGrey,
-    marginBottom: 12,
-  },
-  schemePillScroll: {
-    flexGrow: 0,
-  },
-  schemePill: {
-    width: 110,
-    height: 90,
-    padding: 8,
-    backgroundColor: theme.colors.bgWhiteLight,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  schemePillActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-    elevation: 4,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  schemePillText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.mediumGrey,
-    textAlign: 'center',
-  },
-  schemePillTextActive: {
-    color: COLORS.white,
-    fontWeight: '600',
-  },
-}) }
+const safeHaptic = (style: Haptics.ImpactFeedbackStyle) => {
+  if (process.env.NODE_ENV !== "test" && Platform.OS !== "web") {
+    try {
+      Haptics?.impactAsync?.(style)?.catch?.(() => {});
+    } catch {}
+  }
+};
 
-var styles = getStyles(theme);;
+const getMetalIconSource = (metal: string) => {
+  switch (metal) {
+    case "silver":
+      return require("../../../../assets/images/silver_coin_badge.png");
+    case "diamond":
+      return require("../../../../assets/images/diamond_coin_badge.png");
+    case "old_gold":
+      return require("../../../../assets/images/gold.png");
+    case "gold":
+    default:
+      return require("../../../../assets/images/luxury_gold_coin.png");
+  }
+};
+
+const getSchemeDisplayImage = (scheme: any, metal: string) => {
+  if (scheme?.IMAGE && typeof scheme.IMAGE === 'string' && (scheme.IMAGE.startsWith('http') || scheme.IMAGE.startsWith('/'))) {
+    return { uri: scheme.IMAGE };
+  }
+  if (scheme?.ICON && typeof scheme.ICON === 'string' && (scheme.ICON.startsWith('http') || scheme.ICON.startsWith('/'))) {
+    return { uri: scheme.ICON };
+  }
+  return getMetalIconSource(metal);
+};
+
+const getSchemeCardTheme = (metal: string, isActive: boolean) => {
+  if (isActive) {
+    return {
+      gradient: ["#5B0E2D", "#2B0413"] as [string, string],
+      borderColor: "#FFD700",
+      badgeBg: "rgba(255, 215, 0, 0.22)",
+      badgeBorder: "rgba(255, 215, 0, 0.5)",
+      badgeText: "#FFD700",
+      titleColor: "#FFFFFF",
+      iconGlow: "rgba(255, 215, 0, 0.15)",
+      radioColor: "#FFD700",
+      pillBg: "rgba(255, 255, 255, 0.16)",
+      pillText: "#FFFFFF",
+    };
+  }
+
+  switch (metal) {
+    case "silver":
+      return {
+        gradient: ["#FFFFFF", "#F1F5F9"] as [string, string],
+        borderColor: "#CBD5E1",
+        badgeBg: "rgba(148, 163, 184, 0.16)",
+        badgeBorder: "rgba(148, 163, 184, 0.4)",
+        badgeText: "#334155",
+        titleColor: "#0F172A",
+        iconGlow: "rgba(148, 163, 184, 0.15)",
+        radioColor: "#94A3B8",
+        pillBg: "#F1F5F9",
+        pillText: "#475569",
+      };
+    case "diamond":
+      return {
+        gradient: ["#FFFFFF", "#F0F9FF"] as [string, string],
+        borderColor: "#BAE6FD",
+        badgeBg: "rgba(56, 189, 248, 0.16)",
+        badgeBorder: "rgba(56, 189, 248, 0.4)",
+        badgeText: "#0369A1",
+        titleColor: "#0F172A",
+        iconGlow: "rgba(56, 189, 248, 0.15)",
+        radioColor: "#38BDF8",
+        pillBg: "#E0F2FE",
+        pillText: "#0369A1",
+      };
+    case "old_gold":
+      return {
+        gradient: ["#FFFFFF", "#FFFBEB"] as [string, string],
+        borderColor: "#FDE68A",
+        badgeBg: "rgba(245, 158, 11, 0.16)",
+        badgeBorder: "rgba(245, 158, 11, 0.4)",
+        badgeText: "#B45309",
+        titleColor: "#0F172A",
+        iconGlow: "rgba(245, 158, 11, 0.15)",
+        radioColor: "#F59E0B",
+        pillBg: "#FEF3C7",
+        pillText: "#B45309",
+      };
+    case "gold":
+    default:
+      return {
+        gradient: ["#FFFFFF", "#FFFDF5"] as [string, string],
+        borderColor: "#FDE68A",
+        badgeBg: "rgba(212, 175, 55, 0.14)",
+        badgeBorder: "rgba(212, 175, 55, 0.35)",
+        badgeText: "#8A5800",
+        titleColor: "#0F172A",
+        iconGlow: "rgba(255, 215, 0, 0.15)",
+        radioColor: "#CBD5E1",
+        pillBg: "#FFF9E6",
+        pillText: "#8A5800",
+      };
+  }
+};
+
+function getStyles(theme: any) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      justifyContent: 'flex-end',
+    },
+    modalContainer: {
+      height: '92%',
+      backgroundColor: COLORS.white,
+      borderTopLeftRadius: 28,
+      borderTopRightRadius: 28,
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 10,
+      elevation: 20,
+    },
+    sheetHandle: {
+      width: moderateScale(38),
+      height: moderateScale(4),
+      borderRadius: moderateScale(2),
+      backgroundColor: '#CBD5E1',
+      alignSelf: 'center',
+      marginTop: moderateScale(10),
+      marginBottom: -moderateScale(6),
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: moderateScale(20),
+      paddingTop: moderateScale(18),
+      paddingBottom: moderateScale(14),
+      borderBottomWidth: 1,
+      borderBottomColor: '#F1F5F9',
+      backgroundColor: COLORS.white,
+    },
+    headerIconCircle: {
+      width: moderateScale(40),
+      height: moderateScale(40),
+      borderRadius: moderateScale(20),
+      backgroundColor: 'rgba(133, 1, 17, 0.1)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: moderateScale(12),
+    },
+    headerContent: {
+      flex: 1,
+    },
+    title: {
+      fontSize: moderateScale(20),
+      fontWeight: '800',
+      color: COLORS.text.dark,
+      letterSpacing: -0.3,
+    },
+    subtitle: {
+      fontSize: moderateScale(12.5),
+      color: COLORS.text.mediumGrey,
+      marginTop: moderateScale(2),
+      fontWeight: '500',
+    },
+    closeButton: {
+      marginLeft: moderateScale(12),
+    },
+    closeButtonContainer: {
+      width: moderateScale(34),
+      height: moderateScale(34),
+      borderRadius: moderateScale(17),
+      backgroundColor: '#F1F5F9',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingHorizontal: moderateScale(20),
+      paddingVertical: moderateScale(16),
+    },
+
+    /* Beautified Scheme Selector Styles */
+    schemeSelectorContainer: {
+      marginBottom: moderateScale(20),
+    },
+    schemeSelectorHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: moderateScale(10),
+    },
+    schemeSelectorLabel: {
+      fontSize: moderateScale(15),
+      fontWeight: '700',
+      color: '#0F172A',
+      letterSpacing: 0.2,
+    },
+    schemeCountBadge: {
+      fontSize: moderateScale(11.5),
+      fontWeight: '600',
+      color: '#64748B',
+      backgroundColor: '#F1F5F9',
+      paddingHorizontal: moderateScale(8),
+      paddingVertical: moderateScale(2),
+      borderRadius: moderateScale(10),
+    },
+    schemePillScroll: {
+      flexGrow: 0,
+      marginHorizontal: -moderateScale(20),
+    },
+    schemeCardsContainer: {
+      paddingHorizontal: moderateScale(20),
+      paddingVertical: moderateScale(4),
+      gap: moderateScale(12),
+    },
+    schemeCardTouch: {
+      width: moderateScale(185),
+    },
+    schemeCard: {
+      borderRadius: moderateScale(16),
+      padding: moderateScale(12),
+      minHeight: moderateScale(134),
+      borderWidth: 1.5,
+      justifyContent: 'space-between',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 6,
+      elevation: 3,
+    },
+    schemeCardActiveGlow: {
+      borderWidth: 2,
+      shadowColor: '#850111',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.35,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    schemeCardTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: moderateScale(6),
+    },
+    schemeMetalBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: moderateScale(4),
+      paddingHorizontal: moderateScale(7),
+      paddingVertical: moderateScale(2.5),
+      borderRadius: moderateScale(8),
+      borderWidth: 1,
+    },
+    schemeMetalBadgeText: {
+      fontSize: moderateScale(9.5),
+      fontWeight: '800',
+      letterSpacing: 0.4,
+    },
+    schemeBonusBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: moderateScale(3),
+      paddingHorizontal: moderateScale(6),
+      paddingVertical: moderateScale(2),
+      borderRadius: moderateScale(6),
+      backgroundColor: 'rgba(217, 119, 6, 0.12)',
+      borderWidth: 1,
+      borderColor: 'rgba(217, 119, 6, 0.3)',
+    },
+    schemeBonusBadgeActive: {
+      backgroundColor: 'rgba(255, 215, 0, 0.22)',
+      borderColor: 'rgba(255, 215, 0, 0.5)',
+    },
+    schemeBonusBadgeText: {
+      fontSize: moderateScale(8.5),
+      fontWeight: '800',
+      color: '#D97706',
+    },
+    schemeBonusBadgeTextActive: {
+      color: '#FFD700',
+    },
+    schemeRadioCircle: {
+      marginLeft: 'auto',
+    },
+    schemeCardMiddleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: moderateScale(10),
+      marginVertical: moderateScale(6),
+    },
+    schemeIconWrapper: {
+      width: moderateScale(40),
+      height: moderateScale(40),
+      borderRadius: moderateScale(20),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    schemeCoinImage: {
+      width: moderateScale(34),
+      height: moderateScale(34),
+    },
+    schemeNameWrapper: {
+      flex: 1,
+    },
+    schemeCardName: {
+      fontSize: moderateScale(13),
+      fontWeight: '800',
+      lineHeight: moderateScale(17),
+      letterSpacing: 0.2,
+    },
+    schemeCardBottomRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: moderateScale(6),
+    },
+    schemeInfoPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: moderateScale(4),
+      paddingHorizontal: moderateScale(7),
+      paddingVertical: moderateScale(3),
+      borderRadius: moderateScale(8),
+    },
+    schemeInfoPillText: {
+      fontSize: moderateScale(10.5),
+      fontWeight: '700',
+    },
+
+    /* Form Section Styles */
+    inputSection: {
+      marginBottom: moderateScale(18),
+    },
+    inputLabel: {
+      fontSize: moderateScale(14.5),
+      fontWeight: '600',
+      color: COLORS.darkGrey,
+      marginBottom: moderateScale(8),
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.background,
+      borderWidth: 1,
+      borderColor: '#EFEFEF',
+      borderRadius: moderateScale(14),
+      paddingHorizontal: moderateScale(16),
+      height: moderateScale(54),
+    },
+    textInput: {
+      flex: 1,
+      fontSize: moderateScale(15),
+      color: COLORS.darkGrey,
+      marginLeft: moderateScale(10),
+      paddingVertical: moderateScale(8),
+    },
+    inputError: {
+      borderColor: COLORS.error,
+    },
+    errorText: {
+      color: COLORS.error,
+      fontSize: moderateScale(12),
+      marginTop: moderateScale(4),
+      marginLeft: moderateScale(4),
+    },
+    amountHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: moderateScale(8),
+    },
+    limitText: {
+      fontSize: moderateScale(12),
+      color: theme.colors.textDark,
+      fontWeight: '600',
+    },
+    currencySymbol: {
+      fontSize: moderateScale(16),
+      fontWeight: '600',
+      color: COLORS.mediumGrey,
+      marginLeft: moderateScale(6),
+    },
+    goldWeightCard: {
+      borderRadius: moderateScale(16),
+      padding: moderateScale(14),
+      marginBottom: moderateScale(20),
+      borderWidth: 1,
+      borderColor: 'rgba(255, 215, 0, 0.3)',
+    },
+    goldWeightHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: moderateScale(6),
+    },
+    goldIconBg: {
+      width: moderateScale(28),
+      height: moderateScale(28),
+      borderRadius: moderateScale(14),
+      backgroundColor: 'rgba(255, 215, 0, 0.2)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: moderateScale(8),
+    },
+    goldWeightLabel: {
+      fontSize: moderateScale(13),
+      color: COLORS.mediumGrey,
+      marginLeft: moderateScale(6),
+    },
+    goldWeightValue: {
+      fontSize: moderateScale(22),
+      fontWeight: '800',
+      color: COLORS.text.dark,
+      letterSpacing: 0.5,
+    },
+    quickSelectSection: {
+      marginBottom: moderateScale(20),
+    },
+    quickSelectLabel: {
+      fontSize: moderateScale(14.5),
+      fontWeight: '600',
+      color: COLORS.darkGrey,
+      marginBottom: moderateScale(10),
+    },
+    quickSelectGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: moderateScale(8),
+    },
+    quickAmountButton: {
+      backgroundColor: theme.colors.bgWhiteLight,
+      paddingHorizontal: moderateScale(14),
+      paddingVertical: moderateScale(10),
+      borderRadius: moderateScale(24),
+      borderWidth: 1,
+      borderColor: '#E0E0E0',
+    },
+    quickAmountButtonActive: {
+      backgroundColor: theme.colors.primary + '15',
+      borderColor: theme.colors.primary,
+    },
+    quickAmountText: {
+      fontSize: moderateScale(13.5),
+      fontWeight: '500',
+      color: COLORS.mediumGrey,
+      textAlign: 'center',
+    },
+    quickAmountTextActive: {
+      color: theme.colors.textDark,
+      fontWeight: '700',
+    },
+    footer: {
+      paddingHorizontal: moderateScale(20),
+      paddingVertical: moderateScale(16),
+      borderTopWidth: 1,
+      borderTopColor: COLORS.lightGrey,
+      backgroundColor: COLORS.white,
+    },
+    submitButton: {
+      borderRadius: moderateScale(14),
+      overflow: 'hidden',
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    submitButtonDisabled: {
+      shadowOpacity: 0,
+      elevation: 0,
+    },
+    submitGradient: {
+      paddingVertical: moderateScale(15),
+      paddingHorizontal: moderateScale(24),
+      alignItems: 'center',
+    },
+    submitButtonText: {
+      fontSize: moderateScale(16),
+      fontWeight: '700',
+      color: COLORS.white,
+    },
+  });
+}
+
+var styles = getStyles(theme);
 
 export default function QuickJoinScreen() {
   const theme = useAppTheme();
@@ -327,15 +565,10 @@ export default function QuickJoinScreen() {
       const schemesData = await fetchSchemesWithCache();
       if (schemesData && schemesData.length > 0) {
         setSchemes(schemesData);
-        if (schemesData.length === 1) {
-          const firstScheme = schemesData[0];
-          setSelectedScheme(firstScheme);
-          fetchSchemeLimits(firstScheme.SCHEMEID);
-        } else {
-          // For multiple schemes, let user select.
-          // Do not fetch limits yet.
-          setSelectedScheme(null);
-        }
+        // Default select the first scheme so limits and form are immediately ready
+        const firstScheme = schemesData[0];
+        setSelectedScheme(firstScheme);
+        fetchSchemeLimits(firstScheme.SCHEMEID);
       } else {
         Alert.alert(t('error'), t('schemes.noSchemesAvailable'), [
           { text: 'OK', onPress: () => router.back() }
@@ -350,50 +583,32 @@ export default function QuickJoinScreen() {
         setGoldRate(Number(homeResponse.data.data.currentRates.gold_rate.replace(/,/g, '')));
       }
 
-      // Fetch Branches for investment creation (if not in store)
-      fetchBranches();
-
+      // Fetch Branches
+      const branchesData = await fetchBranchesWithCache();
+      if (branchesData && branchesData.length > 0) {
+        setBranches(branchesData);
+      }
     } catch (error) {
-      console.error("Error loading quick join data:", error);
-      Alert.alert(t('error'), "Failed to load data");
-      router.back();
+      logger.error('Error loading Quick Join data:', error);
+      Alert.alert(t('error'), t('failedToLoadData'), [
+        { text: 'OK', onPress: () => router.back() }
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchBranches = async () => {
+  const fetchSchemeLimits = async (schemeId: number) => {
     try {
-      const branchData = await fetchBranchesWithCache();
-      if (branchData) {
-        setBranches(branchData);
-      }
-    } catch (e) {
-      logger.error("Error fetching branches", e);
-    }
-  };
-
-  const fetchSchemeLimits = async (schemeId: string | number) => {
-    try {
-      const response = await api.get(`${ENDPOINTS.SCHEME_AMOUNT_LIMIT}/${schemeId}?userId=${user?.id || ''}`);
-      if (response.data?.data) {
-        const limitData = response.data.data;
-        // Find active limit Logic from home/index.tsx
-        const activeLimit = Array.isArray(limitData)
-          ? limitData.find((limit: any) => limit.is_active === 1)
-          : (limitData.is_active === 1 ? limitData : null);
-
-        if (activeLimit) {
-          setSchemeAmountLimits({
-            min_amount: parseFloat(activeLimit.min_amount) || 0,
-            max_amount: parseFloat(activeLimit.max_amount) || 0,
-            limit_type: activeLimit.limit_type,
-            quickselectedamount: activeLimit.quickselectedamount || [],
-          });
-        }
+      const response = await api.get(`${ENDPOINTS.SCHEME_AMOUNT_LIMIT}/${schemeId}`);
+      if (response.data && response.data.data) {
+        setSchemeAmountLimits(response.data.data);
+      } else {
+        setSchemeAmountLimits(null);
       }
     } catch (error) {
-      console.error("Error fetching limits:", error);
+      logger.warn('Failed to fetch scheme amount limits:', error);
+      setSchemeAmountLimits(null);
     }
   };
 
@@ -401,35 +616,29 @@ export default function QuickJoinScreen() {
     router.back();
   };
 
-  const validate = () => {
-    let newErrors = { name: '', amount: '' };
+  const validateForm = () => {
     let isValid = true;
+    const newErrors = { name: '', amount: '' };
 
     if (!formData.name.trim()) {
-      newErrors.name = t('enterName') || 'Name is required';
+      newErrors.name = t('nameRequired') || 'Name is required';
       isValid = false;
     }
 
-    if (!formData.amount) {
-      newErrors.amount = t('enterAmount') || 'Amount is required';
+    if (!formData.amount.trim()) {
+      newErrors.amount = t('amountRequired') || 'Amount is required';
       isValid = false;
     } else {
-      const amt = Number(formData.amount.replace(/,/g, ''));
-      const min = schemeAmountLimits?.min_amount ?? 0;
-      const max = schemeAmountLimits?.max_amount ?? 100000;
-      if (isNaN(amt) || amt <= 0) {
-        newErrors.amount = t('enterValidAmount') || 'Invalid amount';
+      const amountNum = Number(formData.amount);
+      if (isNaN(amountNum) || amountNum <= 0) {
+        newErrors.amount = t('validAmountRequired') || 'Enter a valid amount';
         isValid = false;
-      } else {
-        if (amt < min) {
-          newErrors.amount = schemeAmountLimits?.limit_type === 'user'
-            ? `User-specific minimum is ₹${min.toLocaleString('en-IN')}`
-            : `${t('min') || 'Min'} ₹${min.toLocaleString('en-IN')}`;
+      } else if (schemeAmountLimits) {
+        if (schemeAmountLimits.min_amount && amountNum < schemeAmountLimits.min_amount) {
+          newErrors.amount = `${t('minAmountIs') || 'Minimum amount is'} ₹${schemeAmountLimits.min_amount}`;
           isValid = false;
-        } else if (amt > max) {
-          newErrors.amount = schemeAmountLimits?.limit_type === 'user'
-            ? `User-specific maximum is ₹${max.toLocaleString('en-IN')}`
-            : `${t('max') || 'Max'} ₹${max.toLocaleString('en-IN')}`;
+        } else if (schemeAmountLimits.max_amount && amountNum > schemeAmountLimits.max_amount) {
+          newErrors.amount = `${t('maxAmountIs') || 'Maximum amount is'} ₹${schemeAmountLimits.max_amount}`;
           isValid = false;
         }
       }
@@ -440,63 +649,77 @@ export default function QuickJoinScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!validate() || !selectedScheme) return;
-    if (!user) {
-      Alert.alert(t('error') || "Error", t('pleaseLoginToContinue') || "Please login to continue");
+    if (!validateForm()) return;
+    if (!selectedScheme) {
+      Alert.alert(t('error'), t('selectSchemeToContinue') || "Please select a scheme");
       return;
     }
 
-    setIsSubmitting(true);
     try {
-      // Get Active Chit
-      const activeChit = selectedScheme.chits?.find((chit: any) => chit.ACTIVE === "Y");
-      if (!activeChit) {
-        Alert.alert(t('error') || "Error", t('noActivePaymentPlan') || "No active payment plan found");
-        return;
+      setIsSubmitting(true);
+
+      // Pre-check for chits
+      let activeChit = null;
+      if (selectedScheme.chits && selectedScheme.chits.length > 0) {
+        activeChit = selectedScheme.chits[0];
+      } else {
+        // Fallback fetch scheme detail
+        try {
+          const res = await api.get(`/schemes/${selectedScheme.SCHEMEID}`);
+          const fetched = res.data?.data || res.data;
+          if (fetched?.chits && fetched.chits.length > 0) {
+            activeChit = fetched.chits[0];
+          }
+        } catch (e) {
+          logger.warn("Could not fetch scheme chits:", e);
+        }
       }
 
-      // Branch ID
-      let branchId = user?.branch_id ? String(user.branch_id) : (branches.length > 0 ? String(branches[0].id) : null);
-      if (!branchId) {
-        // Try to use a dummy if strict validation not enforced locally
-        // But usually required
-        // We can check if user has associated branch?
-        // Using '1' as fallback or error?
-        // Alert.alert("Error", "Branch not loaded");
-        // return;
-        // Let's assume branch fetching works or user has default.
+      if (!activeChit || activeChit.CHITID == null) {
+        activeChit = {
+          CHITID: 0,
+          PAYMENT_FREQUENCY_ID: 1,
+          PAYMENT_FREQUENCY: 'monthly'
+        };
       }
 
-      const payload = {
-        userId: user.id || "",
+      // 1. Create Investment (Enroll)
+      const enrollPayload = {
+        userId: user?.id,
         schemeId: Number(selectedScheme.SCHEMEID),
-        chitId: activeChit.CHITID || null,
+        chitId: activeChit.CHITID,
         accountName: formData.name.trim(),
-        associated_branch: branchId || '1', // Fallback
-        payment_frequency_id: activeChit.PAYMENT_FREQUENCY_ID || null,
+        associated_branch: user?.branch_id || (branches.length > 0 ? branches[0].id : "1"),
+        payment_frequency_id: activeChit.PAYMENT_FREQUENCY_ID || 1,
       };
 
-      const response = await api.post(ENDPOINTS.INVESTMENTS, payload);
-      const data = response.data?.data?.data || response.data?.data || response.data;
-      const accountNo = data?.accountNo || data?.account_no;
-      const investmentId = data?.id || data?.investment_id;
+      const enrollRes = await api.post(ENDPOINTS.INVESTMENTS, enrollPayload);
+      const enrollData = enrollRes.data;
+
+      // Extract account details
+      const accountNo = enrollData?.data?.accountNo || enrollData?.data?.data?.accountNo || enrollData?.accountNo;
+      const investmentId = enrollData?.data?.id || enrollData?.data?.data?.id || enrollData?.id;
 
       if (!accountNo || !investmentId) {
-        throw new Error(t('failedToCreateInvestment') || "Failed to create investment (No Account No)");
+        throw new Error(enrollData?.message || "Failed to create scheme account");
       }
 
-      // Store Payment Session
-      const paymentSessionData = {
+      // Store payment session
+      const paymentSessionData: any = {
         amount: Number(formData.amount.replace(/,/g, "")),
         userDetails: {
-          ...payload,
-          name: formData.name, // ensure name is top level
+          userId: user?.id,
           accountname: formData.name.trim(),
-          mobile: String(user.mobile || ""),
-          email: user.email || "",
-          investmentId: investmentId,
+          name: formData.name.trim(),
+          mobile: user?.mobile,
+          email: user?.email,
+          accountNo: accountNo,
           accNo: accountNo,
-          schemeName: selectedScheme.SCHEMENAME,
+          investmentId: investmentId,
+          schemeId: selectedScheme.SCHEMEID,
+          chitId: activeChit.CHITID,
+          branchId: enrollPayload.associated_branch,
+          paymentFrequency: activeChit.PAYMENT_FREQUENCY || 'monthly',
           schemeType: selectedScheme.SCHEMETYPE || 'monthly',
           isRetryAttempt: false,
           source: "quick_join",
@@ -535,16 +758,23 @@ export default function QuickJoinScreen() {
     );
   }
 
-  // if (!selectedScheme) return null; // Removed check to allow selection UI
-
   return (
     <View style={styles.container}>
       <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={handleClose} />
       <View style={styles.modalContainer}>
+        {/* Grab Handle */}
+        <View style={styles.sheetHandle} />
+
+        {/* Header */}
         <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Text style={styles.title}>{t("quickJoin") || "Quick Join"}</Text>
-            <Text style={styles.subtitle}>{t("joinThisSchemeStartSaving") || "Join scheme and start saving"}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <View style={styles.headerIconCircle}>
+              <Ionicons name="flash" size={22} color="#850111" />
+            </View>
+            <View style={styles.headerContent}>
+              <Text style={styles.title}>{t("quickJoin") || "Quick Join"}</Text>
+              <Text style={styles.subtitle}>{t("joinThisSchemeStartSaving") || "Join scheme and start saving"}</Text>
+            </View>
           </View>
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <View style={styles.closeButtonContainer}>
@@ -562,30 +792,187 @@ export default function QuickJoinScreen() {
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Scheme Selector */}
-            {schemes.length > 1 && (
+            {/* Beautified Scheme Selector */}
+            {schemes.length > 0 && (
               <View style={styles.schemeSelectorContainer}>
-                <Text style={styles.schemeSelectorLabel}>{t("selectScheme") || "Select Scheme"}</Text>
+                <View style={styles.schemeSelectorHeader}>
+                  <Text style={styles.schemeSelectorLabel}>
+                    {schemes.length > 1
+                      ? (t("selectScheme") || "Select Scheme")
+                      : (t("selectedScheme") || "Selected Scheme")}
+                  </Text>
+                  <Text style={styles.schemeCountBadge}>
+                    {schemes.length}{" "}
+                    {schemes.length === 1
+                      ? (typeof t("scheme") === "string" ? t("scheme") : "Scheme")
+                      : (typeof t("schemes.title") === "string" ? t("schemes.title") : "Schemes")}
+                  </Text>
+                </View>
+
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   style={styles.schemePillScroll}
-                  contentContainerStyle={{ paddingRight: 20 }}
+                  contentContainerStyle={styles.schemeCardsContainer}
                 >
                   {schemes.map((scheme, index) => {
                     const isActive = selectedScheme?.SCHEMEID === scheme.SCHEMEID;
+                    const metal = getSchemeMetalType(scheme);
+                    const coinIcon = getSchemeDisplayImage(scheme, metal);
+                    const typeLabel = getSchemeTypeLabel(scheme);
+                    const slabs = getSchemeInterestSlabs(scheme);
+                    const isBonus = slabs.length > 0;
+                    const schemeName = getSchemeName(scheme);
+                    const duration = scheme.DURATION_MONTHS || scheme.DURATION || "11";
+                    const themeColors = getSchemeCardTheme(metal, isActive);
+
                     return (
                       <TouchableOpacity
                         key={scheme.SCHEMEID || index}
-                        style={[styles.schemePill, isActive && styles.schemePillActive]}
+                        activeOpacity={0.88}
                         onPress={() => {
+                          safeHaptic(Haptics.ImpactFeedbackStyle.Light);
                           setSelectedScheme(scheme);
                           fetchSchemeLimits(scheme.SCHEMEID);
                         }}
+                        style={styles.schemeCardTouch}
                       >
-                        <Text style={[styles.schemePillText, isActive && styles.schemePillTextActive]}>
-                          {getSchemeName(scheme)}
-                        </Text>
+                        <LinearGradient
+                          colors={themeColors.gradient}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={[
+                            styles.schemeCard,
+                            { borderColor: themeColors.borderColor },
+                            isActive && styles.schemeCardActiveGlow,
+                          ]}
+                        >
+                          {/* Top Row: Metal Badge + Bonus Badge + Radio Selection */}
+                          <View style={styles.schemeCardTopRow}>
+                            <View
+                              style={[
+                                styles.schemeMetalBadge,
+                                {
+                                  backgroundColor: themeColors.badgeBg,
+                                  borderColor: themeColors.badgeBorder,
+                                },
+                              ]}
+                            >
+                              <Ionicons
+                                name={
+                                  metal === "silver"
+                                    ? "disc-outline"
+                                    : metal === "diamond"
+                                    ? "diamond-outline"
+                                    : "sparkles"
+                                }
+                                size={11}
+                                color={themeColors.badgeText}
+                              />
+                              <Text
+                                style={[
+                                  styles.schemeMetalBadgeText,
+                                  { color: themeColors.badgeText },
+                                ]}
+                              >
+                                {metal.toUpperCase().replace("_", " ")}
+                              </Text>
+                            </View>
+
+                            {isBonus && (
+                              <View style={[styles.schemeBonusBadge, isActive && styles.schemeBonusBadgeActive]}>
+                                <Ionicons name="gift" size={10} color={isActive ? "#FFD700" : "#D97706"} />
+                                <Text style={[styles.schemeBonusBadgeText, isActive && styles.schemeBonusBadgeTextActive]}>
+                                  BONUS
+                                </Text>
+                              </View>
+                            )}
+
+                            <View style={styles.schemeRadioCircle}>
+                              <Ionicons
+                                name={isActive ? "checkmark-circle" : "ellipse-outline"}
+                                size={19}
+                                color={themeColors.radioColor}
+                              />
+                            </View>
+                          </View>
+
+                          {/* Middle Row: 3D Metal Icon & Scheme Name */}
+                          <View style={styles.schemeCardMiddleRow}>
+                            <View
+                              style={[
+                                styles.schemeIconWrapper,
+                                { backgroundColor: themeColors.iconGlow },
+                              ]}
+                            >
+                              <Image
+                                source={coinIcon}
+                                style={styles.schemeCoinImage}
+                                resizeMode="contain"
+                              />
+                            </View>
+                            <View style={styles.schemeNameWrapper}>
+                              <Text
+                                style={[
+                                  styles.schemeCardName,
+                                  { color: themeColors.titleColor },
+                                ]}
+                                numberOfLines={2}
+                              >
+                                {schemeName}
+                              </Text>
+                            </View>
+                          </View>
+
+                          {/* Bottom Row: Micro Badges (Duration & Type) */}
+                          <View style={styles.schemeCardBottomRow}>
+                            <View
+                              style={[
+                                styles.schemeInfoPill,
+                                { backgroundColor: themeColors.pillBg },
+                              ]}
+                            >
+                              <Ionicons
+                                name="calendar-outline"
+                                size={11}
+                                color={themeColors.pillText}
+                              />
+                              <Text
+                                style={[
+                                  styles.schemeInfoPillText,
+                                  { color: themeColors.pillText },
+                                ]}
+                              >
+                                {duration} {t("schemes.months") || "Months"}
+                              </Text>
+                            </View>
+
+                            <View
+                              style={[
+                                styles.schemeInfoPill,
+                                { backgroundColor: themeColors.pillBg },
+                              ]}
+                            >
+                              <Ionicons
+                                name={
+                                  typeLabel.toLowerCase() === "flexi"
+                                    ? "options-outline"
+                                    : "timer-outline"
+                                }
+                                size={11}
+                                color={themeColors.pillText}
+                              />
+                              <Text
+                                style={[
+                                  styles.schemeInfoPillText,
+                                  { color: themeColors.pillText },
+                                ]}
+                              >
+                                {typeLabel}
+                              </Text>
+                            </View>
+                          </View>
+                        </LinearGradient>
                       </TouchableOpacity>
                     );
                   })}
@@ -632,7 +1019,6 @@ export default function QuickJoinScreen() {
                         // Check if exceeding max amount
                         if (schemeAmountLimits && schemeAmountLimits.max_amount) {
                           if (Number(cleaned) > schemeAmountLimits.max_amount) {
-                            // Optionally show a toast or just ignore
                             return;
                           }
                         }
@@ -697,7 +1083,6 @@ export default function QuickJoinScreen() {
                 </View>
               </View>
             )}
-
 
             <View style={{ height: 100 }} />
           </ScrollView>

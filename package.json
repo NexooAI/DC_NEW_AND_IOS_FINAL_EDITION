@@ -111,6 +111,9 @@
     "react-test-renderer": "^19.1.0",
     "typescript": "~6.0.3"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "private": true,
   "supportedArchitectures": {
     "os": [

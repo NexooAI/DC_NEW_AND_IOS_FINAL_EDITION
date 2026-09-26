@@ -55,7 +55,7 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
     } else if (onStatementsPress) {
       onStatementsPress();
     } else {
-      router.push("/(app)/payment-history");
+      router.push({ pathname: "/(app)/payment-history", params: { from: "home" } });
     }
   };
 

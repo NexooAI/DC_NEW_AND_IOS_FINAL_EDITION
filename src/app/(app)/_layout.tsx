@@ -44,7 +44,8 @@ export default function AppLayout() {
     segments.includes("old_gold") ||
     segments.includes("notifications") ||
     segments.includes("savings") ||
-    segments.includes("payment-history");
+    segments.includes("payment-history") ||
+    segments.includes("gifts");
   const safeAreaBackgroundColor = isLightBarScreen ? (theme.colors.quaternary || "#F2E6D2") : theme.colors.textDark;
 
   return (
@@ -102,6 +103,26 @@ export default function AppLayout() {
               drawerLabel: "Lucky Draw",
               title: "Lucky Draw",
               drawerItemStyle: { display: 'none' } // Hide from drawer menu but keep as valid route
+            }}
+          />
+          <Drawer.Screen
+            name="payment-history"
+            options={{
+              lazy: true,
+              freezeOnBlur: false,
+              drawerLabel: "Payment History",
+              title: "Payment History",
+              drawerItemStyle: { display: 'none' }
+            }}
+          />
+          <Drawer.Screen
+            name="gifts"
+            options={{
+              lazy: true,
+              freezeOnBlur: false,
+              drawerLabel: "Gifts",
+              title: "My Gifts",
+              drawerItemStyle: { display: 'none' }
             }}
           />
         </Drawer>

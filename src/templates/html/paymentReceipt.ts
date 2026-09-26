@@ -4,6 +4,7 @@
  */
 
 import { theme } from '../../constants/theme';
+import { formatDateTime } from '../../utils/dateTimeUtils';
 
 export interface PaymentReceiptData {
     transactionId: string | number;
@@ -23,11 +24,15 @@ export interface PaymentReceiptData {
     rewardAmount?: number;
     rewardGoldGrams?: number;
     maturityDate?: string;
+    schemePlanTypeName?: string;
+    schemeType?: string | number;
     inversement?: {
         accountName: string;
         accountNo: string;
         schemeName: string;
         paymentFrequencyName?: string;
+        schemePlanTypeName?: string;
+        schemeType?: string | number;
         joiningDate: string;
         paymentStatus?: string;
         total_paid?: number;
@@ -37,6 +42,17 @@ export interface PaymentReceiptData {
     };
     logoBase64?: string;
 }
+
+export const getSchemePlanTypeName = (type: any): string => {
+    if (type === undefined || type === null || type === '') return 'Deposit';
+    const str = String(type).trim().toLowerCase();
+    if (str === '1' || str === 'fixed') return 'Fixed';
+    if (str === '2' || str === 'flexi') return 'Flexi';
+    if (str === '3' || str === 'hybrid') return 'Hybrid';
+    if (str === '4' || str === 'old_gold' || str === 'old gold') return 'Old Gold';
+    if (str === '5' || str === 'deposit' || str === 'one-time' || str.includes('deposit')) return 'Deposit';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+};
 
 export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => {
     const {
@@ -58,6 +74,9 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         logoBase64
     } = data;
 
+    const rawSchemeType = data.schemePlanTypeName || data.schemeType || inversement?.schemePlanTypeName || inversement?.schemeType || (paymentId === '5' || paymentId === '1' || paymentId === '2' || paymentId === '3' || paymentId === '4' ? paymentId : null);
+    const resolvedSchemeTypeName = getSchemePlanTypeName(rawSchemeType);
+
     // Get weight directly or fall back to 0
     let weight = Number(goldWeight || 0);
 
@@ -72,12 +91,8 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
     }
 
     const formattedDate = (val: string) => {
-        const parsed = new Date(val);
-        if (Number.isNaN(parsed.getTime())) return val;
-        return parsed.toLocaleDateString("en-GB", {
-            day: "2-digit", month: "short", year: "numeric",
-            hour: "2-digit", minute: "2-digit"
-        });
+        if (!val) return "";
+        return formatDateTime(val);
     };
 
     return `
@@ -287,8 +302,8 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
                 </tr>
                 ${data.orderId ? `<tr><th>Order ID</th><td>${data.orderId}</td></tr>` : ""}
                 <tr>
-                    <th>Payment Reference ID</th>
-                    <td>${paymentId}</td>
+                    <th>Scheme Type</th>
+                    <td><strong>${resolvedSchemeTypeName}</strong></td>
                 </tr>
                 <tr>
                     <th>Amount Paid</th>
@@ -305,8 +320,8 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
                 ${data.utrReference ? `<tr><th>Bank UTR Ref No</th><td>${data.utrReference}</td></tr>` : ""}
                 ${userMobile ? `<tr><th>Registered Mobile</th><td>${userMobile}</td></tr>` : ""}
                 ${userEmail ? `<tr><th>Registered Email</th><td>${userEmail}</td></tr>` : ""}
-                ${rewardAmount ? `<tr><th>Reward Amount Credited</th><td>₹${Number(rewardAmount).toLocaleString('en-IN')}</td></tr>` : ""}
-                ${rewardGoldGrams ? `<tr><th>Reward Gold Weight</th><td><span class="gold-badge">+${Number(rewardGoldGrams).toFixed(3)} grams</span></td></tr>` : ""}
+                ${(rewardAmount && Number(rewardAmount) > 0) ? `<tr><th>Bonus Reward Amount</th><td><strong style="color: #2e7d32;">+₹${Number(rewardAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td></tr>` : ""}
+                ${(rewardGoldGrams && Number(rewardGoldGrams) > 0) ? `<tr><th>Bonus Reward Gold</th><td><span class="gold-badge">+${Number(rewardGoldGrams).toFixed(4)} grams</span></td></tr>` : ""}
             </table>
 
             <!-- Investment Details Table -->
@@ -316,6 +331,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
                 <tr><th>Account Holder Name</th><td>${inversement.accountName}</td></tr>
                 <tr><th>Account Number</th><td><strong>${inversement.accountNo}</strong></td></tr>
                 <tr><th>Savings Scheme</th><td>${inversement.schemeName}</td></tr>
+                <tr><th>Scheme Type</th><td><strong>${resolvedSchemeTypeName}</strong></td></tr>
                 <tr><th>Payment Frequency</th><td>${inversement.paymentFrequencyName || "Monthly"}</td></tr>
                 <tr><th>Joining Date</th><td>${formattedDate(inversement.joiningDate)}</td></tr>
                 <tr><th>Payment Status</th><td><span style="color: #2e7d32; font-weight: bold;">${(inversement.paymentStatus && inversement.paymentStatus.toLowerCase() === 'charged') ? 'Paid' : (inversement.paymentStatus || 'Paid')}</span></td></tr>

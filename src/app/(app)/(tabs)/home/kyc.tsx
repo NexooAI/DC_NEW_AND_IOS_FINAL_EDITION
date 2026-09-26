@@ -334,7 +334,7 @@ export default function KycForm() {
       value ? new Date(value.split("/").reverse().join("-")) : null
     );
 
-    const handleDateChange = (event: any, date?: Date) => {
+    const handleValueChange = (event: any, date?: Date) => {
       if (date) {
         setSelectedDate(date);
         if (Platform.OS === "android") {
@@ -342,6 +342,10 @@ export default function KycForm() {
           onDateChange(formatDate(date));
         }
       }
+    };
+
+    const handleDismiss = () => {
+      setShowPicker(false);
     };
 
     const handleIosConfirmation = () => {
@@ -398,7 +402,9 @@ export default function KycForm() {
               value={selectedDate || new Date()}
               mode="date"
               display={Platform.OS === "ios" ? "inline" : "default"}
-              onChange={handleDateChange}
+              onValueChange={handleValueChange}
+              onDismiss={handleDismiss}
+              onNeutralButtonPress={handleDismiss}
               minimumDate={minDate}
               maximumDate={maxDate}
               themeVariant="light"
@@ -424,13 +430,27 @@ export default function KycForm() {
 
   const handleChange = (field: string, value: string) => {
     logger.log("handleChange", field, value);
+    if (field === "addressprooftype") {
+      const isDifferent = formData.addressprooftype !== value;
+      setFormData((prev) => ({
+        ...prev,
+        addressprooftype: value,
+        ...(isDifferent ? { idNumber: "" } : {}),
+      }));
+      setErrors((prev) => ({
+        ...prev,
+        addressprooftype: "",
+        ...(isDifferent ? { idNumber: "" } : {}),
+      }));
+      return;
+    }
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
     // Clear error for the field when the user starts typing/changing
     if (value) {
-      setErrors({ ...errors, [field]: "" });
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -533,13 +553,19 @@ export default function KycForm() {
         formData.addressprooftype === "aadhar" &&
         !/^\d{12}$/.test(formData.idNumber)
       ) {
-        newErrors.idNumber = "Aadhar number must be 12 digits";
+        newErrors.idNumber = "Aadhaar number must be exactly 12 digits";
       } else if (
         formData.addressprooftype === "pan" &&
         !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.idNumber)
       ) {
         newErrors.idNumber =
-          "PAN number must be in valid format (e.g., ABCDE1234F)";
+          "PAN number must be 5 letters, 4 numbers, and 1 letter (e.g., ABCDE1234F)";
+      } else if (
+        formData.addressprooftype === "voterid" &&
+        !/^[A-Z]{3}[0-9]{7}$/.test(formData.idNumber)
+      ) {
+        newErrors.idNumber =
+          "Voter ID must be 3 letters followed by 7 digits (e.g., ABC1234567)";
       }
     }
 
@@ -547,22 +573,88 @@ export default function KycForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Update the getPlaceholderText function with proper typing
+  // Get dynamic placeholder text per address proof type
   const getPlaceholderText = (idType: string): string => {
-    const placeholders: { [key: string]: string } = {
-      aadhar: "Enter your 12-digit Aadhar number",
-      pan: "Enter your PAN number (e.g., ABCDE1234F)",
-      voterid: "Enter your Voter ID number",
-    };
-    return placeholders[idType] || "Enter your ID number";
+    switch (idType) {
+      case "aadhar":
+        return "Enter 12-digit Aadhaar number";
+      case "pan":
+        return "e.g. ABCDE1234F";
+      case "voterid":
+        return "e.g. ABC1234567";
+      default:
+        return "Select Address Proof Type first";
+    }
   };
 
-  // Update the formatIdNumber function with proper typing
-  const formatIdNumber = (text: string, idType: string): string => {
-    return idType === "pan" ? text.toUpperCase() : text;
+  // Automatically adapt keyboard based on current character position
+  const getKeyboardType = (
+    idType: string,
+    value: string
+  ): "default" | "number-pad" => {
+    if (idType === "aadhar") {
+      return "number-pad";
+    }
+    if (idType === "pan") {
+      // PAN structure: 5 letters (0..4), 4 numbers (5..8), 1 letter (9)
+      if (value.length < 5) return "default";
+      if (value.length >= 5 && value.length < 9) return "number-pad";
+      return "default";
+    }
+    if (idType === "voterid") {
+      // Voter ID structure: 3 letters (0..2), 7 numbers (3..9)
+      if (value.length < 3) return "default";
+      return "number-pad";
+    }
+    return "default";
   };
 
-  // Update the getMaxLength function with proper typing
+  // Strictly filter and format ID number characters based on official format patterns
+  const formatIdNumber = (rawText: string, idType: string): string => {
+    if (!rawText) return "";
+    const upper = rawText.toUpperCase();
+
+    if (idType === "aadhar") {
+      // Digits only, max 12 digits
+      return upper.replace(/[^0-9]/g, "").slice(0, 12);
+    }
+
+    if (idType === "pan") {
+      // PAN format: 5 letters [A-Z], 4 digits [0-9], 1 letter [A-Z]
+      let result = "";
+      for (let i = 0; i < upper.length && result.length < 10; i++) {
+        const char = upper[i];
+        const pos = result.length;
+        if (pos < 5) {
+          if (/[A-Z]/.test(char)) result += char;
+        } else if (pos < 9) {
+          if (/[0-9]/.test(char)) result += char;
+        } else if (pos === 9) {
+          if (/[A-Z]/.test(char)) result += char;
+        }
+      }
+      return result;
+    }
+
+    if (idType === "voterid") {
+      // Voter ID format: 3 letters [A-Z], 7 digits [0-9]
+      let result = "";
+      for (let i = 0; i < upper.length && result.length < 10; i++) {
+        const char = upper[i];
+        const pos = result.length;
+        if (pos < 3) {
+          if (/[A-Z]/.test(char)) result += char;
+        } else {
+          if (/[0-9]/.test(char)) result += char;
+        }
+      }
+      return result;
+    }
+
+    return upper;
+  };
+
+  // Max length per proof type
   const getMaxLength = (idType: string): number => {
     const maxLengths: { [key: string]: number } = {
       aadhar: 12,
@@ -570,6 +662,36 @@ export default function KycForm() {
       voterid: 10,
     };
     return maxLengths[idType] || 20;
+  };
+
+  // Dynamic step-by-step guidance hint for user
+  const getIdFormatHint = (idType: string, value: string): string => {
+    if (!idType) return "";
+    if (idType === "aadhar") {
+      return `Format: 12 digits (${value.length}/12)`;
+    }
+    if (idType === "pan") {
+      if (value.length < 5) {
+        return `Step 1/3: Enter 5 letters (${value.length}/5) [e.g. ABCDE]`;
+      }
+      if (value.length < 9) {
+        return `Step 2/3: Enter 4 numbers (${value.length - 5}/4) [e.g. 1234]`;
+      }
+      if (value.length === 9) {
+        return `Step 3/3: Enter final 1 letter (9/10) [e.g. F]`;
+      }
+      return `✓ Valid format: 5 letters + 4 numbers + 1 letter (10/10)`;
+    }
+    if (idType === "voterid") {
+      if (value.length < 3) {
+        return `Step 1/2: Enter 3 letters (${value.length}/3) [e.g. ABC]`;
+      }
+      if (value.length < 10) {
+        return `Step 2/2: Enter 7 numbers (${value.length - 3}/7) [${value.length}/10]`;
+      }
+      return `✓ Valid format: 3 letters + 7 numbers (10/10)`;
+    }
+    return "";
   };
 
   const handleSubmit = async () => {
@@ -797,32 +919,46 @@ export default function KycForm() {
                   )}
                 </View>
                 <View style={styles.formGroup}>
-                  <Text style={styles.label}>ID Number</Text>
+                  <View style={styles.labelRow}>
+                    <Text style={styles.label}>ID Number</Text>
+                    {formData.addressprooftype ? (
+                      <Text style={styles.charCounter}>
+                        {formData.idNumber.length}/{getMaxLength(formData.addressprooftype)}
+                      </Text>
+                    ) : null}
+                  </View>
                   <TextInput
-                    style={styles.input}
+                    style={[
+                      styles.input,
+                      !formData.addressprooftype && styles.disabledInput,
+                    ]}
                     placeholderTextColor="gray"
                     placeholder={getPlaceholderText(
                       formData.addressprooftype
                     )}
                     value={formData.idNumber}
+                    editable={!!formData.addressprooftype}
                     onChangeText={(text) =>
                       handleChange(
                         "idNumber",
                         formatIdNumber(text, formData.addressprooftype)
                       )
                     }
-                    autoCapitalize={
-                      formData.addressprooftype === "pan"
-                        ? "characters"
-                        : "none"
-                    }
-                    keyboardType={
-                      formData.addressprooftype === "pan"
-                        ? "default"
-                        : "number-pad"
-                    }
+                    autoCapitalize="characters"
+                    keyboardType={getKeyboardType(
+                      formData.addressprooftype,
+                      formData.idNumber
+                    )}
                     maxLength={getMaxLength(formData.addressprooftype)}
                   />
+                  {formData.addressprooftype && !errors.idNumber ? (
+                    <Text style={styles.helpText}>
+                      {getIdFormatHint(
+                        formData.addressprooftype,
+                        formData.idNumber
+                      )}
+                    </Text>
+                  ) : null}
                   {errors.idNumber && (
                     <Text style={styles.errorText}>{errors.idNumber}</Text>
                   )}
@@ -830,7 +966,43 @@ export default function KycForm() {
 
                 <TouchableOpacity
                   style={styles.sectionContinueButton}
-                  onPress={() => setActiveSection('address')}
+                  onPress={() => {
+                    const idErrors: { [key: string]: string } = {};
+                    if (!formData.dob) {
+                      idErrors.dob = "Please select your date of birth";
+                    }
+                    if (!formData.addressprooftype) {
+                      idErrors.addressprooftype = "Please select an address proof type";
+                    } else if (!formData.idNumber) {
+                      idErrors.idNumber = "Please enter your ID number";
+                    } else {
+                      if (
+                        formData.addressprooftype === "aadhar" &&
+                        !/^\d{12}$/.test(formData.idNumber)
+                      ) {
+                        idErrors.idNumber = "Aadhaar number must be exactly 12 digits";
+                      } else if (
+                        formData.addressprooftype === "pan" &&
+                        !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.idNumber)
+                      ) {
+                        idErrors.idNumber =
+                          "PAN number must be 5 letters, 4 numbers, and 1 letter (e.g., ABCDE1234F)";
+                      } else if (
+                        formData.addressprooftype === "voterid" &&
+                        !/^[A-Z]{3}[0-9]{7}$/.test(formData.idNumber)
+                      ) {
+                        idErrors.idNumber =
+                          "Voter ID must be 3 letters followed by 7 digits (e.g., ABC1234567)";
+                      }
+                    }
+
+                    if (Object.keys(idErrors).length > 0) {
+                      setErrors((prev) => ({ ...prev, ...idErrors }));
+                      return;
+                    }
+
+                    setActiveSection('address');
+                  }}
                 >
                   <Text style={styles.sectionContinueButtonText}>Continue to Address</Text>
                   <Ionicons name="arrow-forward" size={18} color="#fff" />
@@ -1278,6 +1450,17 @@ function getStyles(theme: any) { return StyleSheet.create({
   },
   formGroup: {
     marginBottom: 16,
+  },
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  charCounter: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#888",
   },
   label: {
     fontSize: 15,

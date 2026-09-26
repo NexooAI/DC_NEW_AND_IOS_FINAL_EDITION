@@ -179,8 +179,6 @@ export default function PaymentWebView() {
       verificationTimerRef.current = null;
     }
 
-    useGlobalStore.getState().clearPaymentSession();
-
     console.log(`[PaymentWebView] Navigating to payment-failure. message: ${message}, status: ${status}`);
     logAppEvent("PAYMENT_WEBVIEW_FAILURE", {
       orderId: orderId,
@@ -196,16 +194,23 @@ export default function PaymentWebView() {
         message: message || "Payment Failed",
         orderId: orderId,
         txnId: txnIdValue,
-        amount: amount,
+        amount: amount || (params.amount as string) || "",
         status: status,
         type: type,
         userId: (params.userId as string) || user?.id || "",
         investmentId: String(userDetails?.investmentId || params.investmentId || ""),
+        userDetails: typeof params.userDetails === 'string' ? params.userDetails : JSON.stringify(userDetails || {}),
+        schemeName: schemeName || (params.schemeName as string) || "",
+        schemeId: (params.schemeId as string) || (userDetails?.schemeId as string) || "",
+        chitId: (params.chitId as string) || (userDetails?.chitId as string) || "",
+        schemeType: (params.schemeType as string) || (userDetails?.schemeType as string) || "",
+        savinsTypes: (params.savinsTypes as string) || (userDetails?.savinsTypes as string) || "",
+        source: (params.source as string) || "payment_retry",
       },
     };
 
     router.replace(failureParams);
-  }, [orderId, amount, type, userDetails, params.investmentId, params.userId, user?.id, router]);
+  }, [orderId, amount, type, userDetails, schemeName, params.schemeName, params.schemeId, params.chitId, params.schemeType, params.savinsTypes, params.source, params.userDetails, params.investmentId, params.userId, user?.id, router]);
 
   // Instant Verification Function (checks backend status with quick retries)
   const verifyPaymentStatus = useCallback(async (currentAttempt = 1, maxAttempts = 6) => {

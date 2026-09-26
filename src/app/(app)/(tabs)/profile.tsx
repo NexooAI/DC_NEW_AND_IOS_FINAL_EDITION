@@ -1040,7 +1040,7 @@ const ProfileScreen = () => {
                     {/* Payment History Button */}
                     <TouchableOpacity
                       style={styles.settingItem}
-                      onPress={() => router.push("/payment-history")}
+                      onPress={() => router.push({ pathname: "/(app)/payment-history", params: { from: "profile" } })}
                     >
                       <View
                         style={[styles.settingIcon, { backgroundColor: "#E8F5E9" }]}

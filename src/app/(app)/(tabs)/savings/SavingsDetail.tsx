@@ -48,10 +48,13 @@ import {
 } from "@/templates/html";
 import { Socket } from "socket.io-client";
 import { formatGoldWeight } from "@/utils/imageUtils";
+import { formatDate, formatDateTime } from "@/utils/dateTimeUtils";
 import { theme } from "@/constants/theme";
 import COLORS from "@/constants/colors";
 import { SkeletonSavingsDetailPage } from "@/components/SkeletonLoader";
 import { responsiveUtils } from "@/utils/responsiveUtils";
+import JoiningGiftBanner from "@/components/JoiningGiftBanner";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 
 import { logger } from "@/utils/logger";
 
@@ -115,8 +118,10 @@ const SavingsDetail = () => {
   const navigation = useNavigation();
   const params = useLocalSearchParams<any>();
   const { language, user } = useGlobalStore();
+  const { isVisible } = useAppVisibility();
   const [paymentHistrory, setPaymentHistrory] = useState<Transaction[]>([]);
   const [inversement, setInversement] = useState<any>();
+  const [giftDetails, setGiftDetails] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -241,8 +246,10 @@ const SavingsDetail = () => {
 
   const totalSelectedAmount = useMemo(() => {
     if (selectedPayments.length === 0) return 0;
-    return selectedPayments.length * Number(params.emiAmount);
-  }, [selectedPayments, params.emiAmount]);
+    const rawEmi = params.emiAmount ?? inversement?.chits?.monthlyInstallment ?? inversement?.installmentAmount ?? 0;
+    const emi = Number(rawEmi) || 0;
+    return selectedPayments.length * emi;
+  }, [selectedPayments, params.emiAmount, inversement]);
 
   const { displayGoldRate, displayGoldWeight } = useMemo(() => {
     if (!selectedTransaction) return { displayGoldRate: 0, displayGoldWeight: 0 };
@@ -274,13 +281,58 @@ const SavingsDetail = () => {
     }
   }, [params?.rewards]);
 
-  const totalAmountandRewards = useMemo(() => {
-    return Number(params?.totalPaid) + Number(rewardsData.reduce((acc: number, curr: any) => acc + curr.amount, 0));
-  }, [params?.totalPaid, rewardsData]);
+  const rewardsListFromInv = useMemo(() => {
+    if (Array.isArray(inversement?.rewardsList) && inversement.rewardsList.length > 0) {
+      return inversement.rewardsList;
+    }
+    const fromPayments = (paymentHistrory || [])
+      .map(p => (p as any).rewardsList || ((p as any).rewardAmount ? { amount: (p as any).rewardAmount, gold_grams: (p as any).rewardGoldGrams } : null))
+      .filter(Boolean);
+    if (fromPayments.length > 0) return fromPayments;
+    return rewardsData;
+  }, [inversement, paymentHistrory, rewardsData]);
 
-  const onlyTotalRewards = useMemo(() => {
-    return Number(rewardsData.reduce((acc: number, curr: any) => acc + curr.amount, 0));
-  }, [rewardsData]);
+  const totalPaidAmount = useMemo(() => {
+    const rawPaid = params?.totalPaid ?? inversement?.total_paid ?? inversement?.totalPaid ?? 0;
+    const num = Number(rawPaid);
+    return isNaN(num) ? 0 : num;
+  }, [params?.totalPaid, inversement]);
+
+  const totalRewardsAmount = useMemo(() => {
+    if (inversement?.totalBonusAmount !== undefined && Number(inversement.totalBonusAmount) > 0) {
+      return Number(inversement.totalBonusAmount);
+    }
+    if (inversement?.totalRewardAmount !== undefined && Number(inversement.totalRewardAmount) > 0) {
+      return Number(inversement.totalRewardAmount);
+    }
+    return rewardsListFromInv.reduce((acc: number, curr: any) => {
+      const val = Number(curr?.amount || curr?.interest_amount || 0);
+      return acc + (isNaN(val) ? 0 : val);
+    }, 0);
+  }, [inversement, rewardsListFromInv]);
+
+  const totalRewardsGold = useMemo(() => {
+    if (inversement?.totalBonusGold !== undefined && Number(inversement.totalBonusGold) > 0) {
+      return Number(inversement.totalBonusGold);
+    }
+    if (inversement?.totalRewardGoldGrams !== undefined && Number(inversement.totalRewardGoldGrams) > 0) {
+      return Number(inversement.totalRewardGoldGrams);
+    }
+    return rewardsListFromInv.reduce((acc: number, curr: any) => {
+      const val = Number(curr?.gold_grams || 0);
+      return acc + (isNaN(val) ? 0 : val);
+    }, 0);
+  }, [inversement, rewardsListFromInv]);
+
+  const hasBonusRewards = useMemo(() => {
+    return totalRewardsAmount > 0 || totalRewardsGold > 0 || inversement?.is_interest_enabled === true || inversement?.is_interest_enabled == 1;
+  }, [totalRewardsAmount, totalRewardsGold, inversement]);
+
+  const totalAmountandRewards = useMemo(() => {
+    return totalPaidAmount + totalRewardsAmount;
+  }, [totalPaidAmount, totalRewardsAmount]);
+
+  const onlyTotalRewards = totalRewardsAmount;
 
   const sanitizeFileName = (str: string) => str.replace(/[^a-zA-Z0-9]/g, "_");
 
@@ -289,13 +341,15 @@ const SavingsDetail = () => {
     transaction: Transaction,
     inversement: any
   ) => {
-    // Extract reward amount and gold grams from rewardsList
-    const rewardAmount = transaction.rewardsList?.amount
+    // Extract reward amount and gold grams from rewardsList or payment
+    const rewardAmount = (transaction as any).rewardAmount || (transaction.rewardsList?.amount
       ? Number(transaction.rewardsList.amount)
-      : undefined;
-    const rewardGoldGrams = transaction.rewardsList?.gold_grams
+      : undefined);
+    const rewardGoldGrams = (transaction as any).rewardGoldGrams || (transaction.rewardsList?.gold_grams
       ? Number(transaction.rewardsList.gold_grams)
-      : undefined;
+      : undefined);
+
+    const schemePlanTypeName = inversement?.schemePlanTypeName || params.schemePlanTypeName || schemesData?.schemePlanTypeName || params.scheme_plan_type_id || inversement?.schemeType;
 
     const receiptData: PaymentReceiptData = {
       transactionId: transaction.transactionId,
@@ -314,10 +368,12 @@ const SavingsDetail = () => {
       userEmail: user?.email,
       rewardAmount: rewardAmount,
       rewardGoldGrams: rewardGoldGrams,
+      schemePlanTypeName: schemePlanTypeName,
       maturityDate: params.maturityDate as string,
       inversement: {
         ...inversement,
         schemeName: params.schemeName || inversement?.schemeName,
+        schemePlanTypeName: schemePlanTypeName,
       },
     };
 
@@ -360,13 +416,15 @@ const SavingsDetail = () => {
     transaction: Transaction,
     inversement: any
   ) => {
-    // Extract reward amount and gold grams from rewardsList
-    const rewardAmount = transaction.rewardsList?.amount
+    // Extract reward amount and gold grams from rewardsList or payment
+    const rewardAmount = (transaction as any).rewardAmount || (transaction.rewardsList?.amount
       ? Number(transaction.rewardsList.amount)
-      : undefined;
-    const rewardGoldGrams = transaction.rewardsList?.gold_grams
+      : undefined);
+    const rewardGoldGrams = (transaction as any).rewardGoldGrams || (transaction.rewardsList?.gold_grams
       ? Number(transaction.rewardsList.gold_grams)
-      : undefined;
+      : undefined);
+
+    const schemePlanTypeName = inversement?.schemePlanTypeName || params.schemePlanTypeName || schemesData?.schemePlanTypeName || params.scheme_plan_type_id || inversement?.schemeType;
 
     const receiptData: PaymentReceiptData = {
       transactionId: transaction.transactionId,
@@ -385,10 +443,12 @@ const SavingsDetail = () => {
       userEmail: user?.email,
       rewardAmount: rewardAmount,
       rewardGoldGrams: rewardGoldGrams,
+      schemePlanTypeName: schemePlanTypeName,
       maturityDate: params.maturityDate as string,
       inversement: {
         ...inversement,
         schemeName: params.schemeName || inversement?.schemeName,
+        schemePlanTypeName: schemePlanTypeName,
       },
     };
 
@@ -432,7 +492,7 @@ const SavingsDetail = () => {
 
     let payload = {
       userId: user.id,
-      investmentId: params.id,
+      investmentId: params.id || params.investmentId || inversement?.id,
     };
 
     try {
@@ -531,16 +591,25 @@ const SavingsDetail = () => {
   }, []);
 
   const fetchTransactions = async () => {
+    const invId = params.id || params.investmentId;
+    if (!invId || invId === "undefined" || invId === "0") {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
-      const response = await api.get(`investments/${params.id}`, { skipLoading: true } as any);
-      if (response.data.data.paymentHistory) {
+      const response = await api.get(`investments/${invId}`, { skipLoading: true } as any);
+      if (response?.data?.data?.paymentHistory) {
         setPaymentHistrory(response.data.data.paymentHistory);
       }
-      if (response.data.data.paymentStatus) {
+      if (response?.data?.data?.paymentStatus) {
         setAdvancePayments(response.data.data.paymentStatus);
       }
-      if (response.data.data.investmentList) {
+      if (response?.data?.data?.investmentList) {
         setInversement(response.data.data.investmentList);
+      }
+      if (response?.data?.data?.giftDetails || response?.data?.data?.gift) {
+        setGiftDetails(response.data.data.giftDetails || response.data.data.gift);
       }
     } catch (error) {
       logger.error("Error fetching transactions:", error);
@@ -552,17 +621,19 @@ const SavingsDetail = () => {
 
   useEffect(() => {
     fetchTransactions();
-  }, [params.id]);
+  }, [params.id, params.investmentId]);
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     fetchTransactions();
-  }, []);
+  }, [params.id, params.investmentId]);
 
   const getProgressPercentage = () => {
-    const paid = Number(params.monthsPaid) || 0;
-    const total = Number(params.noOfIns) || 1;
-    return Math.min((paid / total) * 100, 100);
+    const rawPaid = params.monthsPaid ?? inversement?.lastInstallment ?? inversement?.monthsPaid ?? 0;
+    const paid = Number(rawPaid) || 0;
+    const rawTotal = params.noOfIns ?? inversement?.chits?.noOfInstallments ?? inversement?.noOfInstallments ?? 1;
+    const total = Number(rawTotal) || 1;
+    return Math.min(Math.max((paid / total) * 100, 0), 100);
   };
 
   const handleSelectPayment = (payment: any) => {
@@ -590,7 +661,7 @@ const SavingsDetail = () => {
 
     let payload = {
       userId: user.id,
-      investmentId: params.id,
+      investmentId: params.id || params.investmentId || inversement?.id,
     };
 
     try {
@@ -698,8 +769,10 @@ const SavingsDetail = () => {
   // New Component Renderers
 
   const renderHeroCard = () => {
-    const totalMonths = Number(params.noOfIns) || 12;
-    const monthsPaid = Number(params.monthsPaid) || 0;
+    const rawTotalMonths = params.noOfIns ?? inversement?.chits?.noOfInstallments ?? inversement?.noOfInstallments ?? 12;
+    const totalMonths = Number(rawTotalMonths) || 12;
+    const rawMonthsPaid = params.monthsPaid ?? inversement?.lastInstallment ?? inversement?.monthsPaid ?? 0;
+    const monthsPaid = Number(rawMonthsPaid) || 0;
     const progressPercent = getProgressPercentage();
     
     // SVG radial configuration
@@ -737,6 +810,10 @@ const SavingsDetail = () => {
       );
     }
 
+    const schemeNameDisplay = (params.schemeName || inversement?.schemeName || inversement?.chits?.name || "").toUpperCase();
+    const schemeCodeDisplay = params.schemeCode || inversement?.schemeCode || inversement?.chits?.code || "";
+    const goldWeightDisplay = params.goldWeight ?? inversement?.total_gold ?? inversement?.goldWeight ?? "0";
+
     return (
       <View style={styles.heroContainer}>
         <LinearGradient
@@ -748,18 +825,37 @@ const SavingsDetail = () => {
           <View style={[styles.heroBackground, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
             {/* Left Column: Stats */}
             <View style={{ flex: 1.2, paddingRight: 10 }}>
-              <Text style={styles.heroSchemeName} numberOfLines={1}>{(params.schemeName || "").toUpperCase()}</Text>
-              <Text style={[styles.heroSchemeCode, { fontSize: 12, marginBottom: 8 }]}>{params.schemeCode}</Text>
+              <Text style={styles.heroSchemeName} numberOfLines={1}>{schemeNameDisplay}</Text>
+              <Text style={[styles.heroSchemeCode, { fontSize: 12, marginBottom: 8 }]}>{schemeCodeDisplay}</Text>
               
               <View style={{ marginBottom: 6 }}>
                 <Text style={[styles.heroStatLabel, { fontSize: 10, marginBottom: 2 }]}>{translations.totalInvested}</Text>
-                <Text style={styles.heroStatValue}>₹{Number(totalAmountandRewards).toLocaleString()}</Text>
+                <Text style={styles.heroStatValue}>₹{Number(totalPaidAmount || 0).toLocaleString()}</Text>
               </View>
               
-              {schemesData?.schemeType?.toLowerCase() === "weight" && (
+              {(schemesData?.schemeType?.toLowerCase() === "weight" || inversement?.schemeType?.toLowerCase() === "weight") && (
                 <View>
                   <Text style={[styles.heroStatLabel, { fontSize: 10, marginBottom: 2 }]}>{translations.goldAccumulated}</Text>
-                  <Text style={[styles.heroStatValue, { fontSize: 16 }]}>{formatGoldWeight(parseFloat(params.goldWeight) || 0)}</Text>
+                  <Text style={[styles.heroStatValue, { fontSize: 16 }]}>
+                    {formatGoldWeight(parseFloat(goldWeightDisplay) || 0)}
+                  </Text>
+                </View>
+              )}
+
+              {hasBonusRewards && (totalRewardsAmount > 0 || totalRewardsGold > 0) && (
+                <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 8, padding: 6, marginTop: 6, borderWidth: 1, borderColor: 'rgba(255, 215, 0, 0.45)' }}>
+                  <Text style={{ color: '#FFD700', fontSize: 9.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Bonus Rewards
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                    <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>
+                      ₹{totalRewardsAmount.toLocaleString()}
+                    </Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>|</Text>
+                    <Text style={{ color: '#FFD700', fontSize: 12, fontWeight: 'bold' }}>
+                      +{totalRewardsGold.toFixed(4)} g
+                    </Text>
+                  </View>
                 </View>
               )}
             </View>
@@ -809,31 +905,39 @@ const SavingsDetail = () => {
     );
   };
 
-  const renderInfoGrid = () => {
-    const isFlexiOrHybrid = (schemesData?.paymentFrequencyName || params.paymentFrequency || "").toLowerCase().includes("flexi") ||
-      (schemesData?.paymentFrequencyName || params.paymentFrequency || "").toLowerCase().includes("hybrid") ||
-      (params.schemeName || "").toLowerCase().includes("flexi") ||
-      (params.schemeName || "").toLowerCase().includes("hybrid");
+  const renderGiftBanner = () => {
+    return <JoiningGiftBanner gift={giftDetails || inversement?.giftDetails || inversement?.gift} />;
+  };
 
-    const schemeTypeDisplay = isFlexiOrHybrid
-      ? (((schemesData?.paymentFrequencyName || params.paymentFrequency || "").toLowerCase().includes("hybrid") || (params.schemeName || "").toLowerCase().includes("hybrid")) ? "Hybrid" : "Flexi")
-      : (schemesData?.paymentFrequencyName || params.paymentFrequency || "Fixed");
+  const renderInfoGrid = () => {
+    const isDeposit = (schemesData?.schemePlanTypeName || params.schemePlanTypeName || inversement?.schemePlanTypeName || "").toLowerCase().includes("deposit") ||
+      (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("one-time") ||
+      String(params.scheme_plan_type_id) === "5" || String(inversement?.schemeType) === "5";
+
+    const isFlexiOrHybrid = (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("flexi") ||
+      (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("hybrid") ||
+      (params.schemeName || inversement?.schemeName || "").toLowerCase().includes("flexi") ||
+      (params.schemeName || inversement?.schemeName || "").toLowerCase().includes("hybrid");
+
+    const schemeTypeDisplay = isDeposit
+      ? "One-Time Deposit"
+      : (isFlexiOrHybrid
+          ? (((schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("hybrid") || (params.schemeName || inversement?.schemeName || "").toLowerCase().includes("hybrid")) ? "Hybrid" : "Flexi")
+          : (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "Fixed"));
 
     const getStartDate = () => {
       const rawDate = inversement?.start_date || inversement?.joiningDate || params.joiningDate;
       if (rawDate && rawDate !== "N/A" && rawDate !== "") {
-        try {
-          return new Date(rawDate).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          });
-        } catch (e) {
-          return rawDate;
-        }
+        return formatDate(rawDate);
       }
       return null;
     };
+
+    const rawEmi = params.emiAmount ?? inversement?.chits?.monthlyInstallment ?? inversement?.installmentAmount ?? 0;
+    const emiAmount = Number(rawEmi) || 0;
+    const dueDateValue = params.dueDate || inversement?.next_due_date || inversement?.nextDueDate;
+    const maturityDateValue = params.maturityDate || inversement?.maturity_date || inversement?.maturityDate || "N/A";
+    const accNoValue = params.accNo || params.accountNo || inversement?.account_no || inversement?.accountNo || "N/A";
 
     return (
       <View style={styles.sectionContainer}>
@@ -850,21 +954,21 @@ const SavingsDetail = () => {
             </View>
           </View>
 
-          {/* Monthly EMI (Only if not Flexi/Hybrid) */}
+          {/* Monthly EMI / Deposit Amount */}
           {!isFlexiOrHybrid && (
             <View style={styles.gridItem}>
               <View style={[styles.gridIcon, { backgroundColor: '#E8F5E9' }]}>
                 <Ionicons name="cash" size={20} color="#388E3C" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.gridLabel}>{translations.monthlyEMI}</Text>
-                <Text style={styles.gridValue} numberOfLines={1}>₹{Number(params.emiAmount).toLocaleString()}</Text>
+                <Text style={styles.gridLabel}>{isDeposit ? "Deposit Amount" : translations.monthlyEMI}</Text>
+                <Text style={styles.gridValue} numberOfLines={1}>₹{emiAmount.toLocaleString()}</Text>
               </View>
             </View>
           )}
 
           {/* Next Due Date */}
-          {params.dueDate && params.dueDate !== "N/A" && params.dueDate !== "" ? (
+          {dueDateValue && dueDateValue !== "N/A" && dueDateValue !== "" ? (
             <View style={styles.gridItem}>
               <View style={[styles.gridIcon, { backgroundColor: '#E0F7FA' }]}>
                 <Ionicons name="time" size={20} color="#00838F" />
@@ -872,17 +976,7 @@ const SavingsDetail = () => {
               <View style={{ flex: 1 }}>
                 <Text style={styles.gridLabel}>Next Due Date</Text>
                 <Text style={styles.gridValue} numberOfLines={1}>
-                  {(() => {
-                    const parsedDate = new Date(params.dueDate);
-                    if (isNaN(parsedDate.getTime())) {
-                      return params.dueDate;
-                    }
-                    return parsedDate.toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    });
-                  })()}
+                  {formatDate(dueDateValue)}
                 </Text>
               </View>
             </View>
@@ -908,7 +1002,7 @@ const SavingsDetail = () => {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.gridLabel}>{translations.maturityDate}</Text>
-              <Text style={styles.gridValue} numberOfLines={1}>{params.maturityDate}</Text>
+              <Text style={styles.gridValue} numberOfLines={1}>{maturityDateValue}</Text>
             </View>
           </View>
 
@@ -919,7 +1013,7 @@ const SavingsDetail = () => {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.gridLabel}>{translations.accountNo}</Text>
-              <Text style={styles.gridValue} numberOfLines={1}>{params.accNo}</Text>
+              <Text style={styles.gridValue} numberOfLines={1}>{accNoValue}</Text>
             </View>
           </View>
 
@@ -1051,11 +1145,7 @@ const SavingsDetail = () => {
                   <View style={styles.transactionHeader}>
                     <View>
                       <Text style={styles.transactionDate}>
-                        {new Date(txn.paymentDate).toLocaleDateString("en-GB", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        {formatDate(txn.paymentDate)}
                       </Text>
                       <View style={styles.metaRow}>
                         <Text style={styles.transactionMode}>{(txn.paymentMode || "NB").toUpperCase()}</Text>
@@ -1073,6 +1163,25 @@ const SavingsDetail = () => {
                       </View>
                     </View>
                   </View>
+                  {(() => {
+                    const rAmt = Number((txn as any).rewardAmount || txn.rewardsList?.amount || 0);
+                    const rGold = Number((txn as any).rewardGoldGrams || txn.rewardsList?.gold_grams || 0);
+                    if (rAmt > 0 || rGold > 0) {
+                      return (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FBF5E8', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginTop: 6, borderWidth: 0.5, borderColor: '#F2D492' }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Ionicons name="gift-outline" size={13} color="#B8860B" />
+                            <Text style={{ fontSize: 11, fontWeight: '700', color: '#B8860B' }}>Bonus Reward</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            {rAmt > 0 && <Text style={{ fontSize: 11, fontWeight: '700', color: '#2E7D32' }}>+₹{rAmt.toLocaleString()}</Text>}
+                            {rGold > 0 && <Text style={{ fontSize: 11, fontWeight: '700', color: '#B8860B' }}>({rGold.toFixed(4)} g)</Text>}
+                          </View>
+                        </View>
+                      );
+                    }
+                    return null;
+                  })()}
                   <View style={styles.transactionDivider} />
                   <View style={styles.transactionFooter}>
                     <Text style={styles.transactionId}>ID: {txn.transactionId}</Text>
@@ -1092,15 +1201,20 @@ const SavingsDetail = () => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        {/* Header */}
-        <View style={[styles.header, { paddingTop: 10 }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.textDark || "#850111"} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{translations.schemeDetails}</Text>
-          <View style={{ width: 40 }} />
-        </View>
+      {/* Header Container that includes the top safe area with quaternary color */}
+      <View style={{ backgroundColor: theme.colors.quaternary || '#F2E6D2', zIndex: 10 }}>
+        <SafeAreaView edges={['top']} style={{ backgroundColor: 'transparent' }}>
+          <View style={[styles.header, { paddingTop: Platform.OS === 'ios' ? 0 : 8 }]}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={theme.colors.textDark || "#850111"} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>{translations.schemeDetails}</Text>
+            <View style={{ width: 40 }} />
+          </View>
+        </SafeAreaView>
+      </View>
+
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
 
         {loading ? (
           <SkeletonSavingsDetailPage />
@@ -1111,6 +1225,7 @@ const SavingsDetail = () => {
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           >
             {renderHeroCard()}
+            {isVisible('showGifts') && renderGiftBanner()}
             {renderInfoGrid()}
             {renderTransactionHistory()}
             <View style={{ height: bottomPadding + 60 }} />
@@ -1179,13 +1294,7 @@ const SavingsDetail = () => {
                 <View style={styles.receiptRow}>
                   <Text style={styles.receiptLabel}>Date</Text>
                   <Text style={styles.receiptValue}>
-                    {new Date(selectedTransaction.paymentDate).toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {formatDateTime(selectedTransaction.paymentDate)}
                   </Text>
                 </View>
                 <View style={styles.receiptRow}>
@@ -1225,6 +1334,25 @@ const SavingsDetail = () => {
                     </View>
                   </>
                 )}
+                {(() => {
+                  const rAmt = Number((selectedTransaction as any).rewardAmount || selectedTransaction.rewardsList?.amount || 0);
+                  const rGold = Number((selectedTransaction as any).rewardGoldGrams || selectedTransaction.rewardsList?.gold_grams || 0);
+                  if (rAmt > 0 || rGold > 0) {
+                    return (
+                      <>
+                        <View style={styles.receiptRow}>
+                          <Text style={styles.receiptLabel}>Bonus Reward Amount</Text>
+                          <Text style={[styles.receiptValue, { color: '#2E7D32', fontWeight: 'bold' }]}>+₹{rAmt.toLocaleString()}</Text>
+                        </View>
+                        <View style={styles.receiptRow}>
+                          <Text style={styles.receiptLabel}>Bonus Reward Gold</Text>
+                          <Text style={[styles.receiptValue, { color: '#B8860B', fontWeight: 'bold' }]}>+{rGold.toFixed(4)} g</Text>
+                        </View>
+                      </>
+                    );
+                  }
+                  return null;
+                })()}
               </View>
 
               <View style={styles.modalActionRow}>
@@ -1266,8 +1394,8 @@ function getStyles(theme: any) { return StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingBottom: 10,
-    backgroundColor: theme.colors.quaternary,
+    paddingBottom: 12,
+    backgroundColor: theme.colors.quaternary || '#F2E6D2',
     zIndex: 10,
   },
   headerTitle: {

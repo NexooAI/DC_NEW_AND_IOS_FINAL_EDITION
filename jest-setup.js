@@ -107,6 +107,7 @@ jest.mock('@expo/vector-icons', () => {
         MaterialCommunityIcons: View,
         Feather: View,
         FontAwesome: View,
+        FontAwesome5: View,
         MaterialIcons: View, // Specifically added for MenuNavigation
     };
 });

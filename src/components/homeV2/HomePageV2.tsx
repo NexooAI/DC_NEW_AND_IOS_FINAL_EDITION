@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   ScrollView,
@@ -15,9 +15,12 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import useGlobalStore, { useAppTheme } from "@/store/global.store";
 import StatusView from "@/components/StatusView";
+import { resolveRateChange, syncRateHistory } from "@/utils/rateComparison";
 
 // Home V2 Modular Components
 import HeaderV2 from "./HeaderV2";
+import FlashNewsV2 from "./FlashNewsV2";
+import KycPendingActionCardV2 from "./KycPendingActionCardV2";
 import LiveRatesCardV2 from "./LiveRatesCardV2";
 import StoriesListV2 from "./StoriesListV2";
 import BannerSliderV2 from "./BannerSliderV2";
@@ -36,6 +39,9 @@ export interface HomePageV2Props {
   onRefresh?: () => void;
   totalGoldSavings?: number;
   totalAmount?: number;
+  kycStatus?: boolean | null;
+  isKycLoading?: boolean;
+  flashNews?: string[];
 }
 
 export const HomePageV2: React.FC<HomePageV2Props> = ({
@@ -46,6 +52,9 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
   onRefresh,
   totalGoldSavings = 0,
   totalAmount = 0,
+  kycStatus = null,
+  isKycLoading = false,
+  flashNews = [],
 }) => {
   const router = useRouter();
   const { t } = useTranslation();
@@ -74,16 +83,198 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
     return isVisible(fallbackKey as any);
   };
 
-  // Extract Rates
+  // Extract Flash News messages
+  const showFlashNews = checkVisible("showV2FlashNews", "showFlashnews");
+  const flashNewsMessages = useMemo(() => {
+    if (flashNews && flashNews.length > 0) return flashNews;
+    const raw = homeData?.data?.flashNews;
+    if (Array.isArray(raw)) {
+      return raw
+        .map((item: any) =>
+          typeof item === "string" ? item : item?.title || item?.description || ""
+        )
+        .filter(Boolean);
+    }
+    return [];
+  }, [flashNews, homeData?.data?.flashNews]);
+
+  // Determine if KYC is pending
+  const isKycPending = useMemo(() => {
+    if (isKycLoading) return false;
+    if (kycStatus === false) return true;
+    if (kycStatus === true) return false;
+    // Fallback to homeData pre-fetched KYC status
+    const kycData = homeData?.data?.kycStatus;
+    if (kycData) {
+      const status = kycData.kyc_status;
+      const hasData = kycData.data;
+      if (status === "Completed" || hasData) return false;
+      return true;
+    }
+    return false;
+  }, [kycStatus, isKycLoading, homeData?.data?.kycStatus]);
+
+  // Default section sequence (pendingAction is placed at the top of content)
+  const DEFAULT_V2_SECTIONS = [
+    "pendingAction",
+    "liveRates",
+    "stories",
+    "posters",
+    "quickActions",
+    "popularSchemes",
+    "savings",
+    "socialMedia",
+    "supportCard",
+    "liveChat",
+  ];
+
+  // Dynamic section order based on admin configuration
+  const sectionsOrder = useMemo(() => {
+    const rawOrder = visibleData?.homeV2SectionsOrder;
+    if (!rawOrder) return DEFAULT_V2_SECTIONS;
+    const parsed = rawOrder
+      .split(",")
+      .map((s: string) => s.trim())
+      .filter(Boolean);
+    // Ensure pendingAction is always evaluated at top if not explicitly placed
+    if (!parsed.includes("pendingAction")) {
+      parsed.unshift("pendingAction");
+    }
+    // Append any default sections not present in custom order
+    DEFAULT_V2_SECTIONS.forEach((s) => {
+      if (!parsed.includes(s)) {
+        parsed.push(s);
+      }
+    });
+    return parsed;
+  }, [visibleData?.homeV2SectionsOrder]);
+
+  // Extract Rates & Rate Comparison
+  const currentRates = homeData?.data?.currentRates;
   const goldRate =
-    homeData?.data?.currentRates?.gold_rate ||
-    homeData?.data?.currentRates?.gold_rate_22 ||
+    currentRates?.gold_rate ||
+    currentRates?.gold_rate_22 ||
     "6,485";
-  const silverRate = homeData?.data?.currentRates?.silver_rate || "78.50";
+  const silverRate = currentRates?.silver_rate || "78.50";
   const updatedAt =
-    homeData?.data?.currentRates?.updated_at ||
-    homeData?.data?.currentRates?.created_at ||
-    homeData?.data?.currentRates?.date;
+    currentRates?.updated_at ||
+    currentRates?.created_at ||
+    currentRates?.date;
+
+  // Track cached previous rates from local storage
+  const [cachedPrevRates, setCachedPrevRates] = useState<{
+    previousGold: number | null;
+    previousSilver: number | null;
+  }>({ previousGold: null, previousSilver: null });
+
+  useEffect(() => {
+    if (goldRate && silverRate) {
+      syncRateHistory(goldRate, silverRate, updatedAt).then((prev) => {
+        if (prev.previousGold !== null || prev.previousSilver !== null) {
+          setCachedPrevRates(prev);
+        }
+      });
+    }
+  }, [goldRate, silverRate, updatedAt]);
+
+  // Accurately resolve change comparing today vs yesterday rate without fake defaults
+  const goldChange = useMemo(() => {
+    return resolveRateChange(
+      goldRate,
+      currentRates?.gold_change,
+      currentRates?.previous_gold_rate,
+      cachedPrevRates.previousGold
+    );
+  }, [goldRate, currentRates?.gold_change, currentRates?.previous_gold_rate, cachedPrevRates.previousGold]);
+
+  const silverChange = useMemo(() => {
+    return resolveRateChange(
+      silverRate,
+      currentRates?.silver_change,
+      currentRates?.previous_silver_rate,
+      cachedPrevRates.previousSilver
+    );
+  }, [silverRate, currentRates?.silver_change, currentRates?.previous_silver_rate, cachedPrevRates.previousSilver]);
+
+  // Render individual section dynamically
+  const renderSection = (sectionId: string) => {
+    switch (sectionId) {
+      case "pendingAction":
+        return isKycPending ? (
+          <KycPendingActionCardV2 key="pendingAction" />
+        ) : null;
+
+      case "liveRates":
+        return checkVisible("showV2LiveRates", "showGoldRate") ? (
+          <LiveRatesCardV2
+            key="liveRates"
+            goldRate={goldRate}
+            silverRate={silverRate}
+            goldChange={goldChange}
+            silverChange={silverChange}
+            goldPurity="22K"
+            updatedAt={updatedAt}
+          />
+        ) : null;
+
+      case "stories":
+        return checkVisible("showV2Stories", "showCollection") ? (
+          <StoriesListV2
+            key="stories"
+            collections={collectionsData}
+            onStoryPress={handleStoryPress}
+          />
+        ) : null;
+
+      case "posters":
+        return checkVisible("showV2Poster", "showPoster") ? (
+          <BannerSliderV2 key="posters" banners={sliderImages} />
+        ) : null;
+
+      case "quickActions":
+        return checkVisible("showV2QuickActions", "showCustomerCard") ? (
+          <QuickActionsV2 key="quickActions" />
+        ) : null;
+
+      case "popularSchemes":
+        return checkVisible("showV2PopularSchemes", "showSchemes") ? (
+          <PopularSchemesV2
+            key="popularSchemes"
+            schemes={homeData?.data?.schemes}
+          />
+        ) : null;
+
+      case "savings":
+        return checkVisible("showV2Savings", "showCustomerCard") ? (
+          <YourSavingsCardV2
+            key="savings"
+            totalAmount={totalAmount ?? 0}
+            totalGoldGrams={totalGoldSavings}
+          />
+        ) : null;
+
+      case "socialMedia":
+        return checkVisible("showV2SocialMedia", "showSocialMedia") ? (
+          <ConnectWithUsV2
+            key="socialMedia"
+            socialMediaUrls={homeData?.data?.socialmedia}
+          />
+        ) : null;
+
+      case "supportCard":
+        return checkVisible("showV2SupportCard", "showSupportCard") ? (
+          <SupportCardV2 key="supportCard" />
+        ) : null;
+
+      case "liveChat":
+        return checkVisible("showV2LiveChatBox", "showLiveChatBox") ? (
+          <ChatCardV2 key="liveChat" />
+        ) : null;
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -91,6 +282,11 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
 
       {/* 1. Header (Always visible) */}
       <HeaderV2 />
+
+      {/* 2. Flash News Marquee Ticker (Right below Header if enabled & has messages) */}
+      {showFlashNews && flashNewsMessages.length > 0 && (
+        <FlashNewsV2 messages={flashNewsMessages} />
+      )}
 
       <ScrollView
         style={styles.scrollView}
@@ -105,63 +301,8 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
           />
         }
       >
-        {/* 2. Live Rates Section */}
-        {checkVisible("showV2LiveRates", "showGoldRate") && (
-          <LiveRatesCardV2
-            goldRate={goldRate}
-            silverRate={silverRate}
-            goldChange="+12"
-            silverChange="+0.50"
-            goldPurity="22K"
-            updatedAt={updatedAt}
-          />
-        )}
-
-        {/* 3. Status / Updates (Stories) Section */}
-        {checkVisible("showV2Stories", "showCollection") && (
-          <StoriesListV2
-            collections={collectionsData}
-            onStoryPress={handleStoryPress}
-          />
-        )}
-
-        {/* 4. Banner / Posters Section */}
-        {checkVisible("showV2Poster", "showPoster") && (
-          <BannerSliderV2 banners={sliderImages} />
-        )}
-
-        {/* 5. Quick Actions Section */}
-        {checkVisible("showV2QuickActions", "showCustomerCard") && (
-          <QuickActionsV2 />
-        )}
-
-        {/* 6. Popular Schemes Section */}
-        {checkVisible("showV2PopularSchemes", "showSchemes") && (
-          <PopularSchemesV2 schemes={homeData?.data?.schemes} />
-        )}
-
-        {/* 7. Your Savings / Our Savings Section */}
-        {checkVisible("showV2Savings", "showCustomerCard") && (
-          <YourSavingsCardV2
-            totalAmount={totalAmount ?? 0}
-            totalGoldGrams={totalGoldSavings}
-          />
-        )}
-
-        {/* 8. Social Media (Connect With Us) Section */}
-        {checkVisible("showV2SocialMedia", "showSocialMedia") && (
-          <ConnectWithUsV2 socialMediaUrls={homeData?.data?.socialmedia} />
-        )}
-
-        {/* 9. Support Card (Need Help?) Section */}
-        {checkVisible("showV2SupportCard", "showSupportCard") && (
-          <SupportCardV2 />
-        )}
-
-        {/* 10. Chat Card (Chat With Us) Section */}
-        {checkVisible("showV2LiveChatBox", "showLiveChatBox") && (
-          <ChatCardV2 />
-        )}
+        {/* Dynamic V2 Sections rendered in configured order (Pending Action, Live Rates, etc.) */}
+        {sectionsOrder.map((sectionId: string) => renderSection(sectionId))}
 
         {/* Powered By Footer */}
         <View style={styles.poweredByContainer}>

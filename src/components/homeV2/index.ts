@@ -1,4 +1,6 @@
 export { HeaderV2 } from "./HeaderV2";
+export { FlashNewsV2 } from "./FlashNewsV2";
+export { KycPendingActionCardV2 } from "./KycPendingActionCardV2";
 export { LiveRatesCardV2 } from "./LiveRatesCardV2";
 export { StoriesListV2 } from "./StoriesListV2";
 export { BannerSliderV2 } from "./BannerSliderV2";

@@ -62,7 +62,7 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
         />
         <View style={styles.brandTextContainer}>
           <Text style={[styles.brandTitle, { color: theme.colors.primary }]} numberOfLines={1}>
-            {appConfig.constants.customerName || "SRI GANAPATHY JEWEL CITY"}
+            {appConfig.constants.customerName || "Kanisaa Jewellery"}
           </Text>
           <Text style={styles.brandTagline}>Generations of Trust</Text>
         </View>

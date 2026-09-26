@@ -65,11 +65,6 @@ export default function PaymentFailure() {
           router.replace("/(app)/bill_payment");
         } else if (type === "booking" || type === "advance_booking") {
           router.replace("/(tabs)/home/BookingHistory");
-        } else if (type === "scheme" && investmentId && investmentId !== "0" && investmentId !== "undefined") {
-          router.replace({
-            pathname: "/(tabs)/savings/SavingsDetail",
-            params: { investmentId }
-          });
         } else {
           router.replace("/(tabs)/home");
         }
@@ -82,7 +77,7 @@ export default function PaymentFailure() {
         setTabVisibility(true);
         backHandler.remove();
       };
-    }, [setTabVisibility, router, isBillPayment, type, investmentId])
+    }, [setTabVisibility, router, isBillPayment, type])
   );
 
   // Log payment failure data when component mounts
@@ -163,24 +158,7 @@ export default function PaymentFailure() {
   };
 
   const handleRetryPress = () => {
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      if (isBillPayment) {
-        router.replace("/(app)/bill_payment");
-      } else if (type === "booking" || type === "advance_booking") {
-        router.replace("/(tabs)/home/BookingHistory");
-      } else if (type === "scheme" && investmentId && investmentId !== "0" && investmentId !== "undefined") {
-        router.replace({
-          pathname: "/(tabs)/savings/SavingsDetail",
-          params: { investmentId }
-        });
-      } else {
-        router.replace("/(tabs)/home");
-      }
-    });
+    handleRetry();
   };
 
   const handleCopy = async (text: string, label: string) => {
@@ -215,11 +193,6 @@ export default function PaymentFailure() {
         router.replace("/(app)/bill_payment");
       } else if (type === "booking" || type === "advance_booking") {
         router.replace("/(tabs)/home/BookingHistory");
-      } else if (type === "scheme" && investmentId && investmentId !== "0" && investmentId !== "undefined") {
-        router.replace({
-          pathname: "/(tabs)/savings/SavingsDetail",
-          params: { investmentId }
-        });
       } else {
         router.replace("/(tabs)/home");
       }
@@ -231,71 +204,99 @@ export default function PaymentFailure() {
       useNativeDriver: true,
     }).start(() => {
       try {
-        // Get payment session from global store
+        // 1. Get payment session from global store
         const paymentSession = useGlobalStore.getState().getCurrentPaymentSession();
 
-        if (paymentSession?.userDetails) {
-          logger.log("Retrying payment - using payment session from global store");
+        // 2. Extract userDetails from session or route params
+        let userDetails = paymentSession?.userDetails as any;
+        if (!userDetails && params.userDetails) {
+          try {
+            userDetails = typeof params.userDetails === "string" ? JSON.parse(params.userDetails) : params.userDetails;
+          } catch (e) {
+            logger.error("Error parsing params.userDetails in handleRetry:", e);
+          }
+        }
 
-          // Prepare userDetails for navigation (exclude orderId for retry)
+        const retryAmount = String(paymentSession?.amount || params.amount || userDetails?.amount || 0);
+
+        if (userDetails || params.schemeId || params.chitId || (investmentId && investmentId !== "0")) {
+          logger.log("Retrying payment - preparing navigation to paymentNewOverView", {
+            hasSession: !!paymentSession,
+            hasUserDetails: !!userDetails,
+            amount: retryAmount,
+          });
+
+          // Prepare clean userDetails object for retry (new orderId will be created)
           const userDetailsForNav = {
-            ...paymentSession.userDetails,
-            amount: paymentSession.amount || params.amount,
-            // Remove orderId as we'll get a new one
+            ...(userDetails || {}),
+            amount: retryAmount,
             orderId: undefined,
           };
 
-          // Prepare navigation params with fallbacks
+          if (!userDetailsForNav.userId && userId) {
+            userDetailsForNav.userId = userId;
+          }
+          if (!userDetailsForNav.investmentId && investmentId && investmentId !== "0" && investmentId !== "undefined") {
+            userDetailsForNav.investmentId = investmentId;
+          }
+
           const navigationParams: any = {
             pathname: "/(tabs)/home/paymentNewOverView",
             params: {
-              amount: String(paymentSession.amount || params.amount || 0),
+              amount: retryAmount,
               userDetails: JSON.stringify(userDetailsForNav),
+              source: "payment_retry",
             },
           };
 
-          // Add optional params only if they exist
-          const userDetails = paymentSession.userDetails as any; // Type assertion for additional fields
+          const schemeId = userDetailsForNav.schemeId || params.schemeId;
+          if (schemeId) navigationParams.params.schemeId = String(schemeId);
 
-          if (userDetails.schemeId) {
-            navigationParams.params.schemeId = String(userDetails.schemeId);
-          }
-          if (userDetails.chitId) {
-            navigationParams.params.chitId = String(userDetails.chitId);
-          }
-          if (userDetails.paymentFrequency) {
-            navigationParams.params.paymentFrequency = userDetails.paymentFrequency;
-          }
-          if (userDetails.schemeType) {
-            navigationParams.params.schemeType = userDetails.schemeType;
-          }
-          if (userDetails.noOfIns) {
-            navigationParams.params.noOfIns = String(userDetails.noOfIns);
-          }
-          if (userDetails.totalPaid) {
-            navigationParams.params.totalPaid = String(userDetails.totalPaid);
-          }
-          if (userDetails.paidPaymentCount) {
-            navigationParams.params.paidPaymentCount = String(userDetails.paidPaymentCount);
-          }
-          if (userDetails.maturityDate) {
-            navigationParams.params.maturityDate = String(userDetails.maturityDate);
-          }
-          if (userDetails.joiningDate) {
-            navigationParams.params.joiningDate = String(userDetails.joiningDate);
-          }
-          if (userDetails.schemeName) {
-            navigationParams.params.schemeName = String(userDetails.schemeName);
-          }
-          navigationParams.params.source = userDetails.source || "payment_retry";
+          const chitId = userDetailsForNav.chitId || params.chitId;
+          if (chitId) navigationParams.params.chitId = String(chitId);
 
-          // Use runAfterInteractions to ensure UI is ready before navigation
+          const paymentFrequency = userDetailsForNav.paymentFrequency || params.paymentFrequency;
+          if (paymentFrequency) navigationParams.params.paymentFrequency = String(paymentFrequency);
+
+          const schemeType = userDetailsForNav.schemeType || params.schemeType;
+          if (schemeType) navigationParams.params.schemeType = String(schemeType);
+
+          const savinsTypes = userDetailsForNav.savinsTypes || params.savinsTypes;
+          if (savinsTypes) navigationParams.params.savinsTypes = String(savinsTypes);
+
+          const schemeName = userDetailsForNav.schemeName || params.schemeName;
+          if (schemeName) navigationParams.params.schemeName = String(schemeName);
+
+          const noOfIns = userDetailsForNav.noOfIns || params.noOfIns;
+          if (noOfIns) navigationParams.params.noOfIns = String(noOfIns);
+
+          const totalPaid = userDetailsForNav.totalPaid || params.totalPaid;
+          if (totalPaid) navigationParams.params.totalPaid = String(totalPaid);
+
+          const paidPaymentCount = userDetailsForNav.paidPaymentCount ?? params.paidPaymentCount;
+          if (paidPaymentCount !== undefined && paidPaymentCount !== null) {
+            navigationParams.params.paidPaymentCount = String(paidPaymentCount);
+          }
+
+          const maturityDate = userDetailsForNav.maturityDate || params.maturityDate;
+          if (maturityDate) navigationParams.params.maturityDate = String(maturityDate);
+
+          const joiningDate = userDetailsForNav.joiningDate || params.joiningDate;
+          if (joiningDate) navigationParams.params.joiningDate = String(joiningDate);
+
+          const goldWeight = userDetailsForNav.goldWeight || params.goldWeight;
+          if (goldWeight) navigationParams.params.goldWeight = String(goldWeight);
+
+          const accNo = userDetailsForNav.accNo || params.accNo;
+          if (accNo) navigationParams.params.accNo = String(accNo);
+
           runAfterInteractions(() => {
             try {
               router.replace(navigationParams);
               logger.log("Navigated to paymentNewOverView for retry", {
                 amount: navigationParams.params.amount,
-                hasUserDetails: !!navigationParams.params.userDetails,
+                schemeId: navigationParams.params.schemeId,
+                chitId: navigationParams.params.chitId,
               });
             } catch (navError) {
               logger.error("Error navigating to paymentNewOverView:", navError);
@@ -303,8 +304,7 @@ export default function PaymentFailure() {
             }
           });
         } else {
-          // No payment session found, try to navigate back to payment overview fallback
-          logger.warn("No payment session found for retry, using fallback navigation");
+          logger.warn("Insufficient data for retry, using fallback navigation");
           handleRetryPressFallback();
         }
       } catch (error) {

@@ -89,6 +89,18 @@ interface Scheme {
   SCHEME_PLAN_TYPE_ID?: number | null | undefined;
 }
 
+export const checkIsDeposit = (scheme: Scheme | null | undefined): boolean => {
+  if (!scheme) return false;
+  if (
+    String(scheme.scheme_plan_type_id) === "5" ||
+    String(scheme.SCHEME_PLAN_TYPE_ID) === "5"
+  ) {
+    return true;
+  }
+  const val = (scheme.SCHEMETYPE || scheme.INS_TYPE || "").toLowerCase();
+  return val.includes("deposit") || val.includes("one-time");
+};
+
 interface DynamicSchemeCardProps {
   onJoinPress?: (scheme: Scheme) => void;
   onInfoPress?: (scheme: Scheme) => void;
@@ -484,6 +496,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
     );
   };
 
+
   const getCardGradient = (schemeId: number | null | undefined) => {
     if (schemeId === null || schemeId === undefined || isNaN(schemeId)) {
       return ["#000000", "#1A1A1A"];
@@ -869,6 +882,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
         : require("../../assets/images/gold_coin_badge.png");
 
     const isOldGoldScheme = checkIsOldGold(item);
+    const isDepositScheme = checkIsDeposit(item);
 
     return (
       <View style={[styles.card, { borderColor: accentColor }]}>
@@ -895,7 +909,20 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
               </View>
               {/* Scheme Type and Duration */}
               <View style={styles.schemeInfoContainer}>
-                {item.SCHEMETYPE && getLocalizedText(item.SCHEMETYPE) && (
+                {/* One-Time Deposit Badge */}
+                {isDepositScheme && (
+                  <View style={[styles.schemeInfoBadge, { borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                    <Ionicons
+                      name="shield-checkmark"
+                      size={12}
+                      color="#10B981"
+                    />
+                    <Text style={[styles.schemeInfoText, { color: '#10B981', fontWeight: 'bold' }]}>
+                      One-Time Deposit
+                    </Text>
+                  </View>
+                )}
+                {item.SCHEMETYPE && getLocalizedText(item.SCHEMETYPE) && !isDepositScheme && (
                   <View style={[styles.schemeInfoBadge, { borderColor: accentColor }]}>
                     <Ionicons
                       name="time-outline"
