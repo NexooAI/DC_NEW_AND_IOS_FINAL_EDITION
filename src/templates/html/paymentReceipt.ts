@@ -325,7 +325,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
                 ${userMobile ? `<tr><th>Registered Mobile</th><td>${userMobile}</td></tr>` : ""}
                 ${userEmail ? `<tr><th>Registered Email</th><td>${userEmail}</td></tr>` : ""}
                 ${(rewardAmount && Number(rewardAmount) > 0) ? `<tr><th>Bonus Reward Amount</th><td><strong style="color: #2e7d32;">+₹${Number(rewardAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td></tr>` : ""}
-                ${(rewardGoldGrams && Number(rewardGoldGrams) > 0) ? `<tr><th>Bonus Reward Gold</th><td><span class="gold-badge">+${Number(rewardGoldGrams).toFixed(4)} grams</span></td></tr>` : ""}
+                ${(rewardGoldGrams && Number(rewardGoldGrams) > 0) ? `<tr><th>Bonus Reward Gold</th><td><span class="gold-badge">+${Number(rewardGoldGrams).toFixed(3)} grams</span></td></tr>` : ""}
             </table>
 
             <!-- Investment Details Table -->

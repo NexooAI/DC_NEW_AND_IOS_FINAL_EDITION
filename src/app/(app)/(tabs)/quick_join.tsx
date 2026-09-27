@@ -425,6 +425,177 @@ function getStyles(theme: any) {
       color: COLORS.mediumGrey,
       marginLeft: moderateScale(6),
     },
+    limitBadgeContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: moderateScale(4),
+      backgroundColor: 'rgba(133, 1, 17, 0.08)',
+      paddingHorizontal: moderateScale(8),
+      paddingVertical: moderateScale(3),
+      borderRadius: moderateScale(10),
+    },
+    amountAndBonusRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: moderateScale(10),
+    },
+    amountInputHalfColumn: {
+      flex: 1,
+    },
+    bonusPreviewCard: {
+      flex: 1,
+      height: moderateScale(54),
+      backgroundColor: '#FFFDF0',
+      borderWidth: 1,
+      borderColor: 'rgba(217, 119, 6, 0.35)',
+      borderRadius: moderateScale(14),
+      paddingHorizontal: moderateScale(10),
+      paddingVertical: moderateScale(6),
+      justifyContent: 'center',
+    },
+    bonusPreviewHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    bonusPreviewTitle: {
+      fontSize: moderateScale(11),
+      fontWeight: '700',
+      color: '#B45309',
+    },
+    bonusPercentageBadge: {
+      backgroundColor: 'rgba(217, 119, 6, 0.15)',
+      paddingHorizontal: moderateScale(5),
+      paddingVertical: moderateScale(1),
+      borderRadius: moderateScale(6),
+    },
+    bonusPercentageText: {
+      fontSize: moderateScale(10),
+      fontWeight: '800',
+      color: '#B45309',
+    },
+    bonusPreviewAmount: {
+      fontSize: moderateScale(14),
+      fontWeight: '800',
+      color: '#16A34A',
+      marginTop: moderateScale(1),
+    },
+    bonusPreviewTotal: {
+      fontSize: moderateScale(10),
+      color: '#64748B',
+      fontWeight: '500',
+    },
+    bonusSectionCard: {
+      backgroundColor: theme.colors.background,
+      borderRadius: moderateScale(16),
+      padding: moderateScale(14),
+      marginBottom: moderateScale(20),
+      borderWidth: 1,
+      borderColor: '#F1E5D1',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 6,
+      elevation: 2,
+    },
+    bonusSectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: moderateScale(12),
+      gap: moderateScale(10),
+    },
+    bonusSectionIconBg: {
+      width: moderateScale(34),
+      height: moderateScale(34),
+      borderRadius: moderateScale(17),
+      backgroundColor: 'rgba(217, 119, 6, 0.12)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    bonusSectionTitle: {
+      fontSize: moderateScale(14),
+      fontWeight: '800',
+      color: '#850111',
+    },
+    bonusSectionSubtitle: {
+      fontSize: moderateScale(11),
+      color: COLORS.mediumGrey,
+      marginTop: moderateScale(1),
+    },
+    bonusTableContainer: {
+      borderRadius: moderateScale(12),
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: '#F1F5F9',
+    },
+    bonusTableHeader: {
+      flexDirection: 'row',
+      backgroundColor: '#850111',
+      paddingVertical: moderateScale(9),
+      paddingHorizontal: moderateScale(12),
+    },
+    bonusTableHeaderText: {
+      fontSize: moderateScale(11),
+      fontWeight: '800',
+      color: '#FFF',
+    },
+    bonusTableRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: moderateScale(10),
+      paddingHorizontal: moderateScale(12),
+      backgroundColor: '#FFF',
+      borderBottomWidth: 1,
+      borderBottomColor: '#F8FAFC',
+    },
+    bonusTableRowAlt: {
+      backgroundColor: '#FAFAF9',
+    },
+    bonusTableRowHighlighted: {
+      backgroundColor: '#FEFCE8',
+    },
+    bonusTableCellText: {
+      fontSize: moderateScale(12),
+      color: '#1E293B',
+    },
+    miniChartBarBg: {
+      height: 4,
+      backgroundColor: '#E2E8F0',
+      borderRadius: 2,
+      marginTop: moderateScale(4),
+      overflow: 'hidden',
+    },
+    miniChartBarFill: {
+      height: 4,
+      backgroundColor: '#D97706',
+      borderRadius: 2,
+    },
+    bonusPercentBadge: {
+      backgroundColor: '#FEF3C7',
+      paddingHorizontal: moderateScale(7),
+      paddingVertical: moderateScale(3),
+      borderRadius: moderateScale(6),
+    },
+    bonusPercentBadgeMax: {
+      backgroundColor: '#DCFCE7',
+    },
+    bonusPercentBadgeText: {
+      fontSize: moderateScale(11),
+      fontWeight: '800',
+      color: '#B45309',
+    },
+    bonusPercentBadgeTextMax: {
+      color: '#15803D',
+    },
+    bonusAmountCellText: {
+      fontSize: moderateScale(12),
+      fontWeight: '800',
+      color: '#16A34A',
+    },
+    bonusRateSubText: {
+      fontSize: moderateScale(9),
+      color: '#64748B',
+    },
     goldWeightCard: {
       borderRadius: moderateScale(16),
       padding: moderateScale(14),
@@ -616,6 +787,33 @@ export default function QuickJoinScreen() {
     router.back();
   };
 
+  const getEffectiveLimits = (scheme: any, limits: any) => {
+    let min = limits?.min_amount ?? limits?.minAmount ?? limits?.min;
+    let max = limits?.max_amount ?? limits?.maxAmount ?? limits?.max;
+
+    min = min != null ? Number(min) : 0;
+    max = max != null ? Number(max) : 0;
+
+    // Fallback to scheme's chits if limits are missing or 0
+    if ((!min || !max) && scheme?.chits && Array.isArray(scheme.chits) && scheme.chits.length > 0) {
+      const amounts = scheme.chits
+        .map((c: any) => parseFloat(c.AMOUNT || c.amount || '0'))
+        .filter((a: number) => !isNaN(a) && a > 0);
+      if (amounts.length > 0) {
+        if (!min) min = Math.min(...amounts);
+        if (!max) max = Math.max(...amounts);
+      }
+    }
+
+    // Fallback to scheme direct attributes
+    if (!min && scheme?.MINAMOUNT) min = Number(scheme.MINAMOUNT);
+    if (!min && scheme?.min_amount) min = Number(scheme.min_amount);
+    if (!max && scheme?.MAXAMOUNT) max = Number(scheme.MAXAMOUNT);
+    if (!max && scheme?.max_amount) max = Number(scheme.max_amount);
+
+    return { min: min || 0, max: max || 0 };
+  };
+
   const validateForm = () => {
     let isValid = true;
     const newErrors = { name: '', amount: '' };
@@ -630,15 +828,16 @@ export default function QuickJoinScreen() {
       isValid = false;
     } else {
       const amountNum = Number(formData.amount);
+      const limits = getEffectiveLimits(selectedScheme, schemeAmountLimits);
       if (isNaN(amountNum) || amountNum <= 0) {
         newErrors.amount = t('validAmountRequired') || 'Enter a valid amount';
         isValid = false;
-      } else if (schemeAmountLimits) {
-        if (schemeAmountLimits.min_amount && amountNum < schemeAmountLimits.min_amount) {
-          newErrors.amount = `${t('minAmountIs') || 'Minimum amount is'} ₹${schemeAmountLimits.min_amount}`;
+      } else {
+        if (limits.min > 0 && amountNum < limits.min) {
+          newErrors.amount = `${t('minAmountIs') || 'Minimum amount is'} ₹${limits.min.toLocaleString('en-IN')}`;
           isValid = false;
-        } else if (schemeAmountLimits.max_amount && amountNum > schemeAmountLimits.max_amount) {
-          newErrors.amount = `${t('maxAmountIs') || 'Maximum amount is'} ₹${schemeAmountLimits.max_amount}`;
+        } else if (limits.max > 0 && amountNum > limits.max) {
+          newErrors.amount = `${t('maxAmountIs') || 'Maximum amount is'} ₹${limits.max.toLocaleString('en-IN')}`;
           isValid = false;
         }
       }
@@ -999,40 +1198,99 @@ export default function QuickJoinScreen() {
                 </View>
 
                 {/* Amount Input */}
-                <View style={styles.inputSection}>
-                  <View style={styles.amountHeader}>
-                    <Text style={styles.inputLabel}>{t("amount") || "Investment Amount"}</Text>
-                    {schemeAmountLimits && (
-                      <Text style={styles.limitText}>
-                        {t('min')} ₹{schemeAmountLimits.min_amount} - {t('max')} ₹{schemeAmountLimits.max_amount}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={[styles.inputContainer, errors.amount && styles.inputError]}>
-                    <Text style={styles.currencySymbol}>₹</Text>
-                    <TextInput
-                      style={styles.textInput}
-                      value={formData.amount}
-                      onChangeText={(text) => {
-                        const cleaned = text.replace(/[^0-9]/g, '');
+                {(() => {
+                  const effectiveLimits = getEffectiveLimits(selectedScheme, schemeAmountLimits);
+                  const slabs = getSchemeInterestSlabs(selectedScheme);
+                  const isBonus = slabs && slabs.length > 0;
+                  const amountNum = Number(formData.amount || 0);
+                  const maxSlab = isBonus ? slabs.reduce((prev, curr) => curr.percentage > prev.percentage ? curr : prev, slabs[0]) : null;
+                  const maxPercent = maxSlab ? maxSlab.percentage : 0;
+                  const estimatedBonus = amountNum > 0 ? Math.round((amountNum * maxPercent) / 100) : 0;
 
-                        // Check if exceeding max amount
-                        if (schemeAmountLimits && schemeAmountLimits.max_amount) {
-                          if (Number(cleaned) > schemeAmountLimits.max_amount) {
-                            return;
-                          }
-                        }
+                  return (
+                    <View style={styles.inputSection}>
+                      <View style={styles.amountHeader}>
+                        <Text style={styles.inputLabel}>{t("amount") || "Investment Amount"}</Text>
+                        {effectiveLimits.min > 0 && (
+                          <View style={styles.limitBadgeContainer}>
+                            <Ionicons name="information-circle" size={13} color="#850111" />
+                            <Text style={styles.limitText}>
+                              {t('min') || 'Min'}: ₹{effectiveLimits.min.toLocaleString('en-IN')}
+                              {effectiveLimits.max > effectiveLimits.min ? ` - ${t('max') || 'Max'}: ₹${effectiveLimits.max.toLocaleString('en-IN')}` : ''}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
 
-                        setFormData(prev => ({ ...prev, amount: cleaned }));
-                        if (errors.amount) setErrors(prev => ({ ...prev, amount: '' }));
-                      }}
-                      placeholder={t("enterAmount")}
-                      placeholderTextColor={COLORS.mediumGrey}
-                      keyboardType="numeric"
-                    />
-                  </View>
-                  {errors.amount ? <Text style={styles.errorText}>{errors.amount}</Text> : null}
-                </View>
+                      {isBonus ? (
+                        <View style={styles.amountAndBonusRow}>
+                          {/* Left Column: Half Row for Amount Entry */}
+                          <View style={styles.amountInputHalfColumn}>
+                            <View style={[styles.inputContainer, errors.amount && styles.inputError]}>
+                              <Text style={styles.currencySymbol}>₹</Text>
+                              <TextInput
+                                style={styles.textInput}
+                                value={formData.amount}
+                                onChangeText={(text) => {
+                                  const cleaned = text.replace(/[^0-9]/g, '');
+                                  if (effectiveLimits.max > 0 && Number(cleaned) > effectiveLimits.max) {
+                                    return;
+                                  }
+                                  setFormData(prev => ({ ...prev, amount: cleaned }));
+                                  if (errors.amount) setErrors(prev => ({ ...prev, amount: '' }));
+                                }}
+                                placeholder={t("enterAmount")}
+                                placeholderTextColor={COLORS.mediumGrey}
+                                keyboardType="numeric"
+                              />
+                            </View>
+                          </View>
+
+                          {/* Right Column: Half Row for Bonus Preview */}
+                          <View style={styles.bonusPreviewCard}>
+                            <View style={styles.bonusPreviewHeader}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <Ionicons name="gift" size={13} color="#B45309" />
+                                <Text style={styles.bonusPreviewTitle}>
+                                  {language === 'ta' ? 'போனஸ்' : 'Est. Bonus'}
+                                </Text>
+                              </View>
+                              <View style={styles.bonusPercentageBadge}>
+                                <Text style={styles.bonusPercentageText}>+{maxPercent}%</Text>
+                              </View>
+                            </View>
+                            <Text style={styles.bonusPreviewAmount}>
+                              +₹{estimatedBonus.toLocaleString('en-IN')}
+                            </Text>
+                            <Text style={styles.bonusPreviewTotal} numberOfLines={1}>
+                              {language === 'ta' ? 'மொத்தம்' : 'Total'}: ₹{(amountNum + estimatedBonus).toLocaleString('en-IN')}
+                            </Text>
+                          </View>
+                        </View>
+                      ) : (
+                        <View style={[styles.inputContainer, errors.amount && styles.inputError]}>
+                          <Text style={styles.currencySymbol}>₹</Text>
+                          <TextInput
+                            style={styles.textInput}
+                            value={formData.amount}
+                            onChangeText={(text) => {
+                              const cleaned = text.replace(/[^0-9]/g, '');
+                              if (effectiveLimits.max > 0 && Number(cleaned) > effectiveLimits.max) {
+                                return;
+                              }
+                              setFormData(prev => ({ ...prev, amount: cleaned }));
+                              if (errors.amount) setErrors(prev => ({ ...prev, amount: '' }));
+                            }}
+                            placeholder={t("enterAmount")}
+                            placeholderTextColor={COLORS.mediumGrey}
+                            keyboardType="numeric"
+                          />
+                        </View>
+                      )}
+                      {errors.amount ? <Text style={styles.errorText}>{errors.amount}</Text> : null}
+                    </View>
+                  );
+                })()}
               </>
             )}
 
@@ -1059,20 +1317,36 @@ export default function QuickJoinScreen() {
             )}
 
             {/* Quick Select */}
-            {(schemeAmountLimits?.quickselectedamount?.length ?? 0) > 0 && (
-              <View style={styles.quickSelectSection}>
-                <Text style={styles.quickSelectLabel}>{t("quickSelect") || "Quick Select"}</Text>
-                <View style={styles.quickSelectGrid}>
-                  {schemeAmountLimits.quickselectedamount
-                    .filter((amt: number) => amt >= (schemeAmountLimits.min_amount || 0) && amt <= (schemeAmountLimits.max_amount || Infinity))
-                    .map((amount: number, index: number) => (
+            {(() => {
+              const effectiveLimits = getEffectiveLimits(selectedScheme, schemeAmountLimits);
+              const quickAmounts = (schemeAmountLimits?.quickselectedamount?.length ?? 0) > 0
+                ? schemeAmountLimits.quickselectedamount
+                : (selectedScheme?.chits && selectedScheme.chits.length > 0)
+                ? selectedScheme.chits.map((c: any) => Number(c.AMOUNT || c.amount)).filter((a: number) => a > 0)
+                : [1000, 2000, 5000, 10000];
+
+              const filteredQuick = quickAmounts.filter((amt: number) => 
+                (effectiveLimits.min === 0 || amt >= effectiveLimits.min) && (effectiveLimits.max === 0 || amt <= effectiveLimits.max)
+              );
+
+              if (filteredQuick.length === 0) return null;
+
+              return (
+                <View style={styles.quickSelectSection}>
+                  <Text style={styles.quickSelectLabel}>{t("quickSelect") || "Quick Select"}</Text>
+                  <View style={styles.quickSelectGrid}>
+                    {filteredQuick.map((amount: number, index: number) => (
                       <TouchableOpacity
                         key={index}
                         style={[
                           styles.quickAmountButton,
                           formData.amount === String(amount) && styles.quickAmountButtonActive
                         ]}
-                        onPress={() => setFormData(prev => ({ ...prev, amount: String(amount) }))}
+                        onPress={() => {
+                          safeHaptic(Haptics.ImpactFeedbackStyle.Light);
+                          setFormData(prev => ({ ...prev, amount: String(amount) }));
+                          if (errors.amount) setErrors(prev => ({ ...prev, amount: '' }));
+                        }}
                       >
                         <Text style={[
                           styles.quickAmountText,
@@ -1080,9 +1354,108 @@ export default function QuickJoinScreen() {
                         ]}>₹{amount.toLocaleString('en-IN')}</Text>
                       </TouchableOpacity>
                     ))}
+                  </View>
                 </View>
-              </View>
-            )}
+              );
+            })()}
+
+            {/* Bonus Table and Chart Section */}
+            {(() => {
+              const slabs = getSchemeInterestSlabs(selectedScheme);
+              if (!slabs || slabs.length === 0) return null;
+
+              const amountNum = Number(formData.amount || 0);
+              const maxSlab = slabs.reduce((prev, curr) => curr.percentage > prev.percentage ? curr : prev, slabs[0]);
+              const maxPercent = maxSlab ? maxSlab.percentage : 0;
+
+              return (
+                <View style={styles.bonusSectionCard}>
+                  <View style={styles.bonusSectionHeader}>
+                    <View style={styles.bonusSectionIconBg}>
+                      <Ionicons name="gift" size={18} color="#D97706" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.bonusSectionTitle}>
+                        {language === 'ta' ? 'போனஸ் அட்டவணை & பலன்கள்' : 'Bonus Benefits & Slabs'}
+                      </Text>
+                      <Text style={styles.bonusSectionSubtitle}>
+                        {language === 'ta' 
+                          ? 'முதலீட்டுக் காலத்திற்கு ஏற்ப கிடைக்கும் கூடுதல் போனஸ்' 
+                          : 'Guaranteed bonus benefits by investment tenure'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Table & Chart */}
+                  <View style={styles.bonusTableContainer}>
+                    {/* Table Header */}
+                    <View style={styles.bonusTableHeader}>
+                      <Text style={[styles.bonusTableHeaderText, { flex: 1.2 }]}>
+                        {language === 'ta' ? 'நாட்கள் வரம்பு' : 'Days Range'}
+                      </Text>
+                      <Text style={[styles.bonusTableHeaderText, { flex: 0.9, textAlign: 'center' }]}>
+                        {language === 'ta' ? 'போனஸ் %' : 'Bonus %'}
+                      </Text>
+                      <Text style={[styles.bonusTableHeaderText, { flex: 1.1, textAlign: 'right' }]}>
+                        {language === 'ta' ? 'போனஸ் தொகை' : 'Bonus Benefit'}
+                      </Text>
+                    </View>
+
+                    {/* Table Rows with Visual Progress Mini-Chart */}
+                    {slabs.map((slab, sIdx) => {
+                      const slabBonus = amountNum > 0 ? Math.round((amountNum * slab.percentage) / 100) : 0;
+                      const isMaxSlab = slab.percentage === maxPercent;
+
+                      return (
+                        <View 
+                          key={sIdx} 
+                          style={[
+                            styles.bonusTableRow, 
+                            sIdx % 2 !== 0 && styles.bonusTableRowAlt,
+                            isMaxSlab && styles.bonusTableRowHighlighted,
+                          ]}
+                        >
+                          <View style={{ flex: 1.2 }}>
+                            <Text style={[styles.bonusTableCellText, { fontWeight: '700', color: '#1E293B' }]}>
+                              {slab.from_day} - {slab.to_day} {language === 'ta' ? 'நாட்கள்' : 'Days'}
+                            </Text>
+                            {/* Mini Visual Chart Bar */}
+                            <View style={styles.miniChartBarBg}>
+                              <View 
+                                style={[
+                                  styles.miniChartBarFill, 
+                                  { width: `${Math.min(100, Math.max(12, (slab.percentage / (maxPercent || 1)) * 100))}%` },
+                                  isMaxSlab && { backgroundColor: '#16A34A' }
+                                ]} 
+                              />
+                            </View>
+                          </View>
+
+                          <View style={{ flex: 0.9, alignItems: 'center' }}>
+                            <View style={[styles.bonusPercentBadge, isMaxSlab && styles.bonusPercentBadgeMax]}>
+                              <Text style={[styles.bonusPercentBadgeText, isMaxSlab && styles.bonusPercentBadgeTextMax]}>
+                                +{slab.percentage}%
+                              </Text>
+                            </View>
+                          </View>
+
+                          <View style={{ flex: 1.1, alignItems: 'flex-end' }}>
+                            <Text style={styles.bonusAmountCellText}>
+                              +₹{slabBonus.toLocaleString('en-IN')}
+                            </Text>
+                            {amountNum === 0 && (
+                              <Text style={styles.bonusRateSubText}>
+                                {language === 'ta' ? `₹10k க்கு +₹${Math.round(10000 * slab.percentage / 100)}` : `+₹${Math.round(10000 * slab.percentage / 100)} / ₹10k`}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              );
+            })()}
 
             <View style={{ height: 100 }} />
           </ScrollView>

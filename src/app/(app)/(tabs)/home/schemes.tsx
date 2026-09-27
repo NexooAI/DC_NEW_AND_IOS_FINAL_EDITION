@@ -1427,25 +1427,6 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                 {(getTranslatedText(item.SCHEMENAME, language) || "Unnamed Scheme").toUpperCase()}
               </Text>
               
-              {min > 0 ? (
-                <View style={styles.amountRangeContainer}>
-                  <Text style={styles.minAmountLabel}>
-                    {t("schemes.minimumAmount") || "Min"} : {formatAmount(min)}
-                  </Text>
-                  {max > min && (
-                    <Text style={styles.minAmountLabel}>
-                      {" | "}{t("maximum") || "Max"} : {formatAmount(max)}
-                    </Text>
-                  )}
-                </View>
-              ) : item.SLOGAN ? (
-                <View style={styles.amountRangeContainer}>
-                  <Text style={styles.minAmountLabel} numberOfLines={1}>
-                    {getTranslatedText(item.SLOGAN, language)}
-                  </Text>
-                </View>
-              ) : null}
-
               <View style={styles.inlineInfoRow}>
                 <View style={[styles.infoPill, { borderColor: metalColor, backgroundColor: metalBg }]}>
                   <Ionicons name="sparkles-outline" size={12} color={metalColor} />
@@ -1464,6 +1445,42 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                   <Text style={[styles.infoPillText, { color: '#FFF' }]}>{typeDisplay}</Text>
                 </View>
               </View>
+
+              {item.SLOGAN && getTranslatedText(item.SLOGAN, language) ? (
+                <View style={styles.amountRangeContainer}>
+                  <Text
+                    style={styles.minAmountLabel}
+                    numberOfLines={2}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                  >
+                    {getTranslatedText(item.SLOGAN, language)}
+                  </Text>
+                  {min > 0 && (
+                    <Text
+                      style={[styles.minAmountLabel, { marginTop: 2, fontSize: 13, opacity: 0.9 }]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.8}
+                    >
+                      {t("schemes.minimumAmount") || "Min"} : {formatAmount(min)}
+                      {max > min ? ` | ${t("maximum") || "Max"} : ${formatAmount(max)}` : ""}
+                    </Text>
+                  )}
+                </View>
+              ) : min > 0 ? (
+                <View style={styles.amountRangeContainer}>
+                  <Text
+                    style={styles.minAmountLabel}
+                    numberOfLines={2}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                  >
+                    {t("schemes.minimumAmount") || "Min"} : {formatAmount(min)}
+                    {max > min ? ` | ${t("maximum") || "Max"} : ${formatAmount(max)}` : ""}
+                  </Text>
+                </View>
+              ) : null}
             </View>
 
             <View style={styles.cardSideInfo}>
@@ -2516,12 +2533,14 @@ function getStyles(theme: any) { return StyleSheet.create({
     elevation: 10,
   },
   schemeCardGradient: {
-    padding: 12,
-    minHeight: 115,
+    padding: 16,
+    minHeight: 185,
+    justifyContent: "space-between",
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   cardMainInfo: {
     flex: 1,
@@ -2559,30 +2578,32 @@ function getStyles(theme: any) { return StyleSheet.create({
     lineHeight: 22,
   },
   minAmountLabel: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.9)",
+    fontSize: 13,
+    color: "rgba(255,255,255,0.92)",
     fontWeight: "600",
+    lineHeight: 19,
   },
   amountRangeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    marginTop: 2,
   },
   inlineInfoRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 8,
+    gap: 8,
+    marginTop: 2,
+    flexWrap: 'wrap',
   },
   infoPill: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.3)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,215,0,0.3)',
-    gap: 6,
+    gap: 5,
   },
   infoPillText: {
     color: '#FFD700',
@@ -2590,18 +2611,19 @@ function getStyles(theme: any) { return StyleSheet.create({
     fontWeight: '800',
   },
   cardSideInfo: {
-    marginLeft: 15,
+    marginLeft: 12,
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'center',
+    paddingTop: 4,
   },
   coinIcon: {
-    width: 42,
-    height: 42,
+    width: 48,
+    height: 48,
     resizeMode: 'contain',
-    opacity: 0.9,
+    opacity: 0.95,
   },
   cardActionRow: {
-    marginTop: 6,
+    marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',

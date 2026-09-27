@@ -995,7 +995,7 @@ const SavingsDetail = () => {
                     </Text>
                     <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>|</Text>
                     <Text style={{ color: '#FFD700', fontSize: 12, fontWeight: 'bold' }}>
-                      +{totalRewardsGold.toFixed(4)} g
+                      +{totalRewardsGold.toFixed(3)} g
                     </Text>
                   </View>
                 </View>
@@ -1317,7 +1317,7 @@ const SavingsDetail = () => {
                           </View>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                             {rAmt > 0 && <Text style={{ fontSize: 11, fontWeight: '700', color: '#2E7D32' }}>+₹{rAmt.toLocaleString()}</Text>}
-                            {rGold > 0 && <Text style={{ fontSize: 11, fontWeight: '700', color: '#B8860B' }}>({rGold.toFixed(4)} g)</Text>}
+                            {rGold > 0 && <Text style={{ fontSize: 11, fontWeight: '700', color: '#B8860B' }}>({rGold.toFixed(3)} g)</Text>}
                           </View>
                         </View>
                       );
@@ -1527,7 +1527,7 @@ const SavingsDetail = () => {
                         </View>
                         <View style={styles.receiptRow}>
                           <Text style={styles.receiptLabel}>Bonus Reward Gold</Text>
-                          <Text style={[styles.receiptValue, { color: '#B8860B', fontWeight: 'bold' }]}>+{rGold.toFixed(4)} g</Text>
+                          <Text style={[styles.receiptValue, { color: '#B8860B', fontWeight: 'bold' }]}>+{rGold.toFixed(3)} g</Text>
                         </View>
                       </>
                     );
