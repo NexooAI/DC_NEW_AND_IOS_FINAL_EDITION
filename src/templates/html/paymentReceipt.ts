@@ -26,6 +26,7 @@ export interface PaymentReceiptData {
     maturityDate?: string;
     schemePlanTypeName?: string;
     schemeType?: string | number;
+    metal?: string;
     inversement?: {
         accountName: string;
         accountNo: string;
@@ -89,6 +90,9 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
     } else if (weight === 0 && rate > 0 && amountPaid > 0) {
         weight = Number((amountPaid / rate).toFixed(3));
     }
+
+    const isSilverReceipt = (data.metal || inversement?.schemeName || '').toLowerCase().includes('silver');
+    const metalName = isSilverReceipt ? 'Silver' : 'Gold';
 
     const formattedDate = (val: string) => {
         if (!val) return "";
@@ -336,8 +340,8 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
                 <tr><th>Joining Date</th><td>${formattedDate(inversement.joiningDate)}</td></tr>
                 <tr><th>Payment Status</th><td><span style="color: #2e7d32; font-weight: bold;">${(inversement.paymentStatus && inversement.paymentStatus.toLowerCase() === 'charged') ? 'Paid' : (inversement.paymentStatus || 'Paid')}</span></td></tr>
                 <tr><th>Maturity Date</th><td>${data.maturityDate || (inversement.end_date ? formattedDate(inversement.end_date) : 'N/A')}</td></tr>
-                ${rate > 0 ? `<tr><th>Live Gold Rate</th><td>₹${rate.toLocaleString('en-IN')}/gram</td></tr>` : ""}
-                ${weight > 0 ? `<tr><th>Gold Weight Credited</th><td><span class="gold-badge">${weight.toFixed(3)} grams</span></td></tr>` : ""}
+                ${rate > 0 ? `<tr><th>Live ${metalName} Rate</th><td>₹${rate.toLocaleString('en-IN')}/gram</td></tr>` : ""}
+                ${weight > 0 ? `<tr><th>${metalName} Weight Credited</th><td><span class="gold-badge">${weight.toFixed(3)} grams</span></td></tr>` : ""}
             </table>` : ""}
         </div>
 

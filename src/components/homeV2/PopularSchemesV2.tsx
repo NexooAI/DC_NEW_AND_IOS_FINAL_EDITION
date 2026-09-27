@@ -25,7 +25,7 @@ export interface SchemeItem {
   type?: string;
   metal: "gold" | "silver" | "diamond" | "platinum" | "old_gold";
   mode?: string;
-  badgeText: string;
+  badgeText?: string;
   badgeIcon: keyof typeof Ionicons.glyphMap;
   badgeColor: string;
   badgeBg: string;
@@ -203,16 +203,15 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
   const allItems: SchemeItem[] = useMemo(() => {
     const list: SchemeItem[] = [];
 
-    // 1. Gold Savings (Single unified card)
+    // 1. Gold Savings Scheme (Card starts directly with Gold Coin showcase)
     if (availableCategories.gold && isVisible("showGoldScheme" as any)) {
       list.push({
         id: "gold_savings",
-        title: "Gold Savings",
+        title: "Gold Savings Scheme",
         subtitle: "Save gold for your golden future",
         image: require("../../../assets/images/luxury_gold_coin.png"),
         type: "gold",
         metal: "gold",
-        badgeText: "22K GOLD",
         badgeIcon: "sparkles",
         badgeColor: "#9A6B00",
         badgeBg: "rgba(212, 175, 55, 0.16)",
@@ -224,16 +223,15 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
       });
     }
 
-    // 2. Silver Savings
+    // 2. Silver Savings Scheme (Card starts directly with Silver Coin showcase)
     if (availableCategories.silver && isVisible("showSilverScheme" as any)) {
       list.push({
         id: "silver_savings",
-        title: "Silver Savings",
+        title: "Silver Savings Scheme",
         subtitle: "Small savings Big security",
         image: require("../../../assets/images/silver_coin_badge.png"),
         type: "silver",
         metal: "silver",
-        badgeText: "999 SILVER",
         badgeIcon: "disc-outline",
         badgeColor: "#334155",
         badgeBg: "rgba(148, 163, 184, 0.2)",
@@ -245,16 +243,15 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
       });
     }
 
-    // 3. Diamond Savings
+    // 3. Diamond Savings Scheme
     if (availableCategories.diamond && isVisible("showDiamondScheme" as any)) {
       list.push({
         id: "diamond_savings",
-        title: "Diamond Savings",
+        title: "Diamond Savings Scheme",
         subtitle: "Sparkle with your savings",
         image: require("../../../assets/images/diamond_coin_badge.png"),
         type: "diamond",
         metal: "diamond",
-        badgeText: "DIAMOND",
         badgeIcon: "diamond-outline",
         badgeColor: "#0369A1",
         badgeBg: "rgba(56, 189, 248, 0.18)",
@@ -266,16 +263,15 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
       });
     }
 
-    // 4. Platinum Savings
+    // 4. Platinum Savings Scheme
     if (availableCategories.platinum && isVisible("showPlatinumScheme" as any)) {
       list.push({
         id: "platinum_savings",
-        title: "Platinum Savings",
+        title: "Platinum Savings Scheme",
         subtitle: "Precious metals for life",
         image: require("../../../assets/images/luxury_gold_coin.png"),
         type: "platinum",
         metal: "platinum",
-        badgeText: "PLATINUM",
         badgeIcon: "shield-checkmark-outline",
         badgeColor: "#374151",
         badgeBg: "rgba(156, 163, 175, 0.2)",
@@ -287,16 +283,15 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
       });
     }
 
-    // 5. Old Gold Deposit
+    // 5. Old Gold Scheme
     if (availableCategories.old_gold && isVisible("showOldGoldScheme" as any)) {
       list.push({
         id: "old_gold_savings",
-        title: "Old Gold Deposit",
+        title: "Old Gold Scheme",
         subtitle: "Convert old gold into savings",
         image: require("../../../assets/images/gold.png"),
         type: "old_gold",
         metal: "old_gold",
-        badgeText: "OLD GOLD",
         badgeIcon: "repeat-outline",
         badgeColor: "#B45309",
         badgeBg: "rgba(245, 158, 11, 0.2)",
@@ -312,12 +307,11 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     if (list.length === 0) {
       list.push({
         id: "gold_savings",
-        title: "Gold Savings",
+        title: "Gold Savings Scheme",
         subtitle: "Save gold for your golden future",
         image: require("../../../assets/images/luxury_gold_coin.png"),
         type: "gold",
         metal: "gold",
-        badgeText: "22K GOLD",
         badgeIcon: "sparkles",
         badgeColor: "#9A6B00",
         badgeBg: "rgba(212, 175, 55, 0.16)",
@@ -339,19 +333,19 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     ];
 
     if (availableCategories.gold && isVisible("showGoldScheme" as any)) {
-      tabs.push({ key: "gold", label: t("gold") || "Gold", icon: "sparkles" });
+      tabs.push({ key: "gold", label: t("goldSchemes") || "Gold Saving Scheme", icon: "sparkles" });
     }
     if (availableCategories.silver && isVisible("showSilverScheme" as any)) {
-      tabs.push({ key: "silver", label: t("silver") || "Silver", icon: "disc-outline" });
+      tabs.push({ key: "silver", label: t("silverSchemes") || "Silver Saving Scheme", icon: "disc-outline" });
     }
     if (availableCategories.diamond && isVisible("showDiamondScheme" as any)) {
-      tabs.push({ key: "diamond", label: t("diamond") || "Diamond", icon: "diamond-outline" });
+      tabs.push({ key: "diamond", label: t("diamondSchemes") || "Diamond Saving Scheme", icon: "diamond-outline" });
     }
     if (availableCategories.platinum && isVisible("showPlatinumScheme" as any)) {
-      tabs.push({ key: "platinum", label: t("platinum") || "Platinum", icon: "shield-checkmark-outline" });
+      tabs.push({ key: "platinum", label: t("platinumSchemes") || "Platinum Saving Scheme", icon: "shield-checkmark-outline" });
     }
     if (availableCategories.old_gold && isVisible("showOldGoldScheme" as any)) {
-      tabs.push({ key: "old_gold", label: t("oldGold") || "Old Gold", icon: "repeat-outline" });
+      tabs.push({ key: "old_gold", label: t("oldGoldSchemes") || "Old Gold", icon: "repeat-outline" });
     }
 
     return tabs;
@@ -487,15 +481,19 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
               end={{ x: 1, y: 1 }}
               style={[styles.card, { borderColor: item.borderColor }]}
             >
-              {/* Top Row: Metal Badge Pill */}
-              <View style={styles.topBadgeRow}>
-                <View style={[styles.badgePill, { backgroundColor: item.badgeBg }]}>
-                  <Ionicons name={item.badgeIcon} size={11} color={item.badgeColor} />
-                  <Text style={[styles.badgeText, { color: item.badgeColor }]}>
-                    {item.badgeText}
-                  </Text>
+              {/* Top Row: Metal Badge Pill (Starts directly with coin showcase when omitted) */}
+              {item.badgeText ? (
+                <View style={styles.topBadgeRow}>
+                  <View style={[styles.badgePill, { backgroundColor: item.badgeBg }]}>
+                    <Ionicons name={item.badgeIcon} size={11} color={item.badgeColor} />
+                    <Text style={[styles.badgeText, { color: item.badgeColor }]}>
+                      {item.badgeText}
+                    </Text>
+                  </View>
                 </View>
-              </View>
+              ) : (
+                <View style={{ height: 6 }} />
+              )}
 
               {/* Center 3D Image Showcase with Ambient Aura */}
               <View style={styles.imageShowcase}>

@@ -239,6 +239,21 @@ const SavingsDetail = () => {
       schemeDetails: t("schemeDetails") || "Scheme Details",
       statusActive: t("statusActive"),
       downloadReceipt: t("downloadReceipt"),
+      startDate: t("startDate") || "Start Date",
+      nextDueDate: t("nextDueDate") || "Next Due Date",
+      depositAmount: t("depositAmount") || "Deposit Amount",
+      oneTimeDeposit: t("oneTimeDeposit") || "One-Time Deposit",
+      bonusRewards: t("bonusRewards") || "Bonus Rewards",
+      schemeMatured: t("schemeMatured") || "Scheme Matured",
+      redeemAtStore: t("redeemAtStore") || "Redeem Jewellery at Showroom",
+      maturedCongratulations: t("maturedCongratulations") || "Congratulations! Your scheme has successfully matured. Visit our showroom to redeem your jewellery.",
+      collectGiftAtStore: t("collectGiftAtStore") || "Collect Gift at Showroom",
+      searchTxnPlaceholder: t("searchTxnPlaceholder") || "Search by ID, amount, or mode...",
+      transactionDetails: t("transactionDetails") || "Transaction Details",
+      showLess: t("showLess") || "Show Less",
+      silverAccumulated: t("silverAccumulated") || "Silver Accumulated",
+      silverRate: t("silverRate") || "Silver Rate",
+      silverWeight: t("silverWeight") || "Silver Weight",
     }),
     [language]
   );
@@ -334,6 +349,103 @@ const SavingsDetail = () => {
 
   const onlyTotalRewards = totalRewardsAmount;
 
+  // Metal type detection
+  const metalType = useMemo(() => {
+    const m = (params.metal || inversement?.metal || schemesData?.metal || "").toLowerCase();
+    if (m.includes("silver")) return "silver";
+    if (m.includes("diamond")) return "diamond";
+    if (m.includes("platinum")) return "platinum";
+    if (m.includes("old_gold") || m.includes("old gold")) return "old_gold";
+    return "gold";
+  }, [params.metal, inversement, schemesData]);
+
+  const isSilver = metalType === "silver";
+  const accumulatedLabel = isSilver
+    ? (translations.silverAccumulated || "Silver Accumulated")
+    : (translations.goldAccumulated || "Gold Accumulated");
+  const rateLabel = isSilver
+    ? (translations.silverRate || "Silver Rate")
+    : (translations.goldRate || "Gold Rate");
+  const weightLabel = isSilver
+    ? (translations.silverWeight || "Silver Weight")
+    : (translations.goldWeight || "Gold Weight");
+
+  // Scheme Type Detection
+  const isDeposit = useMemo(() => {
+    return (schemesData?.schemePlanTypeName || params.schemePlanTypeName || inversement?.schemePlanTypeName || "").toLowerCase().includes("deposit") ||
+      (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("one-time") ||
+      String(params.scheme_plan_type_id) === "5" || String(inversement?.schemeType) === "5";
+  }, [schemesData, params, inversement]);
+
+  const isFlexi = useMemo(() => {
+    const freq = (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase();
+    const name = (params.schemeName || inversement?.schemeName || inversement?.chits?.name || "").toLowerCase();
+    const type = (schemesData?.schemeTypeName || params.schemeType || inversement?.schemeType || "").toLowerCase();
+    return freq.includes("flexi") || name.includes("flexi") || type.includes("flexi");
+  }, [schemesData, params, inversement]);
+
+  const isHybrid = useMemo(() => {
+    const freq = (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase();
+    const name = (params.schemeName || inversement?.schemeName || inversement?.chits?.name || "").toLowerCase();
+    const type = (schemesData?.schemeTypeName || params.schemeType || inversement?.schemeType || "").toLowerCase();
+    return freq.includes("hybrid") || name.includes("hybrid") || type.includes("hybrid");
+  }, [schemesData, params, inversement]);
+
+  const isFixed = useMemo(() => {
+    return !isDeposit && !isFlexi && !isHybrid;
+  }, [isDeposit, isFlexi, isHybrid]);
+
+  // Maturity / Completion Calculation:
+  // - Fixed: strict total installment count (e.g. 11/11) or date expired
+  // - Flexi: CAN pay any number of times even in the 11th month! Only matured when date expired or status changed.
+  // - Deposit: initial lump sum paid => completed
+  const isMaturedOrCompleted = useMemo(() => {
+    // 1. Explicit status check
+    const status = (inversement?.status || params.status || "").toUpperCase();
+    if (["MATURED", "COMPLETED", "CLOSED", "CLAIMED"].includes(status)) {
+      return true;
+    }
+
+    // 2. Date-based maturity check
+    const maturityDateStr = params.maturityDate || inversement?.maturity_date || inversement?.maturityDate;
+    if (maturityDateStr && maturityDateStr !== "N/A" && maturityDateStr !== "") {
+      const matDate = new Date(maturityDateStr);
+      const today = new Date();
+      if (!isNaN(matDate.getTime()) && today.getTime() > matDate.getTime()) {
+        return true;
+      }
+    }
+
+    // 3. Scheme-type specific rules
+    if (isDeposit) {
+      return totalPaidAmount > 0;
+    }
+
+    if (isFixed) {
+      const rawPaid = params.monthsPaid ?? inversement?.lastInstallment ?? inversement?.monthsPaid ?? 0;
+      const paid = Number(rawPaid) || 0;
+      const rawTotal = params.noOfIns ?? inversement?.chits?.noOfInstallments ?? inversement?.noOfInstallments ?? 11;
+      const total = Number(rawTotal) || 11;
+      return paid >= total;
+    }
+
+    if (isFlexi) {
+      // Flexi rule: User can make any number of payments even in month 11!
+      // Do not block by installment count.
+      return false;
+    }
+
+    if (isHybrid) {
+      const rawPaid = params.monthsPaid ?? inversement?.lastInstallment ?? inversement?.monthsPaid ?? 0;
+      const paid = Number(rawPaid) || 0;
+      const rawTotal = params.noOfIns ?? inversement?.chits?.noOfInstallments ?? inversement?.noOfInstallments ?? 11;
+      const total = Number(rawTotal) || 11;
+      return paid >= total;
+    }
+
+    return false;
+  }, [inversement, params, isDeposit, isFixed, isFlexi, isHybrid, totalPaidAmount]);
+
   const sanitizeFileName = (str: string) => str.replace(/[^a-zA-Z0-9]/g, "_");
 
   // PDF Generation functions
@@ -370,6 +482,7 @@ const SavingsDetail = () => {
       rewardGoldGrams: rewardGoldGrams,
       schemePlanTypeName: schemePlanTypeName,
       maturityDate: params.maturityDate as string,
+      metal: metalType,
       inversement: {
         ...inversement,
         schemeName: params.schemeName || inversement?.schemeName,
@@ -445,6 +558,7 @@ const SavingsDetail = () => {
       rewardGoldGrams: rewardGoldGrams,
       schemePlanTypeName: schemePlanTypeName,
       maturityDate: params.maturityDate as string,
+      metal: metalType,
       inversement: {
         ...inversement,
         schemeName: params.schemeName || inversement?.schemeName,
@@ -479,6 +593,16 @@ const SavingsDetail = () => {
       socketInstance.disconnect();
     };
   }, []);
+
+  // Hide bottom navigation tab bar when on savings detail screen
+  useFocusEffect(
+    useCallback(() => {
+      useGlobalStore.getState().setTabVisibility(false);
+      return () => {
+        useGlobalStore.getState().setTabVisibility(true);
+      };
+    }, [])
+  );
 
   const PaymentNow = async () => {
     if (!user) {
@@ -561,11 +685,20 @@ const SavingsDetail = () => {
           }),
           paidPaymentCount: String(paymentHistrory?.length + 1 || 0),
           maturityDate: params.maturityDate,
-          joiningDate: params.joiningDate || inversement?.joiningDate,
+          joiningDate: params.joiningDate || inversement?.joiningDate || (inversement as any)?.created_at || (inversement as any)?.joiningdate,
           totalPaid: params.totalPaid,
           noOfIns: params.noOfIns,
           goldWeight: params.goldWeight,
           accNo: params.accNo,
+          investmentId: responce?.data?.data?.investmentId || params.id || params.investmentId || inversement?.id,
+          schemesData: params.schemesData,
+          interestSlabs: JSON.stringify(
+            schemesData?.interest_slabs ||
+            parseSchemes?.interest_slabs ||
+            inversement?.interest_slabs ||
+            inversement?.schemes?.interest_slabs ||
+            []
+          ),
         },
       });
     } catch (error) {
@@ -738,11 +871,20 @@ const SavingsDetail = () => {
             (paymentHistrory?.length || 0) + selectedPayments.length
           ),
           maturityDate: params.maturityDate,
-          joiningDate: params.joiningDate || inversement?.joiningDate,
+          joiningDate: params.joiningDate || inversement?.joiningDate || (inversement as any)?.created_at || (inversement as any)?.joiningdate,
           totalPaid: params.totalPaid,
           noOfIns: params.noOfIns,
           goldWeight: params.goldWeight,
           accNo: params.accNo,
+          investmentId: responce?.data?.data?.investmentId || params.id || params.investmentId || inversement?.id,
+          schemesData: params.schemesData,
+          interestSlabs: JSON.stringify(
+            schemesData?.interest_slabs ||
+            parseSchemes?.interest_slabs ||
+            inversement?.interest_slabs ||
+            inversement?.schemes?.interest_slabs ||
+            []
+          ),
         },
       });
     } catch (error) {
@@ -835,7 +977,7 @@ const SavingsDetail = () => {
               
               {(schemesData?.schemeType?.toLowerCase() === "weight" || inversement?.schemeType?.toLowerCase() === "weight") && (
                 <View>
-                  <Text style={[styles.heroStatLabel, { fontSize: 10, marginBottom: 2 }]}>{translations.goldAccumulated}</Text>
+                  <Text style={[styles.heroStatLabel, { fontSize: 10, marginBottom: 2 }]}>{accumulatedLabel}</Text>
                   <Text style={[styles.heroStatValue, { fontSize: 16 }]}>
                     {formatGoldWeight(parseFloat(goldWeightDisplay) || 0)}
                   </Text>
@@ -845,7 +987,7 @@ const SavingsDetail = () => {
               {hasBonusRewards && (totalRewardsAmount > 0 || totalRewardsGold > 0) && (
                 <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 8, padding: 6, marginTop: 6, borderWidth: 1, borderColor: 'rgba(255, 215, 0, 0.45)' }}>
                   <Text style={{ color: '#FFD700', fontSize: 9.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Bonus Rewards
+                    {translations.bonusRewards}
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
                     <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>
@@ -893,7 +1035,7 @@ const SavingsDetail = () => {
                       {monthsPaid}/{totalMonths}
                     </Text>
                     <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                      Months
+                      {translations.months || "Months"}
                     </Text>
                   </View>
                 </View>
@@ -920,7 +1062,7 @@ const SavingsDetail = () => {
       (params.schemeName || inversement?.schemeName || "").toLowerCase().includes("hybrid");
 
     const schemeTypeDisplay = isDeposit
-      ? "One-Time Deposit"
+      ? (translations.oneTimeDeposit || "One-Time Deposit")
       : (isFlexiOrHybrid
           ? (((schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("hybrid") || (params.schemeName || inversement?.schemeName || "").toLowerCase().includes("hybrid")) ? "Hybrid" : "Flexi")
           : (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "Fixed"));
@@ -961,7 +1103,7 @@ const SavingsDetail = () => {
                 <Ionicons name="cash" size={20} color="#388E3C" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.gridLabel}>{isDeposit ? "Deposit Amount" : translations.monthlyEMI}</Text>
+                <Text style={styles.gridLabel}>{isDeposit ? (translations.depositAmount || "Deposit Amount") : translations.monthlyEMI}</Text>
                 <Text style={styles.gridValue} numberOfLines={1}>₹{emiAmount.toLocaleString()}</Text>
               </View>
             </View>
@@ -974,7 +1116,7 @@ const SavingsDetail = () => {
                 <Ionicons name="time" size={20} color="#00838F" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.gridLabel}>Next Due Date</Text>
+                <Text style={styles.gridLabel}>{translations.nextDueDate || "Next Due Date"}</Text>
                 <Text style={styles.gridValue} numberOfLines={1}>
                   {formatDate(dueDateValue)}
                 </Text>
@@ -989,7 +1131,7 @@ const SavingsDetail = () => {
                 <Ionicons name="calendar-outline" size={20} color="#2E7D32" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.gridLabel}>Start Date</Text>
+                <Text style={styles.gridLabel}>{translations.startDate || "Start Date"}</Text>
                 <Text style={styles.gridValue} numberOfLines={1}>{getStartDate()}</Text>
               </View>
             </View>
@@ -1043,11 +1185,11 @@ const SavingsDetail = () => {
       <View style={[styles.sectionContainer, { marginBottom: 120 }]}>
         {/* Header with View All toggle */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Transaction History ({paymentHistrory.length})</Text>
+          <Text style={styles.sectionTitle}>{translations.transactionHistory} ({paymentHistrory.length})</Text>
           {filteredHistory.length > 20 && (
             <TouchableOpacity onPress={() => setShowAllTransactions(!showAllTransactions)}>
               <Text style={styles.viewAllText}>
-                {showAllTransactions ? "Show Less" : translations.viewAll}
+                {showAllTransactions ? (translations.showLess || "Show Less") : translations.viewAll}
               </Text>
             </TouchableOpacity>
           )}
@@ -1058,7 +1200,7 @@ const SavingsDetail = () => {
           <Ionicons name="search-outline" size={18} color="#888" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by ID, amount, or mode..."
+            placeholder={translations.searchTxnPlaceholder || "Search by ID, amount, or mode..."}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor="#888"
@@ -1171,7 +1313,7 @@ const SavingsDetail = () => {
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FBF5E8', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginTop: 6, borderWidth: 0.5, borderColor: '#F2D492' }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                             <Ionicons name="gift-outline" size={13} color="#B8860B" />
-                            <Text style={{ fontSize: 11, fontWeight: '700', color: '#B8860B' }}>Bonus Reward</Text>
+                            <Text style={{ fontSize: 11, fontWeight: '700', color: '#B8860B' }}>{translations.bonusRewards}</Text>
                           </View>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                             {rAmt > 0 && <Text style={{ fontSize: 11, fontWeight: '700', color: '#2E7D32' }}>+₹{rAmt.toLocaleString()}</Text>}
@@ -1234,20 +1376,59 @@ const SavingsDetail = () => {
 
         {/* Floating Bottom Bar for Payment */}
         <View style={[styles.bottomBar, { paddingBottom: bottom || 20 }]}>
-          <TouchableOpacity
-            style={[styles.payButton, isLoading && styles.payButtonDisabled]}
-            onPress={PaymentNow}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <>
-                <Text style={styles.payButtonText}>{translations.payNow}</Text>
-                <Ionicons name="arrow-forward" size={20} color="#FFF" />
-              </>
-            )}
-          </TouchableOpacity>
+          {isMaturedOrCompleted ? (
+            <View style={styles.maturedBottomContainer}>
+              <View style={styles.maturedHeaderRow}>
+                <View style={styles.maturedBadge}>
+                  <Ionicons name="ribbon" size={16} color="#B8860B" />
+                  <Text style={styles.maturedBadgeText}>
+                    {translations.schemeMatured || "Scheme Matured"}
+                  </Text>
+                </View>
+                {giftDetails && giftDetails.status !== 'DELIVERED' && (
+                  <TouchableOpacity
+                    style={styles.collectGiftBtn}
+                    onPress={() => router.push('/(app)/gifts' as any)}
+                  >
+                    <Text style={{ fontSize: 13 }}>🎁</Text>
+                    <Text style={styles.collectGiftBtnText}>
+                      {translations.collectGiftAtStore || "Gift Ready"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <Text style={styles.maturedSubText} numberOfLines={2}>
+                {translations.maturedCongratulations || "Congratulations! Your scheme has successfully matured. Visit our nearest branch showroom to purchase your favourite jewellery."}
+              </Text>
+              <TouchableOpacity
+                style={styles.redeemStoreBtn}
+                activeOpacity={0.85}
+                onPress={() => {
+                  Linking.openURL("tel:+918754842999").catch(() => {});
+                }}
+              >
+                <Ionicons name="storefront" size={18} color="#FFF" />
+                <Text style={styles.redeemStoreBtnText}>
+                  {translations.redeemAtStore || "Redeem Jewellery at Showroom"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.payButton, isLoading && styles.payButtonDisabled]}
+              onPress={PaymentNow}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <>
+                  <Text style={styles.payButtonText}>{translations.payNow}</Text>
+                  <Ionicons name="arrow-forward" size={20} color="#FFF" />
+                </>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
 
       </SafeAreaView>
@@ -1271,7 +1452,7 @@ const SavingsDetail = () => {
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={styles.modalTitle}>Transaction Details</Text>
+                  <Text style={styles.modalTitle}>{translations.transactionDetails || "Transaction Details"}</Text>
                   <View style={{ backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
                     <Text style={{ color: '#2E7D32', fontSize: 12, fontWeight: 'bold' }}>SUCCESS</Text>
                   </View>
@@ -1323,13 +1504,13 @@ const SavingsDetail = () => {
                 {(displayGoldRate > 0 || displayGoldWeight > 0) && (
                   <>
                     <View style={styles.receiptRow}>
-                      <Text style={styles.receiptLabel}>Gold Weight</Text>
+                      <Text style={styles.receiptLabel}>{weightLabel}</Text>
                       <Text style={styles.receiptValue}>
                         {displayGoldWeight.toFixed(3)} g
                       </Text>
                     </View>
                     <View style={styles.receiptRow}>
-                      <Text style={styles.receiptLabel}>Gold Rate</Text>
+                      <Text style={styles.receiptLabel}>{rateLabel}</Text>
                       <Text style={styles.receiptValue}>₹{displayGoldRate.toLocaleString()}/g</Text>
                     </View>
                   </>
@@ -1765,6 +1946,76 @@ function getStyles(theme: any) { return StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginRight: 8,
+  },
+  maturedBottomContainer: {
+    backgroundColor: '#FFFDF5',
+    borderWidth: 1,
+    borderColor: '#F3E5AB',
+    borderRadius: 16,
+    padding: 12,
+    gap: 8,
+  },
+  maturedHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  maturedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  maturedBadgeText: {
+    color: '#92400E',
+    fontWeight: '800',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  collectGiftBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+  },
+  collectGiftBtnText: {
+    color: '#166534',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  maturedSubText: {
+    fontSize: 12,
+    color: '#78350F',
+    lineHeight: 16,
+  },
+  redeemStoreBtn: {
+    backgroundColor: theme.colors.primary || '#A3203A',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  redeemStoreBtnText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
 
   // Modal Styles

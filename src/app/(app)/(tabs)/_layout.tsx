@@ -27,40 +27,43 @@ export default function TabsLayout() {
   const fullPath = segments.join("/");
   const isOnSchemesPage = fullPath.includes("home/schemes") || (segments.includes("schemes") && segments.includes("home"));
 
+  const hideTabBarRoutes = [
+    "paymentNewOverView",
+    "join_savings",
+    "PaymentWebView",
+    "payment-success",
+    "payment-failure",
+    "SavingsDetail",
+    "digigold_payment_calculator",
+    "kyc",
+    "ticket-form",
+    "faq-chat",
+    "BookingHistory",
+    "offers",
+    "refer_earn",
+    "our_stores",
+    "contact_us",
+    "about_us",
+    "faq",
+    "ourPolicies",
+    "privacyPolicy",
+    "termsAndConditionsPolicies",
+  ];
+  const isHiddenRoute =
+    hideTabBarRoutes.includes(segments[segments.length - 1]) ||
+    segments.some((seg) => hideTabBarRoutes.includes(seg)) ||
+    hideTabBarRoutes.some((route) => fullPath.includes(route));
+
+  const shouldShowTabs = isTabVisible && !isHiddenRoute;
+
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={["bottom"]}>
+    <SafeAreaView style={{ flex: 1 }} edges={shouldShowTabs ? ["bottom"] : []}>
       <Tabs
         tabBar={(props) => <CustomBottomBar {...props} />}
           screenOptions={{
             headerShown: true,
-            /*
-            tabBarActiveTintColor: "#FFD700", // Gold color for active tabs
-            tabBarInactiveTintColor: "#cbd5e1", // Light silver/grey for inactive tabs
-            tabBarBackground: () => (
-              <BlurView
-                tint="dark"
-                intensity={85}
-                style={StyleSheet.absoluteFill}
-              />
-            ),
             tabBarStyle: {
-              height: 60,
-              overflow: 'hidden',
-              backgroundColor: 'rgba(26, 2, 4, 0.90)', // Dark black-maroon base
-              borderTopWidth: 1.5,
-              borderTopColor: 'rgba(218, 165, 32, 0.25)', // Glowing gold top border line
-              elevation: 10,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: -3 },
-              shadowOpacity: 0.15,
-              shadowRadius: 6,
-              paddingBottom: Platform.OS === 'ios' ? 12 : 8,
-              paddingTop: 8,
-              display: isTabVisible ? 'flex' : 'none',
-            },
-            */
-            tabBarStyle: {
-              display: isTabVisible ? 'flex' : 'none',
+              display: shouldShowTabs ? 'flex' : 'none',
             },
             headerStyle: {
               backgroundColor: theme.colors.primary,

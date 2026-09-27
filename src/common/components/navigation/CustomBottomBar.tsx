@@ -54,7 +54,7 @@ export default function CustomBottomBar(_props?: any) {
   const { t } = useTranslation();
   const router = useRouter();
   const segments = useSegments();
-  const { user } = useGlobalStore();
+  const { user, isTabVisible } = useGlobalStore();
   const { unreadCount } = useUnreadNotifications();
   const { isVisible, visibleData } = useAppVisibility();
   const { navigate, isNavigating } = useNavigationState();
@@ -87,6 +87,17 @@ export default function CustomBottomBar(_props?: any) {
 
   // List of special pages where the tab bar should be hidden
   const hideTabBarRoutes = [
+    "paymentNewOverView",
+    "join_savings",
+    "PaymentWebView",
+    "payment-success",
+    "payment-failure",
+    "SavingsDetail",
+    "digigold_payment_calculator",
+    "kyc",
+    "ticket-form",
+    "faq-chat",
+    "BookingHistory",
     "offers",
     "refer_earn",
     "our_stores",
@@ -99,8 +110,6 @@ export default function CustomBottomBar(_props?: any) {
     "policies/ourPolicies",
     "policies/privacyPolicy",
     "policies/termsAndConditionsPolicies",
-    "payment-success",
-    "payment-failure",
   ];
 
   const hasDashboard = Boolean(
@@ -255,7 +264,13 @@ export default function CustomBottomBar(_props?: any) {
     }
   };
 
-  if (hideTabBarRoutes.includes(current)) {
+  const fullPath = segments.join("/");
+  const isHiddenRoute =
+    hideTabBarRoutes.includes(current) ||
+    segments.some((seg) => hideTabBarRoutes.includes(seg)) ||
+    hideTabBarRoutes.some((route) => fullPath.includes(route));
+
+  if (!isTabVisible || isHiddenRoute) {
     return null;
   }
 

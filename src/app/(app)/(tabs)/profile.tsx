@@ -932,7 +932,8 @@ const ProfileScreen = () => {
                   </>
                 )}
 
-                {/* Dark Mode Toggle */}
+                {/* Dark Mode Toggle - Temporarily disabled/hidden as requested */}
+                {/* 
                 <View style={styles.settingItem}>
                   <View style={[styles.settingIcon, { backgroundColor: '#F0F2F5' }]}>
                     <Ionicons name={themeMode === 'dark' ? "moon" : "sunny-outline"} size={22} color={themeMode === 'dark' ? theme.colors.secondary : theme.colors.textMediumGrey} />
@@ -949,6 +950,7 @@ const ProfileScreen = () => {
                   />
                 </View>
                 <View style={styles.divider} />
+                */}
 
                 {showLanguage && (
                   <>

@@ -82,8 +82,14 @@ export default function PaymentWebView() {
   const isVerifyingRef = useRef(false);
   const appState = useRef(AppState.currentState);
   const verificationTimerRef = useRef<NodeJS.Timeout | null>(null);
-
   const { user } = useGlobalStore();
+
+  useEffect(() => {
+    useGlobalStore.getState().setTabVisibility(false);
+    return () => {
+      useGlobalStore.getState().setTabVisibility(true);
+    };
+  }, []);
 
   const type = (params.type as any) || "scheme";
   const bookingId = params.bookingId as string;

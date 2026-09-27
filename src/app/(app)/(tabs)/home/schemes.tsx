@@ -1541,7 +1541,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
             >
               <Ionicons name="sparkles" size={14} color={selectedMetal === "gold" ? "#7A4D00" : "#B8860B"} />
               <Text style={[styles.metalTabText, selectedMetal === "gold" && styles.metalTabTextActive]}>
-                {t("goldSchemes") || "Gold Schemes"}
+                {t("goldSchemes") || "Gold Saving Scheme"}
               </Text>
             </TouchableOpacity>
           )}
@@ -1554,7 +1554,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
             >
               <Ionicons name="sparkles-outline" size={14} color={selectedMetal === "silver" ? "#333333" : "#666666"} />
               <Text style={[styles.metalTabText, selectedMetal === "silver" && styles.metalTabTextActive]}>
-                {t("silverSchemes") || "Silver Schemes"}
+                {t("silverSchemes") || "Silver Saving Scheme"}
               </Text>
             </TouchableOpacity>
           )}
@@ -1567,7 +1567,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
             >
               <Ionicons name="diamond-outline" size={14} color={selectedMetal === "diamond" ? "#0F4C81" : "#1D70B8"} />
               <Text style={[styles.metalTabText, selectedMetal === "diamond" && styles.metalTabTextActive]}>
-                {t("diamondSchemes") || "Diamond Schemes"}
+                {t("diamondSchemes") || "Diamond Saving Scheme"}
               </Text>
             </TouchableOpacity>
           )}
@@ -1580,7 +1580,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
             >
               <Ionicons name="ribbon-outline" size={14} color={selectedMetal === "platinum" ? "#1E293B" : "#475569"} />
               <Text style={[styles.metalTabText, selectedMetal === "platinum" && styles.metalTabTextActive]}>
-                {t("platinumSchemes") || "Platinum Schemes"}
+                {t("platinumSchemes") || "Platinum Saving Scheme"}
               </Text>
             </TouchableOpacity>
           )}
@@ -1593,7 +1593,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
             >
               <Ionicons name="swap-horizontal-outline" size={14} color={selectedMetal === "old_gold" ? "#78350F" : "#B45309"} />
               <Text style={[styles.metalTabText, selectedMetal === "old_gold" && styles.metalTabTextActive]}>
-                {t("oldGoldSchemes") || "Old Gold Schemes"}
+                {t("oldGoldSchemes") || "Old Gold"}
               </Text>
             </TouchableOpacity>
           )}

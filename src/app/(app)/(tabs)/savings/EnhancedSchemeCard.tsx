@@ -344,6 +344,13 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             chitId: response?.data?.data?.chitId || item?.chitData?.chitId || "",
           }),
           paidPaymentCount: String(paymentHistoryLength + 1 || 0),
+          joiningDate: item.joiningDate || (item as any)?.created_at || (item as any)?.joiningdate || "",
+          interestSlabs: JSON.stringify(
+            (item as any)?.interest_slabs ||
+            item.schemesData?.interest_slabs ||
+            parseSchemes?.interest_slabs ||
+            []
+          ),
         },
       });
 

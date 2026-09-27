@@ -16,6 +16,7 @@ import {
   Easing,
   ImageBackground,
   Image,
+  ToastAndroid,
 } from "react-native";
 import { runAfterInteractions } from "@/utils/interactionUtils";
 import { useKeyboardVisibility } from "@/hooks/useKeyboardVisibility";
@@ -291,6 +292,72 @@ export default function JoinSavings() {
     return name.includes("silver") || name.includes("வெள்ளி") || type.includes("silver") || metal.includes("silver");
   }, [parsedData]);
 
+  // State for max limit toast/banner warning
+  const [maxLimitWarning, setMaxLimitWarning] = useState<string | null>(null);
+
+  // Check if scheme is a deposit or lumpsum scheme
+  const isDepositScheme = useMemo(() => {
+    const typeStr = (parsedData?.schemeType || parsedData?.type || "").toLowerCase();
+    const nameStr = (parsedData?.name || parsedData?.SCHEMENAME || "").toLowerCase();
+    return Boolean(
+      parsedData?.scheme_plan_type_id === 5 ||
+      parsedData?.SCHEME_PLAN_TYPE_ID === 5 ||
+      typeStr.includes("deposit") ||
+      typeStr.includes("lumpsum") ||
+      nameStr.includes("deposit") ||
+      nameStr.includes("lumpsum")
+    );
+  }, [parsedData]);
+
+  // Extract bonus/interest slabs from scheme
+  const interestSlabs = useMemo(() => {
+    if (!parsedData) return [];
+    const raw = parsedData.interest_slabs || parsedData.interest_slab || parsedData.interestSlabs;
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === "string") {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
+    }
+    return [];
+  }, [parsedData]);
+
+  const hasBonusRewards = useMemo(() => {
+    return interestSlabs.length > 0;
+  }, [interestSlabs]);
+
+  // Support dual input for Weight-based, Flexi, Deposit, and Bonus Slabs schemes
+  const allowWeightCalc = useMemo(() => {
+    const isWeightBased = parsedData?.savingType === "weight";
+    const isFlexi = parsedData?.schemeType === "flexi" || parsedData?.type?.toLowerCase()?.includes("flexi");
+    return Boolean(isWeightBased || isFlexi || isDepositScheme || hasBonusRewards);
+  }, [parsedData, isDepositScheme, hasBonusRewards]);
+
+  // Active bonus slab for Day 1
+  const activeSlab = useMemo(() => {
+    if (!interestSlabs || interestSlabs.length === 0) return null;
+    const currentDay = 1;
+    return interestSlabs.find(
+      (slab: any) => currentDay >= Number(slab.from_day) && currentDay <= Number(slab.to_day)
+    ) || interestSlabs[0];
+  }, [interestSlabs]);
+
+  const activeBonusPercent = useMemo(() => {
+    return activeSlab ? Number(activeSlab.percentage) : 0;
+  }, [activeSlab]);
+
+  const bonusAmount = useMemo(() => {
+    if (activeBonusPercent <= 0 || amount <= 0) return 0;
+    return Math.round(amount * (activeBonusPercent / 100));
+  }, [amount, activeBonusPercent]);
+
+  const bonusGoldWeight = useMemo(() => {
+    const rateToUse = isSilverScheme && silverRate > 0 ? silverRate : (goldRate > 0 ? goldRate : 5847);
+    if (bonusAmount <= 0 || rateToUse <= 0) return 0;
+    return bonusAmount / rateToUse;
+  }, [bonusAmount, isSilverScheme, silverRate, goldRate]);
 
   // State for collapsible KYC cards
   const [addressExpanded, setAddressExpanded] = useState(false);
@@ -547,6 +614,16 @@ export default function JoinSavings() {
     fetchBranche();
   }, [user]);
 
+  // Hide bottom navigation tab bar when on join savings screen
+  useFocusEffect(
+    React.useCallback(() => {
+      useGlobalStore.getState().setTabVisibility(false);
+      return () => {
+        useGlobalStore.getState().setTabVisibility(true);
+      };
+    }, [])
+  );
+
   // Fetch KYC status
   useFocusEffect(
     React.useCallback(() => {
@@ -653,10 +730,13 @@ export default function JoinSavings() {
 
     // If amount exceeds max limit
     if (newAmount > maxAmount) {
-      // Calculate gold weight for max amount (only if weight-based or flexi)
       const maxGoldWeight = allowWeightCalc ? calculateGoldWeight(maxAmount) : 0;
+      setMaxLimitWarning(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')}`);
+      if (Platform.OS === 'android') {
+        ToastAndroid.show(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')}`, ToastAndroid.SHORT);
+      }
 
-      // Update all values to max (no alert during typing, validation on Next click)
+      // Update all values to max
       setInputValue(String(maxAmount));
       setAmount(maxAmount);
       if (allowWeightCalc) {
@@ -669,15 +749,15 @@ export default function JoinSavings() {
       const sliderPosition = (maxAmount - minAmount) / (maxAmount - minAmount);
       sliderValue.setValue(sliderPosition);
       return;
+    } else {
+      if (maxLimitWarning) setMaxLimitWarning(null);
     }
 
     // Update amount and gold weight
-    // Don't clamp below min during typing - let validation catch it on Next click
-    // Only clamp above max to prevent exceeding maximum
     const minAmount = getMinAmount();
     const validAmount = Math.min(maxAmount, newAmount);
 
-    // Calculate exact gold weight for the amount (only if weight-based or flexi)
+    // Calculate exact gold weight for the amount
     const exactGoldWeight = allowWeightCalc ? calculateGoldWeight(validAmount) : 0;
 
     setAmount(validAmount);
@@ -686,7 +766,7 @@ export default function JoinSavings() {
     }
     handleChange("amount", String(validAmount));
 
-    // Update slider position (handle case where amount might be below min)
+    // Update slider position
     const clampedAmountForSlider = Math.max(minAmount, Math.min(maxAmount, validAmount));
     const sliderPosition = (clampedAmountForSlider - minAmount) / (maxAmount - minAmount);
     sliderValue.setValue(Math.max(0, Math.min(1, sliderPosition)));
@@ -703,7 +783,6 @@ export default function JoinSavings() {
     // Only round if amount is not at boundaries and not already a step multiple
     if (amount !== minAmount && amount !== maxAmount) {
       const roundedAmount = Math.round(amount / step) * step;
-      // Only apply rounding if it doesn't push us outside bounds
       if (roundedAmount >= minAmount && roundedAmount <= maxAmount) {
         finalAmount = roundedAmount;
       }
@@ -712,21 +791,23 @@ export default function JoinSavings() {
     // Only clamp above max, don't clamp below min (let validation handle it)
     finalAmount = Math.min(maxAmount, finalAmount);
 
+    if (amount > maxAmount) {
+      setMaxLimitWarning(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')}`);
+    } else {
+      if (maxLimitWarning) setMaxLimitWarning(null);
+    }
+
     setAmount(finalAmount);
     setInputValue(
       finalAmount === 0 ? "0" : String(finalAmount).replace(/^0+/, "")
     );
     handleChange("amount", String(finalAmount));
-    // Only calculate gold weight if it's a weight-based scheme or flexi
-    const isWeightBased = parsedData?.savingType === "weight";
-    const isFlexi = parsedData?.schemeType === "flexi" || parsedData?.type?.toLowerCase()?.includes("flexi");
-    const allowWeightCalc = isWeightBased || isFlexi;
 
     if (allowWeightCalc) {
       setGoldWeight(calculateGoldWeight(finalAmount));
     }
 
-    // Update slider position (handle case where amount might be below min)
+    // Update slider position
     const clampedAmountForSlider = Math.max(minAmount, Math.min(maxAmount, finalAmount));
     const sliderPosition = (clampedAmountForSlider - minAmount) / (maxAmount - minAmount);
     sliderValue.setValue(Math.max(0, Math.min(1, sliderPosition)));
@@ -735,7 +816,6 @@ export default function JoinSavings() {
   const calculateGoldWeight = (amt: number) => {
     const rateToUse = isSilverScheme && silverRate > 0 ? silverRate : (goldRate > 0 ? goldRate : 5847);
     const weight = amt / rateToUse;
-    // Return the raw number for calculations, formatting will be done when displaying
     return weight;
   };
 
@@ -755,10 +835,12 @@ export default function JoinSavings() {
 
     // If amount would exceed max limit
     if (calculatedAmount > maxAmount) {
-      // Calculate max allowed weight based on current gold rate
       const maxWeight = calculateGoldWeight(maxAmount);
+      setMaxLimitWarning(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')}`);
+      if (Platform.OS === 'android') {
+        ToastAndroid.show(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')}`, ToastAndroid.SHORT);
+      }
 
-      // Update all values to maximum allowed (no alert during typing, validation on Next click)
       setGoldWeight(maxWeight);
       setAmount(maxAmount);
       setInputValue(String(maxAmount));
@@ -769,6 +851,8 @@ export default function JoinSavings() {
       const sliderPosition = (maxAmount - minAmount) / (maxAmount - minAmount);
       sliderValue.setValue(sliderPosition);
       return;
+    } else {
+      if (maxLimitWarning) setMaxLimitWarning(null);
     }
 
     // Update with exact values
@@ -790,16 +874,17 @@ export default function JoinSavings() {
     const maxAmount = getMaxAmount();
     const newAmount = Math.min(maxAmount, Math.max(minAmount, amount + 100));
 
+    if (newAmount >= maxAmount) {
+      setMaxLimitWarning(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')}`);
+    } else {
+      if (maxLimitWarning) setMaxLimitWarning(null);
+    }
+
     setAmount(newAmount);
     setInputValue(String(newAmount));
     handleChange("amount", String(newAmount));
 
-    // Update gold weight if weight-based or flexi
-    const isWeightBased = parsedData?.savingType === "weight";
-    const isFlexi = parsedData?.schemeType === "flexi" || parsedData?.type?.toLowerCase()?.includes("flexi");
-    const allowWeightCalc = isWeightBased || isFlexi;
-
-    if (allowWeightCalc && goldRate > 0) {
+    if (allowWeightCalc && (goldRate > 0 || silverRate > 0)) {
       setGoldWeight(calculateGoldWeight(newAmount));
     }
 
@@ -813,16 +898,13 @@ export default function JoinSavings() {
     const minAmount = getMinAmount();
     const newAmount = Math.max(minAmount, amount - 100);
 
+    if (maxLimitWarning) setMaxLimitWarning(null);
+
     setAmount(newAmount);
     setInputValue(String(newAmount));
     handleChange("amount", String(newAmount));
 
-    // Update gold weight if weight-based or flexi
-    const isWeightBased = parsedData?.savingType === "weight";
-    const isFlexi = parsedData?.schemeType === "flexi" || parsedData?.type?.toLowerCase()?.includes("flexi");
-    const allowWeightCalc = isWeightBased || isFlexi;
-
-    if (allowWeightCalc && goldRate > 0) {
+    if (allowWeightCalc && (goldRate > 0 || silverRate > 0)) {
       setGoldWeight(calculateGoldWeight(newAmount));
     }
 
@@ -832,7 +914,7 @@ export default function JoinSavings() {
     sliderValue.setValue(Math.max(0, Math.min(1, sliderPosition)));
   };
 
-  // Handle gold weight increment (by 0.1g = 100ml)
+  // Handle gold weight increment (by 0.1g)
   const handleGoldWeightIncrement = () => {
     const maxAmount = getMaxAmount();
     const newWeight = goldWeight + 0.1;
@@ -841,50 +923,45 @@ export default function JoinSavings() {
     // Check if calculated amount exceeds max
     if (calculatedAmount > maxAmount) {
       const maxWeight = calculateGoldWeight(maxAmount);
+      setMaxLimitWarning(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')}`);
+      if (Platform.OS === 'android') {
+        ToastAndroid.show(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')}`, ToastAndroid.SHORT);
+      }
       setGoldWeight(maxWeight);
       setAmount(maxAmount);
       setInputValue(String(maxAmount));
       handleChange("amount", String(maxAmount));
     } else {
+      if (maxLimitWarning) setMaxLimitWarning(null);
       setGoldWeight(newWeight);
       setAmount(calculatedAmount);
       setInputValue(String(calculatedAmount));
       handleChange("amount", String(calculatedAmount));
     }
 
-    // Update slider position
     const minAmount = getMinAmount();
-    const finalAmount = Math.min(maxAmount, calculatedAmount);
-    const sliderPosition = (finalAmount - minAmount) / (maxAmount - minAmount);
+    const sliderPosition = (Math.min(maxAmount, calculatedAmount) - minAmount) / (maxAmount - minAmount);
     sliderValue.setValue(Math.max(0, Math.min(1, sliderPosition)));
   };
 
-  // Handle gold weight decrement (by 0.1g = 100ml)
+  // Handle gold weight decrement (by 0.1g)
   const handleGoldWeightDecrement = () => {
-    const newWeight = Math.max(0, goldWeight - 0.1);
-    const calculatedAmount = calculateAmount(newWeight);
     const minAmount = getMinAmount();
-
-    // Ensure amount doesn't go below minimum
-    if (calculatedAmount < minAmount) {
-      const minWeight = calculateGoldWeight(minAmount);
-      setGoldWeight(minWeight);
-      setAmount(minAmount);
-      setInputValue(String(minAmount));
-      handleChange("amount", String(minAmount));
-    } else {
-      setGoldWeight(newWeight);
-      setAmount(calculatedAmount);
-      setInputValue(String(calculatedAmount));
-      handleChange("amount", String(calculatedAmount));
-    }
-
-    // Update slider position
     const maxAmount = getMaxAmount();
-    const finalAmount = Math.max(minAmount, calculatedAmount);
-    const sliderPosition = (finalAmount - minAmount) / (maxAmount - minAmount);
+    const newWeight = Math.max(0, goldWeight - 0.1);
+    const calculatedAmount = Math.max(minAmount, calculateAmount(newWeight));
+
+    if (maxLimitWarning) setMaxLimitWarning(null);
+    setGoldWeight(newWeight);
+    setAmount(calculatedAmount);
+    setInputValue(String(calculatedAmount));
+    handleChange("amount", String(calculatedAmount));
+
+    const sliderPosition = (calculatedAmount - minAmount) / (maxAmount - minAmount);
     sliderValue.setValue(Math.max(0, Math.min(1, sliderPosition)));
   };
+
+
 
   const translations = useMemo(
     () => ({
@@ -1507,10 +1584,8 @@ export default function JoinSavings() {
     const minAmount = getMinAmount();
     const maxAmount = getMaxAmount();
 
-    // Check if scheme is weight-based or amount-based
-    const isWeightBased = parsedData?.savingType === "weight";
-    const isFlexi = parsedData?.schemeType === "flexi" || parsedData?.type?.toLowerCase()?.includes("flexi");
-    const showWeightInput = isWeightBased || isFlexi;
+    // Check if scheme supports dual weight/amount input (Weight-based, Flexi, Deposit, or Bonus Slabs)
+    const showWeightInput = allowWeightCalc;
 
     // Get quick amounts from API if available, otherwise use default
     let quickAmounts: number[] = [];
@@ -1751,6 +1826,92 @@ export default function JoinSavings() {
               </View>
             )}
           </View>
+
+          {/* Max Limit Warning Banner */}
+          {maxLimitWarning ? (
+            <View style={styles.limitWarningBanner}>
+              <Ionicons name="alert-circle" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+              <Text style={styles.limitWarningText}>{maxLimitWarning}</Text>
+            </View>
+          ) : null}
+
+          {/* Bonus Slabs & Live Benefit Card (for Schemes with Bonus Slabs) */}
+          {hasBonusRewards && (
+            <View style={styles.bonusBenefitCard}>
+              <View style={styles.bonusBenefitHeader}>
+                <View style={styles.bonusTagBadge}>
+                  <Ionicons name="sparkles" size={12} color="#B45309" />
+                  <Text style={styles.bonusTagBadgeText}>
+                    {activeBonusPercent > 0 ? `Day 1 • ${activeBonusPercent}% Active Bonus` : 'Bonus Slabs Scheme'}
+                  </Text>
+                </View>
+                <View style={styles.bonusRatePill}>
+                  <Text style={styles.bonusRatePillText}>
+                    Rate: ₹{(isSilverScheme && silverRate > 0 ? silverRate : goldRate).toLocaleString('en-IN')}/g
+                  </Text>
+                </View>
+              </View>
+
+              {/* Live Bonus Values Grid */}
+              <View style={styles.bonusValuesRow}>
+                <View style={styles.bonusValueCol}>
+                  <Text style={styles.bonusValueLabel}>Bonus Cash Reward</Text>
+                  <Text style={styles.bonusCashText}>+₹{bonusAmount.toLocaleString('en-IN')}</Text>
+                </View>
+                <View style={styles.bonusColDivider} />
+                <View style={styles.bonusValueCol}>
+                  <Text style={styles.bonusValueLabel}>Bonus Gold Weight</Text>
+                  <Text style={styles.bonusGoldText}>+{bonusGoldWeight.toFixed(3)}g</Text>
+                </View>
+              </View>
+
+              <View style={styles.bonusTotalCreditedRow}>
+                <Text style={styles.bonusTotalLabel}>Total Gold Credited to Account:</Text>
+                <Text style={styles.bonusTotalValue}>
+                  {(goldWeight + bonusGoldWeight).toFixed(3)}g
+                </Text>
+              </View>
+
+              {/* Bonus Slabs Breakdown Table */}
+              {interestSlabs.length > 0 && (
+                <View style={styles.slabsTableContainer}>
+                  <View style={styles.slabsTableHeader}>
+                    <Text style={styles.slabsTableHeadText}>Days Range</Text>
+                    <Text style={[styles.slabsTableHeadText, { textAlign: 'right' }]}>Bonus Slab</Text>
+                  </View>
+                  {interestSlabs.map((slab: any, idx: number) => {
+                    const isActive = 1 >= Number(slab.from_day) && 1 <= Number(slab.to_day);
+                    return (
+                      <View
+                        key={idx}
+                        style={[
+                          styles.slabsTableRow,
+                          isActive && styles.slabsTableRowActive,
+                        ]}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          {isActive && <Ionicons name="flame" size={13} color="#D97706" />}
+                          <Text style={[styles.slabsCellText, isActive && styles.slabsCellTextActive]}>
+                            Day {slab.from_day} - {slab.to_day}
+                          </Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Text style={[styles.slabsPercentText, isActive && styles.slabsPercentTextActive]}>
+                            {slab.percentage}%
+                          </Text>
+                          {isActive && (
+                            <View style={styles.currentActiveBadge}>
+                              <Text style={styles.currentActiveBadgeText}>TODAY</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Quick Amount Selection */}
           <View style={styles.quickAmountSection}>
@@ -2426,12 +2587,12 @@ export default function JoinSavings() {
         }
       }
 
-      const chitIdToSend = activeChit?.CHITID != null ? activeChit.CHITID : 0;
-      const paymentFrequencyIdToSend = activeChit?.PAYMENT_FREQUENCY_ID != null ? activeChit.PAYMENT_FREQUENCY_ID : 1;
-      const paymentFrequencyToSend = activeChit?.PAYMENT_FREQUENCY || "monthly";
+      const chitIdToSend = Number(activeChit?.CHITID ?? activeChit?.id ?? 0);
+      const paymentFrequencyIdToSend = Number(activeChit?.PAYMENT_FREQUENCY_ID ?? activeChit?.payment_frequency_id ?? 1);
+      const paymentFrequencyToSend = activeChit?.PAYMENT_FREQUENCY || activeChit?.payment_frequency || "monthly";
 
       const payload = {
-        userId: user.id,
+        userId: Number(user.id),
         schemeId: Number(schemeId),
         chitId: chitIdToSend,
         accountName: formData.accountname,
@@ -2520,6 +2681,10 @@ export default function JoinSavings() {
               schemeName: parsedData?.name || "",
               paymentFrequency: paymentFrequencyToSend,
               chitId: chitIdToSend,
+              goldWeight: goldWeight || 0,
+              bonusAmount: bonusAmount || 0,
+              bonusPercentage: activeBonusPercent || 0,
+              bonusGoldWeight: bonusGoldWeight || 0,
               ...sanitizedApiData, // Only include sanitized fields
             };
 
@@ -2547,6 +2712,9 @@ export default function JoinSavings() {
                   schemeType: schemeType,
                   paymentFrequency: paymentFrequencyToSend,
                   chitId: chitIdToSend,
+                  goldWeight: goldWeight || 0,
+                  bonusAmount: bonusAmount || 0,
+                  bonusPercentage: activeBonusPercent || 0,
                 };
                 userDetailsString = JSON.stringify(minimalUserDetails);
 
@@ -2578,6 +2746,12 @@ export default function JoinSavings() {
                 paymentFrequency: paymentFrequencyToSend,
                 schemeType: schemeType || "",
                 savinsTypes: parsedData?.savingType || "amount",
+                goldWeight: String(goldWeight || 0),
+                bonusAmount: String(bonusAmount || 0),
+                bonusPercentage: String(activeBonusPercent || 0),
+                bonusGoldWeight: String(bonusGoldWeight || 0),
+                source: "join_savings",
+                interestSlabs: JSON.stringify(interestSlabs || []),
                 userDetails: userDetailsString,
               },
             };
@@ -2642,15 +2816,20 @@ export default function JoinSavings() {
           }
         })
         .catch((error: any) => {
+          const serverErrorMessage = error?.response?.data?.message || error?.response?.data?.error || error?.message || "Unknown error";
           logger.crash(error, {
             context: "Creating savings scheme",
             payload,
             formData,
             selectedChit,
+            serverErrorMessage,
           });
+          const isUnavailable = serverErrorMessage.toLowerCase().includes("inactive") || serverErrorMessage.toLowerCase().includes("not found");
           setKycModalData({
-            title: "Error",
-            message: `Failed to create savings scheme: ${error?.message || "Unknown error"}. Please try again.`,
+            title: isUnavailable ? "Scheme Unavailable" : "Error",
+            message: isUnavailable
+              ? "This scheme is currently inactive or undergoing maintenance on the server. Please try another scheme or contact support."
+              : `Failed to create savings scheme: ${serverErrorMessage}. Please try again.`,
             type: "error",
             buttons: [{ text: "OK", onPress: () => { }, style: "default" }],
           });
@@ -4779,6 +4958,196 @@ function getStyles(theme: any) {
       fontSize: 14,
       fontWeight: '500',
       marginLeft: 8,
+    },
+    limitWarningBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#FEF2F2',
+      borderWidth: 1,
+      borderColor: '#FCA5A5',
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      marginTop: 12,
+      marginBottom: 6,
+    },
+    limitWarningText: {
+      color: '#DC2626',
+      fontSize: 12,
+      fontWeight: '600',
+      flex: 1,
+    },
+    bonusBenefitCard: {
+      backgroundColor: '#FFFDF5',
+      borderRadius: 16,
+      borderWidth: 1.5,
+      borderColor: '#FDE68A',
+      padding: 16,
+      marginTop: 16,
+      marginBottom: 12,
+      shadowColor: '#D97706',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+      elevation: 2,
+    },
+    bonusBenefitHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 14,
+    },
+    bonusTagBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#FEF3C7',
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: '#FCD34D',
+      gap: 5,
+    },
+    bonusTagBadgeText: {
+      color: '#92400E',
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    bonusRatePill: {
+      backgroundColor: '#F3F4F6',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+    },
+    bonusRatePillText: {
+      fontSize: 11,
+      color: '#4B5563',
+      fontWeight: '600',
+    },
+    bonusValuesRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#FFFFFF',
+      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderWidth: 1,
+      borderColor: '#FEF3C7',
+      marginBottom: 12,
+    },
+    bonusValueCol: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    bonusValueLabel: {
+      fontSize: 11,
+      color: '#6B7280',
+      fontWeight: '500',
+      marginBottom: 4,
+    },
+    bonusCashText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: '#16A34A',
+    },
+    bonusGoldText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: '#D97706',
+    },
+    bonusColDivider: {
+      width: 1,
+      height: 28,
+      backgroundColor: '#E5E7EB',
+      marginHorizontal: 8,
+    },
+    bonusTotalCreditedRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: '#FEF9C3',
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: '#FDE047',
+    },
+    bonusTotalLabel: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: '#854D0E',
+    },
+    bonusTotalValue: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: '#854D0E',
+    },
+    slabsTableContainer: {
+      marginTop: 4,
+      borderRadius: 10,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: '#E5E7EB',
+      backgroundColor: '#FFFFFF',
+    },
+    slabsTableHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      backgroundColor: '#F9FAFB',
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderBottomWidth: 1,
+      borderBottomColor: '#E5E7EB',
+    },
+    slabsTableHeadText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: '#6B7280',
+      textTransform: 'uppercase',
+    },
+    slabsTableRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: '#F3F4F6',
+    },
+    slabsTableRowActive: {
+      backgroundColor: '#FEF3C7',
+      borderBottomColor: '#FDE68A',
+    },
+    slabsCellText: {
+      fontSize: 12,
+      color: '#4B5563',
+      fontWeight: '500',
+    },
+    slabsCellTextActive: {
+      color: '#92400E',
+      fontWeight: '700',
+    },
+    slabsPercentText: {
+      fontSize: 12,
+      color: '#4B5563',
+      fontWeight: '600',
+    },
+    slabsPercentTextActive: {
+      color: '#B45309',
+      fontWeight: '800',
+    },
+    currentActiveBadge: {
+      backgroundColor: '#D97706',
+      paddingHorizontal: 5,
+      paddingVertical: 2,
+      borderRadius: 4,
+      marginLeft: 4,
+    },
+    currentActiveBadgeText: {
+      color: '#FFFFFF',
+      fontSize: 9,
+      fontWeight: '800',
     },
   })
 }

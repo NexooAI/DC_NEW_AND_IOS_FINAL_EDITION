@@ -50,19 +50,19 @@ describe("PopularSchemesV2 Component", () => {
       <PopularSchemesV2 schemes={mockSchemes} />
     );
 
-    // Verify exactly ONE single "Gold Savings" card is rendered
-    expect(getAllByText("Gold Savings")).toHaveLength(1);
+    // Verify exactly ONE single "Gold Savings Scheme" card is rendered
+    expect(getAllByText("Gold Savings Scheme")).toHaveLength(1);
 
     // Verify older split cards are NOT rendered
     expect(queryByText("Monthly Gold Chit")).toBeNull();
     expect(queryByText("Gold Flexi Savings")).toBeNull();
 
     // Verify Silver and Diamond cards exist
-    expect(getAllByText("Silver Savings")).toHaveLength(1);
-    expect(getAllByText("Diamond Savings")).toHaveLength(1);
+    expect(getAllByText("Silver Savings Scheme")).toHaveLength(1);
+    expect(getAllByText("Diamond Savings Scheme")).toHaveLength(1);
   });
 
-  it("navigates to schemes with gold category when Gold Savings is tapped", () => {
+  it("navigates to schemes with gold category when Gold Savings Scheme is tapped", () => {
     const mockSchemes = [
       {
         SCHEMENAME: "Gold Standard Scheme",
@@ -76,7 +76,7 @@ describe("PopularSchemesV2 Component", () => {
       <PopularSchemesV2 schemes={mockSchemes} />
     );
 
-    fireEvent.press(getByText("Gold Savings"));
+    fireEvent.press(getByText("Gold Savings Scheme"));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/(app)/(tabs)/home/schemes",
       params: {
@@ -93,7 +93,7 @@ describe("PopularSchemesV2 Component", () => {
     );
 
     await waitFor(() => {
-      expect(getAllByText("Gold Savings")).toHaveLength(1);
+      expect(getAllByText("Gold Savings Scheme")).toHaveLength(1);
     });
     expect(queryByText("Monthly Gold Chit")).toBeNull();
     expect(queryByText("Gold Flexi Savings")).toBeNull();
@@ -126,24 +126,24 @@ describe("PopularSchemesV2 Component", () => {
     );
 
     // Initially all cards exist
-    expect(queryByText("Gold Savings")).toBeTruthy();
-    expect(queryByText("Silver Savings")).toBeTruthy();
-    expect(queryByText("Diamond Savings")).toBeTruthy();
+    expect(queryByText("Gold Savings Scheme")).toBeTruthy();
+    expect(queryByText("Silver Savings Scheme")).toBeTruthy();
+    expect(queryByText("Diamond Savings Scheme")).toBeTruthy();
 
     // Tap "silver" tab
-    fireEvent.press(getByText("silver"));
+    fireEvent.press(getByText("silverSchemes"));
 
     // Now only Silver Savings is displayed, Gold and Diamond are filtered out
-    expect(queryByText("Silver Savings")).toBeTruthy();
-    expect(queryByText("Gold Savings")).toBeNull();
-    expect(queryByText("Diamond Savings")).toBeNull();
+    expect(queryByText("Silver Savings Scheme")).toBeTruthy();
+    expect(queryByText("Gold Savings Scheme")).toBeNull();
+    expect(queryByText("Diamond Savings Scheme")).toBeNull();
 
     // Tap "allSchemes" tab to reset filter
     fireEvent.press(getByText("allSchemes"));
 
     // All cards are visible again
-    expect(queryByText("Gold Savings")).toBeTruthy();
-    expect(queryByText("Silver Savings")).toBeTruthy();
-    expect(queryByText("Diamond Savings")).toBeTruthy();
+    expect(queryByText("Gold Savings Scheme")).toBeTruthy();
+    expect(queryByText("Silver Savings Scheme")).toBeTruthy();
+    expect(queryByText("Diamond Savings Scheme")).toBeTruthy();
   });
 });

@@ -472,6 +472,24 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Mutex lock and failed requests queue for 401 token refresh
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string | null) => void;
+  reject: (error: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // Response interceptor
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
@@ -495,6 +513,7 @@ apiClient.interceptors.response.use(
       LoadingService.hide();
     }
 
+    // Mutex lock and failed requests queue for 401 token refresh
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
       logger.log('401 Unauthorized - attempting token refresh');
@@ -515,6 +534,31 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
 
+      const originalRequest = error.config;
+      if (!originalRequest) {
+        return Promise.reject(error);
+      }
+
+      // If token refresh is already in-flight, queue this request
+      if (isRefreshing) {
+        logger.log('⏳ Token refresh already in progress, queuing request');
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            if (originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              originalRequest.headers['X-Retry-Attempt'] = 'true';
+            }
+            return apiClient.request(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
+      isRefreshing = true;
+
       try {
         logger.log('🔄 Starting token refresh process...');
         const refreshToken = await getSecureItemWithTimeout("refreshToken");
@@ -522,6 +566,8 @@ apiClient.interceptors.response.use(
         if (!refreshToken) {
           logger.log('❌ No refresh token available, initiating logout');
           LoadingService.hide(); // Ensure loading is hidden
+          processQueue(new Error('No refresh token available'), null);
+          isRefreshing = false;
           await handleLogout();
           return Promise.reject(error);
         }
@@ -543,19 +589,20 @@ apiClient.interceptors.response.use(
         await SecureStore.setItemAsync("refreshToken", newRefreshToken);
         await SecureStore.setItemAsync("authToken", newToken);
 
-        logger.log('✅ Token refreshed successfully, retrying original request');
+        logger.log('✅ Token refreshed successfully, resolving queued requests and retrying original');
+
+        processQueue(null, newToken);
+        isRefreshing = false;
 
         // Retry the original request with new token
-        if (error.config) {
-          error.config.headers.Authorization = `Bearer ${newToken}`;
-          error.config.headers['X-Retry-Attempt'] = 'true';
-          return apiClient.request(error.config);
-        } else {
-          return Promise.reject(error);
-        }
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        originalRequest.headers['X-Retry-Attempt'] = 'true';
+        return apiClient.request(originalRequest);
       } catch (refreshError) {
         logger.error('❌ Error during token refresh:', refreshError);
-        logger.log('❌ Token refresh failed, initiating logout');
+        logger.log('❌ Token refresh failed, rejecting queued requests and initiating logout');
+        processQueue(refreshError, null);
+        isRefreshing = false;
         LoadingService.hide(); // Ensure loading is hidden
         await handleLogout();
         return Promise.reject(error);

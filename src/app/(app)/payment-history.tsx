@@ -13,7 +13,9 @@ import {
   UIManager,
   StatusBar,
   BackHandler,
+  ToastAndroid,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -269,9 +271,13 @@ export default function PaymentHistoryScreen() {
       case 'successful':
       case 'charged':
         return {
-          label: t('success') || 'Success',
-          color: '#2E7D32',
-          backgroundColor: 'rgba(46,125,50,0.1)',
+          label: t('success') || 'SUCCESS',
+          color: '#16A34A',
+          amountColor: '#15803D',
+          backgroundColor: '#ECFDF5',
+          borderColor: '#86EFAC',
+          accentColor: '#16A34A',
+          icon: 'checkmark-circle' as const,
         };
       case 'failure':
       case 'failed':
@@ -279,24 +285,45 @@ export default function PaymentHistoryScreen() {
       case 'authorization_failed':
       case 'authentication_failed':
         return {
-          label: t('failed') || 'Failed',
-          color: '#D32F2F',
-          backgroundColor: 'rgba(211,47,47,0.1)',
+          label: t('failed') || 'FAILED',
+          color: '#DC2626',
+          amountColor: '#B91C1C',
+          backgroundColor: '#FEF2F2',
+          borderColor: '#FCA5A5',
+          accentColor: '#DC2626',
+          icon: 'close-circle' as const,
         };
       case 'cancelled':
         return {
-          label: t('cancelled') || 'Cancelled',
-          color: '#757575',
-          backgroundColor: 'rgba(117,117,117,0.1)',
+          label: t('cancelled') || 'CANCELLED',
+          color: '#6B7280',
+          amountColor: '#4B5563',
+          backgroundColor: '#F3F4F6',
+          borderColor: '#D1D5DB',
+          accentColor: '#6B7280',
+          icon: 'ban-outline' as const,
         };
       case 'pending':
       default:
         return {
-          label: t('pending') || 'Pending',
-          color: '#E65100',
-          backgroundColor: 'rgba(230,81,0,0.1)',
+          label: t('pending') || 'PENDING',
+          color: '#D97706',
+          amountColor: '#B45309',
+          backgroundColor: '#FFFBEB',
+          borderColor: '#FDE68A',
+          accentColor: '#D97706',
+          icon: 'time-outline' as const,
         };
     }
+  };
+
+  const handleCopy = async (text: string, label: string) => {
+    try {
+      await Clipboard.setStringAsync(text);
+      if (Platform.OS === 'android') {
+        ToastAndroid.show(`${label} copied to clipboard!`, ToastAndroid.SHORT);
+      }
+    } catch {}
   };
 
   if (!userId) {
@@ -330,67 +357,137 @@ export default function PaymentHistoryScreen() {
   const renderTransactionItem = ({ item }: { item: TransactionItem }) => {
     const statusMeta = getStatusMeta(item.paymentStatus);
     const amountVal = Number(item.amount) || 0;
+    const isSuccess = isSuccessStatus(item.paymentStatus);
+    const weightVal = Number((item as any).gold_weight || (item as any).weight || (item as any).metal_weight) || 0;
+    const bonusVal = Number((item as any).bonus_amount) || 0;
+    const refCode = item.gatewayTransactionId || item.utr_reference || item.orderId;
 
     return (
-      <View style={styles.card}>
+      <View style={[styles.card, { borderLeftColor: statusMeta.accentColor }]}>
+        {/* Top Header */}
         <View style={styles.cardHeader}>
           <View style={styles.schemeInfo}>
-            <Text style={styles.schemeNameText} numberOfLines={1}>
-              {item.schemeName || `Scheme #${item.schemeId}`}
-            </Text>
-            {item.schemeType && (
-              <Text style={styles.schemeTypeText}>
-                {item.schemeType.toUpperCase()}
+            <View style={styles.schemeTitleRow}>
+              <Ionicons
+                name="shield-checkmark"
+                size={15}
+                color={theme.colors.secondary || '#D4AF37'}
+                style={{ marginRight: 6 }}
+              />
+              <Text style={styles.schemeNameText} numberOfLines={1}>
+                {item.schemeName || `Scheme #${item.schemeId}`}
               </Text>
-            )}
+            </View>
+            <View style={styles.badgeRow}>
+              {item.schemeType && (
+                <View style={styles.typeBadge}>
+                  <Text style={styles.typeBadgeText}>
+                    {item.schemeType.toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              {item.accountNumber && (
+                <Text style={styles.accountNumberText}>
+                  A/C: {item.accountNumber}
+                </Text>
+              )}
+            </View>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: statusMeta.backgroundColor, borderColor: statusMeta.color }]}>
+
+          {/* Status Badge with Icon */}
+          <View style={[styles.statusBadge, { backgroundColor: statusMeta.backgroundColor, borderColor: statusMeta.borderColor }]}>
+            <Ionicons name={statusMeta.icon} size={12} color={statusMeta.color} style={{ marginRight: 4 }} />
             <Text style={[styles.statusText, { color: statusMeta.color }]}>{statusMeta.label}</Text>
           </View>
         </View>
 
+        {/* Card Body */}
         <View style={styles.cardBody}>
           <View style={styles.amountRow}>
-            <Text style={styles.amountText}>₹{amountVal.toLocaleString('en-IN')}</Text>
-            <View style={styles.paymentMethodBadge}>
-              <Text style={styles.paymentMethodText}>
-                {item.paymentMethod || 'ONLINE'}
+            <View>
+              <Text style={styles.amountLabel}>{t('paymentAmount') || 'Payment Amount'}</Text>
+              <Text style={[styles.amountText, { color: statusMeta.amountColor }]}>
+                {isSuccess ? '+' : ''}₹{amountVal.toLocaleString('en-IN')}
               </Text>
             </View>
+
+            <View style={styles.paymentMethodContainer}>
+              <View style={styles.paymentMethodBadge}>
+                <Ionicons
+                  name={String(item.paymentMethod || '').toLowerCase().includes('upi') ? 'qr-code-outline' : 'card-outline'}
+                  size={12}
+                  color={theme.colors.textSecondary || '#64748B'}
+                  style={{ marginRight: 4 }}
+                />
+                <Text style={styles.paymentMethodText}>
+                  {(item.paymentMethod || item.payment_method_type || 'ONLINE').toUpperCase()}
+                </Text>
+              </View>
+            </View>
           </View>
+
+          {/* Bonus or Weight Accrued if present */}
+          {(weightVal > 0 || bonusVal > 0) && (
+            <View style={styles.rewardsRow}>
+              {weightVal > 0 && (
+                <View style={styles.weightBadge}>
+                  <Ionicons name="sparkles" size={11} color="#B45309" style={{ marginRight: 4 }} />
+                  <Text style={styles.weightBadgeText}>{weightVal}g Gold Credited</Text>
+                </View>
+              )}
+              {bonusVal > 0 && (
+                <View style={styles.bonusBadge}>
+                  <Ionicons name="gift" size={11} color="#15803D" style={{ marginRight: 4 }} />
+                  <Text style={styles.bonusBadgeText}>+₹{bonusVal.toLocaleString('en-IN')} Bonus Added</Text>
+                </View>
+              )}
+            </View>
+          )}
 
           <View style={styles.divider} />
 
-          <View style={styles.row}>
-            <Text style={styles.label}>{t('dateAndTime') || 'Date & Time:'}</Text>
-            <Text style={styles.value}>{formatDateTime(item.paymentDate)}</Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text style={styles.label}>{t('installment') || 'Installment:'}</Text>
-            <Text style={styles.value}>#{item.installment}</Text>
-          </View>
-
-          {item.orderId ? (
-            <View style={styles.row}>
-              <Text style={styles.label}>{t('orderId') || 'Order ID:'}</Text>
-              <Text style={styles.valueCopyable} selectable>{item.orderId}</Text>
+          {/* Metadata Grid */}
+          <View style={styles.metaGrid}>
+            <View style={styles.metaItem}>
+              <Ionicons name="calendar-outline" size={12} color="#64748B" style={{ marginRight: 4 }} />
+              <Text style={styles.metaLabel}>{t('date') || 'Date'}:</Text>
+              <Text style={styles.metaValue}>{formatDateTime(item.paymentDate)}</Text>
             </View>
-          ) : null}
 
-          {item.gatewayTransactionId || item.utr_reference ? (
-            <View style={styles.row}>
-              <Text style={styles.label}>{t('txnReference') || 'Txn Ref:'}</Text>
-              <Text style={styles.valueCopyable} selectable>
-                {item.gatewayTransactionId || item.utr_reference}
-              </Text>
+            <View style={styles.metaItem}>
+              <Ionicons name="layers-outline" size={12} color="#64748B" style={{ marginRight: 4 }} />
+              <Text style={styles.metaLabel}>{t('installment') || 'Inst'}:</Text>
+              <Text style={[styles.metaValue, { fontWeight: '700' }]}>#{item.installment}</Text>
+            </View>
+          </View>
+
+          {/* Transaction / Order IDs with Copy Action */}
+          {refCode ? (
+            <View style={styles.refBox}>
+              <View style={styles.refInfo}>
+                <Text style={styles.refLabel}>
+                  {item.gatewayTransactionId || item.utr_reference ? 'Txn Ref / UTR' : 'Order ID'}:
+                </Text>
+                <Text style={styles.refValue} numberOfLines={1}>
+                  {refCode}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => handleCopy(String(refCode), 'Reference ID')}
+                style={styles.copyBtn}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="copy-outline" size={12} color={theme.colors.primary} />
+                <Text style={styles.copyBtnText}>Copy</Text>
+              </TouchableOpacity>
             </View>
           ) : null}
 
           {item.isManual === 'yes' ? (
             <View style={styles.manualBadgeContainer}>
-              <Ionicons name="checkbox-outline" size={rf(12)} color="#D81B60" />
-              <Text style={styles.manualText}>Office Manual Payment</Text>
+              <Ionicons name="business-outline" size={12} color="#B45309" />
+              <Text style={styles.manualText}>Branch Office Manual Payment</Text>
             </View>
           ) : null}
         </View>
@@ -489,111 +586,237 @@ function getStyles(theme: any) { return StyleSheet.create({
     fontSize: rf(13),
     fontWeight: 'bold',
   },
-  listContent: { paddingHorizontal: wp(5), paddingVertical: hp(1.5), paddingBottom: hp(8) },
+  listContent: { paddingHorizontal: wp(4), paddingVertical: hp(1.5), paddingBottom: hp(8) },
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loaderText: { marginTop: hp(1.5), color: theme.colors.textSecondary, fontSize: rf(12) },
   card: {
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
+    borderLeftWidth: 4.5,
     padding: wp(4),
     marginBottom: hp(1.5),
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5 },
-      android: { elevation: 2 },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.08, shadowRadius: 6 },
+      android: { elevation: 2.5 },
     }),
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: hp(1),
+    marginBottom: hp(0.8),
   },
   schemeInfo: {
     flex: 1,
     marginRight: wp(2),
   },
-  schemeNameText: {
-    fontSize: rf(14),
-    fontWeight: '700',
-    color: theme.colors.textDark || '#2e0406',
+  schemeTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  schemeTypeText: {
-    fontSize: rf(9),
+  schemeNameText: {
+    fontSize: rf(13),
+    fontWeight: '800',
+    color: '#0F172A',
+    flex: 1,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: hp(0.3),
+    gap: 6,
+  },
+  typeBadge: {
+    backgroundColor: 'rgba(212, 175, 55, 0.15)',
+    paddingHorizontal: wp(1.8),
+    paddingVertical: hp(0.2),
+    borderRadius: 4,
+  },
+  typeBadgeText: {
+    fontSize: rf(8.5),
+    fontWeight: '700',
+    color: '#B45309',
+  },
+  accountNumberText: {
+    fontSize: rf(9.5),
     fontWeight: '600',
-    color: theme.colors.textSecondary,
-    marginTop: hp(0.2),
+    color: '#64748B',
   },
   statusBadge: {
-    paddingHorizontal: wp(2.5),
-    paddingVertical: hp(0.5),
-    borderRadius: 7,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: wp(2.2),
+    paddingVertical: hp(0.4),
+    borderRadius: 6,
     borderWidth: 1,
   },
-  statusText: { fontSize: rf(9), fontWeight: '900', textTransform: 'uppercase' },
+  statusText: { fontSize: rf(9), fontWeight: '900', letterSpacing: 0.3 },
   cardBody: {
-    marginTop: hp(0.5),
+    marginTop: hp(0.3),
   },
   amountRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: hp(1),
+    alignItems: 'flex-end',
+    marginBottom: hp(0.8),
+    marginTop: hp(0.4),
+  },
+  amountLabel: {
+    fontSize: rf(9.5),
+    fontWeight: '600',
+    color: '#64748B',
+    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   amountText: {
-    fontSize: rf(18),
-    fontWeight: 'bold',
-    color: theme.colors.textDark || '#850111',
+    fontSize: rf(19),
+    fontWeight: '900',
+    letterSpacing: 0.2,
+  },
+  paymentMethodContainer: {
+    alignItems: 'flex-end',
   },
   paymentMethodBadge: {
-    backgroundColor: theme.colors.backgroundSecondary,
-    paddingHorizontal: wp(2),
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: wp(2.2),
     paddingVertical: hp(0.4),
-    borderRadius: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   paymentMethodText: {
-    fontSize: rf(10),
+    fontSize: rf(9.5),
     fontWeight: '700',
-    color: theme.colors.textSecondary,
+    color: '#475569',
   },
-  row: {
+  rewardsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: hp(0.35),
+    flexWrap: 'wrap',
+    gap: 6,
+    marginVertical: hp(0.5),
   },
-  label: {
-    fontSize: rf(11),
-    color: theme.colors.textSecondary,
+  weightBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: wp(2),
+    paddingVertical: hp(0.3),
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
   },
-  value: {
-    fontSize: rf(11),
-    fontWeight: '600',
-    color: theme.colors.textDark,
+  weightBadgeText: {
+    fontSize: rf(9),
+    fontWeight: '700',
+    color: '#92400E',
   },
-  valueCopyable: {
-    fontSize: rf(11),
-    fontWeight: '600',
-    color: theme.colors.textDark,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  bonusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: wp(2),
+    paddingVertical: hp(0.3),
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+  },
+  bonusBadgeText: {
+    fontSize: rf(9),
+    fontWeight: '700',
+    color: '#166534',
   },
   divider: {
     height: 1,
-    backgroundColor: theme.colors.borderLight,
-    marginVertical: hp(1),
+    backgroundColor: '#F1F5F9',
+    marginVertical: hp(0.8),
+  },
+  metaGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: hp(0.3),
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  metaLabel: {
+    fontSize: rf(10.5),
+    color: '#64748B',
+    marginRight: 4,
+  },
+  metaValue: {
+    fontSize: rf(10.5),
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  refBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: wp(2.5),
+    paddingVertical: hp(0.6),
+    borderRadius: 6,
+    marginTop: hp(0.8),
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  refInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: wp(2),
+  },
+  refLabel: {
+    fontSize: rf(9.5),
+    color: '#64748B',
+    fontWeight: '600',
+    marginRight: 4,
+  },
+  refValue: {
+    fontSize: rf(9.5),
+    fontWeight: '700',
+    color: '#334155',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    flex: 1,
+  },
+  copyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: wp(2),
+    paddingVertical: hp(0.3),
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    gap: 3,
+  },
+  copyBtnText: {
+    fontSize: rf(9),
+    fontWeight: '700',
+    color: theme.colors.primary || '#1D4ED8',
   },
   manualBadgeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: hp(1),
-    backgroundColor: 'rgba(216,27,96,0.05)',
+    marginTop: hp(0.6),
+    backgroundColor: '#FEF3C7',
     paddingHorizontal: wp(2),
-    paddingVertical: hp(0.5),
+    paddingVertical: hp(0.4),
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
     alignSelf: 'flex-start',
   },
   manualText: {
     fontSize: rf(9),
     fontWeight: '700',
-    color: '#D81B60',
+    color: '#B45309',
     marginLeft: wp(1),
   },
   filterContainer: {

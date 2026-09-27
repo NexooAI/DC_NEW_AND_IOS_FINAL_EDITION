@@ -74,14 +74,14 @@ export const MySchemesCards: React.FC<MySchemesCardsProps> = ({
             <View style={styles.cardLeft}>
               <View style={styles.badgeContainerGold}>
                 <Text style={styles.badgeTextGold}>
-                  {t("goldSavingsPlan") || "GOLD SAVINGS SCHEMES"}
+                  {t("goldSavingsPlan") || "GOLD SAVINGS SCHEME"}
                 </Text>
               </View>
               <Text style={styles.cardTitle}>
-                {t("goldSchemes") || "Gold Schemes"}
+                {t("goldSchemes") || "Gold Saving Scheme"}
               </Text>
               <Text style={styles.cardSubtitle}>
-                {t("exploreGoldSavingsPlans") || "Explore exclusive 22KT & 18KT Gold savings schemes with high growth"}
+                {t("exploreGoldSavingsPlans") || "Explore exclusive Gold savings schemes with high growth & bonus"}
               </Text>
               <View style={styles.ctaButtonGold}>
                 <Text style={styles.ctaTextGold}>
@@ -123,11 +123,11 @@ export const MySchemesCards: React.FC<MySchemesCardsProps> = ({
             <View style={styles.cardLeft}>
               <View style={styles.badgeContainerSilver}>
                 <Text style={styles.badgeTextSilver}>
-                  {t("silverSavingsPlan") || "SILVER SAVINGS SCHEMES"}
+                  {t("silverSavingsPlan") || "SILVER SAVINGS SCHEME"}
                 </Text>
               </View>
               <Text style={styles.cardTitle}>
-                {t("silverSchemes") || "Silver Schemes"}
+                {t("silverSchemes") || "Silver Saving Scheme"}
               </Text>
               <Text style={styles.cardSubtitle}>
                 {t("exploreSilverSavingsPlans") || "Smart silver accumulation plans with zero wastage benefits"}
@@ -172,11 +172,11 @@ export const MySchemesCards: React.FC<MySchemesCardsProps> = ({
             <View style={styles.cardLeft}>
               <View style={styles.badgeContainerDiamond}>
                 <Text style={styles.badgeTextDiamond}>
-                  {t("diamondSavingsPlan") || "DIAMOND JEWELLERY PLAN"}
+                  {t("diamondSavingsPlan") || "DIAMOND SAVINGS SCHEME"}
                 </Text>
               </View>
               <Text style={styles.cardTitle}>
-                {t("diamondSchemes") || "Diamond Schemes"}
+                {t("diamondSchemes") || "Diamond Saving Scheme"}
               </Text>
               <Text style={styles.cardSubtitle}>
                 {t("exploreDiamondSavingsPlans") || "Precious diamond jewellery savings plans with special bonus additions"}
@@ -221,11 +221,11 @@ export const MySchemesCards: React.FC<MySchemesCardsProps> = ({
             <View style={styles.cardLeft}>
               <View style={styles.badgeContainerPlatinum}>
                 <Text style={styles.badgeTextPlatinum}>
-                  {t("platinumSavingsPlan") || "PLATINUM SAVINGS SCHEMES"}
+                  {t("platinumSavingsPlan") || "PLATINUM SAVINGS SCHEME"}
                 </Text>
               </View>
               <Text style={styles.cardTitle}>
-                {t("platinumSchemes") || "Platinum Schemes"}
+                {t("platinumSchemes") || "Platinum Saving Scheme"}
               </Text>
               <Text style={styles.cardSubtitle}>
                 {t("explorePlatinumSavingsPlans") || "Elite 950 Pure Platinum savings collection with maximum flexibility"}
@@ -268,11 +268,11 @@ export const MySchemesCards: React.FC<MySchemesCardsProps> = ({
             <View style={styles.cardLeft}>
               <View style={styles.badgeContainerOldGold}>
                 <Text style={styles.badgeTextOldGold}>
-                  {t("oldGoldSavingsPlan") || "OLD GOLD SAVINGS SCHEMES"}
+                  {t("oldGoldSavingsPlan") || "OLD GOLD SCHEME"}
                 </Text>
               </View>
               <Text style={styles.cardTitle}>
-                {t("oldGoldSchemes") || "Old Gold Schemes"}
+                {t("oldGoldSchemes") || "Old Gold"}
               </Text>
               <Text style={styles.cardSubtitle}>
                 {t("exploreOldGoldSavingsPlans") || "Exchange your old gold jewellery for new with maximum value benefits"}

@@ -31,6 +31,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import GlobalLoadingProvider from "@/components/GlobalLoadingProvider";
 import { useForceUpdate } from "@/hooks/useForceUpdate";
 import ForceUpdateScreen from "@/components/ForceUpdateScreen";
+import OfflineBanner from "@/components/OfflineBanner";
 import { logger } from "@/utils/logger";
 
 const getSecureItemWithTimeout = async (key: string, timeoutMs = 1500): Promise<string | null> => {
@@ -426,6 +427,7 @@ export default function RootLayout() {
           />
           <LanguageProvider1>
             <GlobalLoadingProvider>
+              <OfflineBanner />
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="intro" options={{ gestureEnabled: false }} />
                 <Stack.Screen name="login" options={{ gestureEnabled: false }} />

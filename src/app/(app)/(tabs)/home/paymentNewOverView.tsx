@@ -17,7 +17,7 @@ import { BackHandler } from "react-native";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useRouter, useFocusEffect, Stack } from "expo-router";
 import { theme } from "@/constants/theme";
 import api from "@/services/api";
 import paymentService from "../../../../services/payment.service";
@@ -135,6 +135,9 @@ export default function PaymentNewOverView() {
   );
 
   const [goldRate, setGoldRate] = useState(0);
+  const [silverRate, setSilverRate] = useState(0);
+  const [fetchedSlabs, setFetchedSlabs] = useState<any[]>([]);
+  const [showAllSlabs, setShowAllSlabs] = useState(true);
   const [weightPerGram, setWeightPerGram] = useState(0);
   const [isEditingAmount, setIsEditingAmount] = useState(false);
   const [amountError, setAmountError] = useState("");
@@ -221,7 +224,6 @@ export default function PaymentNewOverView() {
   const [isSchemeDetailsExpanded, setIsSchemeDetailsExpanded] = useState(true);
   const schemeDetailsHeight = useRef(new Animated.Value(1)).current;
 
-  const [secondsLeft, setSecondsLeft] = useState(300); // 5 minutes
   const amountScale = useRef(new Animated.Value(1)).current;
 
   const animateAmountText = () => {
@@ -234,31 +236,105 @@ export default function PaymentNewOverView() {
     }).start();
   };
 
-  useEffect(() => {
-    if (isProcessing) return;
+  const handleBackButtonPress = useCallback(() => {
+    setShowExitModal(true);
+  }, []);
 
-    const timer = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          Alert.alert(
-            "Session Expired",
-            "Your payment session has expired. Please try again.",
-            [{ text: "OK", onPress: () => router.back() }]
-          );
-          return 0;
+  const handleConfirmExit = useCallback(() => {
+    if (!isMountedRef.current) {
+      logger.log("Component unmounted, skipping exit navigation");
+      return;
+    }
+
+    setShowExitModal(false);
+    try {
+      if (!router) {
+        logger.error("Router not available for back navigation");
+        return;
+      }
+
+      const source = (params.source || userDetails?.source || "").toString();
+      const invId = params.investmentId || userDetails?.investmentId || params.id;
+
+      logger.log("Exiting payment overview with source:", { source, invId });
+
+      if (source === "savings_detail" || source === "savings_detail_bulk") {
+        if (invId) {
+          router.replace({
+            pathname: "/(tabs)/savings/SavingsDetail",
+            params: {
+              id: String(invId),
+              investmentId: String(invId),
+              schemeName: params.schemeName || userDetails?.schemeName || "",
+              schemeId: params.schemeId || userDetails?.schemeId || "",
+              schemeCode: params.schemeCode || userDetails?.schemeCode || "",
+              emiAmount: params.amount || userDetails?.amount || "",
+              accountHolder: userDetails?.accountname || userDetails?.name || "",
+              accNo: userDetails?.accNo || params.accNo || "",
+              schemesData: typeof params.schemesData === "object" ? JSON.stringify(params.schemesData) : (params.schemesData || ""),
+              joiningDate: params.joiningDate || userDetails?.joiningDate || "",
+              maturityDate: params.maturityDate || userDetails?.maturityDate || "",
+              totalPaid: params.totalPaid || userDetails?.totalPaid || "",
+              noOfIns: params.noOfIns || userDetails?.noOfIns || "",
+              goldWeight: params.goldWeight || userDetails?.goldWeight || "",
+              chitId: params.chitId || userDetails?.chitId || "",
+              paymentFrequency: params.paymentFrequency || userDetails?.paymentFrequency || "",
+              schemeType: params.schemeType || userDetails?.schemeType || "",
+            },
+          });
+          return;
+        } else {
+          router.replace("/(tabs)/savings");
+          return;
         }
-        return prev - 1;
-      });
-    }, 1000);
+      }
 
-    return () => clearInterval(timer);
-  }, [isProcessing]);
+      if (source === "savings_index" || source === "savings" || source === "my_schemes") {
+        router.replace("/(tabs)/savings");
+        return;
+      }
 
-  const formatTimer = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+      if (source === "bill_payment") {
+        router.replace("/(app)/bill_payment");
+        return;
+      }
+
+      if (source === "advance_booking") {
+        router.replace("/(tabs)/joinAdvGold");
+        return;
+      }
+
+      if (source === "join_savings") {
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace("/(tabs)/home/schemes");
+        }
+        return;
+      }
+
+      // Default fallback
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/(tabs)/home");
+      }
+    } catch (error) {
+      logger.error("Error navigating back:", error);
+      try {
+        if (router && typeof router.canGoBack === "function" && router.canGoBack()) {
+          router.back();
+        } else if (router && typeof router.replace === "function") {
+          router.replace("/(tabs)/home");
+        }
+      } catch (fallbackError) {
+        logger.error("Fallback navigation also failed:", fallbackError);
+      }
+    }
+  }, [router, params, userDetails]);
+
+  const handleCancelExit = () => {
+    setShowExitModal(false);
   };
 
   // Check if it's first payment based on paid payment count from params
@@ -281,18 +357,19 @@ export default function PaymentNewOverView() {
     return Number(monthsPaid) === 0;
   }, [params.paidPaymentCount, userDetails?.monthsPaid, params.monthsPaid]);
 
-  // Define handleBackButtonPress before useFocusEffect to avoid closure issues
-  const handleBackButtonPress = useCallback(() => {
-    setShowExitModal(true);
-  }, []);
-
 
   // Reset isProcessing and navigation flag when screen is focused (e.g., when navigating back from payment failure)
+  // Hide bottom navigation tab bar when on payment overview page
   useFocusEffect(
     useCallback(() => {
       setIsProcessing(false);
       isNavigatingRef.current = false; // Reset navigation flag
       isProcessingRef.current = false;
+      useGlobalStore.getState().setTabVisibility(false);
+
+      return () => {
+        useGlobalStore.getState().setTabVisibility(true);
+      };
     }, [])
   );
 
@@ -521,18 +598,23 @@ export default function PaymentNewOverView() {
     }
   };
 
-  // Fetch gold rate with cache
+  // Fetch gold and silver rates with cache
   const fetchGoldRate = async () => {
     try {
       const { fetchGoldRatesWithCache } = await import("@/utils/apiCache");
       const rateData = await fetchGoldRatesWithCache();
-      if (isMountedRef.current && rateData?.gold_rate) {
-        const rate = Number(rateData.gold_rate);
-        setGoldRate(rate);
-        calculateWeightPerGram(currentAmount, rate);
+      if (isMountedRef.current && rateData) {
+        if (rateData.gold_rate) {
+          const rate = Number(rateData.gold_rate);
+          setGoldRate(rate);
+          calculateWeightPerGram(currentAmount, rate);
+        }
+        if (rateData.silver_rate) {
+          setSilverRate(Number(rateData.silver_rate));
+        }
       }
     } catch (error) {
-      logger.error("Error fetching gold rate:", error);
+      logger.error("Error fetching metal rates:", error);
       // Don't crash - just log the error
     }
   };
@@ -659,6 +741,142 @@ export default function PaymentNewOverView() {
 
     return name;
   }, [params.schemeName, userDetails?.schemeName, t, language]);
+
+  // Bonus Scheme slabs from params, userDetails, or fetched scheme data
+  const rawSlabs = useMemo(() => {
+    if (params.interestSlabs) {
+      try {
+        const parsed = typeof params.interestSlabs === "string" ? JSON.parse(params.interestSlabs) : params.interestSlabs;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        logger.warn("Error parsing params.interestSlabs:", e);
+      }
+    }
+    if (userDetails?.interest_slabs && Array.isArray(userDetails.interest_slabs) && userDetails.interest_slabs.length > 0) {
+      return userDetails.interest_slabs;
+    }
+    if (userDetails?.interestSlabs && Array.isArray(userDetails.interestSlabs) && userDetails.interestSlabs.length > 0) {
+      return userDetails.interestSlabs;
+    }
+    if (fetchedSlabs.length > 0) return fetchedSlabs;
+    return [];
+  }, [params.interestSlabs, userDetails?.interest_slabs, userDetails?.interestSlabs, fetchedSlabs]);
+
+  // Fallback API call to fetch scheme bonus slabs if not passed via navigation params
+  useEffect(() => {
+    const fetchSlabsIfNeeded = async () => {
+      const schemeId = params.schemeId || userDetails?.schemeId;
+      if (!schemeId || rawSlabs.length > 0) return;
+      try {
+        const res = await api.get(`/schemes/${schemeId}`);
+        const data = res?.data?.data || res?.data;
+        const s = data?.interest_slabs || data?.interest_slab || data?.interestSlabs;
+        if (Array.isArray(s) && s.length > 0) {
+          setFetchedSlabs(s);
+        } else if (typeof s === "string") {
+          try {
+            const parsed = JSON.parse(s);
+            if (Array.isArray(parsed)) setFetchedSlabs(parsed);
+          } catch {}
+        }
+      } catch (err) {
+        logger.warn("Could not fetch scheme bonus slabs:", err);
+      }
+    };
+    fetchSlabsIfNeeded();
+  }, [params.schemeId, userDetails?.schemeId, rawSlabs.length]);
+
+  const normalizedSlabs = useMemo(() => {
+    if (!Array.isArray(rawSlabs)) return [];
+    return rawSlabs.map((s: any) => ({
+      from_day: Number(s.from_day ?? s.fromDay ?? s.from ?? 0),
+      to_day: Number(s.to_day ?? s.toDay ?? s.to ?? 0),
+      percentage: Number(s.percentage ?? s.bonus_percentage ?? s.bonusPercentage ?? s.interest_percentage ?? 0),
+    })).filter((s: any) => s.to_day > 0 || s.percentage > 0);
+  }, [rawSlabs]);
+
+  // Metal type detection
+  const isSilverScheme = useMemo(() => {
+    const name = String(params.schemeName || userDetails?.schemeName || "").toLowerCase();
+    const type = String(params.metalType || userDetails?.metalType || "").toLowerCase();
+    return name.includes("silver") || name.includes("வெள்ளி") || type.includes("silver");
+  }, [params.schemeName, userDetails?.schemeName, params.metalType, userDetails?.metalType]);
+
+  const effectiveRate = useMemo(() => {
+    if (isSilverScheme && silverRate > 0) return silverRate;
+    return goldRate > 0 ? goldRate : 0;
+  }, [isSilverScheme, silverRate, goldRate]);
+
+  // Days elapsed since enrollment
+  const currentDay = useMemo(() => {
+    const rawDate = params.joiningDate || userDetails?.joiningDate || (userDetails as any)?.created_at || (userDetails as any)?.joiningdate;
+    if (!rawDate) return 1;
+    try {
+      let joinDate: Date;
+      if (typeof rawDate === "string" && rawDate.includes("-")) {
+        const parts = rawDate.split("T")[0].split("-");
+        if (parts[0].length === 4) {
+          joinDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        } else if (parts[2].length === 4) {
+          joinDate = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+        } else {
+          joinDate = new Date(rawDate);
+        }
+      } else {
+        joinDate = new Date(rawDate);
+      }
+      if (isNaN(joinDate.getTime())) return 1;
+      const today = new Date();
+      const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+      const joinMidnight = new Date(joinDate.getFullYear(), joinDate.getMonth(), joinDate.getDate()).getTime();
+      const diffTime = todayMidnight - joinMidnight;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      return Math.max(1, diffDays);
+    } catch {
+      return 1;
+    }
+  }, [params.joiningDate, userDetails?.joiningDate, (userDetails as any)?.created_at, (userDetails as any)?.joiningdate]);
+
+  // Payment installment number
+  const paymentNumber = useMemo(() => {
+    const paidCountParam = params.paidPaymentCount !== undefined && params.paidPaymentCount !== null && params.paidPaymentCount !== ""
+      ? Number(params.paidPaymentCount)
+      : null;
+    if (paidCountParam !== null && !isNaN(paidCountParam) && paidCountParam > 0) {
+      return paidCountParam;
+    }
+    const monthsPaid = Number(userDetails?.monthsPaid || params.monthsPaid || 0);
+    return Math.max(1, monthsPaid + 1);
+  }, [params.paidPaymentCount, userDetails?.monthsPaid, params.monthsPaid]);
+
+  // Active bonus slab based on current day
+  const activeSlab = useMemo(() => {
+    if (!normalizedSlabs.length) return null;
+    return normalizedSlabs.find(
+      (slab: any) => currentDay >= slab.from_day && currentDay <= slab.to_day
+    ) || null;
+  }, [normalizedSlabs, currentDay]);
+
+  const activeBonusPercent = activeSlab ? activeSlab.percentage : 0;
+
+  // Live dynamic bonus calculations linked to currentAmount
+  const bonusCalculations = useMemo(() => {
+    const amt = Number(currentAmount) || 0;
+    const rate = effectiveRate > 0 ? effectiveRate : (goldRate > 0 ? goldRate : 1);
+    const baseWeight = rate > 0 ? amt / rate : 0;
+    const bonusCash = (amt * activeBonusPercent) / 100;
+    const bonusWeight = rate > 0 ? bonusCash / rate : 0;
+    const totalWeight = baseWeight + bonusWeight;
+
+    return {
+      baseWeight: Number(baseWeight.toFixed(3)),
+      bonusCash: Math.round(bonusCash * 100) / 100,
+      bonusWeight: Number(bonusWeight.toFixed(3)),
+      totalWeight: Number(totalWeight.toFixed(3)),
+    };
+  }, [currentAmount, activeBonusPercent, effectiveRate, goldRate]);
+
+  const hasBonusRewards = normalizedSlabs.length > 0;
 
   useEffect(() => {
     if (paymentType) {
@@ -1243,53 +1461,25 @@ export default function PaymentNewOverView() {
     }
   };
 
-  const handleConfirmExit = useCallback(() => {
-    if (!isMountedRef.current) {
-      logger.log("Component unmounted, skipping exit navigation");
-      return;
-    }
-
-    setShowExitModal(false);
-    try {
-      // Validate router is available
-      if (!router || typeof router.back !== 'function') {
-        logger.error("Router not available for back navigation");
-        return;
-      }
-
-      router.back();
-    } catch (error) {
-      logger.error("Error navigating back:", error);
-      // Fallback navigation if router.back() fails
-      try {
-        if (router && typeof router.canGoBack === 'function' && router.canGoBack()) {
-          router.back();
-        } else if (router && typeof router.replace === 'function') {
-          // Ultimate fallback: navigate to home
-          router.replace('/(tabs)/home');
-        }
-      } catch (fallbackError) {
-        logger.error("Fallback navigation also failed:", fallbackError);
-      }
-    }
-  }, [router]);
-
-  const handleCancelExit = () => {
-    setShowExitModal(false);
-  };
-
-
-
   return (
     <View style={styles.container}>
-      {/* Session Timer Banner */}
-      <View style={styles.timerBanner}>
-        <Ionicons name="time-outline" size={18} color="#d97706" />
-        <Text style={styles.timerText}>
-          Session expires in: <Text style={styles.timerCountdown}>{formatTimer(secondsLeft)}</Text>
-        </Text>
-      </View>
-
+      <Stack.Screen
+        options={{
+          headerTitle: t("paymentProcess") || "Payment Process",
+          gestureEnabled: false,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={handleBackButtonPress}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ paddingHorizontal: 12, paddingVertical: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel={t("back") || "Back"}
+            >
+              <Ionicons name="chevron-back" size={24} color={theme.colors.textDark || "#333"} />
+            </TouchableOpacity>
+          ),
+        }}
+      />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.contentContainer}
@@ -1465,6 +1655,219 @@ export default function PaymentNewOverView() {
               </Text>}
             </View>
           </LinearGradient>
+        )}
+
+        {/* Bonus Benefits Card (for Incentive / Bonus Slab Schemes) */}
+        {hasBonusRewards && (
+          <View style={styles.bonusBenefitCard}>
+            <LinearGradient
+              colors={["#FFFBEB", "#FEF3C7"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.bonusBenefitGradient}
+            >
+              {/* Header: Title + Badges */}
+              <View style={styles.bonusHeaderRow}>
+                <View style={styles.bonusTitleGroup}>
+                  <View style={styles.bonusIconWrap}>
+                    <Ionicons name="gift" size={18} color="#D97706" />
+                  </View>
+                  <View>
+                    <Text style={styles.bonusMainTitle}>
+                      {t("bonusBenefits")}
+                    </Text>
+                    <Text style={styles.bonusSubTitle}>
+                      {t("installment")} #{paymentNumber}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Day Badge */}
+                <View style={styles.dayBadgePill}>
+                  <Ionicons name="calendar-outline" size={13} color="#92400E" />
+                  <Text style={styles.dayBadgeText}>
+                    {t("day")} {currentDay}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Active Tier Banner */}
+              <View style={styles.activeTierBanner}>
+                {activeSlab ? (
+                  <>
+                    <View style={styles.activeTierLeft}>
+                      <Ionicons name="sparkles" size={15} color="#D97706" />
+                      <Text style={styles.activeTierLabel}>
+                        {t("activeTier")}:
+                      </Text>
+                      <Text style={styles.activeTierRange}>
+                        {activeSlab.from_day} - {activeSlab.to_day} {t("days")}
+                      </Text>
+                    </View>
+                    <View style={styles.activePercentBadge}>
+                      <Text style={styles.activePercentText}>
+                        +{activeBonusPercent}%
+                      </Text>
+                    </View>
+                  </>
+                ) : (
+                  <View style={styles.noActiveTierRow}>
+                    <Ionicons name="information-circle-outline" size={16} color="#B45309" />
+                    <Text style={styles.noActiveTierText}>
+                      {t("noActiveTier")} {currentDay}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Dynamic Live Calculations Grid */}
+              <View style={styles.bonusMetricsGrid}>
+                {/* 1. Bonus Cash Reward */}
+                <View style={styles.bonusMetricCard}>
+                  <View style={styles.metricIconLabelRow}>
+                    <Ionicons name="cash-outline" size={14} color="#16A34A" />
+                    <Text style={styles.bonusMetricLabel}>
+                      {t("bonusReward")}
+                    </Text>
+                  </View>
+                  <Text style={styles.bonusCashValue}>
+                    +₹{bonusCalculations.bonusCash.toLocaleString("en-IN")}
+                  </Text>
+                  <Text style={styles.bonusMetricSub}>
+                    {activeBonusPercent}% of ₹{Number(currentAmount).toLocaleString("en-IN")}
+                  </Text>
+                </View>
+
+                {/* 2. Bonus Gold Weight */}
+                <View style={styles.bonusMetricCard}>
+                  <View style={styles.metricIconLabelRow}>
+                    <FontAwesome5 name="coins" size={12} color="#D97706" />
+                    <Text style={styles.bonusMetricLabel}>
+                      {t("bonusGold")}
+                    </Text>
+                  </View>
+                  <Text style={styles.bonusWeightValue}>
+                    +{bonusCalculations.bonusWeight.toFixed(3)}g
+                  </Text>
+                  <Text style={styles.bonusMetricSub}>
+                    @ ₹{(effectiveRate > 0 ? effectiveRate : goldRate).toLocaleString("en-IN")}/g
+                  </Text>
+                </View>
+              </View>
+
+              {/* Total Gold Credited Row */}
+              <View style={styles.totalGoldRow}>
+                <View style={styles.totalGoldLeft}>
+                  <Text style={styles.totalGoldTitle}>
+                    {t("totalGoldCredited")}
+                  </Text>
+                  <Text style={styles.totalGoldFormula}>
+                    {`${t("base")}: ${bonusCalculations.baseWeight.toFixed(3)}g + ${t("bonus")}: ${bonusCalculations.bonusWeight.toFixed(3)}g`}
+                  </Text>
+                </View>
+                <View style={styles.totalGoldBadge}>
+                  <Text style={styles.totalGoldGrams}>
+                    {bonusCalculations.totalWeight.toFixed(3)} g
+                  </Text>
+                </View>
+              </View>
+
+              {/* Day-Wise Slabs Breakdown Section */}
+              {normalizedSlabs.length > 0 && (
+                <View style={styles.slabsSectionContainer}>
+                  <TouchableOpacity
+                    style={styles.slabsToggleRow}
+                    onPress={() => setShowAllSlabs((prev) => !prev)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Ionicons name="layers-outline" size={15} color="#92400E" />
+                      <Text style={styles.slabsToggleText}>
+                        {t("dayWiseBonusTiers")}
+                      </Text>
+                      <View style={styles.slabsCountPill}>
+                        <Text style={styles.slabsCountText}>{normalizedSlabs.length}</Text>
+                      </View>
+                    </View>
+                    <Ionicons
+                      name={showAllSlabs ? "chevron-up" : "chevron-down"}
+                      size={18}
+                      color="#92400E"
+                    />
+                  </TouchableOpacity>
+
+                  {showAllSlabs && (
+                    <View style={styles.slabsTable}>
+                      <View style={styles.slabsTableHeader}>
+                        <Text style={[styles.slabsTableHeaderCell, { flex: 1.4 }]}>
+                          {t("daysRange")}
+                        </Text>
+                        <Text style={[styles.slabsTableHeaderCell, { flex: 0.8, textAlign: "right" }]}>
+                          {t("bonusPercentage")}
+                        </Text>
+                        <Text style={[styles.slabsTableHeaderCell, { flex: 0.8, textAlign: "right" }]}>
+                          {t("tierStatus")}
+                        </Text>
+                      </View>
+
+                      {normalizedSlabs.map((slab: any, idx: number) => {
+                        const isCurrent = activeSlab && activeSlab.from_day === slab.from_day && activeSlab.to_day === slab.to_day;
+                        const isPast = currentDay > slab.to_day;
+                        return (
+                          <View
+                            key={idx}
+                            style={[
+                              styles.slabsTableRow,
+                              isCurrent && styles.slabsTableRowActive,
+                              idx % 2 !== 0 && !isCurrent && styles.slabsTableRowAlt,
+                            ]}
+                          >
+                            <View style={{ flex: 1.4, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                              {isCurrent && <Ionicons name="flame" size={14} color="#EA580C" />}
+                              <Text
+                                style={[
+                                  styles.slabsTableCell,
+                                  isCurrent && styles.slabsTableCellActive,
+                                ]}
+                              >
+                                {slab.from_day} - {slab.to_day} {t("days")}
+                              </Text>
+                            </View>
+                            <Text
+                              style={[
+                                styles.slabsTableCell,
+                                { flex: 0.8, textAlign: "right", color: "#16A34A", fontWeight: "700" },
+                                isCurrent && { fontWeight: "900", color: "#15803D" },
+                              ]}
+                            >
+                              +{slab.percentage}%
+                            </Text>
+                            <View style={{ flex: 0.8, alignItems: "flex-end" }}>
+                              {isCurrent ? (
+                                <View style={styles.currentTierTag}>
+                                  <Text style={styles.currentTierTagText}>
+                                    {t("tierActive")}
+                                  </Text>
+                                </View>
+                              ) : isPast ? (
+                                <Text style={styles.pastTierText}>
+                                  {t("tierPast")}
+                                </Text>
+                              ) : (
+                                <Text style={styles.upcomingTierText}>
+                                  {t("tierUpcoming")}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+              )}
+            </LinearGradient>
+          </View>
         )}
 
         {/* User Details Card */}
@@ -1869,23 +2272,23 @@ export default function PaymentNewOverView() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.exitModalContent}>
-            <Text style={styles.exitModalTitle}>Leave Payment?</Text>
+            <Text style={styles.exitModalTitle}>{t("leavePayment") || "Leave Payment?"}</Text>
             <Text style={styles.exitModalMessage}>
-              Are you sure you want to leave the payment page? Your payment
-              details will be lost.
+              {t("leavePaymentConfirmMessage") ||
+                "Are you sure you want to leave the payment page? Your payment details will be lost."}
             </Text>
             <View style={styles.exitModalButtons}>
               <TouchableOpacity
                 style={styles.exitModalCancelButton}
                 onPress={handleCancelExit}
               >
-                <Text style={styles.exitModalCancelButtonText}>Cancel</Text>
+                <Text style={styles.exitModalCancelButtonText}>{t("cancel") || "Cancel"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.exitModalConfirmButton}
                 onPress={handleConfirmExit}
               >
-                <Text style={styles.exitModalConfirmButtonText}>Leave</Text>
+                <Text style={styles.exitModalConfirmButtonText}>{t("leave") || "Leave"}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -2624,6 +3027,292 @@ function getStyles(theme: any) {
       height: "100%",
       backgroundColor: theme.colors.primary,
       borderRadius: 3,
+    },
+    // Bonus Benefit Card Styles
+    bonusBenefitCard: {
+      borderRadius: 20,
+      marginBottom: 20,
+      overflow: "hidden",
+      borderWidth: 1.5,
+      borderColor: "#F59E0B",
+      shadowColor: "#D97706",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 5,
+    },
+    bonusBenefitGradient: {
+      padding: 18,
+    },
+    bonusHeaderRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 14,
+    },
+    bonusTitleGroup: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    bonusIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: "#FEF3C7",
+      borderWidth: 1,
+      borderColor: "#FCD34D",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    bonusMainTitle: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: "#78350F",
+    },
+    bonusSubTitle: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: "#92400E",
+    },
+    dayBadgePill: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      backgroundColor: "#FEF3C7",
+      paddingVertical: 5,
+      paddingHorizontal: 10,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: "#FCD34D",
+    },
+    dayBadgeText: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: "#92400E",
+    },
+    activeTierBanner: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      backgroundColor: "#FFFBEB",
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderWidth: 1,
+      borderColor: "#FDE68A",
+      marginBottom: 14,
+    },
+    activeTierLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      flex: 1,
+      flexWrap: "wrap",
+    },
+    activeTierLabel: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: "#92400E",
+    },
+    activeTierRange: {
+      fontSize: 13,
+      fontWeight: "800",
+      color: "#B45309",
+    },
+    activePercentBadge: {
+      backgroundColor: "#16A34A",
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 10,
+    },
+    activePercentText: {
+      color: "#FFFFFF",
+      fontWeight: "800",
+      fontSize: 13,
+    },
+    noActiveTierRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    noActiveTierText: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: "#92400E",
+    },
+    bonusMetricsGrid: {
+      flexDirection: "row",
+      gap: 12,
+      marginBottom: 12,
+    },
+    bonusMetricCard: {
+      flex: 1,
+      backgroundColor: "#FFFFFF",
+      borderRadius: 14,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: "#FDE68A",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    metricIconLabelRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      marginBottom: 6,
+    },
+    bonusMetricLabel: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: "#78350F",
+    },
+    bonusCashValue: {
+      fontSize: 18,
+      fontWeight: "800",
+      color: "#16A34A",
+      marginBottom: 2,
+    },
+    bonusWeightValue: {
+      fontSize: 18,
+      fontWeight: "800",
+      color: "#D97706",
+      marginBottom: 2,
+    },
+    bonusMetricSub: {
+      fontSize: 11,
+      color: "#9CA3AF",
+    },
+    totalGoldRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      backgroundColor: "#78350F",
+      borderRadius: 14,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      marginBottom: 14,
+    },
+    totalGoldLeft: {
+      flex: 1,
+      marginRight: 10,
+    },
+    totalGoldTitle: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: "#FEF3C7",
+      marginBottom: 2,
+    },
+    totalGoldFormula: {
+      fontSize: 11,
+      color: "#FDE68A",
+    },
+    totalGoldBadge: {
+      backgroundColor: "#F59E0B",
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+    },
+    totalGoldGrams: {
+      fontSize: 15,
+      fontWeight: "900",
+      color: "#FFFFFF",
+    },
+    slabsSectionContainer: {
+      marginTop: 2,
+      backgroundColor: "rgba(255, 255, 255, 0.7)",
+      borderRadius: 12,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: "#FDE68A",
+    },
+    slabsToggleRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+    },
+    slabsToggleText: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: "#92400E",
+    },
+    slabsCountPill: {
+      backgroundColor: "#FEF3C7",
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: "#FCD34D",
+    },
+    slabsCountText: {
+      fontSize: 10,
+      fontWeight: "700",
+      color: "#92400E",
+    },
+    slabsTable: {
+      paddingHorizontal: 12,
+      paddingBottom: 10,
+    },
+    slabsTableHeader: {
+      flexDirection: "row",
+      paddingVertical: 6,
+      borderBottomWidth: 1,
+      borderBottomColor: "#FDE68A",
+      marginBottom: 4,
+    },
+    slabsTableHeaderCell: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: "#78350F",
+      textTransform: "uppercase",
+    },
+    slabsTableRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 7,
+      paddingHorizontal: 6,
+      borderRadius: 6,
+    },
+    slabsTableRowActive: {
+      backgroundColor: "#FEF3C7",
+      borderWidth: 1,
+      borderColor: "#F59E0B",
+    },
+    slabsTableRowAlt: {
+      backgroundColor: "rgba(254, 243, 199, 0.4)",
+    },
+    slabsTableCell: {
+      fontSize: 12,
+      color: "#4B5563",
+    },
+    slabsTableCellActive: {
+      color: "#78350F",
+      fontWeight: "800",
+    },
+    currentTierTag: {
+      backgroundColor: "#EA580C",
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    currentTierTagText: {
+      color: "#FFFFFF",
+      fontSize: 10,
+      fontWeight: "800",
+    },
+    pastTierText: {
+      fontSize: 11,
+      color: "#9CA3AF",
+      fontStyle: "italic",
+    },
+    upcomingTierText: {
+      fontSize: 11,
+      color: "#B45309",
     },
   })
 }

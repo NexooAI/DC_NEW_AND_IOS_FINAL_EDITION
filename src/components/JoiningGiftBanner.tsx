@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 export interface JoiningGiftData {
   gift_name?: string;
@@ -11,16 +13,28 @@ export interface JoiningGiftData {
 
 interface Props {
   gift?: JoiningGiftData | null;
+  onPress?: () => void;
 }
 
-export const JoiningGiftBanner: React.FC<Props> = ({ gift }) => {
+export const JoiningGiftBanner: React.FC<Props> = ({ gift, onPress }) => {
+  const router = useRouter();
   if (!gift || !gift.gift_name) return null;
 
   const isDelivered = gift.status === 'DELIVERED';
 
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    } else {
+      router.push('/(app)/gifts' as any);
+    }
+  };
+
   return (
-    <View
+    <TouchableOpacity
       testID="joining-gift-banner"
+      activeOpacity={0.88}
+      onPress={handlePress}
       style={[
         styles.container,
         {
@@ -70,7 +84,14 @@ export const JoiningGiftBanner: React.FC<Props> = ({ gift }) => {
           ? `Gift received at showroom${gift.handover_date ? ' on ' + new Date(gift.handover_date).toLocaleDateString() : ''}. Thank you!`
           : 'Visit your nearest branch showroom to collect your welcome gift by showing your scheme account number.'}
       </Text>
-    </View>
+
+      <View style={styles.footerRow}>
+        <Text style={[styles.footerText, { color: isDelivered ? '#166534' : '#B45309' }]}>
+          Tap to view full gift details & store directions
+        </Text>
+        <Ionicons name="chevron-forward" size={13} color={isDelivered ? '#166534' : '#B45309'} />
+      </View>
+    </TouchableOpacity>
   );
 };
 
@@ -132,6 +153,20 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 12,
     lineHeight: 17,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    marginTop: 8,
+    paddingTop: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(0,0,0,0.08)',
+  },
+  footerText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
 });
 
