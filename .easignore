@@ -11,4 +11,5 @@ web-build/
 *.tar.gz
 *.log
 playstore_assets/
+scratch/
 .git/
