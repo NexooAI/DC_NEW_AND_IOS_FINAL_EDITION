@@ -58,13 +58,13 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
       {/* Left / Center Branding: Logo + Name + Tagline */}
       <View style={styles.brandContainer}>
         <Image
-          source={require("../../../assets/images/kanisaa-logo-header.png")}
+          source={require("../../../assets/images/jeyabala-logo-header.png")}
           style={styles.logo}
           resizeMode="contain"
         />
         <View style={styles.brandTextContainer}>
           <Text style={[styles.brandTitle, { color: theme.colors.primary }]} numberOfLines={1}>
-            {appConfig.constants.customerName || "Kanisaa Jewellery"}
+            {appConfig.constants.customerName || "Jeyabala Jewellery"}
           </Text>
           <Text style={styles.brandTagline}>
             {t("generationsOfTrust", { defaultValue: "Generations of Trust" })}

@@ -84,11 +84,11 @@ export const loadLogoAsBase64 = async (): Promise<string> => {
   if (cachedLogoBase64) {
     return cachedLogoBase64;
   }
-  const fallbackUrl = "https://api.prod.kanisaajewellery.com/uploads/logo.png";
+  const fallbackUrl = `${theme.baseUrl.replace(/\/$/, '')}/uploads/logo.png`;
   try {
     let asset;
     try {
-      asset = Asset.fromModule(require("../../assets/images/kanisaa-logo-header.png"));
+      asset = Asset.fromModule(require("../../assets/images/jeyabala-logo-header.png"));
     } catch {
       asset = Asset.fromModule(require("../../assets/images/logo.png"));
     }

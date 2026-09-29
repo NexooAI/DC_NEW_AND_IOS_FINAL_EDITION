@@ -338,7 +338,7 @@ class NotificationService {
         if (!fcmData) {
           logger.log('⚠️ No captured getExpoPushToken payload found, using fallback construction');
 
-          const fallbackAppId = themeConfig?.bundleIdentifier || 'com.nexooai.kanisaajewellerydigigoldsavings';
+          const fallbackAppId = themeConfig?.bundleIdentifier || 'com.nexooai.jeyabalajewellery';
           const dynamicAppId = Platform.OS === 'ios'
             ? (Constants.expoConfig?.ios?.bundleIdentifier || fallbackAppId)
             : (Constants.expoConfig?.android?.package || fallbackAppId);

@@ -179,7 +179,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Receipt - Kanisaa Jewellery</title>
+    <title>Payment Receipt - ${theme.constants.customerName}</title>
     <style>
         @page {
             size: A4 portrait;
@@ -197,17 +197,17 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         .container {
             max-width: 100%;
             margin: 0 auto;
-            border: 1.5px solid #a3203a;
+            border: 1.5px solid ${theme.colors.primary};
             border-radius: 8px;
             overflow: hidden;
             box-shadow: none;
             page-break-inside: avoid;
         }
         .header {
-            background: linear-gradient(135deg, #7A143C 0%, #a3203a 50%, #5B0E2D 100%);
+            background: linear-gradient(135deg, ${theme.colors.primary} 0%, #1e165c 70%, #0f0b33 100%);
             color: #ffffff;
             padding: 10px 16px;
-            border-bottom: 2px solid #D4AF37;
+            border-bottom: 2px solid ${theme.colors.secondary || '#dfb45b'};
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
@@ -355,7 +355,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         <div class="header">
             <div class="header-flex">
                 <div style="flex: 0 0 auto;">
-                    ${logoBase64 ? `<img src="${logoBase64}" alt="Kanisaa Logo" style="max-height: 52px; width: auto; max-width: 140px; object-fit: contain;" />` : ''}
+                    ${logoBase64 ? `<img src="${logoBase64}" alt="Jeyabala Logo" style="max-height: 52px; width: auto; max-width: 140px; object-fit: contain;" />` : ''}
                 </div>
                 <div style="flex: 1; text-align: right;">
                     <div class="brand-name">${theme.constants.customerName}</div>
