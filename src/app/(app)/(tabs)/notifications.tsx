@@ -26,15 +26,22 @@ import { logger } from '@/utils/logger';
 
 // Utility function to format date
 const formatDate = (dateString: string) => {
+  if (!dateString) return "";
   const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  if (isNaN(date.getTime())) return dateString;
 
-  if (diffDays === 1) {
-    return "Yesterday";
-  } else if (diffDays === 0) {
+  const now = new Date();
+  // Normalize both dates to midnight local time to compare calendar days accurately
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const itemDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  const diffTime = today.getTime() - itemDate.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays <= 0) {
     return "Today";
+  } else if (diffDays === 1) {
+    return "Yesterday";
   } else {
     return date.toLocaleDateString("en-US", {
       month: "short",

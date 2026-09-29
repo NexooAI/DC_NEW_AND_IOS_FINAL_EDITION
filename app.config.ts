@@ -15,6 +15,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         name: themeConfig.customerName,
         slug: themeConfig.slug,
         version: version,
+        platforms: ["ios", "android"],
         orientation: "portrait",
         userInterfaceStyle: "automatic",
         scheme: themeConfig.slug || "kanisaajewellerydigigold",
