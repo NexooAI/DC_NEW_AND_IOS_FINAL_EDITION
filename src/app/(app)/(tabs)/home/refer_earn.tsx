@@ -94,7 +94,25 @@ export default function ReferCodeScreen() {
   };
 
   const referBaseUrl = theme?.baseUrl || "https://api.prod.kanisaajewellery.com";
-  const shareMessage = (t("refer_earn_share_message") || `Use my referral code {code} to sign up and earn rewards! Click here to download the app: ${referBaseUrl}/refer?code={code}`).replace(/{code}/g, code);
+  const referralLink = `${referBaseUrl}/refer?code=${code}`;
+
+  const shareMessage = useMemo(() => {
+    const rawTemplate =
+      t("refer_earn_share_message") ||
+      `Use my referral code {code} to sign up and earn rewards! Click here to download the app: {url}`;
+
+    let message = rawTemplate
+      .replace(/{code}/g, code)
+      .replace(/https:\/\/api\.prod\.dcjewellers\.org\/refer\?code=\{code\}/g, referralLink)
+      .replace(/https:\/\/api\.prod\.dcjewellers\.org\/refer\?code=[^\s]+/g, referralLink)
+      .replace(/https:\/\/api\.prod\.kanisaajewellery\.com\/refer\?code=\{code\}/g, referralLink)
+      .replace(/{url}/g, referralLink);
+
+    if (!message.includes(referralLink)) {
+      message = `${message}\n${referralLink}`;
+    }
+    return message;
+  }, [code, referBaseUrl, t]);
 
   const onShare = async () => {
     try {
