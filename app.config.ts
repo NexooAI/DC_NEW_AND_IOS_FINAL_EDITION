@@ -4,7 +4,7 @@ import { themeConfig } from './src/constants/theme.config';
 export default ({ config }: ConfigContext): ExpoConfig => {
     const isIos = process.env.EAS_BUILD_PLATFORM === 'ios' || process.env.PLATFORM === 'ios';
 
-    const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "AIzaSyAoc7OWJSIsoPWCtf8mPrpi6H0JqInCOWw";
+    const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "AIzaSyDZp5TNifbLmZ1_caqazWck87DXbtatlWA";
     const bundleIdentifier = themeConfig.bundleIdentifier || "com.nexooai.kanisaajewellerydigigoldsavings";
     const projectId = themeConfig.projectId || "aeef6800-eac4-4ba3-b14d-a09d7342f537";
     const owner = themeConfig.owner || "mnvgroups07";
@@ -162,7 +162,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             [
                 "expo-notifications",
                 {
-                    icon: "./assets/images/icon.png",
+                    icon: "./assets/images/notification-icon.png",
                     color: themeConfig.primaryColor,
                     sounds: ["./assets/sound/notification.wav"],
                 },

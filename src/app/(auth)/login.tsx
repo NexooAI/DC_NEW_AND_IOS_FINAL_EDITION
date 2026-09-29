@@ -81,6 +81,7 @@ import {
   getBorderRadius,
 } from "@/utils/responsiveUtils";
 import { useOtpAutoFetch } from "@/hooks/useOtpAutoFetch";
+import * as Clipboard from "expo-clipboard";
 import { getImageSource } from "@/utils/imageUtils";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 
@@ -690,6 +691,7 @@ export default function Login() {
 
   // OTP related state
   const [otpCode, setOtpCode] = useState("");
+  const [clipboardOtp, setClipboardOtp] = useState("");
   const [timer, setTimer] = useState(30);
   const [resendAttempts, setResendAttempts] = useState(3);
   const [isShowOtp, setIsShowOtp] = useState(false);
@@ -788,7 +790,7 @@ export default function Login() {
   useOtpAutoFetch({
     onOtpReceived: (otp: string) => {
       // Clean and set OTP
-      const cleanOtp = otp.slice(0, 4);
+      const cleanOtp = otp.replace(/[^0-9]/g, "").slice(0, 4);
       setOtpCode(cleanOtp);
       if (cleanOtp.length === 4) {
         verifyOtp(cleanOtp);
@@ -796,6 +798,47 @@ export default function Login() {
     },
     isActive: isShowOtp, // Only listen when OTP screen is shown
   });
+
+  // Check clipboard for OTP when OTP screen is shown
+  useEffect(() => {
+    const checkClipboardForOtp = async () => {
+      if (isShowOtp) {
+        try {
+          const content = await Clipboard.getStringAsync();
+          const cleanContent = content?.trim() || "";
+          let extractedOtp = "";
+          if (/^\d{4}$/.test(cleanContent)) {
+            extractedOtp = cleanContent;
+          } else {
+            const match = cleanContent.match(/\b\d{4}\b/);
+            if (match) {
+              extractedOtp = match[0];
+            }
+          }
+          setClipboardOtp(extractedOtp);
+        } catch (err) {
+          logger.error("Error reading clipboard:", err);
+        }
+      } else {
+        setClipboardOtp("");
+      }
+    };
+
+    checkClipboardForOtp();
+
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active") {
+        checkClipboardForOtp();
+      }
+    });
+
+    const interval = setInterval(checkClipboardForOtp, 1500);
+
+    return () => {
+      subscription.remove();
+      clearInterval(interval);
+    };
+  }, [isShowOtp]);
 
   const extractOtpFromMessage = (message: string) => {
     const otpMatch = message.match(/\d{4}/); // Assuming 4-digit OTP
@@ -862,6 +905,8 @@ export default function Login() {
               profile_photo: data.user.profile_photo,
               mpinStatus: data.user.mpinStatus,
               usertype: data.user.userType,
+              branch_id: data.user.branch_id !== undefined ? data.user.branch_id : null,
+              allow_multi_branch: data.user.allow_multi_branch !== undefined ? data.user.allow_multi_branch : 0,
             });
 
             // Navigate to MPIN verification after successful OTP verification
@@ -1675,6 +1720,45 @@ export default function Login() {
                             ))}
                           </View>
                         </Pressable>
+
+                        {clipboardOtp ? (
+                          <TouchableOpacity
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              backgroundColor: "rgba(255, 215, 0, 0.15)",
+                              paddingVertical: 6,
+                              paddingHorizontal: 12,
+                              borderRadius: 8,
+                              borderWidth: 1,
+                              borderColor: "rgba(255, 215, 0, 0.35)",
+                              marginTop: 10,
+                              marginBottom: 4,
+                              alignSelf: "center",
+                            }}
+                            onPress={() => {
+                              const clean = clipboardOtp.replace(/[^0-9]/g, "").slice(0, 4);
+                              setOtpCode(clean);
+                              setClipboardOtp("");
+                              if (clean.length === 4) {
+                                verifyOtp(clean);
+                              }
+                            }}
+                          >
+                            <Ionicons name="clipboard-outline" size={16} color={theme.colors.secondary || theme.colors.primary} />
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: "#b8860b",
+                                marginLeft: 6,
+                                fontWeight: "600",
+                              }}
+                            >
+                              Tap to paste OTP: {clipboardOtp}
+                            </Text>
+                          </TouchableOpacity>
+                        ) : null}
                         <View
                           style={[
                             registerStyles.timerContainer,

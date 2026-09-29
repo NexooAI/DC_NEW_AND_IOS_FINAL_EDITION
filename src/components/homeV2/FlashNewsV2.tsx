@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { moderateScale } from "react-native-size-matters";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { useAppTheme } from "@/store/global.store";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export interface FlashNewsV2Props {
   messages?: string[];
@@ -28,6 +29,7 @@ export const FlashNewsV2: React.FC<FlashNewsV2Props> = ({
   scrollSpeed = 55,
   restartDelay = 800,
 }) => {
+  const { t } = useTranslation();
   const theme = useAppTheme();
   const { screenWidth } = useResponsiveLayout();
   const baseWidth = screenWidth || 360;
@@ -133,7 +135,11 @@ export const FlashNewsV2: React.FC<FlashNewsV2Props> = ({
     if (onPress) {
       onPress(currentText);
     } else {
-      Alert.alert("Flash News", currentText, [{ text: "Close", style: "cancel" }]);
+      Alert.alert(
+        t("flashNews", { defaultValue: "Flash News" }),
+        currentText,
+        [{ text: t("close", { defaultValue: "Close" }), style: "cancel" }]
+      );
     }
   };
 
@@ -156,7 +162,9 @@ export const FlashNewsV2: React.FC<FlashNewsV2Props> = ({
           <Animated.View style={{ opacity: pulseAnim }}>
             <Ionicons name="flash" size={moderateScale(13)} color="#FACC15" />
           </Animated.View>
-          <Text style={styles.badgeText}>FLASH NEWS</Text>
+          <Text style={styles.badgeText}>
+            {t("flashNews", { defaultValue: "FLASH NEWS" }).toUpperCase()}
+          </Text>
         </View>
 
         {/* Marquee Scrolling Text Area */}

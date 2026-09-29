@@ -7,6 +7,7 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { moderateScale } from "react-native-size-matters";
 import LanguageSelector from "@/components/LanguageSelector";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface HeaderV2Props {
   onNotificationPress?: () => void;
@@ -19,6 +20,7 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
   onMenuPress,
   onLanguagePress,
 }) => {
+  const { t } = useTranslation();
   const theme = useAppTheme();
   const router = useRouter();
   const navigation = useNavigation();
@@ -64,7 +66,9 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
           <Text style={[styles.brandTitle, { color: theme.colors.primary }]} numberOfLines={1}>
             {appConfig.constants.customerName || "Kanisaa Jewellery"}
           </Text>
-          <Text style={styles.brandTagline}>Generations of Trust</Text>
+          <Text style={styles.brandTagline}>
+            {t("generationsOfTrust", { defaultValue: "Generations of Trust" })}
+          </Text>
         </View>
       </View>
 

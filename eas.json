@@ -20,7 +20,7 @@
         "resourceClass": "m-medium"
       },
       "env": {
-        "GOOGLE_MAPS_API_KEY": "AIzaSyAoc7OWJSIsoPWCtf8mPrpi6H0JqInCOWw",
+        "GOOGLE_MAPS_API_KEY": "AIzaSyDZp5TNifbLmZ1_caqazWck87DXbtatlWA",
         "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
       }
     },
@@ -36,7 +36,7 @@
         "simulator": true
       },
       "env": {
-        "GOOGLE_MAPS_API_KEY": "AIzaSyAoc7OWJSIsoPWCtf8mPrpi6H0JqInCOWw",
+        "GOOGLE_MAPS_API_KEY": "AIzaSyDZp5TNifbLmZ1_caqazWck87DXbtatlWA",
         "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
       }
     },
@@ -53,7 +53,7 @@
         "resourceClass": "m-medium"
       },
       "env": {
-        "GOOGLE_MAPS_API_KEY": "AIzaSyAoc7OWJSIsoPWCtf8mPrpi6H0JqInCOWw",
+        "GOOGLE_MAPS_API_KEY": "AIzaSyDZp5TNifbLmZ1_caqazWck87DXbtatlWA",
         "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
       }
     }

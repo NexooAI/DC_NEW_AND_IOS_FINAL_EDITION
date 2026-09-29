@@ -17,7 +17,9 @@ import {
   Pressable,
   StatusBar,
   TouchableWithoutFeedback,
+  AppState,
 } from "react-native";
+import { useOtpAutoFetch } from "@/hooks/useOtpAutoFetch";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter, useLocalSearchParams } from "expo-router";
 import { responsiveUtils } from "@/utils/responsiveUtils";
@@ -325,12 +327,33 @@ export default function Register() {
     }
   };
 
+  const fillOtp = (code: string) => {
+    const digits = code.replace(/[^0-9]/g, "").slice(0, 4).split("");
+    const newPins = ["", "", "", ""];
+    digits.forEach((d, i) => {
+      newPins[i] = d;
+    });
+    setPins(newPins);
+    setClipboardOtp("");
+    if (digits.length === 4) {
+      inputRefs[3].current?.focus();
+    } else if (digits.length > 0) {
+      inputRefs[Math.min(digits.length, 3)].current?.focus();
+    }
+  };
+
   const handlePinChange = (text: string, index: number) => {
+    const cleaned = text.replace(/[^0-9]/g, "");
+    if (cleaned.length > 1) {
+      fillOtp(cleaned);
+      return;
+    }
+
     const newPins = [...pins];
-    newPins[index] = text;
+    newPins[index] = cleaned;
     setPins(newPins);
 
-    if (text.length === 1 && index < 3) {
+    if (cleaned.length === 1 && index < 3) {
       inputRefs[index + 1].current?.focus();
     }
   };
@@ -427,12 +450,17 @@ export default function Register() {
       if (otpSent) {
         try {
           const content = await Clipboard.getStringAsync();
-          const cleanContent = content.trim();
+          const cleanContent = content?.trim() || "";
+          let extractedOtp = "";
           if (/^\d{4}$/.test(cleanContent)) {
-            setClipboardOtp(cleanContent);
+            extractedOtp = cleanContent;
           } else {
-            setClipboardOtp("");
+            const match = cleanContent.match(/\b\d{4}\b/);
+            if (match) {
+              extractedOtp = match[0];
+            }
           }
+          setClipboardOtp(extractedOtp);
         } catch (err) {
           logger.error("Error reading clipboard:", err);
         }
@@ -442,7 +470,31 @@ export default function Register() {
     };
 
     checkClipboardForOtp();
+
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active") {
+        checkClipboardForOtp();
+      }
+    });
+
+    const interval = setInterval(checkClipboardForOtp, 1500);
+
+    return () => {
+      subscription.remove();
+      clearInterval(interval);
+    };
   }, [otpSent]);
+
+  // Android SMS Auto-fetch
+  useOtpAutoFetch({
+    onOtpReceived: (receivedOtp: string) => {
+      const cleanOtp = receivedOtp.replace(/[^0-9]/g, "").slice(0, 4);
+      if (cleanOtp.length === 4) {
+        fillOtp(cleanOtp);
+      }
+    },
+    isActive: otpSent,
+  });
 
   const handleBackButton = () => {
     if (otpSent) {
@@ -673,7 +725,7 @@ export default function Register() {
                                 ref={inputRefs[index]}
                                 style={registerStyles.otpInput}
                                 keyboardType="numeric"
-                                maxLength={1}
+                                maxLength={index === 0 ? 4 : 1}
                                 value={pin}
                                 onChangeText={(text) =>
                                   handlePinChange(text, index)
@@ -714,9 +766,7 @@ export default function Register() {
                               alignSelf: "center",
                             }}
                             onPress={() => {
-                              const digits = clipboardOtp.split("");
-                              setPins(digits);
-                              setClipboardOtp(""); // Clear hint after pasting
+                              fillOtp(clipboardOtp);
                             }}
                           >
                             <Ionicons name="clipboard-outline" size={16} color={theme.colors.secondary} />

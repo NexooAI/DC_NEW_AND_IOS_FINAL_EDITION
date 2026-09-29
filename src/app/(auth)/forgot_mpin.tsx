@@ -21,7 +21,10 @@ import {
   KeyboardAvoidingView,
   StatusBar,
   Pressable,
+  AppState,
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
+import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -348,6 +351,7 @@ export default function ForgotMpin() {
   const [step, setStep] = useState<"verifyOtp" | "createMpin">("verifyOtp");
   const [mobileNumber, setMobileNumber] = useState("");
   const [otp, setOtp] = useState("");
+  const [clipboardOtp, setClipboardOtp] = useState("");
   const [newMpin, setNewMpin] = useState("");
   const [confirmMpin, setConfirmMpin] = useState("");
   const [loading, setLoading] = useState(false);
@@ -827,10 +831,10 @@ export default function ForgotMpin() {
     }
   };
 
-  // OTP Auto-read functionality
+  // OTP Auto-read functionality (Android SMS Retriever)
   useOtpAutoFetch({
     onOtpReceived: (otpCode) => {
-      const cleanOtp = otpCode.slice(0, 4);
+      const cleanOtp = otpCode.replace(/[^0-9]/g, "").slice(0, 4);
       setOtp(cleanOtp);
       if (cleanOtp.length === 4) {
         handleVerifyOtp(cleanOtp);
@@ -838,6 +842,47 @@ export default function ForgotMpin() {
     },
     isActive: step === "verifyOtp",
   });
+
+  // Check clipboard for OTP when on verifyOtp step
+  useEffect(() => {
+    const checkClipboardForOtp = async () => {
+      if (step === "verifyOtp") {
+        try {
+          const content = await Clipboard.getStringAsync();
+          const cleanContent = content?.trim() || "";
+          let extractedOtp = "";
+          if (/^\d{4}$/.test(cleanContent)) {
+            extractedOtp = cleanContent;
+          } else {
+            const match = cleanContent.match(/\b\d{4}\b/);
+            if (match) {
+              extractedOtp = match[0];
+            }
+          }
+          setClipboardOtp(extractedOtp);
+        } catch (err) {
+          logger.error("Error reading clipboard:", err);
+        }
+      } else {
+        setClipboardOtp("");
+      }
+    };
+
+    checkClipboardForOtp();
+
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active") {
+        checkClipboardForOtp();
+      }
+    });
+
+    const interval = setInterval(checkClipboardForOtp, 1500);
+
+    return () => {
+      subscription.remove();
+      clearInterval(interval);
+    };
+  }, [step]);
 
   // Modal handlers
   const handleConfirmSendOtp = async () => {
@@ -897,6 +942,44 @@ export default function ForgotMpin() {
           secureTextEntry={true}
         />
       </Animated.View>
+
+      {clipboardOtp ? (
+        <TouchableOpacity
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "rgba(255, 215, 0, 0.15)",
+            paddingVertical: 6,
+            paddingHorizontal: 12,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: "rgba(255, 215, 0, 0.35)",
+            marginTop: 10,
+            marginBottom: 8,
+            alignSelf: "center",
+          }}
+          onPress={() => {
+            setOtp(clipboardOtp);
+            setClipboardOtp("");
+            if (clipboardOtp.length === 4) {
+              handleVerifyOtp(clipboardOtp);
+            }
+          }}
+        >
+          <Ionicons name="clipboard-outline" size={16} color={theme.colors.secondary || theme.colors.primary} />
+          <Text
+            style={{
+              fontSize: 13,
+              color: "#b8860b",
+              marginLeft: 6,
+              fontWeight: "600",
+            }}
+          >
+            Tap to paste OTP: {clipboardOtp}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
 
       {error ? (
         <View style={styles.errorContainer}>

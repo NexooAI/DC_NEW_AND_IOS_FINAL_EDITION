@@ -18,6 +18,11 @@ export interface PaymentReceiptData {
     status?: string;
     goldRate?: number;
     goldWeight?: number;
+    silverRate?: number;
+    silverWeight?: number;
+    rate?: number;
+    weight?: number;
+    isWeightScheme?: boolean;
     userName?: string;
     userMobile?: string;
     userEmail?: string;
@@ -27,6 +32,7 @@ export interface PaymentReceiptData {
     schemePlanTypeName?: string;
     schemeType?: string | number;
     metal?: string;
+    schemeName?: string;
     inversement?: {
         accountName: string;
         accountNo: string;
@@ -39,7 +45,12 @@ export interface PaymentReceiptData {
         total_paid?: number;
         totalgoldweight?: number;
         current_goldrate?: number;
+        current_silverrate?: number;
+        silver_rate?: number;
+        totalsilverweight?: number;
         end_date?: string;
+        metal?: string;
+        metalType?: string;
     };
     logoBase64?: string;
 }
@@ -66,6 +77,11 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         status,
         goldRate,
         goldWeight,
+        silverRate,
+        silverWeight,
+        rate: passedRate,
+        weight: passedWeight,
+        isWeightScheme,
         userName,
         userMobile,
         userEmail,
@@ -78,21 +94,79 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
     const rawSchemeType = data.schemePlanTypeName || data.schemeType || inversement?.schemePlanTypeName || inversement?.schemeType || (paymentId === '5' || paymentId === '1' || paymentId === '2' || paymentId === '3' || paymentId === '4' ? paymentId : null);
     const resolvedSchemeTypeName = getSchemePlanTypeName(rawSchemeType);
 
-    // Get weight directly or fall back to 0
-    let weight = Number(goldWeight || 0);
+    // Accurate metal detection across all potential fields
+    const combinedMetalInfo = String(
+        data.metal ||
+        data.schemeName ||
+        inversement?.schemeName ||
+        (inversement as any)?.metal ||
+        (inversement as any)?.metalType ||
+        (inversement as any)?.type ||
+        (inversement as any)?.schemes?.metal ||
+        ""
+    ).toLowerCase();
+    const isSilverReceipt = combinedMetalInfo.includes('silver');
+    const metalName = isSilverReceipt ? 'Silver' : 'Gold';
 
-    // Get gold rate directly
-    let rate = Number(goldRate || (inversement ? inversement.current_goldrate : 0));
-
-    // Fallbacks if one is missing but the other exists
-    if (rate === 0 && weight > 0 && amountPaid > 0) {
-        rate = Math.round(amountPaid / weight);
-    } else if (weight === 0 && rate > 0 && amountPaid > 0) {
-        weight = Number((amountPaid / rate).toFixed(3));
+    // Determine if this scheme accumulates weight (Weight scheme)
+    // Fixed Chit (amount-based) and One-Time Deposit schemes do NOT accumulate weight/rate.
+    let isWeightPlan = false;
+    if (typeof isWeightScheme === 'boolean') {
+        isWeightPlan = isWeightScheme;
+    } else {
+        const typeLower = resolvedSchemeTypeName.toLowerCase();
+        if (typeLower === 'fixed' || typeLower === 'deposit') {
+            isWeightPlan = false;
+        } else {
+            isWeightPlan = Boolean(
+                passedWeight ||
+                (isSilverReceipt
+                    ? (silverWeight || silverRate)
+                    : (goldWeight || goldRate))
+            );
+        }
     }
 
-    const isSilverReceipt = (data.metal || inversement?.schemeName || '').toLowerCase().includes('silver');
-    const metalName = isSilverReceipt ? 'Silver' : 'Gold';
+    let rate = 0;
+    let weight = 0;
+
+    if (isWeightPlan) {
+        if (isSilverReceipt) {
+            // For Silver scheme, strictly use silver rate and NEVER fall back to current_goldrate
+            rate = Number(
+                passedRate ||
+                silverRate ||
+                (inversement as any)?.current_silverrate ||
+                (inversement as any)?.silver_rate ||
+                0
+            );
+            weight = Number(
+                passedWeight ||
+                silverWeight ||
+                (inversement as any)?.totalsilverweight ||
+                0
+            );
+        } else {
+            // For Gold scheme
+            rate = Number(
+                passedRate ||
+                goldRate ||
+                (inversement ? inversement.current_goldrate : 0)
+            );
+            weight = Number(
+                passedWeight ||
+                goldWeight ||
+                (inversement ? inversement.totalgoldweight : 0)
+            );
+        }
+
+        // Only compute fallback weight if weight is 0 and rate > 0 and amountPaid > 0
+        if (rate > 0 && weight === 0 && amountPaid > 0) {
+            weight = Number((amountPaid / rate).toFixed(3));
+        } else if (weight > 0 && rate === 0 && amountPaid > 0) {
+            rate = Math.round(amountPaid / weight);
+        }
+    }
 
     const formattedDate = (val: string) => {
         if (!val) return "";
@@ -235,6 +309,15 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
             border-radius: 8px;
             font-weight: bold;
         }
+        .silver-badge {
+            display: inline-block;
+            background-color: #F1F5F9;
+            color: #475569;
+            border: 1px solid #CBD5E1;
+            padding: 1px 6px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
         .footer {
             background-color: #FDFBF7;
             border-top: 1px dashed #D4AF37;
@@ -325,7 +408,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
                 ${userMobile ? `<tr><th>Registered Mobile</th><td>${userMobile}</td></tr>` : ""}
                 ${userEmail ? `<tr><th>Registered Email</th><td>${userEmail}</td></tr>` : ""}
                 ${(rewardAmount && Number(rewardAmount) > 0) ? `<tr><th>Bonus Reward Amount</th><td><strong style="color: #2e7d32;">+₹${Number(rewardAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td></tr>` : ""}
-                ${(rewardGoldGrams && Number(rewardGoldGrams) > 0) ? `<tr><th>Bonus Reward Gold</th><td><span class="gold-badge">+${Number(rewardGoldGrams).toFixed(3)} grams</span></td></tr>` : ""}
+                ${(rewardGoldGrams && Number(rewardGoldGrams) > 0) ? `<tr><th>Bonus Reward ${metalName}</th><td><span class="${isSilverReceipt ? 'silver-badge' : 'gold-badge'}">+${Number(rewardGoldGrams).toFixed(3)} grams</span></td></tr>` : ""}
             </table>
 
             <!-- Investment Details Table -->
@@ -340,15 +423,15 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
                 <tr><th>Joining Date</th><td>${formattedDate(inversement.joiningDate)}</td></tr>
                 <tr><th>Payment Status</th><td><span style="color: #2e7d32; font-weight: bold;">${(inversement.paymentStatus && inversement.paymentStatus.toLowerCase() === 'charged') ? 'Paid' : (inversement.paymentStatus || 'Paid')}</span></td></tr>
                 <tr><th>Maturity Date</th><td>${data.maturityDate || (inversement.end_date ? formattedDate(inversement.end_date) : 'N/A')}</td></tr>
-                ${rate > 0 ? `<tr><th>Live ${metalName} Rate</th><td>₹${rate.toLocaleString('en-IN')}/gram</td></tr>` : ""}
-                ${weight > 0 ? `<tr><th>${metalName} Weight Credited</th><td><span class="gold-badge">${weight.toFixed(3)} grams</span></td></tr>` : ""}
+                ${isWeightPlan && rate > 0 ? `<tr><th>Live ${metalName} Rate</th><td>₹${rate.toLocaleString('en-IN')}/gram</td></tr>` : ""}
+                ${isWeightPlan && weight > 0 ? `<tr><th>${metalName} Weight Credited</th><td><span class="${isSilverReceipt ? 'silver-badge' : 'gold-badge'}">${weight.toFixed(3)} grams</span></td></tr>` : ""}
             </table>` : ""}
         </div>
 
         <!-- Footer -->
         <div class="footer">
             <div class="footer-thankyou">
-                Thank you for choosing <strong>${theme.constants.customerName}</strong> for your gold savings journey.
+                Thank you for choosing <strong>${theme.constants.customerName}</strong> for your ${isSilverReceipt ? 'silver' : 'gold'} savings journey.
                 <br/>
                 This receipt serves as official electronic proof of your transaction.
             </div>

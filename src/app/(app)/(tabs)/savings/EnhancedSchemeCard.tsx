@@ -319,6 +319,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
       const payload = {
         userId: user.id,
         investmentId: item.id,
+        isAdvance: Number(item.monthsPaid || (item as any).lastInstallment || 0) > 0,
       };
 
       const response = await api.post("investments/check-payment", payload);
@@ -353,9 +354,9 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
 
       if (parseSchemes) {
         const isSchemeHybridType = parseSchemes.SCHEMETYPE === "Hybrid" ||
-          parseSchemes.SCHEMETYPE?.toLowerCase() === "hybrid" ||
+          String(parseSchemes.SCHEMETYPE || "").toLowerCase() === "hybrid" ||
           parseSchemes.schemeType === "Hybrid" ||
-          parseSchemes.schemeType?.toLowerCase() === "hybrid";
+          String(parseSchemes.schemeType || "").toLowerCase() === "hybrid";
 
         const isFixedNull = parseSchemes.FIXED === null ||
           parseSchemes.FIXED === undefined ||
@@ -560,7 +561,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                     ]}
                   >
                     <Text style={styles.savingTypeText}>
-                      {item.savingType === "old_gold" ? "Weight" : (item.schemesData?.schemeType?.toLowerCase() === "weight" ? "Weight" : "Amount")}
+                      {item.savingType === "old_gold" ? "Weight" : (String(item.schemesData?.schemeType || (item as any).schemeType || item.savingType || "").toLowerCase() === "weight" ? "Weight" : "Amount")}
                     </Text>
                   </View>
                 </View>
@@ -635,7 +636,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             </View>
             <View style={styles.paymentInfoDivider} />
             <View style={styles.paymentInfoItem}>
-              {item.savingType === "old_gold" || item.schemesData?.schemeType?.toLowerCase() === "weight" ? (
+              {item.savingType === "old_gold" || String(item.schemesData?.schemeType || (item as any).schemeType || item.savingType || "").toLowerCase() === "weight" ? (
                 <>
                   <View style={styles.paymentInfoIconContainer}>
                     <Ionicons name="scale-outline" size={16} color={theme.colors.textDark} />

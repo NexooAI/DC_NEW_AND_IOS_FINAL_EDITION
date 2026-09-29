@@ -11,6 +11,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { moderateScale } from "react-native-size-matters";
 import useGlobalStore, { useAppTheme } from "@/store/global.store";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ConnectWithUsV2Props {
   socialMediaUrls?: any;
@@ -19,6 +20,7 @@ interface ConnectWithUsV2Props {
 export const ConnectWithUsV2: React.FC<ConnectWithUsV2Props> = ({
   socialMediaUrls,
 }) => {
+  const { t } = useTranslation();
   const theme = useAppTheme();
 
   const handleOpenUrl = async (url: string, platform: string) => {
@@ -30,7 +32,10 @@ export const ConnectWithUsV2: React.FC<ConnectWithUsV2Props> = ({
         await Linking.openURL(url);
       }
     } catch {
-      Alert.alert("Unable to Open", `Could not open ${platform}`);
+      Alert.alert(
+        t("unableToOpen", { defaultValue: "Unable to Open" }),
+        `${t("couldNotOpen", { defaultValue: "Could not open" })} ${platform}`
+      );
     }
   };
 
@@ -84,7 +89,9 @@ export const ConnectWithUsV2: React.FC<ConnectWithUsV2Props> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Connect With Us</Text>
+      <Text style={styles.title}>
+        {t("connectWithUs", { defaultValue: "Connect With Us" })}
+      </Text>
 
       <View style={styles.row}>
         {/* Instagram */}

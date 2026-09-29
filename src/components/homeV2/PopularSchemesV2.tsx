@@ -207,8 +207,8 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     if (availableCategories.gold && isVisible("showGoldScheme" as any)) {
       list.push({
         id: "gold_savings",
-        title: "Gold Savings\nScheme",
-        subtitle: "Save gold for your golden future",
+        title: t("goldSavingsSchemeTitle", { defaultValue: "Gold Savings\nScheme" }),
+        subtitle: t("goldSavingsSchemeSubtitle", { defaultValue: "Save gold for your golden future" }),
         image: require("../../../assets/images/luxury_gold_coin.png"),
         type: "gold",
         metal: "gold",
@@ -227,8 +227,8 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     if (availableCategories.silver && isVisible("showSilverScheme" as any)) {
       list.push({
         id: "silver_savings",
-        title: "Silver Savings\nScheme",
-        subtitle: "Small savings Big security",
+        title: t("silverSavingsSchemeTitle", { defaultValue: "Silver Savings\nScheme" }),
+        subtitle: t("silverSavingsSchemeSubtitle", { defaultValue: "Small savings Big security" }),
         image: require("../../../assets/images/silver_coin_badge.png"),
         type: "silver",
         metal: "silver",
@@ -247,8 +247,8 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     if (availableCategories.diamond && isVisible("showDiamondScheme" as any)) {
       list.push({
         id: "diamond_savings",
-        title: "Diamond Savings\nScheme",
-        subtitle: "Sparkle with your savings",
+        title: t("diamondSavingsSchemeTitle", { defaultValue: "Diamond Savings\nScheme" }),
+        subtitle: t("diamondSavingsSchemeSubtitle", { defaultValue: "Sparkle with your savings" }),
         image: require("../../../assets/images/diamond_coin_badge.png"),
         type: "diamond",
         metal: "diamond",
@@ -267,8 +267,8 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     if (availableCategories.platinum && isVisible("showPlatinumScheme" as any)) {
       list.push({
         id: "platinum_savings",
-        title: "Platinum Savings\nScheme",
-        subtitle: "Precious metals for life",
+        title: t("platinumSavingsSchemeTitle", { defaultValue: "Platinum Savings\nScheme" }),
+        subtitle: t("platinumSavingsSchemeSubtitle", { defaultValue: "Precious metals for life" }),
         image: require("../../../assets/images/luxury_gold_coin.png"),
         type: "platinum",
         metal: "platinum",
@@ -287,8 +287,8 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     if (availableCategories.old_gold && isVisible("showOldGoldScheme" as any)) {
       list.push({
         id: "old_gold_savings",
-        title: "Old Gold\nScheme",
-        subtitle: "Convert old gold into savings",
+        title: t("oldGoldSchemeTitle", { defaultValue: "Old Gold\nScheme" }),
+        subtitle: t("oldGoldSchemeSubtitle", { defaultValue: "Convert old gold into savings" }),
         image: require("../../../assets/images/gold.png"),
         type: "old_gold",
         metal: "old_gold",
@@ -307,8 +307,8 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     if (list.length === 0) {
       list.push({
         id: "gold_savings",
-        title: "Gold Savings\nScheme",
-        subtitle: "Save gold for your golden future",
+        title: t("goldSavingsSchemeTitle", { defaultValue: "Gold Savings\nScheme" }),
+        subtitle: t("goldSavingsSchemeSubtitle", { defaultValue: "Save gold for your golden future" }),
         image: require("../../../assets/images/luxury_gold_coin.png"),
         type: "gold",
         metal: "gold",
@@ -324,7 +324,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     }
 
     return list;
-  }, [availableCategories, isVisible]);
+  }, [availableCategories, isVisible, t]);
 
   // Metal Filter Tabs Row
   const filterTabs = useMemo(() => {
@@ -410,7 +410,9 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
       {/* Header Row */}
       <View style={styles.headerRow}>
         <View style={styles.headerTitleRow}>
-          <Text style={styles.title}>Popular Schemes</Text>
+          <Text style={styles.title}>
+            {t("popularSchemes", { defaultValue: "Popular Schemes" })}
+          </Text>
         </View>
         <TouchableOpacity
           onPress={handleViewAll}

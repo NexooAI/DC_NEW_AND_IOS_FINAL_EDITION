@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { moderateScale } from "react-native-size-matters";
 import { formatChangeValue, RateChangeInfo } from "@/utils/rateComparison";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export interface LiveRatesCardV2Props {
   goldRate?: string | number;
@@ -36,6 +37,7 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
   onPress,
 }) => {
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Resolve dynamic change metadata (color, icon, direction, formatted text)
   // No fake defaults: returns null if there is no previous comparison data
@@ -91,7 +93,7 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
   };
 
   const formatUpdatedDate = (rawDate?: string): string => {
-    if (!rawDate) return "Today";
+    if (!rawDate) return t("today", { defaultValue: "Today" });
     try {
       const d = new Date(rawDate);
       if (isNaN(d.getTime())) return String(rawDate);
@@ -131,7 +133,9 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
               resizeMode="contain"
             />
             <View style={styles.rateHeaderContainer}>
-              <Text style={styles.rateType}>Gold Rate ({goldPurity})</Text>
+              <Text style={styles.rateType}>
+                {t("goldRate", { defaultValue: "Gold Rate" })} ({goldPurity})
+              </Text>
               {goldChangeInfo && (
                 <View style={[styles.changeBadge, { backgroundColor: goldChangeInfo.bgColor }]}>
                   <Ionicons name={goldChangeInfo.iconName} size={10} color={goldChangeInfo.color} />
@@ -146,11 +150,11 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
           <View style={styles.bottomRow}>
             <Text style={styles.rateValue}>
               ₹ {formatRate(goldRate)}
-              <Text style={styles.unitText}> / gm</Text>
+              <Text style={styles.unitText}> {t("perGram", { defaultValue: "/ gm" })}</Text>
             </Text>
             <View style={styles.timeBadgeContainer}>
               <Ionicons name="time-outline" size={10} color="#94A3B8" />
-              <Text style={styles.todayText}>{formattedTime || "Today"}</Text>
+              <Text style={styles.todayText}>{formattedTime || t("today", { defaultValue: "Today" })}</Text>
             </View>
           </View>
         </LinearGradient>
@@ -175,7 +179,7 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
               resizeMode="contain"
             />
             <View style={styles.rateHeaderContainer}>
-              <Text style={styles.rateType}>Silver Rate</Text>
+              <Text style={styles.rateType}>{t("silverRate", { defaultValue: "Silver Rate" })}</Text>
               {silverChangeInfo && (
                 <View style={[styles.changeBadge, { backgroundColor: silverChangeInfo.bgColor }]}>
                   <Ionicons name={silverChangeInfo.iconName} size={10} color={silverChangeInfo.color} />
@@ -190,11 +194,11 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
           <View style={styles.bottomRow}>
             <Text style={styles.rateValue}>
               ₹ {formatRate(silverRate)}
-              <Text style={styles.unitText}> / gm</Text>
+              <Text style={styles.unitText}> {t("perGram", { defaultValue: "/ gm" })}</Text>
             </Text>
             <View style={styles.timeBadgeContainer}>
               <Ionicons name="time-outline" size={10} color="#94A3B8" />
-              <Text style={styles.todayText}>{formattedTime || "Today"}</Text>
+              <Text style={styles.todayText}>{formattedTime || t("today", { defaultValue: "Today" })}</Text>
             </View>
           </View>
         </LinearGradient>

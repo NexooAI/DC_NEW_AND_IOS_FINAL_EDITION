@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { moderateScale } from "react-native-size-matters";
 import useGlobalStore, { useAppTheme } from "@/store/global.store";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface SupportCardV2Props {
   onPress?: () => void;
@@ -19,6 +20,7 @@ interface SupportCardV2Props {
 export const SupportCardV2: React.FC<SupportCardV2Props> = ({ onPress }) => {
   const router = useRouter();
   const theme = useAppTheme();
+  const { t } = useTranslation();
 
   const handleSupportPress = () => {
     if (onPress) {
@@ -45,13 +47,19 @@ export const SupportCardV2: React.FC<SupportCardV2Props> = ({ onPress }) => {
 
         {/* Center Text */}
         <View style={styles.textContainer}>
-          <Text style={styles.title}>Need Help?</Text>
-          <Text style={styles.subtitle}>We're here for you</Text>
+          <Text style={styles.title}>
+            {t("needHelp", { defaultValue: "Need Help?" })}
+          </Text>
+          <Text style={styles.subtitle}>
+            {t("wereHereForYou", { defaultValue: "We're here for you" })}
+          </Text>
         </View>
 
         {/* Right Action Button */}
         <View style={styles.actionButton}>
-          <Text style={styles.actionText}>Contact Support</Text>
+          <Text style={styles.actionText}>
+            {t("contactSupport", { defaultValue: "Contact Support" })}
+          </Text>
           <Ionicons name="arrow-forward" size={12} color="#003C28" />
         </View>
       </TouchableOpacity>

@@ -70,9 +70,18 @@ type Transaction = {
   utrReference?: string;
   monthNumber?: number;
   status: string;
-  current_goldrate: string;
-  gold_rate: string;
+  current_goldrate?: string | number;
+  gold_rate?: string | number;
   gold_weight?: string | number;
+  goldRate?: string | number;
+  goldWeight?: string | number;
+  current_silverrate?: string | number;
+  silver_rate?: string | number;
+  silver_weight?: string | number;
+  silverRate?: string | number;
+  silverWeight?: string | number;
+  rate?: string | number;
+  weight?: string | number;
   rewardsList?: {
     id: number;
     amount: number;
@@ -82,6 +91,7 @@ type Transaction = {
     investment_id: number;
   };
   rewardAmount?: string | number;
+  rewardGoldGrams?: string | number;
 };
 
 type SchemeParams = {
@@ -282,19 +292,7 @@ const SavingsDetail = () => {
     return selectedPayments.length * emi;
   }, [selectedPayments, params.emiAmount, inversement]);
 
-  const { displayGoldRate, displayGoldWeight } = useMemo(() => {
-    if (!selectedTransaction) return { displayGoldRate: 0, displayGoldWeight: 0 };
-    const amount = Number(selectedTransaction.amountPaid || 0);
-    let rate = Number(selectedTransaction.gold_rate || selectedTransaction.current_goldrate || 0);
-    let weight = Number(selectedTransaction.gold_weight || 0);
 
-    if (rate === 0 && weight > 0 && amount > 0) {
-      rate = Math.round(amount / weight);
-    } else if (weight === 0 && rate > 0 && amount > 0) {
-      weight = Number((amount / rate).toFixed(3));
-    }
-    return { displayGoldRate: rate, displayGoldWeight: weight };
-  }, [selectedTransaction]);
 
   const schemesData = useMemo(() => {
     try {
@@ -365,15 +363,28 @@ const SavingsDetail = () => {
 
   const onlyTotalRewards = totalRewardsAmount;
 
-  // Metal type detection
+  // Metal type detection (thorough check including scheme name, metal, metalType)
   const metalType = useMemo(() => {
-    const m = (params.metal || inversement?.metal || schemesData?.metal || "").toLowerCase();
-    if (m.includes("silver")) return "silver";
-    if (m.includes("diamond")) return "diamond";
-    if (m.includes("platinum")) return "platinum";
-    if (m.includes("old_gold") || m.includes("old gold")) return "old_gold";
+    const combined = String(
+      params.metal ||
+      params.metalType ||
+      inversement?.metal ||
+      inversement?.metalType ||
+      inversement?.schemes?.metal ||
+      schemesData?.metal ||
+      schemesData?.metalType ||
+      params.schemeName ||
+      inversement?.schemeName ||
+      inversement?.chits?.name ||
+      ""
+    ).toLowerCase();
+
+    if (combined.includes("silver")) return "silver";
+    if (combined.includes("diamond")) return "diamond";
+    if (combined.includes("platinum")) return "platinum";
+    if (combined.includes("old_gold") || combined.includes("old gold")) return "old_gold";
     return "gold";
-  }, [params.metal, inversement, schemesData]);
+  }, [params.metal, params.metalType, params.schemeName, inversement, schemesData]);
 
   const isSilver = metalType === "silver";
   const accumulatedLabel = isSilver
@@ -385,6 +396,45 @@ const SavingsDetail = () => {
   const weightLabel = isSilver
     ? (translations.silverWeight || "Silver Weight")
     : (translations.goldWeight || "Gold Weight");
+
+  const { displayGoldRate, displayGoldWeight } = useMemo(() => {
+    if (!selectedTransaction) return { displayGoldRate: 0, displayGoldWeight: 0 };
+    const rate = isSilver
+      ? Number(
+          selectedTransaction.rate ||
+          selectedTransaction.silverRate ||
+          selectedTransaction.current_silverrate ||
+          (Number(selectedTransaction.silver_rate) > 50 ? selectedTransaction.silver_rate : 0) ||
+          inversement?.current_silverrate ||
+          0
+        )
+      : Number(
+          selectedTransaction.rate ||
+          selectedTransaction.goldRate ||
+          selectedTransaction.current_goldrate ||
+          (Number(selectedTransaction.gold_rate) > 500 ? selectedTransaction.gold_rate : 0) ||
+          inversement?.current_goldrate ||
+          0
+        );
+
+    const weight = isSilver
+      ? Number(
+          selectedTransaction.weight ||
+          selectedTransaction.silverWeight ||
+          selectedTransaction.silver_weight ||
+          (Number(selectedTransaction.silver_rate) <= 50 ? selectedTransaction.silver_rate : 0) ||
+          0
+        )
+      : Number(
+          selectedTransaction.weight ||
+          selectedTransaction.goldWeight ||
+          selectedTransaction.gold_weight ||
+          (Number(selectedTransaction.gold_rate) <= 500 ? selectedTransaction.gold_rate : 0) ||
+          0
+        );
+
+    return { displayGoldRate: rate, displayGoldWeight: weight };
+  }, [selectedTransaction, isSilver, inversement]);
 
   // Scheme Type Detection
   const isDeposit = useMemo(() => {
@@ -398,17 +448,50 @@ const SavingsDetail = () => {
     });
   }, [schemesData, params, inversement]);
 
+  // Determines whether this scheme strictly accumulates gold/silver weight (Recurring Weight scheme)
+  const isWeightScheme = useMemo(() => {
+    if (isDeposit) return false;
+
+    const st = String(
+      schemesData?.savingType ||
+      inversement?.savingType ||
+      params.savingType ||
+      ""
+    ).toLowerCase();
+    if (st === "amount") return false;
+    if (st === "weight" || st === "old_gold") return true;
+
+    const sType = String(
+      schemesData?.schemeType ||
+      inversement?.schemeType ||
+      params.schemeType ||
+      ""
+    ).toLowerCase();
+    if (sType === "amount") return false;
+    if (sType === "weight") return true;
+
+    const planName = String(
+      schemesData?.schemeTypeName ||
+      inversement?.schemeTypeName ||
+      params.schemeTypeName ||
+      ""
+    ).toLowerCase();
+    if (planName === "fixed") return false;
+
+    return false;
+  }, [isDeposit, schemesData, inversement, params]);
+
   const isFlexi = useMemo(() => {
-    const freq = (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase();
-    const name = (params.schemeName || inversement?.schemeName || inversement?.chits?.name || "").toLowerCase();
-    const type = (schemesData?.schemeTypeName || params.schemeType || inversement?.schemeType || "").toLowerCase();
+    const freq = String(schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase();
+    const name = String(params.schemeName || inversement?.schemeName || inversement?.chits?.name || "").toLowerCase();
+    const type = String(schemesData?.schemeTypeName || params.schemeType || inversement?.schemeType || "").toLowerCase();
     return freq.includes("flexi") || name.includes("flexi") || type.includes("flexi");
   }, [schemesData, params, inversement]);
 
   const isHybrid = useMemo(() => {
-    const freq = (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase();
-    const name = (params.schemeName || inversement?.schemeName || inversement?.chits?.name || "").toLowerCase();
-    const type = (schemesData?.schemeTypeName || params.schemeType || inversement?.schemeType || "").toLowerCase();
+    const freq = String(schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase();
+    const name = String(params.schemeName || inversement?.schemeName || inversement?.chits?.name || "").toLowerCase();
+    const type = String(schemesData?.schemeTypeName || params.schemeType || inversement?.schemeType || "").toLowerCase();
     return freq.includes("hybrid") || name.includes("hybrid") || type.includes("hybrid");
   }, [schemesData, params, inversement]);
 
@@ -487,11 +570,10 @@ const SavingsDetail = () => {
   const sanitizeFileName = (str: string) => str.replace(/[^a-zA-Z0-9]/g, "_");
 
   // PDF Generation functions
-  const handleShareReceipt = async (
+  const buildReceiptData = async (
     transaction: Transaction,
     inversement: any
-  ) => {
-    // Extract reward amount and gold grams from rewardsList or payment
+  ): Promise<PaymentReceiptData> => {
     const rewardAmount = (transaction as any).rewardAmount || (transaction.rewardsList?.amount
       ? Number(transaction.rewardsList.amount)
       : undefined);
@@ -501,7 +583,71 @@ const SavingsDetail = () => {
 
     const schemePlanTypeName = inversement?.schemePlanTypeName || params.schemePlanTypeName || schemesData?.schemePlanTypeName || params.scheme_plan_type_id || inversement?.schemeType;
 
-    const receiptData: PaymentReceiptData = {
+    // Resolve rate according to metal type
+    let txnRate = isSilver
+      ? Number(
+          (transaction as any).rate ||
+          (transaction as any).silverRate ||
+          (transaction as any).current_silverrate ||
+          (Number((transaction as any).silver_rate) > 50 ? (transaction as any).silver_rate : 0) ||
+          inversement?.current_silverrate ||
+          0
+        )
+      : Number(
+          (transaction as any).rate ||
+          (transaction as any).goldRate ||
+          transaction.current_goldrate ||
+          (Number(transaction.gold_rate) > 500 ? transaction.gold_rate : 0) ||
+          inversement?.current_goldrate ||
+          0
+        );
+
+    // If rate is 0 and this is a weight scheme, fallback to live cached rates
+    if (txnRate === 0 && isWeightScheme) {
+      try {
+        const cachedRates = useGlobalStore.getState().getCachedRates()?.data;
+        if (isSilver) {
+          txnRate = Number(cachedRates?.silver_rate || 0);
+          if (txnRate === 0) {
+            const stored = await AsyncStorage.getItem("silver_rate");
+            if (stored) txnRate = Number(stored);
+          }
+        } else {
+          txnRate = Number(cachedRates?.gold_rate || 0);
+          if (txnRate === 0) {
+            const stored = await AsyncStorage.getItem("gold_rate");
+            if (stored) txnRate = Number(stored);
+          }
+        }
+      } catch {
+        // ignore fallback errors
+      }
+    }
+
+    // Resolve weight according to metal type
+    let txnWeight = isSilver
+      ? Number(
+          (transaction as any).weight ||
+          (transaction as any).silverWeight ||
+          (transaction as any).silver_weight ||
+          (Number((transaction as any).silver_rate) <= 50 ? (transaction as any).silver_rate : 0) ||
+          inversement?.totalsilverweight ||
+          0
+        )
+      : Number(
+          (transaction as any).weight ||
+          (transaction as any).goldWeight ||
+          transaction.gold_weight ||
+          (Number(transaction.gold_rate) <= 500 ? transaction.gold_rate : 0) ||
+          inversement?.totalgoldweight ||
+          0
+        );
+
+    if (txnWeight === 0 && isWeightScheme && txnRate > 0 && Number(transaction.amountPaid) > 0) {
+      txnWeight = Number((Number(transaction.amountPaid) / txnRate).toFixed(3));
+    }
+
+    return {
       transactionId: transaction.transactionId,
       paymentId: String(transaction.paymentId),
       amountPaid: Number(transaction.amountPaid),
@@ -511,8 +657,13 @@ const SavingsDetail = () => {
       orderId: transaction.orderId,
       utrReference: transaction.utrReference,
       status: transaction.status,
-      goldRate: Number(transaction.gold_rate),
-      goldWeight: Number(transaction.gold_weight),
+      rate: txnRate,
+      weight: txnWeight,
+      goldRate: isSilver ? 0 : txnRate,
+      goldWeight: isSilver ? 0 : txnWeight,
+      silverRate: isSilver ? txnRate : 0,
+      silverWeight: isSilver ? txnWeight : 0,
+      isWeightScheme: isWeightScheme,
       userName: user?.name,
       userMobile: user?.mobile?.toString(),
       userEmail: user?.email,
@@ -525,10 +676,18 @@ const SavingsDetail = () => {
         ...inversement,
         schemeName: params.schemeName || inversement?.schemeName,
         schemePlanTypeName: schemePlanTypeName,
+        current_silverrate: isSilver ? txnRate : inversement?.current_silverrate,
+        current_goldrate: !isSilver ? txnRate : inversement?.current_goldrate,
       },
     };
+  };
 
+  const handleShareReceipt = async (
+    transaction: Transaction,
+    inversement: any
+  ) => {
     try {
+      const receiptData = await buildReceiptData(transaction, inversement);
       const logoBase64 = await loadLogoAsBase64();
       const htmlContent = generatePaymentReceiptHTML({ ...receiptData, logoBase64 });
       const customerName = sanitizeFileName(user?.name || "Customer");
@@ -567,44 +726,8 @@ const SavingsDetail = () => {
     transaction: Transaction,
     inversement: any
   ) => {
-    // Extract reward amount and gold grams from rewardsList or payment
-    const rewardAmount = (transaction as any).rewardAmount || (transaction.rewardsList?.amount
-      ? Number(transaction.rewardsList.amount)
-      : undefined);
-    const rewardGoldGrams = (transaction as any).rewardGoldGrams || (transaction.rewardsList?.gold_grams
-      ? Number(transaction.rewardsList.gold_grams)
-      : undefined);
-
-    const schemePlanTypeName = inversement?.schemePlanTypeName || params.schemePlanTypeName || schemesData?.schemePlanTypeName || params.scheme_plan_type_id || inversement?.schemeType;
-
-    const receiptData: PaymentReceiptData = {
-      transactionId: transaction.transactionId,
-      paymentId: String(transaction.paymentId),
-      amountPaid: Number(transaction.amountPaid),
-      paymentDate: transaction.paymentDate,
-      paymentMode: transaction.paymentMode || "NB",
-      paymentModeType: transaction.paymentModeType,
-      orderId: transaction.orderId,
-      utrReference: transaction.utrReference,
-      status: transaction.status,
-      goldRate: Number(transaction.gold_rate),
-      goldWeight: Number(transaction.gold_weight),
-      userName: user?.name,
-      userMobile: user?.mobile?.toString(),
-      userEmail: user?.email,
-      rewardAmount: rewardAmount,
-      rewardGoldGrams: rewardGoldGrams,
-      schemePlanTypeName: schemePlanTypeName,
-      maturityDate: params.maturityDate as string,
-      metal: metalType,
-      inversement: {
-        ...inversement,
-        schemeName: params.schemeName || inversement?.schemeName,
-        schemePlanTypeName: schemePlanTypeName,
-      },
-    };
-
     try {
+      const receiptData = await buildReceiptData(transaction, inversement);
       const logoBase64 = await loadLogoAsBase64();
       const htmlContent = generatePaymentReceiptHTML({ ...receiptData, logoBase64 });
       const customerName = sanitizeFileName(user?.name || "Customer");
@@ -665,6 +788,7 @@ const SavingsDetail = () => {
     let payload = {
       userId: user.id,
       investmentId: params.id || params.investmentId || inversement?.id,
+      isAdvance: (paymentHistrory?.length || 0) > 0,
     };
 
     try {
@@ -689,9 +813,9 @@ const SavingsDetail = () => {
 
       if (parseSchemes) {
         const isSchemeHybridType = parseSchemes.SCHEMETYPE === "Hybrid" ||
-          parseSchemes.SCHEMETYPE?.toLowerCase() === "hybrid" ||
+          String(parseSchemes.SCHEMETYPE || "").toLowerCase() === "hybrid" ||
           parseSchemes.schemeType === "Hybrid" ||
-          parseSchemes.schemeType?.toLowerCase() === "hybrid";
+          String(parseSchemes.schemeType || "").toLowerCase() === "hybrid";
 
         const isFixedNull = parseSchemes.FIXED === null ||
           parseSchemes.FIXED === undefined ||
@@ -845,6 +969,11 @@ const SavingsDetail = () => {
                 current_goldrate: String(t.gold_rate || params.goldRate || ""),
                 gold_rate: String(t.gold_rate || params.goldRate || ""),
                 gold_weight: t.gold_weight || params.goldWeight || 0,
+                current_silverrate: String(t.silver_rate || t.current_silverrate || params.silverRate || ""),
+                silver_rate: String(t.silver_rate || params.silverRate || ""),
+                silver_weight: t.silver_weight || t.silverWeight || params.silverWeight || 0,
+                rate: t.rate || (isSilver ? (t.silver_rate || t.current_silverrate) : (t.gold_rate || t.current_goldrate)),
+                weight: t.weight || (isSilver ? (t.silver_weight || t.silverWeight) : (t.gold_weight || t.goldWeight)),
               }));
               setPaymentHistrory(mapped);
               historyList = mapped;
@@ -883,6 +1012,11 @@ const SavingsDetail = () => {
           current_goldrate: String(currentInv?.gold_rate || currentInv?.current_goldrate || params.goldRate || ""),
           gold_rate: String(currentInv?.gold_rate || params.goldRate || ""),
           gold_weight: currentInv?.totalgoldweight || currentInv?.gold_weight || params.goldWeight || 0,
+          current_silverrate: String(currentInv?.current_silverrate || currentInv?.silver_rate || params.silverRate || ""),
+          silver_rate: String(currentInv?.current_silverrate || currentInv?.silver_rate || params.silverRate || ""),
+          silver_weight: currentInv?.totalsilverweight || currentInv?.silver_weight || params.silverWeight || 0,
+          rate: isSilver ? (currentInv?.current_silverrate || currentInv?.silver_rate || params.silverRate) : (currentInv?.current_goldrate || currentInv?.gold_rate || params.goldRate),
+          weight: isSilver ? (currentInv?.totalsilverweight || currentInv?.silver_weight) : (currentInv?.totalgoldweight || currentInv?.gold_weight),
         };
         setPaymentHistrory([syntheticTxn]);
       }
@@ -947,6 +1081,8 @@ const SavingsDetail = () => {
     let payload = {
       userId: user.id,
       investmentId: params.id || params.investmentId || inversement?.id,
+      isAdvance: true,
+      amount: totalSelectedAmount,
     };
 
     try {
@@ -974,9 +1110,9 @@ const SavingsDetail = () => {
 
       if (parseSchemes) {
         const isSchemeHybridType = parseSchemes.SCHEMETYPE === "Hybrid" ||
-          parseSchemes.SCHEMETYPE?.toLowerCase() === "hybrid" ||
+          String(parseSchemes.SCHEMETYPE || "").toLowerCase() === "hybrid" ||
           parseSchemes.schemeType === "Hybrid" ||
-          parseSchemes.schemeType?.toLowerCase() === "hybrid";
+          String(parseSchemes.schemeType || "").toLowerCase() === "hybrid";
 
         const isFixedNull = parseSchemes.FIXED === null ||
           parseSchemes.FIXED === undefined ||
@@ -1127,7 +1263,7 @@ const SavingsDetail = () => {
                 <Text style={styles.heroStatValue}>₹{Number(totalPaidAmount || 0).toLocaleString()}</Text>
               </View>
               
-              {(schemesData?.schemeType?.toLowerCase() === "weight" || inversement?.schemeType?.toLowerCase() === "weight") && (
+              {isWeightScheme && (
                 <View>
                   <Text style={[styles.heroStatLabel, { fontSize: 10, marginBottom: 2 }]}>{accumulatedLabel}</Text>
                   <Text style={[styles.heroStatValue, { fontSize: 16 }]}>
@@ -1178,7 +1314,7 @@ const SavingsDetail = () => {
                   )}
                 </View>
               </View>
-            ) : schemesData?.paymentFrequencyName !== "Flexi" && schemesData?.paymentFrequencyName !== "Hybrid" && schemesData?.paymentFrequencyName?.toLowerCase() !== "hybrid" ? (
+            ) : schemesData?.paymentFrequencyName !== "Flexi" && schemesData?.paymentFrequencyName !== "Hybrid" && String(schemesData?.paymentFrequencyName || "").toLowerCase() !== "hybrid" ? (
               <View style={{ flex: 0.8, alignItems: "center", justifyContent: "center" }}>
                 <View style={{ width: size, height: size - 10, position: "relative", alignItems: "center", justifyContent: "center" }}>
                   <Svg width={size} height={size}>
@@ -1227,15 +1363,15 @@ const SavingsDetail = () => {
   };
 
   const renderInfoGrid = () => {
-    const isFlexiOrHybrid = (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("flexi") ||
-      (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("hybrid") ||
-      (params.schemeName || inversement?.schemeName || "").toLowerCase().includes("flexi") ||
-      (params.schemeName || inversement?.schemeName || "").toLowerCase().includes("hybrid");
+    const isFlexiOrHybrid = String(schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("flexi") ||
+      String(schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("hybrid") ||
+      String(params.schemeName || inversement?.schemeName || "").toLowerCase().includes("flexi") ||
+      String(params.schemeName || inversement?.schemeName || "").toLowerCase().includes("hybrid");
 
     const schemeTypeDisplay = isDeposit
       ? (translations.oneTimeDeposit || "One-Time Deposit")
       : (isFlexiOrHybrid
-          ? (((schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("hybrid") || (params.schemeName || inversement?.schemeName || "").toLowerCase().includes("hybrid")) ? "Hybrid" : "Flexi")
+          ? (((String(schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("hybrid") || String(params.schemeName || inversement?.schemeName || "").toLowerCase().includes("hybrid")) ? "Hybrid" : "Flexi"))
           : (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "Fixed"));
 
     const getStartDate = () => {
@@ -1710,7 +1846,7 @@ const SavingsDetail = () => {
                     <Text style={styles.receiptValue}>{selectedTransaction.utrReference}</Text>
                   </View>
                 )}
-                {(displayGoldRate > 0 || displayGoldWeight > 0) && (
+                {isWeightScheme && (displayGoldRate > 0 || displayGoldWeight > 0) && (
                   <>
                     <View style={styles.receiptRow}>
                       <Text style={styles.receiptLabel}>{weightLabel}</Text>
@@ -1718,10 +1854,12 @@ const SavingsDetail = () => {
                         {displayGoldWeight.toFixed(3)} g
                       </Text>
                     </View>
-                    <View style={styles.receiptRow}>
-                      <Text style={styles.receiptLabel}>{rateLabel}</Text>
-                      <Text style={styles.receiptValue}>₹{displayGoldRate.toLocaleString()}/g</Text>
-                    </View>
+                    {displayGoldRate > 0 && (
+                      <View style={styles.receiptRow}>
+                        <Text style={styles.receiptLabel}>{rateLabel}</Text>
+                        <Text style={styles.receiptValue}>₹{displayGoldRate.toLocaleString()}/g</Text>
+                      </View>
+                    )}
                   </>
                 )}
                 {(() => {

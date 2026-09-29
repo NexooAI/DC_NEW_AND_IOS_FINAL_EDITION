@@ -159,8 +159,23 @@ export default function MpinSetup() {
         await SecureStore.setItemAsync("authToken", data.token);
         await SecureStore.setItemAsync("accessToken", data.accessToken);
         await SecureStore.setItemAsync("token", data.token);
-        await SecureStore.setItemAsync("refreshToken", data.refreshtoken);
-        await AsyncStorage.setItem("userData", JSON.stringify(data.user));
+        const resolvedBranchId =
+          data.user?.branch_id !== undefined && data.user?.branch_id !== null
+            ? data.user.branch_id
+            : branch_id
+            ? Number(branch_id)
+            : null;
+        const resolvedAllowMulti =
+          data.user?.allow_multi_branch !== undefined && data.user?.allow_multi_branch !== null
+            ? data.user.allow_multi_branch
+            : 0;
+
+        const completeUserData = {
+          ...data.user,
+          branch_id: resolvedBranchId,
+          allow_multi_branch: resolvedAllowMulti,
+        };
+        await AsyncStorage.setItem("userData", JSON.stringify(completeUserData));
 
         login(data.token, {
           id: data.user.user_id,
@@ -171,6 +186,8 @@ export default function MpinSetup() {
           profile_photo: data.user.profile_photo,
           mpinStatus: data.user.mpinStatus,
           usertype: data.user.userType,
+          branch_id: resolvedBranchId,
+          allow_multi_branch: resolvedAllowMulti,
         });
 
         try {

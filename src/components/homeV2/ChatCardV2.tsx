@@ -10,6 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { moderateScale } from "react-native-size-matters";
 import useGlobalStore, { useAppTheme } from "@/store/global.store";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ChatCardV2Props {
   onPress?: () => void;
@@ -18,6 +19,7 @@ interface ChatCardV2Props {
 export const ChatCardV2: React.FC<ChatCardV2Props> = ({ onPress }) => {
   const router = useRouter();
   const theme = useAppTheme();
+  const { t } = useTranslation();
 
   const handleChatPress = () => {
     if (onPress) {
@@ -60,13 +62,19 @@ export const ChatCardV2: React.FC<ChatCardV2Props> = ({ onPress }) => {
 
         {/* Center Text */}
         <View style={styles.textContainer}>
-          <Text style={styles.title}>Chat With Us</Text>
-          <Text style={styles.subtitle}>Get instant support</Text>
+          <Text style={styles.title}>
+            {t("chatWithUs", { defaultValue: "Chat With Us" })}
+          </Text>
+          <Text style={styles.subtitle}>
+            {t("getInstantSupport", { defaultValue: "Get instant support" })}
+          </Text>
         </View>
 
         {/* Right Action Button */}
         <View style={styles.actionButton}>
-          <Text style={styles.actionText}>Start Chat</Text>
+          <Text style={styles.actionText}>
+            {t("startChat", { defaultValue: "Start Chat" })}
+          </Text>
           <Ionicons name="arrow-forward" size={12} color="#047857" />
         </View>
       </TouchableOpacity>

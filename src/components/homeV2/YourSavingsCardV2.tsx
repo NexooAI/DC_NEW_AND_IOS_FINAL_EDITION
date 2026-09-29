@@ -10,6 +10,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { moderateScale } from "react-native-size-matters";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface YourSavingsCardV2Props {
   totalAmount?: number | string;
@@ -23,6 +24,7 @@ export const YourSavingsCardV2: React.FC<YourSavingsCardV2Props> = ({
   onPress,
 }) => {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const handlePress = () => {
     if (onPress) {
@@ -64,8 +66,12 @@ export const YourSavingsCardV2: React.FC<YourSavingsCardV2Props> = ({
 
           {/* Middle: Title & Motivational Line */}
           <View style={styles.textContainer}>
-            <Text style={styles.title}>Your Savings</Text>
-            <Text style={styles.subtitle}>Small Steps, Big Tomorrow</Text>
+            <Text style={styles.title}>
+              {t("yourSavings", { defaultValue: "Your Savings" })}
+            </Text>
+            <Text style={styles.subtitle}>
+              {t("savingsTagline", { defaultValue: "Small Steps, Big Tomorrow" })}
+            </Text>
           </View>
 
           {/* Vertical Divider */}
@@ -74,7 +80,9 @@ export const YourSavingsCardV2: React.FC<YourSavingsCardV2Props> = ({
           {/* Right: Total Value + Arrow */}
           <View style={styles.valueContainer}>
             <View>
-              <Text style={styles.valueCaption}>Total Saved Value</Text>
+              <Text style={styles.valueCaption}>
+                {t("totalSavedValue", { defaultValue: "Total Saved Value" })}
+              </Text>
               <Text style={styles.valueAmount}>
                 ₹ {formatCurrency(totalAmount)}
               </Text>

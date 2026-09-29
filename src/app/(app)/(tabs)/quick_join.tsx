@@ -993,7 +993,7 @@ export default function QuickJoinScreen() {
           schemeId: String(selectedScheme.SCHEMEID),
           chitId: String(activeChit.CHITID),
           schemeType: selectedScheme.SCHEMETYPE || 'monthly',
-          savinsTypes: selectedScheme.savingType || (selectedScheme.SCHEMETYPE?.toLowerCase() === "weight" ? "weight" : "amount"),
+          savinsTypes: selectedScheme.savingType || (String(selectedScheme.SCHEMETYPE || "").toLowerCase() === "weight" ? "weight" : "amount"),
           userDetails: JSON.stringify(paymentSessionData.userDetails),
         },
       });
@@ -1352,7 +1352,7 @@ export default function QuickJoinScreen() {
             )}
 
             {/* Gold Weight */}
-            {(selectedScheme?.savingType === 'weight' || selectedScheme?.SCHEMETYPE?.toLowerCase() === 'weight') && goldRate > 0 && (() => {
+            {(selectedScheme?.savingType === 'weight' || String(selectedScheme?.SCHEMETYPE || "").toLowerCase() === 'weight') && goldRate > 0 && (() => {
               const slabs = getSchemeInterestSlabs(selectedScheme);
               const isBonus = slabs && slabs.length > 0;
               const amountNum = Number(formData.amount || 0);
@@ -1575,7 +1575,7 @@ export default function QuickJoinScreen() {
                             <Text style={styles.bonusAmountCellText}>
                               +₹{slabBonus.toLocaleString('en-IN')}
                             </Text>
-                            {(selectedScheme?.savingType === 'weight' || selectedScheme?.SCHEMETYPE?.toLowerCase() === 'weight') && goldRate > 0 && slabBonus > 0 && (
+                            {(selectedScheme?.savingType === 'weight' || String(selectedScheme?.SCHEMETYPE || "").toLowerCase() === 'weight') && goldRate > 0 && slabBonus > 0 && (
                               <Text style={styles.bonusGoldCellText}>
                                 +{(slabBonus / goldRate).toFixed(3)} g
                               </Text>

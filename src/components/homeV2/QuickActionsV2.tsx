@@ -9,7 +9,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { moderateScale } from "react-native-size-matters";
-import useGlobalStore from "@/store/global.store";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface QuickActionsV2Props {
   onMyChitsPress?: () => void;
@@ -31,7 +31,7 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
   onViewAllPress,
 }) => {
   const router = useRouter();
-  const { language } = useGlobalStore();
+  const { t } = useTranslation();
 
   const handleMyChits = () => {
     if (onMyChitsPress) {
@@ -88,7 +88,7 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
       {/* Header Row */}
       <View style={styles.headerRow}>
         <Text style={styles.title}>
-          {language === "ta" ? "விரைவு செயல்கள்" : "Quick Actions"}
+          {t("quickActions", { defaultValue: "Quick Actions" })}
         </Text>
         <TouchableOpacity
           onPress={handleViewAll}
@@ -96,7 +96,7 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
           style={styles.viewAllBtn}
         >
           <Text style={styles.viewAllText}>
-            {language === "ta" ? "அனைத்தும்" : "View All"}
+            {t("viewAll", { defaultValue: "View All" })}
           </Text>
           <Ionicons name="arrow-forward" size={13} color="#003C28" />
         </TouchableOpacity>
@@ -118,12 +118,12 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
             <Ionicons name="wallet-outline" size={22} color="#003C28" />
           </View>
           <Text style={styles.actionText} numberOfLines={1}>
-            {language === "ta" ? "எனது திட்டங்கள்" : "My Schemes"}
+            {t("mySchemes", { defaultValue: "My Schemes" })}
           </Text>
         </TouchableOpacity>
 
         {/* 2. Quick Pay */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.actionCard}
           onPress={handleQuickPay}
           activeOpacity={0.85}
@@ -132,9 +132,9 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
             <Ionicons name="flash-outline" size={22} color="#850111" />
           </View>
           <Text style={styles.actionText} numberOfLines={1}>
-            {language === "ta" ? "உடனடி தவணை" : "Quick Pay"}
+            {t("quickPay", { defaultValue: "Quick Pay" })}
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         {/* 3. Receipts */}
         <TouchableOpacity
@@ -146,7 +146,7 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
             <Ionicons name="receipt-outline" size={22} color="#003C28" />
           </View>
           <Text style={styles.actionText} numberOfLines={1}>
-            {language === "ta" ? "ரசீதுகள்" : "Receipts"}
+            {t("receipts", { defaultValue: "Receipts" })}
           </Text>
         </TouchableOpacity>
 
@@ -160,7 +160,7 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
             <Ionicons name="trending-up-outline" size={22} color="#DAA520" />
           </View>
           <Text style={styles.actionText} numberOfLines={1}>
-            {language === "ta" ? "தங்க விலை" : "Gold Rate"}
+            {t("goldRate", { defaultValue: "Gold Rate" })}
           </Text>
         </TouchableOpacity>
 
@@ -174,7 +174,7 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
             <Ionicons name="location-outline" size={22} color="#003C28" />
           </View>
           <Text style={styles.actionText} numberOfLines={1}>
-            {language === "ta" ? "எங்கள் கிளைகள்" : "Our Stores"}
+            {t("ourStores", { defaultValue: "Our Stores" })}
           </Text>
         </TouchableOpacity>
       </ScrollView>

@@ -108,6 +108,7 @@ export default function PaymentSuccess() {
   const [fetchedInvestment, setFetchedInvestment] = useState<any>(null);
   const [latestTxnId, setLatestTxnId] = useState<string>("");
   const [latestOrderId, setLatestOrderId] = useState<string>("");
+  const [latestPaymentRecord, setLatestPaymentRecord] = useState<any>(null);
   const userId = Array.isArray(params.userId) ? params.userId[0] : (params.userId || user?.id?.toString() || "");
 
   const rawTxnId = (Array.isArray(params.txnId) ? params.txnId[0] : params.txnId) || "";
@@ -140,6 +141,7 @@ export default function PaymentSuccess() {
           if (Array.isArray(history) && history.length > 0) {
             const latest = history[0];
             console.log("🔍 [PaymentSuccess] LATEST PAYMENT RECORD:\n", JSON.stringify(latest, null, 2));
+            setLatestPaymentRecord(latest);
             const foundTxnId = latest?.transactionId || latest?.transaction_id || latest?.tracking_id || latest?.txnId || latest?.utrReference || latest?.utr_reference || "";
             const foundOrderId = latest?.orderId || latest?.order_id || "";
             if (foundTxnId) {
@@ -318,6 +320,58 @@ export default function PaymentSuccess() {
         return;
       }
 
+      const metalType = String(
+        (Array.isArray(params.metal) ? params.metal[0] : params.metal) ||
+        (Array.isArray(params.metalType) ? params.metalType[0] : params.metalType) ||
+        fetchedInvestment?.metalType ||
+        fetchedInvestment?.metal ||
+        fetchedInvestment?.type ||
+        (Array.isArray(params.schemeName) ? params.schemeName[0] : params.schemeName) ||
+        fetchedInvestment?.schemeName ||
+        ""
+      ).toLowerCase();
+      const isSilver = metalType.includes("silver");
+
+      const rawSchemeType = String(
+        (Array.isArray(params.schemeTypeName) ? params.schemeTypeName[0] : params.schemeTypeName) ||
+        (Array.isArray(params.schemePlanTypeName) ? params.schemePlanTypeName[0] : params.schemePlanTypeName) ||
+        fetchedInvestment?.schemePlanTypeName ||
+        fetchedInvestment?.schemeType ||
+        (Array.isArray(params.schemeType) ? params.schemeType[0] : params.schemeType) ||
+        ""
+      ).toLowerCase();
+      const isWeightScheme = rawSchemeType.includes("weight") || (rawSchemeType.includes("flexi") && Boolean(params.goldWeight || latestPaymentRecord?.gold_weight || latestPaymentRecord?.weight));
+
+      const silverRate = isSilver
+        ? Number(
+            (Array.isArray(params.silverRate) ? params.silverRate[0] : params.silverRate) ||
+            latestPaymentRecord?.silverRate ||
+            latestPaymentRecord?.current_silverrate ||
+            latestPaymentRecord?.rate ||
+            fetchedInvestment?.current_silverrate ||
+            0
+          )
+        : 0;
+
+      const goldRate = !isSilver
+        ? Number(
+            (Array.isArray(params.goldRate) ? params.goldRate[0] : params.goldRate) ||
+            latestPaymentRecord?.goldRate ||
+            latestPaymentRecord?.current_goldrate ||
+            latestPaymentRecord?.rate ||
+            fetchedInvestment?.current_goldrate ||
+            0
+          )
+        : 0;
+
+      const weight = Number(
+        (Array.isArray(params.goldWeight) ? params.goldWeight[0] : params.goldWeight) ||
+        latestPaymentRecord?.weight ||
+        (isSilver ? (latestPaymentRecord?.silver_weight || latestPaymentRecord?.silverWeight) : (latestPaymentRecord?.gold_weight || latestPaymentRecord?.goldWeight)) ||
+        (isSilver ? fetchedInvestment?.totalsilverweight : fetchedInvestment?.totalgoldweight) ||
+        0
+      );
+
       const receiptData: PaymentReceiptData = {
         transactionId: transactionId,
         paymentId: transactionId,
@@ -330,17 +384,24 @@ export default function PaymentSuccess() {
         userMobile: user?.mobile?.toString() || "",
         userEmail: user?.email || "",
         maturityDate: fetchedInvestment?.end_date || (Array.isArray(params.maturityDate) ? params.maturityDate[0] : params.maturityDate) || undefined,
+        metal: isSilver ? "silver" : "gold",
+        goldRate: goldRate,
+        silverRate: silverRate,
+        rate: isSilver ? silverRate : goldRate,
+        weight: weight,
+        isWeightScheme: isWeightScheme,
         inversement: {
           accountName: fetchedInvestment?.accountName || user?.name || "",
           accountNo: fetchedInvestment?.accountNo || user?.id?.toString() || "",
           schemeName: fetchedInvestment?.schemeName || (Array.isArray(params.schemeName) ? params.schemeName[0] : params.schemeName) || (Array.isArray(params.schemeType) ? params.schemeType[0] : params.schemeType) || "Scheme",
-          paymentFrequencyName: fetchedInvestment?.paymentFrequencyName || Array.isArray(params.paymentFrequency) ? params.paymentFrequency[0] : (params.paymentFrequency || "Monthly"),
+          paymentFrequencyName: fetchedInvestment?.paymentFrequencyName || (Array.isArray(params.paymentFrequency) ? params.paymentFrequency[0] : (params.paymentFrequency || "Monthly")),
           joiningDate: fetchedInvestment?.joiningDate || (Array.isArray(params.joiningDate) ? params.joiningDate[0] : params.joiningDate) || new Date().toISOString(),
           end_date: fetchedInvestment?.end_date || (Array.isArray(params.maturityDate) ? params.maturityDate[0] : params.maturityDate) || new Date().toISOString(),
           paymentStatus: "Paid",
           total_paid: Number(Array.isArray(params.amount) ? params.amount[0] : params.amount) || 0,
           totalgoldweight: fetchedInvestment?.totalgoldweight || 0,
-          current_goldrate: Number(Array.isArray(params.goldRate) ? params.goldRate[0] : params.goldRate) || fetchedInvestment?.current_goldrate || 0,
+          current_goldrate: goldRate,
+          current_silverrate: silverRate,
         }
       };
 

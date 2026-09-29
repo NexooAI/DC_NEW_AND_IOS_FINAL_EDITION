@@ -38,6 +38,7 @@ import ResponsiveButton from "@/components/ResponsiveButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { responsiveUtils } from "@/utils/responsiveUtils";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
+import { useOtpAutoFetch } from "@/hooks/useOtpAutoFetch";
 const { hp } = responsiveUtils;
 import Svg, { Path } from 'react-native-svg';
 
@@ -207,13 +208,41 @@ export default function BasicDetailsForm() {
     useRef<TextInput>(null),
   ];
 
+  const fillOtp = (code: string) => {
+    const digits = code.replace(/[^0-9]/g, "").slice(0, 4).split("");
+    const newPins = ["", "", "", ""];
+    digits.forEach((d, i) => {
+      newPins[i] = d;
+    });
+    setPins(newPins);
+    setOtp(newPins.join(""));
+    setClipboardOtp("");
+    if (digits.length === 4) {
+      inputRefs[3].current?.focus();
+    } else if (digits.length > 0) {
+      inputRefs[Math.min(digits.length, 3)].current?.focus();
+    }
+  };
+
+  const clearOtp = () => {
+    setPins(["", "", "", ""]);
+    setOtp("");
+    setClipboardOtp("");
+  };
+
   const handlePinChange = (text: string, index: number) => {
+    const cleaned = text.replace(/[^0-9]/g, "");
+    if (cleaned.length > 1) {
+      fillOtp(cleaned);
+      return;
+    }
+
     const newPins = [...pins];
-    newPins[index] = text.replace(/[^0-9]/g, "");
+    newPins[index] = cleaned;
     setPins(newPins);
     setOtp(newPins.join(""));
 
-    if (text.length === 1 && index < 3) {
+    if (cleaned.length === 1 && index < 3) {
       inputRefs[index + 1].current?.focus();
     }
   };
@@ -838,15 +867,21 @@ export default function BasicDetailsForm() {
   // Check clipboard for OTP when popup is shown
   useEffect(() => {
     const checkClipboardForOtp = async () => {
-      if (otpModalVisible) {
+      if (otpModalVisible && !otpVerified) {
         try {
           const content = await Clipboard.getStringAsync();
-          const cleanContent = content.trim();
+          const cleanContent = content?.trim() || "";
+          let extractedOtp = "";
           if (/^\d{4}$/.test(cleanContent)) {
-            setClipboardOtp(cleanContent);
+            extractedOtp = cleanContent;
           } else {
-            setClipboardOtp("");
+            // Also extract 4-digit code if user copied the full SMS message
+            const match = cleanContent.match(/\b\d{4}\b/);
+            if (match) {
+              extractedOtp = match[0];
+            }
           }
+          setClipboardOtp(extractedOtp);
         } catch (err) {
           logger.error("Error reading clipboard:", err);
         }
@@ -856,7 +891,33 @@ export default function BasicDetailsForm() {
     };
 
     checkClipboardForOtp();
-  }, [otpModalVisible]);
+
+    // Re-check clipboard whenever user returns to the app from SMS
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active") {
+        checkClipboardForOtp();
+      }
+    });
+
+    // Check periodically while OTP screen is open
+    const interval = setInterval(checkClipboardForOtp, 1500);
+
+    return () => {
+      subscription.remove();
+      clearInterval(interval);
+    };
+  }, [otpModalVisible, otpVerified]);
+
+  // Android SMS Retriever auto-read
+  useOtpAutoFetch({
+    onOtpReceived: (receivedOtp: string) => {
+      const cleanOtp = receivedOtp.replace(/[^0-9]/g, "").slice(0, 4);
+      if (cleanOtp.length === 4) {
+        fillOtp(cleanOtp);
+      }
+    },
+    isActive: otpModalVisible && !otpVerified,
+  });
 
   // Update form validity when fields change
   useEffect(() => {
@@ -1089,12 +1150,12 @@ export default function BasicDetailsForm() {
       } else {
         // OTP verification failed
         Alert.alert(t("error"), data.error || t("invalidOtpOrOtpExpired"));
-        setOtp(""); // Clear the OTP input field
+        clearOtp(); // Clear the OTP input field and pins
         setOtpVerifying(false);
       }
     } catch (e) {
       Alert.alert(t("error"), t("failedToVerifyOtp"));
-      setOtp(""); // Clear the OTP input field on error
+      clearOtp(); // Clear the OTP input field and pins on error
       setOtpVerifying(false);
     }
   };
@@ -1908,7 +1969,7 @@ export default function BasicDetailsForm() {
                               ref={inputRefs[index]}
                               style={styles.otpBox}
                               keyboardType="numeric"
-                              maxLength={1}
+                              maxLength={index === 0 ? 4 : 1}
                               value={pin}
                               onChangeText={(text) => handlePinChange(text, index)}
                               onKeyPress={(e) => handleKeyPress(e, index)}
@@ -1930,8 +1991,7 @@ export default function BasicDetailsForm() {
                         <TouchableOpacity
                           style={styles.clipboardHintContainer}
                           onPress={() => {
-                            setOtp(clipboardOtp);
-                            setClipboardOtp(""); // Clear hint after pasting
+                            fillOtp(clipboardOtp);
                           }}
                         >
                           <Ionicons name="clipboard-outline" size={16} color={theme.colors.primary} />

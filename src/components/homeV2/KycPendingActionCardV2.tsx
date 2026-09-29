@@ -57,11 +57,13 @@ export const KycPendingActionCardV2: React.FC<KycPendingActionCardV2Props> = ({
     }
   };
 
-  const displayTitle = title || t("kycPendingTitle") || "KYC Verification Pending";
+  const displayTitle = title || t("kycPendingTitle", { defaultValue: "KYC Verification Pending" });
   const displayDescription =
     description ||
-    t("kycPendingDesc") ||
-    "Complete your KYC verification to secure your digital gold savings and enjoy instant transactions.";
+    t("kycPendingDesc", {
+      defaultValue:
+        "Complete your KYC verification to secure your digital gold savings and enjoy instant transactions.",
+    });
 
   return (
     <View style={styles.outerContainer}>
@@ -108,11 +110,15 @@ export const KycPendingActionCardV2: React.FC<KycPendingActionCardV2Props> = ({
                   ]}
                 />
               </View>
-              <Text style={styles.badgeText}>PENDING ACTION</Text>
+              <Text style={styles.badgeText}>
+                {t("pendingAction", { defaultValue: "PENDING ACTION" }).toUpperCase()}
+              </Text>
             </View>
 
             <View style={styles.verifyPill}>
-              <Text style={styles.verifyPillText}>Complete Now</Text>
+              <Text style={styles.verifyPillText}>
+                {t("completeNow", { defaultValue: "Complete Now" })}
+              </Text>
               <Ionicons name="arrow-forward" size={moderateScale(11)} color="#DC2626" />
             </View>
           </View>

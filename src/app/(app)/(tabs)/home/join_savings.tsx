@@ -142,13 +142,13 @@ export default function JoinSavings() {
               type: schemeObj.SCHEMETYPE || "Monthly",
               chits: chitsList,
               schemeType:
-                schemeObj.SCHEMETYPE?.toLowerCase()?.includes("flexi") ||
-                  schemeObj.SCHEMETYPE?.toLowerCase()?.includes("flexible")
+                String(schemeObj.SCHEMETYPE || "").toLowerCase().includes("flexi") ||
+                  String(schemeObj.SCHEMETYPE || "").toLowerCase().includes("flexible")
                   ? "flexi"
                   : "fixed",
               savingType:
                 schemeObj.savingType ||
-                (schemeObj.SCHEMETYPE?.toLowerCase() === "weight"
+                (String(schemeObj.SCHEMETYPE || "").toLowerCase() === "weight"
                   ? "weight"
                   : "amount"),
               benefits: schemeObj.BENEFITS || [
@@ -602,8 +602,26 @@ export default function JoinSavings() {
         setBranch(branchData);
         // Auto-select based on user's registered branch, or if only one branch exists
         const userAny = user as any;
-        if (userAny?.branch_id) {
-          handleChange("associated_branch", String(userAny.branch_id));
+        let targetBranchId = userAny?.branch_id ? String(userAny.branch_id) : "";
+        if (!targetBranchId) {
+          try {
+            const rawStored = await AsyncStorage.getItem("userData");
+            if (rawStored) {
+              const parsed = JSON.parse(rawStored);
+              if (parsed?.branch_id) {
+                targetBranchId = String(parsed.branch_id);
+                useGlobalStore.getState().updateUser({
+                  ...(user || {}),
+                  branch_id: parsed.branch_id,
+                  allow_multi_branch: parsed.allow_multi_branch,
+                });
+              }
+            }
+          } catch (e) {}
+        }
+
+        if (targetBranchId) {
+          handleChange("associated_branch", targetBranchId);
         } else if (branchData.length === 1) {
           handleChange("associated_branch", String(branchData[0].id));
         }
@@ -1980,8 +1998,10 @@ export default function JoinSavings() {
   const renderStep2 = () => {
     const isSingleBranch = branch.length === 1;
     const userAny = user as any;
-    const isPickerDisabled = isSingleBranch || !!userAny?.branch_id;
-    const selectedBranch = branch.find((b) => String(b.id) === formData.associated_branch);
+    const isMultiBranchAllowed = userAny?.allow_multi_branch === 1 || userAny?.allow_multi_branch === true;
+    const hasBranchSelected = !!formData.associated_branch || !!userAny?.branch_id;
+    const isPickerDisabled = !isMultiBranchAllowed && (isSingleBranch || hasBranchSelected);
+    const selectedBranch = branch.find((b) => String(b.id) === String(formData.associated_branch || userAny?.branch_id));
 
     return (
       <View style={styles.stepContainer}>
@@ -2037,17 +2057,17 @@ export default function JoinSavings() {
                     style={[
                       pickerSelectStylesModern.inputIOS,
                       errors.associated_branch ? styles.modernInputError : undefined,
-                      { backgroundColor: "rgba(240, 240, 240, 0.4)", flexDirection: "row", alignItems: "center", justifyContent: "space-between", position: 'relative' }
+                      { backgroundColor: "rgba(240, 240, 240, 0.6)", flexDirection: "row", alignItems: "center", justifyContent: "space-between", position: 'relative' }
                     ]}
                   >
-                    <Text style={{ color: "#888", fontSize: 16 }}>
+                    <Text style={{ color: "#222", fontSize: 16, fontWeight: "600" }}>
                       {selectedBranch?.branch_name || "Select Branch"}
                     </Text>
-                    <View style={{ position: 'absolute', right: 15 }}>
+                    <View style={{ position: 'absolute', right: 15, flexDirection: 'row', alignItems: 'center' }}>
                       <Ionicons
-                        name="chevron-down"
-                        size={20}
-                        color="#888"
+                        name="lock-closed-outline"
+                        size={17}
+                        color="#777"
                       />
                     </View>
                   </View>
@@ -2532,14 +2552,22 @@ export default function JoinSavings() {
 
       const accountNameValid = validate("accountname", formData.accountname);
 
-      // Auto-select branch if single branch exists
-      if (branch.length === 1 && !formData.associated_branch) {
-        handleChange("associated_branch", String(branch[0].id));
+      // Auto-select branch if user has registered branch or single branch exists
+      let effectiveBranch = formData.associated_branch;
+      if (!effectiveBranch) {
+        const userAny = user as any;
+        if (userAny?.branch_id) {
+          effectiveBranch = String(userAny.branch_id);
+          handleChange("associated_branch", effectiveBranch);
+        } else if (branch.length === 1) {
+          effectiveBranch = String(branch[0].id);
+          handleChange("associated_branch", effectiveBranch);
+        }
       }
 
       const branchValid = validate(
         "associated_branch",
-        formData.associated_branch
+        effectiveBranch
       );
 
       if (!accountNameValid || !branchValid) {

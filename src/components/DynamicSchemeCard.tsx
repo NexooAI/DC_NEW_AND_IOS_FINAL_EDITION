@@ -328,7 +328,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
           description: getTranslatedText(schemeToJoin.DESCRIPTION as any, language) || "No description available",
           type: targetTab,
           chits: relevantChits.length > 0 ? relevantChits : chits,
-          schemeType: schemeToJoin.SCHEMETYPE?.toLowerCase() || "",
+          schemeType: String(schemeToJoin.SCHEMETYPE || "").toLowerCase(),
           activeTab: targetTab,
           benefits: (schemeToJoin as any).BENEFITS || [],
           slogan: getTranslatedText((schemeToJoin as any).SLOGAN || { en: "" }, language) || "",
@@ -338,7 +338,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
           metaData: schemeToJoin.table_meta || (schemeToJoin as any).meta_data || null,
           instant_intrest: (schemeToJoin as any).instant_intrest || false,
           timestamp: new Date().toISOString(),
-          savingType: schemeToJoin.savingType || (schemeToJoin.SCHEMETYPE?.toLowerCase() === "weight" ? "weight" : "amount"),
+          savingType: schemeToJoin.savingType || (String(schemeToJoin.SCHEMETYPE || "").toLowerCase() === "weight" ? "weight" : "amount"),
         };
         console.log()
         await AsyncStorage.setItem(

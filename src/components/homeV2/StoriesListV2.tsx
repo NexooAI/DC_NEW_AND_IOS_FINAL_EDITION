@@ -10,6 +10,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { moderateScale } from "react-native-size-matters";
 import { getImageSource } from "@/utils/imageUtils";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface StoryItem {
   id: string | number;
@@ -27,31 +28,33 @@ export const StoriesListV2: React.FC<StoriesListV2Props> = ({
   collections = [],
   onStoryPress,
 }) => {
+  const { t } = useTranslation();
+
   // Built-in fallback stories matching the mock design
   const defaultStories: StoryItem[] = [
     {
       id: "latest",
-      name: "Latest",
+      name: t("latest", { defaultValue: "Latest" }),
       thumbnail: require("../../../assets/images/luxury_gold_ring.png"),
     },
     {
       id: "offers",
-      name: "Offers",
+      name: t("offers", { defaultValue: "Offers" }),
       thumbnail: require("../../../assets/images/gold_coin_badge.png"),
     },
     {
       id: "new_arrivals",
-      name: "New Arrivals",
+      name: t("newArrivals", { defaultValue: "New Arrivals" }),
       thumbnail: require("../../../assets/images/slider.png"),
     },
     {
       id: "festivals",
-      name: "Festivals",
+      name: t("festivals", { defaultValue: "Festivals" }),
       thumbnail: require("../../../assets/images/slider1.png"),
     },
     {
       id: "schemes",
-      name: "Schemes",
+      name: t("schemes.title", { defaultValue: "Schemes" }),
       thumbnail: require("../../../assets/images/diamond_coin_badge.png"),
     },
   ];
