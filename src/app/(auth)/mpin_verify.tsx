@@ -38,6 +38,7 @@ import { BlurView } from "expo-blur";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import { AppLocale } from "@/i18n";
 import apiClient from "@/services/api";
+import { hydrateCustomerData } from "@/services/hydrationService";
 
 import { logger } from "@/utils/logger";
 
@@ -861,6 +862,10 @@ export default function MpinVerify() {
             userData
           );
           login(data.token, userData);
+          // Hydrate entire customer data & preload posters immediately into RAM/Disk
+          hydrateCustomerData(userData.id, true).catch((err: any) => {
+            logger.warn("⚠️ Background hydration error after MPIN:", err);
+          });
           logger.log(
             "==========================================================================="
           );
@@ -1227,8 +1232,8 @@ export default function MpinVerify() {
                   style={[
                     styles.logo,
                     {
-                      width: 130,
-                      height: 130,
+                      width: 180,
+                      height: 180,
                       aspectRatio: 1,
                       zIndex: 1,
                     },

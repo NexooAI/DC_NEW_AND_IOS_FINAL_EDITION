@@ -568,7 +568,7 @@ export default function PaymentWebView() {
 
           <View style={styles.safeAreaContainer}>
             {/* Header with back button */}
-            <View style={[styles.header, { paddingTop: insets.top > 0 ? insets.top : (Platform.OS === "android" ? 24 : 12) }]}>
+            <View style={[styles.header, { paddingTop: Platform.OS === "android" ? 8 : (insets.top > 0 ? insets.top : 12) }]}>
               <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
                 <Text style={styles.backButtonText}>← Back</Text>
               </TouchableOpacity>

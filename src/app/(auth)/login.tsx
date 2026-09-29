@@ -1350,8 +1350,8 @@ export default function Login() {
                   <Image
                     source={require("../../../assets/images/logo_trans.png")}
                     style={{
-                      width: 150,
-                      height: 150,
+                      width: 195,
+                      height: 195,
                       aspectRatio: 1,
                       zIndex: 1,
                     }}
@@ -1813,7 +1813,7 @@ export default function Login() {
           </KeyboardAvoidingView>
           {!isKeyboardVisible && (
             <TouchableOpacity
-              onPress={() => Linking.openURL("https://nexoo.ai")}
+              onPress={() => Linking.openURL(theme?.constants?.providerUrl || "https://sakscodeit.com/")}
               style={{
                 alignItems: "center",
                 justifyContent: "center",
@@ -1830,7 +1830,7 @@ export default function Login() {
                 fontWeight: "500",
                 textDecorationLine: "underline",
               }}>
-                Powered by {theme.constants.providerName}
+                Powered by {theme?.constants?.providerName || "Sakscode IT Solutions Pvt Ltd"}
               </Text>
             </TouchableOpacity>
           )}

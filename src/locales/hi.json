@@ -1598,5 +1598,10 @@
   "viewGiftDetails": "उपहार विवरण देखें",
   "searchTxnPlaceholder": "आईडी, राशि या माध्यम से खोजें...",
   "transactionDetails": "लेन-देन विवरण",
-  "showLess": "कम दिखाएं"
+  "showLess": "कम दिखाएं",
+  "oneTimeDepositCompleted": "एकमुश्त जमा पूर्ण",
+  "depositActiveDesc": "आपकी एकमुश्त जमा राशि का सफलतापूर्वक भुगतान कर दिया गया है। आपका निवेश सक्रिय है और {{date}} को परिपक्व होगा।",
+  "daysToMaturity": "परिपक्वता के लिए शेष दिन",
+  "allInstallmentsCompleted": "सभी किस्तें पूरी हुईं",
+  "allInstallmentsCompletedDesc": "सभी किस्तें सफलतापूर्वक पूरी हो चुकी हैं। आपकी योजना सक्रिय है और {{date}} को परिपक्व होगी।"
 }

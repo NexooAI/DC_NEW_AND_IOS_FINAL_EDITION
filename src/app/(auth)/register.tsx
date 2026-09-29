@@ -788,9 +788,9 @@ export default function Register() {
                   textDecorationLine: "underline",
                   color: theme.colors.primary,
                 }}
-                onPress={() => Linking.openURL("https://agnisofterp.com/")}
+                onPress={() => Linking.openURL(theme?.constants?.providerUrl || "https://sakscodeit.com/")}
               >
-                Agni Soft ERP
+                {theme?.constants?.providerName || "Sakscode IT Solutions Pvt Ltd"}
               </Text>
             </Text>
           </View>

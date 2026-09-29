@@ -401,7 +401,7 @@ const theme = {
     // Store and location images
     store: {
       storeIcon: "../../assets/images/store.png",
-      shopIcon: "../../assets/images/shop.jpg",
+      shopIcon: "../../assets/images/shop.png",
       mapPin: "../../assets/images/map-pin.png",
       centerLocation: "../../assets/images/center-location.png",
       centralPark: "../../assets/images/central-park.jpg",
@@ -465,7 +465,7 @@ const theme = {
     gold_pattern: "../../assets/images/gold_pattern.jpg",
     cancel_icon: "../../assets/images/cancel.png",
     success_icon: "../../assets/images/success.png",
-    shop_icon: "../../assets/images/shop.jpg",
+    shop_icon: "../../assets/images/shop.png",
     no_data: "../../assets/images/no-data.png",
     savings_bg: "../../assets/images/savingsbg.jpg",
     digigoldproduct: "../../assets/images/digigoldproduct.png",
@@ -486,8 +486,8 @@ const theme = {
     enableDashboard: themeConfig.enableDashboard !== undefined ? themeConfig.enableDashboard : false,
     homeVersion: themeConfig.homeVersion || "v1",
     enableHomeV2: themeConfig.enableHomeV2 !== undefined ? themeConfig.enableHomeV2 : false,
-    providerName: "Agnisofterp",
-    providerUrl: "https://agnisofterp.com/",
+    providerName: themeConfig.providerName || "Sakscode IT Solutions Pvt Ltd",
+    providerUrl: themeConfig.providerUrl || "https://sakscodeit.com/",
   },
   homeVersion: themeConfig.homeVersion || "v1",
   enableHomeV2: themeConfig.enableHomeV2 !== undefined ? themeConfig.enableHomeV2 : false,

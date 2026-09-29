@@ -11,6 +11,7 @@ import {
   TextInput,
   ActivityIndicator,
   Animated,
+  Platform,
 } from "react-native";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { BackHandler } from "react-native";

@@ -197,6 +197,23 @@ interface GlobalStore {
   setAppConfig: (config: any) => void;
   themeMode: 'light' | 'dark';
   toggleThemeMode: () => void;
+
+  // Customer Data & Offline Hydration Cache (RAM + Disk)
+  customerInvestments: any[] | null;
+  customerInvestmentsTimestamp: number | null;
+  homeBundleData: any | null;
+  homeBundleTimestamp: number | null;
+  customerKyc: any | null;
+  cachedPosterMap: Record<string, string>;
+
+  setCustomerInvestments: (data: any[]) => void;
+  setHomeBundleData: (data: any) => void;
+  setCustomerKyc: (kyc: any) => void;
+  setCachedPosterMap: (map: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => void;
+  setCachedPosterItem: (remoteUrl: string, localUri: string) => void;
+  clearCustomerCache: () => void;
+  isHomeBundleValid: (maxAge?: number) => boolean;
+  isInvestmentsCacheValid: (maxAge?: number) => boolean;
 }
 
 const useGlobalStore = create<GlobalStore>()(
@@ -263,6 +280,13 @@ const useGlobalStore = create<GlobalStore>()(
             cachedVisibility: null,
             cachedBranches: null,
             cachedAboutPage: null,
+            // Clear customer offline cache on logout
+            customerInvestments: null,
+            customerInvestmentsTimestamp: null,
+            homeBundleData: null,
+            homeBundleTimestamp: null,
+            customerKyc: null,
+            cachedPosterMap: {},
           });
 
           logger.auth('✅ Global Store: Logout completed - all data cleared');
@@ -514,6 +538,53 @@ const useGlobalStore = create<GlobalStore>()(
       activeDrawCountdown: null,
       setActiveDrawCountdown: (draw) => set({ activeDrawCountdown: draw }),
 
+      // Customer Data & Offline Hydration Cache
+      customerInvestments: null,
+      customerInvestmentsTimestamp: null,
+      homeBundleData: null,
+      homeBundleTimestamp: null,
+      customerKyc: null,
+      cachedPosterMap: {},
+
+      setCustomerInvestments: (data: any[]) => {
+        logger.log("📦 [Cache] Saving customer investments to store, count:", data?.length || 0);
+        set({ customerInvestments: data, customerInvestmentsTimestamp: Date.now() });
+      },
+      setHomeBundleData: (data: any) => {
+        logger.log("📦 [Cache] Saving home bundle data to store");
+        set({ homeBundleData: data, homeBundleTimestamp: Date.now() });
+      },
+      setCustomerKyc: (kyc: any) => set({ customerKyc: kyc }),
+      setCachedPosterMap: (map) =>
+        set((state) => ({
+          cachedPosterMap: typeof map === 'function' ? map(state.cachedPosterMap) : map,
+        })),
+      setCachedPosterItem: (remoteUrl: string, localUri: string) =>
+        set((state) => ({
+          cachedPosterMap: { ...state.cachedPosterMap, [remoteUrl]: localUri },
+        })),
+      clearCustomerCache: () => {
+        logger.log("📦 [Cache] Clearing customer offline cache");
+        set({
+          customerInvestments: null,
+          customerInvestmentsTimestamp: null,
+          homeBundleData: null,
+          homeBundleTimestamp: null,
+          customerKyc: null,
+          cachedPosterMap: {},
+        });
+      },
+      isHomeBundleValid: (maxAge: number = 15 * 60 * 1000) => {
+        const state = get();
+        if (!state.homeBundleData || !state.homeBundleTimestamp) return false;
+        return Date.now() - state.homeBundleTimestamp < maxAge;
+      },
+      isInvestmentsCacheValid: (maxAge: number = 15 * 60 * 1000) => {
+        const state = get();
+        if (!state.customerInvestments || !state.customerInvestmentsTimestamp) return false;
+        return Date.now() - state.customerInvestmentsTimestamp < maxAge;
+      },
+
       // Debug function to check current state
       debugState: () => {
         const state = get();
@@ -522,6 +593,9 @@ const useGlobalStore = create<GlobalStore>()(
         logger.log('  token:', state.token ? 'present' : 'missing');
         logger.log('  user:', state.user);
         logger.log('  user.id:', state.user?.id);
+        logger.log('  customerInvestments:', state.customerInvestments ? state.customerInvestments.length : 'none');
+        logger.log('  homeBundle:', state.homeBundleData ? 'cached' : 'none');
+        logger.log('  cachedPosters:', Object.keys(state.cachedPosterMap || {}).length);
         return state;
       },
     }),
@@ -532,6 +606,15 @@ const useGlobalStore = create<GlobalStore>()(
         language: state.language,
         user: state.user,
         themeMode: state.themeMode,
+        customerInvestments: state.customerInvestments,
+        customerInvestmentsTimestamp: state.customerInvestmentsTimestamp,
+        homeBundleData: state.homeBundleData,
+        homeBundleTimestamp: state.homeBundleTimestamp,
+        customerKyc: state.customerKyc,
+        cachedPosterMap: state.cachedPosterMap,
+        cachedRates: state.cachedRates,
+        cachedSchemes: state.cachedSchemes,
+        cachedVisibility: state.cachedVisibility,
       })
     }
   )

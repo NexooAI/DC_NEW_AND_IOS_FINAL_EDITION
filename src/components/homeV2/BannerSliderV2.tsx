@@ -12,6 +12,7 @@ import {
 import { useRouter } from "expo-router";
 import { moderateScale } from "react-native-size-matters";
 import { getImageSource } from "@/utils/imageUtils";
+import { getCachedPosterSource, cacheRemoteImage } from "@/utils/mediaCache";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -77,6 +78,15 @@ export const BannerSliderV2: React.FC<BannerSliderV2Props> = ({
 
   const totalItems = items.length;
 
+  // Background ensure caching for banner images
+  useEffect(() => {
+    items.forEach((item) => {
+      if (typeof item.image === "string" && (item.image.startsWith("http://") || item.image.startsWith("https://"))) {
+        cacheRemoteImage(item.image);
+      }
+    });
+  }, [items]);
+
   // Auto-scroll
   useEffect(() => {
     if (totalItems <= 1) return;
@@ -137,12 +147,13 @@ export const BannerSliderV2: React.FC<BannerSliderV2Props> = ({
             onPress={() => handlePress(item)}
             activeOpacity={0.92}
           >
-            {/* Clean Banner Image */}
+            {/* Clean Banner Image with local cache */}
             <Image
               source={
-                typeof item.image === "string"
+                getCachedPosterSource(item.image) ??
+                (typeof item.image === "string"
                   ? getImageSource(item.image) ?? require("../../../assets/images/slider.png")
-                  : item.image || require("../../../assets/images/slider.png")
+                  : item.image || require("../../../assets/images/slider.png"))
               }
               style={styles.bannerImage}
               resizeMode="cover"

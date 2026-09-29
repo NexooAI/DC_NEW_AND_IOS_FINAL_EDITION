@@ -308,11 +308,11 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
         <View style={styles.poweredByContainer}>
           <TouchableOpacity
             style={styles.poweredByButton}
-            onPress={() => Linking.openURL("http://agnisofterp.com/")}
+            onPress={() => Linking.openURL(theme?.constants?.providerUrl || "https://sakscodeit.com/")}
             activeOpacity={0.7}
           >
-            <Text style={styles.poweredByText}>Powered by </Text>
-            <Text style={styles.poweredByLink}>agnisofterp.com</Text>
+            <Text style={styles.poweredByText}>{t("poweredBy") || "Powered by"} </Text>
+            <Text style={styles.poweredByLink}>{theme?.constants?.providerName || "Sakscode IT Solutions Pvt Ltd"}</Text>
           </TouchableOpacity>
         </View>
 

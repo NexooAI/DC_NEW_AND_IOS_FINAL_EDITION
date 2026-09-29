@@ -71,7 +71,7 @@ export const images = {
     // Store and location images
     store: {
         storeIcon: "../../assets/images/store.png",
-        shopIcon: "../../assets/images/shop.jpg",
+        shopIcon: "../../assets/images/shop.png",
         mapPin: "../../assets/images/map-pin.png",
         centerLocation: "../../assets/images/center-location.png",
         centralPark: "../../assets/images/central-park.jpg",

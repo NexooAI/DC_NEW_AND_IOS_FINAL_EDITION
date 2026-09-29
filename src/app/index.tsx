@@ -53,7 +53,7 @@ export default function AuthGuard() {
     "checking" | "validating" | "navigating" | "error"
   >("checking");
   const { screenWidth, screenHeight } = useResponsiveLayout();
-  const logoWidth = screenWidth * 0.4;
+  const logoWidth = Math.min(screenWidth * 0.52, 210);
 
   useEffect(() => {
     logger.log(

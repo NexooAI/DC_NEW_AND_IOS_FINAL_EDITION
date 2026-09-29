@@ -1625,5 +1625,10 @@
   "viewGiftDetails": "View Gift Details",
   "searchTxnPlaceholder": "Search by ID, amount, or mode...",
   "transactionDetails": "Transaction Details",
-  "showLess": "Show Less"
+  "showLess": "Show Less",
+  "oneTimeDepositCompleted": "One-Time Deposit Completed",
+  "depositActiveDesc": "Your single-time deposit has been paid successfully. Your investment is active and will mature on {{date}}.",
+  "daysToMaturity": "Days to Maturity",
+  "allInstallmentsCompleted": "All Installments Paid",
+  "allInstallmentsCompletedDesc": "All installments have been completed successfully. Your scheme is active and will mature on {{date}}."
 }

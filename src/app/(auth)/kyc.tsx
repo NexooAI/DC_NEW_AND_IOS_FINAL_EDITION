@@ -25,7 +25,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/constants/colors";
 
 const { width } = Dimensions.get("window");
-const logoWidth = width * 0.3;
+const logoWidth = width * 0.48;
 
 // Error Alert Component (matching login page)
 const ErrorAlert = ({

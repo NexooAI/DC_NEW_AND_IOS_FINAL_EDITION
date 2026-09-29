@@ -30,6 +30,8 @@ const themeConfig = {
   baseUrl: "https://api.prod.kanisaajewellery.com",
   playStoreUrl: "https://play.google.com/store/apps/details?id=com.nexooai.kanisaajewellerydigigoldsavings&hl=en_IN",
   appStoreUrl: "https://apps.apple.com/us/app/kanisaa-jewellers-gold-diamonds/id6755081937",
+  providerName: "Sakscode IT Solutions Pvt Ltd",
+  providerUrl: "https://sakscodeit.com/",
 };
 
 module.exports = { themeConfig };

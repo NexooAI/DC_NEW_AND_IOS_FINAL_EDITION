@@ -207,7 +207,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     if (availableCategories.gold && isVisible("showGoldScheme" as any)) {
       list.push({
         id: "gold_savings",
-        title: "Gold Savings Scheme",
+        title: "Gold Savings\nScheme",
         subtitle: "Save gold for your golden future",
         image: require("../../../assets/images/luxury_gold_coin.png"),
         type: "gold",
@@ -227,7 +227,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     if (availableCategories.silver && isVisible("showSilverScheme" as any)) {
       list.push({
         id: "silver_savings",
-        title: "Silver Savings Scheme",
+        title: "Silver Savings\nScheme",
         subtitle: "Small savings Big security",
         image: require("../../../assets/images/silver_coin_badge.png"),
         type: "silver",
@@ -247,7 +247,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     if (availableCategories.diamond && isVisible("showDiamondScheme" as any)) {
       list.push({
         id: "diamond_savings",
-        title: "Diamond Savings Scheme",
+        title: "Diamond Savings\nScheme",
         subtitle: "Sparkle with your savings",
         image: require("../../../assets/images/diamond_coin_badge.png"),
         type: "diamond",
@@ -267,7 +267,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     if (availableCategories.platinum && isVisible("showPlatinumScheme" as any)) {
       list.push({
         id: "platinum_savings",
-        title: "Platinum Savings Scheme",
+        title: "Platinum Savings\nScheme",
         subtitle: "Precious metals for life",
         image: require("../../../assets/images/luxury_gold_coin.png"),
         type: "platinum",
@@ -287,7 +287,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     if (availableCategories.old_gold && isVisible("showOldGoldScheme" as any)) {
       list.push({
         id: "old_gold_savings",
-        title: "Old Gold Scheme",
+        title: "Old Gold\nScheme",
         subtitle: "Convert old gold into savings",
         image: require("../../../assets/images/gold.png"),
         type: "old_gold",
@@ -307,7 +307,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     if (list.length === 0) {
       list.push({
         id: "gold_savings",
-        title: "Gold Savings Scheme",
+        title: "Gold Savings\nScheme",
         subtitle: "Save gold for your golden future",
         image: require("../../../assets/images/luxury_gold_coin.png"),
         type: "gold",
@@ -507,7 +507,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
 
               {/* Title & Subtitle */}
               <View style={styles.contentSection}>
-                <Text style={styles.cardTitle} numberOfLines={1}>
+                <Text style={styles.cardTitle} numberOfLines={2}>
                   {item.title}
                 </Text>
                 <Text style={styles.cardSubtitle} numberOfLines={2}>
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.07,
     shadowRadius: 8,
     elevation: 3,
-    minHeight: moderateScale(218),
+    minHeight: moderateScale(234),
     justifyContent: "space-between",
   },
   topBadgeRow: {
@@ -659,13 +659,15 @@ const styles = StyleSheet.create({
   },
   contentSection: {
     marginBottom: moderateScale(8),
+    minHeight: moderateScale(56),
   },
   cardTitle: {
-    fontSize: moderateScale(13.5),
+    fontSize: moderateScale(13),
     fontWeight: "800",
     color: "#0F172A",
     marginBottom: moderateScale(2),
     letterSpacing: 0.2,
+    lineHeight: moderateScale(17),
   },
   cardSubtitle: {
     fontSize: moderateScale(10.5),

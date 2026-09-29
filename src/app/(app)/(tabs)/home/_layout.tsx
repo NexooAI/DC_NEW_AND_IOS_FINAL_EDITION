@@ -1,13 +1,11 @@
 import { Stack } from "expo-router";
-import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
+import useGlobalStore, { useAppTheme } from "@/store/global.store";
 import { useEffect } from "react";
 import { Platform, StatusBar } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { theme } from "@/constants/theme";
+
 export default function HomeLayout() {
   const theme = useAppTheme();
   const { setTabVisibility } = useGlobalStore();
-  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     // Default to showing tabs when entering the home stack
@@ -114,7 +112,9 @@ export default function HomeLayout() {
       />
       <Stack.Screen
         name="PaymentWebView"
-        options={{ title: "Payment WebView" }}
+        options={{
+          headerShown: false,
+        }}
       />
       <Stack.Screen
         name="payment-success"
@@ -122,7 +122,7 @@ export default function HomeLayout() {
           title: "Payment Success",
           headerBackVisible: false,
           gestureEnabled: false,
-          headerLeft: () => null
+          headerLeft: () => null,
         }}
       />
       <Stack.Screen
@@ -131,7 +131,7 @@ export default function HomeLayout() {
           title: "Payment Failure",
           headerBackVisible: false,
           gestureEnabled: false,
-          headerLeft: () => null
+          headerLeft: () => null,
         }}
       />
       <Stack.Screen

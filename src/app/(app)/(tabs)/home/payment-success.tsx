@@ -32,6 +32,7 @@ import { getPdfFileUri } from "@/utils/fileUtils";
 import { loadLogoAsBase64 } from "@/utils/imageUtils";
 import { generatePaymentReceiptHTML, PaymentReceiptData } from "@/templates/html";
 import { investmentAPI, billsAPI } from "@/services/api";
+import { hydrateCustomerData } from "@/services/hydrationService";
 
 // Responsive constants
 const { wp, hp, rf, rp, rm, rb, getShadows } = responsiveUtils;
@@ -86,6 +87,12 @@ export default function PaymentSuccess() {
     const ratingTimer = setTimeout(() => {
       checkAndShowRating();
     }, 1000);
+
+    // Refresh customer investments & home data cache so that new installment is instantly in RAM
+    hydrateCustomerData(undefined, true).catch((err) => {
+      logger.warn("⚠️ Post-payment cache rehydration error:", err);
+    });
+
     return () => clearTimeout(ratingTimer);
   }, []);
   

@@ -17,6 +17,7 @@ import api from "@/services/api";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { logger } from "@/utils/logger";
 import CustomAlert from "@/components/Alert";
+import { checkIsDepositScheme } from "@/utils/schemeUtils";
 
 type Scheme = {
   rewards?: Array<{
@@ -161,6 +162,57 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
       frequency.includes("hybrid") || name.includes("hybrid") || freqName.includes("hybrid");
   }, [item.paymentFrequency, item.schemeName, item.schemesData?.paymentFrequencyName]);
 
+  const isDepositScheme = useMemo(() => {
+    return checkIsDepositScheme({
+      schemeName: item.schemeName || item.schemesData?.schemeName,
+      schemePlanTypeName: item.schemesData?.schemePlanTypeName,
+      scheme_plan_type_id: item.schemesData?.scheme_plan_type_id,
+      schemeType: item.schemesData?.schemeType,
+      paymentFrequency: item.paymentFrequency,
+      paymentFrequencyName: item.schemesData?.paymentFrequencyName,
+    });
+  }, [item.schemeName, item.schemesData, item.paymentFrequency]);
+
+  const isDepositPaid = useMemo(() => {
+    if (!isDepositScheme) return false;
+    const paid = Number(item.totalPaid) || 0;
+    const months = Number(item.monthsPaid) || 0;
+    return paid > 0 || months >= 1;
+  }, [isDepositScheme, item.totalPaid, item.monthsPaid]);
+
+  const isMaturedOrClosed = useMemo(() => {
+    const status = (item.status || "").toUpperCase();
+    if (["MATURED", "COMPLETED", "CLOSED", "CLAIMED"].includes(status)) {
+      return true;
+    }
+    if (item.maturityDate && item.maturityDate !== "N/A" && item.maturityDate !== "") {
+      const mat = new Date(item.maturityDate);
+      if (!isNaN(mat.getTime())) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const compareMat = new Date(mat);
+        compareMat.setHours(23, 59, 59, 999);
+        return today.getTime() > compareMat.getTime();
+      }
+    }
+    return false;
+  }, [item.status, item.maturityDate]);
+
+  const canPayNow = useMemo(() => {
+    // 1. Old gold schemes cannot be paid via Pay Now
+    if (item.savingType === "old_gold") return false;
+
+    // 2. Fixed Sub Deposit / Deposit scheme where deposit has already been paid once
+    // Prevents attempting a 2nd payment which triggers a 500 error on the server
+    if (isDepositScheme && isDepositPaid) return false;
+
+    // 3. Schemes that are matured, completed, closed, or claimed
+    if (isMaturedOrClosed) return false;
+
+    // All active recurring schemes (Fixed, Flexi, Hybrid, etc.) can be paid!
+    return true;
+  }, [item.savingType, isDepositScheme, isDepositPaid, isMaturedOrClosed]);
+
   // Calculate total reward amount and gold grams from all rewards
   const totalRewardAmount = useMemo(() => {
     if (!item.rewards || !Array.isArray(item.rewards) || item.rewards.length === 0) {
@@ -241,6 +293,19 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
 
   const handlePayNow = async () => {
     if (!item || isLoading || !user) return;
+
+    if (!canPayNow) {
+      if (isDepositScheme && isDepositPaid) {
+        setAlertConfig({
+          visible: true,
+          title: translations?.oneTimeDeposit || t("oneTimeDeposit") || "One-Time Deposit",
+          message: "Single-time deposit has already been paid for this scheme.",
+          type: "info",
+        });
+        return;
+      }
+      return;
+    }
 
     setIsLoading(true);
 
@@ -358,10 +423,16 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
       setTimeout(() => {
         setIsLoading(false);
       }, 1000);
-    } catch (error) {
+    } catch (error: any) {
       logger.error("Error in handlePayNow:", error);
       setIsLoading(false);
-      // Could show an error alert here if needed
+      const errorMsg = error?.response?.data?.message || "Unable to proceed with payment at this moment. Please view scheme details or try again later.";
+      setAlertConfig({
+        visible: true,
+        title: "Payment Status",
+        message: errorMsg,
+        type: "warning",
+      });
     }
   };
 
@@ -459,14 +530,16 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                         ]}
                       >
                         <Text style={styles.savingTypeText}>
-                          {isHybrid
-                            ? "Hybrid"
-                            : isFlexiOrHybrid
-                              ? translations.flexi
-                              : translations.fixed}
+                          {isDepositScheme
+                            ? (translations?.oneTimeDeposit || t("oneTimeDeposit") || "One-Time Deposit")
+                            : isHybrid
+                              ? "Hybrid"
+                              : isFlexiOrHybrid
+                                ? translations.flexi
+                                : translations.fixed}
                         </Text>
                       </View>
-                      {!isFlexiOrHybrid && item.schemesData?.paymentFrequencyName && (
+                      {!isFlexiOrHybrid && !isDepositScheme && item.schemesData?.paymentFrequencyName && (
                         <View
                           style={[
                             styles.savingTypeBadge,
@@ -738,8 +811,8 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             </View>
           </View>
 
-          {/* Installment Progress Section - Hide for paymentFrequencyId == 4 or if it is hybrid */}
-          {item.schemesData?.paymentFrequencyId !== 4 && !isHybrid && (
+          {/* Installment Progress Section - Hide for paymentFrequencyId == 4, hybrid, or deposit */}
+          {item.schemesData?.paymentFrequencyId !== 4 && !isHybrid && !isDepositScheme && (
             <View style={styles.progressContainer}>
               <View style={styles.progressHeader}>
                 <Text style={styles.progressLabel}>
@@ -804,7 +877,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
 
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity
-            style={item.savingType === "old_gold" ? [styles.detailsButton, { width: "100%" }] : styles.detailsButton}
+            style={!canPayNow ? [styles.detailsButton, { width: "100%" }] : styles.detailsButton}
             onPress={() => {
               if (item.savingType === "old_gold") {
                 router.push("/(app)/old_gold");
@@ -829,7 +902,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
               />
             </LinearGradient>
           </TouchableOpacity>
-          {item.savingType !== "old_gold" && (
+          {canPayNow && (
             <TouchableOpacity
               style={[
                 styles.payNowButtonLarge,

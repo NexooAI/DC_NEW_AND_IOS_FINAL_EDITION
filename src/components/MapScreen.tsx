@@ -31,7 +31,7 @@ const locations: LocationData[] = [
     description: "Large urban park in Manhattan",
     latitude: 40.785091,
     longitude: -73.968285,
-    image: require("../../assets/images/central-park.jpg"),
+    image: require("../../assets/images/shop.png"),
   },
   {
     id: 2,
@@ -39,7 +39,7 @@ const locations: LocationData[] = [
     description: "102-story Art Deco skyscraper",
     latitude: 40.748817,
     longitude: -73.985428,
-    image: require("../../assets/images/empire-state.jpg"),
+    image: require("../../assets/images/shop.png"),
   },
   // Add more locations as needed
 ];

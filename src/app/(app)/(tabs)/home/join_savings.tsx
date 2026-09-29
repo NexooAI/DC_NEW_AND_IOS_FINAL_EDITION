@@ -1441,7 +1441,7 @@ export default function JoinSavings() {
   //             !showWeightInput && styles.fullWidthInput
   //           ]}>
   //             <Image
-  //               source={require("../../../../../assets/images/rupee-bg.png")}
+  //               source={null}
   //               style={styles.amountCardBgImage}
   //               resizeMode="contain"
   //             />

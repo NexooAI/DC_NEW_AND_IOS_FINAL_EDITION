@@ -596,6 +596,63 @@ function getStyles(theme: any) {
       fontSize: moderateScale(9),
       color: '#64748B',
     },
+    goldWeightSection: {
+      marginBottom: moderateScale(20),
+    },
+    goldHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: moderateScale(8),
+    },
+    goldLiveRateBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: moderateScale(4),
+      backgroundColor: 'rgba(184, 134, 11, 0.1)',
+      paddingHorizontal: moderateScale(8),
+      paddingVertical: moderateScale(3),
+      borderRadius: moderateScale(10),
+    },
+    goldLiveRateBadgeText: {
+      fontSize: moderateScale(10),
+      fontWeight: '700',
+      color: '#B8860B',
+    },
+    goldBaseCard: {
+      flex: 1,
+      height: moderateScale(54),
+      backgroundColor: '#FFFDF0',
+      borderWidth: 1,
+      borderColor: 'rgba(217, 119, 6, 0.35)',
+      borderRadius: moderateScale(14),
+      paddingHorizontal: moderateScale(10),
+      paddingVertical: moderateScale(6),
+      justifyContent: 'center',
+    },
+    goldBaseAmount: {
+      fontSize: moderateScale(14),
+      fontWeight: '800',
+      color: COLORS.text.dark,
+      marginTop: moderateScale(1),
+    },
+    goldBaseBadge: {
+      backgroundColor: 'rgba(184, 134, 11, 0.15)',
+      paddingHorizontal: moderateScale(5),
+      paddingVertical: moderateScale(1),
+      borderRadius: moderateScale(6),
+    },
+    goldBaseBadgeText: {
+      fontSize: moderateScale(10),
+      fontWeight: '800',
+      color: '#B8860B',
+    },
+    bonusGoldCellText: {
+      fontSize: moderateScale(10),
+      fontWeight: '700',
+      color: '#16A34A',
+      marginTop: moderateScale(1),
+    },
     goldWeightCard: {
       borderRadius: moderateScale(16),
       padding: moderateScale(14),
@@ -1295,26 +1352,101 @@ export default function QuickJoinScreen() {
             )}
 
             {/* Gold Weight */}
-            {selectedScheme?.savingType === 'weight' && goldRate > 0 && (
-              <LinearGradient
-                colors={['#FFF9E6', '#FFF']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.goldWeightCard}
-              >
-                <View style={styles.goldWeightHeader}>
-                  <View style={styles.goldIconBg}>
-                    <Ionicons name="scale" size={18} color="#B8860B" />
+            {(selectedScheme?.savingType === 'weight' || selectedScheme?.SCHEMETYPE?.toLowerCase() === 'weight') && goldRate > 0 && (() => {
+              const slabs = getSchemeInterestSlabs(selectedScheme);
+              const isBonus = slabs && slabs.length > 0;
+              const amountNum = Number(formData.amount || 0);
+              const maxSlab = isBonus ? slabs.reduce((prev, curr) => curr.percentage > prev.percentage ? curr : prev, slabs[0]) : null;
+              const maxPercent = maxSlab ? maxSlab.percentage : 0;
+              const estimatedBonus = amountNum > 0 ? Math.round((amountNum * maxPercent) / 100) : 0;
+
+              const baseGold = amountNum > 0 ? amountNum / goldRate : 0;
+              const bonusGold = estimatedBonus > 0 ? estimatedBonus / goldRate : 0;
+              const totalGold = baseGold + bonusGold;
+
+              if (isBonus && maxPercent > 0) {
+                return (
+                  <View style={styles.goldWeightSection}>
+                    <View style={styles.goldHeaderRow}>
+                      <Text style={styles.inputLabel}>
+                        {language === 'ta' ? 'மதிப்பிடப்பட்ட தங்கம்' : (t("estimatedGoldWeight") || "Est. Gold Weight")}
+                      </Text>
+                      <View style={styles.goldLiveRateBadge}>
+                        <Ionicons name="sparkles" size={11} color="#B8860B" />
+                        <Text style={styles.goldLiveRateBadgeText}>
+                          {language === 'ta' ? '1 கிராம்' : '1g'} = ₹{goldRate.toLocaleString('en-IN')}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.amountAndBonusRow}>
+                      {/* Left Column: Base Gold Weight */}
+                      <View style={styles.goldBaseCard}>
+                        <View style={styles.bonusPreviewHeader}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Ionicons name="scale" size={13} color="#B8860B" />
+                            <Text style={[styles.bonusPreviewTitle, { color: '#B8860B' }]}>
+                              {language === 'ta' ? 'அடிப்படை' : 'Base Gold'}
+                            </Text>
+                          </View>
+                          <View style={styles.goldBaseBadge}>
+                            <Text style={styles.goldBaseBadgeText}>916</Text>
+                          </View>
+                        </View>
+                        <Text style={styles.goldBaseAmount}>
+                          {formatGoldWeight(baseGold)}
+                        </Text>
+                        <Text style={styles.bonusPreviewTotal} numberOfLines={1}>
+                          {language === 'ta' ? 'முதலீடு' : 'Amount'}: ₹{amountNum.toLocaleString('en-IN')}
+                        </Text>
+                      </View>
+
+                      {/* Right Column: Bonus Gold Weight */}
+                      <View style={styles.bonusPreviewCard}>
+                        <View style={styles.bonusPreviewHeader}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Ionicons name="gift" size={13} color="#B45309" />
+                            <Text style={styles.bonusPreviewTitle}>
+                              {language === 'ta' ? 'போனஸ்' : 'Bonus Gold'}
+                            </Text>
+                          </View>
+                          <View style={styles.bonusPercentageBadge}>
+                            <Text style={styles.bonusPercentageText}>+{maxPercent}%</Text>
+                          </View>
+                        </View>
+                        <Text style={styles.bonusPreviewAmount}>
+                          +{bonusGold > 0 ? bonusGold.toFixed(3) : '0.000'} g
+                        </Text>
+                        <Text style={styles.bonusPreviewTotal} numberOfLines={1}>
+                          {language === 'ta' ? 'மொத்தம்' : 'Total'}: <Text style={{ fontWeight: '700', color: '#16A34A' }}>{formatGoldWeight(totalGold)}</Text>
+                        </Text>
+                      </View>
+                    </View>
                   </View>
-                  <Text style={styles.goldWeightLabel}>
-                    {t("estimatedGoldWeight") || "Est. Gold Weight"}
+                );
+              }
+
+              return (
+                <LinearGradient
+                  colors={['#FFF9E6', '#FFF']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.goldWeightCard}
+                >
+                  <View style={styles.goldWeightHeader}>
+                    <View style={styles.goldIconBg}>
+                      <Ionicons name="scale" size={18} color="#B8860B" />
+                    </View>
+                    <Text style={styles.goldWeightLabel}>
+                      {t("estimatedGoldWeight") || "Est. Gold Weight"}
+                    </Text>
+                  </View>
+                  <Text style={styles.goldWeightValue}>
+                    {formatGoldWeight(amountNum / goldRate)}
                   </Text>
-                </View>
-                <Text style={styles.goldWeightValue}>
-                  {formatGoldWeight(Number(formData.amount) / goldRate)}
-                </Text>
-              </LinearGradient>
-            )}
+                </LinearGradient>
+              );
+            })()}
 
             {/* Quick Select */}
             {(() => {
@@ -1443,6 +1575,11 @@ export default function QuickJoinScreen() {
                             <Text style={styles.bonusAmountCellText}>
                               +₹{slabBonus.toLocaleString('en-IN')}
                             </Text>
+                            {(selectedScheme?.savingType === 'weight' || selectedScheme?.SCHEMETYPE?.toLowerCase() === 'weight') && goldRate > 0 && slabBonus > 0 && (
+                              <Text style={styles.bonusGoldCellText}>
+                                +{(slabBonus / goldRate).toFixed(3)} g
+                              </Text>
+                            )}
                             {amountNum === 0 && (
                               <Text style={styles.bonusRateSubText}>
                                 {language === 'ta' ? `₹10k க்கு +₹${Math.round(10000 * slab.percentage / 100)}` : `+₹${Math.round(10000 * slab.percentage / 100)} / ₹10k`}

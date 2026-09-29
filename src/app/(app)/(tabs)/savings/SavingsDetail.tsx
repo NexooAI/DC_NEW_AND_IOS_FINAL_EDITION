@@ -32,6 +32,7 @@ import { loadLogoAsBase64 } from "@/utils/imageUtils";
 import { moderateScale } from "react-native-size-matters";
 import SupportContactCard from "@/components/SupportContactCard";
 import CustomAlert from "@/components/Alert";
+import { checkIsDepositScheme } from "@/utils/schemeUtils";
 import Icon from "react-native-vector-icons/AntDesign";
 import Svg, { Path, Circle } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
@@ -117,12 +118,22 @@ const SavingsDetail = () => {
   const router = useRouter();
   const navigation = useNavigation();
   const params = useLocalSearchParams<any>();
-  const { language, user } = useGlobalStore();
+  const { language, user, customerInvestments } = useGlobalStore();
   const { isVisible } = useAppVisibility();
+
+  // Find pre-cached investment data from RAM store
+  const invId = params.id || params.investmentId;
+  const initialCachedInv = useMemo(() => {
+    if (!customerInvestments || !invId) return null;
+    return customerInvestments.find(
+      (item: any) => String(item.id || item.investmentId) === String(invId)
+    );
+  }, [customerInvestments, invId]);
+
   const [paymentHistrory, setPaymentHistrory] = useState<Transaction[]>([]);
-  const [inversement, setInversement] = useState<any>();
+  const [inversement, setInversement] = useState<any>(initialCachedInv || undefined);
   const [giftDetails, setGiftDetails] = useState<any>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(!initialCachedInv);
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -254,6 +265,11 @@ const SavingsDetail = () => {
       silverAccumulated: t("silverAccumulated") || "Silver Accumulated",
       silverRate: t("silverRate") || "Silver Rate",
       silverWeight: t("silverWeight") || "Silver Weight",
+      oneTimeDepositCompleted: t("oneTimeDepositCompleted") || "One-Time Deposit Completed",
+      depositActiveDesc: t("depositActiveDesc"),
+      allInstallmentsCompleted: t("allInstallmentsCompleted") || "All Installments Paid",
+      allInstallmentsCompletedDesc: t("allInstallmentsCompletedDesc"),
+      daysRemainingSuffix: t("daysToMaturity") || "Days to Maturity",
     }),
     [language]
   );
@@ -372,9 +388,14 @@ const SavingsDetail = () => {
 
   // Scheme Type Detection
   const isDeposit = useMemo(() => {
-    return (schemesData?.schemePlanTypeName || params.schemePlanTypeName || inversement?.schemePlanTypeName || "").toLowerCase().includes("deposit") ||
-      (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("one-time") ||
-      String(params.scheme_plan_type_id) === "5" || String(inversement?.schemeType) === "5";
+    return checkIsDepositScheme({
+      schemeName: params.schemeName || inversement?.schemeName || inversement?.chits?.name,
+      schemePlanTypeName: schemesData?.schemePlanTypeName || params.schemePlanTypeName || inversement?.schemePlanTypeName,
+      scheme_plan_type_id: params.scheme_plan_type_id || schemesData?.scheme_plan_type_id,
+      schemeType: inversement?.schemeType || schemesData?.schemeType || params.schemeType,
+      paymentFrequency: params.paymentFrequency || inversement?.chits?.paymentFrequency,
+      paymentFrequencyName: schemesData?.paymentFrequencyName || inversement?.chits?.paymentFrequencyName,
+    });
   }, [schemesData, params, inversement]);
 
   const isFlexi = useMemo(() => {
@@ -395,56 +416,73 @@ const SavingsDetail = () => {
     return !isDeposit && !isFlexi && !isHybrid;
   }, [isDeposit, isFlexi, isHybrid]);
 
-  // Maturity / Completion Calculation:
-  // - Fixed: strict total installment count (e.g. 11/11) or date expired
-  // - Flexi: CAN pay any number of times even in the 11th month! Only matured when date expired or status changed.
-  // - Deposit: initial lump sum paid => completed
-  const isMaturedOrCompleted = useMemo(() => {
-    // 1. Explicit status check
-    const status = (inversement?.status || params.status || "").toUpperCase();
-    if (["MATURED", "COMPLETED", "CLOSED", "CLAIMED"].includes(status)) {
-      return true;
-    }
+  const maturityDateValue = useMemo(() => {
+    return params.maturityDate || inversement?.maturity_date || inversement?.maturityDate || "N/A";
+  }, [params.maturityDate, inversement]);
 
-    // 2. Date-based maturity check
+  // Date-based expiration check
+  const isDateExpired = useMemo(() => {
     const maturityDateStr = params.maturityDate || inversement?.maturity_date || inversement?.maturityDate;
     if (maturityDateStr && maturityDateStr !== "N/A" && maturityDateStr !== "") {
       const matDate = new Date(maturityDateStr);
-      const today = new Date();
-      if (!isNaN(matDate.getTime()) && today.getTime() > matDate.getTime()) {
-        return true;
+      if (!isNaN(matDate.getTime())) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const compareMat = new Date(matDate);
+        compareMat.setHours(23, 59, 59, 999);
+        return today.getTime() > compareMat.getTime();
       }
     }
-
-    // 3. Scheme-type specific rules
-    if (isDeposit) {
-      return totalPaidAmount > 0;
-    }
-
-    if (isFixed) {
-      const rawPaid = params.monthsPaid ?? inversement?.lastInstallment ?? inversement?.monthsPaid ?? 0;
-      const paid = Number(rawPaid) || 0;
-      const rawTotal = params.noOfIns ?? inversement?.chits?.noOfInstallments ?? inversement?.noOfInstallments ?? 11;
-      const total = Number(rawTotal) || 11;
-      return paid >= total;
-    }
-
-    if (isFlexi) {
-      // Flexi rule: User can make any number of payments even in month 11!
-      // Do not block by installment count.
-      return false;
-    }
-
-    if (isHybrid) {
-      const rawPaid = params.monthsPaid ?? inversement?.lastInstallment ?? inversement?.monthsPaid ?? 0;
-      const paid = Number(rawPaid) || 0;
-      const rawTotal = params.noOfIns ?? inversement?.chits?.noOfInstallments ?? inversement?.noOfInstallments ?? 11;
-      const total = Number(rawTotal) || 11;
-      return paid >= total;
-    }
-
     return false;
-  }, [inversement, params, isDeposit, isFixed, isFlexi, isHybrid, totalPaidAmount]);
+  }, [params.maturityDate, inversement]);
+
+  // Explicit status check from API
+  const isExplicitlyMatured = useMemo(() => {
+    const status = (inversement?.status || params.status || "").toUpperCase();
+    return ["MATURED", "COMPLETED", "CLOSED", "CLAIMED"].includes(status);
+  }, [inversement?.status, params.status]);
+
+  // True scheme maturity when date has expired or status is explicitly matured
+  const isSchemeMatured = useMemo(() => {
+    return isExplicitlyMatured || isDateExpired;
+  }, [isExplicitlyMatured, isDateExpired]);
+
+  // Days remaining until maturity
+  const daysToMaturity = useMemo(() => {
+    const maturityDateStr = params.maturityDate || inversement?.maturity_date || inversement?.maturityDate;
+    if (maturityDateStr && maturityDateStr !== "N/A" && maturityDateStr !== "") {
+      const matDate = new Date(maturityDateStr);
+      if (!isNaN(matDate.getTime())) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const compareMat = new Date(matDate);
+        compareMat.setHours(0, 0, 0, 0);
+        const diffMs = compareMat.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        return diffDays > 0 ? diffDays : 0;
+      }
+    }
+    return null;
+  }, [params.maturityDate, inversement]);
+
+  // One-time deposit payment completed (only applicable if strictly a deposit scheme)
+  const isDepositPaymentCompleted = useMemo(() => {
+    if (!isDeposit) return false;
+    const paid = Number(totalPaidAmount) || Number(params.totalPaid) || Number(inversement?.total_paid) || 0;
+    const months = Number(params.monthsPaid) || Number(inversement?.lastInstallment) || 0;
+    return paid > 0 || months >= 1;
+  }, [isDeposit, totalPaidAmount, params.totalPaid, inversement, params.monthsPaid]);
+
+  const canMakePayment = useMemo(() => {
+    if (isSchemeMatured) return false;
+    // Only block payment if it is a deposit scheme AND deposit has already been paid
+    if (isDeposit && isDepositPaymentCompleted) return false;
+    return true;
+  }, [isSchemeMatured, isDeposit, isDepositPaymentCompleted]);
+
+  const isMaturedOrCompleted = useMemo(() => {
+    return isSchemeMatured || (isDeposit && isDepositPaymentCompleted);
+  }, [isSchemeMatured, isDeposit, isDepositPaymentCompleted]);
 
   const sanitizeFileName = (str: string) => str.replace(/[^a-zA-Z0-9]/g, "_");
 
@@ -612,6 +650,16 @@ const SavingsDetail = () => {
       return;
     }
 
+    if (!canMakePayment) {
+      if (isDeposit && isDepositPaymentCompleted) {
+        setAlertMessage("Single-time deposit has already been paid for this scheme.");
+        setAlertType("info");
+        setAlertVisible(true);
+        return;
+      }
+      return;
+    }
+
     setIsLoading(true);
 
     let payload = {
@@ -701,9 +749,10 @@ const SavingsDetail = () => {
           ),
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error("Error in PaymentNow:", error);
-      setAlertMessage("An error occurred. Please try again.");
+      const errMsg = error?.response?.data?.message || "An error occurred while preparing payment. Please try again.";
+      setAlertMessage(errMsg);
       setAlertType("error");
       setAlertVisible(true);
     } finally {
@@ -723,6 +772,20 @@ const SavingsDetail = () => {
     }
   }, []);
 
+  // Pre-load transactions passed from navigation params
+  useEffect(() => {
+    if (params.transactions) {
+      try {
+        const parsed = JSON.parse(params.transactions);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setPaymentHistrory(parsed);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [params.transactions]);
+
   const fetchTransactions = async () => {
     const invId = params.id || params.investmentId;
     if (!invId || invId === "undefined" || invId === "0") {
@@ -732,9 +795,98 @@ const SavingsDetail = () => {
     }
     try {
       const response = await api.get(`investments/${invId}`, { skipLoading: true } as any);
-      if (response?.data?.data?.paymentHistory) {
-        setPaymentHistrory(response.data.data.paymentHistory);
+      const data = response?.data?.data || response?.data;
+
+      let historyList: any[] = [];
+      if (Array.isArray(data?.paymentHistory)) {
+        historyList = data.paymentHistory;
+      } else if (Array.isArray(data?.transactions)) {
+        historyList = data.transactions;
+      } else if (Array.isArray(data?.payments)) {
+        historyList = data.payments;
+      } else if (Array.isArray(data?.payment_history)) {
+        historyList = data.payment_history;
+      } else if (Array.isArray(data?.paymentList)) {
+        historyList = data.paymentList;
+      } else if (Array.isArray(data?.investmentList?.paymentHistory)) {
+        historyList = data.investmentList.paymentHistory;
+      } else if (Array.isArray(data?.investmentList?.payments)) {
+        historyList = data.investmentList.payments;
+      } else if (Array.isArray(data?.investmentList?.transactions)) {
+        historyList = data.investmentList.transactions;
       }
+
+      // If transactions returned, set them
+      if (historyList.length > 0) {
+        setPaymentHistrory(historyList);
+      } else if (user?.id) {
+        // Fallback 1: Query user's payment history to find records matching this investment or chit
+        try {
+          const userHistoryRes = await api.get(`/payments/history/${user.id}`, { skipLoading: true } as any);
+          const allUserTxns = userHistoryRes?.data?.data || userHistoryRes?.data?.history || userHistoryRes?.data;
+          if (Array.isArray(allUserTxns)) {
+            const matched = allUserTxns.filter((t: any) =>
+              String(t.investmentId || t.investment_id) === String(invId) ||
+              (params.chitId && String(t.chitId || t.chit_id) === String(params.chitId)) ||
+              (params.accNo && String(t.accountNumber || t.accNo) === String(params.accNo))
+            );
+            if (matched.length > 0) {
+              const mapped: Transaction[] = matched.map((t: any) => ({
+                paymentId: t.paymentId || t.id,
+                amountPaid: String(t.amount || t.amountPaid || 0),
+                paymentDate: t.paymentDate || t.createdAt || new Date().toISOString(),
+                paymentMode: t.paymentMethod || t.paymentMode || "Online",
+                paymentModeType: t.payment_method_type || t.paymentModeType,
+                transactionId: t.gatewayTransactionId || t.transactionId || t.orderId || String(t.id),
+                orderId: t.orderId,
+                utrReference: t.utr_reference || t.utrReference,
+                monthNumber: t.installment || 1,
+                status: t.paymentStatus || t.status || "SUCCESS",
+                current_goldrate: String(t.gold_rate || params.goldRate || ""),
+                gold_rate: String(t.gold_rate || params.goldRate || ""),
+                gold_weight: t.gold_weight || params.goldWeight || 0,
+              }));
+              setPaymentHistrory(mapped);
+              historyList = mapped;
+            }
+          }
+        } catch (e) {
+          logger.warn("Fallback payment history fetch error:", e);
+        }
+      }
+
+      // Fallback 2: For One-Time Deposit scheme (or any scheme where payment has been made),
+      // if history is still empty, synthesize the deposit transaction so user sees their payment record & can download receipt!
+      const currentInv = data?.investmentList || inversement;
+      const paidAmount = Number(currentInv?.total_paid || currentInv?.amount || params.totalPaid || params.emiAmount || 0);
+      const isOneTime = checkIsDepositScheme({
+        schemeName: params.schemeName || currentInv?.schemeName,
+        schemePlanTypeName: schemesData?.schemePlanTypeName || params.schemePlanTypeName || currentInv?.schemePlanTypeName,
+        scheme_plan_type_id: params.scheme_plan_type_id || schemesData?.scheme_plan_type_id,
+        schemeType: currentInv?.schemeType || schemesData?.schemeType || params.schemeType,
+        paymentFrequency: params.paymentFrequency || currentInv?.chits?.paymentFrequency,
+        paymentFrequencyName: schemesData?.paymentFrequencyName || currentInv?.chits?.paymentFrequencyName,
+      });
+
+      if (historyList.length === 0 && (isOneTime || paidAmount > 0)) {
+        const syntheticTxn: Transaction = {
+          paymentId: Number(currentInv?.paymentId || invId) || 1,
+          amountPaid: String(paidAmount),
+          paymentDate: currentInv?.joiningDate || currentInv?.created_at || currentInv?.createdAt || params.joiningDate || new Date().toISOString(),
+          paymentMode: currentInv?.paymentMode || currentInv?.payment_mode || "Online",
+          paymentModeType: isOneTime ? "One-Time Deposit" : "Initial Installment",
+          transactionId: currentInv?.transactionId || currentInv?.transaction_id || currentInv?.orderId || currentInv?.utrReference || `TXN-DEP-${invId}`,
+          orderId: currentInv?.orderId,
+          utrReference: currentInv?.utrReference || currentInv?.utr_reference,
+          monthNumber: 1,
+          status: currentInv?.status || "SUCCESS",
+          current_goldrate: String(currentInv?.gold_rate || currentInv?.current_goldrate || params.goldRate || ""),
+          gold_rate: String(currentInv?.gold_rate || params.goldRate || ""),
+          gold_weight: currentInv?.totalgoldweight || currentInv?.gold_weight || params.goldWeight || 0,
+        };
+        setPaymentHistrory([syntheticTxn]);
+      }
+
       if (response?.data?.data?.paymentStatus) {
         setAdvancePayments(response.data.data.paymentStatus);
       }
@@ -1002,8 +1154,31 @@ const SavingsDetail = () => {
               )}
             </View>
 
-            {/* Right Column: Speedometer Progress Gauge */}
-            {schemesData?.paymentFrequencyName !== "Flexi" && schemesData?.paymentFrequencyName !== "Hybrid" && schemesData?.paymentFrequencyName?.toLowerCase() !== "hybrid" ? (
+            {/* Right Column: Speedometer Progress Gauge or Deposit Status */}
+            {isDeposit ? (
+              <View style={{ flex: 0.8, alignItems: "center", justifyContent: "center" }}>
+                <View style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.12)",
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: "rgba(255, 215, 0, 0.4)",
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}>
+                  <Ionicons name="shield-checkmark" size={24} color="#FFD700" />
+                  <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "bold", marginTop: 4, textAlign: "center" }}>
+                    {translations.oneTimeDeposit || "One-Time"}
+                  </Text>
+                  {daysToMaturity !== null && (
+                    <Text style={{ color: "#FFD700", fontSize: 10, fontWeight: "700", marginTop: 2, textAlign: "center" }}>
+                      {daysToMaturity} {translations.daysRemainingSuffix || "Days Left"}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            ) : schemesData?.paymentFrequencyName !== "Flexi" && schemesData?.paymentFrequencyName !== "Hybrid" && schemesData?.paymentFrequencyName?.toLowerCase() !== "hybrid" ? (
               <View style={{ flex: 0.8, alignItems: "center", justifyContent: "center" }}>
                 <View style={{ width: size, height: size - 10, position: "relative", alignItems: "center", justifyContent: "center" }}>
                   <Svg width={size} height={size}>
@@ -1052,10 +1227,6 @@ const SavingsDetail = () => {
   };
 
   const renderInfoGrid = () => {
-    const isDeposit = (schemesData?.schemePlanTypeName || params.schemePlanTypeName || inversement?.schemePlanTypeName || "").toLowerCase().includes("deposit") ||
-      (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("one-time") ||
-      String(params.scheme_plan_type_id) === "5" || String(inversement?.schemeType) === "5";
-
     const isFlexiOrHybrid = (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("flexi") ||
       (schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase().includes("hybrid") ||
       (params.schemeName || inversement?.schemeName || "").toLowerCase().includes("flexi") ||
@@ -1109,8 +1280,8 @@ const SavingsDetail = () => {
             </View>
           )}
 
-          {/* Next Due Date */}
-          {dueDateValue && dueDateValue !== "N/A" && dueDateValue !== "" ? (
+          {/* Next Due Date - Hide for One-Time deposit schemes */}
+          {!isDeposit && dueDateValue && dueDateValue !== "N/A" && dueDateValue !== "" ? (
             <View style={styles.gridItem}>
               <View style={[styles.gridIcon, { backgroundColor: '#E0F7FA' }]}>
                 <Ionicons name="time" size={20} color="#00838F" />
@@ -1374,9 +1545,9 @@ const SavingsDetail = () => {
           </ScrollView>
         )}
 
-        {/* Floating Bottom Bar for Payment */}
+        {/* Floating Bottom Bar for Payment / Status */}
         <View style={[styles.bottomBar, { paddingBottom: bottom || 20 }]}>
-          {isMaturedOrCompleted ? (
+          {isSchemeMatured ? (
             <View style={styles.maturedBottomContainer}>
               <View style={styles.maturedHeaderRow}>
                 <View style={styles.maturedBadge}>
@@ -1412,6 +1583,44 @@ const SavingsDetail = () => {
                   {translations.redeemAtStore || "Redeem Jewellery at Showroom"}
                 </Text>
               </TouchableOpacity>
+            </View>
+          ) : (isDeposit && isDepositPaymentCompleted) ? (
+            <View style={styles.depositCompletedBottomContainer}>
+              <View style={styles.depositHeaderRow}>
+                <View style={styles.depositCompletedBadge}>
+                  <Ionicons name="shield-checkmark" size={16} color="#1B5E20" />
+                  <Text style={styles.depositCompletedBadgeText}>
+                    {translations.oneTimeDepositCompleted || "One-Time Deposit Completed"}
+                  </Text>
+                </View>
+                {daysToMaturity !== null && (
+                  <View style={styles.daysRemainingBadge}>
+                    <Ionicons name="hourglass-outline" size={13} color="#B45309" />
+                    <Text style={styles.daysRemainingBadgeText}>
+                      {daysToMaturity} {translations.daysRemainingSuffix || "Days to Maturity"}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.depositCompletedSubText} numberOfLines={2}>
+                {translations.depositActiveDesc
+                  ? translations.depositActiveDesc.replace("{{date}}", maturityDateValue)
+                  : `Your single-time deposit has been paid successfully. Your investment is active and will mature on ${maturityDateValue}.`}
+              </Text>
+              <View style={styles.depositInfoPillRow}>
+                <View style={styles.depositInfoPill}>
+                  <Ionicons name="wallet-outline" size={13} color="#4B5563" />
+                  <Text style={styles.depositInfoPillText}>
+                    {translations.depositAmount || "Deposit"}: ₹{Number(totalPaidAmount || 0).toLocaleString()}
+                  </Text>
+                </View>
+                <View style={styles.depositInfoPill}>
+                  <Ionicons name="calendar-outline" size={13} color="#4B5563" />
+                  <Text style={styles.depositInfoPillText}>
+                    {translations.maturityDate || "Matures"}: {maturityDateValue}
+                  </Text>
+                </View>
+              </View>
             </View>
           ) : (
             <TouchableOpacity
@@ -2016,6 +2225,82 @@ function getStyles(theme: any) { return StyleSheet.create({
     color: '#FFF',
     fontSize: 13,
     fontWeight: '700',
+  },
+  depositCompletedBottomContainer: {
+    backgroundColor: '#F8FAF9',
+    borderWidth: 1,
+    borderColor: '#D1E7DD',
+    borderRadius: 16,
+    padding: 12,
+    gap: 8,
+  },
+  depositHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  depositCompletedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: '#A5D6A7',
+  },
+  depositCompletedBadgeText: {
+    color: '#1B5E20',
+    fontWeight: '800',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  daysRemainingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: '#FDE68A',
+  },
+  daysRemainingBadgeText: {
+    color: '#B45309',
+    fontWeight: '700',
+    fontSize: 11,
+  },
+  depositCompletedSubText: {
+    fontSize: 12,
+    color: '#374151',
+    lineHeight: 16,
+  },
+  depositInfoPillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
+  },
+  depositInfoPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  depositInfoPillText: {
+    fontSize: 11,
+    color: '#4B5563',
+    fontWeight: '600',
   },
 
   // Modal Styles

@@ -658,20 +658,36 @@ export default function Home() {
   const params = useLocalSearchParams();
   const navigation = useNavigation();
   const { unreadCount } = useUnreadNotifications();
-  const [homeData, setHomeData] = useState<HomeApiResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedHomeBundle = useGlobalStore.getState().homeBundleData;
+  const [homeData, setHomeData] = useState<HomeApiResponse | null>(cachedHomeBundle || null);
+  const [isLoading, setIsLoading] = useState(!cachedHomeBundle);
   const [refreshing, setRefreshing] = useState(false);
   const [showFlashBanner, setShowFlashBanner] = useState(false);
   const [activeSchemesCount, setActiveSchemesCount] = useState(0);
   const [selectedCollection, setSelectedCollection] =
     useState<Collection | null>(null);
   const [showStatus, setShowStatus] = useState(false);
-  const [collectionsData, setCollectionsData] = useState<Collection[]>([]);
+  const [collectionsData, setCollectionsData] = useState<Collection[]>(
+    () => cachedHomeBundle?.data?.collections || []
+  );
   const [isCollectionCompact, setIsCollectionCompact] = useState(true); // Added toggle state for layout format
   const [totalGoldSavings, setTotalGoldSavings] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [flashNews, setFlashNews] = useState<any[]>([]);
-  const [sliderImages, setSliderImages] = useState<any[]>([]);
+  const [sliderImages, setSliderImages] = useState<any[]>(() => {
+    if (cachedHomeBundle?.data?.posters && cachedHomeBundle.data.posters.length > 0) {
+      return cachedHomeBundle.data.posters.map((poster: any) => ({
+        id: poster.id,
+        image: poster.image && poster.image.startsWith("http")
+          ? poster.image
+          : poster.image
+            ? `${theme.baseUrl}${poster.image}`
+            : "",
+        title: poster.title || "",
+      }));
+    }
+    return [];
+  });
   const [schemes, setSchemes] = useState<any[]>([]); // Added schemes state
   const activeMetalTypes = useMemo(() => {
     const types = { gold: false, silver: false, diamond: false, platinum: false, old_gold: false };
@@ -1177,7 +1193,11 @@ export default function Home() {
           return;
         }
 
-        isRefreshing ? setRefreshing(true) : setIsLoading(true);
+        if (isRefreshing) {
+          setRefreshing(true);
+        } else if (!homeData && !useGlobalStore.getState().homeBundleData) {
+          setIsLoading(true);
+        }
         // Skip global loader - we use skeleton loader instead
         const response = await api.get(`/home?userId=${userId}`, { skipLoading: true } as any);
 
@@ -1186,6 +1206,8 @@ export default function Home() {
           logger.log("Home API response:", data);
 
           setHomeData(response.data);
+          // Sync to Zustand RAM Store
+          useGlobalStore.getState().setHomeBundleData(response.data);
 
           // Fetch dynamic offers for the floating widget
           try {
@@ -1208,6 +1230,7 @@ export default function Home() {
 
           // Populate investments calculations directly from pre-fetched list
           if (data.investments) {
+            useGlobalStore.getState().setCustomerInvestments(data.investments);
             fetchInvestmentData(data.investments);
           }
 
@@ -3374,10 +3397,10 @@ export default function Home() {
               <View style={styles.poweredByContainer}>
                 <TouchableOpacity
                   style={styles.poweredByButton}
-                  onPress={() => Linking.openURL("http://agnisofterp.com/")}
+                  onPress={() => Linking.openURL(theme?.constants?.providerUrl || "https://sakscodeit.com/")}
                 >
-                  <Text style={styles.poweredByText}>{t("poweredBy")}</Text>
-                  <Text style={styles.poweredByLink}>agnisofterp.com</Text>
+                  <Text style={styles.poweredByText}>{t("poweredBy") || "Powered by"} </Text>
+                  <Text style={styles.poweredByLink}>{theme?.constants?.providerName || "Sakscode IT Solutions Pvt Ltd"}</Text>
                 </TouchableOpacity>
               </View>
 

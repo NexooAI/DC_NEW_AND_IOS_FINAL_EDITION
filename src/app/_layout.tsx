@@ -32,6 +32,7 @@ import GlobalLoadingProvider from "@/components/GlobalLoadingProvider";
 import { useForceUpdate } from "@/hooks/useForceUpdate";
 import ForceUpdateScreen from "@/components/ForceUpdateScreen";
 import OfflineBanner from "@/components/OfflineBanner";
+import { hydrateCustomerData } from "@/services/hydrationService";
 import { logger } from "@/utils/logger";
 
 const getSecureItemWithTimeout = async (key: string, timeoutMs = 1500): Promise<string | null> => {
@@ -326,6 +327,9 @@ export default function RootLayout() {
                 usertype: parsedUser.userType,
                 branch_id: parsedUser.branch_id,
                 allow_multi_branch: parsedUser.allow_multi_branch,
+              });
+              hydrateCustomerData(parsedUser.user_id, false).catch((err) => {
+                logger.warn("⚠️ Layout background hydration error:", err);
               });
               logger.auth(
                 "ðŸ” Layout: Updated global store with user data"

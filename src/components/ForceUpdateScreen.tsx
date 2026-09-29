@@ -87,8 +87,8 @@ export default function ForceUpdateScreen({
               style={[
                 styles.logo,
                 {
-                  width: screenWidth * 0.45,
-                  height: 60,
+                  width: screenWidth * 0.55,
+                  height: 85,
                 },
               ]}
               resizeMode="contain"

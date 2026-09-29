@@ -163,7 +163,7 @@ const ContactUs = () => {
           {/* Hero Section */}
           <View style={styles.heroContainer}>
             <ImageBackground
-              source={aboutData?.image_url ? { uri: getFullImageUrl(aboutData.image_url) } : require("../../../../../../assets/images/shop.jpg")}
+              source={aboutData?.image_url ? { uri: getFullImageUrl(aboutData.image_url) } : require("../../../../../../assets/images/shop.png")}
               style={styles.heroImage}
             >
               <LinearGradient
