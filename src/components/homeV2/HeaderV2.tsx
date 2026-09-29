@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { DrawerActions } from "@react-navigation/native";
 import { useRouter, useNavigation } from "expo-router";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
@@ -49,7 +48,7 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
     if (onMenuPress) {
       onMenuPress();
     } else {
-      navigation.dispatch(DrawerActions.openDrawer());
+      (navigation as any).openDrawer?.();
     }
   };
 

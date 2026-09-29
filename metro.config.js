@@ -1,4 +1,6 @@
-// Learn more https://docs.expo.io/guides/customizing-metro
+// Disable React Navigation compatibility check in Expo Router SDK 56+
+process.env.EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK = "1";
+
 // Learn more https://docs.expo.io/guides/customizing-metro
 // Polyfill for Array.prototype.toReversed (required by Metro in newer Expo versions on Node < 20)
 if (!Array.prototype.toReversed) {
