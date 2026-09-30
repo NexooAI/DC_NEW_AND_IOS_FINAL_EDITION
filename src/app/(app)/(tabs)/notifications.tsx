@@ -420,7 +420,7 @@ export default function NotificationsScreen() {
   const { user } = useGlobalStore();
   const { isVisible } = useAppVisibility();
   const { refreshCount } = useUnreadNotifications();
-  
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [categorizedNotifications, setCategorizedNotifications] = useState<NotificationResponse>({});
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
@@ -673,7 +673,7 @@ export default function NotificationsScreen() {
 
           {/* Floating Bell Button with Gold Badge */}
           <TouchableOpacity
-            onPress={() => router.push("/test-notifications")} // Direct routing placeholder or settings
+            //onPress={() => router.push("/test-notifications")} // Direct routing placeholder or settings
             style={{
               width: 46,
               height: 46,
@@ -829,7 +829,7 @@ export default function NotificationsScreen() {
                   }}>
                     {date}
                   </Text>
-                  
+
                   {/* Render Standalone Cards */}
                   {items.map((item, idx) => (
                     <NotificationItem
