@@ -114,15 +114,15 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
     return false;
   }, [kycStatus, isKycLoading, homeData?.data?.kycStatus]);
 
-  // Default section sequence (pendingAction is placed at the top of content)
+  // Default section sequence: Royal Portfolio First
   const DEFAULT_V2_SECTIONS = [
     "pendingAction",
+    "savings",
     "liveRates",
+    "quickActions",
     "stories",
     "posters",
-    "quickActions",
     "popularSchemes",
-    "savings",
     "socialMedia",
     "supportCard",
     "liveChat",
@@ -296,8 +296,8 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#003C28", "#C59B27"]}
-            tintColor="#003C28"
+            colors={[theme.colors.primary || "#2F2483", theme.colors.secondary || "#DFB45B"]}
+            tintColor={theme.colors.primary || "#2F2483"}
           />
         }
       >
@@ -312,7 +312,9 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
             activeOpacity={0.7}
           >
             <Text style={styles.poweredByText}>{t("poweredBy") || "Powered by"} </Text>
-            <Text style={styles.poweredByLink}>{theme?.constants?.providerName || "Sakscode IT Solutions Pvt Ltd"}</Text>
+            <Text style={[styles.poweredByLink, { color: theme.colors.primary || "#2F2483" }]}>
+              {theme?.constants?.providerName || "Sakscode IT Solutions Pvt Ltd"}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -360,7 +362,7 @@ const styles = StyleSheet.create({
   },
   poweredByLink: {
     fontSize: 11,
-    color: "#003C28",
+    color: "#2F2483",
     fontWeight: "700",
   },
   bottomSpacer: {

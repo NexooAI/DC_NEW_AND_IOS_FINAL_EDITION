@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useSegments } from "expo-router";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore, { useAppTheme } from "@/store/global.store";
-import { useAppVisibility } from "@/hooks/useAppVisibility";
+import { useAppVisibility, resolveDashboardVisibility } from "@/hooks/useAppVisibility";
 import { LinearGradient } from "expo-linear-gradient";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import ResponsiveText from "@/components/ResponsiveText";
@@ -112,11 +112,9 @@ export default function CustomBottomBar(_props?: any) {
     "policies/termsAndConditionsPolicies",
   ];
 
-  const hasDashboard = Boolean(
-    theme?.constants?.enableDashboard ||
-    visibleData?.enableDashboardV2 === 1 ||
-    visibleData?.enableDashboard === 1
-  );
+  const isDashboardVisible = useMemo(() => {
+    return resolveDashboardVisibility(visibleData);
+  }, [visibleData, theme?.constants?.enableDashboard]);
 
   const tabs: Tab[] = useMemo(() => {
     const rawTabs: Tab[] = [
@@ -132,7 +130,7 @@ export default function CustomBottomBar(_props?: any) {
         icon: "wallet-outline",
         iconActive: "wallet",
       },
-      ...(hasDashboard ? [{
+      ...(isDashboardVisible ? [{
         name: "dashboard_tab",
         label: "dashboard",
         icon: "grid-outline" as keyof typeof Ionicons.glyphMap,
@@ -160,14 +158,7 @@ export default function CustomBottomBar(_props?: any) {
       if (tab.name === "home") return isVisible("showTabHome");
       if (tab.name === "savings") return isVisible("showTabSavings");
       if (tab.name === "quick_join") return isVisible("showTabQuickJoin");
-      if (tab.name === "dashboard_tab") {
-        return Boolean(
-          hasDashboard &&
-          visibleData?.enableDashboardV2 !== 0 &&
-          visibleData?.enableDashboard !== 0 &&
-          (visibleData?.enableDashboardV2 === 1 || visibleData?.enableDashboard === 1 || isVisible("enableDashboardV2" as any))
-        );
-      }
+      if (tab.name === "dashboard_tab") return isDashboardVisible;
       if (tab.name === "rewards") return isVisible("showTabRewards");
       if (tab.name === "profile") return isVisible("showTabProfile");
       return true;
@@ -176,8 +167,15 @@ export default function CustomBottomBar(_props?: any) {
     // 1. Order tabs dynamically
     const orderArray = bottomNavTabsOrder.split(",").map((s: string) => s.trim());
     const sortedTabs = [...rawTabs].sort((a, b) => {
-      const idxA = orderArray.indexOf(a.name);
-      const idxB = orderArray.indexOf(b.name);
+      let idxA = orderArray.indexOf(a.name);
+      let idxB = orderArray.indexOf(b.name);
+      if (a.name === "dashboard_tab" && idxA === -1) idxA = orderArray.indexOf("dashboard");
+      if (b.name === "dashboard_tab" && idxB === -1) idxB = orderArray.indexOf("dashboard");
+
+      // If dashboard_tab is visible but not in custom order string, position after savings
+      if (a.name === "dashboard_tab" && idxA === -1) idxA = 1.5;
+      if (b.name === "dashboard_tab" && idxB === -1) idxB = 1.5;
+
       if (idxA === -1 && idxB === -1) return 0;
       if (idxA === -1) return 1;
       if (idxB === -1) return -1;
@@ -203,7 +201,7 @@ export default function CustomBottomBar(_props?: any) {
     }
 
     return sortedTabs;
-  }, [hasDashboard, visibleData, isVisible, bottomNavStyle, bottomNavTabsOrder, bottomNavCenterTab]);
+  }, [isDashboardVisible, visibleData, isVisible, bottomNavStyle, bottomNavTabsOrder, bottomNavCenterTab]);
 
   // Animate tab press
   const animateTabPress = (index: number) => {

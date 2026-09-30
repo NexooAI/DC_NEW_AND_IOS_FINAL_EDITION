@@ -48,6 +48,9 @@ export interface AppVisibilityData {
     showTabProfile?: number;
     showTabDashboard?: number;
     showBottomNavDashboard?: number | boolean;
+    enableDashboard?: number | boolean;
+    enableDashboardV2?: number | boolean;
+    showDashboard?: number | boolean;
     bottomNavStyle?: 'v1_classic' | 'v2_floating' | 'v3_center_fab' | 'v4_curved' | string;
     bottomNavVersion?: number | string;
     bottomNavCenterTab?: string;
@@ -158,6 +161,7 @@ export function useAppVisibility() {
                 'showLangTamil', 'showLangEnglish', 'showLangHindi', 'showLangMalayalam', 'showLangTelugu',
                 // Tabs
                 'showTabHome', 'showTabSavings', 'showTabQuickJoin', 'showTabRewards', 'showTabProfile',
+                'showTabDashboard', 'showBottomNavDashboard',
                 // Side Menu
                 'showSideReferEarn', 'showSideTickets', 'showSideGifts', 'showSideOffers', 'showSideStores',
                 'showSideContactUs', 'showSideFaq', 'showSidePrivacy', 'showSideTerms',
@@ -174,6 +178,15 @@ export function useAppVisibility() {
             ];
             return defaultVisible.includes(componentName);
         }
+        // Dashboard Tab Component Check
+        if (
+            componentName === 'showTabDashboard' || componentName === 'showBottomNavDashboard' ||
+            componentName === 'enableDashboard' || componentName === 'showDashboard' ||
+            (componentName as any) === 'enableDashboardV2'
+        ) {
+            return resolveDashboardVisibility(visibleData);
+        }
+
         // Ensure components default to true unless explicitly disabled (0)
         if (
             componentName === 'showGoldRate' || componentName === 'showReferEarn' || 
@@ -229,6 +242,7 @@ export function useAppVisibility() {
         isLoading,
         error,
         isVisible,
+        isDashboardVisible: resolveDashboardVisibility(visibleData),
         isSchemesV2: isSchemesV2Active(visibleData),
         loginVersion: resolveLoginVersion(visibleData),
         isKycV2: resolveKycVersion(visibleData) === 2,
@@ -236,6 +250,41 @@ export function useAppVisibility() {
         getVisibleComponents,
         refetch: fetchVisibilityData,
     };
+}
+
+/**
+ * Resolves whether the bottom Dashboard tab is visible.
+ * Checks API visibleData first (from Admin Panel /app-visible), then fallback to theme.config.js
+ */
+export function resolveDashboardVisibility(visibleData?: any): boolean {
+    const { themeConfig } = require('@/constants/theme.config');
+
+    if (visibleData) {
+        // Explicit disable switches: 0 / false / '0'
+        if (
+            visibleData.showTabDashboard === 0 || visibleData.showTabDashboard === false || visibleData.showTabDashboard === '0' ||
+            visibleData.showBottomNavDashboard === 0 || visibleData.showBottomNavDashboard === false || visibleData.showBottomNavDashboard === '0' ||
+            visibleData.enableDashboard === 0 || visibleData.enableDashboard === false || visibleData.enableDashboard === '0' ||
+            visibleData.enableDashboardV2 === 0 || visibleData.enableDashboardV2 === false || visibleData.enableDashboardV2 === '0' ||
+            visibleData.showDashboard === 0 || visibleData.showDashboard === false || visibleData.showDashboard === '0'
+        ) {
+            return false;
+        }
+
+        // Explicit enable switches: 1 / true / '1'
+        if (
+            visibleData.showTabDashboard === 1 || visibleData.showTabDashboard === true || visibleData.showTabDashboard === '1' ||
+            visibleData.showBottomNavDashboard === 1 || visibleData.showBottomNavDashboard === true || visibleData.showBottomNavDashboard === '1' ||
+            visibleData.enableDashboard === 1 || visibleData.enableDashboard === true || visibleData.enableDashboard === '1' ||
+            visibleData.enableDashboardV2 === 1 || visibleData.enableDashboardV2 === true || visibleData.enableDashboardV2 === '1' ||
+            visibleData.showDashboard === 1 || visibleData.showDashboard === true || visibleData.showDashboard === '1'
+        ) {
+            return true;
+        }
+    }
+
+    // Fallback to theme.config.js
+    return Boolean(themeConfig?.enableDashboard);
 }
 
 /**

@@ -1392,16 +1392,34 @@ export default function Login() {
                     </View>
                   )}
 
-                  <Image
-                    source={require("../../../assets/images/logo_trans.png")}
+                  <View
                     style={{
-                      width: 195,
-                      height: 195,
-                      aspectRatio: 1,
-                      zIndex: 1,
+                      backgroundColor: '#FFFFFF',
+                      paddingHorizontal: 20,
+                      paddingVertical: 10,
+                      borderRadius: 18,
+                      borderWidth: 1.5,
+                      borderColor: 'rgba(223, 180, 91, 0.45)',
+                      shadowColor: '#000000',
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: 0.22,
+                      shadowRadius: 10,
+                      elevation: 8,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 2,
                     }}
-                    resizeMode="contain"
-                  />
+                  >
+                    <Image
+                      source={require("../../../assets/images/logo_trans.png")}
+                      style={{
+                        width: 200,
+                        height: 82,
+                        aspectRatio: 2.4375,
+                      }}
+                      resizeMode="contain"
+                    />
+                  </View>
                 </View>
 
                 <View

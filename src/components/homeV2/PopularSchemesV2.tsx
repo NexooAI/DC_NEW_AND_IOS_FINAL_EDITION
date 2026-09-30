@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: moderateScale(12.5),
     fontWeight: "700",
-    color: "#003C28",
+    color: "#2F2483",
   },
   filterTabsScroll: {
     paddingHorizontal: moderateScale(16),

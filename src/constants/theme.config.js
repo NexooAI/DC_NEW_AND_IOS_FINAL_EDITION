@@ -31,6 +31,7 @@ const themeConfig = {
   appStoreUrl: "https://apps.apple.com/app/jeyabala-jewellery/id0000000000",
   providerName: "NexooAI Solutions",
   providerUrl: "https://nexooai.com/",
+  youtubeUrl: "https://youtu.be/8RAhdn5b9Bw",
 };
 
 module.exports = { themeConfig };

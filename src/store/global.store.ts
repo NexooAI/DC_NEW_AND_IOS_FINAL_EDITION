@@ -634,13 +634,19 @@ export const getAppConfig = () => {
 
   // Dynamic overrides from backend /app-visible and /config/settings API if present
   const dynamicDashboard =
+    cachedVisibility?.showTabDashboard === 1 ||
+    cachedVisibility?.showBottomNavDashboard === 1 ||
+    cachedVisibility?.showBottomNavDashboard === true ||
     cachedVisibility?.enableDashboardV2 === 1 ||
     cachedVisibility?.enableDashboard === 1 ||
     cachedVisibility?.showDashboard === 1 ||
     storeConfig?.layout_dashboard_version === 'v2' ||
     storeConfig?.theme?.dashboardVersion === 'v2'
       ? true
-      : cachedVisibility?.enableDashboardV2 === 0 ||
+      : cachedVisibility?.showTabDashboard === 0 ||
+        cachedVisibility?.showBottomNavDashboard === 0 ||
+        cachedVisibility?.showBottomNavDashboard === false ||
+        cachedVisibility?.enableDashboardV2 === 0 ||
         cachedVisibility?.enableDashboard === 0 ||
         cachedVisibility?.showDashboard === 0 ||
         storeConfig?.layout_dashboard_version === 'v1' ||
@@ -716,13 +722,19 @@ export const useAppTheme = () => {
     const basePalette = themeMode === 'dark' ? darkPalette : lightPalette;
 
     const dynamicDashboard =
+      cachedVisibility?.showTabDashboard === 1 ||
+      cachedVisibility?.showBottomNavDashboard === 1 ||
+      cachedVisibility?.showBottomNavDashboard === true ||
       cachedVisibility?.enableDashboardV2 === 1 ||
       cachedVisibility?.enableDashboard === 1 ||
       cachedVisibility?.showDashboard === 1 ||
       appConfig?.layout_dashboard_version === 'v2' ||
       appConfig?.theme?.dashboardVersion === 'v2'
         ? true
-        : cachedVisibility?.enableDashboardV2 === 0 ||
+        : cachedVisibility?.showTabDashboard === 0 ||
+          cachedVisibility?.showBottomNavDashboard === 0 ||
+          cachedVisibility?.showBottomNavDashboard === false ||
+          cachedVisibility?.enableDashboardV2 === 0 ||
           cachedVisibility?.enableDashboard === 0 ||
           cachedVisibility?.showDashboard === 0 ||
           appConfig?.layout_dashboard_version === 'v1' ||

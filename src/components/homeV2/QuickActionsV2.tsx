@@ -6,10 +6,11 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { moderateScale } from "react-native-size-matters";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useAppTheme } from "@/store/global.store";
 
 interface QuickActionsV2Props {
   onMyChitsPress?: () => void;
@@ -17,7 +18,7 @@ interface QuickActionsV2Props {
   onReceiptsPress?: () => void;
   onRateChartPress?: () => void;
   onStoresPress?: () => void;
-  onStatementsPress?: () => void;
+  onReferPress?: () => void;
   onViewAllPress?: () => void;
 }
 
@@ -27,156 +28,140 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
   onReceiptsPress,
   onRateChartPress,
   onStoresPress,
-  onStatementsPress,
+  onReferPress,
   onViewAllPress,
 }) => {
   const router = useRouter();
   const { t } = useTranslation();
+  const theme = useAppTheme();
 
-  const handleMyChits = () => {
-    if (onMyChitsPress) {
-      onMyChitsPress();
-    } else {
-      router.push("/(app)/(tabs)/savings");
-    }
-  };
+  const primaryColor = theme.colors.primary || "#2F2483";
+  const secondaryColor = theme.colors.secondary || "#DFB45B";
 
-  const handleQuickPay = () => {
-    if (onQuickPayPress) {
-      onQuickPayPress();
-    } else {
-      router.push("/(app)/(tabs)/quick_join");
-    }
-  };
-
-  const handleReceipts = () => {
-    if (onReceiptsPress) {
-      onReceiptsPress();
-    } else if (onStatementsPress) {
-      onStatementsPress();
-    } else {
-      router.push({ pathname: "/(app)/payment-history", params: { from: "home" } });
-    }
-  };
-
-  const handleRateChart = () => {
-    if (onRateChartPress) {
-      onRateChartPress();
-    } else {
-      router.push("/(app)/(tabs)/home/ratechart");
-    }
-  };
-
-  const handleStores = () => {
-    if (onStoresPress) {
-      onStoresPress();
-    } else {
-      router.push("/(app)/(tabs)/home/our_stores");
-    }
-  };
+  const actions = [
+    {
+      id: "my_schemes",
+      title: t("mySchemes", { defaultValue: "My Schemes" }),
+      icon: "wallet-outline" as const,
+      color: primaryColor,
+      bg: "rgba(47, 36, 131, 0.08)",
+      borderColor: "rgba(47, 36, 131, 0.16)",
+      onPress: () => {
+        if (onMyChitsPress) onMyChitsPress();
+        else router.push("/(app)/(tabs)/savings");
+      },
+    },
+    {
+      id: "quick_pay",
+      title: t("quickPay", { defaultValue: "Quick Pay" }),
+      icon: "flash-outline" as const,
+      color: "#B45309",
+      bg: "rgba(223, 180, 91, 0.14)",
+      borderColor: "rgba(223, 180, 91, 0.35)",
+      onPress: () => {
+        if (onQuickPayPress) onQuickPayPress();
+        else router.push("/(app)/(tabs)/quick_join");
+      },
+    },
+    {
+      id: "receipts",
+      title: t("receipts", { defaultValue: "Receipts" }),
+      icon: "receipt-outline" as const,
+      color: primaryColor,
+      bg: "rgba(47, 36, 131, 0.08)",
+      borderColor: "rgba(47, 36, 131, 0.16)",
+      onPress: () => {
+        if (onReceiptsPress) onReceiptsPress();
+        else router.push({ pathname: "/(app)/payment-history", params: { from: "home" } });
+      },
+    },
+    {
+      id: "rate_chart",
+      title: t("goldRate", { defaultValue: "Rate Chart" }),
+      icon: "trending-up-outline" as const,
+      color: "#9A6B00",
+      bg: "rgba(212, 175, 55, 0.12)",
+      borderColor: "rgba(212, 175, 55, 0.3)",
+      onPress: () => {
+        if (onRateChartPress) onRateChartPress();
+        else router.push("/(app)/(tabs)/home/ratechart");
+      },
+    },
+    {
+      id: "our_stores",
+      title: t("ourStores", { defaultValue: "Devakottai" }),
+      icon: "location-outline" as const,
+      color: primaryColor,
+      bg: "rgba(47, 36, 131, 0.08)",
+      borderColor: "rgba(47, 36, 131, 0.16)",
+      onPress: () => {
+        if (onStoresPress) onStoresPress();
+        else router.push("/(app)/(tabs)/home/our_stores");
+      },
+    },
+    {
+      id: "refer_earn",
+      title: t("referEarn", { defaultValue: "Refer & Win" }),
+      icon: "gift-outline" as const,
+      color: "#9333EA",
+      bg: "rgba(147, 51, 234, 0.08)",
+      borderColor: "rgba(147, 51, 234, 0.18)",
+      onPress: () => {
+        if (onReferPress) onReferPress();
+        else router.push("/(app)/(tabs)/home/refer_earn");
+      },
+    },
+  ];
 
   const handleViewAll = () => {
-    if (onViewAllPress) {
-      onViewAllPress();
-    } else {
-      router.push("/(app)/(tabs)/savings");
-    }
+    if (onViewAllPress) onViewAllPress();
+    else router.push("/(app)/(tabs)/savings");
   };
 
   return (
     <View style={styles.container}>
       {/* Header Row */}
       <View style={styles.headerRow}>
-        <Text style={styles.title}>
-          {t("quickActions", { defaultValue: "Quick Actions" })}
-        </Text>
+        <View style={styles.titleWithAccent}>
+          <View style={[styles.titleAccentBar, { backgroundColor: primaryColor }]} />
+          <Text style={styles.title}>
+            {t("quickActions", { defaultValue: "Quick Services" })}
+          </Text>
+        </View>
+
         <TouchableOpacity
           onPress={handleViewAll}
           activeOpacity={0.7}
           style={styles.viewAllBtn}
         >
-          <Text style={styles.viewAllText}>
+          <Text style={[styles.viewAllText, { color: primaryColor }]}>
             {t("viewAll", { defaultValue: "View All" })}
           </Text>
-          <Ionicons name="arrow-forward" size={13} color="#003C28" />
+          <Ionicons name="arrow-forward" size={13} color={primaryColor} />
         </TouchableOpacity>
       </View>
 
-      {/* 5 Actions Horizontal Row */}
+      {/* 6 Actions Horizontal Flow */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.actionsRow}
       >
-        {/* 1. My Schemes */}
-        <TouchableOpacity
-          style={styles.actionCard}
-          onPress={handleMyChits}
-          activeOpacity={0.85}
-        >
-          <View style={styles.iconWrapper}>
-            <Ionicons name="wallet-outline" size={22} color="#003C28" />
-          </View>
-          <Text style={styles.actionText} numberOfLines={1}>
-            {t("mySchemes", { defaultValue: "My Schemes" })}
-          </Text>
-        </TouchableOpacity>
-
-        {/* 2. Quick Pay */}
-        {/* <TouchableOpacity
-          style={styles.actionCard}
-          onPress={handleQuickPay}
-          activeOpacity={0.85}
-        >
-          <View style={styles.iconWrapper}>
-            <Ionicons name="flash-outline" size={22} color="#850111" />
-          </View>
-          <Text style={styles.actionText} numberOfLines={1}>
-            {t("quickPay", { defaultValue: "Quick Pay" })}
-          </Text>
-        </TouchableOpacity> */}
-
-        {/* 3. Receipts */}
-        <TouchableOpacity
-          style={styles.actionCard}
-          onPress={handleReceipts}
-          activeOpacity={0.85}
-        >
-          <View style={styles.iconWrapper}>
-            <Ionicons name="receipt-outline" size={22} color="#003C28" />
-          </View>
-          <Text style={styles.actionText} numberOfLines={1}>
-            {t("receipts", { defaultValue: "Receipts" })}
-          </Text>
-        </TouchableOpacity>
-
-        {/* 4. Gold Rate Chart */}
-        <TouchableOpacity
-          style={styles.actionCard}
-          onPress={handleRateChart}
-          activeOpacity={0.85}
-        >
-          <View style={styles.iconWrapper}>
-            <Ionicons name="trending-up-outline" size={22} color="#DAA520" />
-          </View>
-          <Text style={styles.actionText} numberOfLines={1}>
-            {t("goldRate", { defaultValue: "Gold Rate" })}
-          </Text>
-        </TouchableOpacity>
-
-        {/* 5. Our Stores */}
-        <TouchableOpacity
-          style={styles.actionCard}
-          onPress={handleStores}
-          activeOpacity={0.85}
-        >
-          <View style={styles.iconWrapper}>
-            <Ionicons name="location-outline" size={22} color="#003C28" />
-          </View>
-          <Text style={styles.actionText} numberOfLines={1}>
-            {t("ourStores", { defaultValue: "Our Stores" })}
-          </Text>
-        </TouchableOpacity>
+        {actions.map((act) => (
+          <TouchableOpacity
+            key={act.id}
+            style={[styles.actionCard, { borderColor: act.borderColor }]}
+            onPress={act.onPress}
+            activeOpacity={0.82}
+          >
+            <View style={[styles.iconWrapper, { backgroundColor: act.bg }]}>
+              <Ionicons name={act.icon} size={22} color={act.color} />
+            </View>
+            <Text style={styles.actionText} numberOfLines={1}>
+              {act.title}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
     </View>
   );
@@ -184,7 +169,7 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: moderateScale(8),
+    paddingVertical: moderateScale(10),
   },
   headerRow: {
     flexDirection: "row",
@@ -193,8 +178,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: moderateScale(16),
     marginBottom: moderateScale(10),
   },
+  titleWithAccent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(6),
+  },
+  titleAccentBar: {
+    width: moderateScale(3),
+    height: moderateScale(16),
+    borderRadius: moderateScale(2),
+  },
   title: {
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(15),
     fontWeight: "800",
     color: "#0F172A",
     letterSpacing: 0.2,
@@ -202,41 +197,44 @@ const styles = StyleSheet.create({
   viewAllBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
+    gap: moderateScale(3),
   },
   viewAllText: {
-    fontSize: moderateScale(12.5),
+    fontSize: moderateScale(12),
     fontWeight: "700",
-    color: "#003C28",
   },
   actionsRow: {
     paddingHorizontal: moderateScale(16),
     gap: moderateScale(10),
   },
   actionCard: {
-    minWidth: moderateScale(96),
-    height: moderateScale(72),
+    width: moderateScale(92),
+    height: moderateScale(76),
     borderRadius: moderateScale(14),
-    backgroundColor: "#F8FAFC",
-    borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.05)",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.2,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: moderateScale(10),
+    paddingHorizontal: moderateScale(6),
     paddingVertical: moderateScale(6),
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 5,
+    elevation: 2,
   },
   iconWrapper: {
+    width: moderateScale(38),
+    height: moderateScale(38),
+    borderRadius: moderateScale(12),
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: moderateScale(4),
   },
   actionText: {
     fontSize: moderateScale(10.5),
-    fontWeight: "600",
-    color: "#334155",
+    fontWeight: "700",
+    color: "#1E293B",
     textAlign: "center",
   },
 });

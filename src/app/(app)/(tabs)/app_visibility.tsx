@@ -37,6 +37,11 @@ interface AppVisibilityData {
   showTranslate: number;
   showYoutube: number;
   showSchemsPage: number;
+  showTabDashboard?: number;
+  showBottomNavDashboard?: number | boolean;
+  enableDashboard?: number | boolean;
+  enableDashboardV2?: number | boolean;
+  showDashboard?: number | boolean;
   updated_at: string;
 }
 
@@ -336,6 +341,21 @@ export default function AppVisibilityScreen() {
                 <Text style={styles.componentTitle}>Translate Component</Text>
                 <Text style={styles.componentDescription}>
                   This component provides translation functionality
+                </Text>
+              </View>
+            )}
+
+            {/* Dashboard Bottom Tab Component */}
+            {(visibleData?.showTabDashboard === 1 ||
+              visibleData?.showBottomNavDashboard === 1 ||
+              visibleData?.showBottomNavDashboard === true ||
+              visibleData?.enableDashboard === 1 ||
+              visibleData?.enableDashboardV2 === 1 ||
+              visibleData?.showDashboard === 1) && (
+              <View style={styles.componentCard}>
+                <Text style={styles.componentTitle}>Dashboard Bottom Tab</Text>
+                <Text style={styles.componentDescription}>
+                  This component shows the Dashboard tab icon in the bottom navigation bar
                 </Text>
               </View>
             )}

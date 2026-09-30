@@ -147,17 +147,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   brandTitle: {
-    fontSize: moderateScale(12.5),
+    fontSize: moderateScale(13),
     fontWeight: "800",
-    color: "#5B0E2D", // Sri Ganapathy Jewel City primary
+    color: "#2F2483",
     letterSpacing: 0.3,
     textTransform: "uppercase",
   },
   brandTagline: {
     fontSize: moderateScale(10),
-    color: "#C59B27", // Warm Gold
+    color: "#B48328",
     fontWeight: "600",
-    fontStyle: "italic",
     marginTop: -1,
   },
   actionsContainer: {

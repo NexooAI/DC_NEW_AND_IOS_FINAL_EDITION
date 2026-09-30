@@ -1,6 +1,8 @@
 import api from '@/services/api';
 import useGlobalStore from '@/store/global.store';
 import { logger } from '@/utils/logger';
+import { APP_CONFIG } from '@/constants/appConfig';
+import { themeConfig } from '@/constants/theme.config';
 
 /**
  * Cache configuration
@@ -26,6 +28,85 @@ const CACHE_CONFIG = {
     MAX_AGE: 12 * 60 * 60 * 1000, // 12 hours
     ENDPOINT: '/config/settings',
   },
+};
+
+/**
+ * Default fallback about page data constructed from tenant configuration
+ */
+export const getDefaultAboutPageData = () => {
+  const storeName = APP_CONFIG.appName || themeConfig?.customerName || "Jeyabala Jewellery";
+  const mobile = APP_CONFIG.mobile || themeConfig?.mobile || "+919486611921";
+  const whatsapp = APP_CONFIG.whatsapp || themeConfig?.whatsapp || "+919486611921";
+  const email = APP_CONFIG.email || themeConfig?.email || "jeyabalajb83@gmail.com";
+  const address = APP_CONFIG.address || themeConfig?.address || "Vathiyar Street, Devakottai, Tamil Nadu 630302";
+  const website = APP_CONFIG.website || themeConfig?.website || "https://jeyabalajewellery.com";
+  const foundationYear = APP_CONFIG.foundationYear || themeConfig?.foundationYear || 1995;
+  const lat = APP_CONFIG.latitude || themeConfig?.latitude || 9.9482;
+  const lng = APP_CONFIG.longitude || themeConfig?.longitude || 78.8258;
+  const youtubeUrl = APP_CONFIG.youtubeUrl || (themeConfig as any)?.youtubeUrl || "https://youtu.be/8RAhdn5b9Bw";
+
+  return {
+    id: 1,
+    title: storeName,
+    company_name: storeName,
+    description: `Welcome to ${storeName}, Devakottai. We offer hallmarked 916 gold, silver jewellery, and flexible gold savings schemes built on trust and tradition.`,
+    about_us: `Welcome to ${storeName}, Devakottai. We offer hallmarked 916 gold, silver jewellery, and flexible gold savings schemes built on trust and tradition.`,
+    helpline: mobile,
+    mobile: mobile,
+    phone: mobile,
+    whatsapp: whatsapp,
+    whatsapp_number: whatsapp,
+    email: email,
+    support_email: email,
+    address: address,
+    shop_addr: address,
+    shop_address: address,
+    website: website,
+    website_url: website,
+    youtube_url: youtubeUrl,
+    facebook_url: "https://facebook.com",
+    instagram_url: "https://instagram.com",
+    twitter_url: "https://twitter.com",
+    foundation_year: foundationYear,
+    latitude: lat,
+    longitude: lng,
+    map_url: `https://maps.google.com/?q=${lat},${lng}`,
+    business_hours: "Mon - Sat: 9:30 AM - 8:30 PM, Sun: 10:00 AM - 2:00 PM",
+    image_url: null,
+  };
+};
+
+/**
+ * Default fallback branch data constructed from tenant configuration
+ */
+export const getDefaultBranchesData = () => {
+  const storeName = APP_CONFIG.appName || themeConfig?.customerName || "Jeyabala Jewellery";
+  const mobile = APP_CONFIG.mobile || themeConfig?.mobile || "+919486611921";
+  const email = APP_CONFIG.email || themeConfig?.email || "jeyabalajb83@gmail.com";
+  const address = APP_CONFIG.address || themeConfig?.address || "Vathiyar Street, Devakottai, Tamil Nadu 630302";
+  const lat = APP_CONFIG.latitude || themeConfig?.latitude || 9.9482;
+  const lng = APP_CONFIG.longitude || themeConfig?.longitude || 78.8258;
+
+  return [
+    {
+      id: 1,
+      branch_name: `${storeName} - Head Office`,
+      name: storeName,
+      address: address,
+      city: "Devakottai",
+      state: "Tamil Nadu",
+      pincode: "630302",
+      phone: mobile,
+      mobile: mobile,
+      email: email,
+      latitude: lat,
+      longitude: lng,
+      location: `https://maps.google.com/?q=${lat},${lng}`,
+      location_url: `https://maps.google.com/?q=${lat},${lng}`,
+      is_active: 1,
+      is_main: 1,
+    },
+  ];
 };
 
 /**
@@ -90,7 +171,8 @@ export const fetchGoldRatesWithCache = async (forceRefresh: boolean = false) => 
         return cached.data;
       }
 
-      throw new Error("No gold rate data available");
+      logger.warn("⚠️ [API] No gold rate data available from API or cache");
+      return null;
     } catch (error) {
       logger.error("❌ [API] Error fetching gold rates:", error);
       
@@ -101,7 +183,7 @@ export const fetchGoldRatesWithCache = async (forceRefresh: boolean = false) => 
         return cached.data;
       }
 
-      throw error;
+      return null;
     }
   });
 };
@@ -149,7 +231,7 @@ export const fetchSchemesWithCache = async (forceRefresh: boolean = false) => {
         return cached.data;
       }
 
-      throw new Error("No schemes data available");
+      return []; // Return empty array on error
     } catch (error) {
       logger.error("❌ [API] Error fetching schemes:", error);
       
@@ -176,24 +258,29 @@ export const fetchBranchesWithCache = async (forceRefresh: boolean = false) => {
   // Check cache first if not forcing refresh
   if (!forceRefresh && store.isBranchesCacheValid(CACHE_CONFIG.BRANCHES.MAX_AGE)) {
     const cached = store.getCachedBranches();
-    logger.log("📦 [Cache] Using cached branches", {
-      age: Date.now() - (cached?.timestamp || 0),
-      cached: !!cached,
-    });
-    return cached?.data;
+    if (cached?.data && Array.isArray(cached.data) && cached.data.length > 0) {
+      logger.log("📦 [Cache] Using cached branches", {
+        age: Date.now() - (cached?.timestamp || 0),
+        cached: !!cached,
+      });
+      return cached.data;
+    }
   }
 
   return dedupeRequest('fetchBranches', async () => {
     const currentStore = useGlobalStore.getState();
     if (!forceRefresh && currentStore.isBranchesCacheValid(CACHE_CONFIG.BRANCHES.MAX_AGE)) {
-      return currentStore.getCachedBranches()?.data;
+      const cached = currentStore.getCachedBranches();
+      if (cached?.data && Array.isArray(cached.data) && cached.data.length > 0) {
+        return cached.data;
+      }
     }
 
     try {
       logger.log("📡 [API] Fetching branches from API...");
       const response = await api.get(CACHE_CONFIG.BRANCHES.ENDPOINT);
       
-      if (response?.data?.data) {
+      if (response?.data?.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
         currentStore.setCachedBranches(response.data.data);
         logger.log("✅ [API] Branches fetched and cached", {
           count: response.data.data.length,
@@ -201,25 +288,27 @@ export const fetchBranchesWithCache = async (forceRefresh: boolean = false) => {
         return response.data.data;
       }
 
-      // If API fails but we have cached data, return it
+      // If API fails or empty but we have cached data, return it
       const cached = currentStore.getCachedBranches();
-      if (cached) {
-        logger.warn("⚠️ [API] API failed, using stale cached branches");
+      if (cached?.data && Array.isArray(cached.data) && cached.data.length > 0) {
+        logger.warn("⚠️ [API] No branches in API response, using cached branches");
         return cached.data;
       }
 
-      throw new Error("No branches data available");
+      const defaultBranches = getDefaultBranchesData();
+      currentStore.setCachedBranches(defaultBranches);
+      return defaultBranches;
     } catch (error) {
-      logger.error("❌ [API] Error fetching branches:", error);
+      logger.warn("⚠️ [API] Error fetching branches, using fallback branches:", error);
       
       // Return cached data even if expired as fallback
       const cached = currentStore.getCachedBranches();
-      if (cached) {
+      if (cached?.data && Array.isArray(cached.data) && cached.data.length > 0) {
         logger.warn("⚠️ [API] Using expired cached branches as fallback");
         return cached.data;
       }
 
-      throw error;
+      return getDefaultBranchesData();
     }
   });
 };
@@ -235,17 +324,22 @@ export const fetchAboutPageWithCache = async (forceRefresh: boolean = false) => 
   // Check cache first if not forcing refresh
   if (!forceRefresh && store.isAboutPageCacheValid(CACHE_CONFIG.ABOUT_PAGE.MAX_AGE)) {
     const cached = store.getCachedAboutPage();
-    logger.log("📦 [Cache] Using cached about page", {
-      age: Date.now() - (cached?.timestamp || 0),
-      cached: !!cached,
-    });
-    return cached?.data;
+    if (cached?.data) {
+      logger.log("📦 [Cache] Using cached about page", {
+        age: Date.now() - (cached?.timestamp || 0),
+        cached: !!cached,
+      });
+      return cached.data;
+    }
   }
 
   return dedupeRequest('fetchAboutPage', async () => {
     const currentStore = useGlobalStore.getState();
     if (!forceRefresh && currentStore.isAboutPageCacheValid(CACHE_CONFIG.ABOUT_PAGE.MAX_AGE)) {
-      return currentStore.getCachedAboutPage()?.data;
+      const cached = currentStore.getCachedAboutPage();
+      if (cached?.data) {
+        return cached.data;
+      }
     }
 
     try {
@@ -258,25 +352,30 @@ export const fetchAboutPageWithCache = async (forceRefresh: boolean = false) => 
         return response.data.data;
       }
 
-      // If API fails but we have cached data, return it
+      // If API returns null/empty (e.g. data: null), use cached if available
       const cached = currentStore.getCachedAboutPage();
-      if (cached) {
-        logger.warn("⚠️ [API] API failed, using stale cached about page");
+      if (cached?.data) {
+        logger.warn("⚠️ [API] About page data empty in API, using cached about page");
         return cached.data;
       }
 
-      throw new Error("No about page data available");
+      // Fallback to default tenant themeConfig data
+      logger.log("ℹ️ [API] About page not configured on server, using default store info");
+      const defaultData = getDefaultAboutPageData();
+      currentStore.setCachedAboutPage(defaultData);
+      return defaultData;
     } catch (error) {
-      logger.error("❌ [API] Error fetching about page:", error);
+      logger.warn("⚠️ [API] Error fetching about page, falling back to default store info:", error);
       
       // Return cached data even if expired as fallback
       const cached = currentStore.getCachedAboutPage();
-      if (cached) {
+      if (cached?.data) {
         logger.warn("⚠️ [API] Using expired cached about page as fallback");
         return cached.data;
       }
 
-      throw error;
+      const defaultData = getDefaultAboutPageData();
+      return defaultData;
     }
   });
 };

@@ -11,6 +11,7 @@ import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { BlurView } from "expo-blur";
+import { useAppVisibility, resolveDashboardVisibility } from "@/hooks/useAppVisibility";
 import CustomBottomBar from "@/common/components/navigation/CustomBottomBar";
 
 export default function TabsLayout() {
@@ -21,7 +22,8 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const segments = useSegments();
   const router = useRouter();
-  const hasDashboard = getAppConfig().constants.enableDashboard;
+  const { visibleData } = useAppVisibility();
+  const hasDashboard = resolveDashboardVisibility(visibleData) || Boolean(theme?.constants?.enableDashboard);
 
   // Check if we're on the schemes page
   const fullPath = segments.join("/");

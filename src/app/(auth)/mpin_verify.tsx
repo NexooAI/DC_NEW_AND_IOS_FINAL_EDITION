@@ -1227,20 +1227,35 @@ export default function MpinVerify() {
                   </View>
                 )}
 
-                <Image
-                  source={require("../../../assets/images/logo_trans.png")}
-                  style={[
-                    styles.logo,
-                    {
-                      width: 180,
-                      height: 180,
-                      aspectRatio: 1,
-                      zIndex: 1,
-                    },
-                  ]}
-                  resizeMode="contain"
-                  fadeDuration={0}
-                />
+                <View
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    paddingHorizontal: 20,
+                    paddingVertical: 10,
+                    borderRadius: 18,
+                    borderWidth: 1.5,
+                    borderColor: 'rgba(223, 180, 91, 0.45)',
+                    shadowColor: '#000000',
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.22,
+                    shadowRadius: 10,
+                    elevation: 8,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 2,
+                  }}
+                >
+                  <Image
+                    source={require("../../../assets/images/logo_trans.png")}
+                    style={{
+                      width: 190,
+                      height: 78,
+                      aspectRatio: 2.4375,
+                    }}
+                    resizeMode="contain"
+                    fadeDuration={0}
+                  />
+                </View>
               </View>
 
               <View style={styles.formContainer}>
