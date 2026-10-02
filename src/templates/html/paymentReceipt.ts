@@ -173,6 +173,10 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         return formatDateTime(val);
     };
 
+    const isTextile = (theme as any)?.constants?.businessType === 'textile';
+    const brandTagline = isTextile ? "Silks & Sarees • Exclusive Showroom" : "Gold & Diamonds";
+    const journeyType = isTextile ? "textile savings scheme" : (isSilverReceipt ? 'silver' : 'gold') + " savings";
+
     return `
 <!DOCTYPE html>
 <html lang="en">
@@ -359,7 +363,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
                 </div>
                 <div style="flex: 1; text-align: right;">
                     <div class="brand-name">${theme.constants.customerName}</div>
-                    <div class="brand-tagline">Gold & Diamonds</div>
+                    <div class="brand-tagline">${brandTagline}</div>
                     <div class="company-address">
                         ${theme.constants.address}<br/>
                         <strong>Mobile:</strong> ${theme.constants.mobile} | <strong>Email:</strong> ${theme.constants.email}
@@ -431,7 +435,7 @@ export const generatePaymentReceiptHTML = (data: PaymentReceiptData): string => 
         <!-- Footer -->
         <div class="footer">
             <div class="footer-thankyou">
-                Thank you for choosing <strong>${theme.constants.customerName}</strong> for your ${isSilverReceipt ? 'silver' : 'gold'} savings journey.
+                Thank you for choosing <strong>${theme.constants.customerName}</strong> for your ${journeyType} journey.
                 <br/>
                 This receipt serves as official electronic proof of your transaction.
             </div>

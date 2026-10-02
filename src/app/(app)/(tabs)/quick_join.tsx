@@ -25,6 +25,7 @@ import api from '@/services/api';
 import { fetchSchemesWithCache, fetchBranchesWithCache } from '@/utils/apiCache';
 import { formatGoldWeight } from '@/utils/imageUtils';
 import { logger } from '@/utils/logger';
+import { themeConfig } from '@/constants/theme.config';
 import {
   getSchemeMetalType,
   getSchemeInterestSlabs,
@@ -47,6 +48,9 @@ const safeHaptic = (style: Haptics.ImpactFeedbackStyle) => {
 };
 
 const getMetalIconSource = (metal: string) => {
+  if ((themeConfig as any)?.businessType === 'textile') {
+    return require("../../../../assets/images/saveasmoneyproduct.png");
+  }
   switch (metal) {
     case "silver":
       return require("../../../../assets/images/silver_coin_badge.png");
@@ -762,6 +766,7 @@ export default function QuickJoinScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { user, storePaymentSession } = useGlobalStore();
+  const isTextile = (themeConfig as any)?.businessType === 'textile';
   const [loading, setLoading] = useState(true);
   const [schemes, setSchemes] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
@@ -805,10 +810,12 @@ export default function QuickJoinScreen() {
         return;
       }
 
-      // Fetch Gold Rate
-      const homeResponse = await api.get(ENDPOINTS.HOME, { params: { userId: user?.id } });
-      if (homeResponse.data?.data?.currentRates?.gold_rate) {
-        setGoldRate(Number(homeResponse.data.data.currentRates.gold_rate.replace(/,/g, '')));
+      // Fetch Gold Rate only for jewellery mode
+      if (!isTextile) {
+        const homeResponse = await api.get(ENDPOINTS.HOME, { params: { userId: user?.id } });
+        if (homeResponse.data?.data?.currentRates?.gold_rate) {
+          setGoldRate(Number(homeResponse.data.data.currentRates.gold_rate.replace(/,/g, '')));
+        }
       }
 
       // Fetch Branches
@@ -1109,29 +1116,31 @@ export default function QuickJoinScreen() {
                               style={[
                                 styles.schemeMetalBadge,
                                 {
-                                  backgroundColor: themeColors.badgeBg,
-                                  borderColor: themeColors.badgeBorder,
+                                  backgroundColor: isTextile ? "rgba(212, 175, 55, 0.18)" : themeColors.badgeBg,
+                                  borderColor: isTextile ? "rgba(212, 175, 55, 0.45)" : themeColors.badgeBorder,
                                 },
                               ]}
                             >
                               <Ionicons
                                 name={
-                                  metal === "silver"
+                                  isTextile
+                                    ? "gift-outline"
+                                    : metal === "silver"
                                     ? "disc-outline"
                                     : metal === "diamond"
                                     ? "diamond-outline"
                                     : "sparkles"
                                 }
                                 size={11}
-                                color={themeColors.badgeText}
+                                color={isTextile ? "#B8860B" : themeColors.badgeText}
                               />
                               <Text
                                 style={[
                                   styles.schemeMetalBadgeText,
-                                  { color: themeColors.badgeText },
+                                  { color: isTextile ? "#B8860B" : themeColors.badgeText },
                                 ]}
                               >
-                                {metal.toUpperCase().replace("_", " ")}
+                                {isTextile ? "11-MONTH PLAN" : metal.toUpperCase().replace("_", " ")}
                               </Text>
                             </View>
 
@@ -1455,6 +1464,8 @@ export default function QuickJoinScreen() {
                 ? schemeAmountLimits.quickselectedamount
                 : (selectedScheme?.chits && selectedScheme.chits.length > 0)
                 ? selectedScheme.chits.map((c: any) => Number(c.AMOUNT || c.amount)).filter((a: number) => a > 0)
+                : isTextile
+                ? [500, 1000, 2000, 5000]
                 : [1000, 2000, 5000, 10000];
 
               const filteredQuick = quickAmounts.filter((amt: number) => 

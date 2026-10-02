@@ -13,7 +13,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import { formatGoldWeight } from "@/utils/imageUtils";
 import { useTranslation } from "@/hooks/useTranslation";
 import { theme } from "@/constants/theme";
+import { themeConfig } from "@/constants/theme.config";
 import api from "@/services/api";
+
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { logger } from "@/utils/logger";
 import CustomAlert from "@/components/Alert";
@@ -66,6 +68,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
   styles = getStyles(theme);
   const { t, locale } = useTranslation();
   const { user } = useGlobalStore();
+  const isTextile = (themeConfig as any)?.businessType === "textile";
   const [isExpanded, setIsExpanded] = useState(autoExpand);
   const animatedHeight = useRef(new Animated.Value(autoExpand ? 1 : 0)).current;
   const [isActive, setIsActive] = useState(autoExpand);
@@ -636,7 +639,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             </View>
             <View style={styles.paymentInfoDivider} />
             <View style={styles.paymentInfoItem}>
-              {item.savingType === "old_gold" || String(item.schemesData?.schemeType || (item as any).schemeType || item.savingType || "").toLowerCase() === "weight" ? (
+              {!isTextile && (item.savingType === "old_gold" || String(item.schemesData?.schemeType || (item as any).schemeType || item.savingType || "").toLowerCase() === "weight") ? (
                 <>
                   <View style={styles.paymentInfoIconContainer}>
                     <Ionicons name="scale-outline" size={16} color={theme.colors.textDark} />

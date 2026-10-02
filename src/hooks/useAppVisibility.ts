@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/utils/logger';
 import api from '@/services/api';
 import useGlobalStore from '@/store/global.store';
+import { themeConfig } from '@/constants/theme.config';
 
 // Type definition for the API response
 export interface AppVisibilityData {
@@ -150,6 +151,25 @@ export function useAppVisibility() {
 
     // Helper function to check if a component should be visible
     const isVisible = useCallback((componentName: keyof Omit<AppVisibilityData, 'id' | 'updated_at'>) => {
+        const isTextile = (themeConfig as any)?.businessType === 'textile';
+
+        // Gold & bullion specific components that must be hidden by default in Textile mode
+        const goldOnlyComponents: Array<keyof Omit<AppVisibilityData, 'id' | 'updated_at'>> = [
+            'showGoldRate', 'showSilverRate', 'showHallmark',
+            'showGoldScheme', 'showSilverScheme', 'showDiamondScheme', 'showPlatinumScheme', 'showOldGoldScheme',
+            'showProfileRateChart', 'showV2LiveRates', 'showFlexiScheme', 'showDailyScheme', 'showWeeklyScheme'
+        ];
+
+        if (isTextile) {
+            if (componentName === 'showFixedScheme') {
+                return visibleData?.showFixedScheme !== undefined ? visibleData.showFixedScheme !== 0 : true;
+            }
+            if (goldOnlyComponents.includes(componentName)) {
+                // In textile mode, only show if backend explicitly enabled with 1
+                return visibleData ? (visibleData as any)[componentName] === 1 : false;
+            }
+        }
+
         if (!visibleData) {
             // Default core components to true if visibleData is not loaded yet
             const defaultVisible: Array<keyof Omit<AppVisibilityData, 'id' | 'updated_at'>> = [

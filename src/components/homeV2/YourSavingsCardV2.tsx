@@ -14,6 +14,8 @@ import { moderateScale } from "react-native-size-matters";
 import useGlobalStore, { useAppTheme } from "@/store/global.store";
 import { useTranslation } from "@/hooks/useTranslation";
 
+import { themeConfig } from "@/constants/theme.config";
+
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 interface YourSavingsCardV2Props {
@@ -33,6 +35,9 @@ export const YourSavingsCardV2: React.FC<YourSavingsCardV2Props> = ({
   const { t } = useTranslation();
   const theme = useAppTheme();
   const { user } = useGlobalStore();
+  const customerInvestments = useGlobalStore((state) => state.customerInvestments);
+  const activeChitsCount = Array.isArray(customerInvestments) ? customerInvestments.length : 0;
+  const isTextile = (themeConfig as any)?.businessType === "textile";
 
   const handlePassbookPress = () => {
     if (onPress) {
@@ -65,12 +70,23 @@ export const YourSavingsCardV2: React.FC<YourSavingsCardV2Props> = ({
   };
 
   const userName = user?.name ? user.name.split(" ")[0] : "";
+  const cardGradient = isTextile
+    ? [theme.colors.primary || "#800020", "#540015", "#2B000B"]
+    : [theme.colors.primary || "#1A134A", "#2F2483", "#43339E"];
+
+  const storeDisplayName = themeConfig?.customerName || t("jeyabalaGoldVault", { defaultValue: "Savings Vault" });
+  const cardTitle = isTextile
+    ? t("yourTextileSavings", { defaultValue: "Your Textile Savings" })
+    : t("yourGoldenPortfolio", { defaultValue: "Your Golden Portfolio" });
+  const trustBadgeText = isTextile
+    ? t("trustedSavingsScheme", { defaultValue: "100% Safe Savings" })
+    : t("100PercentHallmark", { defaultValue: "916 BIS Vault" });
 
   return (
     <View style={styles.container}>
       <View style={styles.cardWrapper}>
         <LinearGradient
-          colors={["#1A134A", "#2F2483", "#43339E"]}
+          colors={cardGradient as [string, string, ...string[]]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.card}
@@ -87,61 +103,96 @@ export const YourSavingsCardV2: React.FC<YourSavingsCardV2Props> = ({
                 <Text style={styles.greetingText}>
                   {userName
                     ? `${t("hello", { defaultValue: "Hello" })}, ${userName}`
-                    : t("jeyabalaGoldVault", { defaultValue: "Jeyabala Gold Vault" })}
+                    : storeDisplayName}
                 </Text>
               </View>
               <Text style={styles.cardMainTitle}>
-                {t("yourGoldenPortfolio", { defaultValue: "Your Golden Portfolio" })}
+                {cardTitle}
               </Text>
             </View>
 
             <View style={styles.trustBadge}>
               <Ionicons name="shield-checkmark" size={13} color="#DFB45B" />
               <Text style={styles.trustBadgeText}>
-                {t("100PercentHallmark", { defaultValue: "916 BIS Vault" })}
+                {trustBadgeText}
               </Text>
             </View>
           </View>
 
-          {/* Center Showcase: Accumulated Gold Grams & Total Valuation */}
+          {/* Center Showcase: Accumulated Savings / Valuation */}
           <TouchableOpacity
             style={styles.metricsContainer}
             onPress={handlePassbookPress}
             activeOpacity={0.88}
           >
-            {/* Left Metric: Gold Grams */}
-            <View style={styles.metricBlock}>
-              <View style={styles.metricLabelRow}>
-                <Image
-                  source={require("../../../assets/images/gold.png")}
-                  style={styles.metricIconSmall}
-                  resizeMode="contain"
-                />
-                <Text style={styles.metricLabel}>
-                  {t("goldAccumulated", { defaultValue: "Gold Accumulated" })}
-                </Text>
-              </View>
-              <Text style={styles.metricValuePrimary}>
-                {formatWeight(totalGoldGrams)}
-                <Text style={styles.metricUnit}> {t("gramsShort", { defaultValue: "gms" })}</Text>
-              </Text>
-            </View>
+            {isTextile ? (
+              <>
+                {/* Left Metric: Total Saved in INR */}
+                <View style={styles.metricBlock}>
+                  <View style={styles.metricLabelRow}>
+                    <Ionicons name="wallet-outline" size={13} color="#DFB45B" />
+                    <Text style={styles.metricLabel}>
+                      {t("totalSavings", { defaultValue: "Total Saved" })}
+                    </Text>
+                  </View>
+                  <Text style={styles.metricValuePrimary}>
+                    ₹ {formatCurrency(totalAmount)}
+                  </Text>
+                </View>
 
-            {/* Vertical Elegant Gold Divider */}
-            <View style={styles.metricDivider} />
+                {/* Vertical Elegant Gold Divider */}
+                <View style={styles.metricDivider} />
 
-            {/* Right Metric: Saved Valuation */}
-            <View style={styles.metricBlock}>
-              <View style={styles.metricLabelRow}>
-                <Ionicons name="wallet-outline" size={13} color="#DFB45B" />
-                <Text style={styles.metricLabel}>
-                  {t("portfolioValue", { defaultValue: "Portfolio Value" })}
-                </Text>
-              </View>
-              <Text style={styles.metricValueSecondary}>
-                ₹ {formatCurrency(totalAmount)}
-              </Text>
-            </View>
+                {/* Right Metric: Active Chits count */}
+                <View style={styles.metricBlock}>
+                  <View style={styles.metricLabelRow}>
+                    <Ionicons name="card-outline" size={13} color="#DFB45B" />
+                    <Text style={styles.metricLabel}>
+                      {t("activeChits", { defaultValue: "Active Chits" })}
+                    </Text>
+                  </View>
+                  <Text style={styles.metricValueSecondary}>
+                    {activeChitsCount > 0 ? `${activeChitsCount} Active` : "11-Month Plan"}
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <>
+                {/* Left Metric: Gold Grams */}
+                <View style={styles.metricBlock}>
+                  <View style={styles.metricLabelRow}>
+                    <Image
+                      source={require("../../../assets/images/gold.png")}
+                      style={styles.metricIconSmall}
+                      resizeMode="contain"
+                    />
+                    <Text style={styles.metricLabel}>
+                      {t("goldAccumulated", { defaultValue: "Gold Accumulated" })}
+                    </Text>
+                  </View>
+                  <Text style={styles.metricValuePrimary}>
+                    {formatWeight(totalGoldGrams)}
+                    <Text style={styles.metricUnit}> {t("gramsShort", { defaultValue: "gms" })}</Text>
+                  </Text>
+                </View>
+
+                {/* Vertical Elegant Gold Divider */}
+                <View style={styles.metricDivider} />
+
+                {/* Right Metric: Saved Valuation */}
+                <View style={styles.metricBlock}>
+                  <View style={styles.metricLabelRow}>
+                    <Ionicons name="wallet-outline" size={13} color="#DFB45B" />
+                    <Text style={styles.metricLabel}>
+                      {t("portfolioValue", { defaultValue: "Portfolio Value" })}
+                    </Text>
+                  </View>
+                  <Text style={styles.metricValueSecondary}>
+                    ₹ {formatCurrency(totalAmount)}
+                  </Text>
+                </View>
+              </>
+            )}
           </TouchableOpacity>
 
           {/* Bottom Action Strip: Pay Chit (Gold CTA) + View Passbook */}

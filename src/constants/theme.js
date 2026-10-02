@@ -474,6 +474,7 @@ const theme = {
   },
 
   constants: {
+    businessType: themeConfig.businessType || "jewellery",
     customerName: themeConfig.customerName || "Jeyabala Jewellery",
     address: themeConfig.address || "Vathiyar Street, Devakottai, Tamil Nadu 630302",
     mobile: themeConfig.mobile || "+919486611921",

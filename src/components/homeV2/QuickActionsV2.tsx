@@ -12,6 +12,8 @@ import { moderateScale } from "react-native-size-matters";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAppTheme } from "@/store/global.store";
 
+import { themeConfig } from "@/constants/theme.config";
+
 interface QuickActionsV2Props {
   onMyChitsPress?: () => void;
   onQuickPayPress?: () => void;
@@ -35,7 +37,10 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
   const { t } = useTranslation();
   const theme = useAppTheme();
 
-  const primaryColor = theme.colors.primary || "#2F2483";
+  const isTextile = (themeConfig as any)?.businessType === "textile";
+  const showroomCity = (themeConfig as any)?.city || (isTextile ? "Theni" : "Devakottai");
+
+  const primaryColor = theme.colors.primary || (isTextile ? "#800020" : "#2F2483");
   const secondaryColor = theme.colors.secondary || "#DFB45B";
 
   const actions = [
@@ -44,8 +49,8 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
       title: t("mySchemes", { defaultValue: "My Schemes" }),
       icon: "wallet-outline" as const,
       color: primaryColor,
-      bg: "rgba(47, 36, 131, 0.08)",
-      borderColor: "rgba(47, 36, 131, 0.16)",
+      bg: "rgba(128, 0, 32, 0.08)",
+      borderColor: "rgba(128, 0, 32, 0.16)",
       onPress: () => {
         if (onMyChitsPress) onMyChitsPress();
         else router.push("/(app)/(tabs)/savings");
@@ -68,32 +73,48 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
       title: t("receipts", { defaultValue: "Receipts" }),
       icon: "receipt-outline" as const,
       color: primaryColor,
-      bg: "rgba(47, 36, 131, 0.08)",
-      borderColor: "rgba(47, 36, 131, 0.16)",
+      bg: "rgba(128, 0, 32, 0.08)",
+      borderColor: "rgba(128, 0, 32, 0.16)",
       onPress: () => {
         if (onReceiptsPress) onReceiptsPress();
         else router.push({ pathname: "/(app)/payment-history", params: { from: "home" } });
       },
     },
-    {
-      id: "rate_chart",
-      title: t("goldRate", { defaultValue: "Rate Chart" }),
-      icon: "trending-up-outline" as const,
-      color: "#9A6B00",
-      bg: "rgba(212, 175, 55, 0.12)",
-      borderColor: "rgba(212, 175, 55, 0.3)",
-      onPress: () => {
-        if (onRateChartPress) onRateChartPress();
-        else router.push("/(app)/(tabs)/home/ratechart");
-      },
-    },
+    ...(isTextile
+      ? [
+          {
+            id: "special_offers",
+            title: t("specialOffers", { defaultValue: "Offers / சலுகை" }),
+            icon: "sparkles-outline" as const,
+            color: "#B45309",
+            bg: "rgba(223, 180, 91, 0.14)",
+            borderColor: "rgba(223, 180, 91, 0.35)",
+            onPress: () => {
+              router.push("/(app)/(tabs)/home/offers");
+            },
+          },
+        ]
+      : [
+          {
+            id: "rate_chart",
+            title: t("goldRate", { defaultValue: "Rate Chart" }),
+            icon: "trending-up-outline" as const,
+            color: "#9A6B00",
+            bg: "rgba(212, 175, 55, 0.12)",
+            borderColor: "rgba(212, 175, 55, 0.3)",
+            onPress: () => {
+              if (onRateChartPress) onRateChartPress();
+              else router.push("/(app)/(tabs)/home/ratechart");
+            },
+          },
+        ]),
     {
       id: "our_stores",
-      title: t("ourStores", { defaultValue: "Devakottai" }),
+      title: t("ourStores", { defaultValue: showroomCity }),
       icon: "location-outline" as const,
       color: primaryColor,
-      bg: "rgba(47, 36, 131, 0.08)",
-      borderColor: "rgba(47, 36, 131, 0.16)",
+      bg: "rgba(128, 0, 32, 0.08)",
+      borderColor: "rgba(128, 0, 32, 0.16)",
       onPress: () => {
         if (onStoresPress) onStoresPress();
         else router.push("/(app)/(tabs)/home/our_stores");

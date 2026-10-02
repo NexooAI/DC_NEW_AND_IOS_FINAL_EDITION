@@ -9,6 +9,8 @@ import { moderateScale } from "react-native-size-matters";
 import LanguageSelector from "@/components/LanguageSelector";
 import { useTranslation } from "@/hooks/useTranslation";
 
+import { themeConfig } from "@/constants/theme.config";
+
 interface HeaderV2Props {
   onNotificationPress?: () => void;
   onMenuPress?: () => void;
@@ -28,6 +30,16 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
   const { user } = useGlobalStore();
   const appConfig = getAppConfig();
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const isTextile = (themeConfig as any)?.businessType === "textile";
+
+  const { language } = useGlobalStore();
+  const headerLogo = isTextile
+    ? require("../../../assets/images/theni_anantham/logo.png")
+    : require("../../../assets/images/jeyabala-logo-header.png");
+
+  const brandTagline = isTextile
+    ? (language === "ta" ? (themeConfig as any)?.taglineTamil || "மகிழ்ச்சியின் ஆரம்பம்..." : (themeConfig as any)?.tagline || "Happiness Begins...")
+    : t("generationsOfTrust", { defaultValue: "Generations of Trust" });
 
   const handleLanguagePress = () => {
     if (onLanguagePress) {
@@ -58,16 +70,16 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
       {/* Left / Center Branding: Logo + Name + Tagline */}
       <View style={styles.brandContainer}>
         <Image
-          source={require("../../../assets/images/jeyabala-logo-header.png")}
+          source={headerLogo}
           style={styles.logo}
           resizeMode="contain"
         />
         <View style={styles.brandTextContainer}>
           <Text style={[styles.brandTitle, { color: theme.colors.primary }]} numberOfLines={1}>
-            {appConfig.constants.customerName || "Jeyabala Jewellery"}
+            {appConfig.constants.customerName || "Theni Anandham"}
           </Text>
           <Text style={styles.brandTagline}>
-            {t("generationsOfTrust", { defaultValue: "Generations of Trust" })}
+            {brandTagline}
           </Text>
         </View>
       </View>
