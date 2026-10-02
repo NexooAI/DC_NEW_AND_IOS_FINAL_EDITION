@@ -33,7 +33,7 @@ const themeConfig = {
   latitude: 10.3673,
   longitude: 77.9803,
   foundationYear: 1985,
-  baseUrl: "https://api.thenianantham.com",
+  baseUrl: "https://api.prod.nexooai.in",
   playStoreUrl: "https://play.google.com/store/apps/details?id=com.nexooai.thenianantham&hl=en_IN",
   appStoreUrl: "https://apps.apple.com/app/theni-anantham/id0000000000",
   providerName: "NexooAI Solutions",
