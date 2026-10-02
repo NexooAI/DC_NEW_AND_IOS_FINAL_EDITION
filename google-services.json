@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "932187013222",
-    "project_id": "nexooai-a1096",
-    "storage_bucket": "nexooai-a1096.firebasestorage.app"
+    "project_number": "142275801634",
+    "project_id": "nexooainew",
+    "storage_bucket": "nexooainew.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:932187013222:android:fa19fbc8e15d80a44ceda7",
+        "mobilesdk_app_id": "1:142275801634:android:a68eb9556ef6836b5f907b",
         "android_client_info": {
-          "package_name": "com.nexooai.jeyabalajewellery"
+          "package_name": "com.nexooai.thenianantham"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44"
+          "current_key": "AIzaSyCba3NPScu7p09OriVfDrFctO8LAPjJb_s"
         }
       ],
       "services": {

@@ -5,9 +5,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     const isIos = process.env.EAS_BUILD_PLATFORM === 'ios' || process.env.PLATFORM === 'ios';
 
     const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "AIzaSyDZp5TNifbLmZ1_caqazWck87DXbtatlWA";
-    const bundleIdentifier = themeConfig.bundleIdentifier || "com.nexooai.jeyabalajewellery";
-    const projectId = themeConfig.projectId || "d8571507-0c97-4cbc-9e65-32535f15fa46";
-    const owner = themeConfig.owner || "nexooai";
+    const bundleIdentifier = themeConfig.bundleIdentifier || "com.nexooai.thenianantham";
+    const projectId = themeConfig.projectId || "4dc9d969-4bf5-43e8-b3da-1d31c3e95755";
+    const owner = themeConfig.owner || "nexooainew";
     const version = isIos ? ((themeConfig as any).iosVersion) : ((themeConfig as any).androidVersion);
 
     return {
@@ -17,7 +17,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         version: version,
         orientation: "portrait",
         userInterfaceStyle: "automatic",
-        scheme: themeConfig.slug || "jeyabalajewellery",
+        scheme: themeConfig.slug || "theniananthamdinidigul",
 
         icon: themeConfig.icon || "./assets/images/icon.png",
 
@@ -60,8 +60,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             icon: themeConfig.icon || "./assets/images/icon.png",
             bundleIdentifier: bundleIdentifier,
             associatedDomains: [
-                "applinks:api.prod.jeyabalajewellery.com",
-                "applinks:jeyabalajewellery.com"
+                "applinks:api.thenianantham.com",
+                "applinks:thenianantham.com"
             ],
             googleServicesFile: "./GoogleService-Info.plist",
             buildNumber: (themeConfig as any).buildNumber,
@@ -70,9 +70,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             },
             infoPlist: {
                 ITSAppUsesNonExemptEncryption: false,
-                NSPhotoLibraryUsageDescription: "This app needs access to your photo library so you can select and upload your profile picture, receipts, jewellery images, or documents for order verification and customer support.",
-                NSCameraUsageDescription: "This app needs access to your camera so you can take photos of receipts, jewellery, or documents for order verification, profile pictures, and customer support.",
-                NSPhotoLibraryAddUsageDescription: "This app needs permission to save images to your photo library so you can keep copies of receipts, order confirmations, or jewellery images for your records.",
+                NSPhotoLibraryUsageDescription: "This app needs access to your photo library so you can select and upload your profile picture, receipts, chit scheme documents, or proof for customer support.",
+                NSCameraUsageDescription: "This app needs access to your camera so you can take photos of receipts, documents for chit scheme verification, profile pictures, and customer support.",
+                NSPhotoLibraryAddUsageDescription: "This app needs permission to save images to your photo library so you can keep copies of receipts or chit payment confirmations for your records.",
                 NSFaceIDUsageDescription: "This app uses Face ID / Touch ID to securely authenticate you without entering your MPIN.",
                 "NSAppTransportSecurity": {
                     "NSAllowsArbitraryLoads": false,

@@ -38,10 +38,10 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
   const theme = useAppTheme();
 
   const isTextile = (themeConfig as any)?.businessType === "textile";
-  const showroomCity = (themeConfig as any)?.city || (isTextile ? "Theni" : "Devakottai");
+  const showroomCity = (themeConfig as any)?.city || "Dindigul";
 
-  const primaryColor = theme.colors.primary || (isTextile ? "#800020" : "#2F2483");
-  const secondaryColor = theme.colors.secondary || "#DFB45B";
+  const primaryColor = theme.colors.primary || "#D81E27";
+  const secondaryColor = theme.colors.secondary || "#FFD200";
 
   const actions = [
     {

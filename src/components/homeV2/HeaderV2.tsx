@@ -33,13 +33,11 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
   const isTextile = (themeConfig as any)?.businessType === "textile";
 
   const { language } = useGlobalStore();
-  const headerLogo = isTextile
-    ? require("../../../assets/images/theni_anantham/logo.png")
-    : require("../../../assets/images/jeyabala-logo-header.png");
+  const headerLogo = require("../../../assets/images/theni_anantham/logo.png");
 
-  const brandTagline = isTextile
-    ? (language === "ta" ? (themeConfig as any)?.taglineTamil || "மகிழ்ச்சியின் ஆரம்பம்..." : (themeConfig as any)?.tagline || "Happiness Begins...")
-    : t("generationsOfTrust", { defaultValue: "Generations of Trust" });
+  const brandTagline = language === "ta" 
+    ? ((themeConfig as any)?.taglineTamil || "மகிழ்ச்சியின் ஆரம்பம்...") 
+    : ((themeConfig as any)?.tagline || "Happiness Begins...");
 
   const handleLanguagePress = () => {
     if (onLanguagePress) {
@@ -76,7 +74,7 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
         />
         <View style={styles.brandTextContainer}>
           <Text style={[styles.brandTitle, { color: theme.colors.primary }]} numberOfLines={1}>
-            {appConfig.constants.customerName || "Theni Anandham"}
+            {appConfig.constants.customerName || "Theni Anantham"}
           </Text>
           <Text style={styles.brandTagline}>
             {brandTagline}

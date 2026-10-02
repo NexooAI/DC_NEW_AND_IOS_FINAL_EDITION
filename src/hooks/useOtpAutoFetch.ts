@@ -37,7 +37,7 @@ interface UseOtpAutoFetchProps {
 export const useOtpAutoFetch = ({
   onOtpReceived,
   isActive,
-  senderName = 'Jeyabala Jewellery'
+  senderName = 'Theni Anantham'
 }: UseOtpAutoFetchProps) => {
   const smsListenerRef = useRef<any>(null);
 
@@ -47,7 +47,7 @@ export const useOtpAutoFetch = ({
 
     // Multiple patterns to match different OTP formats
     const patterns = [
-      // Pattern for "Your OTP for Jeyabala Jewellery DigitalApp registration is 5799"
+      // Pattern for "Your OTP for Theni Anantham DigitalApp registration is 5799"
       /Your OTP for.*?is\s+(\d{4,6})/i,
       // Generic 4-6 digit OTP patterns
       /OTP.*?(\d{4,6})/i,

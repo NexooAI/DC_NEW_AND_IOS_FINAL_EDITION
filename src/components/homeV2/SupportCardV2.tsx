@@ -52,7 +52,7 @@ export const SupportCardV2: React.FC<SupportCardV2Props> = ({ onPress }) => {
             {t("needHelp", { defaultValue: "Need Assistance?" })}
           </Text>
           <Text style={styles.subtitle}>
-            {t("devakottaiShowroomHelp", { defaultValue: "Jeyabala Devakottai Helpline" })}
+            {t("dindigulShowroomHelp", { defaultValue: "Theni Anantham Dindigul Helpline" })}
           </Text>
         </View>
 

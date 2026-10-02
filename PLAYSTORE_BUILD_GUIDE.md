@@ -1,5 +1,5 @@
 # 🚀 Google Play Store Release & Build Guide
-## Kanisaa Jewellery (கனிசா ஜூவல்லரி - Thrissur)
+## Theni Anantham (தேனி ★ ஆனந்தம் - Dindigul)
 
 ---
 
@@ -7,15 +7,15 @@
 
 | Check | Command | Status | Result |
 | :--- | :--- | :--- | :--- |
-| **Expo Doctor** | `npx expo-doctor` | 🟢 PASSED | **18/18 checks passed (0 issues)** |
+| **Expo Doctor** | `npx expo-doctor` | 🟢 PASSED | **21/21 checks passed (0 issues)** |
 | **TypeScript Check** | `npx tsc --noEmit --skipLibCheck` | 🟢 PASSED | **0 type errors (Code 0)** |
 | **App Version** | In `theme.config.js` | 🟢 READY | **Version `1.0.0`** |
 | **Version Code** | In `theme.config.js` | 🟢 READY | **`versionCode: 1`** |
-| **Package Name** | In `app.config.ts` | 🟢 READY | **`com.nexooai.kanisaajewellerydigigoldsavings`** |
-| **EAS Slug** | In `app.config.ts` | 🟢 READY | **`kanisaajewellerydigigold`** |
-| **EAS Project ID** | In `app.config.ts` | 🟢 READY | **`aeef6800-eac4-4ba3-b14d-a09d7342f537`** |
-| **EAS Owner** | In `app.config.ts` | 🟢 READY | **`mnvgroups07`** |
-| **Google Services** | `google-services.json` | 🟢 READY | Validated with `com.nexooai.kanisaajewellerydigigoldsavings` client |
+| **Package Name** | In `app.config.ts` | 🟢 READY | **`com.nexooai.thenianantham`** |
+| **EAS Slug** | In `app.config.ts` | 🟢 READY | **`theniananthamdinidigul`** |
+| **EAS Project ID** | In `app.config.ts` | 🟢 READY | **`4dc9d969-4bf5-43e8-b3da-1d31c3e95755`** |
+| **EAS Owner** | In `app.config.ts` | 🟢 READY | **`nexooainew`** |
+| **Google Services** | `google-services.json` | 🟢 READY | Validated with `com.nexooai.thenianantham` client |
 
 ---
 
@@ -59,15 +59,15 @@ eas build --platform android --profile preview
 
 ### 📌 App Title (பெயர்)
 ```text
-Kanisaa Jewellery Digi Gold
+Theni Anantham Chits
 ```
-*(27 / 30 எழுத்துக்கள்)*
+*(20 / 30 எழுத்துக்கள்)*
 
 ---
 
 ### 📌 Short Description (குறு விபரம்)
 ```text
-Save in Digital Gold, pay scheme installments, and book gold advance securely.
+Official Deepavali Chit Scheme & textile savings app from Theni Anantham Dindigul.
 ```
 *(79 / 80 எழுத்துக்கள்)*
 
@@ -75,58 +75,52 @@ Save in Digital Gold, pay scheme installments, and book gold advance securely.
 
 ### 📌 Full Description (முழு விபரம்)
 ```text
-Secure your future with gold! The Kanisaa Jewellery Digital Gold Savings app is your premium companion for smart, flexible, and transparent gold accumulation. Brought to you by Kanisaa Jewellery, Thrissur, Kerala, this app enables you to save, track, and build your gold savings from the comfort of your home.
+Welcome to the official Theni Anantham mobile app – your trusted digital gateway to the Deepavali Annual Chit Scheme (தீபாவளி வருடாந்திர சீட்டு) and exclusive textile collections from Dindigul's premier showroom!
 
-Key Features:
+With decades of trust, heritage, and excellence in Dindigul, Tamil Nadu, Theni Anantham brings you a seamless mobile experience to join, save, and manage your annual festival textile chits.
 
-✨ Digital Gold Savings Schemes
-Start accumulating pure gold in small fractions or monthly installments. Choose the plan that fits your financial goals:
-• Save Gold: Save in terms of gold weight (grams).
-• Save as Money: Save in terms of monetary value.
+✨ Key Features:
 
-🔒 Gold Advance Booking
-Plan for your wedding or special occasions by booking gold in advance. Lock in gold prices to shield yourself from market fluctuations and redeem at the best rate.
+🎉 Deepavali Annual Chit Scheme (தீபாவளி வருடாந்திர சீட்டு)
+• Choose between ₹500 and ₹1,000 monthly denominations.
+• Pay 11 continuous monthly installments (1st to 5th of each month).
+• 12th Month Incentive Bonus: Theni Anantham rewards your regular savings by paying the 12th month installment into your account!
+• 100% Textile Redemption: Redeem accumulated savings exclusively for the finest bridal silks, sarees, dhotis, kidswear, and family garments at our Dindigul showroom.
 
 💳 Quick & Secure Online Payments
-Pay your monthly scheme installments instantly. The app supports secure, seamless integrations with:
+Pay your monthly scheme installments instantly. The app supports secure integrations with:
 • UPI (Google Pay, PhonePe, Paytm, BHIM)
 • Credit and Debit Cards (Visa, Mastercard, RuPay)
 • Netbanking and Secure Bank Gateways
 
-📈 Real-Time Gold Rate & Weight Tracker
-Keep track of daily live gold rates. Monitor your accumulated gold weight, payment history, and scheme status with absolute transparency.
-
-🎁 Lucky Draw & Rewards
-Participate in exciting customer lucky draws, earn rewards, and track your contest tickets directly in the app.
-
-🔄 Old Gold Exchange Setup
-Easily register or inquire about exchanging your old gold jewellery for new schemes and stunning designs at Kanisaa Jewellery.
+📖 Digital Chit Passbook & Receipts
+Monitor your installment history, due dates, paid receipts, and scheme status with absolute transparency.
 
 🛡️ Industry-Standard Security
-Your account is fully protected. Securely login using your personalized MPIN or Biometrics (Face ID/Touch ID).
+Your account is fully protected. Securely login using your personalized MPIN or Mobile OTP.
 
-📞 24/7 Customer Support
-Need assistance? Raise support tickets or contact us directly via WhatsApp/Call in just a tap.
-
-Download the Kanisaa Jewellery app today and start your journey towards smart gold savings!
+📞 Dedicated Customer Support
+Need assistance? Contact our showroom team directly via WhatsApp or Phone call in just a tap.
 
 Showroom Address & Customer Support:
-Kanisaa Jewellery,
-Road Fathima Nagar, Mission Quarters, Anchery, Thrissur, Kerala 680005.
-Phone / WhatsApp: +91 90618 03999
-Email: dcjewellerstcr@gmail.com
-Website: https://www.dcjewellers.org
+Theni Anantham,
+11, Main Road, Varadaraj Shopping Complex,
+Dindigul, Tamil Nadu - 624001, India.
+Phone / WhatsApp: +91 73393 66531
+Email: contact@thenianantham.com
+Website: https://www.thenianantham.com
+Instagram: @THENIANANTHAMDINIDIGUL
 ```
 
 ---
 
 ### 📌 Store Categorization & Setup Details
-* **Application Category:** Shopping / Finance
-* **Tags:** Jewellery, Gold Scheme, DigiGold, Savings, Gold Rate, Thrissur
+* **Application Category:** Shopping
+* **Tags:** Textiles, Shopping, Savings, Chit Fund, Sarees, Silk, Dindigul
 * **Content Rating:** Everyone (3+)
 * **Target Audience:** Age 18 and above
 * **App Access:** All functionality is available without special access (Login via Mobile OTP)
-* **Privacy Policy URL:** `https://api.prod.kanisaajewellery.com/policies/#privacy`
+* **Privacy Policy URL:** `https://www.thenianantham.com/privacy-policy`
 
 ---
 
@@ -134,28 +128,28 @@ Website: https://www.dcjewellers.org
 
 ### 🇺🇸 English (`en-IN` / `en-US` - Default)
 ```text
-Welcome to Kanisaa Jewellery Digi Gold!
+Welcome to Theni Anantham!
 
 What's New in Version 1.0.0:
-• Live Gold & Silver Rates: Real-time 22K & 24K market rate updates.
-• Monthly Gold Savings Schemes: Flexible chit schemes with special bonus benefits.
-• Digital Gold Passbook: Track your accumulated gold weight and payments.
-• Gold Advance Booking: Lock in gold prices for future purchases.
-• Instant & Secure Payments: Pay installments via UPI, GPay, PhonePe & Cards.
-• Showroom Redemption: Redeem gold weight easily at our Thrissur showroom.
+• Official launch of the Theni Anantham Deepavali Annual Chit Scheme app.
+• Enroll in ₹500 & ₹1000 monthly chit schemes.
+• Pay 11 months and receive the 12th month incentive bonus paid by Theni Anantham.
+• Instant UPI, Card, and Netbanking payments with digital receipts.
+• Live digital passbook and installment tracking.
+• Exclusive textile redemption at our Dindigul showroom.
 ```
 
 ---
 
 ### 🇮🇳 Tamil (`ta-IN`)
 ```text
-கனிசா ஜூவல்லரி டிஜிட்டல் கோல்ட் ஆப்பிற்கு உங்களை அன்போடு வரவேற்கிறோம்!
+தேனி ஆனந்தம் அதிகாரப்பூர்வ செயலிக்கு நல்வரவு!
 
 பதிப்பு 1.0.0 சிறப்பம்சங்கள்:
-• நேரலை தங்கம் & வெள்ளி விலை நிலவரம் (Live 22K/24K Rates).
-• மாதாந்திர தங்க சேமிப்பு திட்டங்கள் & போனஸ் சலுகைகள்.
-• டிஜிட்டல் தங்க பாஸ்புக் & சேமிப்பு விவரங்கள்.
-• தங்கம் முன்பதிவு (Gold Advance Booking) வசதி.
-• UPI, GPay, PhonePe மூலம் பாதுகாப்பான ஆன்லைன் பேமெண்ட்.
-• சேமித்த தங்கத்தை திருச்சூர் ஷோரூமில் நகைகளாக மாற்றும் வசதி.
+• தேனி ஆனந்தம் தீபாவளி வருடாந்திர சீட்டு செயலியின் அதிகாரப்பூர்வ வெளியீடு.
+• ₹500 மற்றும் ₹1000 மாத சீட்டுத் திட்டங்களில் சுலபமாக இணையலாம்.
+• 11 மாதங்கள் தவணை செலுத்தி, 12-வது மாத தவணையை ஊக்கத்தொகையாக தேனி ஆனந்தத்திடம் பெறுங்கள்.
+• UPI மற்றும் கார்டு மூலம் பாதுகாப்பான ஆன்லைன் கட்டண வசதி.
+• டிஜிட்டல் பாஸ்புக் மற்றும் உடனடி கட்டண ரசீதுகள்.
+• திண்டுக்கல் ஷோரூமில் சிறந்த ஜவுளி ரகங்களாக பெற்று மகிழுங்கள்.
 ```

@@ -9,7 +9,7 @@ export interface RateChangeInfo {
   iconName: "caret-up" | "caret-down" | "remove-outline";
 }
 
-export const RATE_HISTORY_STORAGE_KEY = "@jeyabala_daily_rate_snapshot";
+export const RATE_HISTORY_STORAGE_KEY = "@thenianantham_daily_rate_snapshot";
 
 export interface StoredRateSnapshot {
   date: string; // YYYY-MM-DD

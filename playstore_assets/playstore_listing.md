@@ -1,6 +1,6 @@
-# Google Play Store Listing: Jeyabala Jewellery (ஜெயபாலா ஜூவல்லரி)
+# Google Play Store Listing: Theni Anantham (தேனி ★ ஆனந்தம் - Dindigul)
 
-This document contains all text metadata, graphics asset guidelines, contact information, data safety details, and release notes required to publish the **Jeyabala Jewellery** app on the **Google Play Console**.
+This document contains all text metadata, graphics asset guidelines, contact information, data safety details, and release notes required to publish the **Theni Anantham** app on the **Google Play Console**.
 
 ---
 
@@ -8,10 +8,10 @@ This document contains all text metadata, graphics asset guidelines, contact inf
 
 | Asset Type | Dimension | Format | File Path | Google Play Requirement |
 | :--- | :--- | :--- | :--- | :--- |
-| **High-Res App Icon** | **512 x 512 px** | 32-bit PNG | [`playstore_assets/playstore_icon_512x512.png`](file:///c:/Users/nithy/Videos/DC_New(AND-IOS)/DC_NEW_AND_IOS_FINAL_EDITION/playstore_assets/playstore_icon_512x512.png) | Exactly 512x512 px, max 1MB. |
+| **High-Res App Icon** | **512 x 512 px** | 32-bit PNG | [`playstore_assets/playstore_icon_512x512.png`](file:///c:/Users/nithy/Videos/DC_New(AND-IOS)/DC_NEW_AND_IOS_FINAL_EDITION/playstore_assets/playstore_icon_512x512.png) | Exactly 512x512 px, max 1MB. Official Theni Anantham logo. |
 | **Feature Graphic** | **1024 x 500 px** | PNG | [`playstore_assets/feature_graphic_1024x500.png`](file:///c:/Users/nithy/Videos/DC_New(AND-IOS)/DC_NEW_AND_IOS_FINAL_EDITION/playstore_assets/feature_graphic_1024x500.png) | Exactly 1024x500 px, max 15MB. |
-| **Launch Promo Poster** | **1080 x 1080 px** | High-Res JPEG | [`playstore_assets/promo_poster_1080x1080.jpg`](file:///c:/Users/nithy/Videos/DC_New(AND-IOS)/DC_NEW_AND_IOS_FINAL_EDITION/playstore_assets/promo_poster_1080x1080.jpg) | Square marketing banner for social media & launch. |
-| **Phone Screenshots** | Min 2, Max 8 | PNG/JPEG | *User has existing mobile screenshots* | 16:9 or 18:9 aspect ratio (e.g. 1080x1920 or 1080x2400). |
+| **Deepavali Chit Banner** | **1080 x 1080 px / Vertical** | High-Res JPEG | [`assets/images/theni_anantham/deepavali_chit_banner.jpg`](file:///c:/Users/nithy/Videos/DC_New(AND-IOS)/DC_NEW_AND_IOS_FINAL_EDITION/assets/images/theni_anantham/deepavali_chit_banner.jpg) | Official Deepavali Annual Chit scheme poster. |
+| **Scheme Rules Voucher** | **High-Res** | JPEG | [`assets/images/theni_anantham/scheme_rules_voucher.jpg`](file:///c:/Users/nithy/Videos/DC_New(AND-IOS)/DC_NEW_AND_IOS_FINAL_EDITION/assets/images/theni_anantham/scheme_rules_voucher.jpg) | 10 Official rules and terms. |
 
 ---
 
@@ -19,219 +19,171 @@ This document contains all text metadata, graphics asset guidelines, contact inf
 
 ### App Title
 > **Character Limit**: 30 Characters  
-> **Title Option 1 (Recommended)**: `Jeyabala Jewellery Digi Gold` *(28 characters)*  
-> **Title Option 2**: `Jeyabala Jewellery` *(18 characters)*  
-> **Title Option 3**: `Jeyabala Gold Savings Scheme` *(28 characters)*
+> **Title Option 1 (Recommended)**: `Theni Anantham Chits` *(20 characters)*  
+> **Title Option 2**: `Theni Anantham Dindigul` *(23 characters)*  
+> **Title Option 3**: `Theni Anantham` *(14 characters)*
 
 ### Short Description
 > **Character Limit**: 80 Characters  
-> **Short Description**: `Save gold monthly, track live rates & pay chit schemes at Jeyabala Jewellery.` *(78 characters)*
+> **Short Description**: `Official Deepavali Chit Scheme & textile savings app from Theni Anantham Dindigul.` *(79 characters)*
 
 ### Full Description
 > **Character Limit**: 4,000 Characters  
 > **Copy the text below directly into the Play Console**:
 
 ```text
-Welcome to the official Jeyabala Jewellery mobile app – your trusted digital gateway to smart gold savings, live gold rates, and flexible monthly chit schemes. 
+Welcome to the official Theni Anantham mobile app – your trusted digital gateway to the Deepavali Annual Chit Scheme (தீபாவளி வருடாந்திர சீட்டு) and exclusive textile collections from Dindigul's premier showroom!
 
-With a rich legacy of trust and craftsmanship in Devakottai, Tamil Nadu since 1995, Jeyabala Jewellery brings the timeless tradition of gold buying directly to your fingertips. Whether you are planning for a wedding, securing your family’s future, or accumulating pure 916 hallmarked gold gram-by-gram, our app makes gold savings effortless, transparent, and rewarding.
+With decades of trust, heritage, and excellence in Dindigul, Tamil Nadu, Theni Anantham brings you a seamless mobile experience to join, save, and manage your annual festival textile chits.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✨ KEY FEATURES & BENEFITS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🏆 Flexible Gold Savings & Chit Schemes
-Choose from attractive monthly gold savings plans tailored to your budget.
-• Save in Gold Weight (Grams): Accumulate physical gold based on prevailing daily rates.
-• Save as Money (Value): Deposit fixed monthly amounts and enjoy exciting maturity benefits and bonus gold.
-• Digital Passbook: Track total accumulated gold grams, monthly installment history, and maturity dates anytime.
-
-📈 Daily Live Gold & Silver Rates
-Stay updated with real-time market gold rates for:
-• 22K Gold (Per Gram & Sovereign)
-• 24K Pure Gold
-• 18K Hallmarked Gold
-• Pure Silver (Per Gram & Kg)
-Make informed purchasing decisions with transparent daily pricing.
+🎉 Deepavali Annual Chit Scheme (தீபாவளி வருடாந்திர சீட்டு)
+Save systematically for your family's festival celebrations and wedding shopping:
+• Flexible Plans: Choose between ₹500 and ₹1,000 monthly denominations.
+• Pay 11 Months: Deposit monthly installments between the 1st and 5th of each month for 11 continuous months.
+• 12th Month Incentive Bonus: Theni Anantham rewards your regular savings by paying the 12th month installment into your account!
+• 100% Textile Redemption: Redeem accumulated savings exclusively for the finest bridal silks, sarees, dhotis, kidswear, and family garments at our Dindigul showroom.
 
 💳 Instant & Secure Online Payments
-Pay your monthly chit installments in seconds from the comfort of your home. We support 100% secure payment methods:
-• UPI (Google Pay, PhonePe, Paytm, BHIM, CRED)
+Pay your monthly installments in seconds from anywhere:
+• Instant UPI (Google Pay, PhonePe, Paytm, BHIM, CRED)
 • Debit & Credit Cards (Visa, MasterCard, RuPay)
-• Net Banking across all major Indian banks
-• Instant digital payment receipt and SMS confirmations
+• Net Banking across all major banks
+• Instant digital payment receipts generated right in the app.
 
-👑 100% BIS 916 Hallmarked Jewellery
-Every piece of jewellery you redeem through your savings scheme is certified 100% BIS 916 Hallmarked gold, crafted by master artisans with Chettinad heritage and contemporary modern aesthetics.
+📖 Digital Passbook & Chit Tracker
+• View all active and completed chit schemes in one place.
+• Check your installment history, due dates, and paid receipts anytime.
+• Transparent breakdown of principal paid and company incentive bonus.
 
-🎁 Exclusive Scheme Offers & Bonanzas
-• Exciting lucky draws and festive gifts for active scheme subscribers.
-• Zero or reduced making charges (V.A / Wastage) on scheme redemption.
-• Special booking discounts for Akshaya Tritiya, Diwali, and wedding seasons.
-
-🔒 Bank-Grade Security & Easy Login
-• Secure MPIN login and biometric fingerprint authentication.
-• Safe, encrypted transaction processing with industry-standard protocols.
-• Dedicated profile management with nominee details support.
-
-📍 Visit Our Devakottai Showroom
-Find our showroom location with one-tap Google Maps directions, store opening hours, and direct call support.
+🏬 Showroom & Customer Support
+• Locate our grand Dindigul showroom with built-in navigation and grand parking facility.
+• Direct one-tap helpline and WhatsApp support for any chit assistance.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📞 REACH OUT TO US
+📜 SCHEME RULES AT A GLANCE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Showroom Address:
-Jeyabala Jewellery
-Vathiyar Street, Devakottai,
-Tamil Nadu - 630302, India.
+1. Denominations available: ₹500 and ₹1,000 per month.
+2. Installments must be paid between the 1st and 5th of every month.
+3. Must pay continuously for 11 months.
+4. 12th month installment is contributed as an incentive bonus by Theni Anantham for regular payers.
+5. All accumulated funds are strictly redeemable ONLY as textiles; no cash refund is permitted.
+6. Digital card/passbook must be presented at the showroom counter for redemption.
+7. Legal jurisdiction: Dindigul court limits.
 
-Helpline & WhatsApp: +91 94866 11921
-Email: jeyabalajb83@gmail.com
-Website: https://jeyabalajewellery.com
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📍 CONTACT & SHOWROOM DETAILS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Theni Anantham
+11, Main Road, Varadaraj Shopping Complex,
+Dindigul, Tamil Nadu - 624001, India.
+Helpline: +91 73393 66531
+WhatsApp: +91 73393 66531
+Email: contact@thenianantham.com
+Website: https://www.thenianantham.com
+Instagram: @THENIANANTHAMDINIDIGUL
 
-Download the Jeyabala Jewellery app today and start your journey towards a golden future!
+Download the Theni Anantham app today – "மகிழ்ச்சியின் ஆரம்பம்..." (Happiness Begins...)!
 ```
 
 ---
 
-## 🇮🇳 3. Google Play Store Metadata (Tamil / தமிழ்)
+## 🇮🇳 3. தமிழ் விளக்கம் (Tamil Store Listing)
 
-You can add **Tamil (ta-IN)** as a localized language in Play Console under **Store presence > Main store listing > Manage translations**.
+### செயலியின் பெயர் (App Title)
+> **Title**: `தேனி ஆனந்தம் (Theni Anantham)`
 
-### App Title (தமிழ்)
-> **வரம்பு**: 30 எழுத்துக்கள்  
-> **தலைப்பு 1**: `ஜெயபாலா ஜூவல்லரி டிஜி கோல்டு` *(29 எழுத்துக்கள்)*  
-> **தலைப்பு 2**: `ஜெயபாலா ஜூவல்லரி` *(16 எழுத்துக்கள்)*
+### சுருக்கமான விளக்கம் (Short Description)
+> `தேனி ஆனந்தம் திண்டுக்கல் - தீபாவளி வருடாந்திர சீட்டு மற்றும் ஜவுளி சேமிப்பு செயலி.`
 
-### Short Description (தமிழ்)
-> **வரம்பு**: 80 எழுத்துக்கள்  
-> **சுருக்கமான விளக்கம்**: `தங்கச் சேமிப்பு திட்டம், நேரடி தங்க விலை மற்றும் தவணை செலுத்தும் செயலி.` *(71 எழுத்துக்கள்)*
-
-### Full Description (தமிழ்)
-> **முழு விவரம் (கீழே உள்ளதை நகலெடுத்துப் பயன்படுத்தவும்)**:
-
+### முழு விளக்கம் (Full Description)
 ```text
-தேவகோட்டையின் பாரம்பரியமிக்க "ஜெயபாலா ஜூவல்லரி" (Jeyabala Jewellery) வழங்கும் அதிகாரப்பூர்வ மொபைல் செயலிக்கு அன்புடன் வரவேற்கிறோம்!
+திண்டுக்கல்லின் முன்னணி மற்றும் பாரம்பரிய ஜவுளி நிறுவனமான "தேனி ஆனந்தம்" (Theni Anantham) வழங்கும் அதிகாரப்பூர்வ மொபைல் செயலிக்கு அன்புடன் வரவேற்கிறோம்!
 
-1995-ஆம் ஆண்டு முதல் தேவகோட்டை மற்றும் சுற்றுவட்டார மக்களிடையே நன்மதிப்பையும், நம்பிக்கையையும் பெற்ற ஜெயபாலா ஜூவல்லரி, இப்போது உங்கள் தங்கச் சேமிப்பை மேலும் எளிமையாகவும், வெளிப்படையாகவும் மாற்ற இந்த மொபைல் செயலியை வழங்குகிறது.
-
-உங்கள் இல்லத் திருமணங்கள் மற்றும் எதிர்கால நல்வாழ்விற்காக, சிறு தொகையிலோ அல்லது மாதாந்திரத் தவணையிலோ தூய BIS 916 ஹால்மார்க் தங்கத்தைச் சேமிக்க இன்றே தொடங்குங்கள்!
+எங்களின் பிரசித்தி பெற்ற "தீபாவளி வருடாந்திர சீட்டு" (Deepavali Annual Chit Scheme) திட்டத்தில் உங்கள் வீட்டிலிருந்தபடியே எளிதாக இணைந்து, தவணைகளை பாதுகாப்பாக செலுத்தி, உங்கள் குடும்பத்தின் தீபாவளி மற்றும் திருமண ஜவுளி ஷாப்பிங்கை முன்கூட்டியே திட்டமிடுங்கள்.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✨ செயலியின் முக்கிய சிறப்பம்சங்கள்:
+✨ திட்டத்தின் முக்கிய சிறப்பம்சங்கள்:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🏆 தங்கச் சேமிப்புத் திட்டங்கள் (Gold Chit Schemes):
-• உங்கள் வசதிக்கேற்ப எளிய மாதாந்திர சேமிப்புத் திட்டங்கள்.
-• கிராம் அடிப்படையில் (Save Gold) அல்லது பண மதிப்பில் (Save as Money) சேமிக்கும் வசதி.
-• டிஜிட்டல் பாஸ்புக் (Digital Passbook): நீங்கள் சேமித்துள்ள மொத்த தங்கம், செலுத்திய தவணைகள் மற்றும் முதிர்வுத் தேதியை எந்த நேரத்திலும் பார்க்கலாம்.
+🎉 தீபாவளி வருடாந்திர சீட்டு:
+• மாதந்தோறும் ₹500 அல்லது ₹1000 தவணை செலுத்தும் வாய்ப்பு.
+• தொடர்ந்து 11 மாதங்கள் வரை தவணை தொகையை தவறாமல் செலுத்த வேண்டும்.
+• 12-வது மாத தவணையை தேனி ஆனந்தம் நிறுவனமே ஊக்கத்தொகையாக உங்கள் கணக்கில் செலுத்திவிடும்!
+• சீட்டுக் காலம் முடிந்த பின்னர் நீங்கள் செலுத்திய தொகைக்கு ஏற்ப பட்டுச் சேலைகள், சுடிதார், வேஷ்டி, ரெடிமேட் மற்றும் அனைத்து ஜவுளி ரகங்களையும் பெற்று மகிழுங்கள்.
 
-📈 நேரடி தினசரி தங்க விலை நிலவரம் (Live Rates):
-• 22K ஆபரணத் தங்கம் (கிராம் மற்றும் சவரன் விலை)
-• 24K தூய தங்கம்
-• வெள்ளி விலை நிலவரம்
-தினசரி காலை மற்றும் மாலை நேரடி விலை மாற்றங்களை உடனுக்குடன் தெரிந்துகொள்ளலாம்.
+💳 பாதுகாப்பான ஆன்லைன் கட்டணம்:
+• UPI (GPay, PhonePe, Paytm), Debit Card, Net Banking மூலமாக சில நொடிகளில் தவணை செலுத்தலாம்.
+• தவணை செலுத்திய உடனேயே டிஜிட்டல் ரசீது உங்கள் செயலியில் கிடைக்கும்.
 
-💳 உடனடி ஆன்லைன் பேமெண்ட் வசதி (100% பாதுகாப்பானது):
-உங்கள் மாதாந்திர தவணைகளை வீட்டிலிருந்தபடியே நொடியில் செலுத்தலாம்:
-• Google Pay, PhonePe, Paytm, BHIM போன்ற அனைத்து UPI செயலிகள்.
-• டெபிட் கார்டு, கிரெடிட் கார்டு மற்றும் நெட் பேங்கிங்.
-• கட்டணம் செலுத்தியவுடன் உடனடி டிஜிட்டல் ரசீது மற்றும் SMS உறுதிப்படுத்தல்.
-
-👑 100% BIS 916 ஹால்மார்க் தங்கம்:
-சேமிப்புத் திட்டத்தின் முடிவில் எவ்வித சேதாரம் / செய்கூலி சலுகைகளுடன் பாரம்பரிய மற்றும் நவீன தங்க, வைர, வெள்ளி நகைகளை தேர்வு செய்து பெற்றுக்கொள்ளலாம்.
-
-🔒 அதிநவீன பாதுகாப்பு:
-• உங்கள் சொந்த MPIN அல்லது கைரேகை (Fingerprint) மூலம் பாதுகாப்பான லாகின்.
-• உங்கள் தகவல்கள் மற்றும் பரிவர்த்தனைகள் 100% பாதுகாப்பாக நிர்வகிக்கப்படுகின்றன.
+📖 டிஜிட்டல் பாஸ்புக்:
+• உங்கள் சீட்டின் நிலை, செலுத்திய தேதிகள் மற்றும் நிலுவைத் தொகையை எப்போது வேண்டுமானாலும் உங்கள் மொபைலில் பார்க்கலாம்.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📍 எங்கள் கடை முகவரி & தொடர்பு விவரங்கள்:
+📜 விதிமுறைகள் மற்றும் நிபந்தனைகள்:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ஜெயபாலா ஜூவல்லரி
-வாத்தியார் தெரு, தேவகோட்டை,
-தமிழ்நாடு - 630302.
+1. இத்திட்டத்தில் ரூ.500, ரூ.1000 ஆகிய இரண்டு பிரிவுகள் உள்ளன.
+2. ஒவ்வொரு மாதமும் பிரதி 1-ம் தேதி முதல் 5-ம் தேதிக்குள் தவணைத் தொகையை செலுத்திட வேண்டும்.
+3. தொடர்ந்து 11 மாதங்கள் வரை தவணை தொகையை தவறாமல் செலுத்த வேண்டும்.
+4. 12வது மாதம் தவணை தொகையை, ஊக்கத் தொகையாக தேனி ஆனந்தம் நிறுவனமே உங்கள் கணக்கில் செலுத்தி விடும் (ஒவ்வொரு மாதமும் தவறாமல் செலுத்தும் வாடிக்கையாளர்களுக்கு மட்டுமே இச்சலுகை பொருந்தும்).
+5. செலுத்திய பணத்தை பணமாகவோ திருப்பித்தரப்பட மாட்டாது. சீட்டுக் காலம் முடிந்த பின்னரே ஜவுளிகளாக மட்டுமே கிடைக்கும்.
+6. ஜவுளி எடுக்கும் போது இந்த டிஜிட்டல் அட்டை / ரசீதை கட்டாயம் கொண்டு வர வேண்டும்.
+7. திட்டத்தின் அனைத்து விதிமுறைகளும் திண்டுக்கல் சட்ட எல்லைக்கு உட்பட்டதாகும்.
 
-ஹெல்ப்லைன் & வாட்ஸ்அப்: +91 94866 11921
-மின்னஞ்சல்: jeyabalajb83@gmail.com
-இணையதளம்: https://jeyabalajewellery.com
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📍 முகவரி & தொடர்பு விவரங்கள்:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+தேனி ஆனந்தம் (Theni Anantham)
+11, மெயின் ரோடு, வரதராஜ் ஷாப்பிங் காம்ப்ளக்ஸ்,
+திண்டுக்கல், தமிழ்நாடு - 624001.
+(மிகப்பிரம்மாண்ட பார்க்கிங் வசதி உள்ளது)
 
-இன்றே ஜெயபாலா ஜூவல்லரி செயலியைப் பதிவிறக்கி, உங்கள் பொன்னான எதிர்காலத்திற்கான தங்கச் சேமிப்பைத் தொடங்குங்கள்!
+📞 உதவி எண் / வாட்ஸ்அப்: +91 73393 66531
+📧 மின்னஞ்சல்: contact@thenianantham.com
+🌐 இணையதளம்: https://www.thenianantham.com
+📸 இன்ஸ்டாகிராம்: @THENIANANTHAMDINIDIGUL
+
+இன்றே தேனி ஆனந்தம் செயலியை பதிவிறக்கம் செய்யுங்கள் — மகிழ்ச்சியின் ஆரம்பம்...!
 ```
 
 ---
 
-## 🏷️ 4. Store Categorization & Tags
+## 🔒 4. Google Play Console App Setup & Data Safety
 
-| Field | Setting / Recommendation |
+| Console Section | Recommended Value |
 | :--- | :--- |
-| **App Category** | **Shopping** (Primary) or **Finance** |
-| **Store Tags** | `Jewellery`, `Gold Savings`, `Chit Fund`, `Online Shopping`, `Finance` |
-| **Target Audience** | **18 and older** (Financial transactions/gold scheme) |
-| **Content Rating** | **Everyone (3+)** |
-| **Contains Ads** | **No** (Set "No, my app does not contain ads") |
+| **Category** | Shopping |
+| **Tags** | Shopping, Lifestyle, Savings, Textiles, Ethnic Wear |
+| **Target Audience** | 18 and older |
+| **Content Rating** | Everyone (PEGI 3 / ESRB Everyone) |
+| **Email** | `contact@thenianantham.com` |
+| **Phone** | `+917339366531` |
+| **Website** | `https://www.thenianantham.com` |
+| **Privacy Policy URL** | `https://www.thenianantham.com/privacy-policy` |
 
 ---
 
-## 📞 5. Store Listing Contact Details
+## 🚀 5. Version 1.0.0 Release Notes
 
-Fill these under **Play Console > Store settings > Store listing contact details**:
-
-* **Email address**: `jeyabalajb83@gmail.com`
-* **Phone number**: `+919486611921`
-* **Website**: `https://jeyabalajewellery.com`
-* **Physical address**: `Vathiyar Street, Devakottai, Tamil Nadu 630302, India`
-
----
-
-## 🔒 6. Privacy Policy & Data Safety Declarations
-
-### Privacy Policy URL
-> **URL**: `https://jeyabalajewellery.com/privacy-policy`  
-> *(Note: A compliant privacy policy document is provided below if hosting on your server).*
-
-### Data Safety Form Answers (Play Console Checklist)
-1. **Data Collection & Sharing**:
-   * Does your app collect or share user data? **Yes**
-   * Is all user data encrypted in transit? **Yes** (HTTPS/SSL encryption)
-   * Do you provide a way for users to request data deletion? **Yes**
-2. **Data Types Collected**:
-   * **Personal Info**: Name, Phone number, Email address (Purpose: App functionality, Account management).
-   * **Location**: Approximate location (Purpose: Show Devakottai store route & distance).
-   * **Financial Info**: Purchase/Payment transaction history (Purpose: Chit scheme installment records & receipt generation).
-   * **Device or other IDs**: Device token (Purpose: Push notifications for daily gold rate updates & scheme reminders).
-3. **Data Sharing**:
-   * Does your app share data with third parties? **No** (Payment gateways only process payments securely).
-
----
-
-## 🚀 7. Release Details (Version 1.0.0)
-
-When creating your initial Production or Testing release in the Play Console:
-
-### Release Name
-`1.0.0` or `1.0.0 (1)`
-
-### Release Notes (English - en-US)
+### English
 ```text
-<en-US>
-• Official launch of the Jeyabala Jewellery Digi Gold & Savings app.
-• Flexible monthly gold savings schemes with instant enrollment.
-• Live daily 22K, 24K gold and silver market rates.
-• Fast and secure online installment payments via UPI, Cards, and Net Banking.
-• Digital passbook to track accumulated gold weight and payment history.
-• Biometric and MPIN secure login protection.
-</en-US>
+• Welcome to the official Theni Anantham mobile app!
+• Enroll in the Deepavali Annual Chit Scheme (₹500 & ₹1000 plans).
+• Pay 11 months and get the 12th month incentive bonus paid by Theni Anantham.
+• Instant UPI and online card payment gateway integration.
+• Live digital passbook, payment receipts, and scheme history tracking.
+• Exclusive textile redemption at our Dindigul showroom.
 ```
 
-### Release Notes (Tamil - ta-IN)
+### Tamil
 ```text
-<ta-IN>
-• ஜெயபாலா ஜூவல்லரி அதிகாரப்பூர்வ தங்கச் சேமிப்பு செயலியின் முதல் வெளியீடு.
-• எளிய மாதாந்திர தங்கச் சேமிப்புத் திட்டங்கள் மற்றும் உடனடி முன்பதிவு.
-• தினசரி நேரடி 22K, 24K தங்கம் மற்றும் வெள்ளி விலை நிலவரங்கள்.
-• UPI, கார்டுகள் மற்றும் நெட் பேங்கிங் மூலம் ஆன்லைனில் விரைவான தவணை செலுத்தும் வசதி.
-• நீங்கள் சேமித்த தங்கம் மற்றும் ரசீதுகளைக் காண டிஜிட்டல் பாஸ்புக் வசதி.
-• MPIN மற்றும் கைரேகை (Fingerprint) பாதுகாப்பான லாகின்.
-</ta-IN>
+• தேனி ஆனந்தம் அதிகாரப்பூர்வ செயலிக்கு நல்வரவு!
+• தீபாவளி வருடாந்திர சீட்டு திட்டத்தில் (₹500 & ₹1000) ஆன்லைனில் இணையலாம்.
+• 11 மாதங்கள் தவணை செலுத்தி, 12-வது மாதத்தை ஊக்கத்தொகையாக தேனி ஆனந்தத்திடம் பெறுங்கள்.
+• விரைவான UPI மற்றும் ஆன்லைன் கட்டண வசதி.
+• டிஜிட்டல் பாஸ்புக் மற்றும் தவணை ரசீதுகள்.
+• திண்டுக்கல் ஷோரூமில் ஜவுளிகளாக பெற்றுக்கொள்ளும் வசதி.
 ```

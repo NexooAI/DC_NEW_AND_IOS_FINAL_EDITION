@@ -185,7 +185,7 @@ class NotificationService {
       await this.checkGoogleServicesConfig();
 
       // Get project ID from Expo config or themeConfig fallback
-      const projectId = Constants?.expoConfig?.extra?.eas?.projectId || themeConfig?.projectId || 'aeef6800-eac4-4ba3-b14d-a09d7342f537';
+      const projectId = Constants?.expoConfig?.extra?.eas?.projectId || themeConfig?.projectId || '4dc9d969-4bf5-43e8-b3da-1d31c3e95755';
 
       if (!projectId) {
         logger.error('❌ Project ID not found in Expo config');
@@ -338,12 +338,12 @@ class NotificationService {
         if (!fcmData) {
           logger.log('⚠️ No captured getExpoPushToken payload found, using fallback construction');
 
-          const fallbackAppId = themeConfig?.bundleIdentifier || 'com.nexooai.jeyabalajewellery';
+          const fallbackAppId = themeConfig?.bundleIdentifier || 'com.nexooai.thenianantham';
           const dynamicAppId = Platform.OS === 'ios'
             ? (Constants.expoConfig?.ios?.bundleIdentifier || fallbackAppId)
             : (Constants.expoConfig?.android?.package || fallbackAppId);
 
-          const dynamicProjectId = Constants.expoConfig?.extra?.eas?.projectId || themeConfig?.projectId || 'aeef6800-eac4-4ba3-b14d-a09d7342f537';
+          const dynamicProjectId = Constants.expoConfig?.extra?.eas?.projectId || themeConfig?.projectId || '4dc9d969-4bf5-43e8-b3da-1d31c3e95755';
 
           fcmData = {
             type: "fcm",

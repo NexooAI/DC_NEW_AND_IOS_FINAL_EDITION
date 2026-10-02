@@ -441,7 +441,7 @@ export default function PaymentWebView() {
     const currentUrl = requestUrl.toLowerCase();
     const apiDomain = themeConstants.baseUrl
       ? themeConstants.baseUrl.toLowerCase().replace("http://", "").replace("https://", "").split("/")[0]
-      : "jeyabalajewellery.com";
+      : "thenianantham.com";
     const domainParts = apiDomain.split(".");
     const rootDomain = domainParts.length >= 2 ? domainParts.slice(-2).join(".") : apiDomain;
     const isOurDomain = (apiDomain && currentUrl.includes(apiDomain)) || (rootDomain && currentUrl.includes(rootDomain));

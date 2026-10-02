@@ -88,7 +88,7 @@ export const loadLogoAsBase64 = async (): Promise<string> => {
   try {
     let asset;
     try {
-      asset = Asset.fromModule(require("../../assets/images/jeyabala-logo-header.png"));
+      asset = Asset.fromModule(require("../../assets/images/theni_anantham/logo.png"));
     } catch {
       asset = Asset.fromModule(require("../../assets/images/logo.png"));
     }

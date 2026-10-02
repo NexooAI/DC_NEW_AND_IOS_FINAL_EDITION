@@ -74,7 +74,7 @@ export const YourSavingsCardV2: React.FC<YourSavingsCardV2Props> = ({
     ? [theme.colors.primary || "#800020", "#540015", "#2B000B"]
     : [theme.colors.primary || "#1A134A", "#2F2483", "#43339E"];
 
-  const storeDisplayName = themeConfig?.customerName || t("jeyabalaGoldVault", { defaultValue: "Savings Vault" });
+  const storeDisplayName = themeConfig?.customerName || t("savingsVault", { defaultValue: "Theni Anantham Chit Vault" });
   const cardTitle = isTextile
     ? t("yourTextileSavings", { defaultValue: "Your Textile Savings" })
     : t("yourGoldenPortfolio", { defaultValue: "Your Golden Portfolio" });

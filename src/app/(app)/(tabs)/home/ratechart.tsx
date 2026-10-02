@@ -659,7 +659,7 @@ export default function RateChart() {
                             </TouchableOpacity>
                         </View>
                         <Text style={styles.modalBodyText}>
-                            Gold and Silver rates displayed are live market benchmark prices updated daily by {theme?.constants?.customerName || "Jeyabala Jewellery"}.
+                            Gold and Silver rates displayed are live market benchmark prices updated daily by {theme?.constants?.customerName || "Theni Anantham"}.
                         </Text>
                         <Text style={[styles.modalBodyText, { marginTop: 8 }]}>
                             Rates are per gram and subject to applicable GST taxes at the time of purchase or advance booking.

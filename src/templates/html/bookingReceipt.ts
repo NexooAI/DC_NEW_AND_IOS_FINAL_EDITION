@@ -160,11 +160,11 @@ export const generateBookingReceiptHTML = (data: BookingReceiptData): string => 
         <div class="header">
             <div class="header-flex">
                 <div style="flex: 0 0 auto;">
-                    ${logoBase64 ? `<img src="${logoBase64}" alt="Jeyabala Logo" style="max-height: 52px; width: auto; max-width: 140px; object-fit: contain;" />` : ''}
+                    ${logoBase64 ? `<img src="${logoBase64}" alt="${theme.constants.customerName} Logo" style="max-height: 52px; width: auto; max-width: 140px; object-fit: contain;" />` : ''}
                 </div>
                 <div style="flex: 1; text-align: right;">
                     <div class="brand-name">${theme.constants.customerName}</div>
-                    <div class="brand-tagline">Gold & Diamonds</div>
+                    <div class="brand-tagline">Happiness Begins...</div>
                     <div class="company-address">
                         ${theme.constants.address}<br/>
                         <strong>Mobile:</strong> ${theme.constants.mobile} | <strong>Email:</strong> ${theme.constants.email}

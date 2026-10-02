@@ -34,23 +34,23 @@ const CACHE_CONFIG = {
  * Default fallback about page data constructed from tenant configuration
  */
 export const getDefaultAboutPageData = () => {
-  const storeName = APP_CONFIG.appName || themeConfig?.customerName || "Jeyabala Jewellery";
-  const mobile = APP_CONFIG.mobile || themeConfig?.mobile || "+919486611921";
-  const whatsapp = APP_CONFIG.whatsapp || themeConfig?.whatsapp || "+919486611921";
-  const email = APP_CONFIG.email || themeConfig?.email || "jeyabalajb83@gmail.com";
-  const address = APP_CONFIG.address || themeConfig?.address || "Vathiyar Street, Devakottai, Tamil Nadu 630302";
-  const website = APP_CONFIG.website || themeConfig?.website || "https://jeyabalajewellery.com";
-  const foundationYear = APP_CONFIG.foundationYear || themeConfig?.foundationYear || 1995;
-  const lat = APP_CONFIG.latitude || themeConfig?.latitude || 9.9482;
-  const lng = APP_CONFIG.longitude || themeConfig?.longitude || 78.8258;
+  const storeName = APP_CONFIG.appName || themeConfig?.customerName || "Theni Anantham";
+  const mobile = APP_CONFIG.mobile || themeConfig?.mobile || "+917339366531";
+  const whatsapp = APP_CONFIG.whatsapp || themeConfig?.whatsapp || "+917339366531";
+  const email = APP_CONFIG.email || themeConfig?.email || "contact@thenianantham.com";
+  const address = APP_CONFIG.address || themeConfig?.address || "11, Main Road, Varadaraj Shopping Complex, Dindigul, Tamil Nadu";
+  const website = APP_CONFIG.website || themeConfig?.website || "https://www.thenianantham.com";
+  const foundationYear = APP_CONFIG.foundationYear || themeConfig?.foundationYear || 1985;
+  const lat = APP_CONFIG.latitude || themeConfig?.latitude || 10.3673;
+  const lng = APP_CONFIG.longitude || themeConfig?.longitude || 77.9803;
   const youtubeUrl = APP_CONFIG.youtubeUrl || (themeConfig as any)?.youtubeUrl || "https://youtu.be/8RAhdn5b9Bw";
 
   return {
     id: 1,
     title: storeName,
     company_name: storeName,
-    description: `Welcome to ${storeName}, Devakottai. We offer hallmarked 916 gold, silver jewellery, and flexible gold savings schemes built on trust and tradition.`,
-    about_us: `Welcome to ${storeName}, Devakottai. We offer hallmarked 916 gold, silver jewellery, and flexible gold savings schemes built on trust and tradition.`,
+    description: `Welcome to ${storeName}, Dindigul. Premier textile showroom offering exquisite bridal silks, wedding collections, and trusted Deepavali annual chit schemes.`,
+    about_us: `Welcome to ${storeName}, Dindigul. Premier textile showroom offering exquisite bridal silks, wedding collections, and trusted Deepavali annual chit schemes.`,
     helpline: mobile,
     mobile: mobile,
     phone: mobile,
@@ -65,13 +65,13 @@ export const getDefaultAboutPageData = () => {
     website_url: website,
     youtube_url: youtubeUrl,
     facebook_url: "https://facebook.com",
-    instagram_url: "https://instagram.com",
+    instagram_url: "https://instagram.com/THENIANANTHAMDINIDIGUL",
     twitter_url: "https://twitter.com",
     foundation_year: foundationYear,
     latitude: lat,
     longitude: lng,
     map_url: `https://maps.google.com/?q=${lat},${lng}`,
-    business_hours: "Mon - Sat: 9:30 AM - 8:30 PM, Sun: 10:00 AM - 2:00 PM",
+    business_hours: "Mon - Sun: 9:00 AM - 9:30 PM",
     image_url: null,
   };
 };
@@ -80,22 +80,22 @@ export const getDefaultAboutPageData = () => {
  * Default fallback branch data constructed from tenant configuration
  */
 export const getDefaultBranchesData = () => {
-  const storeName = APP_CONFIG.appName || themeConfig?.customerName || "Jeyabala Jewellery";
-  const mobile = APP_CONFIG.mobile || themeConfig?.mobile || "+919486611921";
-  const email = APP_CONFIG.email || themeConfig?.email || "jeyabalajb83@gmail.com";
-  const address = APP_CONFIG.address || themeConfig?.address || "Vathiyar Street, Devakottai, Tamil Nadu 630302";
-  const lat = APP_CONFIG.latitude || themeConfig?.latitude || 9.9482;
-  const lng = APP_CONFIG.longitude || themeConfig?.longitude || 78.8258;
+  const storeName = APP_CONFIG.appName || themeConfig?.customerName || "Theni Anantham";
+  const mobile = APP_CONFIG.mobile || themeConfig?.mobile || "+917339366531";
+  const email = APP_CONFIG.email || themeConfig?.email || "contact@thenianantham.com";
+  const address = APP_CONFIG.address || themeConfig?.address || "11, Main Road, Varadaraj Shopping Complex, Dindigul, Tamil Nadu";
+  const lat = APP_CONFIG.latitude || themeConfig?.latitude || 10.3673;
+  const lng = APP_CONFIG.longitude || themeConfig?.longitude || 77.9803;
 
   return [
     {
       id: 1,
-      branch_name: `${storeName} - Head Office`,
+      branch_name: `${storeName} - Dindigul`,
       name: storeName,
       address: address,
-      city: "Devakottai",
+      city: "Dindigul",
       state: "Tamil Nadu",
-      pincode: "630302",
+      pincode: "624001",
       phone: mobile,
       mobile: mobile,
       email: email,
