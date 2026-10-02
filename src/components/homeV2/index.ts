@@ -11,4 +11,5 @@ export { ConnectWithUsV2 } from "./ConnectWithUsV2";
 export { SupportCardV2 } from "./SupportCardV2";
 export { ChatCardV2 } from "./ChatCardV2";
 export { HomePageV2 } from "./HomePageV2";
+export { TextileHomePage } from "./TextileHomePage";
 export { default } from "./HomePageV2";

@@ -30,6 +30,8 @@ import YourSavingsCardV2 from "./YourSavingsCardV2";
 import ConnectWithUsV2 from "./ConnectWithUsV2";
 import SupportCardV2 from "./SupportCardV2";
 import ChatCardV2 from "./ChatCardV2";
+import TextileHomePage from "./TextileHomePage";
+import { themeConfig } from "@/constants/theme.config";
 
 export interface HomePageV2Props {
   homeData?: any;
@@ -56,6 +58,25 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
   isKycLoading = false,
   flashNews = [],
 }) => {
+  const isTextile = (themeConfig as any)?.businessType === "textile";
+
+  if (isTextile) {
+    return (
+      <TextileHomePage
+        homeData={homeData}
+        collectionsData={collectionsData}
+        sliderImages={sliderImages}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        totalGoldSavings={totalGoldSavings}
+        totalAmount={totalAmount}
+        kycStatus={kycStatus}
+        isKycLoading={isKycLoading}
+        flashNews={flashNews}
+      />
+    );
+  }
+
   const router = useRouter();
   const { t } = useTranslation();
   const theme = useAppTheme();
