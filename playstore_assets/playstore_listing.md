@@ -1,175 +1,213 @@
-# Google Play Store Listing Content: Kanisaa Jewellery
+# Google Play Store Listing: Jeyabala Jewellery (ஜெயபாலா ஜூவல்லரி)
 
-This document contains all the text descriptions, metadata, and asset requirements needed to publish the **Kanisaa Jewellery Digi Gold Savings** app on the Google Play Console.
+This document contains all text metadata, graphics asset guidelines, contact information, data safety details, and release notes required to publish the **Jeyabala Jewellery** app on the **Google Play Console**.
 
 ---
 
-## 1. App Store Metadata (English)
+## 🎨 1. Graphic Assets Summary (Ready in `playstore_assets/`)
+
+| Asset Type | Dimension | Format | File Path | Google Play Requirement |
+| :--- | :--- | :--- | :--- | :--- |
+| **High-Res App Icon** | **512 x 512 px** | 32-bit PNG | [`playstore_assets/playstore_icon_512x512.png`](file:///c:/Users/nithy/Videos/DC_New(AND-IOS)/DC_NEW_AND_IOS_FINAL_EDITION/playstore_assets/playstore_icon_512x512.png) | Exactly 512x512 px, max 1MB. |
+| **Feature Graphic** | **1024 x 500 px** | PNG | [`playstore_assets/feature_graphic_1024x500.png`](file:///c:/Users/nithy/Videos/DC_New(AND-IOS)/DC_NEW_AND_IOS_FINAL_EDITION/playstore_assets/feature_graphic_1024x500.png) | Exactly 1024x500 px, max 15MB. |
+| **Launch Promo Poster** | **1080 x 1080 px** | High-Res JPEG | [`playstore_assets/promo_poster_1080x1080.jpg`](file:///c:/Users/nithy/Videos/DC_New(AND-IOS)/DC_NEW_AND_IOS_FINAL_EDITION/playstore_assets/promo_poster_1080x1080.jpg) | Square marketing banner for social media & launch. |
+| **Phone Screenshots** | Min 2, Max 8 | PNG/JPEG | *User has existing mobile screenshots* | 16:9 or 18:9 aspect ratio (e.g. 1080x1920 or 1080x2400). |
+
+---
+
+## 📱 2. Google Play Store Metadata (English)
 
 ### App Title
-> **Limit**: 30 Characters  
-> **Proposed Title**: `Kanisaa Jewellery Digi Gold` (27 chars)
+> **Character Limit**: 30 Characters  
+> **Title Option 1 (Recommended)**: `Jeyabala Jewellery Digi Gold` *(28 characters)*  
+> **Title Option 2**: `Jeyabala Jewellery` *(18 characters)*  
+> **Title Option 3**: `Jeyabala Gold Savings Scheme` *(28 characters)*
 
 ### Short Description
-> **Limit**: 80 Characters  
-> **Proposed Short Description**: `Save in Digital Gold, pay scheme installments, and book gold advance securely.` (79 chars)
+> **Character Limit**: 80 Characters  
+> **Short Description**: `Save gold monthly, track live rates & pay chit schemes at Jeyabala Jewellery.` *(78 characters)*
 
 ### Full Description
-> **Limit**: 4,000 Characters  
-> **Proposed Full Description**:
-> ```text
-> Secure your future with gold! The Kanisaa Jewellery Digital Gold Savings app is your premium companion for smart, flexible, and transparent gold accumulation. Brought to you by Kanisaa Jewellery, Thrissur, Kerala, this app enables you to save, track, and build your gold savings from the comfort of your home.
-> 
-> Key Features:
-> 
-> ✨ Digital Gold Savings Schemes
-> Start accumulating pure gold in small fractions or monthly installments. Choose the plan that fits your financial goals:
-> • Save Gold: Save in terms of gold weight (grams).
-> • Save as Money: Save in terms of monetary value.
-> 
-> 🔒 Gold Advance Booking
-> Plan for your wedding or special occasions by booking gold in advance. Lock in gold prices to shield yourself from market fluctuations and redeem at the best rate.
-> 
-> 💳 Quick & Secure Online Payments
-> Pay your monthly scheme installments instantly. The app supports secure, seamless integrations with:
-> • UPI (Google Pay, PhonePe, Paytm, BHIM)
-> • Credit and Debit Cards (Visa, Mastercard, RuPay)
-> • Netbanking and Secure Bank Gateways
-> 
-> 📈 Real-Time Gold Rate & Weight Tracker
-> Keep track of daily live gold rates. Monitor your accumulated gold weight, payment history, and scheme status with absolute transparency.
-> 
-> 🎁 Lucky Draw & Rewards
-> Participate in exciting customer lucky draws, earn rewards, and track your contest tickets directly in the app.
-> 
-> 🔄 Old Gold Exchange Setup
-> Easily register or inquire about exchanging your old gold jewellery for new schemes and stunning designs at Kanisaa Jewellery.
-> 
-> 🛡️ Industry-Standard Security
-> Your account is fully protected. Securely login using your personalized MPIN or Biometrics (Face ID/Touch ID).
-> 
-> 📞 24/7 Customer Support
-> Need assistance? Raise support tickets or contact us directly via WhatsApp/Call in just a tap.
-> 
-> Download the Kanisaa Jewellery app today and start your journey towards smart gold savings!
-> ```
+> **Character Limit**: 4,000 Characters  
+> **Copy the text below directly into the Play Console**:
+
+```text
+Welcome to the official Jeyabala Jewellery mobile app – your trusted digital gateway to smart gold savings, live gold rates, and flexible monthly chit schemes. 
+
+With a rich legacy of trust and craftsmanship in Devakottai, Tamil Nadu since 1995, Jeyabala Jewellery brings the timeless tradition of gold buying directly to your fingertips. Whether you are planning for a wedding, securing your family’s future, or accumulating pure 916 hallmarked gold gram-by-gram, our app makes gold savings effortless, transparent, and rewarding.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✨ KEY FEATURES & BENEFITS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🏆 Flexible Gold Savings & Chit Schemes
+Choose from attractive monthly gold savings plans tailored to your budget.
+• Save in Gold Weight (Grams): Accumulate physical gold based on prevailing daily rates.
+• Save as Money (Value): Deposit fixed monthly amounts and enjoy exciting maturity benefits and bonus gold.
+• Digital Passbook: Track total accumulated gold grams, monthly installment history, and maturity dates anytime.
+
+📈 Daily Live Gold & Silver Rates
+Stay updated with real-time market gold rates for:
+• 22K Gold (Per Gram & Sovereign)
+• 24K Pure Gold
+• 18K Hallmarked Gold
+• Pure Silver (Per Gram & Kg)
+Make informed purchasing decisions with transparent daily pricing.
+
+💳 Instant & Secure Online Payments
+Pay your monthly chit installments in seconds from the comfort of your home. We support 100% secure payment methods:
+• UPI (Google Pay, PhonePe, Paytm, BHIM, CRED)
+• Debit & Credit Cards (Visa, MasterCard, RuPay)
+• Net Banking across all major Indian banks
+• Instant digital payment receipt and SMS confirmations
+
+👑 100% BIS 916 Hallmarked Jewellery
+Every piece of jewellery you redeem through your savings scheme is certified 100% BIS 916 Hallmarked gold, crafted by master artisans with Chettinad heritage and contemporary modern aesthetics.
+
+🎁 Exclusive Scheme Offers & Bonanzas
+• Exciting lucky draws and festive gifts for active scheme subscribers.
+• Zero or reduced making charges (V.A / Wastage) on scheme redemption.
+• Special booking discounts for Akshaya Tritiya, Diwali, and wedding seasons.
+
+🔒 Bank-Grade Security & Easy Login
+• Secure MPIN login and biometric fingerprint authentication.
+• Safe, encrypted transaction processing with industry-standard protocols.
+• Dedicated profile management with nominee details support.
+
+📍 Visit Our Devakottai Showroom
+Find our showroom location with one-tap Google Maps directions, store opening hours, and direct call support.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📞 REACH OUT TO US
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Showroom Address:
+Jeyabala Jewellery
+Vathiyar Street, Devakottai,
+Tamil Nadu - 630302, India.
+
+Helpline & WhatsApp: +91 94866 11921
+Email: jeyabalajb83@gmail.com
+Website: https://jeyabalajewellery.com
+
+Download the Jeyabala Jewellery app today and start your journey towards a golden future!
+```
 
 ---
 
-## 2. App Store Metadata (Tamil / தமிழ்)
+## 🇮🇳 3. Google Play Store Metadata (Tamil / தமிழ்)
 
-If you wish to localize your app store listing for Tamil-speaking users, here is the translated content:
+You can add **Tamil (ta-IN)** as a localized language in Play Console under **Store presence > Main store listing > Manage translations**.
 
 ### App Title (தமிழ்)
-> **Limit**: 30 Characters  
-> **Proposed Title**: `கனிசா ஜூவல்லரி டிஜி கோல்டு` (28 chars)
+> **வரம்பு**: 30 எழுத்துக்கள்  
+> **தலைப்பு 1**: `ஜெயபாலா ஜூவல்லரி டிஜி கோல்டு` *(29 எழுத்துக்கள்)*  
+> **தலைப்பு 2**: `ஜெயபாலா ஜூவல்லரி` *(16 எழுத்துக்கள்)*
 
 ### Short Description (தமிழ்)
-> **Limit**: 80 Characters  
-> **Proposed Short Description**: `டிஜிட்டல் தங்கத்தில் சேமிக்கவும், தவணைகளை பாதுகாப்பாக செலுத்தவும்.` (73 chars)
+> **வரம்பு**: 80 எழுத்துக்கள்  
+> **சுருக்கமான விளக்கம்**: `தங்கச் சேமிப்பு திட்டம், நேரடி தங்க விலை மற்றும் தவணை செலுத்தும் செயலி.` *(71 எழுத்துக்கள்)*
 
 ### Full Description (தமிழ்)
-> **Limit**: 4,000 Characters  
-> **Proposed Full Description**:
-> ```text
-> தங்கத்தின் மூலம் உங்கள் எதிர்காலத்தைப் பாதுகாத்திடுங்கள்! கனிசா ஜூவல்லரி டிஜிட்டல் கோல்டு சேமிப்பு செயலி (Kanisaa Jewellery Digital Gold Savings App) எளிய, நெகிழ்வான மற்றும் வெளிப்படையான தங்கச் சேமிப்பிற்கான ஒரு சிறந்த தளமாகும். கேரளாவின் திருச்சூரில் அமைந்துள்ள கனிசா ஜூவல்லரியின் இந்தச் செயலி மூலம், நீங்கள் வீட்டிலிருந்தபடியே தங்கச் சேமிப்பைத் தொடங்கலாம் மற்றும் கண்காணிக்கலாம்.
-> 
-> முக்கிய அம்சங்கள்:
-> 
-> ✨ டிஜிட்டல் தங்கச் சேமிப்பு திட்டங்கள்
-> சிறு தொகையாக அல்லது மாதாந்திர தவணைகளாக தூய தங்கத்தைச் சேமிக்கத் தொடங்குங்கள். உங்கள் இலக்குகளுக்கு ஏற்ப திட்டங்களைத் தேர்ந்தெடுங்கள்:
-> • தங்கம் சேமிப்பு திட்டம் (Save Gold): தங்கத்தின் எடையில் (கிராம்) சேமிக்கலாம்.
-> • பணம் சேமிப்பு திட்டம் (Save as Money): பண மதிப்பில் சேமிக்கலாம்.
-> 
-> 🔒 கோல்டு அட்வான்ஸ் புக்கிங் (தங்க முன்பதிவு)
-> திருமணங்கள் மற்றும் பிற விசேஷங்களுக்கு முன்கூட்டியே தங்கத்தை முன்பதிவு செய்து கொள்ளுங்கள். தங்கத்தின் விலை மாற்றங்களிலிருந்து உங்களைப் பாதுகாத்துக் கொள்ள விலையை முன்கூட்டியே லாக் செய்து சிறந்த முறையில் மீட்டுக்கொள்ளலாம்.
-> 
-> 💳 விரைவான மற்றும் பாதுகாப்பான ஆன்லைன் பேமெண்ட்ஸ்
-> உங்கள் மாதாந்திர தவணைத் தொகையை உடனடியாகச் செலுத்துங்கள். இந்தச் செயலி கீழ்க்கண்ட பாதுகாப்பான வழிகளை ஆதரிக்கிறது:
-> • UPI (Google Pay, PhonePe, Paytm, BHIM)
-> • கிரெடிட் மற்றும் டெபிட் கார்டுகள் (Visa, Mastercard, RuPay)
-> • நெட்பேங்கிங் மற்றும் பாதுகாப்பான வங்கி நுழைவாயில்கள் (Secure Bank Gateways)
-> 
-> 📈 நேரடி தங்கம் விலை & சேமிப்பு விவரங்கள்
-> தினசரி நேரடித் தங்க விலையை எளிதாகக் கண்காணிக்கலாம். நீங்கள் சேமித்துள்ள தங்கத்தின் எடை, முந்தைய பேமெண்ட் வரலாறு மற்றும் திட்டத்தின் விவரங்களை வெளிப்படையாகப் பார்க்கலாம்.
-> 
-> 🎁 லக்கி டிரா மற்றும் ரிவார்டுகள்
-> வாடிக்கையாளர்களுக்கான லக்கி டிராவில் பங்கேற்று, பரிசுகளை வெல்லுங்கள். உங்கள் டிக்கெட்டுகள் மற்றும் ரிவார்டுகளை செயலி மூலமாகவே கண்காணிக்கலாம்.
-> 
-> 🔄 பழைய தங்க மாற்றுத் திட்டம்
-> உங்கள் பழைய தங்க நகைகளை புதிய திட்டங்களாக அல்லது புதிய நகைகளாக மாற்றுவது பற்றிய விவரங்களை எளிதாகப் பதிவு செய்து தெரிந்துகொள்ளலாம்.
-> 
-> 🛡️ அதிநவீன பாதுகாப்பு
-> உங்கள் கணக்கு முழுமையாகப் பாதுகாக்கப்பட்டுள்ளது. உங்கள் பிரத்யேக MPIN அல்லது பயோமெட்ரிக்ஸ் (கைரேகை / முக அங்கீகாரம்) மூலம் பாதுகாப்பாக லாகின் செய்யலாம்.
-> 
-> 📞 24/7 வாடிக்கையாளர் ஆதரவு
-> உதவி தேவையா? ஒரு தட்டலில் வாட்ஸ்அப் அல்லது அழைப்பு மூலம் எங்களைத் தொடர்புகொள்ளலாம் அல்லது சப்போர்ட் டிக்கெட் உருவாக்கலாம்.
-> 
-> இன்றே கனிசா ஜூவல்லரி செயலியைப் பதிவிறக்கி, உங்கள் தங்கச் சேமிப்பைத் தொடங்குங்கள்!
-> ```
+> **முழு விவரம் (கீழே உள்ளதை நகலெடுத்துப் பயன்படுத்தவும்)**:
+
+```text
+தேவகோட்டையின் பாரம்பரியமிக்க "ஜெயபாலா ஜூவல்லரி" (Jeyabala Jewellery) வழங்கும் அதிகாரப்பூர்வ மொபைல் செயலிக்கு அன்புடன் வரவேற்கிறோம்!
+
+1995-ஆம் ஆண்டு முதல் தேவகோட்டை மற்றும் சுற்றுவட்டார மக்களிடையே நன்மதிப்பையும், நம்பிக்கையையும் பெற்ற ஜெயபாலா ஜூவல்லரி, இப்போது உங்கள் தங்கச் சேமிப்பை மேலும் எளிமையாகவும், வெளிப்படையாகவும் மாற்ற இந்த மொபைல் செயலியை வழங்குகிறது.
+
+உங்கள் இல்லத் திருமணங்கள் மற்றும் எதிர்கால நல்வாழ்விற்காக, சிறு தொகையிலோ அல்லது மாதாந்திரத் தவணையிலோ தூய BIS 916 ஹால்மார்க் தங்கத்தைச் சேமிக்க இன்றே தொடங்குங்கள்!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✨ செயலியின் முக்கிய சிறப்பம்சங்கள்:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🏆 தங்கச் சேமிப்புத் திட்டங்கள் (Gold Chit Schemes):
+• உங்கள் வசதிக்கேற்ப எளிய மாதாந்திர சேமிப்புத் திட்டங்கள்.
+• கிராம் அடிப்படையில் (Save Gold) அல்லது பண மதிப்பில் (Save as Money) சேமிக்கும் வசதி.
+• டிஜிட்டல் பாஸ்புக் (Digital Passbook): நீங்கள் சேமித்துள்ள மொத்த தங்கம், செலுத்திய தவணைகள் மற்றும் முதிர்வுத் தேதியை எந்த நேரத்திலும் பார்க்கலாம்.
+
+📈 நேரடி தினசரி தங்க விலை நிலவரம் (Live Rates):
+• 22K ஆபரணத் தங்கம் (கிராம் மற்றும் சவரன் விலை)
+• 24K தூய தங்கம்
+• வெள்ளி விலை நிலவரம்
+தினசரி காலை மற்றும் மாலை நேரடி விலை மாற்றங்களை உடனுக்குடன் தெரிந்துகொள்ளலாம்.
+
+💳 உடனடி ஆன்லைன் பேமெண்ட் வசதி (100% பாதுகாப்பானது):
+உங்கள் மாதாந்திர தவணைகளை வீட்டிலிருந்தபடியே நொடியில் செலுத்தலாம்:
+• Google Pay, PhonePe, Paytm, BHIM போன்ற அனைத்து UPI செயலிகள்.
+• டெபிட் கார்டு, கிரெடிட் கார்டு மற்றும் நெட் பேங்கிங்.
+• கட்டணம் செலுத்தியவுடன் உடனடி டிஜிட்டல் ரசீது மற்றும் SMS உறுதிப்படுத்தல்.
+
+👑 100% BIS 916 ஹால்மார்க் தங்கம்:
+சேமிப்புத் திட்டத்தின் முடிவில் எவ்வித சேதாரம் / செய்கூலி சலுகைகளுடன் பாரம்பரிய மற்றும் நவீன தங்க, வைர, வெள்ளி நகைகளை தேர்வு செய்து பெற்றுக்கொள்ளலாம்.
+
+🔒 அதிநவீன பாதுகாப்பு:
+• உங்கள் சொந்த MPIN அல்லது கைரேகை (Fingerprint) மூலம் பாதுகாப்பான லாகின்.
+• உங்கள் தகவல்கள் மற்றும் பரிவர்த்தனைகள் 100% பாதுகாப்பாக நிர்வகிக்கப்படுகின்றன.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📍 எங்கள் கடை முகவரி & தொடர்பு விவரங்கள்:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ஜெயபாலா ஜூவல்லரி
+வாத்தியார் தெரு, தேவகோட்டை,
+தமிழ்நாடு - 630302.
+
+ஹெல்ப்லைன் & வாட்ஸ்அப்: +91 94866 11921
+மின்னஞ்சல்: jeyabalajb83@gmail.com
+இணையதளம்: https://jeyabalajewellery.com
+
+இன்றே ஜெயபாலா ஜூவல்லரி செயலியைப் பதிவிறக்கி, உங்கள் பொன்னான எதிர்காலத்திற்கான தங்கச் சேமிப்பைத் தொடங்குங்கள்!
+```
 
 ---
 
-## 3. Store Categorization & Tags
+## 🏷️ 4. Store Categorization & Tags
 
-* **Category**: Finance (நிதியியல்) or Shopping (ஷாப்பிங்)
-* **Target Audience Age**: 18 and older
-* **Tags**: Finance, Shopping, Gold Savings, Investments, Payments
-* **Contains Ads**: No
-* **App URL**: `https://www.dcjewellers.org`
-* **Support Email**: `dcjewellerstcr@gmail.com`
-* **Support Phone**: `+91 90618 03999`
-* **Privacy Policy URL**: `https://www.dcjewellers.org/privacy-policy` (Note: Ensure you host a simple privacy policy on your website)
-
----
-
-## 4. Google Play Store Graphic Asset Specifications
-
-To upload your app to Google Play Store, you need the following specific graphic assets:
-
-| Asset Type | Dimension | Format | Key Requirements | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| **App Icon** | 512 x 512 pixels | 32-bit PNG | Transparent background or solid color, high-resolution. | [Generated App Icon](file:///C:/Users/nithy/.gemini/antigravity-ide/brain/a65e9d9f-de32-4b7d-a05f-91d74a141e90/app_icon.png) |
-| **Feature Graphic** | 1024 x 500 pixels | JPEG or 24-bit PNG | Center-focused bold brand elements, no text near margins. | [Generated Feature Graphic](file:///C:/Users/nithy/.gemini/antigravity-ide/brain/a65e9d9f-de32-4b7d-a05f-91d74a141e90/feature_graphic.png) |
-| **Phone Screenshot 1** | 1080 x 1920 pixels | JPEG or 24-bit PNG | Welcome/Login Page screen mockup showing premium brand aesthetics. | [Generated Welcome Screenshot](file:///C:/Users/nithy/.gemini/antigravity-ide/brain/a65e9d9f-de32-4b7d-a05f-91d74a141e90/screenshot_1_welcome.png) |
-| **Phone Screenshot 2** | 1080 x 1920 pixels | JPEG or 24-bit PNG | Home Dashboard screen mockup showcasing gold tracker and active schemes. | [Generated Dashboard Screenshot](file:///C:/Users/nithy/.gemini/antigravity-ide/brain/a65e9d9f-de32-4b7d-a05f-91d74a141e90/screenshot_2_dashboard.png) |
-| **Phone Screenshot 3** | 1080 x 1920 pixels | JPEG or 24-bit PNG | Savings Schemes page displaying different gold deposit/advance booking choices. | [Generated Schemes Screenshot](file:///C:/Users/nithy/.gemini/antigravity-ide/brain/a65e9d9f-de32-4b7d-a05f-91d74a141e90/screenshot_3_schemes.png) |
+| Field | Setting / Recommendation |
+| :--- | :--- |
+| **App Category** | **Shopping** (Primary) or **Finance** |
+| **Store Tags** | `Jewellery`, `Gold Savings`, `Chit Fund`, `Online Shopping`, `Finance` |
+| **Target Audience** | **18 and older** (Financial transactions/gold scheme) |
+| **Content Rating** | **Everyone (3+)** |
+| **Contains Ads** | **No** (Set "No, my app does not contain ads") |
 
 ---
 
-## 5. Visual Asset Previews
+## 📞 5. Store Listing Contact Details
 
-Here are the sample graphics generated for your store listing:
+Fill these under **Play Console > Store settings > Store listing contact details**:
 
-### App Icon
-![App Icon](/c:/Users/nithy/.gemini/antigravity-ide/brain/a65e9d9f-de32-4b7d-a05f-91d74a141e90/app_icon.png)
-
-### Feature Graphic
-![Feature Graphic](/c:/Users/nithy/.gemini/antigravity-ide/brain/a65e9d9f-de32-4b7d-a05f-91d74a141e90/feature_graphic.png)
-
-### Screenshots
-````carousel
-![Screenshot 1: Welcome](/c:/Users/nithy/.gemini/antigravity-ide/brain/a65e9d9f-de32-4b7d-a05f-91d74a141e90/screenshot_1_welcome.png)
-<!-- slide -->
-![Screenshot 2: Dashboard](/c:/Users/nithy/.gemini/antigravity-ide/brain/a65e9d9f-de32-4b7d-a05f-91d74a141e90/screenshot_2_dashboard.png)
-<!-- slide -->
-![Screenshot 3: Schemes](/c:/Users/nithy/.gemini/antigravity-ide/brain/a65e9d9f-de32-4b7d-a05f-91d74a141e90/screenshot_3_schemes.png)
-````
+* **Email address**: `jeyabalajb83@gmail.com`
+* **Phone number**: `+919486611921`
+* **Website**: `https://jeyabalajewellery.com`
+* **Physical address**: `Vathiyar Street, Devakottai, Tamil Nadu 630302, India`
 
 ---
 
-## 6. How to Use These Assets
+## 🔒 6. Privacy Policy & Data Safety Declarations
 
-1. **Text Content**: Copy the title, short description, and full description from above and paste them into the corresponding fields in the Google Play Console under **Grow > Store presence > Main store listing**.
-2. **App Icon**: Download `app_icon.png` and upload it directly.
-3. **Feature Graphic**: Download `feature_graphic.png` and upload it.
-4. **Phone Screenshots**: Download the screenshots and upload them to the **Phone Screenshots** section (you can upload 2 to 8 screenshots).
+### Privacy Policy URL
+> **URL**: `https://jeyabalajewellery.com/privacy-policy`  
+> *(Note: A compliant privacy policy document is provided below if hosting on your server).*
+
+### Data Safety Form Answers (Play Console Checklist)
+1. **Data Collection & Sharing**:
+   * Does your app collect or share user data? **Yes**
+   * Is all user data encrypted in transit? **Yes** (HTTPS/SSL encryption)
+   * Do you provide a way for users to request data deletion? **Yes**
+2. **Data Types Collected**:
+   * **Personal Info**: Name, Phone number, Email address (Purpose: App functionality, Account management).
+   * **Location**: Approximate location (Purpose: Show Devakottai store route & distance).
+   * **Financial Info**: Purchase/Payment transaction history (Purpose: Chit scheme installment records & receipt generation).
+   * **Device or other IDs**: Device token (Purpose: Push notifications for daily gold rate updates & scheme reminders).
+3. **Data Sharing**:
+   * Does your app share data with third parties? **No** (Payment gateways only process payments securely).
 
 ---
 
-## 7. Release Details (Release Name & Release Notes)
+## 🚀 7. Release Details (Version 1.0.0)
 
-When creating a new release in the Play Console (e.g., in Production, Open testing, or Internal testing), use the following details:
+When creating your initial Production or Testing release in the Play Console:
 
 ### Release Name
 `1.0.0` or `1.0.0 (1)`
@@ -177,24 +215,23 @@ When creating a new release in the Play Console (e.g., in Production, Open testi
 ### Release Notes (English - en-US)
 ```text
 <en-US>
-- Initial release of the Kanisaa Jewellery Digital Gold Savings app.
-- Start saving in pure 24K digital gold with flexible schemes.
-- Book gold in advance to secure today's gold rate.
-- Easily pay monthly installments online via UPI, Cards, and Net Banking.
-- Real-time gold rate tracking and transaction history.
-- Secure login using MPIN and Biometric authentication.
+• Official launch of the Jeyabala Jewellery Digi Gold & Savings app.
+• Flexible monthly gold savings schemes with instant enrollment.
+• Live daily 22K, 24K gold and silver market rates.
+• Fast and secure online installment payments via UPI, Cards, and Net Banking.
+• Digital passbook to track accumulated gold weight and payment history.
+• Biometric and MPIN secure login protection.
 </en-US>
 ```
 
 ### Release Notes (Tamil - ta-IN)
 ```text
 <ta-IN>
-- கனிசா ஜூவல்லரி டிஜிட்டல் தங்கச் சேமிப்பு செயலியின் முதல் வெளியீடு.
-- நெகிழ்வான திட்டங்கள் மூலம் தூய 24K டிஜிட்டல் தங்கத்தில் சேமிக்கத் தொடங்குங்கள்.
-- தற்போதைய தங்க விலையை முன்பதிவு செய்து விலையேற்றத்தில் இருந்து பாதுகாத்திடுங்கள்.
-- UPI, கார்டுகள் மற்றும் நெட்பேங்கிங் மூலம் உங்கள் தவணைகளை ஆன்லைனில் எளிதாக செலுத்துங்கள்.
-- நேரடி தங்கம் விலை நிலவரம் மற்றும் பரிவர்த்தனை வரலாற்று விவரங்கள்.
-- MPIN மற்றும் பயோமெட்ரிக் லாகின் மூலம் அதிநவீன பாதுகாப்பு.
+• ஜெயபாலா ஜூவல்லரி அதிகாரப்பூர்வ தங்கச் சேமிப்பு செயலியின் முதல் வெளியீடு.
+• எளிய மாதாந்திர தங்கச் சேமிப்புத் திட்டங்கள் மற்றும் உடனடி முன்பதிவு.
+• தினசரி நேரடி 22K, 24K தங்கம் மற்றும் வெள்ளி விலை நிலவரங்கள்.
+• UPI, கார்டுகள் மற்றும் நெட் பேங்கிங் மூலம் ஆன்லைனில் விரைவான தவணை செலுத்தும் வசதி.
+• நீங்கள் சேமித்த தங்கம் மற்றும் ரசீதுகளைக் காண டிஜிட்டல் பாஸ்புக் வசதி.
+• MPIN மற்றும் கைரேகை (Fingerprint) பாதுகாப்பான லாகின்.
 </ta-IN>
 ```
-
