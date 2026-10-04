@@ -41,17 +41,18 @@ eas build --platform android --profile preview
 
 ---
 
-## 🎨 3. Play Store Graphic Assets
+## 🎨 3. Play Store Graphic Assets (100% Theni Anantham Branded)
 
-அனைத்து கிராஃபிக் பைல்களும் `playstore_assets/` மற்றும் `assets/playstore/` ஃபோல்டரில் சரியான அளவுகளில் உள்ளன:
+அனைத்து கிராஃபிக் பைல்களும் `playstore_assets/` ஃபோல்டரில் கூகுள் ப்ளே ஸ்டோரின் துல்லியமான அளவுகளில் தயார் செய்யப்பட்டுள்ளது:
 
-### Files Directory: `assets/playstore/` & `playstore_assets/`
-1. **App Icon:** `app_icon.png` / `app_icon_512.png` (`512 x 512 px`, PNG 32-bit, < 1MB)
-2. **Feature Graphic Banner:** `feature_graphic.png` (`1024 x 500 px`, RGB, No transparency)
-3. **Screenshots:**
-   - `screenshot_1_welcome.png`
-   - `screenshot_2_dashboard.png`
-   - `screenshot_3_schemes.png`
+### Files Directory: `playstore_assets/`
+1. **App Icon:** `playstore_icon_512x512.png` / `app_icon.png` (`512 x 512 px`, 32-bit PNG, < 1MB)
+2. **Feature Graphic Banner:** `feature_graphic_1024x500.png` / `feature_graphic.png` (`1024 x 500 px`, RGB PNG, Theni Anantham Deepavali Chit Scheme)
+3. **Screenshots (1080 x 1920 px):**
+   - `screenshot_1_welcome.png` (Secure & Easy Login, MPIN & Biometrics)
+   - `screenshot_2_dashboard.png` (Textile Home & Deepavali Chit 11+1 Bonus)
+   - `screenshot_3_schemes.png` (Official Chit Scheme Rules Voucher & Terms)
+   - `screenshot_4_passbook.png` (Digital Passbook, Instant UPI & Showroom)
 
 ---
 
