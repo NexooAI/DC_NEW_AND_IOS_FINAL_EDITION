@@ -47,7 +47,8 @@
       "android": {
         "buildType": "app-bundle",
         "image": "latest",
-        "gradleCommand": ":app:bundleRelease"
+        "gradleCommand": ":app:bundleRelease",
+        "credentialsSource": "local"
       },
       "ios": {
         "resourceClass": "m-medium"
