@@ -55,6 +55,8 @@ export default function AppLayout() {
     >
       <NavigationErrorBoundary>
         <Drawer
+          initialRouteName="(tabs)"
+          backBehavior="history"
           screenOptions={{
             headerShown: false,
             swipeEnabled: false, // Disable swipe gesture
@@ -76,15 +78,6 @@ export default function AppLayout() {
           drawerContent={renderDrawerContent}
         >
           <Drawer.Screen
-            name="dashboard"
-            options={{
-              lazy: true,
-              freezeOnBlur: false,
-              drawerLabel: "Dashboard",
-              title: "Dashboard",
-            }}
-          />
-          <Drawer.Screen
             name="(tabs)"
             options={{
               // Enable lazy loading for better performance
@@ -96,23 +89,13 @@ export default function AppLayout() {
             }}
           />
           <Drawer.Screen
-            name="lucky_draw"
+            name="dashboard"
             options={{
               lazy: true,
               freezeOnBlur: false,
-              drawerLabel: "Lucky Draw",
-              title: "Lucky Draw",
-              drawerItemStyle: { display: 'none' } // Hide from drawer menu but keep as valid route
-            }}
-          />
-          <Drawer.Screen
-            name="payment-history"
-            options={{
-              lazy: true,
-              freezeOnBlur: false,
-              drawerLabel: "Payment History",
-              title: "Payment History",
-              drawerItemStyle: { display: 'none' }
+              drawerLabel: "Dashboard",
+              title: "Dashboard",
+              drawerItemStyle: { display: 'none' },
             }}
           />
           <Drawer.Screen
@@ -122,7 +105,67 @@ export default function AppLayout() {
               freezeOnBlur: false,
               drawerLabel: "Gifts",
               title: "My Gifts",
-              drawerItemStyle: { display: 'none' }
+              drawerItemStyle: { display: 'none' },
+            }}
+          />
+          <Drawer.Screen
+            name="tickets"
+            options={{
+              lazy: true,
+              freezeOnBlur: false,
+              drawerLabel: "Tickets",
+              title: "Tickets & Enquiries",
+              drawerItemStyle: { display: 'none' },
+            }}
+          />
+          <Drawer.Screen
+            name="lucky_draw"
+            options={{
+              lazy: true,
+              freezeOnBlur: false,
+              drawerLabel: "Lucky Draw",
+              title: "Lucky Draw",
+              drawerItemStyle: { display: 'none' }, // Hide from drawer menu but keep as valid route
+            }}
+          />
+          <Drawer.Screen
+            name="payment-history"
+            options={{
+              lazy: true,
+              freezeOnBlur: false,
+              drawerLabel: "Payment History",
+              title: "Payment History",
+              drawerItemStyle: { display: 'none' },
+            }}
+          />
+          <Drawer.Screen
+            name="gold_advance"
+            options={{
+              lazy: true,
+              freezeOnBlur: false,
+              drawerLabel: "Gold Advance",
+              title: "Gold Advance",
+              drawerItemStyle: { display: 'none' },
+            }}
+          />
+          <Drawer.Screen
+            name="bill_payment"
+            options={{
+              lazy: true,
+              freezeOnBlur: false,
+              drawerLabel: "Bill Payment",
+              title: "Bill Payment",
+              drawerItemStyle: { display: 'none' },
+            }}
+          />
+          <Drawer.Screen
+            name="old_gold"
+            options={{
+              lazy: true,
+              freezeOnBlur: false,
+              drawerLabel: "Old Gold",
+              title: "Old Gold",
+              drawerItemStyle: { display: 'none' },
             }}
           />
         </Drawer>

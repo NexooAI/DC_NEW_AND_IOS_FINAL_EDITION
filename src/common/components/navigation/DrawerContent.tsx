@@ -208,7 +208,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
   };
 
   const handleNavigation = useCallback(
-    (route: string) => {
+    (route: string, params?: any) => {
       if (isNavigating) return;
 
       if (navigationTimeoutRef.current) {
@@ -220,11 +220,19 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
 
       navigationTimeoutRef.current = setTimeout(() => {
         try {
-          router.push(route as any);
+          if (params) {
+            router.push({ pathname: route as any, params });
+          } else {
+            router.push(route as any);
+          }
         } catch (error) {
           console.error("Navigation error, trying navigate:", error);
           try {
-            router.navigate(route as any);
+            if (params) {
+              router.navigate({ pathname: route as any, params });
+            } else {
+              router.navigate(route as any);
+            }
           } catch (navErr) {
             console.error("Secondary navigation error:", navErr);
             Alert.alert(t("navigationError") || "Error", t("failedToNavigate") || "Failed to open page");
@@ -408,7 +416,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                 <DrawerMenuItem
                   label={t("ticketsAndEnquiries") || "Tickets & Enquiries"}
                   iconName="receipt-outline"
-                  onPress={() => handleNavigation("/(app)/tickets")}
+                  onPress={() => handleNavigation("/(app)/tickets", { from: pathname })}
                   disabled={isNavigating}
                   isActive={isRouteActive("/(app)/tickets")}
                   delay={175}
@@ -419,7 +427,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                 <DrawerMenuItem
                   label={t("schemeGifts") || "Gifts"}
                   iconName="gift-outline"
-                  onPress={() => handleNavigation("/(app)/gifts")}
+                  onPress={() => handleNavigation("/(app)/gifts", { from: pathname })}
                   disabled={isNavigating}
                   isActive={isRouteActive("/(app)/gifts")}
                   delay={185}

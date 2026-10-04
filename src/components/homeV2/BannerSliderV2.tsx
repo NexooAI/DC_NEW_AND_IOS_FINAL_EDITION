@@ -48,41 +48,41 @@ export const BannerSliderV2: React.FC<BannerSliderV2Props> = ({
   // Default luxury banner slide matching the brand assets
   const defaultBanners: BannerItem[] = isTextile
     ? [
-        {
-          id: "theni_banner_1",
-          title: "தீபாவளி வருடாந்திர சீட்டு",
-          subtitle: "11 மாதம் தவணை செலுத்துங்கள் • 12-வது மாதம் ஊக்கத்தொகை!",
-          ctaText: "இப்போதே சேருங்கள்",
-          link: "/(app)/(tabs)/quick_join",
-          image: require("../../../assets/images/theni_anantham/deepavali_chit_banner.jpg"),
-        },
-        {
-          id: "theni_banner_2",
-          title: "ரூ.500 & ரூ.1,000 சிறப்பு சேமிப்பு",
-          subtitle: "12வது தவணை தொகையை தேனி ஆனந்தமே செலுத்தும்!",
-          ctaText: "விதிமுறைகள் அறிய",
-          link: "/(app)/(tabs)/quick_join",
-          image: require("../../../assets/images/theni_anantham/scheme_rules_voucher.jpg"),
-        },
-      ]
+      {
+        id: "theni_banner_1",
+        title: "தீபாவளி வருடாந்திர சீட்டு",
+        subtitle: "11 மாதம் தவணை செலுத்துங்கள் • 12-வது மாதம் ஊக்கத்தொகை!",
+        ctaText: "இப்போதே சேருங்கள்",
+        link: "/(app)/(tabs)/quick_join",
+        image: require("../../../assets/images/theni_anantham/deepavali_chit_banner_1024x512.jpg"),
+      },
+      {
+        id: "theni_banner_2",
+        title: "ரூ.500 & ரூ.1,000 சிறப்பு சேமிப்பு",
+        subtitle: "12வது தவணை தொகையை தேனி ஆனந்தமே செலுத்தும்!",
+        ctaText: "விதிமுறைகள் அறிய",
+        link: "/(app)/(tabs)/quick_join",
+        image: require("../../../assets/images/theni_anantham/scheme_rules_voucher.jpg"),
+      },
+    ]
     : [
-        {
-          id: "featured_1",
-          title: "Tradition Shines Forever",
-          subtitle: "Pure Jewellery | Trusted Schemes\nA Brighter Tomorrow",
-          ctaText: "Explore Now",
-          link: "/(app)/(tabs)/home/schemes",
-          image: require("../../../assets/images/slider.png"),
-        },
-        {
-          id: "featured_2",
-          title: "Special Gold Savings",
-          subtitle: "Join Today & Get Extra Gold Benefits\nZero Making Charges",
-          ctaText: "View Schemes",
-          link: "/(app)/(tabs)/home/schemes",
-          image: require("../../../assets/images/slider1.png"),
-        },
-      ];
+      {
+        id: "featured_1",
+        title: "Tradition Shines Forever",
+        subtitle: "Pure Jewellery | Trusted Schemes\nA Brighter Tomorrow",
+        ctaText: "Explore Now",
+        link: "/(app)/(tabs)/home/schemes",
+        image: require("../../../assets/images/slider.png"),
+      },
+      {
+        id: "featured_2",
+        title: "Special Gold Savings",
+        subtitle: "Join Today & Get Extra Gold Benefits\nZero Making Charges",
+        ctaText: "View Schemes",
+        link: "/(app)/(tabs)/home/schemes",
+        image: require("../../../assets/images/slider1.png"),
+      },
+    ];
 
   const items: BannerItem[] = useMemo(() => {
     if (banners && banners.length > 0) {

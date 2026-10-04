@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '@/constants/theme';
 import COLORS from '@/constants/colors';
@@ -72,18 +72,25 @@ export default function TicketsScreen() {
   const theme = useAppTheme();
   styles = getStyles(theme);
   const router = useRouter();
+  const params = useLocalSearchParams<{ from?: string }>();
   const handleBack = useCallback(() => {
-    const hasDashboard = getAppConfig().constants.enableDashboard;
-    if (!hasDashboard) {
-      router.replace("/(app)/(tabs)/home");
-    } else {
+    try {
+      if (params.from) {
+        router.replace(params.from as any);
+      } else if (router.canGoBack()) {
+        router.back();
+      } else {
+        const hasDashboard = getAppConfig().constants.enableDashboard;
+        router.replace(hasDashboard ? "/(app)/dashboard" : "/(app)/(tabs)/home");
+      }
+    } catch {
       if (router.canGoBack()) {
         router.back();
       } else {
-        router.replace("/(app)/dashboard");
+        router.replace("/(app)/(tabs)/home");
       }
     }
-  }, [router]);
+  }, [router, params.from]);
 
   useFocusEffect(
     useCallback(() => {
