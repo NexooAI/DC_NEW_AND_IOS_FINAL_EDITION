@@ -153,8 +153,8 @@ export const TextileHomePage: React.FC<TextileHomePageProps> = ({
                       {userName
                         ? `${isTamil ? "வணக்கம்" : "Hello"}, ${userName}`
                         : isTamil
-                        ? "தேனி ஆனந்தம்"
-                        : "Theni Anantham"}
+                          ? "தேனி ஆனந்தம்"
+                          : "Theni Anantham"}
                     </Text>
                   </View>
                   <Text style={styles.schemeTitleText}>
@@ -203,8 +203,8 @@ export const TextileHomePage: React.FC<TextileHomePageProps> = ({
                     {activeChitsCount > 0
                       ? `${activeChitsCount} ${isTamil ? "சீட்டுகள்" : "Active"}`
                       : isTamil
-                      ? "ரூ.500 / ரூ.1000 திட்டம்"
-                      : "₹500 / ₹1000 Plans"}
+                        ? "ரூ.500 / ரூ.1000 திட்டம்"
+                        : "₹500 / ₹1000 Plans"}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -262,7 +262,7 @@ export const TextileHomePage: React.FC<TextileHomePageProps> = ({
             activeOpacity={0.92}
           >
             <Image
-              source={require("../../../assets/images/theni_anantham/deepavali_chit_banner.jpg")}
+              source={require("../../../assets/images/theni_anantham/deepavali_chit_banner_1024x512.jpg")}
               style={styles.spotlightBannerImage}
               resizeMode="cover"
             />

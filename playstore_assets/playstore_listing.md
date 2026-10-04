@@ -10,7 +10,7 @@ This document contains all text metadata, graphics asset guidelines, contact inf
 | :--- | :--- | :--- | :--- | :--- |
 | **High-Res App Icon** | **512 x 512 px** | 32-bit PNG | [`playstore_assets/playstore_icon_512x512.png`](file:///c:/Users/nithy/Videos/DC_New(AND-IOS)/DC_NEW_AND_IOS_FINAL_EDITION/playstore_assets/playstore_icon_512x512.png) | Exactly 512x512 px, max 1MB. Official Theni Anantham logo. |
 | **Feature Graphic** | **1024 x 500 px** | PNG | [`playstore_assets/feature_graphic_1024x500.png`](file:///c:/Users/nithy/Videos/DC_New(AND-IOS)/DC_NEW_AND_IOS_FINAL_EDITION/playstore_assets/feature_graphic_1024x500.png) | Exactly 1024x500 px, max 15MB. |
-| **Deepavali Chit Banner** | **1080 x 1080 px / Vertical** | High-Res JPEG | [`assets/images/theni_anantham/deepavali_chit_banner.jpg`](file:///c:/Users/nithy/Videos/DC_New(AND-IOS)/DC_NEW_AND_IOS_FINAL_EDITION/assets/images/theni_anantham/deepavali_chit_banner.jpg) | Official Deepavali Annual Chit scheme poster. |
+| **Deepavali Chit Banner** | **1080 x 1080 px / Vertical** | High-Res JPEG | [`assets/images/theni_anantham/deepavali_chit_banner_1024x512.jpg`](file:///c:/Users/nithy/Videos/DC_New(AND-IOS)/DC_NEW_AND_IOS_FINAL_EDITION/assets/images/theni_anantham/deepavali_chit_banner_1024x512.jpg) | Official Deepavali Annual Chit scheme poster. |
 | **Scheme Rules Voucher** | **High-Res** | JPEG | [`assets/images/theni_anantham/scheme_rules_voucher.jpg`](file:///c:/Users/nithy/Videos/DC_New(AND-IOS)/DC_NEW_AND_IOS_FINAL_EDITION/assets/images/theni_anantham/scheme_rules_voucher.jpg) | 10 Official rules and terms. |
 
 ---

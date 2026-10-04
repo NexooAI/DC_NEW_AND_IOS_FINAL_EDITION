@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
 import { useAppTheme } from '@/store/global.store';
@@ -34,6 +34,7 @@ type TabType = 'my_gifts' | 'offers' | 'how_to_claim';
 export default function GiftsScreen() {
   const theme = useAppTheme();
   const router = useRouter();
+  const params = useLocalSearchParams<{ from?: string }>();
   const { t } = useTranslation();
   const { user } = useGlobalStore();
   const { isVisible } = useAppVisibility();
@@ -47,14 +48,24 @@ export default function GiftsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedGift, setSelectedGift] = useState<CustomerGift | null>(null);
 
-  // Hardware back press handler
+  // Hardware and header back press handler
   const handleBack = useCallback(() => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(app)/(tabs)/home');
+    try {
+      if (params.from) {
+        router.replace(params.from as any);
+      } else if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(app)/(tabs)/home');
+      }
+    } catch {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(app)/(tabs)/home');
+      }
     }
-  }, [router]);
+  }, [router, params.from]);
 
   useFocusEffect(
     useCallback(() => {

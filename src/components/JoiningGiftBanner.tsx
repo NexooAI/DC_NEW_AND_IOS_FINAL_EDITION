@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 export interface JoiningGiftData {
@@ -18,6 +18,7 @@ interface Props {
 
 export const JoiningGiftBanner: React.FC<Props> = ({ gift, onPress }) => {
   const router = useRouter();
+  const pathname = usePathname();
   if (!gift || !gift.gift_name) return null;
 
   const isDelivered = gift.status === 'DELIVERED';
@@ -26,7 +27,7 @@ export const JoiningGiftBanner: React.FC<Props> = ({ gift, onPress }) => {
     if (onPress) {
       onPress();
     } else {
-      router.push('/(app)/gifts' as any);
+      router.push({ pathname: '/(app)/gifts', params: { from: pathname || '/(app)/(tabs)/home' } } as any);
     }
   };
 

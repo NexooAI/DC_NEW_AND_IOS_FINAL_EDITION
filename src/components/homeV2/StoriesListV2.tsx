@@ -35,59 +35,59 @@ export const StoriesListV2: React.FC<StoriesListV2Props> = ({
   // Built-in fallback stories matching the business vertical
   const defaultStories: StoryItem[] = isTextile
     ? [
-        {
-          id: "silk_sarees",
-          name: t("silkSarees", { defaultValue: "Silk Sarees" }),
-          thumbnail: require("../../../assets/images/theni_anantham/deepavali_chit_banner.jpg"),
-        },
-        {
-          id: "wedding_silks",
-          name: t("weddingSilks", { defaultValue: "Bridal Wear" }),
-          thumbnail: require("../../../assets/images/theni_anantham/deepavali_chit_banner.jpg"),
-        },
-        {
-          id: "mens_wear",
-          name: t("mensWear", { defaultValue: "Men's Silks" }),
-          thumbnail: require("../../../assets/images/theni_anantham/logo.png"),
-        },
-        {
-          id: "kids_festive",
-          name: t("kidsWear", { defaultValue: "Kids Ethnic" }),
-          thumbnail: require("../../../assets/images/theni_anantham/deepavali_chit_banner.jpg"),
-        },
-        {
-          id: "chit_schemes",
-          name: t("deepavaliChit", { defaultValue: "தீபாவளி சீட்டு" }),
-          thumbnail: require("../../../assets/images/theni_anantham/scheme_rules_voucher.jpg"),
-        },
-      ]
+      {
+        id: "silk_sarees",
+        name: t("silkSarees", { defaultValue: "Silk Sarees" }),
+        thumbnail: require("../../../assets/images/theni_anantham/deepavali_chit_banner_1024x512.jpg"),
+      },
+      {
+        id: "wedding_silks",
+        name: t("weddingSilks", { defaultValue: "Bridal Wear" }),
+        thumbnail: require("../../../assets/images/theni_anantham/deepavali_chit_banner_1024x512.jpg"),
+      },
+      {
+        id: "mens_wear",
+        name: t("mensWear", { defaultValue: "Men's Silks" }),
+        thumbnail: require("../../../assets/images/theni_anantham/logo.png"),
+      },
+      {
+        id: "kids_festive",
+        name: t("kidsWear", { defaultValue: "Kids Ethnic" }),
+        thumbnail: require("../../../assets/images/theni_anantham/deepavali_chit_banner_1024x512.jpg"),
+      },
+      {
+        id: "chit_schemes",
+        name: t("deepavaliChit", { defaultValue: "தீபாவளி சீட்டு" }),
+        thumbnail: require("../../../assets/images/theni_anantham/scheme_rules_voucher.jpg"),
+      },
+    ]
     : [
-        {
-          id: "latest",
-          name: t("latest", { defaultValue: "Latest" }),
-          thumbnail: require("../../../assets/images/luxury_gold_ring.png"),
-        },
-        {
-          id: "offers",
-          name: t("offers", { defaultValue: "Offers" }),
-          thumbnail: require("../../../assets/images/gold_coin_badge.png"),
-        },
-        {
-          id: "new_arrivals",
-          name: t("newArrivals", { defaultValue: "New Arrivals" }),
-          thumbnail: require("../../../assets/images/slider.png"),
-        },
-        {
-          id: "festivals",
-          name: t("festivals", { defaultValue: "Festivals" }),
-          thumbnail: require("../../../assets/images/slider1.png"),
-        },
-        {
-          id: "schemes",
-          name: t("schemes.title", { defaultValue: "Schemes" }),
-          thumbnail: require("../../../assets/images/diamond_coin_badge.png"),
-        },
-      ];
+      {
+        id: "latest",
+        name: t("latest", { defaultValue: "Latest" }),
+        thumbnail: require("../../../assets/images/luxury_gold_ring.png"),
+      },
+      {
+        id: "offers",
+        name: t("offers", { defaultValue: "Offers" }),
+        thumbnail: require("../../../assets/images/gold_coin_badge.png"),
+      },
+      {
+        id: "new_arrivals",
+        name: t("newArrivals", { defaultValue: "New Arrivals" }),
+        thumbnail: require("../../../assets/images/slider.png"),
+      },
+      {
+        id: "festivals",
+        name: t("festivals", { defaultValue: "Festivals" }),
+        thumbnail: require("../../../assets/images/slider1.png"),
+      },
+      {
+        id: "schemes",
+        name: t("schemes.title", { defaultValue: "Schemes" }),
+        thumbnail: require("../../../assets/images/diamond_coin_badge.png"),
+      },
+    ];
 
   const storiesData: StoryItem[] = useMemo(() => {
     if (collections && collections.length > 0) {

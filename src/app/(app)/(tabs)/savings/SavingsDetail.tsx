@@ -1695,7 +1695,7 @@ const SavingsDetail = () => {
                 {giftDetails && giftDetails.status !== 'DELIVERED' && (
                   <TouchableOpacity
                     style={styles.collectGiftBtn}
-                    onPress={() => router.push('/(app)/gifts' as any)}
+                    onPress={() => router.push({ pathname: '/(app)/gifts', params: { from: '/(app)/(tabs)/savings' } } as any)}
                   >
                     <Text style={{ fontSize: 13 }}>🎁</Text>
                     <Text style={styles.collectGiftBtnText}>
