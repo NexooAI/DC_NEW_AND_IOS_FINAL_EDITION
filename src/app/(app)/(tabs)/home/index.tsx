@@ -1261,11 +1261,11 @@ export default function Home() {
             const images = data.posters.map((poster: Poster) => ({
               id: poster.id,
               image:
-                poster.image && poster.image.startsWith("http")
-                  ? poster.image
-                  : poster.image
-                    ? `${theme.baseUrl}${poster.image}`
-                    : "",
+                poster.image && typeof poster.image === "string" && poster.image.trim() !== ""
+                  ? poster.image.startsWith("http")
+                    ? poster.image
+                    : `${theme.baseUrl}${poster.image.startsWith("/") ? "" : "/"}${poster.image}`
+                  : require("../../../../../assets/images/slider.png"),
               title: poster.title || "",
             }));
             setSliderImages(images);
@@ -1486,11 +1486,11 @@ export default function Home() {
             if (cachedData?.data?.posters && cachedData.data.posters.length > 0) {
               setSliderImages((currentImages) => currentImages.length > 0 ? currentImages : cachedData.data.posters.map((poster: any) => ({
                 id: poster.id,
-                image: poster.image && poster.image.startsWith("http")
-                  ? poster.image
-                  : poster.image
-                    ? `${theme.baseUrl}${poster.image}`
-                    : "",
+                image: poster.image && typeof poster.image === "string" && poster.image.trim() !== ""
+                  ? poster.image.startsWith("http")
+                    ? poster.image
+                    : `${theme.baseUrl}${poster.image.startsWith("/") ? "" : "/"}${poster.image}`
+                  : require("../../../../../assets/images/slider.png"),
                 title: poster.title || "",
               })));
             }

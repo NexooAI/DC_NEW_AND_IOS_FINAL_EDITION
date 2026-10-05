@@ -20,6 +20,8 @@ interface PostersSliderProps {
   }>;
 }
 
+const DEFAULT_FALLBACK_POSTER = require("../../assets/images/slider.png");
+
 const PosterCard: React.FC<{
   item: any;
   index: number;
@@ -29,6 +31,22 @@ const PosterCard: React.FC<{
   theme: any;
 }> = ({ item, index, itemWidth, itemHeight, itemGap, theme }) => {
   const [loading, setLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
+
+  // Compute safe image source
+  const imageSource = React.useMemo(() => {
+    if (imageError || !item.image) {
+      return DEFAULT_FALLBACK_POSTER;
+    }
+    if (typeof item.image === "string") {
+      const trimmed = item.image.trim();
+      if (!trimmed || trimmed === "undefined" || trimmed === "null") {
+        return DEFAULT_FALLBACK_POSTER;
+      }
+      return { uri: trimmed };
+    }
+    return item.image;
+  }, [item.image, imageError]);
 
   return (
     <View
@@ -45,7 +63,7 @@ const PosterCard: React.FC<{
         },
       ]}
     >
-      {loading && (
+      {loading && !imageError && (
         <View
           style={[
             StyleSheet.absoluteFill,
@@ -60,18 +78,17 @@ const PosterCard: React.FC<{
         </View>
       )}
       <Image
-        source={
-          typeof item.image === "string"
-            ? { uri: item.image }
-            : item.image
-        }
+        source={imageSource}
         style={styles.image}
         resizeMode="stretch"
-        onLoadStart={() => setLoading(true)}
+        onLoadStart={() => {
+          if (!imageError) setLoading(true);
+        }}
         onLoadEnd={() => setLoading(false)}
-        onError={(error) => {
+        onError={(_error) => {
           setLoading(false);
-          logger.error("Poster image loading error:", error);
+          setImageError(true);
+          logger.warn("Poster image failed to load, fell back to default asset:", item?.image);
         }}
       />
     </View>

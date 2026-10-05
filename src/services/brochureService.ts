@@ -90,8 +90,9 @@ export async function downloadAndShareSchemeBrochure(
     // 3. If NO document exists in the backend:
     // Generate a support inquiry ticket with customer number and confirm delivery via WhatsApp
     const user = useGlobalStore.getState().user;
-    const userMobile = user?.mobile || user?.phone || user?.enternumber || '';
-    const userName = user?.name || user?.accountname || 'Customer';
+    const userAny = user as any;
+    const userMobile = user?.mobile || userAny?.phone || userAny?.enternumber || '';
+    const userName = user?.name || userAny?.accountname || 'Customer';
     const userEmail = user?.email || '';
 
     let ticketId: any = null;
