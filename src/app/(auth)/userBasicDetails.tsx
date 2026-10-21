@@ -374,6 +374,10 @@ export default function BasicDetailsForm() {
       try {
         const branchList = await fetchBranchesWithCache() || [];
         setBranches(branchList);
+        if (branchList.length === 1 && !selectedBranchId) {
+          setSelectedBranchId(Number(branchList[0].id));
+          setBranchError("");
+        }
       } catch (error) {
         logger.error("Error fetching branches for registration:", error);
       }
@@ -505,13 +509,18 @@ export default function BasicDetailsForm() {
   };
 
   const validateReferralCode = (value: string, shouldSetError = true) => {
-    if (value && value.length > 0 && value.length < 6) {
-      if (shouldSetError) setReferralError(t("referralCodeMustBe6Characters"));
-      return false;
+    if (!value || !value.trim()) {
+      if (shouldSetError) setReferralError("");
+      return true;
     }
-    if (value && !/^[A-Z0-9]{6}$/.test(value)) {
+    // Referral code is optional: validate format only for user guidance
+    if (value.length > 0 && value.length < 6) {
+      if (shouldSetError) setReferralError(t("referralCodeMustBe6Characters"));
+      return true;
+    }
+    if (!/^[A-Z0-9]{6}$/.test(value.trim())) {
       if (shouldSetError) setReferralError(t("invalidReferralCodeFormat"));
-      return false;
+      return true;
     }
     if (shouldSetError) setReferralError("");
     return true;
@@ -543,45 +552,10 @@ export default function BasicDetailsForm() {
     const isMobileValid = validateMobile(mobileInput);
     const isNameValid = validateName(name);
     const isEmailValid = validateEmail(email);
-    const isReferralValid = validateReferralCode(referralCode);
     const isBranchValid = validateBranch(selectedBranchId);
 
-    // If referral code is provided, it must be validated via API
-    if (referralCode && referralCode.length === 6 && !referralValidated) {
-      setReferralError(t("pleaseWaitForReferralCodeValidation"));
-      return false;
-    }
-
-    // If referral code is provided but validation failed, show error modal
-    if (
-      referralCode &&
-      referralCode.length === 6 &&
-      !referralValidated &&
-      referralValidationMessage
-    ) {
-      setReferralErrorMessage(
-        t("pleaseEnterValidReferralCodeOrRemove")
-      );
-      setReferralErrorModalVisible(true);
-      return false;
-    }
-
-    // If referral code is provided and validation failed, show error modal
-    if (
-      referralCode &&
-      referralCode.length === 6 &&
-      !referralValidated &&
-      referralError
-    ) {
-      setReferralErrorMessage(
-        t("pleaseEnterValidReferralCodeOrRemove")
-      );
-      setReferralErrorModalVisible(true);
-      return false;
-    }
-
-    const formValid =
-      isMobileValid && isNameValid && isEmailValid && isReferralValid && isBranchValid;
+    // Referral code is 100% OPTIONAL - it never blocks form validation!
+    const formValid = isMobileValid && isNameValid && isEmailValid && isBranchValid;
     setIsFormValid(formValid);
     return formValid;
   };
@@ -590,15 +564,10 @@ export default function BasicDetailsForm() {
     const isMobileValid = validateMobile(mobileInput, false);
     const isNameValid = validateName(name, false);
     const isEmailValid = validateEmail(email, false);
-    const isReferralValid = validateReferralCode(referralCode, false);
     const isBranchValid = validateBranch(selectedBranchId, false);
 
-    // Check referral validation status without showing errors
-    if (referralCode && referralCode.length === 6 && !referralValidated) {
-      return false;
-    }
-
-    const formValid = isMobileValid && isNameValid && isEmailValid && isReferralValid && isBranchValid;
+    // Referral code is 100% OPTIONAL
+    const formValid = isMobileValid && isNameValid && isEmailValid && isBranchValid;
     setIsFormValid(formValid);
     return formValid;
   };
@@ -627,9 +596,7 @@ export default function BasicDetailsForm() {
       errors.push("• Home Branch selection is required");
     }
 
-    if (referralCode && referralCode.length > 0 && referralCode.length < 6) {
-      errors.push("• Referral code must be 6 characters");
-    }
+    // Referral code is optional - do NOT put it in required errors list
 
     return errors.join("\n");
   };
@@ -655,6 +622,9 @@ export default function BasicDetailsForm() {
       return;
     }
 
+    // Referral code is strictly optional: only pass it if it was successfully validated
+    const effectiveReferralCode = (referralCode && referralValidated) ? referralCode.trim().toUpperCase() : "";
+
     // Navigate to MPIN page with user data as params
     router.push({
       pathname: "/(auth)/mpin",
@@ -662,7 +632,7 @@ export default function BasicDetailsForm() {
         name,
         email,
         mobile: mobileInput,
-        referral_code: referralCode,
+        referral_code: effectiveReferralCode,
         branch_id: selectedBranchId ? String(selectedBranchId) : "",
       },
     });
