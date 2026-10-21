@@ -33,6 +33,7 @@ import { useForceUpdate } from "@/hooks/useForceUpdate";
 import ForceUpdateScreen from "@/components/ForceUpdateScreen";
 import OfflineBanner from "@/components/OfflineBanner";
 import { hydrateCustomerData } from "@/services/hydrationService";
+import { checkTokenValidity } from "@/services/api";
 import { logger } from "@/utils/logger";
 
 const getSecureItemWithTimeout = async (key: string, timeoutMs = 1500): Promise<string | null> => {
@@ -305,7 +306,10 @@ export default function RootLayout() {
   useEffect(() => {
     const initializeUserData = async () => {
       try {
-        const token = await getSecureItemWithTimeout("authToken");
+        const token =
+          (await getSecureItemWithTimeout("authToken")) ||
+          (await getSecureItemWithTimeout("token")) ||
+          (await getSecureItemWithTimeout("accessToken"));
         const storedUserData = await AsyncStorage.getItem("userData");
 
         if (token && storedUserData) {
@@ -314,6 +318,13 @@ export default function RootLayout() {
             logger.auth("ðŸ” Layout: Found stored user data:", parsedUser);
 
             if (parsedUser.user_id) {
+              // Validate token before attempting to hydrate protected endpoints
+              const validToken = await checkTokenValidity();
+              if (!validToken) {
+                logger.warn("⚠️ [Layout] Stored token is invalid or expired. Skipping background hydration.");
+                return;
+              }
+
               updateUser({
                 id: parsedUser.user_id,
                 name: parsedUser.name,

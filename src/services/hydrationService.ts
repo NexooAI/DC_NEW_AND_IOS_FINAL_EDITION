@@ -3,6 +3,7 @@ import useGlobalStore from '@/store/global.store';
 import { preloadPosters } from '@/utils/mediaCache';
 import { logger } from '@/utils/logger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 let isHydrating = false;
 
@@ -25,6 +26,16 @@ export const hydrateCustomerData = async (
 
   if (!currentUserId) {
     logger.warn('⚠️ [Hydration] No userId available, skipping hydration');
+    return;
+  }
+
+  // Ensure user has an auth token before calling protected endpoints
+  const token = (await SecureStore.getItemAsync("token")) ||
+                (await SecureStore.getItemAsync("accessToken")) ||
+                (await SecureStore.getItemAsync("authToken"));
+
+  if (!token) {
+    logger.warn('⚠️ [Hydration] No auth token found in SecureStore, skipping protected hydration');
     return;
   }
 

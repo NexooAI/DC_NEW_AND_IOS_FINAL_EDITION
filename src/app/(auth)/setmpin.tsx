@@ -181,9 +181,12 @@ export default function SetMpinPage() {
         try {
           // Store all tokens securely like in login flow
           await SecureStore.setItemAsync("authToken", data.token);
-          await SecureStore.setItemAsync("accessToken", data.accessToken);
+          await SecureStore.setItemAsync("accessToken", data.accessToken || data.token);
           await SecureStore.setItemAsync("token", data.token);
-          await SecureStore.setItemAsync("refreshToken", data.refreshtoken);
+          const setMpinRefreshToken = data.refreshToken || data.refreshtoken;
+          if (setMpinRefreshToken) {
+            await SecureStore.setItemAsync("refreshToken", setMpinRefreshToken);
+          }
 
           // Store user data in AsyncStorage like in login flow
           await AsyncStorage.setItem("userData", JSON.stringify(data.user));

@@ -834,10 +834,10 @@ export default function MpinVerify() {
             data.accessToken || data.token
           );
           await SecureStore.setItemAsync("token", data.token);
-          await SecureStore.setItemAsync(
-            "refreshToken",
-            data.refreshtoken || ""
-          );
+          const mpinRefreshToken = data.refreshToken || data.refreshtoken;
+          if (mpinRefreshToken) {
+            await SecureStore.setItemAsync("refreshToken", mpinRefreshToken);
+          }
 
           // Store user data in AsyncStorage like in login flow
           await AsyncStorage.setItem("userData", JSON.stringify(data.user));

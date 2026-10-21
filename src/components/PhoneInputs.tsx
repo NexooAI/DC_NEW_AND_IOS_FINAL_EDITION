@@ -18,6 +18,7 @@ interface PhoneInputProps {
   disableBlurAlert?: boolean;
   label?: string;
   variant?: "default" | "line";
+  error?: string;
 }
 
 const PhoneInput: React.FC<PhoneInputProps> = ({
@@ -28,18 +29,21 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
   disableBlurAlert = false,
   label,
   variant = "default",
+  error: externalError,
 }) => {
   const theme = useAppTheme();
   styles = getStyles(theme, variant);
   const { t } = useTranslation();
-  const [error, setError] = useState("");
+  const [internalError, setInternalError] = useState("");
+
+  const activeError = externalError !== undefined ? externalError : internalError;
 
   const validateMobile = (text: string) => {
     const numericText = text.replace(/[^0-9]/g, "").slice(0, 10);
     onChangeText(numericText);
 
     if (numericText.length > 0) {
-      setError("");
+      setInternalError("");
     }
     if (numericText.length === 10) {
       Keyboard.dismiss();
@@ -53,18 +57,18 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
     }
 
     if (!value) {
-      setError(t("pleaseEnterMobile"));
+      setInternalError(t("pleaseEnterMobile"));
       Alert.alert(t("error"), t("pleaseEnterMobile"));
       return;
     }
 
     if (value.length !== 10) {
-      setError(t("validMobileNumber"));
+      setInternalError(t("validMobileNumber"));
       Alert.alert(t("error"), t("validMobileNumber"));
       return;
     }
 
-    setError("");
+    setInternalError("");
   };
 
   const displayLabel = label || t("mobileNumber");
@@ -73,7 +77,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
     <View style={styles.container}>
       <Text style={styles.label}>{displayLabel}</Text>
 
-      <View style={[styles.inputContainer, error && styles.errorContainer]}>
+      <View style={[styles.inputContainer, activeError ? styles.errorContainer : null]}>
         <View style={styles.countryCodeBox}>
           <Text style={styles.countryCodeText}>+91</Text>
         </View>
@@ -88,7 +92,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
           autoCapitalize="none"
           editable={!loading}
           maxLength={10}
-          style={[styles.input, error && styles.inputError]}
+          style={[styles.input, activeError ? styles.inputError : null]}
           scrollEnabled={false}
           multiline={false}
           numberOfLines={1}
@@ -102,7 +106,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
       <Text style={styles.counterText}>{value.length}/10</Text>
 
       {/* Error message */}
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {activeError ? <Text style={styles.errorText}>{activeError}</Text> : null}
     </View>
   );
 };

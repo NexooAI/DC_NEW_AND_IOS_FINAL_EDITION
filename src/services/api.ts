@@ -271,7 +271,9 @@ const isPublicEndpoint = (url: string | undefined): boolean => {
     '/auth/refresh-token',
     '/register/complete',
     '/version/verify-version',
-    '/branches'
+    '/branches',
+    '/intro-screens',
+    '/app-visible'
   ];
   return publicEndpoints.some(endpoint => url.includes(endpoint));
 };
@@ -285,6 +287,9 @@ const checkTokenValidity = async () => {
     let token = await getSecureItemWithTimeout("token");
     if (!token) {
       token = await getSecureItemWithTimeout("accessToken");
+    }
+    if (!token) {
+      token = await getSecureItemWithTimeout("authToken");
     }
 
     if (!token || typeof token !== 'string' || token.trim() === '') {
@@ -321,12 +326,14 @@ const checkTokenValidity = async () => {
             logger.log('🔄 Token expired, attempting refresh...');
             const response = await apiClient.post('/auth/refresh-token', { refreshToken });
             const newToken = response.data.token;
-            const newAccessToken = response.data.accessToken;
-            const newRefreshToken = response.data.refreshtoken;
+            const newAccessToken = response.data.accessToken || response.data.token;
+            const newRefreshToken = response.data.refreshToken || response.data.refreshtoken;
 
             await SecureStore.setItemAsync("token", newToken);
             await SecureStore.setItemAsync("accessToken", newAccessToken);
-            await SecureStore.setItemAsync("refreshToken", newRefreshToken);
+            if (newRefreshToken) {
+              await SecureStore.setItemAsync("refreshToken", newRefreshToken);
+            }
             await SecureStore.setItemAsync("authToken", newToken);
 
             logger.log('✅ Token refreshed successfully');
@@ -457,7 +464,12 @@ apiClient.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
         logger.log('✅ Auth token loaded & Authorization header configured');
       } else {
-        logger.log('❌ No token found in SecureStore');
+        const url = config.url || '';
+        if (isPublicEndpoint(url)) {
+          logger.log(`ℹ️ [Auth] Public endpoint called without token: ${url}`);
+        } else {
+          logger.warn(`⚠️ [Auth] Protected endpoint called without token in SecureStore: ${url}`);
+        }
       }
     } catch (error) {
       logger.error('Error setting authorization header:', error);
@@ -580,13 +592,15 @@ apiClient.interceptors.response.use(
 
         const response = await Promise.race([refreshPromise, timeoutPromise]) as any;
         const newToken = response.data.token;
-        const newAccessToken = response.data.accessToken;
-        const newRefreshToken = response.data.refreshtoken;
+        const newAccessToken = response.data.accessToken || response.data.token;
+        const newRefreshToken = response.data.refreshToken || response.data.refreshtoken;
 
         // Store new tokens
         await SecureStore.setItemAsync("token", newToken);
         await SecureStore.setItemAsync("accessToken", newAccessToken);
-        await SecureStore.setItemAsync("refreshToken", newRefreshToken);
+        if (newRefreshToken) {
+          await SecureStore.setItemAsync("refreshToken", newRefreshToken);
+        }
         await SecureStore.setItemAsync("authToken", newToken);
 
         logger.log('✅ Token refreshed successfully, resolving queued requests and retrying original');

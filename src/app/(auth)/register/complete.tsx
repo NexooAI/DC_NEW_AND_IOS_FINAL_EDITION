@@ -114,9 +114,12 @@ export default function CompleteRegistration() {
         try {
           // Store all tokens securely like in login flow
           await SecureStore.setItemAsync("authToken", data.token);
-          await SecureStore.setItemAsync("accessToken", data.accessToken);
+          await SecureStore.setItemAsync("accessToken", data.accessToken || data.token);
           await SecureStore.setItemAsync("token", data.token);
-          await SecureStore.setItemAsync("refreshToken", data.refreshtoken);
+          const regRefreshToken = data.refreshToken || data.refreshtoken;
+          if (regRefreshToken) {
+            await SecureStore.setItemAsync("refreshToken", regRefreshToken);
+          }
 
           // Store user data in AsyncStorage like in login flow
           await AsyncStorage.setItem("userData", JSON.stringify(data.user));

@@ -101,6 +101,8 @@ function getStyles(theme: any) { return StyleSheet.create({
     width: "80%",
     maxWidth: 400,
     alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: theme.colors.primary,
   },
   title: {
     fontSize: 20,

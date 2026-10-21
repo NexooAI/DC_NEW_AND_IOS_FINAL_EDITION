@@ -871,17 +871,20 @@ export default function Login() {
           try {
             // Store all tokens securely
             await SecureStore.setItemAsync("authToken", data.token);
-            await SecureStore.setItemAsync("accessToken", data.accessToken);
+            await SecureStore.setItemAsync("accessToken", data.accessToken || data.token);
             await SecureStore.setItemAsync("token", data.token);
-            await SecureStore.setItemAsync("refreshToken", data.refreshtoken);
+            const loginRefreshToken = data.refreshToken || data.refreshtoken;
+            if (loginRefreshToken) {
+              await SecureStore.setItemAsync("refreshToken", loginRefreshToken);
+            }
             await AsyncStorage.setItem("userData", JSON.stringify(data.user));
 
             // Log token storage for debugging
             logger.log("🔍 Login - Token stored successfully:", {
               authToken: data.token ? "STORED" : "MISSING",
-              accessToken: data.accessToken ? "STORED" : "MISSING",
+              accessToken: (data.accessToken || data.token) ? "STORED" : "MISSING",
               token: data.token ? "STORED" : "MISSING",
-              refreshToken: data.refreshtoken ? "STORED" : "MISSING",
+              refreshToken: loginRefreshToken ? "STORED" : "MISSING",
               userData: data.user ? "STORED" : "MISSING",
             });
 
@@ -1501,19 +1504,8 @@ export default function Login() {
                             loading={loading}
                             disableBlurAlert={isNavigatingToRegister}
                             variant="line"
+                            error={mobileError}
                           />
-                          {mobileError ? (
-                            <ResponsiveText
-                              variant="caption"
-                              size="sm"
-                              color={theme.colors.error}
-                              align="left"
-                              truncateMode="double"
-                              style={registerStyles.errorText}
-                            >
-                              {mobileError}
-                            </ResponsiveText>
-                          ) : null}
                         </View>
                         <ResponsiveButton
                           title={loading ? t("processing") : t("getOtp")}
