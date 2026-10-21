@@ -869,6 +869,17 @@ export const rewardsAPI = {
   getWalletInfo: async (userId: string | number) => {
     return apiClient.get(`/rewards/wallet?userId=${userId}`);
   },
+  getReferralRules: async () => {
+    try {
+      return await apiClient.get('/rewards/referral-investment-config', { skipLoading: true } as any);
+    } catch (e) {
+      try {
+        return await apiClient.get('/rewards/rules', { skipLoading: true } as any);
+      } catch (err2) {
+        return await apiClient.get('/rewards/referral-rules', { skipLoading: true } as any);
+      }
+    }
+  },
   redeemPoints: async (payload: { points: number; payment_method: string; payment_details: string; userId?: number | string }) => {
     return apiClient.post('/rewards/redeem', payload);
   }
