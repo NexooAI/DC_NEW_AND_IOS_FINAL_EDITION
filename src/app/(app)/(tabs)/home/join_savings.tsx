@@ -276,6 +276,8 @@ export default function JoinSavings() {
   const [isTyping, setIsTyping] = useState(false);
   const [inputValue, setInputValue] = useState("0");
   const [goldWeight, setGoldWeight] = useState(0);
+  const [isTypingWeight, setIsTypingWeight] = useState(false);
+  const [weightInputValue, setWeightInputValue] = useState("");
   const [goldRate, setGoldRate] = useState(5847); // Default fallback
   const [silverRate, setSilverRate] = useState(0);
 
@@ -286,10 +288,24 @@ export default function JoinSavings() {
 
   // Check if the current scheme is specifically a silver scheme
   const isSilverScheme = useMemo(() => {
-    const name = (parsedData?.name || parsedData?.SCHEMENAME || "").toLowerCase();
-    const type = (parsedData?.schemeType || parsedData?.type || "").toLowerCase();
-    const metal = (parsedData?.metal || "").toLowerCase();
-    return name.includes("silver") || name.includes("வெள்ளி") || type.includes("silver") || metal.includes("silver");
+    const name = (
+      typeof parsedData?.name === "string" ? parsedData.name :
+      (typeof parsedData?.name === "object" ? Object.values(parsedData.name).join(" ") : "") ||
+      (typeof parsedData?.SCHEMENAME === "string" ? parsedData.SCHEMENAME :
+      (typeof parsedData?.SCHEMENAME === "object" ? Object.values(parsedData.SCHEMENAME).join(" ") : "")) ||
+      ""
+    ).toLowerCase();
+    const type = String(parsedData?.schemeType || parsedData?.type || "").toLowerCase();
+    const metal = String(parsedData?.metal || parsedData?.metalType || parsedData?.metal_type || parsedData?.METATYPE || "").toLowerCase();
+    return (
+      name.includes("silver") ||
+      name.includes("வெள்ளி") ||
+      name.includes("வெண்டி") ||
+      name.includes("వెండి") ||
+      name.includes("चांदी") ||
+      type.includes("silver") ||
+      metal.includes("silver")
+    );
   }, [parsedData]);
 
   // State for max limit toast/banner warning
@@ -348,16 +364,23 @@ export default function JoinSavings() {
     return activeSlab ? Number(activeSlab.percentage) : 0;
   }, [activeSlab]);
 
+  const activeRate = useMemo(() => {
+    if (isSilverScheme) {
+      return silverRate > 0 ? silverRate : 95;
+    }
+    return goldRate > 0 ? goldRate : 5847;
+  }, [isSilverScheme, silverRate, goldRate]);
+
   const bonusAmount = useMemo(() => {
     if (activeBonusPercent <= 0 || amount <= 0) return 0;
     return Math.round(amount * (activeBonusPercent / 100));
   }, [amount, activeBonusPercent]);
 
   const bonusGoldWeight = useMemo(() => {
-    const rateToUse = isSilverScheme && silverRate > 0 ? silverRate : (goldRate > 0 ? goldRate : 5847);
+    const rateToUse = activeRate;
     if (bonusAmount <= 0 || rateToUse <= 0) return 0;
     return bonusAmount / rateToUse;
-  }, [bonusAmount, isSilverScheme, silverRate, goldRate]);
+  }, [bonusAmount, activeRate]);
 
   // State for collapsible KYC cards
   const [addressExpanded, setAddressExpanded] = useState(false);
@@ -490,6 +513,15 @@ export default function JoinSavings() {
       }));
     }
   }, [user]);
+
+  // Automatically sync weight when active metal rate loads or changes
+  useEffect(() => {
+    if (allowWeightCalc && activeRate > 0 && amount > 0 && !isTypingWeight) {
+      const w = calculateGoldWeight(amount);
+      setGoldWeight(w);
+      setWeightInputValue(String(w.toFixed(3)));
+    }
+  }, [activeRate, allowWeightCalc, isSilverScheme]);
 
   // Update amount when payment frequency changes
   // BUT: Don't reset if we have amount from calculator params
@@ -749,7 +781,8 @@ export default function JoinSavings() {
     // If amount exceeds max limit
     if (newAmount > maxAmount) {
       const maxGoldWeight = allowWeightCalc ? calculateGoldWeight(maxAmount) : 0;
-      setMaxLimitWarning(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')}`);
+      const metalUnit = isSilverScheme ? "silver" : "gold";
+      setMaxLimitWarning(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')} (max ${maxGoldWeight.toFixed(3)}g ${metalUnit})`);
       if (Platform.OS === 'android') {
         ToastAndroid.show(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')}`, ToastAndroid.SHORT);
       }
@@ -759,6 +792,7 @@ export default function JoinSavings() {
       setAmount(maxAmount);
       if (allowWeightCalc) {
         setGoldWeight(maxGoldWeight);
+        setWeightInputValue(String(maxGoldWeight.toFixed(3)));
       }
       handleChange("amount", String(maxAmount));
 
@@ -775,12 +809,13 @@ export default function JoinSavings() {
     const minAmount = getMinAmount();
     const validAmount = Math.min(maxAmount, newAmount);
 
-    // Calculate exact gold weight for the amount
+    // Calculate exact gold/silver weight for the amount
     const exactGoldWeight = allowWeightCalc ? calculateGoldWeight(validAmount) : 0;
 
     setAmount(validAmount);
     if (allowWeightCalc) {
       setGoldWeight(exactGoldWeight);
+      setWeightInputValue(String(exactGoldWeight.toFixed(3)));
     }
     handleChange("amount", String(validAmount));
 
@@ -822,7 +857,9 @@ export default function JoinSavings() {
     handleChange("amount", String(finalAmount));
 
     if (allowWeightCalc) {
-      setGoldWeight(calculateGoldWeight(finalAmount));
+      const calcW = calculateGoldWeight(finalAmount);
+      setGoldWeight(calcW);
+      setWeightInputValue(String(calcW.toFixed(3)));
     }
 
     // Update slider position
@@ -832,19 +869,27 @@ export default function JoinSavings() {
   };
 
   const calculateGoldWeight = (amt: number) => {
-    const rateToUse = isSilverScheme && silverRate > 0 ? silverRate : (goldRate > 0 ? goldRate : 5847);
+    const rateToUse = activeRate > 0 ? activeRate : 1;
     const weight = amt / rateToUse;
     return weight;
   };
 
   const calculateAmount = (weight: number) => {
-    const rateToUse = isSilverScheme && silverRate > 0 ? silverRate : (goldRate > 0 ? goldRate : 5847);
+    const rateToUse = activeRate > 0 ? activeRate : 1;
     return Math.round(weight * rateToUse);
   };
 
   const handleGoldWeightInput = (text: string) => {
+    setWeightInputValue(text);
     // Allow only numbers and one decimal point
     const numericValue = text.replace(/[^0-9.]/g, "");
+    if (!numericValue || numericValue === "." || numericValue === "0") {
+      setGoldWeight(0);
+      setAmount(0);
+      setInputValue("0");
+      handleChange("amount", "0");
+      return;
+    }
     const weight = parseFloat(numericValue) || 0;
     const maxAmount = getMaxAmount();
 
@@ -854,7 +899,8 @@ export default function JoinSavings() {
     // If amount would exceed max limit
     if (calculatedAmount > maxAmount) {
       const maxWeight = calculateGoldWeight(maxAmount);
-      setMaxLimitWarning(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')}`);
+      const metalUnit = isSilverScheme ? "silver" : "gold";
+      setMaxLimitWarning(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')} (max ${maxWeight.toFixed(3)}g ${metalUnit})`);
       if (Platform.OS === 'android') {
         ToastAndroid.show(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')}`, ToastAndroid.SHORT);
       }
@@ -862,6 +908,7 @@ export default function JoinSavings() {
       setGoldWeight(maxWeight);
       setAmount(maxAmount);
       setInputValue(String(maxAmount));
+      setWeightInputValue(String(maxWeight.toFixed(3)));
       handleChange("amount", String(maxAmount));
 
       // Update slider position for max amount
@@ -903,7 +950,9 @@ export default function JoinSavings() {
     handleChange("amount", String(newAmount));
 
     if (allowWeightCalc && (goldRate > 0 || silverRate > 0)) {
-      setGoldWeight(calculateGoldWeight(newAmount));
+      const calcW = calculateGoldWeight(newAmount);
+      setGoldWeight(calcW);
+      setWeightInputValue(String(calcW.toFixed(3)));
     }
 
     // Update slider position
@@ -923,7 +972,9 @@ export default function JoinSavings() {
     handleChange("amount", String(newAmount));
 
     if (allowWeightCalc && (goldRate > 0 || silverRate > 0)) {
-      setGoldWeight(calculateGoldWeight(newAmount));
+      const calcW = calculateGoldWeight(newAmount);
+      setGoldWeight(calcW);
+      setWeightInputValue(String(calcW.toFixed(3)));
     }
 
     // Update slider position
@@ -932,28 +983,32 @@ export default function JoinSavings() {
     sliderValue.setValue(Math.max(0, Math.min(1, sliderPosition)));
   };
 
-  // Handle gold weight increment (by 0.1g)
+  // Handle weight increment (1g for silver, 0.1g for gold)
   const handleGoldWeightIncrement = () => {
     const maxAmount = getMaxAmount();
-    const newWeight = goldWeight + 0.1;
+    const stepWeight = isSilverScheme ? 1 : 0.1;
+    const newWeight = Math.round((goldWeight + stepWeight) * 1000) / 1000;
     const calculatedAmount = calculateAmount(newWeight);
 
     // Check if calculated amount exceeds max
     if (calculatedAmount > maxAmount) {
       const maxWeight = calculateGoldWeight(maxAmount);
-      setMaxLimitWarning(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')}`);
+      const metalUnit = isSilverScheme ? "silver" : "gold";
+      setMaxLimitWarning(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')} (max ${maxWeight.toFixed(3)}g ${metalUnit})`);
       if (Platform.OS === 'android') {
         ToastAndroid.show(`Maximum allowed limit is ₹${maxAmount.toLocaleString('en-IN')}`, ToastAndroid.SHORT);
       }
       setGoldWeight(maxWeight);
       setAmount(maxAmount);
       setInputValue(String(maxAmount));
+      setWeightInputValue(String(maxWeight.toFixed(3)));
       handleChange("amount", String(maxAmount));
     } else {
       if (maxLimitWarning) setMaxLimitWarning(null);
       setGoldWeight(newWeight);
       setAmount(calculatedAmount);
       setInputValue(String(calculatedAmount));
+      setWeightInputValue(String(newWeight));
       handleChange("amount", String(calculatedAmount));
     }
 
@@ -962,17 +1017,19 @@ export default function JoinSavings() {
     sliderValue.setValue(Math.max(0, Math.min(1, sliderPosition)));
   };
 
-  // Handle gold weight decrement (by 0.1g)
+  // Handle weight decrement (1g for silver, 0.1g for gold)
   const handleGoldWeightDecrement = () => {
     const minAmount = getMinAmount();
     const maxAmount = getMaxAmount();
-    const newWeight = Math.max(0, goldWeight - 0.1);
+    const stepWeight = isSilverScheme ? 1 : 0.1;
+    const newWeight = Math.max(0, Math.round((goldWeight - stepWeight) * 1000) / 1000);
     const calculatedAmount = Math.max(minAmount, calculateAmount(newWeight));
 
     if (maxLimitWarning) setMaxLimitWarning(null);
     setGoldWeight(newWeight);
     setAmount(calculatedAmount);
     setInputValue(String(calculatedAmount));
+    setWeightInputValue(String(newWeight));
     handleChange("amount", String(calculatedAmount));
 
     const sliderPosition = (calculatedAmount - minAmount) / (maxAmount - minAmount);
@@ -1036,6 +1093,7 @@ export default function JoinSavings() {
       details: t("details"),
       summary: t("summary"),
       goldWeight: t("goldWeight"),
+      silverWeight: t("silverWeight") || "Silver Weight",
       goldLabel: t("goldLabel"),
       goldSymbol: t("goldSymbol"),
       goldRateToday: t("goldRateToday"),
@@ -1785,20 +1843,26 @@ export default function JoinSavings() {
               </View>
             )}
 
-            {/* Gold Weight Input Card - 2nd Row, 70% width, right-aligned */}
+            {/* Gold / Silver Weight Input Card - 2nd Row, 70% width, right-aligned */}
             {showWeightInput && (
               <View style={styles.goldCardRow}>
-                {/* Horizontal Line Behind Gold Card */}
-                <View style={styles.horizontalLineGold} />
+                {/* Horizontal Line Behind Card */}
+                <View style={isSilverScheme ? styles.horizontalLineSilver : styles.horizontalLineGold} />
 
-                <View style={[styles.inputCard, styles.goldCard, styles.zigzagCardRight]}>
+                <View style={[styles.inputCard, isSilverScheme ? styles.silverCard : styles.goldCard, styles.zigzagCardRight]}>
                   <View style={styles.cardHeader}>
                     <View style={styles.titleWithIcon}>
-                      <Ionicons name="diamond-outline" size={width < 350 ? 14 : 16} color="#FFD700" />
-                      <Text style={[styles.cardTitle, { color: '#FF8F00' }]}>{translations.goldWeight}</Text>
+                      <Ionicons
+                        name={isSilverScheme ? "sparkles" : "diamond-outline"}
+                        size={width < 350 ? 14 : 16}
+                        color={isSilverScheme ? "#94A3B8" : "#FFD700"}
+                      />
+                      <Text style={[styles.cardTitle, { color: isSilverScheme ? '#94A3B8' : '#FF8F00' }]}>
+                        {isSilverScheme ? (translations.silverWeight || "Silver Weight") : translations.goldWeight}
+                      </Text>
                     </View>
-                    <View style={[styles.amountBadge, styles.goldBadge]}>
-                      <Text style={[styles.amountBadgeText, { color: '#FF8F00' }]}>Grams</Text>
+                    <View style={[styles.amountBadge, isSilverScheme ? styles.silverBadge : styles.goldBadge]}>
+                      <Text style={[styles.amountBadgeText, { color: isSilverScheme ? '#94A3B8' : '#FF8F00' }]}>Grams</Text>
                     </View>
                   </View>
 
@@ -1806,39 +1870,51 @@ export default function JoinSavings() {
                     <View style={styles.goldInputWithButtons}>
                       <View style={styles.goldInputWrapper}>
                         <TextInput
-                          style={styles.goldInputLarge}
-                          value={formatGoldWeight(goldWeight).replace(" g", "")}
+                          style={[styles.goldInputLarge, isSilverScheme && styles.silverInputLarge]}
+                          value={isTypingWeight ? weightInputValue : (goldWeight > 0 ? formatGoldWeight(goldWeight).replace(" g", "") : "")}
                           onChangeText={handleGoldWeightInput}
+                          onFocus={() => {
+                            setIsTypingWeight(true);
+                            setWeightInputValue(goldWeight > 0 ? String(goldWeight) : "");
+                          }}
+                          onBlur={() => {
+                            setIsTypingWeight(false);
+                            if (goldWeight > 0) {
+                              setWeightInputValue(formatGoldWeight(goldWeight).replace(" g", ""));
+                            }
+                          }}
                           keyboardType="decimal-pad"
-                          maxLength={6}
+                          maxLength={10}
                           placeholder="0.000"
-                          placeholderTextColor="rgba(255, 215, 0, 0.5)"
+                          placeholderTextColor={isSilverScheme ? "rgba(148, 163, 184, 0.5)" : "rgba(255, 215, 0, 0.5)"}
                         />
-                        <Text style={styles.goldUnit}>grams</Text>
+                        <Text style={[styles.goldUnit, isSilverScheme && styles.silverUnit]}>grams</Text>
                       </View>
 
                       {/* Increment/Decrement Buttons - Right Side */}
                       <View style={styles.goldButtonsContainer}>
                         <TouchableOpacity
-                          style={styles.goldIncrementButton}
+                          style={[styles.goldIncrementButton, isSilverScheme && styles.silverIncrementButton]}
                           onPress={handleGoldWeightIncrement}
                           activeOpacity={0.7}
                         >
-                          <Ionicons name="add" size={width < 350 ? 14 : 16} color="#FF8F00" />
+                          <Ionicons name="add" size={width < 350 ? 14 : 16} color={isSilverScheme ? "#94A3B8" : "#FF8F00"} />
                         </TouchableOpacity>
                         <TouchableOpacity
-                          style={styles.goldDecrementButton}
+                          style={[styles.goldDecrementButton, isSilverScheme && styles.silverDecrementButton]}
                           onPress={handleGoldWeightDecrement}
                           activeOpacity={0.7}
                         >
-                          <Ionicons name="remove" size={width < 350 ? 14 : 16} color="#FF8F00" />
+                          <Ionicons name="remove" size={width < 350 ? 14 : 16} color={isSilverScheme ? "#94A3B8" : "#FF8F00"} />
                         </TouchableOpacity>
                       </View>
                     </View>
                   </View>
 
                   <View style={styles.cardFooter}>
-                    <Text style={[styles.hintText, { color: 'rgba(255, 143, 0, 0.7)' }]}>Gold weight in grams</Text>
+                    <Text style={[styles.hintText, { color: isSilverScheme ? 'rgba(148, 163, 184, 0.7)' : 'rgba(255, 143, 0, 0.7)' }]}>
+                      {isSilverScheme ? "Silver weight in grams" : "Gold weight in grams"}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -1878,13 +1954,15 @@ export default function JoinSavings() {
                 </View>
                 <View style={styles.bonusColDivider} />
                 <View style={styles.bonusValueCol}>
-                  <Text style={styles.bonusValueLabel}>Bonus Gold Weight</Text>
-                  <Text style={styles.bonusGoldText}>+{bonusGoldWeight.toFixed(3)}g</Text>
+                  <Text style={styles.bonusValueLabel}>{isSilverScheme ? "Bonus Silver Weight" : "Bonus Gold Weight"}</Text>
+                  <Text style={[styles.bonusGoldText, isSilverScheme && { color: '#94A3B8' }]}>+{bonusGoldWeight.toFixed(3)}g</Text>
                 </View>
               </View>
 
               <View style={styles.bonusTotalCreditedRow}>
-                <Text style={styles.bonusTotalLabel}>Total Gold Credited to Account:</Text>
+                <Text style={styles.bonusTotalLabel}>
+                  {isSilverScheme ? "Total Silver Credited to Account:" : "Total Gold Credited to Account:"}
+                </Text>
                 <Text style={styles.bonusTotalValue}>
                   {(goldWeight + bonusGoldWeight).toFixed(3)}g
                 </Text>
@@ -1958,7 +2036,9 @@ export default function JoinSavings() {
                       sliderValue.setValue(newValue);
                       setAmount(quickAmount);
                       if (showWeightInput) {
-                        setGoldWeight(calculateGoldWeight(quickAmount));
+                        const calcW = calculateGoldWeight(quickAmount);
+                        setGoldWeight(calcW);
+                        setWeightInputValue(String(calcW.toFixed(3)));
                       }
                       setInputValue(String(quickAmount));
                       handleChange("amount", String(quickAmount));
@@ -2713,6 +2793,11 @@ export default function JoinSavings() {
               bonusAmount: bonusAmount || 0,
               bonusPercentage: activeBonusPercent || 0,
               bonusGoldWeight: bonusGoldWeight || 0,
+              metalType: isSilverScheme ? "silver" : (parsedData?.metal || parsedData?.metalType || "gold"),
+              metal: isSilverScheme ? "silver" : (parsedData?.metal || parsedData?.metalType || "gold"),
+              isSilver: isSilverScheme,
+              silverRate: silverRate || 0,
+              goldRate: goldRate || 0,
               ...sanitizedApiData, // Only include sanitized fields
             };
 
@@ -2743,6 +2828,8 @@ export default function JoinSavings() {
                   goldWeight: goldWeight || 0,
                   bonusAmount: bonusAmount || 0,
                   bonusPercentage: activeBonusPercent || 0,
+                  metalType: isSilverScheme ? "silver" : "gold",
+                  isSilver: isSilverScheme,
                 };
                 userDetailsString = JSON.stringify(minimalUserDetails);
 
@@ -2780,6 +2867,11 @@ export default function JoinSavings() {
                 bonusGoldWeight: String(bonusGoldWeight || 0),
                 source: "join_savings",
                 interestSlabs: JSON.stringify(interestSlabs || []),
+                metalType: isSilverScheme ? "silver" : (parsedData?.metal || parsedData?.metalType || "gold"),
+                metal: isSilverScheme ? "silver" : (parsedData?.metal || parsedData?.metalType || "gold"),
+                isSilver: String(isSilverScheme),
+                silverRate: String(silverRate || 0),
+                goldRate: String(goldRate || 0),
                 userDetails: userDetailsString,
               },
             };
@@ -3085,23 +3177,27 @@ export default function JoinSavings() {
         // Set gold weight if available, otherwise calculate from amount (only if weight-based)
         const isWeightBased = parsedData?.savingType === "weight";
         if (isWeightBased) {
-          if (goldRate > 0 && weightToUse > 0) {
+          const currentRate = activeRate;
+          if (currentRate > 0 && weightToUse > 0) {
             setGoldWeight(weightToUse);
-          } else if (goldRate > 0) {
-            setGoldWeight(calculateGoldWeight(amountToUse));
+            setWeightInputValue(String(weightToUse));
+          } else if (currentRate > 0) {
+            const w = calculateGoldWeight(amountToUse);
+            setGoldWeight(w);
+            setWeightInputValue(String(w.toFixed(3)));
           } else {
-            // If gold rate not loaded yet, store weightToUse and calculate when goldRate loads
-            // This will be handled by the goldRate useEffect
             if (weightToUse > 0) {
               setGoldWeight(weightToUse);
+              setWeightInputValue(String(weightToUse));
             } else {
               setGoldWeight(0);
+              setWeightInputValue("0");
             }
           }
         }
       }
     }
-  }, [stepParam, amountParam, weightParam, calculatedAmountParam, calculatedWeightParam, goldRate]);
+  }, [stepParam, amountParam, weightParam, calculatedAmountParam, calculatedWeightParam, goldRate, silverRate, activeRate, isSilverScheme]);
 
   // Keep formData.amount in sync with amount state (especially when coming from calculator)
   useEffect(() => {
@@ -4559,6 +4655,17 @@ function getStyles(theme: any) {
       zIndex: 0,
       transform: [{ translateY: -1.5 }],
     },
+    horizontalLineSilver: {
+      position: 'absolute',
+      right: 0,
+      width: '70%',
+      top: '50%',
+      height: 3,
+      backgroundColor: '#CBD5E1',
+      opacity: 0.7,
+      zIndex: 0,
+      transform: [{ translateY: -1.5 }],
+    },
     zigzagCardLeft: {
       width: '70%',
       alignSelf: 'flex-start',
@@ -4688,6 +4795,10 @@ function getStyles(theme: any) {
       backgroundColor: '#FFF8E1',
       borderColor: '#FFECB3',
     },
+    silverCard: {
+      backgroundColor: '#F8FAFC',
+      borderColor: '#CBD5E1',
+    },
     fullWidthCard: {
       width: '90%',
       alignSelf: 'center',
@@ -4721,6 +4832,9 @@ function getStyles(theme: any) {
     },
     goldBadge: {
       backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    },
+    silverBadge: {
+      backgroundColor: 'rgba(148, 163, 184, 0.15)',
     },
     amountBadgeText: {
       fontSize: width < 350 ? 9 : 10,
@@ -4840,6 +4954,21 @@ function getStyles(theme: any) {
       shadowRadius: 4,
       elevation: 3,
     },
+    silverIncrementButton: {
+      width: width < 350 ? 28 : 32,
+      height: width < 350 ? 28 : 32,
+      borderRadius: width < 350 ? 14 : 16,
+      backgroundColor: 'rgba(148, 163, 184, 0.2)',
+      borderWidth: 1.5,
+      borderColor: '#94A3B8',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#94A3B8',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 3,
+    },
     goldDecrementButton: {
       width: width < 350 ? 28 : 32,
       height: width < 350 ? 28 : 32,
@@ -4850,6 +4979,21 @@ function getStyles(theme: any) {
       alignItems: 'center',
       justifyContent: 'center',
       shadowColor: '#FF8F00',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    silverDecrementButton: {
+      width: width < 350 ? 28 : 32,
+      height: width < 350 ? 28 : 32,
+      borderRadius: width < 350 ? 14 : 16,
+      backgroundColor: 'rgba(148, 163, 184, 0.2)',
+      borderWidth: 1.5,
+      borderColor: '#94A3B8',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#94A3B8',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.3,
       shadowRadius: 4,
@@ -4871,12 +5015,18 @@ function getStyles(theme: any) {
       textAlign: 'center',
       flexShrink: 1,
     },
+    silverInputLarge: {
+      color: '#64748B',
+    },
     goldUnit: {
       fontSize: width < 350 ? 11 : width < 400 ? 12 : 14,
       fontWeight: '600',
       color: '#FF8F00',
       marginLeft: width < 350 ? 4 : 6,
       opacity: 0.8,
+    },
+    silverUnit: {
+      color: '#64748B',
     },
     cardFooter: {
       marginTop: width < 350 ? 0 : 2,

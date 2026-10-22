@@ -46,17 +46,22 @@ const safeHaptic = (style: Haptics.ImpactFeedbackStyle) => {
   }
 };
 
+const SILVER_COIN_BADGE = require("../../../../assets/images/silver_coin_badge.png");
+const DIAMOND_COIN_BADGE = require("../../../../assets/images/diamond_coin_badge.png");
+const GOLD_ICON = require("../../../../assets/images/gold.png");
+const LUXURY_GOLD_COIN = require("../../../../assets/images/luxury_gold_coin.png");
+
 const getMetalIconSource = (metal: string) => {
   switch (metal) {
     case "silver":
-      return require("../../../../assets/images/silver_coin_badge.png");
+      return SILVER_COIN_BADGE;
     case "diamond":
-      return require("../../../../assets/images/diamond_coin_badge.png");
+      return DIAMOND_COIN_BADGE;
     case "old_gold":
-      return require("../../../../assets/images/gold.png");
+      return GOLD_ICON;
     case "gold":
     default:
-      return require("../../../../assets/images/luxury_gold_coin.png");
+      return LUXURY_GOLD_COIN;
   }
 };
 
@@ -977,6 +982,9 @@ export default function QuickJoinScreen() {
           branchId: enrollPayload.associated_branch,
           paymentFrequency: activeChit.PAYMENT_FREQUENCY || 'monthly',
           schemeType: selectedScheme.SCHEMETYPE || 'monthly',
+          metalType: getSchemeMetalType(selectedScheme),
+          metal: getSchemeMetalType(selectedScheme),
+          isSilver: getSchemeMetalType(selectedScheme) === "silver",
           isRetryAttempt: false,
           source: "quick_join",
         },
@@ -994,6 +1002,9 @@ export default function QuickJoinScreen() {
           chitId: String(activeChit.CHITID),
           schemeType: selectedScheme.SCHEMETYPE || 'monthly',
           savinsTypes: selectedScheme.savingType || (String(selectedScheme.SCHEMETYPE || "").toLowerCase() === "weight" ? "weight" : "amount"),
+          metalType: getSchemeMetalType(selectedScheme),
+          metal: getSchemeMetalType(selectedScheme),
+          isSilver: String(getSchemeMetalType(selectedScheme) === "silver"),
           userDetails: JSON.stringify(paymentSessionData.userDetails),
         },
       });
@@ -1165,6 +1176,7 @@ export default function QuickJoinScreen() {
                                 source={coinIcon}
                                 style={styles.schemeCoinImage}
                                 resizeMode="contain"
+                                fadeDuration={0}
                               />
                             </View>
                             <View style={styles.schemeNameWrapper}>

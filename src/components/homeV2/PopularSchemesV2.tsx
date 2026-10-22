@@ -12,10 +12,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { moderateScale } from "react-native-size-matters";
 import * as Haptics from "expo-haptics";
+import { Asset } from "expo-asset";
 import api from "@/services/api";
 import { useAppTheme } from "@/store/global.store";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useTranslation } from "@/hooks/useTranslation";
+
+// Module-level static image asset references (avoids repeated require lookups)
+const LUXURY_GOLD_COIN = require("../../../assets/images/luxury_gold_coin.png");
+const SILVER_COIN_BADGE = require("../../../assets/images/silver_coin_badge.png");
+const DIAMOND_COIN_BADGE = require("../../../assets/images/diamond_coin_badge.png");
+const GOLD_ICON = require("../../../assets/images/gold.png");
 
 export interface SchemeItem {
   id: string | number;
@@ -123,6 +130,18 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
   const [fetchedSchemes, setFetchedSchemes] = useState<any[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
 
+  // Pre-load coin and badge images into native memory cache for instant, zero-delay rendering
+  useEffect(() => {
+    try {
+      Asset.loadAsync([
+        LUXURY_GOLD_COIN,
+        SILVER_COIN_BADGE,
+        DIAMOND_COIN_BADGE,
+        GOLD_ICON,
+      ])?.catch?.(() => {});
+    } catch {}
+  }, []);
+
   useEffect(() => {
     if (!schemes || schemes.length === 0) {
       let isMounted = true;
@@ -209,7 +228,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
         id: "gold_savings",
         title: t("goldSavingsSchemeTitle", { defaultValue: "Gold Savings\nScheme" }),
         subtitle: t("goldSavingsSchemeSubtitle", { defaultValue: "Save gold for your golden future" }),
-        image: require("../../../assets/images/luxury_gold_coin.png"),
+        image: LUXURY_GOLD_COIN,
         type: "gold",
         metal: "gold",
         badgeIcon: "sparkles",
@@ -229,7 +248,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
         id: "silver_savings",
         title: t("silverSavingsSchemeTitle", { defaultValue: "Silver Savings\nScheme" }),
         subtitle: t("silverSavingsSchemeSubtitle", { defaultValue: "Small savings Big security" }),
-        image: require("../../../assets/images/silver_coin_badge.png"),
+        image: SILVER_COIN_BADGE,
         type: "silver",
         metal: "silver",
         badgeIcon: "disc-outline",
@@ -249,7 +268,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
         id: "diamond_savings",
         title: t("diamondSavingsSchemeTitle", { defaultValue: "Diamond Savings\nScheme" }),
         subtitle: t("diamondSavingsSchemeSubtitle", { defaultValue: "Sparkle with your savings" }),
-        image: require("../../../assets/images/diamond_coin_badge.png"),
+        image: DIAMOND_COIN_BADGE,
         type: "diamond",
         metal: "diamond",
         badgeIcon: "diamond-outline",
@@ -269,7 +288,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
         id: "platinum_savings",
         title: t("platinumSavingsSchemeTitle", { defaultValue: "Platinum Savings\nScheme" }),
         subtitle: t("platinumSavingsSchemeSubtitle", { defaultValue: "Precious metals for life" }),
-        image: require("../../../assets/images/luxury_gold_coin.png"),
+        image: LUXURY_GOLD_COIN,
         type: "platinum",
         metal: "platinum",
         badgeIcon: "shield-checkmark-outline",
@@ -289,7 +308,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
         id: "old_gold_savings",
         title: t("oldGoldSchemeTitle", { defaultValue: "Old Gold\nScheme" }),
         subtitle: t("oldGoldSchemeSubtitle", { defaultValue: "Convert old gold into savings" }),
-        image: require("../../../assets/images/gold.png"),
+        image: GOLD_ICON,
         type: "old_gold",
         metal: "old_gold",
         badgeIcon: "repeat-outline",
@@ -309,7 +328,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
         id: "gold_savings",
         title: t("goldSavingsSchemeTitle", { defaultValue: "Gold Savings\nScheme" }),
         subtitle: t("goldSavingsSchemeSubtitle", { defaultValue: "Save gold for your golden future" }),
-        image: require("../../../assets/images/luxury_gold_coin.png"),
+        image: LUXURY_GOLD_COIN,
         type: "gold",
         metal: "gold",
         badgeIcon: "sparkles",
@@ -504,6 +523,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
                   source={item.image}
                   style={styles.cardImage}
                   resizeMode="contain"
+                  fadeDuration={0}
                 />
               </View>
 

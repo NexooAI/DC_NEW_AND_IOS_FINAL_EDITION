@@ -35,6 +35,7 @@ import OfflineBanner from "@/components/OfflineBanner";
 import { hydrateCustomerData } from "@/services/hydrationService";
 import { checkTokenValidity } from "@/services/api";
 import { logger } from "@/utils/logger";
+import { Asset } from "expo-asset";
 
 const getSecureItemWithTimeout = async (key: string, timeoutMs = 1500): Promise<string | null> => {
   return new Promise((resolve) => {
@@ -94,6 +95,20 @@ export default function RootLayout() {
     }
     prevIsLoggedInRef.current = isLoggedIn;
   }, [isLoggedIn]);
+
+  // Pre-load essential badge and coin images into native memory cache on startup for instant rendering
+  useEffect(() => {
+    try {
+      Asset.loadAsync([
+        require("../../assets/images/luxury_gold_coin.png"),
+        require("../../assets/images/silver_coin_badge.png"),
+        require("../../assets/images/gold_coin_badge.png"),
+        require("../../assets/images/diamond_coin_badge.png"),
+        require("../../assets/images/gold.png"),
+        require("../../assets/images/silver.png"),
+      ])?.catch?.(() => {});
+    } catch {}
+  }, []);
 
   const notificationResponseRef = useRef<any>(null);
   const isNavigationReady = useRef(false);

@@ -135,11 +135,18 @@ export default function PaymentNewOverView() {
     Number(params.amount) || 0
   );
 
-  const [goldRate, setGoldRate] = useState(0);
-  const [silverRate, setSilverRate] = useState(0);
+  const [goldRate, setGoldRate] = useState(
+    Number(params.goldRate) || 0
+  );
+  const [silverRate, setSilverRate] = useState(
+    Number(params.silverRate) || 0
+  );
   const [fetchedSlabs, setFetchedSlabs] = useState<any[]>([]);
   const [showAllSlabs, setShowAllSlabs] = useState(true);
-  const [weightPerGram, setWeightPerGram] = useState(0);
+  const [weightPerGram, setWeightPerGram] = useState(
+    Number(params.goldWeight) || 0
+  );
+  const [schemeMetal, setSchemeMetal] = useState<string>("");
   const [isEditingAmount, setIsEditingAmount] = useState(false);
   const [amountError, setAmountError] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -605,13 +612,19 @@ export default function PaymentNewOverView() {
       const { fetchGoldRatesWithCache } = await import("@/utils/apiCache");
       const rateData = await fetchGoldRatesWithCache();
       if (isMountedRef.current && rateData) {
+        let gRate = 0;
+        let sRate = 0;
         if (rateData.gold_rate) {
-          const rate = Number(rateData.gold_rate);
-          setGoldRate(rate);
-          calculateWeightPerGram(currentAmount, rate);
+          gRate = Number(rateData.gold_rate);
+          setGoldRate(gRate);
         }
         if (rateData.silver_rate) {
-          setSilverRate(Number(rateData.silver_rate));
+          sRate = Number(rateData.silver_rate);
+          setSilverRate(sRate);
+        }
+        const activeRate = isSilverScheme && sRate > 0 ? sRate : (gRate > 0 ? gRate : sRate);
+        if (activeRate > 0) {
+          calculateWeightPerGram(currentAmount, activeRate);
         }
       }
     } catch (error) {
@@ -620,10 +633,11 @@ export default function PaymentNewOverView() {
     }
   };
 
-  // Calculate weight per gram based on amount and gold rate
-  const calculateWeightPerGram = (amount: number, rate: number) => {
-    if (rate > 0 && !isNaN(rate) && isFinite(rate) && amount >= 0) {
-      const weight = amount / rate;
+  // Calculate weight per gram based on amount and metal rate
+  const calculateWeightPerGram = (amount: number, rate?: number) => {
+    const rateToUse = rate && rate > 0 ? rate : effectiveRate;
+    if (rateToUse > 0 && !isNaN(rateToUse) && isFinite(rateToUse) && amount >= 0) {
+      const weight = amount / rateToUse;
       if (isFinite(weight) && !isNaN(weight)) {
         setWeightPerGram(weight);
       }
@@ -641,7 +655,7 @@ export default function PaymentNewOverView() {
 
     if (newAmount < minAmount) {
       setCurrentAmount(minAmount);
-      calculateWeightPerGram(minAmount, goldRate);
+      calculateWeightPerGram(minAmount, effectiveRate);
       setAmountError(
         limitType === "user"
           ? `User-specific minimum amount allowed is ₹${minAmount.toLocaleString('en-IN')}`
@@ -649,11 +663,11 @@ export default function PaymentNewOverView() {
       );
     } else if (newAmount >= minAmount && newAmount <= maxAmount) {
       setCurrentAmount(newAmount);
-      calculateWeightPerGram(newAmount, goldRate);
+      calculateWeightPerGram(newAmount, effectiveRate);
       setAmountError(""); // Clear any previous error
     } else if (newAmount > maxAmount) {
       setCurrentAmount(maxAmount);
-      calculateWeightPerGram(maxAmount, goldRate);
+      calculateWeightPerGram(maxAmount, effectiveRate);
       setAmountError(
         limitType === "user"
           ? `User-specific maximum amount allowed is ₹${maxAmount.toLocaleString('en-IN')}`
@@ -673,7 +687,7 @@ export default function PaymentNewOverView() {
 
     if (amount < minAmount) {
       setCurrentAmount(minAmount);
-      calculateWeightPerGram(minAmount, goldRate);
+      calculateWeightPerGram(minAmount, effectiveRate);
       setAmountError(
         limitType === "user"
           ? `User-specific minimum amount allowed is ₹${minAmount.toLocaleString('en-IN')}`
@@ -681,7 +695,7 @@ export default function PaymentNewOverView() {
       );
     } else if (amount > maxAmount) {
       setCurrentAmount(maxAmount);
-      calculateWeightPerGram(maxAmount, goldRate);
+      calculateWeightPerGram(maxAmount, effectiveRate);
       setAmountError(
         limitType === "user"
           ? `User-specific maximum amount allowed is ₹${maxAmount.toLocaleString('en-IN')}`
@@ -689,7 +703,7 @@ export default function PaymentNewOverView() {
       );
     } else {
       setCurrentAmount(amount);
-      calculateWeightPerGram(amount, goldRate);
+      calculateWeightPerGram(amount, effectiveRate);
       setAmountError("");
     }
   };
@@ -767,18 +781,22 @@ export default function PaymentNewOverView() {
   useEffect(() => {
     const fetchSlabsIfNeeded = async () => {
       const schemeId = params.schemeId || userDetails?.schemeId;
-      if (!schemeId || rawSlabs.length > 0) return;
+      if (!schemeId) return;
       try {
         const res = await api.get(`/schemes/${schemeId}`);
         const data = res?.data?.data || res?.data;
-        const s = data?.interest_slabs || data?.interest_slab || data?.interestSlabs;
-        if (Array.isArray(s) && s.length > 0) {
-          setFetchedSlabs(s);
-        } else if (typeof s === "string") {
-          try {
-            const parsed = JSON.parse(s);
-            if (Array.isArray(parsed)) setFetchedSlabs(parsed);
-          } catch {}
+        const metal = data?.metal || data?.metal_type || data?.metalType || "";
+        if (metal) setSchemeMetal(metal);
+        if (rawSlabs.length === 0) {
+          const s = data?.interest_slabs || data?.interest_slab || data?.interestSlabs;
+          if (Array.isArray(s) && s.length > 0) {
+            setFetchedSlabs(s);
+          } else if (typeof s === "string") {
+            try {
+              const parsed = JSON.parse(s);
+              if (Array.isArray(parsed)) setFetchedSlabs(parsed);
+            } catch {}
+          }
         }
       } catch (err) {
         logger.warn("Could not fetch scheme bonus slabs:", err);
@@ -798,15 +816,70 @@ export default function PaymentNewOverView() {
 
   // Metal type detection
   const isSilverScheme = useMemo(() => {
-    const name = String(params.schemeName || userDetails?.schemeName || "").toLowerCase();
-    const type = String(params.metalType || userDetails?.metalType || "").toLowerCase();
-    return name.includes("silver") || name.includes("வெள்ளி") || type.includes("silver");
-  }, [params.schemeName, userDetails?.schemeName, params.metalType, userDetails?.metalType]);
+    const name = String(
+      params.schemeName ||
+      userDetails?.schemeName ||
+      (userDetails as any)?.schemename ||
+      ""
+    ).toLowerCase();
+    const type = String(
+      params.metalType ||
+      params.metal ||
+      params.metal_type ||
+      userDetails?.metalType ||
+      userDetails?.metal ||
+      (userDetails as any)?.metal_type ||
+      schemeMetal ||
+      ""
+    ).toLowerCase();
+    const isSilverFlag =
+      String(params.isSilver) === "true" ||
+      (userDetails as any)?.isSilver === true ||
+      (userDetails as any)?.isSilver === "true";
+    return (
+      isSilverFlag ||
+      name.includes("silver") ||
+      name.includes("வெள்ளி") ||
+      name.includes("வெண்டி") ||
+      name.includes("వెండి") ||
+      name.includes("चांदी") ||
+      type.includes("silver")
+    );
+  }, [
+    params.schemeName,
+    userDetails?.schemeName,
+    (userDetails as any)?.schemename,
+    params.metalType,
+    params.metal,
+    params.metal_type,
+    params.isSilver,
+    userDetails?.metalType,
+    userDetails?.metal,
+    (userDetails as any)?.metal_type,
+    (userDetails as any)?.isSilver,
+    schemeMetal,
+  ]);
 
   const effectiveRate = useMemo(() => {
     if (isSilverScheme && silverRate > 0) return silverRate;
-    return goldRate > 0 ? goldRate : 0;
+    if (!isSilverScheme && goldRate > 0) return goldRate;
+    return silverRate > 0 ? silverRate : (goldRate > 0 ? goldRate : 0);
   }, [isSilverScheme, silverRate, goldRate]);
+
+  // Automatically sync weightPerGram whenever currentAmount or effectiveRate changes
+  useEffect(() => {
+    if (effectiveRate > 0 && currentAmount >= 0) {
+      const weight = currentAmount / effectiveRate;
+      if (isFinite(weight) && !isNaN(weight)) {
+        setWeightPerGram(weight);
+      }
+    }
+  }, [currentAmount, effectiveRate]);
+
+  const isWeightScheme = useMemo(() => {
+    const st = String(params.savinsTypes || params.savingType || userDetails?.savingType || "").toLowerCase();
+    return st === "weight" || Boolean(Number(params.goldWeight) > 0);
+  }, [params.savinsTypes, params.savingType, userDetails?.savingType, params.goldWeight]);
 
   // Days elapsed since enrollment
   const currentDay = useMemo(() => {
@@ -898,10 +971,10 @@ export default function PaymentNewOverView() {
           // Set current amount to min/max if out of bounds
           if (currentAmount < min) {
             setCurrentAmount(min);
-            calculateWeightPerGram(min, goldRate);
+            calculateWeightPerGram(min, effectiveRate);
           } else if (currentAmount > max) {
             setCurrentAmount(max);
-            calculateWeightPerGram(max, goldRate);
+            calculateWeightPerGram(max, effectiveRate);
           }
           logger.log("Hybrid dynamic range limits set (Fixed Phase):", { min, max });
         } else {
@@ -911,7 +984,7 @@ export default function PaymentNewOverView() {
         fetchAmountLimits();
       }
     }
-  }, [params.schemeId, isFlexi, isHybrid, hybridStatus, goldRate, paymentType]);
+  }, [params.schemeId, isFlexi, isHybrid, hybridStatus, effectiveRate, paymentType]);
 
   const fetchTermsAndConditions = async () => {
     try {
@@ -1359,7 +1432,11 @@ export default function PaymentNewOverView() {
             orderId: orderId, // Add orderId to params
             amount: currentAmount.toString(),
             schemeName: schemeName,
-            goldRate: goldRate.toString(),
+            goldRate: (effectiveRate > 0 ? effectiveRate : goldRate).toString(),
+            silverRate: silverRate.toString(),
+            rate: (effectiveRate > 0 ? effectiveRate : goldRate).toString(),
+            metalType: isSilverScheme ? "silver" : (params.metalType || "gold"),
+            isSilver: isSilverScheme ? "true" : "false",
             maturityDate: params.maturityDate ? params.maturityDate.toString() : "",
             joiningDate: params.joiningDate ? params.joiningDate.toString() : "",
             userDetails: JSON.stringify({
@@ -1367,7 +1444,11 @@ export default function PaymentNewOverView() {
               amount: currentAmount,
               orderId: orderId, // Include orderId in userDetails
               schemeName: schemeName,
-              goldRate: goldRate,
+              goldRate: isSilverScheme ? (silverRate || effectiveRate) : goldRate,
+              silverRate: silverRate,
+              rate: effectiveRate > 0 ? effectiveRate : goldRate,
+              metalType: isSilverScheme ? "silver" : (params.metalType || "gold"),
+              isSilver: isSilverScheme,
               maturityDate: params.maturityDate || "",
               joiningDate: params.joiningDate || "",
               // investmentId: params.investmentId,
@@ -1420,7 +1501,11 @@ export default function PaymentNewOverView() {
             orderId: orderId,
             amount: currentAmount.toString(),
             schemeName: schemeName,
-            goldRate: goldRate.toString(),
+            goldRate: (effectiveRate > 0 ? effectiveRate : goldRate).toString(),
+            silverRate: silverRate.toString(),
+            rate: (effectiveRate > 0 ? effectiveRate : goldRate).toString(),
+            metalType: isSilverScheme ? "silver" : (params.metalType || "gold"),
+            isSilver: isSilverScheme ? "true" : "false",
             maturityDate: params.maturityDate ? params.maturityDate.toString() : "",
             joiningDate: params.joiningDate ? params.joiningDate.toString() : "",
             userDetails: JSON.stringify({
@@ -1428,7 +1513,11 @@ export default function PaymentNewOverView() {
               amount: currentAmount,
               orderId: orderId,
               schemeName: schemeName,
-              goldRate: goldRate,
+              goldRate: isSilverScheme ? (silverRate || effectiveRate) : goldRate,
+              silverRate: silverRate,
+              rate: effectiveRate > 0 ? effectiveRate : goldRate,
+              metalType: isSilverScheme ? "silver" : (params.metalType || "gold"),
+              isSilver: isSilverScheme,
               maturityDate: params.maturityDate || "",
               joiningDate: params.joiningDate || "",
               userId: userDetails.userId || user?.id,
@@ -1544,9 +1633,9 @@ export default function PaymentNewOverView() {
                     <Text style={styles.amountValue}>{formattedAmount}</Text>
                   </Animated.View>
                 )}
-                {(params.savinsTypes)?.toString().toLowerCase() === "weight" && (
+                {isWeightScheme && (
                   <Text style={styles.weightText}>
-                    {formattedWeight} grams (₹{(goldRate && !isNaN(goldRate) ? Number(goldRate).toFixed(2) : "0.00")}/gram)
+                    {formattedWeight} grams (₹{(effectiveRate && !isNaN(effectiveRate) ? Number(effectiveRate).toFixed(2) : "0.00")}/gram)
                   </Text>
                 )}
                 {amountError ? (
@@ -1651,9 +1740,11 @@ export default function PaymentNewOverView() {
             </View>
             <View style={styles.amountDisplay}>
               <Text style={styles.amountValue}>{formattedAmount}</Text>
-              {(params.savinsTypes)?.toString().toLowerCase() === "weight" && <Text style={styles.weightText}>
-                {formattedWeight} grams (₹{(goldRate && !isNaN(goldRate) ? Number(goldRate).toFixed(2) : "0.00")}/gram)
-              </Text>}
+              {isWeightScheme && (
+                <Text style={styles.weightText}>
+                  {formattedWeight} grams (₹{(effectiveRate && !isNaN(effectiveRate) ? Number(effectiveRate).toFixed(2) : "0.00")}/gram)
+                </Text>
+              )}
             </View>
           </LinearGradient>
         )}
@@ -1739,12 +1830,12 @@ export default function PaymentNewOverView() {
                   </Text>
                 </View>
 
-                {/* 2. Bonus Gold Weight */}
+                {/* 2. Bonus Gold/Silver Weight */}
                 <View style={styles.bonusMetricCard}>
                   <View style={styles.metricIconLabelRow}>
                     <FontAwesome5 name="coins" size={12} color="#D97706" />
                     <Text style={styles.bonusMetricLabel}>
-                      {t("bonusGold")}
+                      {isSilverScheme ? (t("bonusSilver") || "Bonus Silver") : t("bonusGold")}
                     </Text>
                   </View>
                   <Text style={styles.bonusWeightValue}>
@@ -1756,11 +1847,11 @@ export default function PaymentNewOverView() {
                 </View>
               </View>
 
-              {/* Total Gold Credited Row */}
+              {/* Total Gold/Silver Credited Row */}
               <View style={styles.totalGoldRow}>
                 <View style={styles.totalGoldLeft}>
                   <Text style={styles.totalGoldTitle}>
-                    {t("totalGoldCredited")}
+                    {isSilverScheme ? (t("totalSilverCredited") || "Total Silver Credited") : t("totalGoldCredited")}
                   </Text>
                   <Text style={styles.totalGoldFormula}>
                     {`${t("base")}: ${bonusCalculations.baseWeight.toFixed(3)}g + ${t("bonus")}: ${bonusCalculations.bonusWeight.toFixed(3)}g`}
@@ -2016,15 +2107,17 @@ export default function PaymentNewOverView() {
             >
               <View style={styles.schemeDetailsRow}>
                 <Text style={styles.schemeDetailLabel}>Metal Type:</Text>
-                <Text style={styles.schemeDetailValue}>{params.metalType || "N/A"}</Text>
+                <Text style={styles.schemeDetailValue}>
+                  {isSilverScheme ? (t("silver") || "Silver") : (params.metalType || "Gold")}
+                </Text>
               </View>
               <View style={styles.schemeDetailsRow}>
                 <Text style={styles.schemeDetailLabel}>Booked Weight:</Text>
-                <Text style={styles.schemeDetailValue}>{params.goldWeight || "0"} grams</Text>
+                <Text style={styles.schemeDetailValue}>{formattedWeight || params.goldWeight || "0"} grams</Text>
               </View>
               <View style={styles.schemeDetailsRow}>
                 <Text style={styles.schemeDetailLabel}>Rate Per Gram:</Text>
-                <Text style={styles.schemeDetailValue}>₹{Number(params.ratePerGram || 0).toLocaleString("en-IN")}/g</Text>
+                <Text style={styles.schemeDetailValue}>₹{Number(params.ratePerGram || effectiveRate || 0).toLocaleString("en-IN")}/g</Text>
               </View>
               <View style={styles.schemeDetailsRow}>
                 <Text style={styles.schemeDetailLabel}>Total Metal Value:</Text>

@@ -393,6 +393,9 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
           schemeType: parseSchemes.schemeTypeName || "Fixed",
           source: "savings_index",
           savinsTypes: parseSchemes.schemeType || "amount",
+          metalType: getLocalizedText(item.metalType).toLowerCase(),
+          metal: getLocalizedText(item.metalType).toLowerCase(),
+          isSilver: String(getLocalizedText(item.metalType).toLowerCase() === "silver"),
           hybridStatus: hybridStatus ? JSON.stringify(hybridStatus) : "",
           userDetails: JSON.stringify({
             amount: item.emiAmount?.toString() || "0",
@@ -403,6 +406,9 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
             schemeId: response?.data?.data?.schemeId || item.schemeCode || "",
             schemeType: parseSchemes.schemeTypeName || "Fixed",
             schemeName: getLocalizedText(item.schemeName) || "",
+            metalType: getLocalizedText(item.metalType).toLowerCase(),
+            metal: getLocalizedText(item.metalType).toLowerCase(),
+            isSilver: getLocalizedText(item.metalType).toLowerCase() === "silver",
             paymentFrequency:
               parseSchemes.paymentFrequencyName ||
               getLocalizedText(item.schemesData?.paymentFrequencyName) ||

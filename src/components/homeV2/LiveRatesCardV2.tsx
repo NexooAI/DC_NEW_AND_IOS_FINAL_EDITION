@@ -13,6 +13,9 @@ import { moderateScale } from "react-native-size-matters";
 import { formatChangeValue, RateChangeInfo } from "@/utils/rateComparison";
 import { useTranslation } from "@/hooks/useTranslation";
 
+const GOLD_ICON = require("../../../assets/images/gold.png");
+const SILVER_ICON = require("../../../assets/images/silver.png");
+
 export interface LiveRatesCardV2Props {
   goldRate?: string | number;
   silverRate?: string | number;
@@ -128,9 +131,10 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
         >
           <View style={styles.topRow}>
             <Image
-              source={require("../../../assets/images/gold.png")}
+              source={GOLD_ICON}
               style={styles.icon}
               resizeMode="contain"
+              fadeDuration={0}
             />
             <View style={styles.rateHeaderContainer}>
               <Text style={styles.rateType}>
@@ -174,9 +178,10 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
         >
           <View style={styles.topRow}>
             <Image
-              source={require("../../../assets/images/silver.png")}
+              source={SILVER_ICON}
               style={styles.icon}
               resizeMode="contain"
+              fadeDuration={0}
             />
             <View style={styles.rateHeaderContainer}>
               <Text style={styles.rateType}>{t("silverRate", { defaultValue: "Silver Rate" })}</Text>

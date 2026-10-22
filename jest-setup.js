@@ -36,7 +36,7 @@ jest.mock('expo-modules-core', () => ({
 // Mock Expo Asset
 jest.mock('expo-asset', () => ({
     Asset: {
-        loadAsync: jest.fn(),
+        loadAsync: jest.fn(() => Promise.resolve([])),
         fromModule: jest.fn(() => ({ uri: 'test-uri', localUri: 'test-local-uri', downloadAsync: jest.fn() })),
     },
     useAssets: jest.fn(() => [[], undefined]),
@@ -225,10 +225,22 @@ jest.mock('@/utils/logger', () => ({
     }
 }));
 
+// Mock Expo Clipboard
+jest.mock('expo-clipboard', () => ({
+    getStringAsync: jest.fn(() => Promise.resolve('')),
+    setStringAsync: jest.fn(() => Promise.resolve()),
+    hasStringAsync: jest.fn(() => Promise.resolve(false)),
+}));
+
 // Mock Language Hooks & Context
 jest.mock('@/hooks/useTranslation', () => ({
     useTranslation: () => ({
-        t: (key) => key,
+        t: (key, options) => {
+            if (options && typeof options === 'object' && options.defaultValue !== undefined) {
+                return options.defaultValue;
+            }
+            return key;
+        },
         locale: 'en',
         setLocale: jest.fn(),
         supportedLocales: ['en', 'ta', 'te', 'hi', 'mal'],

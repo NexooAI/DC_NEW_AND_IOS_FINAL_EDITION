@@ -41,7 +41,7 @@ describe('E2E Payment Flow: My Schemes -> Pay Now', () => {
         pendingInstallments: 1, 
         monthsPaid: 1,
         emiAmount: 5000,
-        maturityDate: '2025-05-01',
+        maturityDate: '2030-05-01',
         goldWeight: 10.5,
         accountHolder: 'Test User',
         accNo: '123456789',

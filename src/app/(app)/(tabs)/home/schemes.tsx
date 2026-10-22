@@ -40,7 +40,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { logger } from "@/utils/logger";
 const { width, height } = Dimensions.get("window");
 import * as Haptics from "expo-haptics";
+import { Asset } from "expo-asset";
 import { COLORS } from "@/constants/colors";
+
+// Static module-level asset references for zero-delay instant rendering
+const SILVER_COIN_BADGE = require("../../../../../assets/images/silver_coin_badge.png");
+const DIAMOND_COIN_BADGE = require("../../../../../assets/images/diamond_coin_badge.png");
+const GOLD_COIN_BADGE = require("../../../../../assets/images/gold_coin_badge.png");
 
 interface Chit {
   CHITID: number | null | undefined;
@@ -494,6 +500,17 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     }
     return metals;
   }, [allSchemes]);
+
+  // Pre-load scheme coin badges into native memory cache for instant, zero-delay rendering
+  useEffect(() => {
+    try {
+      Asset.loadAsync([
+        SILVER_COIN_BADGE,
+        DIAMOND_COIN_BADGE,
+        GOLD_COIN_BADGE,
+      ])?.catch?.(() => {});
+    } catch {}
+  }, []);
 
   useEffect(() => {
     if (!allSchemes || allSchemes.length === 0) return;
@@ -1068,6 +1085,8 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         timestamp: new Date().toISOString(),
         savingType: item.savingType || (item.SCHEMETYPE?.toLowerCase() === "weight" ? "weight" : "amount"),
         interest_slabs: getSchemeInterestSlabs(item),
+        metal: getSchemeMetalType(item),
+        metalType: getSchemeMetalType(item),
       };
 
       await AsyncStorage.setItem(
@@ -1376,12 +1395,12 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
       metalBg = "rgba(245, 158, 11, 0.1)";
     }
 
-    // Determine coin type
+    // Determine coin type using pre-loaded module-level assets
     const coinSource = isSilver
-      ? require("../../../../../assets/images/silver_coin_badge.png")
+      ? SILVER_COIN_BADGE
       : isDiamond
-        ? require("../../../../../assets/images/diamond_coin_badge.png")
-        : require("../../../../../assets/images/gold_coin_badge.png");
+        ? DIAMOND_COIN_BADGE
+        : GOLD_COIN_BADGE;
 
     const cardAnimation = {
       opacity: cardAnimations,
@@ -1484,7 +1503,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
             </View>
 
             <View style={styles.cardSideInfo}>
-              <Image source={coinSource} style={styles.coinIcon} />
+              <Image source={coinSource} style={styles.coinIcon} resizeMode="contain" fadeDuration={0} />
             </View>
           </View>
 
