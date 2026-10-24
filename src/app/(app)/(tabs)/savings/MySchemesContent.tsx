@@ -62,6 +62,8 @@ type Scheme = {
   emiAmount: number;
   maturityDate: string; // parsed date string
   goldWeight: number;
+  silverWeight?: number;
+  metal?: string;
   accountHolder: string; // accountName
   accNo: string; // accountNo
   schemeCode: string;
@@ -82,6 +84,8 @@ interface InvestmentResponse {
     schemeName: string;
     type: string;
     schemeType: string;
+    metal?: string;
+    metalType?: string;
     duration_months?: number | string;
   };
   chits?: {
@@ -94,6 +98,12 @@ interface InvestmentResponse {
   start_date: string;
   end_date: string;
   totalgoldweight: string;
+  totalsilverweight?: string | number;
+  total_silver?: string | number;
+  total_silver_weight?: string | number;
+  silver_weight?: string | number;
+  metal?: string;
+  metalType?: string;
   accountName: string;
   accountNo: string;
   amount: string;
@@ -365,23 +375,66 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
             totalPaid = 0;
           }
 
+          // Check if scheme is Silver based on all available fields
+          const isSilverScheme = String(
+            (item as any).metal ||
+            (item as any).metalType ||
+            (item as any).metal_type ||
+            schemeObj.metal ||
+            schemeObj.metalType ||
+            schemeObj.type ||
+            item.schemeName ||
+            schemeObj.schemeName ||
+            ""
+          ).toLowerCase().includes("silver") ||
+          String(
+            (item as any).metal ||
+            item.schemeName ||
+            schemeObj.schemeName ||
+            ""
+          ).includes("வெள்ளி") ||
+          String(
+            (item as any).metal ||
+            item.schemeName ||
+            schemeObj.schemeName ||
+            ""
+          ).includes("వెండి") ||
+          String(
+            (item as any).metal ||
+            item.schemeName ||
+            schemeObj.schemeName ||
+            ""
+          ).includes("चांदी");
+
           // Calculate gold weight with validation
           let goldWeight = 0;
           try {
             goldWeight = parseFloat(item.totalgoldweight) || 0;
             if (isNaN(goldWeight) || goldWeight < 0) {
-              logger.warn(
-                `Invalid gold weight for investment ${item.investmentId}:`,
-                goldWeight
-              );
               goldWeight = 0;
             }
           } catch (error) {
-            logger.error(
-              `Error calculating gold weight for investment ${item.investmentId}:`,
-              error
-            );
             goldWeight = 0;
+          }
+
+          // Calculate silver weight with validation
+          let silverWeight = 0;
+          try {
+            silverWeight = parseFloat(
+              String(
+                (item as any).totalsilverweight ??
+                (item as any).total_silver ??
+                (item as any).total_silver_weight ??
+                (item as any).silver_weight ??
+                (item as any).silverWeight ??
+                0
+              )
+            ) || 0;
+            if (isNaN(silverWeight) || silverWeight < 0) {
+              silverWeight = 0;
+            }
+          } catch (error) {
+            silverWeight = 0;
           }
 
           // Validate months paid
@@ -407,7 +460,8 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
             id: item.investmentId,
             schemeName:
               schemeObj.schemeName || item.schemeName || "Unknown Scheme",
-            metalType: schemeObj.type ? schemeObj.type.toLowerCase() : "gold",
+            metalType: isSilverScheme ? "silver" : (schemeObj.type ? schemeObj.type.toLowerCase() : "gold"),
+            metal: isSilverScheme ? "silver" : "gold",
             savingType: schemeObj.schemeType
               ? schemeObj.schemeType.toLowerCase()
               : "weight",
@@ -416,7 +470,8 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
             monthsPaid,
             emiAmount: installmentAmount,
             maturityDate: dom,
-            goldWeight,
+            goldWeight: isSilverScheme ? (silverWeight || goldWeight) : goldWeight,
+            silverWeight: silverWeight,
             accountHolder: item.accountName || "",
             accNo: item.accountNo || "",
             joiningDate: doj,

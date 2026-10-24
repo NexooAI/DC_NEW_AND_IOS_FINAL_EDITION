@@ -165,6 +165,10 @@ export default function PaymentWebView() {
         paymentFrequency: userDetails?.paymentFrequency || "",
         schemeName: schemeName,
         goldRate: goldRate,
+        silverRate: (params.silverRate as string) || (userDetails?.silverRate ? String(userDetails.silverRate) : ""),
+        rate: (params.rate as string) || (userDetails?.rate ? String(userDetails.rate) : ""),
+        metalType: (params.metalType as string) || userDetails?.metalType || (userDetails?.isSilver ? "silver" : "gold"),
+        isSilver: (params.isSilver as string) || (userDetails?.isSilver ? "true" : "false"),
         joiningDate: joiningDate || userDetails?.joiningDate || "",
         maturityDate: maturityDate || userDetails?.maturityDate || "",
         type: type,
@@ -173,7 +177,7 @@ export default function PaymentWebView() {
     };
 
     router.replace(successParams);
-  }, [orderId, amount, type, userDetails, schemeName, goldRate, joiningDate, maturityDate, params.userId, user?.id, router]);
+  }, [orderId, amount, type, userDetails, schemeName, goldRate, params.silverRate, params.rate, params.metalType, params.isSilver, joiningDate, maturityDate, params.userId, user?.id, router]);
 
   const navigateToFailure = useCallback((message: string, status = "FAILED", txnIdValue = "") => {
     if (isPaymentProcessed.current) return;

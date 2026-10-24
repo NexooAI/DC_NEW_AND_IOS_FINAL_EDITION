@@ -39,6 +39,8 @@ type Scheme = {
   emiAmount: number;
   maturityDate: string;
   goldWeight: number;
+  silverWeight?: number;
+  metal?: string;
   accountHolder: string;
   accNo: string;
   schemeCode: string;
@@ -267,6 +269,15 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
 
   const handleNavigation = (item: Scheme) => {
     if (!item) return;
+    const isSilver =
+      getLocalizedText(item.metalType).toLowerCase().includes("silver") ||
+      (getLocalizedText(item.schemeName) || "").toLowerCase().includes("silver") ||
+      (item as any).metal === "silver";
+
+    const silverWt = (item as any).silverWeight !== undefined && Number((item as any).silverWeight) > 0
+      ? String((item as any).silverWeight)
+      : (isSilver && item.goldWeight > 0 ? String(item.goldWeight) : "0.00");
+
     router.push({
       pathname: "/(tabs)/savings/SavingsDetail",
       params: {
@@ -275,7 +286,12 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
         monthsPaid: item.monthsPaid?.toString() || "0",
         emiAmount: item.emiAmount?.toString() || "0",
         maturityDate: item.maturityDate || "",
-        goldWeight: item.goldWeight?.toString() || "0.00",
+        goldWeight: !isSilver ? (item.goldWeight?.toString() || "0.00") : "0.00",
+        silverWeight: silverWt,
+        metalType: isSilver ? "silver" : (getLocalizedText(item.metalType).toLowerCase() || "gold"),
+        metal: isSilver ? "silver" : (getLocalizedText(item.metalType).toLowerCase() || "gold"),
+        isSilver: String(isSilver),
+        savingType: String(item.savingType || ""),
         accountHolder: item.accountHolder || "N/A",
         accNo: item.accNo || "N/A",
         schemeCode: item.schemeCode || "",
@@ -652,7 +668,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                       {translations.totalWeight}
                     </Text>
                     <Text style={styles.paymentInfoValue}>
-                      {formatGoldWeight(item.goldWeight)}
+                      {formatGoldWeight((item as any).silverWeight && Number((item as any).silverWeight) > 0 ? (item as any).silverWeight : item.goldWeight)}
                     </Text>
                   </View>
                 </>

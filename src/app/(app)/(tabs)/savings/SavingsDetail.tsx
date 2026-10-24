@@ -373,13 +373,20 @@ const SavingsDetail = () => {
       inversement?.schemes?.metal ||
       schemesData?.metal ||
       schemesData?.metalType ||
+      schemesData?.type ||
       params.schemeName ||
       inversement?.schemeName ||
       inversement?.chits?.name ||
       ""
     ).toLowerCase();
 
-    if (combined.includes("silver")) return "silver";
+    if (
+      combined.includes("silver") ||
+      combined.includes("வெள்ளி") ||
+      combined.includes("வெண்டி") ||
+      combined.includes("వెండి") ||
+      combined.includes("चांदी")
+    ) return "silver";
     if (combined.includes("diamond")) return "diamond";
     if (combined.includes("platinum")) return "platinum";
     if (combined.includes("old_gold") || combined.includes("old gold")) return "old_gold";
@@ -396,6 +403,76 @@ const SavingsDetail = () => {
   const weightLabel = isSilver
     ? (translations.silverWeight || "Silver Weight")
     : (translations.goldWeight || "Gold Weight");
+
+  // Accumulated metal weight for Gold / Silver (checking all possible backend and frontend field aliases)
+  const accumulatedWeight = useMemo(() => {
+    if (isSilver) {
+      // 1. Check inversement from API or cached store
+      const invSilver = Number(
+        inversement?.totalsilverweight ??
+        inversement?.silver_weight ??
+        inversement?.total_silver ??
+        inversement?.silverWeight ??
+        inversement?.total_silver_weight ??
+        0
+      );
+      if (!isNaN(invSilver) && invSilver > 0) return invSilver;
+
+      // 2. Check params.silverWeight
+      const paramSilver = Number(params.silverWeight);
+      if (!isNaN(paramSilver) && paramSilver > 0) return paramSilver;
+
+      // 3. Fallback: Sum up weight from transaction history
+      const historySilver = (paymentHistrory || []).reduce((acc: number, txn: any) => {
+        const s = (txn.status || "Success").toUpperCase();
+        if (s !== "SUCCESS" && s !== "ACTIVE" && s !== "COMPLETED") return acc;
+        const w = Number(txn.weight || txn.silverWeight || txn.silver_weight || 0);
+        if (!isNaN(w) && w > 0) return acc + w;
+        const rate = Number(txn.rate || txn.silverRate || txn.silver_rate || txn.current_silverrate || 0);
+        const amt = Number(txn.amountPaid || txn.amount || 0);
+        if (rate > 0 && amt > 0) return acc + (amt / rate);
+        return acc;
+      }, 0);
+      if (historySilver > 0) return Number(historySilver.toFixed(3));
+
+      // 4. Fallback if params.goldWeight was passed with silver weight
+      const fallbackParam = Number(params.goldWeight);
+      if (!isNaN(fallbackParam) && fallbackParam > 0) return fallbackParam;
+
+      return 0;
+    } else {
+      // Gold
+      // 1. Check inversement from API or cached store
+      const invGold = Number(
+        inversement?.totalgoldweight ??
+        inversement?.gold_weight ??
+        inversement?.total_gold ??
+        inversement?.goldWeight ??
+        inversement?.total_gold_weight ??
+        0
+      );
+      if (!isNaN(invGold) && invGold > 0) return invGold;
+
+      // 2. Check params.goldWeight
+      const paramGold = Number(params.goldWeight);
+      if (!isNaN(paramGold) && paramGold > 0) return paramGold;
+
+      // 3. Fallback: Sum up weight from transaction history
+      const historyGold = (paymentHistrory || []).reduce((acc: number, txn: any) => {
+        const s = (txn.status || "Success").toUpperCase();
+        if (s !== "SUCCESS" && s !== "ACTIVE" && s !== "COMPLETED") return acc;
+        const w = Number(txn.weight || txn.goldWeight || txn.gold_weight || 0);
+        if (!isNaN(w) && w > 0) return acc + w;
+        const rate = Number(txn.rate || txn.goldRate || txn.gold_rate || txn.current_goldrate || 0);
+        const amt = Number(txn.amountPaid || txn.amount || 0);
+        if (rate > 0 && amt > 0) return acc + (amt / rate);
+        return acc;
+      }, 0);
+      if (historyGold > 0) return Number(historyGold.toFixed(3));
+
+      return 0;
+    }
+  }, [isSilver, inversement, params.silverWeight, params.goldWeight, paymentHistrory]);
 
   const { displayGoldRate, displayGoldWeight } = useMemo(() => {
     if (!selectedTransaction) return { displayGoldRate: 0, displayGoldWeight: 0 };
@@ -417,7 +494,7 @@ const SavingsDetail = () => {
           0
         );
 
-    const weight = isSilver
+    let weight = isSilver
       ? Number(
           selectedTransaction.weight ||
           selectedTransaction.silverWeight ||
@@ -432,6 +509,11 @@ const SavingsDetail = () => {
           (Number(selectedTransaction.gold_rate) <= 500 ? selectedTransaction.gold_rate : 0) ||
           0
         );
+
+    // If weight is 0 but amountPaid and rate exist, compute it!
+    if (weight === 0 && rate > 0 && Number(selectedTransaction.amountPaid) > 0) {
+      weight = Number((Number(selectedTransaction.amountPaid) / rate).toFixed(3));
+    }
 
     return { displayGoldRate: rate, displayGoldWeight: weight };
   }, [selectedTransaction, isSilver, inversement]);
@@ -452,6 +534,9 @@ const SavingsDetail = () => {
   const isWeightScheme = useMemo(() => {
     if (isDeposit) return false;
 
+    // If accumulated weight is already present (> 0), it is definitely a weight-accumulating scheme!
+    if (accumulatedWeight > 0) return true;
+
     const st = String(
       schemesData?.savingType ||
       inversement?.savingType ||
@@ -470,6 +555,9 @@ const SavingsDetail = () => {
     if (sType === "amount") return false;
     if (sType === "weight") return true;
 
+    // For silver schemes, if not explicitly amount, default to true
+    if (isSilver) return true;
+
     const planName = String(
       schemesData?.schemeTypeName ||
       inversement?.schemeTypeName ||
@@ -479,7 +567,7 @@ const SavingsDetail = () => {
     if (planName === "fixed") return false;
 
     return false;
-  }, [isDeposit, schemesData, inversement, params]);
+  }, [isDeposit, accumulatedWeight, isSilver, schemesData, inversement, params]);
 
   const isFlexi = useMemo(() => {
     const freq = String(schemesData?.paymentFrequencyName || params.paymentFrequency || inversement?.chits?.paymentFrequency || "").toLowerCase();
@@ -866,7 +954,8 @@ const SavingsDetail = () => {
           joiningDate: params.joiningDate || inversement?.joiningDate || (inversement as any)?.created_at || (inversement as any)?.joiningdate,
           totalPaid: params.totalPaid,
           noOfIns: params.noOfIns,
-          goldWeight: params.goldWeight,
+          goldWeight: !isSilver ? String(accumulatedWeight || params.goldWeight || 0) : "0",
+          silverWeight: isSilver ? String(accumulatedWeight || params.silverWeight || 0) : "0",
           accNo: params.accNo,
           investmentId: responce?.data?.data?.investmentId || params.id || params.investmentId || inversement?.id,
           schemesData: params.schemesData,
@@ -1174,7 +1263,8 @@ const SavingsDetail = () => {
           joiningDate: params.joiningDate || inversement?.joiningDate || (inversement as any)?.created_at || (inversement as any)?.joiningdate,
           totalPaid: params.totalPaid,
           noOfIns: params.noOfIns,
-          goldWeight: params.goldWeight,
+          goldWeight: !isSilver ? String(accumulatedWeight || params.goldWeight || 0) : "0",
+          silverWeight: isSilver ? String(accumulatedWeight || params.silverWeight || 0) : "0",
           accNo: params.accNo,
           investmentId: responce?.data?.data?.investmentId || params.id || params.investmentId || inversement?.id,
           schemesData: params.schemesData,
@@ -1254,7 +1344,6 @@ const SavingsDetail = () => {
 
     const schemeNameDisplay = (params.schemeName || inversement?.schemeName || inversement?.chits?.name || "").toUpperCase();
     const schemeCodeDisplay = params.schemeCode || inversement?.schemeCode || inversement?.chits?.code || "";
-    const goldWeightDisplay = params.goldWeight ?? inversement?.total_gold ?? inversement?.goldWeight ?? "0";
 
     return (
       <View style={styles.heroContainer}>
@@ -1275,11 +1364,11 @@ const SavingsDetail = () => {
                 <Text style={styles.heroStatValue}>₹{Number(totalPaidAmount || 0).toLocaleString()}</Text>
               </View>
               
-              {isWeightScheme && (
+              {(isWeightScheme || accumulatedWeight > 0) && (
                 <View>
                   <Text style={[styles.heroStatLabel, { fontSize: 10, marginBottom: 2 }]}>{accumulatedLabel}</Text>
                   <Text style={[styles.heroStatValue, { fontSize: 16 }]}>
-                    {formatGoldWeight(parseFloat(goldWeightDisplay) || 0)}
+                    {formatGoldWeight(accumulatedWeight)}
                   </Text>
                 </View>
               )}
@@ -1610,9 +1699,24 @@ const SavingsDetail = () => {
                       </Text>
                       <View style={styles.metaRow}>
                         <Text style={styles.transactionMode}>{(txn.paymentMode || "NB").toUpperCase()}</Text>
-                        {txn.gold_rate ? (
-                          <Text style={styles.transactionRate}> • ₹{Number(txn.gold_rate).toLocaleString()}/g</Text>
-                        ) : null}
+                        {(() => {
+                          const txnRate = isSilver
+                            ? (txn.silver_rate || txn.silverRate || txn.current_silverrate || txn.rate)
+                            : (txn.gold_rate || txn.goldRate || txn.current_goldrate || txn.rate);
+                          const txnWeight = isSilver
+                            ? (txn.silver_weight || txn.silverWeight || txn.weight || (Number(txnRate) > 0 && Number(txn.amountPaid) > 0 ? (Number(txn.amountPaid) / Number(txnRate)).toFixed(3) : null))
+                            : (txn.gold_weight || txn.goldWeight || txn.weight || (Number(txnRate) > 0 && Number(txn.amountPaid) > 0 ? (Number(txn.amountPaid) / Number(txnRate)).toFixed(3) : null));
+                          return (
+                            <>
+                              {txnRate ? (
+                                <Text style={styles.transactionRate}> • ₹{Number(txnRate).toLocaleString()}/g</Text>
+                              ) : null}
+                              {txnWeight && Number(txnWeight) > 0 ? (
+                                <Text style={styles.transactionRate}> • {Number(txnWeight).toFixed(3)}g</Text>
+                              ) : null}
+                            </>
+                          );
+                        })()}
                       </View>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>

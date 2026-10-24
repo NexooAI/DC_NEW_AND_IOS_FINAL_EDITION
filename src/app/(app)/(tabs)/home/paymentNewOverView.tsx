@@ -878,8 +878,13 @@ export default function PaymentNewOverView() {
 
   const isWeightScheme = useMemo(() => {
     const st = String(params.savinsTypes || params.savingType || userDetails?.savingType || "").toLowerCase();
-    return st === "weight" || Boolean(Number(params.goldWeight) > 0);
-  }, [params.savinsTypes, params.savingType, userDetails?.savingType, params.goldWeight]);
+    return (
+      st === "weight" ||
+      Boolean(Number(params.goldWeight) > 0) ||
+      Boolean(Number(params.silverWeight) > 0) ||
+      (isSilverScheme && (weightPerGram > 0 || Number(params.silverWeight) > 0))
+    );
+  }, [params.savinsTypes, params.savingType, userDetails?.savingType, params.goldWeight, params.silverWeight, isSilverScheme, weightPerGram]);
 
   // Days elapsed since enrollment
   const currentDay = useMemo(() => {
