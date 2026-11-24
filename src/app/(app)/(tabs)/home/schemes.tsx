@@ -348,12 +348,14 @@ export const getSchemeDurationDisplay = (
   const durationMonths = Number(scheme.DURATION_MONTHS || 0);
 
   if (freqStr.includes("daily") || typeLabel === "daily") {
-    const count = noOfIns > 0 ? noOfIns : durationMonths > 0 ? durationMonths * 30 : 330;
+    // If backend NOINS is <= 12 (month count mistakenly stored as NOINS), convert to 330 days (or months * 30)
+    const count = noOfIns > 12 ? noOfIns : durationMonths > 0 ? durationMonths * 30 : 330;
     return compact ? `${count}D` : `${count} ${t("days") || "Days"}`;
   }
 
   if (freqStr.includes("weekly") || typeLabel === "weekly") {
-    const count = noOfIns > 0 ? noOfIns : durationMonths > 0 ? Math.round((durationMonths * 30) / 7) : 48;
+    // If backend NOINS is <= 12 (month count mistakenly stored as NOINS), map 11 months -> 48 weeks
+    const count = noOfIns > 12 ? noOfIns : durationMonths === 11 ? 48 : durationMonths > 0 ? Math.round((durationMonths * 52) / 12) : 48;
     return compact ? `${count}W` : `${count} ${t("weeks") || "Weeks"}`;
   }
 

@@ -981,8 +981,14 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
                         const freq = String(firstChit?.PAYMENT_FREQUENCY || item.SCHEMETYPE || item.INS_TYPE || "").toLowerCase();
                         const noIns = Number(firstChit?.NOINS || 0);
                         const durM = Number(item.DURATION_MONTHS || 0);
-                        if (freq.includes("daily")) return `${noIns > 0 ? noIns : durM > 0 ? durM * 30 : 330}D`;
-                        if (freq.includes("weekly")) return `${noIns > 0 ? noIns : durM > 0 ? Math.round((durM * 30) / 7) : 48}W`;
+                        if (freq.includes("daily")) {
+                          const c = noIns > 12 ? noIns : durM > 0 ? durM * 30 : 330;
+                          return `${c}D`;
+                        }
+                        if (freq.includes("weekly")) {
+                          const c = noIns > 12 ? noIns : durM === 11 ? 48 : durM > 0 ? Math.round((durM * 52) / 12) : 48;
+                          return `${c}W`;
+                        }
                         return `${durM > 0 ? durM : noIns > 0 ? noIns : 11}M`;
                       })()}
                     </Text>
@@ -1159,8 +1165,14 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
                       const freq = String(firstChit?.PAYMENT_FREQUENCY || selectedScheme.SCHEMETYPE || selectedScheme.INS_TYPE || "").toLowerCase();
                       const noIns = Number(firstChit?.NOINS || 0);
                       const durM = Number(selectedScheme.DURATION_MONTHS || 0);
-                      if (freq.includes("daily")) return `${noIns > 0 ? noIns : durM > 0 ? durM * 30 : 330} ${t("days") || "Days"}`;
-                      if (freq.includes("weekly")) return `${noIns > 0 ? noIns : durM > 0 ? Math.round((durM * 30) / 7) : 48} ${t("weeks") || "Weeks"}`;
+                      if (freq.includes("daily")) {
+                        const c = noIns > 12 ? noIns : durM > 0 ? durM * 30 : 330;
+                        return `${c} ${t("days") || "Days"}`;
+                      }
+                      if (freq.includes("weekly")) {
+                        const c = noIns > 12 ? noIns : durM === 11 ? 48 : durM > 0 ? Math.round((durM * 52) / 12) : 48;
+                        return `${c} ${t("weeks") || "Weeks"}`;
+                      }
                       return `${durM > 0 ? durM : noIns > 0 ? noIns : 11} ${t("monthsLabel") || "Months"}`;
                     })()}
                   </Text>
