@@ -6,7 +6,7 @@ import { themeConfig } from './src/constants/theme.config';
 export default ({ config }: ConfigContext): ExpoConfig => {
     const isIos = process.env.EAS_BUILD_PLATFORM === 'ios' || process.env.PLATFORM === 'ios';
 
-    const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "AIzaSyBTjXrjQNL4FwARtaSpT1pAz83ov2tqs44";
+    const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY || "AIzaSyDZp5TNifbLmZ1_caqazWck87DXbtatlWA";
     const bundleIdentifier = themeConfig.bundleIdentifier || "com.nexooai.srimurugangoldhouse";
     const projectId = themeConfig.projectId || "18a93bd7-51d4-4464-ba6c-a7cb4533c799";
     const owner = themeConfig.owner || "sudhakarg";
