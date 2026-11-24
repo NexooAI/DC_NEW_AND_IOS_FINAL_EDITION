@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
+import { themeConfig } from '../constants/theme.config';
 
 import { logger } from '@/utils/logger';
 
@@ -37,7 +38,7 @@ interface UseOtpAutoFetchProps {
 export const useOtpAutoFetch = ({
   onOtpReceived,
   isActive,
-  senderName = 'Kanisaa Jewellery'
+  senderName = themeConfig.customerName || 'Sri Murugan Gold House'
 }: UseOtpAutoFetchProps) => {
   const smsListenerRef = useRef<any>(null);
 

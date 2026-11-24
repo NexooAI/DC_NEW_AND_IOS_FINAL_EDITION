@@ -170,7 +170,7 @@ class FAQService {
             {
                 id: "5",
                 question: "How to contact customer support?",
-                answer: "You can contact our customer support by calling +919061803999 or emailing kanisaajewellery@gmail.com. Our support team is available 24/7 to help you.",
+                answer: "You can contact our customer support by calling +918754842999 or emailing saran1310@gmail.com. Our support team is available 24/7 to help you.",
                 category: "Support",
                 priority: 1,
                 isActive: true,
