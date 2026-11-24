@@ -514,10 +514,10 @@ export default function Register() {
     <View
       style={{
         flex: 1,
-        backgroundColor: theme.colors.primary,
+        backgroundColor: "#850111",
       }}
     >
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
+      <StatusBar barStyle="light-content" backgroundColor="#850111" />
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={{ flex: 1, position: 'relative' }}>
           {/* Background Models Grid Watermark Layer (1, 2, 3 Grid Models) */}
@@ -531,7 +531,7 @@ export default function Register() {
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'center',
-              opacity: 0.25,
+              opacity: 0.13,
               zIndex: 0,
             }}>
               <View style={{
@@ -615,27 +615,34 @@ export default function Register() {
                   }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    {/* Back arrow in small yellow circle */}
+                    {/* Back arrow in Royal Ivory & Gold circle */}
                     <TouchableOpacity
                       onPress={handleBackButton}
                       style={{
                         width: 40,
                         height: 40,
                         borderRadius: 20,
-                        backgroundColor: theme.colors.secondary || '#F8CF2C',
+                        backgroundColor: '#FFFDF5',
+                        borderWidth: 1.5,
+                        borderColor: '#D4AF37',
                         justifyContent: 'center',
                         alignItems: 'center',
                         marginRight: 15,
+                        shadowColor: '#D4AF37',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.35,
+                        shadowRadius: 4,
+                        elevation: 4,
                       }}
                     >
-                      <Ionicons name="arrow-back" size={22} color={theme.colors.primary} />
+                      <Ionicons name="arrow-back" size={22} color="#850111" />
                     </TouchableOpacity>
                   </View>
                 </View>
 
                 <View
                   style={{
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: '#FAF9F6',
                     paddingHorizontal: 24,
                     paddingTop: 30,
                     paddingBottom: Platform.OS === "ios" ? 80 : 100,
@@ -644,31 +651,54 @@ export default function Register() {
                     position: 'relative',
                   }}
                 >
-                  {/* Custom wave curve at the top */}
+                  {/* Custom wave curve at the top with gold rim */}
                   <View style={{ position: 'absolute', top: -39, left: 0, right: 0, height: 40, zIndex: 10, backgroundColor: 'transparent' }}>
                     <Svg height="40" width={Dimensions.get("window").width} viewBox={`0 0 ${Dimensions.get("window").width} 40`} style={{ position: 'absolute', top: 0, left: 0 }}>
                       <Path
                         d={`M0,40 C${Dimensions.get("window").width * 0.3},40 ${Dimensions.get("window").width * 0.6},0 ${Dimensions.get("window").width},0 L${Dimensions.get("window").width},40 L0,40 Z`}
-                        fill="#FFFFFF"
+                        fill="#FAF9F6"
+                      />
+                      <Path
+                        d={`M0,40 C${Dimensions.get("window").width * 0.3},40 ${Dimensions.get("window").width * 0.6},0 ${Dimensions.get("window").width},0`}
+                        fill="none"
+                        stroke="#D4AF37"
+                        strokeWidth="2.5"
                       />
                     </Svg>
                   </View>
 
                   {/* Content */}
                   <View style={{ width: '100%' }}>
-                    {/* Title and Subtitle inside the white card */}
+                    {/* Title and Subtitle inside the ivory card */}
                     <View style={{ marginBottom: 20 }}>
-                      <Text style={{ color: theme.colors.primary, fontSize: 22, fontWeight: 'bold', marginBottom: 6 }}>
+                      <Text style={{ color: '#850111', fontSize: 22, fontWeight: 'bold', marginBottom: 6 }}>
                         {t("createAccount") || "Create Your Account"}
                       </Text>
-                      <Text style={{ color: '#666666', fontSize: 14 }}>
+                      <Text style={{ color: '#B8860B', fontSize: 14, fontWeight: '600' }}>
                         {t("registerSubtitle") || "Fill in the details below to register"}
                       </Text>
                     </View>
 
                     {!otpSent ? (
                       <>
-                        <View style={[registerStyles.inputContainer, { borderWidth: 0, shadowColor: 'transparent', elevation: 0, paddingHorizontal: 0 }]}>
+                        <View
+                          style={[
+                            registerStyles.inputContainer,
+                            {
+                              backgroundColor: '#FFFDF9',
+                              borderWidth: 1.2,
+                              borderColor: 'rgba(212, 175, 55, 0.45)',
+                              borderRadius: 14,
+                              paddingHorizontal: 14,
+                              paddingVertical: 6,
+                              shadowColor: '#850111',
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.05,
+                              shadowRadius: 6,
+                              elevation: 2,
+                            },
+                          ]}
+                        >
                           <PhoneInput
                             value={mobile}
                             onChangeText={setMobile}
@@ -679,15 +709,28 @@ export default function Register() {
                         <TouchableOpacity
                           style={[
                             registerStyles.loginButton,
-                            { borderRadius: 8, marginTop: 20 },
+                            {
+                              borderRadius: 12,
+                              marginTop: 22,
+                              borderWidth: 1,
+                              borderColor: '#D4AF37',
+                              overflow: 'hidden',
+                              shadowColor: '#850111',
+                              shadowOffset: { width: 0, height: 3 },
+                              shadowOpacity: 0.2,
+                              shadowRadius: 6,
+                              elevation: 4,
+                            },
                             loading && registerStyles.loginButtonDisabled,
                           ]}
                           onPress={handleGetOtp}
                           disabled={loading}
                         >
                           <LinearGradient
-                            colors={[theme.colors.primary, theme.colors.primary]}
-                            style={[registerStyles.gradientButton, { borderRadius: 8 }]}
+                            colors={["#850111", "#63010D"]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={[registerStyles.gradientButton, { borderRadius: 12 }]}
                           >
                             <Text style={registerStyles.loginButtonText}>
                               {loading ? t("sending") : t("getOtp")}
@@ -709,10 +752,10 @@ export default function Register() {
                       </>
                     ) : (
                       <View style={registerStyles.otpContainer}>
-                        <Text style={registerStyles.otpTitle}>
+                        <Text style={[registerStyles.otpTitle, { color: "#850111" }]}>
                           {t("enterOtp")}
                         </Text>
-                        <Text style={registerStyles.otpSentText}>
+                        <Text style={[registerStyles.otpSentText, { color: "#B8860B" }]}>
                           {t("otpSentTo")}{" "}
                           {mobile.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")}
                         </Text>
@@ -723,7 +766,15 @@ export default function Register() {
                               <TextInput
                                 key={index}
                                 ref={inputRefs[index]}
-                                style={registerStyles.otpInput}
+                                style={[
+                                  registerStyles.otpInput,
+                                  {
+                                    borderColor: "rgba(212, 175, 55, 0.55)",
+                                    backgroundColor: "#FFFDF9",
+                                    color: "#850111",
+                                    borderRadius: 12,
+                                  },
+                                ]}
                                 keyboardType="numeric"
                                 maxLength={index === 0 ? 4 : 1}
                                 value={pin}
@@ -744,7 +795,7 @@ export default function Register() {
                             <Feather
                               name={showOtp ? "eye-off" : "eye"}
                               size={24}
-                              color={theme.colors.white}
+                              color="#850111"
                             />
                           </TouchableOpacity>
                         </View>

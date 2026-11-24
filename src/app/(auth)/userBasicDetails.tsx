@@ -1146,10 +1146,10 @@ export default function BasicDetailsForm() {
       ]}
     >
       <LinearGradient
-        colors={['#FFFFFF', '#FFFFFF']}
+        colors={['#FAF9F6', '#FAF9F6']}
         style={styles.gradient}
       >
-        <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
+        <StatusBar barStyle="light-content" backgroundColor="#850111" />
         {showError && (
           <ErrorAlert message={errorMessage} onClose={hideErrorAlert} />
         )}
@@ -1166,15 +1166,17 @@ export default function BasicDetailsForm() {
               showsVerticalScrollIndicator={false}
             >
               <Pressable onPress={Keyboard.dismiss} style={{ flex: 1, width: "100%" }}>
-                {/* Header Back Button and Title */}
-                <View
+                {/* Header Back Button */}
+                <LinearGradient
+                  colors={["#850111", "#5A000B", "#3B0006"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                   style={{
                     height: Platform.OS === 'ios' ? hp(22) : hp(20),
                     paddingTop: Platform.OS === 'ios' ? 70 : 50,
                     paddingHorizontal: 20,
                     width: "100%",
                     zIndex: 1,
-                    backgroundColor: theme.colors.primary,
                   }}
                 >
                   {/* Background Models Grid Watermark Layer (1, 2, 3 Grid Models) */}
@@ -1188,7 +1190,7 @@ export default function BasicDetailsForm() {
                       flexDirection: 'row',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      opacity: 0.25,
+                      opacity: 0.13,
                       zIndex: 0,
                     }}>
                       <View style={{
@@ -1198,7 +1200,7 @@ export default function BasicDetailsForm() {
                         borderRadius: 12,
                         overflow: 'hidden',
                         borderWidth: 1,
-                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                        borderColor: 'rgba(212, 175, 55, 0.35)',
                       }}>
                         <Image
                           source={require("../../../assets/images/intro_1.png")}
@@ -1213,7 +1215,7 @@ export default function BasicDetailsForm() {
                         borderRadius: 12,
                         overflow: 'hidden',
                         borderWidth: 1,
-                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                        borderColor: 'rgba(212, 175, 55, 0.35)',
                       }}>
                         <Image
                           source={require("../../../assets/images/intro_1.png")}
@@ -1228,7 +1230,7 @@ export default function BasicDetailsForm() {
                         borderRadius: 12,
                         overflow: 'hidden',
                         borderWidth: 1,
-                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                        borderColor: 'rgba(212, 175, 55, 0.35)',
                       }}>
                         <Image
                           source={require("../../../assets/images/intro_1.png")}
@@ -1240,27 +1242,34 @@ export default function BasicDetailsForm() {
                   )}
 
                   <View style={{ flexDirection: 'row', alignItems: 'center', zIndex: 1 }}>
-                    {/* Back arrow in small yellow circle */}
+                    {/* Back arrow in Royal Ivory & Gold circle */}
                     <TouchableOpacity
                       onPress={handleBack}
                       style={{
                         width: 40,
                         height: 40,
                         borderRadius: 20,
-                        backgroundColor: theme.colors.secondary || '#F8CF2C',
+                        backgroundColor: '#FFFDF5',
+                        borderWidth: 1.5,
+                        borderColor: '#D4AF37',
                         justifyContent: 'center',
                         alignItems: 'center',
+                        shadowColor: '#D4AF37',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.35,
+                        shadowRadius: 4,
+                        elevation: 4,
                       }}
                     >
-                      <Ionicons name="arrow-back" size={22} color={theme.colors.primary} />
+                      <Ionicons name="arrow-back" size={22} color="#850111" />
                     </TouchableOpacity>
                   </View>
-                </View>
+                </LinearGradient>
 
-                {/* Bottom White Card */}
+                {/* Bottom Ivory Card */}
                 <View
                   style={{
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: '#FAF9F6',
                     paddingHorizontal: 24,
                     paddingTop: 30,
                     paddingBottom: Platform.OS === "ios" ? 80 : 100,
@@ -1269,12 +1278,18 @@ export default function BasicDetailsForm() {
                     position: 'relative',
                   }}
                 >
-                  {/* Custom wave curve at the top */}
+                  {/* Custom wave curve at the top with gold rim */}
                   <View style={{ position: 'absolute', top: -39, left: 0, right: 0, height: 40, zIndex: 10, backgroundColor: 'transparent' }}>
                     <Svg height="40" width={width} viewBox={`0 0 ${width} 40`} style={{ position: 'absolute', top: 0, left: 0 }}>
                       <Path
                         d={`M0,40 C${width * 0.3},40 ${width * 0.7},0 ${width},0 L${width},40 L0,40 Z`}
-                        fill="#FFFFFF"
+                        fill="#FAF9F6"
+                      />
+                      <Path
+                        d={`M0,40 C${width * 0.3},40 ${width * 0.7},0 ${width},0`}
+                        fill="none"
+                        stroke="#D4AF37"
+                        strokeWidth="2.5"
                       />
                     </Svg>
                   </View>
@@ -1874,7 +1889,7 @@ export default function BasicDetailsForm() {
                             ? t("processing")
                             : t("continueToMpinSetup") || "Continue to MPIN Setup"
                         }
-                        backgroundColor={theme.colors.primary}
+                        backgroundColor="#850111"
                         textColor="#FFFFFF"
                         variant="secondary"
                         size="md"
@@ -1885,7 +1900,18 @@ export default function BasicDetailsForm() {
                         style={[
                           styles.loginButton,
                           loading && styles.loginButtonDisabled,
-                          { height: 48, minHeight: 48, borderRadius: 8 },
+                          {
+                            height: 50,
+                            minHeight: 50,
+                            borderRadius: 12,
+                            borderWidth: 1,
+                            borderColor: "#D4AF37",
+                            shadowColor: "#850111",
+                            shadowOffset: { width: 0, height: 3 },
+                            shadowOpacity: 0.2,
+                            shadowRadius: 6,
+                            elevation: 4,
+                          },
                         ]}
                       />
 

@@ -1290,10 +1290,10 @@ export default function Login() {
     <View
       style={{
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FAF9F6',
       }}
     >
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
+      <StatusBar barStyle="light-content" backgroundColor="#850111" />
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={{ flex: 1, position: 'relative' }}>
           <SimpleLanguageSwitcher />
@@ -1321,7 +1321,10 @@ export default function Login() {
               showsVerticalScrollIndicator={false}
             >
               <Pressable onPress={Keyboard.dismiss} style={{ flex: 1, width: "100%" }}>
-                <View
+                <LinearGradient
+                  colors={["#850111", "#5A000B", "#3B0006"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                   style={{
                     height: Platform.OS === 'ios' ? hp(38) : hp(36),
                     paddingTop: insets.top,
@@ -1330,7 +1333,6 @@ export default function Login() {
                     width: "100%",
                     position: 'relative',
                     zIndex: 1,
-                    backgroundColor: theme.colors.primary,
                   }}
                 >
                   {/* Background Models Grid Watermark Layer (1, 2, 3 Grid Models) */}
@@ -1344,7 +1346,7 @@ export default function Login() {
                       flexDirection: 'row',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      opacity: 0.25,
+                      opacity: 0.13,
                       zIndex: 0,
                     }}>
                       <View style={{
@@ -1354,7 +1356,7 @@ export default function Login() {
                         borderRadius: 12,
                         overflow: 'hidden',
                         borderWidth: 1,
-                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                        borderColor: 'rgba(212, 175, 55, 0.35)',
                       }}>
                         <Image
                           source={getIndexImage(0) ? getImageSource(getIndexImage(0)) : require("../../../assets/images/intro_1.png")}
@@ -1369,7 +1371,7 @@ export default function Login() {
                         borderRadius: 12,
                         overflow: 'hidden',
                         borderWidth: 1,
-                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                        borderColor: 'rgba(212, 175, 55, 0.35)',
                       }}>
                         <Image
                           source={getIndexImage(1) ? getImageSource(getIndexImage(1)) : require("../../../assets/images/intro_1.png")}
@@ -1384,7 +1386,7 @@ export default function Login() {
                         borderRadius: 12,
                         overflow: 'hidden',
                         borderWidth: 1,
-                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                        borderColor: 'rgba(212, 175, 55, 0.35)',
                       }}>
                         <Image
                           source={getIndexImage(2) ? getImageSource(getIndexImage(2)) : require("../../../assets/images/intro_1.png")}
@@ -1395,35 +1397,60 @@ export default function Login() {
                     </View>
                   )}
 
-                  <Image
-                    source={require("../../../assets/images/logo_trans.png")}
+                  {/* Royal Ivory & Gold Medallion Frame for Logo */}
+                  <View
                     style={{
-                      width: 195,
-                      height: 195,
-                      aspectRatio: 1,
-                      zIndex: 1,
+                      width: 158,
+                      height: 158,
+                      borderRadius: 79,
+                      backgroundColor: '#FFFDF5',
+                      borderWidth: 2.5,
+                      borderColor: '#D4AF37',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      zIndex: 2,
+                      shadowColor: '#D4AF37',
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.45,
+                      shadowRadius: 12,
+                      elevation: 10,
+                      padding: 10,
                     }}
-                    resizeMode="contain"
-                  />
-                </View>
+                  >
+                    <Image
+                      source={require("../../../assets/images/logo_trans.png")}
+                      style={{
+                        width: 132,
+                        height: 132,
+                      }}
+                      resizeMode="contain"
+                    />
+                  </View>
+                </LinearGradient>
 
                 <View
                   style={{
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: '#FAF9F6',
                     paddingHorizontal: spacing.lg + 10,
-                    paddingTop: 30,
+                    paddingTop: 28,
                     paddingBottom: insets.bottom + 40,
                     flex: 1,
                     zIndex: 1,
                     position: 'relative',
                   }}
                 >
-                  {/* Custom wave curve at the top */}
+                  {/* Custom wave curve at the top with subtle gold rim */}
                   <View style={{ position: 'absolute', top: -39, left: 0, right: 0, height: 40, zIndex: 10, backgroundColor: 'transparent' }}>
                     <Svg height="40" width={screenWidth} viewBox={`0 0 ${screenWidth} 40`} style={{ position: 'absolute', top: 0, left: 0 }}>
                       <Path
                         d={`M0,40 C${screenWidth * 0.3},40 ${screenWidth * 0.7},0 ${screenWidth},0 L${screenWidth},40 L0,40 Z`}
-                        fill="#FFFFFF"
+                        fill="#FAF9F6"
+                      />
+                      <Path
+                        d={`M0,40 C${screenWidth * 0.3},40 ${screenWidth * 0.7},0 ${screenWidth},0`}
+                        fill="none"
+                        stroke="#D4AF37"
+                        strokeWidth="2.5"
                       />
                     </Svg>
                   </View>
@@ -1444,56 +1471,46 @@ export default function Login() {
                         variant="title"
                         size="lg"
                         weight="bold"
-                        color={theme.colors.primary}
+                        color="#850111"
                         align="center"
                         truncateMode="double"
-                        style={[registerStyles.pageTitle, { marginBottom: 0 }]}
+                        style={[registerStyles.pageTitle, { marginBottom: 4 }]}
                       >
                         {safeT("welcome", "Welcome")}!
                       </ResponsiveText>
-                      {/* <ResponsiveText
-                          variant="subtitle"
-                          size="md"
-                          color={theme.colors.primary}
-                          align="center"
-                          truncateMode="double"
-                          style={registerStyles.subtitle}
-                        >
-                          {safeT("signInToContinue", "Sign in to continue")}
-                        </ResponsiveText> */}
-                      {__DEV__ && (
-                        <TouchableOpacity
-                          onPress={() => {
-                            try {
-                              const crashlytics = require('@react-native-firebase/crashlytics').default;
-                              crashlytics().log('Test crash triggered by developer');
-                              crashlytics().crash();
-                            } catch (error) {
-                              console.log('Crashlytics is not available in this environment:', error);
-                              Alert.alert('Not Available', 'Crashlytics is only available in a native Dev Client / Release build.');
-                            }
-                          }}
-                          style={{
-                            backgroundColor: "#E74C3C",
-                            paddingVertical: 8,
-                            paddingHorizontal: 16,
-                            borderRadius: 20,
-                            marginTop: 10,
-                            alignSelf: 'center',
-                            borderWidth: 1,
-                            borderColor: "rgba(255, 255, 255, 0.2)"
-                          }}
-                        >
-                          <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>
-                            💥 Trigger Test Crash (Dev Only)
-                          </Text>
-                        </TouchableOpacity>
-                      )}
+                      <ResponsiveText
+                        variant="subtitle"
+                        size="sm"
+                        weight="semibold"
+                        color="#B8860B"
+                        align="center"
+                        truncateMode="double"
+                        style={[registerStyles.subtitle, { marginBottom: 16 }]}
+                      >
+                        {safeT("signInToContinue", "Sign in to continue")}
+                      </ResponsiveText>
                     </>
                     ) : null}
                     {!isShowOtp ? (
                       <>
-                        <View style={[registerStyles.inputContainer, { borderWidth: 0, shadowColor: 'transparent', elevation: 0, paddingHorizontal: 0 }]}>
+                        <View
+                          style={[
+                            registerStyles.inputContainer,
+                            {
+                              backgroundColor: '#FFFDF9',
+                              borderWidth: 1.2,
+                              borderColor: 'rgba(212, 175, 55, 0.45)',
+                              borderRadius: 14,
+                              paddingHorizontal: 14,
+                              paddingVertical: 6,
+                              shadowColor: '#850111',
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.05,
+                              shadowRadius: 6,
+                              elevation: 2,
+                            },
+                          ]}
+                        >
                           <PhoneInput
                             value={mobile}
                             label={t("registerMobileNumber")}
@@ -1509,7 +1526,7 @@ export default function Login() {
                         </View>
                         <ResponsiveButton
                           title={loading ? t("processing") : t("getOtp")}
-                          backgroundColor={theme.colors.primary}
+                          backgroundColor="#850111"
                           textColor="#FFFFFF"
                           variant="secondary"
                           size="md"
@@ -1520,12 +1537,19 @@ export default function Login() {
                           style={[
                             {
                               width: "100%",
-                              maxWidth: wp(75),
-                              height: 48,
-                              minHeight: 48,
-                              borderRadius: 8,
+                              maxWidth: wp(78),
+                              height: 50,
+                              minHeight: 50,
+                              borderRadius: 12,
+                              borderWidth: 1,
+                              borderColor: "#D4AF37",
                               overflow: "hidden",
-                              marginTop: spacing.md,
+                              marginTop: spacing.lg,
+                              shadowColor: "#850111",
+                              shadowOffset: { width: 0, height: 3 },
+                              shadowOpacity: 0.2,
+                              shadowRadius: 6,
+                              elevation: 4,
                             },
                             loading && registerStyles.loginButtonDisabled,
                           ]}
@@ -1686,13 +1710,15 @@ export default function Login() {
                                     height: isSmallScreen ? 42 : 48,
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    borderColor: otpCode.length === index ? theme.colors.primary : "rgba(133, 1, 17, 0.15)",
-                                    backgroundColor: theme.colors.white,
+                                    borderWidth: 1.5,
+                                    borderRadius: 12,
+                                    borderColor: otpCode.length === index ? "#850111" : "rgba(212, 175, 55, 0.45)",
+                                    backgroundColor: "#FFFDF9",
                                     // 3D Shadow properties
-                                    shadowColor: "#000",
+                                    shadowColor: "#850111",
                                     shadowOffset: { width: 0, height: 2 },
                                     shadowOpacity: 0.08,
-                                    shadowRadius: 3,
+                                    shadowRadius: 4,
                                     elevation: 2,
                                   },
                                 ]}
@@ -1701,7 +1727,7 @@ export default function Login() {
                                   variant="title"
                                   size="lg"
                                   weight="bold"
-                                  color={theme.colors.textDark}
+                                  color="#850111"
                                   style={{
                                     fontSize: isSmallScreen ? 20 : 22,
                                   }}
