@@ -23,11 +23,16 @@ import { useRouter, useFocusEffect, useNavigation } from "expo-router";
 import { rewardsAPI, investmentAPI } from "@/services/api";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import { useEffect } from "react";
-
+import RewardsReferPageV2 from "@/components/rewardsV2";
 
 const DISABLE_REDEMPTION_FORM = true; // Set to false to restore original redemption modal flow
+const USE_REWARDS_V2 = true; // Version 2 Unified Screen (Set to false to use Version 1)
 
 export default function RewardsScreen() {
+  if (USE_REWARDS_V2) {
+    return <RewardsReferPageV2 />;
+  }
+
   const theme = useAppTheme();
   styles = getStyles(theme);
     const { t } = useTranslation();

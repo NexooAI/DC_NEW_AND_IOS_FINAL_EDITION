@@ -1466,13 +1466,13 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     const typeDisplay = itemIsFixed
       ? (t(fixedFreqKey) || fixedFreqKey)
       : (t(schemeTypeLabel) || schemeTypeLabel);
-    const isWeightSaving =
-      item.savingType?.toLowerCase() === "weight" ||
-      item.SCHEMETYPE?.toLowerCase()?.includes("weight");
+    const isFixedWeightScheme =
+      (item as any).is_fixed_weight === 1 ||
+      (item as any).is_fixed_weight === true;
     const planLabel = itemIsFlexi
       ? (t("Flexi") || "Flexi")
       : itemIsFixed
-      ? isWeightSaving
+      ? isFixedWeightScheme
         ? (language === "ta" ? "பிக்சட் எடை" : "Fixed Weight")
         : (language === "ta" ? "பிக்சட் தொகை" : "Fixed Amount")
       : typeDisplay;

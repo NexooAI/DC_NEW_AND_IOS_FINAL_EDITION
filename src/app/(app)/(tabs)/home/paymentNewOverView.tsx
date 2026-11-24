@@ -1764,11 +1764,22 @@ export default function PaymentNewOverView() {
               )}
             </View>
             <View style={styles.amountDisplay}>
-              <Text style={styles.amountValue}>{formattedAmount}</Text>
-              {isWeightScheme && (
-                <Text style={styles.weightText}>
-                  {formattedWeight} grams (₹{(effectiveRate && !isNaN(effectiveRate) ? Number(effectiveRate).toFixed(2) : "0.00")}/gram)
-                </Text>
+              {!isEditable && isWeightScheme ? (
+                <>
+                  <Text style={styles.amountValue}>{formattedWeight} g</Text>
+                  <Text style={styles.weightText}>
+                    {formattedAmount} (₹{(effectiveRate && !isNaN(effectiveRate) ? Number(effectiveRate).toFixed(2) : "0.00")}/gram)
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.amountValue}>{formattedAmount}</Text>
+                  {isWeightScheme && (
+                    <Text style={styles.weightText}>
+                      {formattedWeight} grams (₹{(effectiveRate && !isNaN(effectiveRate) ? Number(effectiveRate).toFixed(2) : "0.00")}/gram)
+                    </Text>
+                  )}
+                </>
               )}
             </View>
           </LinearGradient>

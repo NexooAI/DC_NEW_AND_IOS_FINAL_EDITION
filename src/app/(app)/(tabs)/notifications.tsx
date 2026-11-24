@@ -678,51 +678,8 @@ export default function NotificationsScreen() {
             </View>
           </View>
 
-          {/* Floating Bell Button with Gold Badge (Test route enabled in __DEV__ only) */}
-          <TouchableOpacity
-            disabled={!__DEV__}
-            activeOpacity={__DEV__ ? 0.7 : 1}
-            onPress={() => {
-              if (__DEV__) {
-                router.push("/test-notifications");
-              }
-            }}
-            style={{
-              width: 46,
-              height: 46,
-              borderRadius: 23,
-              backgroundColor: 'white',
-              justifyContent: 'center',
-              alignItems: 'center',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.08,
-              shadowRadius: 5,
-              elevation: 4,
-            }}
-          >
-            <Ionicons name="notifications-outline" size={22} color="#0F1D3A" />
-            {unreadCount > 0 && (
-              <View style={{
-                position: 'absolute',
-                top: -3,
-                right: -3,
-                backgroundColor: '#D4AF37',
-                borderRadius: 10,
-                paddingHorizontal: 4,
-                minWidth: 18,
-                height: 18,
-                justifyContent: "center",
-                alignItems: "center",
-                borderWidth: 1.5,
-                borderColor: 'white'
-              }}>
-                <Text style={{ color: "white", fontWeight: "800", fontSize: 9 }}>
-                  {unreadCount}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          {/* Right Spacer to keep Notifications title centered (test-notifications button removed) */}
+          <View style={{ width: 46, height: 46 }} />
         </View>
 
         {/* Filter Chips Scrollbar */}

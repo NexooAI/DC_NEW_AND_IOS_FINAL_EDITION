@@ -23,19 +23,26 @@ import useGlobalStore, { useAppTheme } from "@/store/global.store";
 import { useRouter } from "expo-router";
 import { useTranslation } from "@/hooks/useTranslation";
 import { rewardsAPI } from "@/services/api";
-import referralService, { ReferralConfig, DEFAULT_REFERRAL_CONFIG } from "@/services/referralService";
 
 const { width } = Dimensions.get("window");
 
 import ScreenHeader from "@/components/ScreenHeader";
+import RewardsReferPageV2 from "@/components/rewardsV2";
+
+const USE_REFER_EARN_V2 = true; // Version 2 Unified Screen (Set to false to use Version 1)
 
 export default function ReferCodeScreen() {
+  const router = useRouter();
+
+  if (USE_REFER_EARN_V2) {
+    return <RewardsReferPageV2 onBack={() => router.back()} />;
+  }
+
   const theme = useAppTheme();
   const styles = getStyles(theme);
   const { t } = useTranslation();
   const { user } = useGlobalStore();
   const code = user?.referralCode || "DEFAULT123";
-  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState(t("refer_earn_tab_refer") || "Refer & Earn");
   const [referrals, setReferrals] = useState<any[]>([]);
@@ -43,13 +50,6 @@ export default function ReferCodeScreen() {
   const [walletBalance, setWalletBalance] = useState(0);
   const [walletTotalEarned, setWalletTotalEarned] = useState(0);
   const [history, setHistory] = useState<any[]>([]);
-  const [referralConfig, setReferralConfig] = useState<ReferralConfig>(DEFAULT_REFERRAL_CONFIG);
-
-  useEffect(() => {
-    referralService.getCachedConfig().then((cached) => {
-      if (cached) setReferralConfig(cached);
-    });
-  }, []);
 
   const fetchReferrals = useCallback(async () => {
     if (!user?.id) return;
@@ -67,16 +67,6 @@ export default function ReferCodeScreen() {
         if (Array.isArray(walletResponse.data.data.history)) {
           setHistory(walletResponse.data.data.history);
         }
-      }
-
-      // Dynamically fetch latest referral rules & tiers from server
-      try {
-        const remoteConfig = await referralService.fetchRemoteConfig(walletResponse?.data?.data);
-        if (remoteConfig) {
-          setReferralConfig(remoteConfig);
-        }
-      } catch (ruleErr) {
-        console.warn("Could not fetch remote referral rules, using cached/defaults:", ruleErr);
       }
     } catch (error) {
       console.error("Error fetching referrals in ReferEarn:", error);
@@ -112,25 +102,7 @@ export default function ReferCodeScreen() {
   };
 
   const referBaseUrl = theme?.baseUrl || "https://api.prod.kanisaajewellery.com";
-  const referralLink = `${referBaseUrl}/refer?code=${code}`;
-
-  const shareMessage = useMemo(() => {
-    const rawTemplate =
-      t("refer_earn_share_message") ||
-      `Use my referral code {code} to sign up and earn rewards! Click here to download the app: {url}`;
-
-    let message = rawTemplate
-      .replace(/{code}/g, code)
-      .replace(/https:\/\/api\.prod\.dcjewellers\.org\/refer\?code=\{code\}/g, referralLink)
-      .replace(/https:\/\/api\.prod\.dcjewellers\.org\/refer\?code=[^\s]+/g, referralLink)
-      .replace(/https:\/\/api\.prod\.kanisaajewellery\.com\/refer\?code=\{code\}/g, referralLink)
-      .replace(/{url}/g, referralLink);
-
-    if (!message.includes(referralLink)) {
-      message = `${message}\n${referralLink}`;
-    }
-    return message;
-  }, [code, referBaseUrl, t]);
+  const shareMessage = (t("refer_earn_share_message") || `Use my referral code {code} to sign up and earn rewards! Click here to download the app: ${referBaseUrl}/refer?code={code}`).replace(/{code}/g, code);
 
   const onShare = async () => {
     try {
@@ -167,33 +139,11 @@ export default function ReferCodeScreen() {
     }
   };
 
-  const maxEarnablePoints = useMemo(() => {
-    if (!referralConfig.investmentRules || referralConfig.investmentRules.length === 0) return 600;
-    return referralConfig.investmentRules.reduce((max, r) => Math.max(max, r.rewardValue), 0);
-  }, [referralConfig]);
-
   const banners = [
     { title: t("refer_earn_banner_1") || "Share the Wealth with Friends" },
-    {
-      title:
-        (t("refer_earn_banner_2") || "Invite your friends and earn up to {maxPoints} points on their first payment.")
-          .replace(/{maxPoints}/g, String(maxEarnablePoints))
-          .replace(/600/g, String(maxEarnablePoints))
-          .replace(/250/g, String(maxEarnablePoints))
-    },
+    { title: t("refer_earn_banner_2") || "Invite your friends and earn up to 250 points on their first payment." },
     { title: t("refer_earn_banner_3") || "Grow together and enjoy exclusive referral bonuses." }
   ];
-
-  const dynamicFaqAmountAnswer = useMemo(() => {
-    const lines = [
-      t("refer_earn_faq_amount_intro") || "Your earnings depend on your friend's payment:",
-      `• ${t("signup_bonus_title") || "Sign up Bonus"}: ${referralConfig.signupBonus} Points when friend registers`,
-    ];
-    referralConfig.investmentRules.forEach((rule) => {
-      lines.push(`• ${rule.displayAmount} → ${rule.displayReward}`);
-    });
-    return lines.join("\n");
-  }, [referralConfig, t]);
 
   const faqs = [
     { q: t("refer_earn_faq_limit_q"), a: t("refer_earn_faq_limit_a") },
@@ -204,7 +154,7 @@ export default function ReferCodeScreen() {
     { q: t("refer_earn_faq_withdraw_q"), a: t("refer_earn_faq_withdraw_a") },
     { q: t("refer_earn_faq_cancel_q"), a: t("refer_earn_faq_cancel_a") },
     { q: t("refer_earn_faq_later_q"), a: t("refer_earn_faq_later_a") },
-    { q: t("refer_earn_faq_amount_q"), a: dynamicFaqAmountAnswer || t("refer_earn_faq_amount_a") },
+    { q: t("refer_earn_faq_amount_q"), a: t("refer_earn_faq_amount_a") },
     { q: t("refer_earn_faq_program_q"), a: t("refer_earn_faq_program_a") },
   ];
 
@@ -349,74 +299,65 @@ export default function ReferCodeScreen() {
         {/* Tiers Content */}
         <View style={{ padding: 20, backgroundColor: theme.colors.white }}>
 
-          {/* Instant Sign Up Bonus Callout */}
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: '#FFF9E6',
-            borderRadius: 14,
-            padding: 14,
-            marginBottom: 20,
-            borderWidth: 1,
-            borderColor: '#FFE082'
-          }}>
+          {/* Tier 1 */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
             <View style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: '#FFD700',
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginRight: 12
+              width: 48, height: 48, borderRadius: 12, backgroundColor: '#FFFBE6',
+              justifyContent: 'center', alignItems: 'center', marginRight: 16
             }}>
-              <Ionicons name="sparkles" size={20} color="#004B40" />
+              <FontAwesome5 name="coins" size={20} color="#d4af37" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#B78103', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                {t("signup_bonus_title") || "Install & Sign Up Bonus"}
+              <Text style={{ fontSize: 13, color: theme.colors.textMediumGrey, marginBottom: 2, fontWeight: '600' }}>
+                {t("tier_1_amount") || "₹100 to ₹1,000"}
               </Text>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: '#1a1a1a', marginTop: 2 }}>
-                Instant <Text style={{ color: '#004B40', fontWeight: '800' }}>{referralConfig.signupBonus} Points</Text> on Friend's Sign Up
+              <Text style={{ fontSize: 16, color: '#1a1a1a', fontWeight: '700' }}>
+                Earn <Text style={{ color: '#004B40', fontWeight: '800' }}>50 Points</Text>
               </Text>
             </View>
           </View>
 
-          {/* Section Divider / Label */}
-          <View style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: theme.colors.textMediumGrey, textTransform: 'uppercase', letterSpacing: 0.8 }}>
-              {t("investment_rules_title") || "First Payment Rewards"}
-            </Text>
+          {/* Divider */}
+          <View style={{ height: 1, backgroundColor: theme.colors.backgroundSecondary, marginLeft: 64, marginBottom: 20 }} />
+
+          {/* Tier 2 */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+            <View style={{
+              width: 48, height: 48, borderRadius: 12, backgroundColor: '#FFFBE6',
+              justifyContent: 'center', alignItems: 'center', marginRight: 16
+            }}>
+              <FontAwesome5 name="coins" size={20} color="#d4af37" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, color: theme.colors.textMediumGrey, marginBottom: 2, fontWeight: '600' }}>
+                {t("tier_2_amount") || "₹1,000 to ₹10,000"}
+              </Text>
+              <Text style={{ fontSize: 16, color: '#1a1a1a', fontWeight: '700' }}>
+                Earn <Text style={{ color: '#004B40', fontWeight: '800' }}>250 Points</Text>
+              </Text>
+            </View>
           </View>
 
-          {/* Dynamic Investment Tiers from API / Server */}
-          {referralConfig.investmentRules.map((rule, index) => {
-            const isLast = index === referralConfig.investmentRules.length - 1;
-            const iconName = isLast ? "trophy" : (index >= 2 ? "award" : "coins");
+          {/* Divider */}
+          <View style={{ height: 1, backgroundColor: theme.colors.backgroundSecondary, marginLeft: 64, marginBottom: 20 }} />
 
-            return (
-              <React.Fragment key={rule.id || index}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 18 }}>
-                  <View style={{
-                    width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFFBE6',
-                    justifyContent: 'center', alignItems: 'center', marginRight: 14
-                  }}>
-                    <FontAwesome5 name={iconName} size={isLast ? 20 : 18} color="#d4af37" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, color: theme.colors.textMediumGrey, marginBottom: 2, fontWeight: '600' }}>
-                      {rule.displayAmount}
-                    </Text>
-                    <Text style={{ fontSize: 16, color: '#1a1a1a', fontWeight: '700' }}>
-                      {t("earn") || "Earn"} <Text style={{ color: '#004B40', fontWeight: '800' }}>{rule.displayReward}</Text>
-                    </Text>
-                  </View>
-                </View>
-                {!isLast && (
-                  <View style={{ height: 1, backgroundColor: theme.colors.backgroundSecondary, marginLeft: 58, marginBottom: 18 }} />
-                )}
-              </React.Fragment>
-            );
-          })}
+          {/* Tier 3 */}
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{
+              width: 48, height: 48, borderRadius: 12, backgroundColor: '#FFFBE6',
+              justifyContent: 'center', alignItems: 'center', marginRight: 16
+            }}>
+              <FontAwesome5 name="percentage" size={20} color="#d4af37" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, color: theme.colors.textMediumGrey, marginBottom: 2, fontWeight: '600' }}>
+                {t("tier_3_amount") || "Above ₹10,000"}
+              </Text>
+              <Text style={{ fontSize: 16, color: '#1a1a1a', fontWeight: '700' }}>
+                Earn <Text style={{ color: '#004B40', fontWeight: '800' }}>2% of Amount</Text>
+              </Text>
+            </View>
+          </View>
 
         </View>
       </View>

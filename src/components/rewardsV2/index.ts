@@ -1,0 +1,10 @@
+export { HeaderV2 } from "./HeaderV2";
+export { WalletHeroCardV2 } from "./WalletHeroCardV2";
+export { ReferralCodeCardV2 } from "./ReferralCodeCardV2";
+export { SegmentedTabsV2 } from "./SegmentedTabsV2";
+export { ReferTiersSectionV2 } from "./ReferTiersSectionV2";
+export { MyReferralsSectionV2 } from "./MyReferralsSectionV2";
+export { RedeemFaqSectionV2 } from "./RedeemFaqSectionV2";
+export { StickyBottomBarV2 } from "./StickyBottomBarV2";
+export { RewardsReferPageV2 } from "./RewardsReferPageV2";
+export { default } from "./RewardsReferPageV2";
