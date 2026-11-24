@@ -66,7 +66,7 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
             {appConfig.constants.customerName || "Sri Murugan Gold House"}
           </Text>
           <Text style={styles.brandTagline}>
-            {t("brandTagline", { defaultValue: "Pure Gold & Trust" })}
+            {t("generationsOfTrust", { defaultValue: "தலைமுறை தலைமுறையாய் உங்கள் நம்பிக்கை" })}
           </Text>
         </View>
       </View>
