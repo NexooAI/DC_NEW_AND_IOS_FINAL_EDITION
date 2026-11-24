@@ -1467,6 +1467,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
       ? (t(fixedFreqKey) || fixedFreqKey)
       : (t(schemeTypeLabel) || schemeTypeLabel);
     const isFixedWeightScheme =
+      (item as any).scheme_mode === "FIXED_WEIGHT" ||
       (item as any).is_fixed_weight === 1 ||
       (item as any).is_fixed_weight === true;
     const planLabel = itemIsFlexi
