@@ -1136,13 +1136,13 @@ export default function MpinVerify() {
 
   return (
     <View
-      style={[styles.backgroundImage, { backgroundColor: theme.colors.primary }]}
+      style={[styles.backgroundImage, { backgroundColor: "#FAF9F6" }]}
     >
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
+      <StatusBar barStyle="light-content" backgroundColor="#850111" />
       <LinearGradient
         colors={[
-          "#FFFFFF",
-          "#FFFFFF",
+          "#FAF9F6",
+          "#FAF9F6",
         ]}
         style={styles.gradient}
       >
@@ -1154,14 +1154,16 @@ export default function MpinVerify() {
         >
           <Pressable onPress={Keyboard.dismiss} style={{ flex: 1 }}>
             <View style={styles.container}>
-              <View
+              <LinearGradient
+                colors={["#850111", "#5A000B", "#3B0006"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
                 style={{
                   height: Platform.OS === 'ios' ? hp(34) : hp(30),
                   paddingTop: insets.top + (Platform.OS === 'ios' ? 20 : 10),
                   justifyContent: "center",
                   alignItems: "center",
                   width: "100%",
-                  backgroundColor: theme.colors.primary,
                   position: 'relative',
                 }}
               >
@@ -1176,7 +1178,7 @@ export default function MpinVerify() {
                     flexDirection: 'row',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    opacity: 0.25,
+                    opacity: 0.13,
                     zIndex: 0,
                   }}>
                     <View style={{
@@ -1186,7 +1188,7 @@ export default function MpinVerify() {
                       borderRadius: 12,
                       overflow: 'hidden',
                       borderWidth: 1,
-                      borderColor: 'rgba(255, 215, 0, 0.25)',
+                      borderColor: 'rgba(212, 175, 55, 0.35)',
                     }}>
                       <Image
                         source={getIndexImage(0) ? getImageSource(getIndexImage(0)) : require("../../../assets/images/intro_1.png")}
@@ -1201,7 +1203,7 @@ export default function MpinVerify() {
                       borderRadius: 12,
                       overflow: 'hidden',
                       borderWidth: 1,
-                      borderColor: 'rgba(255, 215, 0, 0.25)',
+                      borderColor: 'rgba(212, 175, 55, 0.35)',
                     }}>
                       <Image
                         source={getIndexImage(1) ? getImageSource(getIndexImage(1)) : require("../../../assets/images/intro_1.png")}
@@ -1216,7 +1218,7 @@ export default function MpinVerify() {
                       borderRadius: 12,
                       overflow: 'hidden',
                       borderWidth: 1,
-                      borderColor: 'rgba(255, 215, 0, 0.25)',
+                      borderColor: 'rgba(212, 175, 55, 0.35)',
                     }}>
                       <Image
                         source={getIndexImage(2) ? getImageSource(getIndexImage(2)) : require("../../../assets/images/intro_1.png")}
@@ -1227,29 +1229,51 @@ export default function MpinVerify() {
                   </View>
                 )}
 
-                <Image
-                  source={require("../../../assets/images/logo_trans.png")}
-                  style={[
-                    styles.logo,
-                    {
-                      width: 180,
-                      height: 180,
-                      aspectRatio: 1,
-                      zIndex: 1,
-                    },
-                  ]}
-                  resizeMode="contain"
-                  fadeDuration={0}
-                />
-              </View>
+                {/* Royal Ivory & Gold Medallion Frame for Logo */}
+                <View
+                  style={{
+                    width: 146,
+                    height: 146,
+                    borderRadius: 73,
+                    backgroundColor: '#FFFDF5',
+                    borderWidth: 2.5,
+                    borderColor: '#D4AF37',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 2,
+                    shadowColor: '#D4AF37',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.45,
+                    shadowRadius: 12,
+                    elevation: 10,
+                    padding: 10,
+                  }}
+                >
+                  <Image
+                    source={require("../../../assets/images/logo_trans.png")}
+                    style={{
+                      width: 120,
+                      height: 120,
+                    }}
+                    resizeMode="contain"
+                    fadeDuration={0}
+                  />
+                </View>
+              </LinearGradient>
 
               <View style={styles.formContainer}>
-                {/* Custom wave curve at the top */}
+                {/* Custom wave curve at the top with gold rim */}
                 <View style={{ position: 'absolute', top: -39, left: 0, right: 0, height: 40, zIndex: 10, backgroundColor: 'transparent' }}>
                   <Svg height="40" width={width} viewBox={`0 0 ${width} 40`} style={{ position: 'absolute', top: 0, left: 0 }}>
                     <Path
                       d={`M0,40 C${width * 0.3},40 ${width * 0.7},0 ${width},0 L${width},40 L0,40 Z`}
-                      fill="#FFFFFF"
+                      fill="#FAF9F6"
+                    />
+                    <Path
+                      d={`M0,40 C${width * 0.3},40 ${width * 0.7},0 ${width},0`}
+                      fill="none"
+                      stroke="#D4AF37"
+                      strokeWidth="2.5"
                     />
                   </Svg>
                 </View>
@@ -1366,8 +1390,10 @@ export default function MpinVerify() {
                         colors={
                           isLocked
                             ? ["#cccccc", "#dddddd"]
-                            : [theme.colors.primary, theme.colors.primary]
+                            : ["#850111", "#63010D"]
                         }
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
                         style={styles.buttonGradient}
                       >
                         <Text style={styles.loginButtonText}>
@@ -1395,7 +1421,7 @@ export default function MpinVerify() {
                       onPress={handleBiometricPress}
                       disabled={loading || isLocked}
                     >
-                      <Icon name="fingerprint" size={40} color={COLORS.primary} />
+                      <Icon name="fingerprint" size={40} color="#850111" />
                       <Text style={styles.biometricText}>
                         {Platform.OS === 'ios' ? (t('faceIdTouchId') || 'Face ID / Touch ID') : (t('biometricLogin') || 'Biometric Login')}
                       </Text>
@@ -1500,7 +1526,9 @@ export default function MpinVerify() {
                         style={StyleSheet.absoluteFill}
                       />
                       <View style={styles.ornamentTextContainer}>
-                        <Text style={styles.ornamentPromoTitle}>DC Jewellers Collections</Text>
+                        <Text style={styles.ornamentPromoTitle}>
+                          {theme.constants.customerName || "Sri Murugan Gold House"}
+                        </Text>
                         <Text style={styles.ornamentPromoSubtitle}>Explore our pure gold savings schemes & new arrivals</Text>
                       </View>
                     </View>
@@ -1600,9 +1628,9 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     alignItems: "center",
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingTop: 30,
     paddingBottom: Platform.OS === "ios" ? 80 : 100,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAF9F6',
     zIndex: 1,
     position: 'relative',
   },
@@ -1612,18 +1640,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   mpinTitle: {
-    color: COLORS.primary,
-    fontSize: 28,
+    color: "#850111",
+    fontSize: 26,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 8,
     textAlign: "center",
   },
   mpinSubtitle: {
-    color: COLORS.primary,
-    fontSize: 16,
-    marginBottom: 30,
+    color: "#B8860B",
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 28,
     textAlign: "center",
-    opacity: 0.8,
   },
   otpInputsContainer: {
     flexDirection: "row",
@@ -1640,22 +1668,27 @@ const styles = StyleSheet.create({
   otpInput: {
     width: "100%",
     height: "100%",
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderRadius: 12,
     textAlign: "center",
     fontSize: 24,
-    color: COLORS.black,
-    backgroundColor: COLORS.white,
+    color: "#850111",
+    backgroundColor: "#FFFDF9",
+    shadowColor: "#850111",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   otpInputEmpty: {
-    borderColor: "#cbd5e1",
-    backgroundColor: COLORS.white,
-    color: COLORS.black,
+    borderColor: "rgba(212, 175, 55, 0.45)",
+    backgroundColor: "#FFFDF9",
+    color: "#850111",
   },
   otpInputFilled: {
-    borderColor: theme.colors.secondary,
-    backgroundColor: COLORS.white,
-    color: COLORS.black,
+    borderColor: "#850111",
+    backgroundColor: "#FFFDF9",
+    color: "#850111",
   },
   otpInputDisabled: {
     borderColor: COLORS.grey,
@@ -1669,13 +1702,15 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: theme.colors.secondary,
+    backgroundColor: "#D4AF37",
     transform: [{ translateX: -4 }, { translateY: -4 }],
   },
   loginButton: {
     width: "100%",
     height: 50,
-    borderRadius: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#D4AF37",
     overflow: "hidden",
     marginTop: 20,
     ...Platform.select({
