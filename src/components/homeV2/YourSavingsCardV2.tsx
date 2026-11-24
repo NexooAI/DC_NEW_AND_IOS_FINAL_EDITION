@@ -89,7 +89,7 @@ export const YourSavingsCardV2: React.FC<YourSavingsCardV2Props> = ({
             </View>
 
             <View style={styles.arrowCircle}>
-              <Ionicons name="arrow-forward" size={14} color="#A16207" />
+              <Ionicons name="arrow-forward" size={14} color="#850111" />
             </View>
           </View>
         </LinearGradient>
@@ -105,9 +105,9 @@ const styles = StyleSheet.create({
   },
   cardWrapper: {
     borderRadius: moderateScale(16),
-    shadowColor: "#000",
+    shadowColor: "#850111",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
   },
@@ -117,17 +117,19 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(16),
     paddingVertical: moderateScale(12),
     paddingHorizontal: moderateScale(14),
-    borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.3)",
+    borderWidth: 1.2,
+    borderColor: "rgba(212, 175, 55, 0.45)", // Heritage Gold Border
   },
   iconContainer: {
     width: moderateScale(42),
     height: moderateScale(42),
     borderRadius: moderateScale(21),
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: moderateScale(10),
+    borderWidth: 1,
+    borderColor: "rgba(212, 175, 55, 0.3)",
   },
   icon: {
     width: moderateScale(32),
@@ -139,7 +141,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: moderateScale(14),
     fontWeight: "800",
-    color: "#0F172A",
+    color: "#850111", // Royal Burgundy
     letterSpacing: 0.2,
   },
   subtitle: {
@@ -151,7 +153,7 @@ const styles = StyleSheet.create({
   divider: {
     width: 1,
     height: moderateScale(32),
-    backgroundColor: "rgba(212, 175, 55, 0.25)",
+    backgroundColor: "rgba(212, 175, 55, 0.35)",
     marginHorizontal: moderateScale(10),
   },
   valueContainer: {
@@ -167,7 +169,7 @@ const styles = StyleSheet.create({
   valueAmount: {
     fontSize: moderateScale(14),
     fontWeight: "800",
-    color: "#0F172A",
+    color: "#700918", // Deep Royal Ruby
   },
   arrowCircle: {
     width: moderateScale(26),

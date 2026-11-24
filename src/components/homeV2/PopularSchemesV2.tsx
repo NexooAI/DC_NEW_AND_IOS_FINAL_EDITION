@@ -577,7 +577,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: moderateScale(16),
     fontWeight: "800",
-    color: "#0F172A",
+    color: "#850111", // Royal Temple Burgundy
     letterSpacing: 0.2,
   },
   viewAllBtn: {
@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: moderateScale(12.5),
     fontWeight: "700",
-    color: "#003C28",
+    color: "#850111",
   },
   filterTabsScroll: {
     paddingHorizontal: moderateScale(16),

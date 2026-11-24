@@ -42,7 +42,7 @@ export const SupportCardV2: React.FC<SupportCardV2Props> = ({ onPress }) => {
       >
         {/* Left Headset Icon */}
         <View style={styles.iconCircle}>
-          <Ionicons name="headset" size={24} color="#003C28" />
+          <Ionicons name="headset" size={24} color="#850111" />
         </View>
 
         {/* Center Text */}
@@ -60,7 +60,7 @@ export const SupportCardV2: React.FC<SupportCardV2Props> = ({ onPress }) => {
           <Text style={styles.actionText}>
             {t("contactSupport", { defaultValue: "Contact Support" })}
           </Text>
-          <Ionicons name="arrow-forward" size={12} color="#003C28" />
+          <Ionicons name="arrow-forward" size={12} color="#FFFFFF" />
         </View>
       </TouchableOpacity>
     </View>
@@ -75,23 +75,23 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#FFFDF9",
     borderRadius: moderateScale(16),
     paddingVertical: moderateScale(12),
     paddingHorizontal: moderateScale(14),
     borderWidth: 1,
-    borderColor: "rgba(0, 60, 40, 0.12)",
-    shadowColor: "#000",
+    borderColor: "rgba(212, 175, 55, 0.35)",
+    shadowColor: "#850111",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.04,
     shadowRadius: 4,
-    elevation: 1,
+    elevation: 2,
   },
   iconCircle: {
     width: moderateScale(40),
     height: moderateScale(40),
     borderRadius: moderateScale(20),
-    backgroundColor: "rgba(0, 60, 40, 0.08)",
+    backgroundColor: "rgba(133, 1, 17, 0.08)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: moderateScale(10),
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: moderateScale(14),
     fontWeight: "800",
-    color: "#0F172A",
+    color: "#850111",
   },
   subtitle: {
     fontSize: moderateScale(11),
@@ -114,17 +114,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#003C28",
+    borderColor: "#850111",
     paddingHorizontal: moderateScale(12),
     paddingVertical: moderateScale(6),
     borderRadius: moderateScale(20),
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#850111",
     gap: moderateScale(4),
   },
   actionText: {
     fontSize: moderateScale(11.5),
     fontWeight: "700",
-    color: "#003C28",
+    color: "#FFFFFF",
   },
 });
 

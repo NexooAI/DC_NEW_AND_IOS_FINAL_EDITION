@@ -124,10 +124,10 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
         activeOpacity={0.88}
       >
         <LinearGradient
-          colors={["#FFFDF8", "#FAF4E8"]}
+          colors={["#FFFDF5", "#FDF3DD", "#F6E3B4"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.card}
+          style={[styles.card, styles.goldCard]}
         >
           <View style={styles.topRow}>
             <Image
@@ -137,7 +137,7 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
               fadeDuration={0}
             />
             <View style={styles.rateHeaderContainer}>
-              <Text style={styles.rateType}>
+              <Text style={styles.goldRateType}>
                 {t("goldRate", { defaultValue: "Gold Rate" })} ({goldPurity})
               </Text>
               {goldChangeInfo && (
@@ -152,13 +152,13 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
           </View>
 
           <View style={styles.bottomRow}>
-            <Text style={styles.rateValue}>
+            <Text style={styles.goldRateValue}>
               ₹ {formatRate(goldRate)}
-              <Text style={styles.unitText}> {t("perGram", { defaultValue: "/ gm" })}</Text>
+              <Text style={styles.goldUnitText}> {t("perGram", { defaultValue: "/ gm" })}</Text>
             </Text>
             <View style={styles.timeBadgeContainer}>
-              <Ionicons name="time-outline" size={10} color="#94A3B8" />
-              <Text style={styles.todayText}>{formattedTime || t("today", { defaultValue: "Today" })}</Text>
+              <Ionicons name="time-outline" size={10} color="#850111" />
+              <Text style={styles.goldTodayText}>{formattedTime || t("today", { defaultValue: "Today" })}</Text>
             </View>
           </View>
         </LinearGradient>
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     paddingVertical: moderateScale(10),
     paddingHorizontal: moderateScale(12),
     borderWidth: 1,
-    borderColor: "rgba(212, 175, 55, 0.25)",
+    borderColor: "#CBD5E1",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -235,6 +235,14 @@ const styles = StyleSheet.create({
     elevation: 2,
     justifyContent: "space-between",
     minHeight: moderateScale(76),
+  },
+  goldCard: {
+    borderColor: "#D4AF37", // Sacred Heritage Gold Border
+    borderWidth: 1.5,
+    shadowColor: "#850111", // Warm Temple Maroon Glow
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   topRow: {
     flexDirection: "row",
@@ -253,6 +261,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#475569",
     marginBottom: 1,
+  },
+  goldRateType: {
+    fontSize: moderateScale(11),
+    fontWeight: "800",
+    color: "#850111", // Royal Temple Maroon
+    marginBottom: 1,
+    letterSpacing: 0.2,
   },
   changeBadge: {
     flexDirection: "row",
@@ -274,6 +289,12 @@ const styles = StyleSheet.create({
     color: "#64748B",
     marginLeft: 2,
   },
+  goldTodayText: {
+    fontSize: moderateScale(9),
+    fontWeight: "600",
+    color: "#850111",
+    marginLeft: 2,
+  },
   bottomRow: {
     marginTop: moderateScale(4),
     flexDirection: "column",
@@ -291,10 +312,21 @@ const styles = StyleSheet.create({
     color: "#0F172A",
     letterSpacing: 0.3,
   },
+  goldRateValue: {
+    fontSize: moderateScale(15),
+    fontWeight: "900",
+    color: "#700918", // Deep Royal Ruby
+    letterSpacing: 0.3,
+  },
   unitText: {
     fontSize: moderateScale(11),
     fontWeight: "600",
     color: "#64748B",
+  },
+  goldUnitText: {
+    fontSize: moderateScale(11),
+    fontWeight: "700",
+    color: "#850111",
   },
 });
 

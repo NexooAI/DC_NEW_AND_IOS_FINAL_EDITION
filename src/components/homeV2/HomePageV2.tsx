@@ -278,7 +278,7 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor="#850111" />
 
       {/* 1. Header (Always visible) */}
       <HeaderV2 />
@@ -296,8 +296,8 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#003C28", "#C59B27"]}
-            tintColor="#003C28"
+            colors={["#850111", "#D4AF37"]}
+            tintColor="#850111"
           />
         }
       >
@@ -335,7 +335,7 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#850111", // Matches Royal Maroon Header seamless edge
   },
   scrollView: {
     flex: 1,
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   },
   poweredByLink: {
     fontSize: 11,
-    color: "#003C28",
+    color: "#850111",
     fontWeight: "700",
   },
   bottomSpacer: {

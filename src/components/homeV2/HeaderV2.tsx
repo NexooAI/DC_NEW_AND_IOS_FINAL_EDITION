@@ -62,7 +62,7 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
           resizeMode="contain"
         />
         <View style={styles.brandTextContainer}>
-          <Text style={[styles.brandTitle, { color: theme.colors.primary }]} numberOfLines={1}>
+          <Text style={styles.brandTitle} numberOfLines={1}>
             {appConfig.constants.customerName || "Sri Murugan Gold House"}
           </Text>
           <Text style={styles.brandTagline}>
@@ -79,7 +79,7 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="language" size={20} color="#1E293B" />
+          <Ionicons name="language" size={19} color="#FFDF00" />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -88,7 +88,7 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="notifications-outline" size={22} color="#1E293B" />
+          <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
           {unreadCount > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>
@@ -104,7 +104,7 @@ export const HeaderV2: React.FC<HeaderV2Props> = ({
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="menu" size={24} color="#1E293B" />
+          <Ionicons name="menu" size={22} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
@@ -124,9 +124,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: moderateScale(14),
     paddingTop: Platform.OS === "android" ? moderateScale(8) : moderateScale(4),
     paddingBottom: moderateScale(10),
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0, 0, 0, 0.04)",
+    backgroundColor: "#850111", // Royal Temple Burgundy
+    borderBottomWidth: 1.5,
+    borderBottomColor: "#D4AF37", // Sacred Gold Border
   },
   brandContainer: {
     flexDirection: "row",
@@ -146,16 +146,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   brandTitle: {
-    fontSize: moderateScale(12.5),
+    fontSize: moderateScale(13),
     fontWeight: "800",
-    color: "#5B0E2D", // Sri Ganapathy Jewel City primary
-    letterSpacing: 0.3,
+    color: "#FFFFFF", // Crisp White for High Royal Contrast
+    letterSpacing: 0.4,
     textTransform: "uppercase",
   },
   brandTagline: {
     fontSize: moderateScale(10),
-    color: "#C59B27", // Warm Gold
-    fontWeight: "600",
+    color: "#FFDF00", // Radiant Temple Gold
+    fontWeight: "700",
     fontStyle: "italic",
     marginTop: -1,
   },
@@ -171,13 +171,13 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(17.5),
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "rgba(255, 255, 255, 0.16)", // Translucent Royal Frosted Glass
   },
   badge: {
     position: "absolute",
     top: 4,
     right: 4,
-    backgroundColor: "#DC2626", // Vivid Red
+    backgroundColor: "#F59E0B", // Bright Amber Gold
     borderRadius: 8,
     minWidth: 16,
     height: 16,
@@ -185,10 +185,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 3,
     borderWidth: 1.5,
-    borderColor: "#FFFFFF",
+    borderColor: "#850111",
   },
   badgeText: {
-    color: "#FFFFFF",
+    color: "#850111", // Maroon text on Gold Badge
     fontSize: 9,
     fontWeight: "800",
   },

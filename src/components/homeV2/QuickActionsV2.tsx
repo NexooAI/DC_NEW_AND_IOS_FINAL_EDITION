@@ -98,7 +98,7 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
           <Text style={styles.viewAllText}>
             {t("viewAll", { defaultValue: "View All" })}
           </Text>
-          <Ionicons name="arrow-forward" size={13} color="#003C28" />
+          <Ionicons name="arrow-forward" size={13} color="#850111" />
         </TouchableOpacity>
       </View>
 
@@ -115,7 +115,7 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
           activeOpacity={0.85}
         >
           <View style={styles.iconWrapper}>
-            <Ionicons name="wallet-outline" size={22} color="#003C28" />
+            <Ionicons name="wallet-outline" size={22} color="#850111" />
           </View>
           <Text style={styles.actionText} numberOfLines={1}>
             {t("mySchemes", { defaultValue: "My Schemes" })}
@@ -143,7 +143,7 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
           activeOpacity={0.85}
         >
           <View style={styles.iconWrapper}>
-            <Ionicons name="receipt-outline" size={22} color="#003C28" />
+            <Ionicons name="receipt-outline" size={22} color="#850111" />
           </View>
           <Text style={styles.actionText} numberOfLines={1}>
             {t("receipts", { defaultValue: "Receipts" })}
@@ -157,7 +157,7 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
           activeOpacity={0.85}
         >
           <View style={styles.iconWrapper}>
-            <Ionicons name="trending-up-outline" size={22} color="#DAA520" />
+            <Ionicons name="trending-up-outline" size={22} color="#B8860B" />
           </View>
           <Text style={styles.actionText} numberOfLines={1}>
             {t("goldRate", { defaultValue: "Gold Rate" })}
@@ -171,7 +171,7 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
           activeOpacity={0.85}
         >
           <View style={styles.iconWrapper}>
-            <Ionicons name="location-outline" size={22} color="#003C28" />
+            <Ionicons name="location-outline" size={22} color="#850111" />
           </View>
           <Text style={styles.actionText} numberOfLines={1}>
             {t("ourStores", { defaultValue: "Our Stores" })}
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: moderateScale(16),
     fontWeight: "800",
-    color: "#0F172A",
+    color: "#850111", // Royal Temple Burgundy
     letterSpacing: 0.2,
   },
   viewAllBtn: {
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: moderateScale(12.5),
     fontWeight: "700",
-    color: "#003C28",
+    color: "#850111",
   },
   actionsRow: {
     paddingHorizontal: moderateScale(16),
@@ -217,26 +217,26 @@ const styles = StyleSheet.create({
     minWidth: moderateScale(96),
     height: moderateScale(72),
     borderRadius: moderateScale(14),
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#FFFDF9", // Warm Ivory Cream
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.05)",
+    borderColor: "rgba(212, 175, 55, 0.35)", // Subtle gold rim
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: moderateScale(10),
     paddingVertical: moderateScale(6),
-    shadowColor: "#000",
+    shadowColor: "#850111",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
   iconWrapper: {
     marginBottom: moderateScale(4),
   },
   actionText: {
     fontSize: moderateScale(10.5),
-    fontWeight: "600",
-    color: "#334155",
+    fontWeight: "700",
+    color: "#4A0E17", // Rich Deep Maroon
     textAlign: "center",
   },
 });

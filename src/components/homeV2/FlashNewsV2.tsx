@@ -152,7 +152,7 @@ export const FlashNewsV2: React.FC<FlashNewsV2Props> = ({
       activeOpacity={0.9}
     >
       <LinearGradient
-        colors={[primaryColor, "#1E293B"]}
+        colors={[primaryColor, "#4A030C"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.gradientBar}

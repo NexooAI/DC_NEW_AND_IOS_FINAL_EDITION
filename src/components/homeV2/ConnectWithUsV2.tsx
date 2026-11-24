@@ -71,7 +71,7 @@ export const ConnectWithUsV2: React.FC<ConnectWithUsV2Props> = ({
       (theme.constants as any)?.mobile ||
       "919876543210";
     const cleanNumber = String(rawNumber).replace(/[^\d]/g, "");
-    const customerName = theme.constants.customerName || "Sri Ganapathy Jewel City";
+    const customerName = theme.constants.customerName || "Sri Murugan Gold House";
     const text = encodeURIComponent(`Hello ${customerName}, I would like to enquire about your chit schemes.`);
     const url = `whatsapp://send?phone=${cleanNumber}&text=${text}`;
     const webUrl = `https://wa.me/${cleanNumber}?text=${text}`;
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: moderateScale(16),
     fontWeight: "800",
-    color: "#0F172A",
+    color: "#850111", // Royal Temple Burgundy
     letterSpacing: 0.2,
     marginBottom: moderateScale(12),
   },
