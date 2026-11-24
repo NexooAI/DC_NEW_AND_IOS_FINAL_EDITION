@@ -899,16 +899,12 @@ export default function ForgotMpin() {
   if (initializing) {
     return (
       <LinearGradient
-        colors={[
-          theme.colors.transparent,
-          theme.colors.transparent,
-          theme.colors.bgPrimaryLight,
-        ]}
+        colors={["#850111", "#5A000B", "#2D0005"]}
         style={styles.gradient}
       >
         <View style={styles.container}>
           <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>{t("loading")}</Text>
+            <Text style={[styles.loadingText, { color: "#FFDF00" }]}>{t("loading")}</Text>
           </View>
         </View>
       </LinearGradient>
@@ -1039,9 +1035,6 @@ export default function ForgotMpin() {
 
   const renderCreateMpinStep = () => (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>{t("createMpinTitle") || "Create MPIN"}</Text>
-      <Text style={styles.cardSubtitle}>{t("createNewMpinSubtitle") || "Create a new MPIN"}</Text>
-
       <Animated.View
         style={[
           styles.inputContainer,
@@ -1275,10 +1268,14 @@ export default function ForgotMpin() {
                 {/* Title and Subtitle inside the ivory card */}
                 <View style={{ marginBottom: 20 }}>
                   <Text style={{ color: '#850111', fontSize: 22, fontWeight: 'bold', marginBottom: 6 }}>
-                    {t("forgotMpinTitle") || "Forgot MPIN"}
+                    {step === "createMpin"
+                      ? (t("resetMpin") || "Reset MPIN")
+                      : (t("forgotMpinTitle") || "Forgot MPIN")}
                   </Text>
                   <Text style={{ color: '#B8860B', fontSize: 14, fontWeight: '600' }}>
-                    {t("forgotMpinSubtitle") || "Reset your MPIN"}
+                    {step === "createMpin"
+                      ? (t("createNewMpinSubtitle") || "Create a new MPIN")
+                      : (t("forgotMpinSubtitle") || "Reset your MPIN")}
                   </Text>
                 </View>
 

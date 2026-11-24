@@ -84,6 +84,7 @@ const createThemeColors = (basePalette, overrides = {}) => {
     silver: colors.silver || colors.textLightGrey,
     gold: colors.gold || colors.secondary,
     goldLight: colors.goldLight || colors.backgroundTertiary,
+    bgPrimaryLight: colors.bgPrimaryLight || "rgba(133, 1, 17, 0.12)",
     textBrown: colors.textBrown || colors.textSecondary,
     textDarkBrown: colors.textDarkBrown || colors.textDark,
     cardBackgroundLight: colors.cardBackgroundLight || surfaceElevated,
