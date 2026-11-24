@@ -10,6 +10,7 @@ import { useSegments, useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
 import { COLORS } from "@/constants/colors";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { BlurView } from "expo-blur";
 import CustomBottomBar from "@/common/components/navigation/CustomBottomBar";
 
@@ -21,7 +22,22 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const segments = useSegments();
   const router = useRouter();
-  const hasDashboard = getAppConfig().constants.enableDashboard;
+  const { visibleData } = useAppVisibility();
+
+  // Dynamic Dashboard support: checks config and backend visibility flags
+  const hasDashboard = Boolean(
+    getAppConfig().constants.enableDashboard ||
+    visibleData?.enableDashboardV2 === 1 ||
+    visibleData?.enableDashboard === 1 ||
+    visibleData?.showTabDashboard === 1 ||
+    visibleData?.showBottomNavDashboard === 1 ||
+    visibleData?.showBottomNavDashboard === true
+  ) &&
+  visibleData?.enableDashboardV2 !== 0 &&
+  visibleData?.enableDashboard !== 0 &&
+  visibleData?.showTabDashboard !== 0 &&
+  visibleData?.showBottomNavDashboard !== 0 &&
+  visibleData?.showBottomNavDashboard !== false;
 
   // Check if we're on the schemes page
   const fullPath = segments.join("/");

@@ -61,14 +61,31 @@ export default function CustomBottomBar(_props?: any) {
 
   const current = segments[segments.length - 1] || "home";
 
+  const hasDashboard = Boolean(
+    theme?.constants?.enableDashboard ||
+    visibleData?.enableDashboardV2 === 1 ||
+    visibleData?.enableDashboard === 1 ||
+    visibleData?.showTabDashboard === 1 ||
+    visibleData?.showBottomNavDashboard === 1 ||
+    visibleData?.showBottomNavDashboard === true
+  ) &&
+  visibleData?.enableDashboardV2 !== 0 &&
+  visibleData?.enableDashboard !== 0 &&
+  visibleData?.showTabDashboard !== 0 &&
+  visibleData?.showBottomNavDashboard !== 0 &&
+  visibleData?.showBottomNavDashboard !== false;
+
   // Dynamic Settings from API
   const bottomNavStyle = (visibleData?.bottomNavStyle || "v2_floating") as
     | "v1_classic"
     | "v2_floating"
     | "v3_center_fab"
     | "v4_curved";
-  const bottomNavTabsOrder = visibleData?.bottomNavTabsOrder || "home,savings,quick_join,rewards,profile";
-  const bottomNavCenterTab = visibleData?.bottomNavCenterTab || "quick_join";
+  const defaultTabsOrder = hasDashboard
+    ? "home,savings,dashboard_tab,rewards,profile"
+    : "home,savings,quick_join,rewards,profile";
+  const bottomNavTabsOrder = visibleData?.bottomNavTabsOrder || defaultTabsOrder;
+  const bottomNavCenterTab = visibleData?.bottomNavCenterTab || (hasDashboard ? "dashboard_tab" : "quick_join");
 
   const getProfileImageSource = () => {
     if (user?.profileImage) {
@@ -111,12 +128,6 @@ export default function CustomBottomBar(_props?: any) {
     "policies/privacyPolicy",
     "policies/termsAndConditionsPolicies",
   ];
-
-  const hasDashboard = Boolean(
-    theme?.constants?.enableDashboard ||
-    visibleData?.enableDashboardV2 === 1 ||
-    visibleData?.enableDashboard === 1
-  );
 
   const tabs: Tab[] = useMemo(() => {
     const rawTabs: Tab[] = [
@@ -165,7 +176,9 @@ export default function CustomBottomBar(_props?: any) {
           hasDashboard &&
           visibleData?.enableDashboardV2 !== 0 &&
           visibleData?.enableDashboard !== 0 &&
-          (visibleData?.enableDashboardV2 === 1 || visibleData?.enableDashboard === 1 || isVisible("enableDashboardV2" as any))
+          visibleData?.showTabDashboard !== 0 &&
+          visibleData?.showBottomNavDashboard !== 0 &&
+          visibleData?.showBottomNavDashboard !== false
         );
       }
       if (tab.name === "rewards") return isVisible("showTabRewards");
@@ -173,11 +186,20 @@ export default function CustomBottomBar(_props?: any) {
       return true;
     });
 
-    // 1. Order tabs dynamically
-    const orderArray = bottomNavTabsOrder.split(",").map((s: string) => s.trim());
+    // 1. Order tabs dynamically with dashboard always guaranteed in center
+    let effectiveOrderArray = bottomNavTabsOrder.split(",").map((s: string) => s.trim());
+    if (hasDashboard && !effectiveOrderArray.includes("dashboard_tab")) {
+      const savingsIdx = effectiveOrderArray.indexOf("savings");
+      if (savingsIdx !== -1) {
+        effectiveOrderArray.splice(savingsIdx + 1, 0, "dashboard_tab");
+      } else {
+        effectiveOrderArray.splice(Math.floor(effectiveOrderArray.length / 2), 0, "dashboard_tab");
+      }
+    }
+
     const sortedTabs = [...rawTabs].sort((a, b) => {
-      const idxA = orderArray.indexOf(a.name);
-      const idxB = orderArray.indexOf(b.name);
+      const idxA = effectiveOrderArray.indexOf(a.name);
+      const idxB = effectiveOrderArray.indexOf(b.name);
       if (idxA === -1 && idxB === -1) return 0;
       if (idxA === -1) return 1;
       if (idxB === -1) return -1;
@@ -189,7 +211,7 @@ export default function CustomBottomBar(_props?: any) {
       let targetCenterName = bottomNavCenterTab;
       let centerIdx = sortedTabs.findIndex(t => t.name === targetCenterName);
       if (centerIdx === -1) {
-        centerIdx = sortedTabs.findIndex(t => t.name === "quick_join");
+        centerIdx = sortedTabs.findIndex(t => t.name === (hasDashboard ? "dashboard_tab" : "quick_join"));
       }
       if (centerIdx === -1) {
         centerIdx = Math.floor(sortedTabs.length / 2);
