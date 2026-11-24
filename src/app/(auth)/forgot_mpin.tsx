@@ -1005,8 +1005,10 @@ export default function ForgotMpin() {
           disabled={loading || otp.length !== 4}
         >
           <LinearGradient
-            colors={[theme.colors.primary, theme.colors.primary]}
-            style={styles.buttonGradient}
+            colors={["#850111", "#63010D"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.buttonGradient, { borderRadius: 12 }]}
           >
             <Text style={styles.actionButtonText}>
               {loading ? t("verifying") : t("verifyOtp")}
@@ -1112,8 +1114,10 @@ export default function ForgotMpin() {
           }
         >
           <LinearGradient
-            colors={[theme.colors.primary, theme.colors.primary]}
-            style={styles.buttonGradient}
+            colors={["#850111", "#63010D"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.buttonGradient, { borderRadius: 12 }]}
           >
             <Text style={styles.actionButtonText}>
               {loading ? t("resetting") : t("resetMpin")}
@@ -1128,10 +1132,10 @@ export default function ForgotMpin() {
     <View
       style={{
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FAF9F6',
       }}
     >
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
+      <StatusBar barStyle="light-content" backgroundColor="#850111" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoid}
@@ -1139,14 +1143,16 @@ export default function ForgotMpin() {
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <Pressable onPress={Keyboard.dismiss} style={{ flex: 1, width: "100%" }}>
             {/* Header Back Button and Title Area */}
-            <View
+            <LinearGradient
+              colors={["#850111", "#5A000B", "#3B0006"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
               style={{
                 height: Platform.OS === 'ios' ? hp(22) : hp(20),
                 paddingTop: Platform.OS === 'ios' ? 70 : 50,
                 paddingHorizontal: 20,
                 width: "100%",
                 zIndex: 1,
-                backgroundColor: theme.colors.primary,
               }}
             >
               {/* Background Models Grid Watermark Layer (1, 2, 3 Grid Models) */}
@@ -1160,7 +1166,7 @@ export default function ForgotMpin() {
                   flexDirection: 'row',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  opacity: 0.25,
+                  opacity: 0.13,
                   zIndex: 0,
                 }}>
                   <View style={{
@@ -1170,7 +1176,7 @@ export default function ForgotMpin() {
                     borderRadius: 12,
                     overflow: 'hidden',
                     borderWidth: 1,
-                    borderColor: 'rgba(255, 215, 0, 0.25)',
+                    borderColor: 'rgba(212, 175, 55, 0.35)',
                   }}>
                     <Image
                       source={require("../../../assets/images/intro_1.png")}
@@ -1185,7 +1191,7 @@ export default function ForgotMpin() {
                     borderRadius: 12,
                     overflow: 'hidden',
                     borderWidth: 1,
-                    borderColor: 'rgba(255, 215, 0, 0.25)',
+                    borderColor: 'rgba(212, 175, 55, 0.35)',
                   }}>
                     <Image
                       source={require("../../../assets/images/intro_1.png")}
@@ -1200,7 +1206,7 @@ export default function ForgotMpin() {
                     borderRadius: 12,
                     overflow: 'hidden',
                     borderWidth: 1,
-                    borderColor: 'rgba(255, 215, 0, 0.25)',
+                    borderColor: 'rgba(212, 175, 55, 0.35)',
                   }}>
                     <Image
                       source={require("../../../assets/images/intro_1.png")}
@@ -1212,27 +1218,34 @@ export default function ForgotMpin() {
               )}
 
               <View style={{ flexDirection: 'row', alignItems: 'center', zIndex: 1 }}>
-                {/* Back arrow in small gold circle */}
+                {/* Back arrow in Royal Ivory & Gold circle */}
                 <TouchableOpacity
                   onPress={() => router.push("/(auth)/mpin_verify")}
                   style={{
                     width: 40,
                     height: 40,
                     borderRadius: 20,
-                    backgroundColor: theme.colors.secondary || '#F8CF2C',
+                    backgroundColor: '#FFFDF5',
+                    borderWidth: 1.5,
+                    borderColor: '#D4AF37',
                     justifyContent: 'center',
                     alignItems: 'center',
+                    shadowColor: '#D4AF37',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.35,
+                    shadowRadius: 4,
+                    elevation: 4,
                   }}
                 >
-                  <Icon name="arrow-back" size={22} color={theme.colors.primary} />
+                  <Icon name="arrow-back" size={22} color="#850111" />
                 </TouchableOpacity>
               </View>
-            </View>
+            </LinearGradient>
 
-            {/* Bottom White Card */}
+            {/* Bottom Ivory Card */}
             <View
               style={{
-                backgroundColor: '#FFFFFF',
+                backgroundColor: '#FAF9F6',
                 paddingHorizontal: 24,
                 paddingTop: 30,
                 paddingBottom: Platform.OS === "ios" ? 80 : 100,
@@ -1241,24 +1254,30 @@ export default function ForgotMpin() {
                 position: 'relative',
               }}
             >
-              {/* Custom wave curve at the top */}
+              {/* Custom wave curve at the top with gold rim */}
               <View style={{ position: 'absolute', top: -39, left: 0, right: 0, height: 40, zIndex: 10, backgroundColor: 'transparent' }}>
                 <Svg height="40" width={width} viewBox={`0 0 ${width} 40`} style={{ position: 'absolute', top: 0, left: 0 }}>
                   <Path
                     d={`M0,40 C${width * 0.3},40 ${width * 0.7},0 ${width},0 L${width},40 L0,40 Z`}
-                    fill="#FFFFFF"
+                    fill="#FAF9F6"
+                  />
+                  <Path
+                    d={`M0,40 C${width * 0.3},40 ${width * 0.7},0 ${width},0`}
+                    fill="none"
+                    stroke="#D4AF37"
+                    strokeWidth="2.5"
                   />
                 </Svg>
               </View>
 
               {/* Content */}
               <View style={{ width: '100%' }}>
-                {/* Title and Subtitle inside the white card */}
+                {/* Title and Subtitle inside the ivory card */}
                 <View style={{ marginBottom: 20 }}>
-                  <Text style={{ color: theme.colors.primary, fontSize: 22, fontWeight: 'bold', marginBottom: 6 }}>
+                  <Text style={{ color: '#850111', fontSize: 22, fontWeight: 'bold', marginBottom: 6 }}>
                     {t("forgotMpinTitle") || "Forgot MPIN"}
                   </Text>
-                  <Text style={{ color: '#666666', fontSize: 14 }}>
+                  <Text style={{ color: '#B8860B', fontSize: 14, fontWeight: '600' }}>
                     {t("forgotMpinSubtitle") || "Reset your MPIN"}
                   </Text>
                 </View>
