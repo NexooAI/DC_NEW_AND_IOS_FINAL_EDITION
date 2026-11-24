@@ -320,6 +320,47 @@ export const getSchemeTypeLabel = (scheme: Scheme | any, defaultVal = "Monthly")
   return "Monthly";
 };
 
+/**
+ * Formats a scheme's duration/installment count dynamically based on its payment frequency
+ * (Daily -> X Days, Weekly -> X Weeks, Monthly -> X Months).
+ */
+export const getSchemeDurationDisplay = (
+  scheme: Scheme | any,
+  t: (key: string, opts?: any) => string,
+  compact = false
+): string => {
+  if (!scheme) return "";
+  const firstChit =
+    scheme.chits?.find((c: any) => c?.ACTIVE === "Y" || c?.ACTIVE === "1") ||
+    scheme.chits?.[0];
+
+  const freqStr = String(
+    firstChit?.PAYMENT_FREQUENCY ||
+      scheme.PAYMENT_FREQUENCY ||
+      scheme.SCHEMETYPE ||
+      scheme.INS_TYPE ||
+      scheme.savingType ||
+      ""
+  ).toLowerCase();
+
+  const typeLabel = getSchemeTypeLabel(scheme).toLowerCase();
+  const noOfIns = Number(firstChit?.NOINS || scheme.NO_OF_INSTALLMENTS || scheme.noOfIns || 0);
+  const durationMonths = Number(scheme.DURATION_MONTHS || 0);
+
+  if (freqStr.includes("daily") || typeLabel === "daily") {
+    const count = noOfIns > 0 ? noOfIns : durationMonths > 0 ? durationMonths * 30 : 330;
+    return compact ? `${count}D` : `${count} ${t("days") || "Days"}`;
+  }
+
+  if (freqStr.includes("weekly") || typeLabel === "weekly") {
+    const count = noOfIns > 0 ? noOfIns : durationMonths > 0 ? Math.round((durationMonths * 30) / 7) : 48;
+    return compact ? `${count}W` : `${count} ${t("weeks") || "Weeks"}`;
+  }
+
+  const count = durationMonths > 0 ? durationMonths : noOfIns > 0 ? noOfIns : 11;
+  return compact ? `${count}M` : `${count} ${t("schemes.months") || "Months"}`;
+};
+
 export const checkIsSchemeDeposit = (scheme: Scheme | any): boolean => {
   if (!scheme) return false;
   if (
@@ -1456,7 +1497,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                 <View style={styles.infoPill}>
                   <Ionicons name="calendar-outline" size={12} color="#FFD700" />
                   <Text style={styles.infoPillText}>
-                    {item.DURATION_MONTHS || "11"} {t("schemes.months") || "Months"}
+                    {getSchemeDurationDisplay(item, t)}
                   </Text>
                 </View>
                 <View style={[styles.infoPill, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
@@ -1962,9 +2003,9 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                     <View style={styles.pillBadge}>
                       <Text style={styles.pillBadgeText}>{t(getSchemeTypeLabel(selectedScheme)) || getSchemeTypeLabel(selectedScheme)}</Text>
                     </View>
-                    {selectedScheme.DURATION_MONTHS && (
+                    {(selectedScheme.DURATION_MONTHS || selectedScheme.chits?.[0]?.NOINS) && (
                       <View style={styles.pillBadge}>
-                        <Text style={styles.pillBadgeText}>{selectedScheme.DURATION_MONTHS} {t("schemes.months") || "Months"}</Text>
+                        <Text style={styles.pillBadgeText}>{getSchemeDurationDisplay(selectedScheme, t)}</Text>
                       </View>
                     )}
                     <View style={[styles.pillBadge, { backgroundColor: '#F0F0FF' }]}>

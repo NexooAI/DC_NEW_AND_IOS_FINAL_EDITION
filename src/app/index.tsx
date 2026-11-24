@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   ActivityIndicator,
   StyleSheet,
-  ImageBackground,
   Text,
+  Animated,
+  StatusBar,
 } from "react-native";
 import { Image } from "react-native";
 import { useRouter } from "expo-router";
@@ -53,7 +54,25 @@ export default function AuthGuard() {
     "checking" | "validating" | "navigating" | "error"
   >("checking");
   const { screenWidth, screenHeight } = useResponsiveLayout();
-  const logoWidth = Math.min(screenWidth * 0.52, 210);
+  const logoWidth = Math.min(screenWidth * 0.44, 175);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.88)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 550,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 6,
+        tension: 45,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, scaleAnim]);
 
   useEffect(() => {
     logger.log(
@@ -325,33 +344,41 @@ export default function AuthGuard() {
     };
 
     return (
-      <ImageBackground
-        source={resolveImageSource(theme?.image?.bg_image, bgLoginImage)}
-        style={styles.backgroundImage}
+      <LinearGradient
+        colors={["#850111", "#5A000B", "#2D0005"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradient}
       >
-        <LinearGradient
-          colors={[
-            theme.colors.bgBlackHeavy,
-            theme.colors.bgBlackMedium,
-            theme.colors.bgBlackHeavy,
+        <StatusBar barStyle="light-content" backgroundColor="#850111" />
+        <Animated.View
+          style={[
+            styles.container,
+            { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
           ]}
-          style={styles.gradient}
         >
-          <View style={styles.container}>
+          {/* Royal Ivory & Gold Medallion Frame */}
+          <View style={styles.medallion}>
             <Image
               source={resolveImageSource(theme?.images?.auth?.logo || theme?.image?.transparentLogo, logoTransImage)}
-              style={[styles.logo, { width: logoWidth, aspectRatio: 1 }]}
+              style={{ width: logoWidth, height: logoWidth }}
               resizeMode="contain"
             />
-            <ActivityIndicator
-              size="large"
-              color={authStatus === "error" ? COLORS.error : COLORS.secondary}
-              style={styles.loader}
-            />
-            <Text style={styles.statusText}>{getStatusText()}</Text>
           </View>
-        </LinearGradient>
-      </ImageBackground>
+
+          <Text style={styles.brandTitle}>
+            {(theme?.constants?.customerName || "Sri Murugan Gold House").toUpperCase()}
+          </Text>
+          <Text style={styles.brandTagline}>Generations of Trust</Text>
+
+          <ActivityIndicator
+            size="large"
+            color={authStatus === "error" ? COLORS.error : "#FFDF00"}
+            style={styles.loader}
+          />
+          <Text style={styles.statusText}>{getStatusText()}</Text>
+        </Animated.View>
+      </LinearGradient>
     );
   }
 
@@ -360,10 +387,6 @@ export default function AuthGuard() {
 }
 
 const styles = StyleSheet.create({
-  backgroundImage: {
-    flex: 1,
-    resizeMode: "cover",
-  },
   gradient: {
     flex: 1,
   },
@@ -371,19 +394,49 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
   },
-  logo: {
-    marginBottom: 40,
+  medallion: {
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    backgroundColor: "#FFFDF5",
+    borderWidth: 3,
+    borderColor: "#D4AF37",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 14,
+    marginBottom: 24,
+    shadowColor: "#D4AF37",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  brandTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "800",
+    letterSpacing: 1.4,
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  brandTagline: {
+    color: "#FFDF00",
+    fontSize: 13,
+    fontWeight: "600",
+    fontStyle: "italic",
+    letterSpacing: 0.6,
+    marginBottom: 28,
   },
   loader: {
-    marginTop: 20,
+    marginTop: 8,
   },
   statusText: {
-    color: COLORS.white,
-    fontSize: 16,
+    color: "#FDE68A",
+    fontSize: 13,
     fontWeight: "500",
-    marginTop: 16,
+    marginTop: 12,
     textAlign: "center",
     opacity: 0.9,
   },

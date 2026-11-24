@@ -1719,5 +1719,6 @@
     "defaultMessage": "App is temporarily unavailable for scheduled maintenance",
     "defaultReason": "Scheduled System Upgrade",
     "thankYou": "Thank you for your patience"
-  }
+  },
+  "weeks": "Weeks"
 }

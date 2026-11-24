@@ -968,7 +968,7 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
                   return null;
                 })()}
 
-                {item.DURATION_MONTHS && !isNaN(item.DURATION_MONTHS) && (
+                {(item.DURATION_MONTHS || item.chits?.[0]?.NOINS) && (
                   <View style={[styles.schemeInfoBadge, { borderColor: accentColor }]}>
                     <Ionicons
                       name="calendar-outline"
@@ -976,7 +976,15 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
                       color={accentColor}
                     />
                     <Text style={[styles.schemeInfoText, { color: accentColor }]}>
-                      {item.DURATION_MONTHS}M
+                      {(() => {
+                        const firstChit = item.chits?.[0];
+                        const freq = String(firstChit?.PAYMENT_FREQUENCY || item.SCHEMETYPE || item.INS_TYPE || "").toLowerCase();
+                        const noIns = Number(firstChit?.NOINS || 0);
+                        const durM = Number(item.DURATION_MONTHS || 0);
+                        if (freq.includes("daily")) return `${noIns > 0 ? noIns : durM > 0 ? durM * 30 : 330}D`;
+                        if (freq.includes("weekly")) return `${noIns > 0 ? noIns : durM > 0 ? Math.round((durM * 30) / 7) : 48}W`;
+                        return `${durM > 0 ? durM : noIns > 0 ? noIns : 11}M`;
+                      })()}
                     </Text>
                   </View>
                 )}
@@ -1143,9 +1151,19 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
                   <Text style={styles.pillBadgeText}>{getLocalizedText(selectedScheme.SCHEMETYPE)}</Text>
                 </View>
               )}
-              {selectedScheme.DURATION_MONTHS && !isNaN(selectedScheme.DURATION_MONTHS) && (
+              {(selectedScheme.DURATION_MONTHS || selectedScheme.chits?.[0]?.NOINS) && (
                 <View style={styles.pillBadge}>
-                  <Text style={styles.pillBadgeText}>{selectedScheme.DURATION_MONTHS} {t("monthsLabel") || "Months"}</Text>
+                  <Text style={styles.pillBadgeText}>
+                    {(() => {
+                      const firstChit = selectedScheme.chits?.[0];
+                      const freq = String(firstChit?.PAYMENT_FREQUENCY || selectedScheme.SCHEMETYPE || selectedScheme.INS_TYPE || "").toLowerCase();
+                      const noIns = Number(firstChit?.NOINS || 0);
+                      const durM = Number(selectedScheme.DURATION_MONTHS || 0);
+                      if (freq.includes("daily")) return `${noIns > 0 ? noIns : durM > 0 ? durM * 30 : 330} ${t("days") || "Days"}`;
+                      if (freq.includes("weekly")) return `${noIns > 0 ? noIns : durM > 0 ? Math.round((durM * 30) / 7) : 48} ${t("weeks") || "Weeks"}`;
+                      return `${durM > 0 ? durM : noIns > 0 ? noIns : 11} ${t("monthsLabel") || "Months"}`;
+                    })()}
+                  </Text>
                 </View>
               )}
               {/* Saving Type Pill */}

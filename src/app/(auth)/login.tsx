@@ -1493,24 +1493,7 @@ export default function Login() {
                     ) : null}
                     {!isShowOtp ? (
                       <>
-                        <View
-                          style={[
-                            registerStyles.inputContainer,
-                            {
-                              backgroundColor: '#FFFDF9',
-                              borderWidth: 1.2,
-                              borderColor: 'rgba(212, 175, 55, 0.45)',
-                              borderRadius: 14,
-                              paddingHorizontal: 14,
-                              paddingVertical: 6,
-                              shadowColor: '#850111',
-                              shadowOffset: { width: 0, height: 2 },
-                              shadowOpacity: 0.05,
-                              shadowRadius: 6,
-                              elevation: 2,
-                            },
-                          ]}
-                        >
+                        <View style={[registerStyles.inputContainer, { borderWidth: 0, shadowColor: 'transparent', elevation: 0, paddingHorizontal: 0, backgroundColor: 'transparent' }]}>
                           <PhoneInput
                             value={mobile}
                             label={t("registerMobileNumber")}
