@@ -1606,9 +1606,9 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
             style={[styles.metalTabPill, selectedMetal === "all" && styles.metalTabPillAllActive]}
             activeOpacity={0.8}
           >
-            <Ionicons name="grid-outline" size={14} color={selectedMetal === "all" ? "#FFF" : "#666"} />
-            <Text style={[styles.metalTabText, selectedMetal === "all" && { color: "#FFF" }]}>
-              {t("allSchemes") || "All Schemes"}
+            <Ionicons name="grid-outline" size={14} color={selectedMetal === "all" ? "#FFF" : "#850111"} />
+            <Text style={[styles.metalTabText, selectedMetal === "all" && { color: "#FFF" }]} numberOfLines={1}>
+              {t("allOnly") || "All"}
             </Text>
           </TouchableOpacity>
 
@@ -1618,9 +1618,9 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               style={[styles.metalTabPill, selectedMetal === "gold" && styles.metalTabPillGoldActive]}
               activeOpacity={0.8}
             >
-              <Ionicons name="sparkles" size={14} color={selectedMetal === "gold" ? "#7A4D00" : "#B8860B"} />
-              <Text style={[styles.metalTabText, selectedMetal === "gold" && styles.metalTabTextActive]}>
-                {t("goldSchemes") || "Gold Saving Scheme"}
+              <Image source={GOLD_COIN_BADGE} style={{ width: 16, height: 16 }} resizeMode="contain" fadeDuration={0} />
+              <Text style={[styles.metalTabText, selectedMetal === "gold" && styles.metalTabTextActive]} numberOfLines={1}>
+                {t("gold") || "Gold"}
               </Text>
             </TouchableOpacity>
           )}
@@ -1631,9 +1631,9 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               style={[styles.metalTabPill, selectedMetal === "silver" && styles.metalTabPillSilverActive]}
               activeOpacity={0.8}
             >
-              <Ionicons name="sparkles-outline" size={14} color={selectedMetal === "silver" ? "#333333" : "#666666"} />
-              <Text style={[styles.metalTabText, selectedMetal === "silver" && styles.metalTabTextActive]}>
-                {t("silverSchemes") || "Silver Saving Scheme"}
+              <Image source={SILVER_COIN_BADGE} style={{ width: 16, height: 16 }} resizeMode="contain" fadeDuration={0} />
+              <Text style={[styles.metalTabText, selectedMetal === "silver" && styles.metalTabTextActive]} numberOfLines={1}>
+                {t("silver") || "Silver"}
               </Text>
             </TouchableOpacity>
           )}
@@ -1644,9 +1644,9 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               style={[styles.metalTabPill, selectedMetal === "diamond" && styles.metalTabPillDiamondActive]}
               activeOpacity={0.8}
             >
-              <Ionicons name="diamond-outline" size={14} color={selectedMetal === "diamond" ? "#0F4C81" : "#1D70B8"} />
-              <Text style={[styles.metalTabText, selectedMetal === "diamond" && styles.metalTabTextActive]}>
-                {t("diamondSchemes") || "Diamond Saving Scheme"}
+              <Image source={DIAMOND_COIN_BADGE} style={{ width: 16, height: 16 }} resizeMode="contain" fadeDuration={0} />
+              <Text style={[styles.metalTabText, selectedMetal === "diamond" && styles.metalTabTextActive]} numberOfLines={1}>
+                {t("diamond") || "Diamond"}
               </Text>
             </TouchableOpacity>
           )}
@@ -1658,8 +1658,8 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               activeOpacity={0.8}
             >
               <Ionicons name="ribbon-outline" size={14} color={selectedMetal === "platinum" ? "#1E293B" : "#475569"} />
-              <Text style={[styles.metalTabText, selectedMetal === "platinum" && styles.metalTabTextActive]}>
-                {t("platinumSchemes") || "Platinum Saving Scheme"}
+              <Text style={[styles.metalTabText, selectedMetal === "platinum" && styles.metalTabTextActive]} numberOfLines={1}>
+                {t("platinum") || "Platinum"}
               </Text>
             </TouchableOpacity>
           )}
@@ -1671,8 +1671,8 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               activeOpacity={0.8}
             >
               <Ionicons name="swap-horizontal-outline" size={14} color={selectedMetal === "old_gold" ? "#78350F" : "#B45309"} />
-              <Text style={[styles.metalTabText, selectedMetal === "old_gold" && styles.metalTabTextActive]}>
-                {t("oldGoldSchemes") || "Old Gold"}
+              <Text style={[styles.metalTabText, selectedMetal === "old_gold" && styles.metalTabTextActive]} numberOfLines={1}>
+                {t("oldGold") || "Old Gold"}
               </Text>
             </TouchableOpacity>
           )}
@@ -2333,20 +2333,22 @@ function getStyles(theme: any) { return StyleSheet.create({
     borderBottomColor: theme.colors.borderLight || '#f0f0f0',
   },
   metalTabsScroll: {
-    gap: 8,
-    paddingRight: 16,
+    flexGrow: 1,
+    gap: 6,
+    paddingRight: 4,
+    alignItems: 'center',
   },
   metalTabPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: theme.colors.backgroundSecondary || '#f8f9fa',
+    justifyContent: 'center',
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 18,
+    backgroundColor: '#FFFDF9',
     borderWidth: 1,
-    borderColor: theme.colors.borderLight || '#e9ecef',
-    marginRight: 6,
-    gap: 6,
+    borderColor: 'rgba(212, 175, 55, 0.35)',
+    gap: 5,
   },
   metalTabPillGoldActive: {
     backgroundColor: '#FFF9E6',
