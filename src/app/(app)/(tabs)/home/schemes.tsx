@@ -1452,13 +1452,31 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     const schemeTypeLabel = getSchemeTypeLabel(item);
     const itemIsFlexi = checkIsSchemeFlexi(item);
     const itemIsFixed = checkIsSchemeFixed(item);
-    const typeDisplay = t(schemeTypeLabel) || schemeTypeLabel;
+    const firstChit =
+      item.chits?.find((c: any) => c?.ACTIVE === "Y" || c?.ACTIVE === "1") ||
+      item.chits?.[0];
+    const freqSource = `${firstChit?.PAYMENT_FREQUENCY || ""} ${item.SCHEMETYPE || ""} ${
+      item.SCHEMENAME && typeof item.SCHEMENAME === "object" ? item.SCHEMENAME.en || "" : item.SCHEMENAME || ""
+    }`.toLowerCase();
+    const fixedFreqKey = freqSource.includes("daily")
+      ? "Daily"
+      : freqSource.includes("weekly")
+      ? "Weekly"
+      : "Monthly";
+    const typeDisplay = itemIsFixed
+      ? (t(fixedFreqKey) || fixedFreqKey)
+      : (t(schemeTypeLabel) || schemeTypeLabel);
+    const isWeightSaving =
+      item.savingType?.toLowerCase() === "weight" ||
+      item.SCHEMETYPE?.toLowerCase()?.includes("weight");
     const planLabel = itemIsFlexi
       ? (t("Flexi") || "Flexi")
       : itemIsFixed
-      ? (t("Fixed") || "Fixed")
+      ? isWeightSaving
+        ? (language === "ta" ? "பிக்சட் எடை" : "Fixed Weight")
+        : (language === "ta" ? "பிக்சட் தொகை" : "Fixed Amount")
       : typeDisplay;
-    const showSeparateFreqPill = itemIsFixed && typeDisplay.toLowerCase() !== "fixed";
+    const showSeparateFreqPill = itemIsFixed;
     const interestSlabs = getSchemeInterestSlabs(item);
     const isBonusScheme = interestSlabs.length > 0;
     const gradientColors = getPremiumGradient(index);
