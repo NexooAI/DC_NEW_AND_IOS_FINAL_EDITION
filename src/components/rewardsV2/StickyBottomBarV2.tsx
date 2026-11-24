@@ -18,13 +18,14 @@ export const StickyBottomBarV2: React.FC<StickyBottomBarV2Props> = ({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
-  const finalShareMessage =
+  const referralUrl = `${baseUrl}/refer?code=${encodeURIComponent(referralCode)}`;
+  const rawTemplate =
     shareMessage ||
-    (t("refer_earn_share_message") ||
-      `Use my referral code {code} to sign up at Sri Murugan Gold House and earn exciting rewards! Download app: ${baseUrl}/refer?code={code}`).replace(
-      /{code}/g,
-      referralCode
-    );
+    t("refer_earn_share_message") ||
+    `Use my referral code {code} to sign up at Sri Murugan Gold House and earn exciting rewards! Download app: {url}`;
+  const finalShareMessage = rawTemplate
+    .replace(/\{url\}/gi, referralUrl)
+    .replace(/\{code\}/gi, referralCode);
 
   const handleWhatsAppShare = () => {
     const url = `whatsapp://send?text=${encodeURIComponent(finalShareMessage)}`;
