@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, useFocusEffect } from "expo-router";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
+import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "@/constants/colors";
@@ -33,6 +34,21 @@ export default function GoldAdvanceScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { user } = useGlobalStore();
+  const { visibleData } = useAppVisibility();
+  const hasDashboard =
+    Boolean(
+      getAppConfig().constants.enableDashboard ||
+        visibleData?.enableDashboardV2 === 1 ||
+        visibleData?.enableDashboard === 1 ||
+        visibleData?.showTabDashboard === 1 ||
+        visibleData?.showBottomNavDashboard === 1 ||
+        visibleData?.showBottomNavDashboard === true
+    ) &&
+    visibleData?.enableDashboardV2 !== 0 &&
+    visibleData?.enableDashboard !== 0 &&
+    visibleData?.showTabDashboard !== 0 &&
+    visibleData?.showBottomNavDashboard !== 0 &&
+    visibleData?.showBottomNavDashboard !== false;
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedOption, setSelectedOption] = useState<any>(null);
@@ -345,7 +361,6 @@ export default function GoldAdvanceScreen() {
             if (router.canGoBack()) {
               router.back();
             } else {
-              const hasDashboard = getAppConfig().constants.enableDashboard;
               router.replace(hasDashboard ? '/(app)/dashboard' : '/(app)/(tabs)/home');
             }
           }} style={styles.backButton}>
@@ -379,7 +394,6 @@ export default function GoldAdvanceScreen() {
           if (router.canGoBack()) {
             router.back();
           } else {
-            const hasDashboard = getAppConfig().constants.enableDashboard;
             router.replace(hasDashboard ? '/(app)/dashboard' : '/(app)/(tabs)/home');
           }
         }} style={styles.backButton}>

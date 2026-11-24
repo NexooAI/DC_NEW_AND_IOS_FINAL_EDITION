@@ -24,6 +24,7 @@ import ResponsiveText from '@/components/ResponsiveText';
 import { responsiveUtils } from '@/utils/responsiveUtils';
 import FAQService from '@/services/faqService';
 import useGlobalStore, { getAppConfig, useAppTheme } from '@/store/global.store';
+import { useAppVisibility } from '@/hooks/useAppVisibility';
 import { useTranslation } from '@/hooks/useTranslation';
 
 // Enable LayoutAnimation for Android (only if not on the New Architecture / Fabric)
@@ -72,18 +73,29 @@ export default function TicketsScreen() {
   const theme = useAppTheme();
   styles = getStyles(theme);
   const router = useRouter();
+  const { visibleData } = useAppVisibility();
   const handleBack = useCallback(() => {
-    const hasDashboard = getAppConfig().constants.enableDashboard;
-    if (!hasDashboard) {
-      router.replace("/(app)/(tabs)/home");
+    const hasDashboard =
+      Boolean(
+        getAppConfig().constants.enableDashboard ||
+          visibleData?.enableDashboardV2 === 1 ||
+          visibleData?.enableDashboard === 1 ||
+          visibleData?.showTabDashboard === 1 ||
+          visibleData?.showBottomNavDashboard === 1 ||
+          visibleData?.showBottomNavDashboard === true
+      ) &&
+      visibleData?.enableDashboardV2 !== 0 &&
+      visibleData?.enableDashboard !== 0 &&
+      visibleData?.showTabDashboard !== 0 &&
+      visibleData?.showBottomNavDashboard !== 0 &&
+      visibleData?.showBottomNavDashboard !== false;
+
+    if (router.canGoBack()) {
+      router.back();
     } else {
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace("/(app)/dashboard");
-      }
+      router.replace(hasDashboard ? "/(app)/dashboard" : "/(app)/(tabs)/home");
     }
-  }, [router]);
+  }, [router, visibleData]);
 
   useFocusEffect(
     useCallback(() => {
