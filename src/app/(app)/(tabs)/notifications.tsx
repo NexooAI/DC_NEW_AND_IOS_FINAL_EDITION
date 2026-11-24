@@ -678,9 +678,15 @@ export default function NotificationsScreen() {
             </View>
           </View>
 
-          {/* Floating Bell Button with Gold Badge */}
+          {/* Floating Bell Button with Gold Badge (Test route enabled in __DEV__ only) */}
           <TouchableOpacity
-            onPress={() => router.push("/test-notifications")} // Direct routing placeholder or settings
+            disabled={!__DEV__}
+            activeOpacity={__DEV__ ? 0.7 : 1}
+            onPress={() => {
+              if (__DEV__) {
+                router.push("/test-notifications");
+              }
+            }}
             style={{
               width: 46,
               height: 46,
