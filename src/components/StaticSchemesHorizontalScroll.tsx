@@ -957,7 +957,7 @@ export default function StaticSchemesHorizontalScroll({
                         style={{ flex: 1, backgroundColor: '#25D366', paddingVertical: 10, borderRadius: 10, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}
                         onPress={() => {
                           const msg = locale === "ta" ? "வணக்கம், திட்டம் பற்றிய விவரங்கள் தேவை." : "Hello, I need details about scheme enquiry.";
-                          const cleanPhone = (themeConfig.whatsapp || "918754842999").replace(/[^0-9]/g, "");
+                          const cleanPhone = ((theme as any)?.constants?.whatsapp || "918754842999").replace(/[^0-9]/g, "");
                           const num = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
                           Linking.openURL(`https://api.whatsapp.com/send?phone=${num}&text=${encodeURIComponent(msg)}`);
                         }}
