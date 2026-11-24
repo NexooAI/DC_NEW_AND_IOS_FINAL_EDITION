@@ -174,6 +174,7 @@ export default function AuthGuard() {
   };
 
   const checkAuthenticationStatus = async () => {
+    const minSplashWait = new Promise((resolve) => setTimeout(resolve, 1400));
     try {
       setAuthStatus("checking");
       logger.log("🔐 Starting authentication check...");
@@ -232,6 +233,7 @@ export default function AuthGuard() {
       if (!token) {
         logger.log("❌ No authentication token found, redirecting to login");
         setAuthStatus("navigating");
+        await minSplashWait;
         router.replace("/(auth)/login");
         return;
       }
@@ -294,6 +296,7 @@ export default function AuthGuard() {
 
           setAuthStatus("navigating");
           logger.log("🔍 Navigating to MPIN verification page...");
+          await minSplashWait;
           router.replace("/(auth)/mpin_verify");
         } catch (parseError) {
           logger.error("❌ Error parsing user data:", parseError);
@@ -357,12 +360,12 @@ export default function AuthGuard() {
             { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
           ]}
         >
-          {/* Royal Ivory & Gold Medallion Frame */}
+          {/* Royal Gold-Glow Squircle Frame */}
           <View style={styles.medallion}>
             <Image
               source={resolveImageSource(theme?.images?.auth?.logo || theme?.image?.transparentLogo, logoTransImage)}
-              style={{ width: logoWidth, height: logoWidth }}
-              resizeMode="contain"
+              style={{ width: 168, height: 168 }}
+              resizeMode="cover"
             />
           </View>
 
@@ -397,21 +400,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   medallion: {
-    width: 190,
-    height: 190,
-    borderRadius: 95,
-    backgroundColor: "#FFFDF5",
-    borderWidth: 3,
-    borderColor: "#D4AF37",
+    width: 168,
+    height: 168,
+    borderRadius: 36,
+    backgroundColor: "#5A000B",
     justifyContent: "center",
     alignItems: "center",
-    padding: 14,
     marginBottom: 24,
     shadowColor: "#D4AF37",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
+    shadowOpacity: 0.55,
     shadowRadius: 16,
     elevation: 12,
+    overflow: "hidden",
   },
   brandTitle: {
     color: "#FFFFFF",

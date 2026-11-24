@@ -1229,33 +1229,31 @@ export default function MpinVerify() {
                   </View>
                 )}
 
-                {/* Royal Ivory & Gold Medallion Frame for Logo */}
+                {/* Royal Gold-Glow Squircle Frame for Logo */}
                 <View
                   style={{
-                    width: 146,
-                    height: 146,
-                    borderRadius: 73,
-                    backgroundColor: '#FFFDF5',
-                    borderWidth: 2.5,
-                    borderColor: '#D4AF37',
+                    width: 136,
+                    height: 136,
+                    borderRadius: 30,
+                    backgroundColor: '#5A000B',
                     justifyContent: 'center',
                     alignItems: 'center',
                     zIndex: 2,
                     shadowColor: '#D4AF37',
                     shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.45,
-                    shadowRadius: 12,
-                    elevation: 10,
-                    padding: 10,
+                    shadowOpacity: 0.55,
+                    shadowRadius: 14,
+                    elevation: 12,
+                    overflow: 'hidden',
                   }}
                 >
                   <Image
                     source={require("../../../assets/images/logo_trans.png")}
                     style={{
-                      width: 120,
-                      height: 120,
+                      width: 136,
+                      height: 136,
                     }}
-                    resizeMode="contain"
+                    resizeMode="cover"
                     fadeDuration={0}
                   />
                 </View>
