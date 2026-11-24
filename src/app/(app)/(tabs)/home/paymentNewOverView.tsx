@@ -25,6 +25,7 @@ import paymentService from "../../../../services/payment.service";
 import { PaymentInitPayload } from "@/types/payment.types";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { logger } from '@/utils/logger';
 
@@ -1560,21 +1561,26 @@ export default function PaymentNewOverView() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          headerTitle: t("paymentProcess") || "Payment Process",
+          headerShown: false,
           gestureEnabled: false,
-          headerLeft: () => (
-            <TouchableOpacity
-              onPress={handleBackButtonPress}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={{ paddingHorizontal: 12, paddingVertical: 8 }}
-              accessibilityRole="button"
-              accessibilityLabel={t("back") || "Back"}
-            >
-              <Ionicons name="chevron-back" size={24} color={theme.colors.textDark || "#333"} />
-            </TouchableOpacity>
-          ),
         }}
       />
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: theme.colors.quaternary || "#F2E6D2" }}>
+        <View style={{ backgroundColor: theme.colors.quaternary || "#F2E6D2", paddingHorizontal: 16, paddingVertical: 10, flexDirection: "row", alignItems: "center" }}>
+          <TouchableOpacity
+            onPress={handleBackButtonPress}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{ marginRight: 12, padding: 2 }}
+            accessibilityRole="button"
+            accessibilityLabel={t("back") || "Back"}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.colors.textDark || "#850111"} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 17, fontWeight: "700", color: theme.colors.textDark || "#850111", flex: 1 }} numberOfLines={1}>
+            {t("paymentProcess") || "Payment Process"}
+          </Text>
+        </View>
+      </SafeAreaView>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.contentContainer}
@@ -1593,6 +1599,13 @@ export default function PaymentNewOverView() {
                 color={theme.colors.secondary}
               />
               <Text style={styles.amountTitle}>{t("totalAmount")}</Text>
+              {!paymentType && (
+                <View style={styles.installmentBadgePill}>
+                  <Text style={styles.installmentBadgeText}>
+                    {t("installment") || "Installment"} #{paymentNumber}
+                  </Text>
+                </View>
+              )}
               <TouchableOpacity
                 style={styles.editButton}
                 onPress={toggleEditMode}
@@ -1742,6 +1755,13 @@ export default function PaymentNewOverView() {
                     ? 'Advance Payment Amount'
                     : t("totalAmount")}
               </Text>
+              {!paymentType && (
+                <View style={styles.installmentBadgePill}>
+                  <Text style={styles.installmentBadgeText}>
+                    {t("installment") || "Installment"} #{paymentNumber}
+                  </Text>
+                </View>
+              )}
             </View>
             <View style={styles.amountDisplay}>
               <Text style={styles.amountValue}>{formattedAmount}</Text>
@@ -2428,6 +2448,21 @@ function getStyles(theme: any) {
       flexDirection: "row",
       alignItems: "center",
       marginBottom: 12,
+      gap: 8,
+    },
+    installmentBadgePill: {
+      backgroundColor: "rgba(255, 215, 0, 0.2)",
+      borderWidth: 1,
+      borderColor: "rgba(255, 215, 0, 0.55)",
+      borderRadius: 12,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    installmentBadgeText: {
+      fontSize: 11.5,
+      fontWeight: "800",
+      color: "#FFD700",
+      letterSpacing: 0.3,
     },
     amountTitle: {
       fontSize: 16,

@@ -128,6 +128,15 @@ const isValidArray = (value: any): value is any[] => {
   return Array.isArray(value) && value.length > 0;
 };
 
+const cleanTranslatedValue = (val: any): string => {
+  if (val === null || val === undefined) return "";
+  const str = String(val).trim();
+  if (!str || str.toLowerCase() === "null" || str.toLowerCase() === "undefined") {
+    return "";
+  }
+  return str;
+};
+
 const getTranslatedText = (
   textObj: any,
   language: string
@@ -137,7 +146,7 @@ const getTranslatedText = (
   }
 
   if (typeof textObj === "string") {
-    return textObj.trim() || "";
+    return cleanTranslatedValue(textObj);
   }
 
   if (typeof textObj === "number") {
@@ -150,9 +159,9 @@ const getTranslatedText = (
 
   if (typeof textObj === "object" && textObj !== null) {
     if (Array.isArray(textObj)) {
-      const validItems = textObj.filter(
-        (item) => item !== null && item !== undefined && item !== ""
-      );
+      const validItems = textObj
+        .map((item) => cleanTranslatedValue(item))
+        .filter(Boolean);
       return validItems.length > 0 ? validItems.join(", ") : "";
     }
 
@@ -164,17 +173,20 @@ const getTranslatedText = (
     const hasMal = textObj.hasOwnProperty("mal") || textObj.hasOwnProperty("MAL") || (textObj as any).hasOwnProperty("_ta") || (textObj as any).hasOwnProperty("_TA");
 
     if (hasEn || hasTa || hasTe || hasHi || hasMal) {
-      const targetText = textObj[language] || textObj[language.toUpperCase()] || textObj[language.toLowerCase()];
-      const enText = textObj.en || textObj.EN || "";
-      const taText = textObj.ta || textObj.TA || "";
+      const targetText = cleanTranslatedValue(
+        textObj[language] ?? textObj[language.toUpperCase()] ?? textObj[language.toLowerCase()]
+      );
+      const enText = cleanTranslatedValue(textObj.en ?? textObj.EN);
+      const taText = cleanTranslatedValue(textObj.ta ?? textObj.TA);
+      const anyValid = Object.values(textObj).map(cleanTranslatedValue).find(Boolean) || "";
 
       // Malayalam fallback logic if "mal" translation is missing
       if ((language === "mal" || language === "MAL") && !targetText) {
-        const malTextLegacy = (textObj as any)._ta || (textObj as any)._TA || "";
-        return malTextLegacy || taText || enText || Object.values(textObj)[0] || "";
+        const malTextLegacy = cleanTranslatedValue((textObj as any)._ta ?? (textObj as any)._TA);
+        return malTextLegacy || taText || enText || anyValid || "";
       }
 
-      return targetText || enText || taText || Object.values(textObj)[0] || "";
+      return targetText || enText || taText || anyValid || "";
     }
 
     try {
@@ -524,6 +536,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
   const flatListRef = useRef<FlatList>(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [selectedScheme, setSelectedScheme] = useState<Scheme | null>(null);
+  const [selectedSchemeGradient, setSelectedSchemeGradient] = useState<[string, string]>(['#5B0E2D', '#2B0413']);
   const [selectedSchemeId, setSelectedSchemeId] = useState<number | null>(null);
   const [userSelectedTab, setUserSelectedTab] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -602,8 +615,30 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     return schemesForSelectedMetal.some(checkIsSchemeHybrid);
   }, [schemesForSelectedMetal]);
 
+  const metalCounts = useMemo(() => {
+    const counts = { all: 0, gold: 0, silver: 0, diamond: 0, platinum: 0, old_gold: 0 };
+    if (!allSchemes || allSchemes.length === 0) return counts;
+    allSchemes.forEach((scheme) => {
+      if (scheme.ACTIVE !== "Y") return;
+      counts.all += 1;
+      const metalType = getSchemeMetalType(scheme);
+      counts[metalType] = (counts[metalType] || 0) + 1;
+    });
+    return counts;
+  }, [allSchemes]);
+
   const metalHasFixed = useMemo(() => {
     return schemesForSelectedMetal.some(checkIsSchemeFixed);
+  }, [schemesForSelectedMetal]);
+
+  const planTypeCounts = useMemo(() => {
+    return {
+      all: schemesForSelectedMetal.length,
+      fixed: schemesForSelectedMetal.filter(checkIsSchemeFixed).length,
+      flexi: schemesForSelectedMetal.filter(checkIsSchemeFlexi).length,
+      deposit: schemesForSelectedMetal.filter(checkIsSchemeDeposit).length,
+      hybrid: schemesForSelectedMetal.filter(checkIsSchemeHybrid).length,
+    };
   }, [schemesForSelectedMetal]);
 
   // Adjust plan type if the selected metal only has one plan type available
@@ -1104,9 +1139,17 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
     try {
       const chits = item.chits || [];
-      const relevantChits = chits.filter(
-        (chit) => chit && chit.PAYMENT_FREQUENCY === activeTab
-      );
+      const itemIsFlexi = checkIsSchemeFlexi(item);
+      const itemFreq = getSchemeTypeLabel(item);
+      const normalizedActive = (activeTab || "").toLowerCase();
+      const filteredByTab =
+        normalizedActive && normalizedActive !== "all" && normalizedActive !== "fixed"
+          ? chits.filter((chit) => chit && chit.PAYMENT_FREQUENCY?.toLowerCase() === normalizedActive)
+          : [];
+      const relevantChits =
+        filteredByTab.length > 0
+          ? filteredByTab
+          : chits.filter((chit) => chit && chit.ACTIVE === "Y");
 
       const schemeDataToStore = {
         schemeId: schemeId,
@@ -1114,10 +1157,10 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         description:
           getTranslatedText(item.DESCRIPTION as any, language) ||
           "No description available",
-        type: activeTab,
-        chits: relevantChits,
-        schemeType: activeTab.toLowerCase() === "flexi" ? "flexi" : "fixed",
-        activeTab: activeTab,
+        type: itemFreq,
+        chits: relevantChits.length > 0 ? relevantChits : chits,
+        schemeType: itemIsFlexi ? "flexi" : "fixed",
+        activeTab: itemIsFlexi ? "Flexi" : itemFreq,
         benefits: item.BENEFITS || [],
         slogan: getTranslatedText(item.SLOGAN || { en: "" }, language) || "",
         image: item.IMAGE || "",
@@ -1173,8 +1216,13 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     }
   };
 
-  const showDetailModal = useCallback((scheme: Scheme) => {
+  const showDetailModal = useCallback((scheme: Scheme, gradientColors?: [string, string]) => {
     setSelectedScheme(scheme);
+    if (gradientColors) {
+      setSelectedSchemeGradient(gradientColors);
+    } else {
+      setSelectedSchemeGradient(['#5B0E2D', '#2B0413']);
+    }
     setIsDetailModalVisible(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }, []);
@@ -1347,11 +1395,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     const headers = (table.headers as any)[language] || table.headers.en || [];
 
     return (
-      <View style={styles.tableRefinedContainer}>
+      <View style={[styles.tableRefinedContainer, { backgroundColor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.18)' }]}>
         {/* Table Header */}
-        <View style={styles.tableRefinedHeader}>
+        <View style={[styles.tableRefinedHeader, { backgroundColor: 'rgba(0,0,0,0.28)', borderBottomColor: 'rgba(255,255,255,0.16)' }]}>
           {headers.map((h: string, idx: number) => (
-            <Text key={idx} style={styles.tableRefinedHeaderText}>
+            <Text key={idx} style={[styles.tableRefinedHeaderText, { color: '#FFD700' }]}>
               {getTranslatedText(h, language)}
             </Text>
           ))}
@@ -1359,9 +1407,9 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
         {/* Table Rows */}
         {table.rows.map((row, rIndex) => (
-          <View key={rIndex} style={[styles.tableRefinedRow, rIndex % 2 !== 0 && styles.tableRowAlt]}>
+          <View key={rIndex} style={[styles.tableRefinedRow, rIndex % 2 !== 0 && { backgroundColor: 'rgba(255,255,255,0.05)' }, { borderBottomColor: 'rgba(255,255,255,0.12)' }]}>
             {Object.values(row).map((cell, cIndex) => (
-              <Text key={cIndex} style={styles.tableRefinedCell}>
+              <Text key={cIndex} style={[styles.tableRefinedCell, { color: '#FFFFFF' }]}>
                 {getTranslatedText(cell, language)}
               </Text>
             ))}
@@ -1402,8 +1450,15 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
     if (!item) return null;
 
     const schemeTypeLabel = getSchemeTypeLabel(item);
-    const itemIsFlexi = schemeTypeLabel.toLowerCase() === "flexi";
+    const itemIsFlexi = checkIsSchemeFlexi(item);
+    const itemIsFixed = checkIsSchemeFixed(item);
     const typeDisplay = t(schemeTypeLabel) || schemeTypeLabel;
+    const planLabel = itemIsFlexi
+      ? (t("Flexi") || "Flexi")
+      : itemIsFixed
+      ? (t("Fixed") || "Fixed")
+      : typeDisplay;
+    const showSeparateFreqPill = itemIsFixed && typeDisplay.toLowerCase() !== "fixed";
     const interestSlabs = getSchemeInterestSlabs(item);
     const isBonusScheme = interestSlabs.length > 0;
     const gradientColors = getPremiumGradient(index);
@@ -1503,9 +1558,15 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                   </Text>
                 </View>
                 <View style={[styles.infoPill, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
-                  <Ionicons name={itemIsFlexi ? "options-outline" : "timer-outline"} size={12} color="#FFF" />
-                  <Text style={[styles.infoPillText, { color: '#FFF' }]}>{typeDisplay}</Text>
+                  <Ionicons name={itemIsFlexi ? "options-outline" : "lock-closed-outline"} size={12} color="#FFF" />
+                  <Text style={[styles.infoPillText, { color: '#FFF' }]}>{planLabel}</Text>
                 </View>
+                {showSeparateFreqPill && (
+                  <View style={[styles.infoPill, { backgroundColor: 'rgba(255,215,0,0.16)', borderColor: 'rgba(255,215,0,0.45)' }]}>
+                    <Ionicons name="timer-outline" size={12} color="#FFD700" />
+                    <Text style={[styles.infoPillText, { color: '#FFD700' }]}>{typeDisplay}</Text>
+                  </View>
+                )}
               </View>
 
               {item.SLOGAN && getTranslatedText(item.SLOGAN, language) ? (
@@ -1552,7 +1613,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
           <View style={styles.cardActionRow}>
              <TouchableOpacity
-              onPress={() => showDetailModal(item)}
+              onPress={() => showDetailModal(item, gradientColors)}
               style={styles.knowMoreButtonClean}
             >
               <Text style={styles.knowMoreButtonTextClean}>
@@ -1610,6 +1671,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
             <Text style={[styles.metalTabText, selectedMetal === "all" && { color: "#FFF" }]} numberOfLines={1}>
               {t("allOnly") || "All"}
             </Text>
+            <View style={[styles.cornerCountBadge, selectedMetal === "all" && styles.cornerCountBadgeActive]}>
+              <Text style={[styles.cornerCountBadgeText, selectedMetal === "all" && styles.cornerCountBadgeTextActive]}>
+                {metalCounts.all}
+              </Text>
+            </View>
           </TouchableOpacity>
 
           {isVisible("showGoldScheme") && availableMetals.gold && (
@@ -1622,6 +1688,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               <Text style={[styles.metalTabText, selectedMetal === "gold" && styles.metalTabTextActive]} numberOfLines={1}>
                 {t("gold") || "Gold"}
               </Text>
+              <View style={[styles.cornerCountBadge, selectedMetal === "gold" && styles.cornerCountBadgeActive]}>
+                <Text style={[styles.cornerCountBadgeText, selectedMetal === "gold" && styles.cornerCountBadgeTextActive]}>
+                  {metalCounts.gold}
+                </Text>
+              </View>
             </TouchableOpacity>
           )}
 
@@ -1635,6 +1706,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               <Text style={[styles.metalTabText, selectedMetal === "silver" && styles.metalTabTextActive]} numberOfLines={1}>
                 {t("silver") || "Silver"}
               </Text>
+              <View style={[styles.cornerCountBadge, selectedMetal === "silver" && styles.cornerCountBadgeActive]}>
+                <Text style={[styles.cornerCountBadgeText, selectedMetal === "silver" && styles.cornerCountBadgeTextActive]}>
+                  {metalCounts.silver}
+                </Text>
+              </View>
             </TouchableOpacity>
           )}
 
@@ -1648,6 +1724,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               <Text style={[styles.metalTabText, selectedMetal === "diamond" && styles.metalTabTextActive]} numberOfLines={1}>
                 {t("diamond") || "Diamond"}
               </Text>
+              <View style={[styles.cornerCountBadge, selectedMetal === "diamond" && styles.cornerCountBadgeActive]}>
+                <Text style={[styles.cornerCountBadgeText, selectedMetal === "diamond" && styles.cornerCountBadgeTextActive]}>
+                  {metalCounts.diamond}
+                </Text>
+              </View>
             </TouchableOpacity>
           )}
 
@@ -1661,6 +1742,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               <Text style={[styles.metalTabText, selectedMetal === "platinum" && styles.metalTabTextActive]} numberOfLines={1}>
                 {t("platinum") || "Platinum"}
               </Text>
+              <View style={[styles.cornerCountBadge, selectedMetal === "platinum" && styles.cornerCountBadgeActive]}>
+                <Text style={[styles.cornerCountBadgeText, selectedMetal === "platinum" && styles.cornerCountBadgeTextActive]}>
+                  {metalCounts.platinum}
+                </Text>
+              </View>
             </TouchableOpacity>
           )}
 
@@ -1674,6 +1760,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               <Text style={[styles.metalTabText, selectedMetal === "old_gold" && styles.metalTabTextActive]} numberOfLines={1}>
                 {t("oldGold") || "Old Gold"}
               </Text>
+              <View style={[styles.cornerCountBadge, selectedMetal === "old_gold" && styles.cornerCountBadgeActive]}>
+                <Text style={[styles.cornerCountBadgeText, selectedMetal === "old_gold" && styles.cornerCountBadgeTextActive]}>
+                  {metalCounts.old_gold}
+                </Text>
+              </View>
             </TouchableOpacity>
           )}
         </ScrollView>
@@ -1695,6 +1786,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
             <Text style={[styles.planTypeText, schemePlanType === "all" && styles.planTypeTextActive]}>
               {t("allOnly") || "All"}
             </Text>
+            <View style={[styles.cornerCountBadge, schemePlanType === "all" && styles.cornerCountBadgeActive]}>
+              <Text style={[styles.cornerCountBadgeText, schemePlanType === "all" && styles.cornerCountBadgeTextActive]}>
+                {planTypeCounts.all}
+              </Text>
+            </View>
           </TouchableOpacity>
 
           {metalHasFixed && (
@@ -1714,6 +1810,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               <Text style={[styles.planTypeText, schemePlanType === "fixed" && styles.planTypeTextActive]}>
                 {t("Fixed") || "Fixed"}
               </Text>
+              <View style={[styles.cornerCountBadge, schemePlanType === "fixed" && styles.cornerCountBadgeActive]}>
+                <Text style={[styles.cornerCountBadgeText, schemePlanType === "fixed" && styles.cornerCountBadgeTextActive]}>
+                  {planTypeCounts.fixed}
+                </Text>
+              </View>
             </TouchableOpacity>
           )}
 
@@ -1731,6 +1832,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               <Text style={[styles.planTypeText, schemePlanType === "flexi" && styles.planTypeTextActive]}>
                 {t("Flexi") || "Flexi"}
               </Text>
+              <View style={[styles.cornerCountBadge, schemePlanType === "flexi" && styles.cornerCountBadgeActive]}>
+                <Text style={[styles.cornerCountBadgeText, schemePlanType === "flexi" && styles.cornerCountBadgeTextActive]}>
+                  {planTypeCounts.flexi}
+                </Text>
+              </View>
             </TouchableOpacity>
           )}
 
@@ -1748,6 +1854,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               <Text style={[styles.planTypeText, schemePlanType === "deposit" && styles.planTypeTextActive]}>
                 {t("Deposit") || "Deposit"}
               </Text>
+              <View style={[styles.cornerCountBadge, schemePlanType === "deposit" && styles.cornerCountBadgeActive]}>
+                <Text style={[styles.cornerCountBadgeText, schemePlanType === "deposit" && styles.cornerCountBadgeTextActive]}>
+                  {planTypeCounts.deposit}
+                </Text>
+              </View>
             </TouchableOpacity>
           )}
 
@@ -1765,6 +1876,11 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               <Text style={[styles.planTypeText, schemePlanType === "hybrid" && styles.planTypeTextActive]}>
                 {t("Hybrid") || "Hybrid"}
               </Text>
+              <View style={[styles.cornerCountBadge, schemePlanType === "hybrid" && styles.cornerCountBadgeActive]}>
+                <Text style={[styles.cornerCountBadgeText, schemePlanType === "hybrid" && styles.cornerCountBadgeTextActive]}>
+                  {planTypeCounts.hybrid}
+                </Text>
+              </View>
             </TouchableOpacity>
           )}
         </View>
@@ -1860,13 +1976,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                 tintColor="#667eea"
               />
             }
-            ListHeaderComponent={
-              selectedMetal === "all" ? null : (
-                <Text style={styles.resultsCount}>
-                  {schemesListData.length} {schemePlanType === "all" ? "" : `${activeTab} `}Scheme{schemesListData.length !== 1 ? 's' : ''} Available
-                </Text>
-              )
-            }
+            ListHeaderComponent={null}
             ListFooterComponent={
               <View style={styles.listFooter}>
                 <Text style={styles.footerText}>
@@ -1917,7 +2027,12 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               <Ionicons name="close" size={26} color="#fff" />
             </TouchableOpacity>
           </View>
-          <View style={styles.modalContentModern}>
+          <LinearGradient
+            colors={selectedSchemeGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.modalContentModern}
+          >
             <View style={{
               flexDirection: 'row',
               justifyContent: 'space-between',
@@ -1925,8 +2040,8 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
               paddingHorizontal: 20,
               paddingVertical: 14,
               borderBottomWidth: 1,
-              borderBottomColor: '#F1F3F5',
-              backgroundColor: '#fff',
+              borderBottomColor: 'rgba(255,255,255,0.16)',
+              backgroundColor: 'rgba(0,0,0,0.22)',
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
             }}>
@@ -1934,7 +2049,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                 style={{ 
                   fontSize: 15, 
                   fontWeight: '800', 
-                  color: theme.colors.textDark || '#0b162c', 
+                  color: '#FFFFFF', 
                   flex: 1, 
                   marginRight: 12,
                   lineHeight: 19
@@ -1994,7 +2109,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                 <>
                   <View style={styles.modernHeader}>
                     {selectedScheme.SLOGAN && (
-                      <Text style={styles.modernSlogan}>
+                      <Text style={[styles.modernSlogan, { color: 'rgba(255,255,255,0.9)' }]}>
                         {getTranslatedText(selectedScheme.SLOGAN as any, language)}
                       </Text>
                     )}
@@ -2002,30 +2117,30 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                   </View>
 
                   <View style={styles.pillBadgesContainer}>
-                    <View style={styles.pillBadge}>
-                      <Text style={styles.pillBadgeText}>{t(getSchemeTypeLabel(selectedScheme)) || getSchemeTypeLabel(selectedScheme)}</Text>
+                    <View style={[styles.pillBadge, { backgroundColor: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,215,0,0.45)' }]}>
+                      <Text style={[styles.pillBadgeText, { color: '#FFD700' }]}>{t(getSchemeTypeLabel(selectedScheme)) || getSchemeTypeLabel(selectedScheme)}</Text>
                     </View>
                     {(selectedScheme.DURATION_MONTHS || selectedScheme.chits?.[0]?.NOINS) && (
-                      <View style={styles.pillBadge}>
-                        <Text style={styles.pillBadgeText}>{getSchemeDurationDisplay(selectedScheme, t)}</Text>
+                      <View style={[styles.pillBadge, { backgroundColor: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,215,0,0.45)' }]}>
+                        <Text style={[styles.pillBadgeText, { color: '#FFFFFF' }]}>{getSchemeDurationDisplay(selectedScheme, t)}</Text>
                       </View>
                     )}
-                    <View style={[styles.pillBadge, { backgroundColor: '#F0F0FF' }]}>
-                      <Text style={[styles.pillBadgeText, { color: '#5D5DFF' }]}>
+                    <View style={[styles.pillBadge, { backgroundColor: 'rgba(255,215,0,0.18)', borderColor: 'rgba(255,215,0,0.5)' }]}>
+                      <Text style={[styles.pillBadgeText, { color: '#FFD700' }]}>
                         {selectedScheme.savingType === 'weight' ? (t('goldWeight') || 'Gold Weight') : (t('amount') || 'Amount')}
                       </Text>
                     </View>
                   </View>
 
                   <View style={styles.gridSection}>
-                    <Text style={styles.gridSectionTitle}>{t("benefits") || "Benefits"}</Text>
+                    <Text style={[styles.gridSectionTitle, { color: '#FFD700' }]}>{t("benefits") || "Benefits"}</Text>
                     <View style={styles.benefitsGrid}>
                       {(selectedScheme.BENEFITS || ["Secure Gold Savings", "Bonus on Maturity", "Instant Access"]).map((benefit, idx) => (
-                        <View key={idx} style={styles.gridBenefitItem}>
-                          <View style={styles.gridIconContainer}>
-                            <Ionicons name="checkmark-circle" size={18} color="#2ECC71" />
+                        <View key={idx} style={[styles.gridBenefitItem, { backgroundColor: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.18)' }]}>
+                          <View style={[styles.gridIconContainer, { backgroundColor: 'rgba(74, 222, 128, 0.18)' }]}>
+                            <Ionicons name="checkmark-circle" size={18} color="#4ADE80" />
                           </View>
-                          <Text style={styles.gridBenefitText}>{getTranslatedText(benefit, language)}</Text>
+                          <Text style={[styles.gridBenefitText, { color: '#FFFFFF' }]}>{getTranslatedText(benefit, language)}</Text>
                         </View>
                       ))}
                     </View>
@@ -2033,8 +2148,8 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
                   {selectedScheme.DESCRIPTION && (
                     <View style={styles.modernSection}>
-                      <Text style={styles.modernSectionTitle}>{t("description") || "Description"}</Text>
-                      <Text style={styles.modernDescription}>
+                      <Text style={[styles.modernSectionTitle, { color: '#FFD700', opacity: 1 }]}>{t("description") || "Description"}</Text>
+                      <Text style={[styles.modernDescription, { color: 'rgba(255,255,255,0.92)' }]}>
                         {getTranslatedText(selectedScheme.DESCRIPTION as any, language)}
                       </Text>
                     </View>
@@ -2042,7 +2157,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 
                   {selectedScheme.table_meta && (
                     <View style={styles.modernSection}>
-                      <Text style={styles.modernSectionTitle}>{t("schemeDetails") || "Scheme Details"}</Text>
+                      <Text style={[styles.modernSectionTitle, { color: '#FFD700', opacity: 1 }]}>{t("schemeDetails") || "Scheme Details"}</Text>
                       {renderTableMeta(selectedScheme)}
                     </View>
                   )}
@@ -2054,18 +2169,18 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                     return (
                       <View style={styles.modernSection}>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                          <Ionicons name="gift" size={20} color="#D4AF37" />
-                          <Text style={styles.modernSectionTitle}>
+                          <Ionicons name="gift" size={20} color="#FFD700" />
+                          <Text style={[styles.modernSectionTitle, { color: '#FFD700', opacity: 1, marginBottom: 0 }]}>
                             {language === "ta" ? "போனஸ் அட்டவணை (Bonus Table)" : "Bonus Table"}
                           </Text>
                         </View>
-                        <View style={styles.tableRefinedContainer}>
+                        <View style={[styles.tableRefinedContainer, { backgroundColor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.18)' }]}>
                           {/* Table Header */}
-                          <View style={[styles.tableRefinedHeader, { backgroundColor: "#8A1830" }]}>
-                            <Text style={[styles.tableRefinedHeaderText, { flex: 1.2 }]}>
+                          <View style={[styles.tableRefinedHeader, { backgroundColor: "rgba(0,0,0,0.28)", borderBottomColor: 'rgba(255,255,255,0.16)' }]}>
+                            <Text style={[styles.tableRefinedHeaderText, { flex: 1.2, color: '#FFD700' }]}>
                               {language === "ta" ? "நாட்கள் வரம்பு (Days)" : "Days Range"}
                             </Text>
-                            <Text style={[styles.tableRefinedHeaderText, { flex: 0.8, textAlign: "right" }]}>
+                            <Text style={[styles.tableRefinedHeaderText, { flex: 0.8, textAlign: "right", color: '#FFD700' }]}>
                               {language === "ta" ? "போனஸ் % (Bonus %)" : "Bonus %"}
                             </Text>
                           </View>
@@ -2075,17 +2190,17 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                               key={sIdx}
                               style={[
                                 styles.tableRefinedRow,
-                                sIdx % 2 !== 0 && styles.tableRowAlt,
-                                { justifyContent: "space-between" },
+                                sIdx % 2 !== 0 && { backgroundColor: 'rgba(255,255,255,0.05)' },
+                                { justifyContent: "space-between", borderBottomColor: 'rgba(255,255,255,0.12)' },
                               ]}
                             >
-                              <Text style={[styles.tableRefinedCell, { flex: 1.2, fontWeight: "600", color: "#1E293B" }]}>
+                              <Text style={[styles.tableRefinedCell, { flex: 1.2, fontWeight: "600", color: "#FFFFFF" }]}>
                                 {slab.from_day} - {slab.to_day} {language === "ta" ? "நாட்கள்" : "Days"}
                               </Text>
                               <Text
                                 style={[
                                   styles.tableRefinedCell,
-                                  { flex: 0.8, textAlign: "right", color: "#16A34A", fontWeight: "800", fontSize: 14 },
+                                  { flex: 0.8, textAlign: "right", color: "#4ADE80", fontWeight: "800", fontSize: 14 },
                                 ]}
                               >
                                 {slab.percentage}%
@@ -2101,7 +2216,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
                 </>
               )}
             </ScrollView>
-          </View>
+          </LinearGradient>
         </View>
       </Modal>
 
@@ -2290,12 +2405,12 @@ function getStyles(theme: any) { return StyleSheet.create({
   planTypeWrapper: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    backgroundColor: '#F1F5F9',
-    padding: 4,
-    borderRadius: 8,
-    marginHorizontal: 16,
-    marginTop: 10,
-    gap: 4,
+    backgroundColor: 'transparent',
+    paddingVertical: 6,
+    paddingHorizontal: 2,
+    marginHorizontal: 14,
+    marginTop: 8,
+    gap: 10,
     alignSelf: 'flex-start',
   },
   planTypeButton: {
@@ -2303,52 +2418,89 @@ function getStyles(theme: any) { return StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    backgroundColor: 'transparent',
-    gap: 4,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    gap: 5,
+    position: 'relative',
+    overflow: 'visible',
   },
   planTypeButtonActive: {
     backgroundColor: '#850111',
-    shadowColor: '#000',
+    borderColor: '#850111',
+    shadowColor: '#850111',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   planTypeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#475569',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
   },
   planTypeTextActive: {
     color: '#FFF',
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  cornerCountBadge: {
+    position: 'absolute',
+    top: -7,
+    right: -6,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#850111',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    zIndex: 10,
+  },
+  cornerCountBadgeActive: {
+    backgroundColor: '#D4AF37',
+    borderColor: '#FFFFFF',
+  },
+  cornerCountBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    lineHeight: 12,
+  },
+  cornerCountBadgeTextActive: {
+    color: '#1E293B',
   },
   metalTabsWrapper: {
     backgroundColor: theme.colors.background,
-    paddingVertical: 10,
+    paddingTop: 12,
+    paddingBottom: 8,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.borderLight || '#f0f0f0',
   },
   metalTabsScroll: {
     flexGrow: 1,
-    gap: 6,
-    paddingRight: 4,
+    gap: 10,
+    paddingTop: 6,
+    paddingRight: 10,
     alignItems: 'center',
   },
   metalTabPill: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 11,
+    paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 18,
     backgroundColor: '#FFFDF9',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.35)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(212, 175, 55, 0.45)',
     gap: 5,
+    position: 'relative',
+    overflow: 'visible',
   },
   metalTabPillGoldActive: {
     backgroundColor: '#FFF9E6',

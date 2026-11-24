@@ -1715,5 +1715,8 @@
     "defaultReason": "ഷെഡ്യൂൾ ചെയ്ത സിസ്റ്റം അപ്‌ഗ്രേഡ്",
     "thankYou": "നിങ്ങളുടെ ക്ഷമയ്ക്ക് നന്ദി"
   },
-  "weeks": "ആഴ്ചകൾ"
+  "weeks": "ആഴ്ചകൾ",
+  "oldGoldSavingsSchemeTitle": "പഴയ സ്വർണ്ണം\nമാറ്റം",
+  "oldGoldSavingsSchemeSubtitle": "നഷ്ടമില്ലാതെ പഴയ സ്വർണ്ണം മാറ്റുക",
+  "exploreNow": "ഇപ്പോൾ കാണുക"
 }

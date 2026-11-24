@@ -1717,5 +1717,8 @@
     "defaultReason": "షెడ్యూల్ చేసిన సిస్టమ్ అప్‌గ్రేడ్",
     "thankYou": "మీ సహనానికి ధన్యవాదాలు"
   },
-  "weeks": "వారాలు"
+  "weeks": "వారాలు",
+  "oldGoldSavingsSchemeTitle": "పాత బంగారం\nమార్పిడి",
+  "oldGoldSavingsSchemeSubtitle": "నష్టం లేకుండా పాత బంగారాన్ని మార్చుకోండి",
+  "exploreNow": "ఇప్పుడే చూడండి"
 }

@@ -31,7 +31,8 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
   onViewAllPress,
 }) => {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const isCompactLocale = locale === "ta" || locale === "mal" || locale === "te";
 
   const handleMyChits = () => {
     if (onMyChitsPress) {
@@ -87,7 +88,12 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
     <View style={styles.container}>
       {/* Header Row */}
       <View style={styles.headerRow}>
-        <Text style={styles.title}>
+        <Text
+          style={[styles.title, isCompactLocale && { fontSize: moderateScale(14) }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+        >
           {t("quickActions", { defaultValue: "Quick Actions" })}
         </Text>
         <TouchableOpacity
@@ -95,7 +101,10 @@ export const QuickActionsV2: React.FC<QuickActionsV2Props> = ({
           activeOpacity={0.7}
           style={styles.viewAllBtn}
         >
-          <Text style={styles.viewAllText}>
+          <Text
+            style={[styles.viewAllText, isCompactLocale && { fontSize: moderateScale(11) }]}
+            numberOfLines={1}
+          >
             {t("viewAll", { defaultValue: "View All" })}
           </Text>
           <Ionicons name="arrow-forward" size={13} color="#850111" />
@@ -194,6 +203,8 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(10),
   },
   title: {
+    flex: 1,
+    marginRight: moderateScale(8),
     fontSize: moderateScale(16),
     fontWeight: "800",
     color: "#850111", // Royal Temple Burgundy
@@ -202,6 +213,7 @@ const styles = StyleSheet.create({
   viewAllBtn: {
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 0,
     gap: 3,
   },
   viewAllText: {

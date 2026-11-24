@@ -22,7 +22,7 @@ import { runAfterInteractions } from "@/utils/interactionUtils";
 import { useKeyboardVisibility } from "@/hooks/useKeyboardVisibility";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore, { useAppTheme, getAppConfig } from "@/store/global.store";
 import api from "@/services/api";
@@ -344,12 +344,13 @@ export default function JoinSavings() {
     return interestSlabs.length > 0;
   }, [interestSlabs]);
 
-  // Support dual input for Weight-based, Flexi, Deposit, and Bonus Slabs schemes
+  // Support dual Weight + Amount input ONLY for Flexi (and Deposit) schemes; Fixed schemes show Amount only
   const allowWeightCalc = useMemo(() => {
-    const isWeightBased = parsedData?.savingType === "weight";
-    const isFlexi = parsedData?.schemeType === "flexi" || parsedData?.type?.toLowerCase()?.includes("flexi");
-    return Boolean(isWeightBased || isFlexi || isDepositScheme || hasBonusRewards);
-  }, [parsedData, isDepositScheme, hasBonusRewards]);
+    const isFlexi =
+      parsedData?.schemeType?.toLowerCase() === "flexi" ||
+      parsedData?.type?.toLowerCase()?.includes("flexi");
+    return Boolean(isFlexi || isDepositScheme);
+  }, [parsedData, isDepositScheme]);
 
   // Active bonus slab for Day 1
   const activeSlab = useMemo(() => {
@@ -763,15 +764,16 @@ export default function JoinSavings() {
     // First update input value
     setInputValue(numericValue);
 
-    // Check if scheme is weight-based or amount-based
-    const isWeightBased = parsedData?.savingType === "weight";
-    const isFlexi = parsedData?.schemeType === "flexi" || parsedData?.type?.toLowerCase()?.includes("flexi");
-    const allowWeightCalc = isWeightBased || isFlexi;
+    // Only Flexi / Deposit schemes calculate gold weight dynamically alongside amount
+    const isFlexi =
+      parsedData?.schemeType?.toLowerCase() === "flexi" ||
+      parsedData?.type?.toLowerCase()?.includes("flexi");
+    const allowWeightCalcLocal = Boolean(isFlexi || isDepositScheme);
 
     // Handle empty input
     if (numericValue === "0") {
       setAmount(0);
-      if (allowWeightCalc) {
+      if (allowWeightCalcLocal) {
         setGoldWeight(0);
       }
       handleChange("amount", "0");
@@ -3279,6 +3281,26 @@ export default function JoinSavings() {
       style={styles.safeAreaContainer}
       edges={["left", "right"]}
     >
+      <Stack.Screen options={{ headerShown: false }} />
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: theme.colors.quaternary || "#F2E6D2" }}>
+        <View style={{ backgroundColor: theme.colors.quaternary || "#F2E6D2", paddingHorizontal: 16, paddingVertical: 10, flexDirection: "row", alignItems: "center" }}>
+          <TouchableOpacity
+            onPress={() => {
+              if (step > 1) {
+                setStep(step - 1);
+              } else {
+                router.back();
+              }
+            }}
+            style={{ marginRight: 12, padding: 2 }}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.colors.textDark || "#850111"} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 17, fontWeight: "700", color: theme.colors.textDark || "#850111", flex: 1 }} numberOfLines={1}>
+            {t("joinSchemes") || "Join Schemes"}
+          </Text>
+        </View>
+      </SafeAreaView>
       <View style={styles.container}>
         {/* <View style={styles.header}>
           <TouchableOpacity

@@ -126,7 +126,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
   const router = useRouter();
   const theme = useAppTheme();
   const { isVisible } = useAppVisibility();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [fetchedSchemes, setFetchedSchemes] = useState<any[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
 
@@ -343,7 +343,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     }
 
     return list;
-  }, [availableCategories, isVisible, t]);
+  }, [availableCategories, isVisible, t, locale]);
 
   // Metal Filter Tabs Row
   const filterTabs = useMemo(() => {
@@ -368,7 +368,7 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     }
 
     return tabs;
-  }, [availableCategories, isVisible, t]);
+  }, [availableCategories, isVisible, t, locale]);
 
   // Filtered Cards
   const displayedItems = useMemo(() => {
@@ -428,17 +428,32 @@ export const PopularSchemesV2: React.FC<PopularSchemesV2Props> = ({
     <View style={styles.container}>
       {/* Header Row */}
       <View style={styles.headerRow}>
-        <View style={styles.headerTitleRow}>
-          <Text style={styles.title}>
+        <View style={[styles.headerTitleRow, { flex: 1, marginRight: 8 }]}>
+          <Text
+            style={[
+              styles.title,
+              locale !== "en" && { fontSize: moderateScale(14.5) },
+            ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.82}
+          >
             {t("popularSchemes", { defaultValue: "Popular Schemes" })}
           </Text>
         </View>
         <TouchableOpacity
           onPress={handleViewAll}
           activeOpacity={0.7}
-          style={styles.viewAllBtn}
+          style={[styles.viewAllBtn, { flexShrink: 0 }]}
         >
-          <Text style={[styles.viewAllText, { color: theme.colors.primary }]}>
+          <Text
+            style={[
+              styles.viewAllText,
+              { color: theme.colors.primary },
+              locale !== "en" && { fontSize: moderateScale(11.5) },
+            ]}
+            numberOfLines={1}
+          >
             {t("viewAll") || "View All"}
           </Text>
           <Ionicons name="arrow-forward" size={13} color={theme.colors.primary} />

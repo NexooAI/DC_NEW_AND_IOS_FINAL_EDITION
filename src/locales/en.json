@@ -1720,5 +1720,8 @@
     "defaultReason": "Scheduled System Upgrade",
     "thankYou": "Thank you for your patience"
   },
-  "weeks": "Weeks"
+  "weeks": "Weeks",
+  "oldGoldSavingsSchemeTitle": "Old Gold\nExchange",
+  "oldGoldSavingsSchemeSubtitle": "Upgrade your old gold with zero loss",
+  "exploreNow": "Explore Now"
 }

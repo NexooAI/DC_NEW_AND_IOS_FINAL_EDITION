@@ -401,12 +401,18 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
     textObj: any,
     lang: string
   ): string => {
+    const cleanVal = (v: any): string => {
+      if (v === null || v === undefined) return "";
+      const s = String(v).trim();
+      return !s || s.toLowerCase() === "null" || s.toLowerCase() === "undefined" ? "" : s;
+    };
+
     if (textObj === null || textObj === undefined || textObj === "") {
       return "";
     }
 
     if (typeof textObj === "string") {
-      return textObj.trim() || "";
+      return cleanVal(textObj);
     }
 
     if (typeof textObj === "number") {
