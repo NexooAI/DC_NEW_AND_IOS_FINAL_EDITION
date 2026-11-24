@@ -20,11 +20,11 @@ export const images = {
 
     // Navigation and UI elements
     navigation: {
-        menuBg: "../../assets/images/menu_bg.png",
+        menuBg: "../../assets/images/scheme_card_bg.png",
         goldPattern: "../../assets/images/gold_pattern.jpg",
-        cancelIcon: "../../assets/images/cancel.png",
-        successIcon: "../../assets/images/success.png",
-        noData: "../../assets/images/no-data.png",
+        cancelIcon: "../../assets/images/intro_1.png",
+        successIcon: "../../assets/images/intro_1.png",
+        noData: "../../assets/images/no-data2.png",
     },
 
     // Product and scheme images
@@ -45,8 +45,8 @@ export const images = {
         slider2: "../../assets/images/slider2.png",
         slider3: "../../assets/images/slider3.png",
         slider4: "../../assets/images/slider4.png",
-        banner: "../../assets/images/banner.png",
-        banner2: "../../assets/images/banner2.png",
+        banner: "../../assets/images/slider.png",
+        banner2: "../../assets/images/slider.png",
         flashBanner: "../../assets/images/flashbanner.png",
     },
 
@@ -70,7 +70,7 @@ export const images = {
 
     // Store and location images
     store: {
-        storeIcon: "../../assets/images/store.png",
+        storeIcon: "../../assets/images/shop.png",
         shopIcon: "../../assets/images/shop.png",
         mapPin: "../../assets/images/map-pin.png",
         centerLocation: "../../assets/images/center-location.png",
@@ -92,7 +92,7 @@ export const images = {
 
     // Translation and language images
     translate: {
-        malayalam: "../../assets/images/translate/mal.png",
+        malayalam: "../../assets/images/translate/ta.png",
         english: "../../assets/images/translate/eng.png",
     },
 

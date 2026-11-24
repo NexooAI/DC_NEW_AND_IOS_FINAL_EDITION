@@ -27,6 +27,35 @@ type Tab = {
   isCenter?: boolean;
 };
 
+// List of special pages where the tab bar should be hidden (module-level static array)
+export const HIDE_TAB_BAR_ROUTES = [
+  "paymentNewOverView",
+  "join_savings",
+  "PaymentWebView",
+  "payment-success",
+  "payment-failure",
+  "SavingsDetail",
+  "digigold_payment_calculator",
+  "kyc",
+  "ticket-form",
+  "faq-chat",
+  "BookingHistory",
+  "offers",
+  "refer_earn",
+  "our_stores",
+  "contact_us",
+  "about_us",
+  "faq",
+  "ourPolicies",
+  "privacyPolicy",
+  "termsAndConditionsPolicies",
+  "policies/ourPolicies",
+  "policies/privacyPolicy",
+  "policies/termsAndConditionsPolicies",
+];
+
+export const hideTabBarRoutes = HIDE_TAB_BAR_ROUTES;
+
 const TabProfileIcon = ({ source, defaultIcon, color, size, isActive, themeSecondary }: any) => {
   const [hasError, setHasError] = React.useState(false);
   if (source && !hasError) {
@@ -69,11 +98,11 @@ export default function CustomBottomBar(_props?: any) {
     visibleData?.showBottomNavDashboard === 1 ||
     visibleData?.showBottomNavDashboard === true
   ) &&
-  visibleData?.enableDashboardV2 !== 0 &&
-  visibleData?.enableDashboard !== 0 &&
-  visibleData?.showTabDashboard !== 0 &&
-  visibleData?.showBottomNavDashboard !== 0 &&
-  visibleData?.showBottomNavDashboard !== false;
+    visibleData?.enableDashboardV2 !== 0 &&
+    visibleData?.enableDashboard !== 0 &&
+    visibleData?.showTabDashboard !== 0 &&
+    visibleData?.showBottomNavDashboard !== 0 &&
+    visibleData?.showBottomNavDashboard !== false;
 
   // Dynamic Settings from API
   const bottomNavStyle = (visibleData?.bottomNavStyle || "v2_floating") as
@@ -102,32 +131,7 @@ export default function CustomBottomBar(_props?: any) {
     [0, 1, 2, 3, 4, 5].map(() => new Animated.Value(1))
   ).current;
 
-  // List of special pages where the tab bar should be hidden
-  const hideTabBarRoutes = [
-    "paymentNewOverView",
-    "join_savings",
-    "PaymentWebView",
-    "payment-success",
-    "payment-failure",
-    "SavingsDetail",
-    "digigold_payment_calculator",
-    "kyc",
-    "ticket-form",
-    "faq-chat",
-    "BookingHistory",
-    "offers",
-    "refer_earn",
-    "our_stores",
-    "contact_us",
-    "about_us",
-    "faq",
-    "ourPolicies",
-    "privacyPolicy",
-    "termsAndConditionsPolicies",
-    "policies/ourPolicies",
-    "policies/privacyPolicy",
-    "policies/termsAndConditionsPolicies",
-  ];
+  const hideTabBarRoutes = HIDE_TAB_BAR_ROUTES;
 
   const tabs: Tab[] = useMemo(() => {
     const rawTabs: Tab[] = [

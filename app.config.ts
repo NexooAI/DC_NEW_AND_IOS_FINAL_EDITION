@@ -185,7 +185,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             },
         },
 
-        assetBundlePatterns: ["**/*"],
+        assetBundlePatterns: ["assets/**/*"],
 
         updates: {
             url: `https://u.expo.dev/${projectId}`,
