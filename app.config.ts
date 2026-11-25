@@ -164,7 +164,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             [
                 "expo-notifications",
                 {
-                    icon: "./assets/images/icon.png",
+                    icon: "./assets/images/notification-icon.png",
                     color: themeConfig.primaryColor,
                     sounds: ["./assets/sound/notification.wav"],
                 },
