@@ -35,6 +35,7 @@ import CustomAlert from "@/components/Alert";
 import { checkIsDepositScheme } from "@/utils/schemeUtils";
 import Icon from "react-native-vector-icons/AntDesign";
 import Svg, { Path, Circle } from "react-native-svg";
+import { resolveInstallmentInfo } from "@/utils/schemeInstallments";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Clipboard from "expo-clipboard";
@@ -1142,12 +1143,21 @@ const SavingsDetail = () => {
     fetchTransactions();
   }, [params.id, params.investmentId]);
 
-  const getProgressPercentage = () => {
+  const installmentInfo = useMemo(() => {
     const rawPaid = params.monthsPaid ?? inversement?.lastInstallment ?? inversement?.monthsPaid ?? 0;
-    const paid = Number(rawPaid) || 0;
-    const rawTotal = params.noOfIns ?? inversement?.chits?.noOfInstallments ?? inversement?.noOfInstallments ?? 1;
-    const total = Number(rawTotal) || 1;
-    return Math.min(Math.max((paid / total) * 100, 0), 100);
+    const rawTotal = params.noOfIns ?? inversement?.chits?.noOfInstallments ?? inversement?.noOfInstallments ?? 11;
+    const freqText =
+      params.paymentFrequency ||
+      schemesData?.paymentFrequencyName ||
+      inversement?.chits?.paymentFrequency ||
+      params.schemeName ||
+      "";
+    return resolveInstallmentInfo(freqText, rawTotal, rawPaid, translations.months || "Months");
+  }, [params.monthsPaid, params.noOfIns, params.paymentFrequency, params.schemeName, inversement, schemesData?.paymentFrequencyName, translations.months]);
+
+  const getProgressPercentage = () => {
+    const total = installmentInfo.total || 1;
+    return Math.min(Math.max((installmentInfo.paid / total) * 100, 0), 100);
   };
 
   const handleSelectPayment = (payment: any) => {
@@ -1301,10 +1311,8 @@ const SavingsDetail = () => {
   // New Component Renderers
 
   const renderHeroCard = () => {
-    const rawTotalMonths = params.noOfIns ?? inversement?.chits?.noOfInstallments ?? inversement?.noOfInstallments ?? 12;
-    const totalMonths = Number(rawTotalMonths) || 12;
-    const rawMonthsPaid = params.monthsPaid ?? inversement?.lastInstallment ?? inversement?.monthsPaid ?? 0;
-    const monthsPaid = Number(rawMonthsPaid) || 0;
+    const totalMonths = installmentInfo.total;
+    const monthsPaid = installmentInfo.paid;
     const progressPercent = getProgressPercentage();
     
     // SVG radial configuration
@@ -1330,7 +1338,7 @@ const SavingsDetail = () => {
       const rad = (angle * Math.PI) / 180;
       const tx = cx + (radius + 6) * Math.cos(rad);
       const ty = cy - (radius + 6) * Math.sin(rad);
-      const isReached = i < monthsPaid;
+      const isReached = i < Math.round((monthsPaid / Math.max(totalMonths, 1)) * maxTicks);
       ticks.push(
         <Circle
           key={i}
@@ -1364,7 +1372,7 @@ const SavingsDetail = () => {
                 <Text style={styles.heroStatValue}>₹{Number(totalPaidAmount || 0).toLocaleString()}</Text>
               </View>
               
-              {(isWeightScheme || accumulatedWeight > 0) && (
+              {isWeightScheme && (
                 <View>
                   <Text style={[styles.heroStatLabel, { fontSize: 10, marginBottom: 2 }]}>{accumulatedLabel}</Text>
                   <Text style={[styles.heroStatValue, { fontSize: 16 }]}>
@@ -1447,7 +1455,7 @@ const SavingsDetail = () => {
                       {monthsPaid}/{totalMonths}
                     </Text>
                     <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                      {translations.months || "Months"}
+                      {installmentInfo.unitLabel}
                     </Text>
                   </View>
                 </View>

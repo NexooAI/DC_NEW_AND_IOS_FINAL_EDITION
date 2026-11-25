@@ -701,11 +701,13 @@ export default function MpinVerify() {
   ];
 
   const showErrorModal = (title: string, message: string) => {
+    Keyboard.dismiss();
     setModalData({ title, message, type: "error" });
     setShowModal(true);
   };
 
   const showWarningModal = (title: string, message: string) => {
+    Keyboard.dismiss();
     setModalData({ title, message, type: "warning" });
     setShowModal(true);
   };

@@ -265,6 +265,7 @@ const isPublicEndpoint = (url: string | undefined): boolean => {
 
   const publicEndpoints = [
     '/auth/login',
+    '/auth/login-mpin',
     '/auth/register',
     '/auth/check-mobile',
     '/auth/verify-otp',
@@ -273,6 +274,7 @@ const isPublicEndpoint = (url: string | undefined): boolean => {
     '/version/verify-version',
     '/branches',
     '/intro-screens',
+    '/config/settings',
     '/app-visible'
   ];
   return publicEndpoints.some(endpoint => url.includes(endpoint));
