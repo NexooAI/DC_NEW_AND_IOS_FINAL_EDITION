@@ -344,13 +344,21 @@ export default function JoinSavings() {
     return interestSlabs.length > 0;
   }, [interestSlabs]);
 
-  // Support dual Weight + Amount input ONLY for Flexi (and Deposit) schemes; Fixed schemes show Amount only
+  const isFixedWeightScheme = useMemo(() => {
+    return Boolean(
+      parsedData?.scheme_mode === "FIXED_WEIGHT" ||
+        parsedData?.is_fixed_weight === true ||
+        parsedData?.is_fixed_weight === 1
+    );
+  }, [parsedData]);
+
+  // Support dual Weight + Amount input ONLY for Flexi, Deposit, or Fixed Weight schemes; Fixed Amount schemes show Amount only
   const allowWeightCalc = useMemo(() => {
     const isFlexi =
       parsedData?.schemeType?.toLowerCase() === "flexi" ||
       parsedData?.type?.toLowerCase()?.includes("flexi");
-    return Boolean(isFlexi || isDepositScheme);
-  }, [parsedData, isDepositScheme]);
+    return Boolean(isFlexi || isDepositScheme || isFixedWeightScheme);
+  }, [parsedData, isDepositScheme, isFixedWeightScheme]);
 
   // Active bonus slab for Day 1
   const activeSlab = useMemo(() => {
@@ -764,11 +772,11 @@ export default function JoinSavings() {
     // First update input value
     setInputValue(numericValue);
 
-    // Only Flexi / Deposit schemes calculate gold weight dynamically alongside amount
+    // Only Flexi / Deposit / Fixed Weight schemes calculate gold weight dynamically alongside amount
     const isFlexi =
       parsedData?.schemeType?.toLowerCase() === "flexi" ||
       parsedData?.type?.toLowerCase()?.includes("flexi");
-    const allowWeightCalcLocal = Boolean(isFlexi || isDepositScheme);
+    const allowWeightCalcLocal = Boolean(isFlexi || isDepositScheme || isFixedWeightScheme);
 
     // Handle empty input
     if (numericValue === "0") {

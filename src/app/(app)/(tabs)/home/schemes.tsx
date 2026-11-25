@@ -1170,6 +1170,12 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         instant_intrest: item.instant_intrest || false,
         timestamp: new Date().toISOString(),
         savingType: item.savingType || (item.SCHEMETYPE?.toLowerCase() === "weight" ? "weight" : "amount"),
+        scheme_mode: (item as any).scheme_mode || "AMOUNT",
+        is_fixed_weight:
+          (item as any).scheme_mode === "FIXED_WEIGHT" ||
+          (item as any).is_fixed_weight === 1 ||
+          (item as any).is_fixed_weight === true,
+        allow_partial_payment: Boolean((item as any).allow_partial_payment),
         interest_slabs: getSchemeInterestSlabs(item),
         metal: getSchemeMetalType(item),
         metalType: getSchemeMetalType(item),
