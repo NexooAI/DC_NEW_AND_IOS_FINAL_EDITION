@@ -1172,11 +1172,13 @@ export default function BasicDetailsForm() {
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={{
-                    height: Platform.OS === 'ios' ? hp(22) : hp(20),
-                    paddingTop: Platform.OS === 'ios' ? 70 : 50,
+                    height: Platform.OS === 'ios' ? hp(19) : hp(17),
+                    paddingTop: Platform.OS === 'ios' ? 46 : 34,
+                    paddingBottom: 20,
                     paddingHorizontal: 20,
                     width: "100%",
                     zIndex: 1,
+                    justifyContent: 'center',
                   }}
                 >
                   {/* Background Models Grid Watermark Layer (1, 2, 3 Grid Models) */}
@@ -1241,7 +1243,7 @@ export default function BasicDetailsForm() {
                     </View>
                   )}
 
-                  <View style={{ flexDirection: 'row', alignItems: 'center', zIndex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', zIndex: 2 }}>
                     {/* Back arrow in Royal Ivory & Gold circle */}
                     <TouchableOpacity
                       onPress={handleBack}
@@ -1263,6 +1265,36 @@ export default function BasicDetailsForm() {
                     >
                       <Ionicons name="arrow-back" size={22} color="#850111" />
                     </TouchableOpacity>
+
+                    {/* Compact Centered Logo in same row */}
+                    <View
+                      style={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: 16,
+                        backgroundColor: '#5A000B',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        shadowColor: '#D4AF37',
+                        shadowOffset: { width: 0, height: 3 },
+                        shadowOpacity: 0.5,
+                        shadowRadius: 8,
+                        elevation: 8,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <Image
+                        source={require("../../../assets/images/logo_trans.png")}
+                        style={{
+                          width: 60,
+                          height: 60,
+                        }}
+                        resizeMode="cover"
+                      />
+                    </View>
+
+                    {/* Right Spacer to keep Logo centered */}
+                    <View style={{ width: 40, height: 40 }} />
                   </View>
                 </LinearGradient>
 
