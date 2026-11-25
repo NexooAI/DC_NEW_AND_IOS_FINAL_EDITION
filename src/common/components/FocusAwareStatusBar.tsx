@@ -1,6 +1,6 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { Platform, StatusBar, StatusBarProps } from "react-native";
-import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import { useFocusEffect } from "expo-router";
 
 interface FocusAwareStatusBarProps extends StatusBarProps {
   backgroundColor?: string;
@@ -19,10 +19,11 @@ export default function FocusAwareStatusBar({
   translucent = false,
   ...props
 }: FocusAwareStatusBarProps) {
-  const isFocused = useIsFocused();
+  const [isFocused, setIsFocused] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
+      setIsFocused(true);
       StatusBar.setBarStyle(barStyle);
       if (Platform.OS === "android") {
         if (backgroundColor) {
@@ -30,6 +31,9 @@ export default function FocusAwareStatusBar({
         }
         StatusBar.setTranslucent(translucent);
       }
+      return () => {
+        setIsFocused(false);
+      };
     }, [barStyle, backgroundColor, translucent])
   );
 
