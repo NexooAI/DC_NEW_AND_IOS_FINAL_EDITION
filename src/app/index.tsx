@@ -360,6 +360,13 @@ export default function AuthGuard() {
             { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
           ]}
         >
+          {/* Top Heritage & Offer Highlight Pill */}
+          <View style={styles.topPromoPill}>
+            <Text style={styles.topPromoText}>
+              ✨ 916 BIS HALLMARKED GOLD • DIGITAL CHIT SAVINGS ✨
+            </Text>
+          </View>
+
           {/* Royal Gold-Glow Squircle Frame */}
           <View style={styles.medallion}>
             <Image
@@ -373,6 +380,24 @@ export default function AuthGuard() {
             {(theme?.constants?.customerName || "Sri Murugan Gold House").toUpperCase()}
           </Text>
           <Text style={styles.brandTagline}>Generations of Trust</Text>
+
+          {/* Bottom Promotional Highlights Strip */}
+          <View style={styles.bottomPromoCard}>
+            <View style={styles.promoItem}>
+              <Text style={styles.promoTitle}>11 Months</Text>
+              <Text style={styles.promoSub}>Easy Plans</Text>
+            </View>
+            <View style={styles.promoDivider} />
+            <View style={styles.promoItem}>
+              <Text style={styles.promoTitle}>0% Wastage</Text>
+              <Text style={styles.promoSub}>Bonus Value</Text>
+            </View>
+            <View style={styles.promoDivider} />
+            <View style={styles.promoItem}>
+              <Text style={styles.promoTitle}>100% Safe</Text>
+              <Text style={styles.promoSub}>Live Passbook</Text>
+            </View>
+          </View>
 
           <ActivityIndicator
             size="large"
@@ -428,7 +453,57 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontStyle: "italic",
     letterSpacing: 0.6,
-    marginBottom: 28,
+    marginBottom: 22,
+  },
+  topPromoPill: {
+    backgroundColor: "rgba(212, 175, 55, 0.16)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 223, 0, 0.45)",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    marginBottom: 24,
+  },
+  topPromoText: {
+    color: "#FDE68A",
+    fontSize: 10.5,
+    fontWeight: "800",
+    letterSpacing: 0.9,
+    textAlign: "center",
+  },
+  bottomPromoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(0, 0, 0, 0.28)",
+    borderWidth: 1,
+    borderColor: "rgba(212, 175, 55, 0.35)",
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    width: "100%",
+    maxWidth: 340,
+    marginBottom: 24,
+  },
+  promoItem: {
+    flex: 1,
+    alignItems: "center",
+  },
+  promoTitle: {
+    color: "#FFDF00",
+    fontSize: 12.5,
+    fontWeight: "800",
+  },
+  promoSub: {
+    color: "rgba(255, 255, 255, 0.85)",
+    fontSize: 10.5,
+    fontWeight: "600",
+    marginTop: 2,
+  },
+  promoDivider: {
+    width: 1,
+    height: 26,
+    backgroundColor: "rgba(212, 175, 55, 0.3)",
   },
   loader: {
     marginTop: 8,
