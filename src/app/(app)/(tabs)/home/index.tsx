@@ -1400,10 +1400,10 @@ export default function Home() {
   const lastFocusRefreshTime = useRef(Date.now());
   useFocusEffect(
     useCallback(() => {
-      // Reset status bar color and translucency when Home is focused
-      StatusBar.setBarStyle("dark-content");
+      // Keep status bar aligned with the primary maroon header when Home is focused
+      StatusBar.setBarStyle("light-content");
       if (Platform.OS === "android") {
-        StatusBar.setBackgroundColor(theme.colors.quaternary || "#F2E6D2");
+        StatusBar.setBackgroundColor(theme.colors.primary || "#850111");
         StatusBar.setTranslucent(false);
       }
 
