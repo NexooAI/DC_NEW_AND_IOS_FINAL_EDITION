@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
-import { useAppTheme } from '@/store/global.store';
+import { useAppTheme, getAppConfig } from '@/store/global.store';
 import useGlobalStore from '@/store/global.store';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAppVisibility } from '@/hooks/useAppVisibility';
@@ -47,14 +47,36 @@ export default function GiftsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedGift, setSelectedGift] = useState<CustomerGift | null>(null);
 
-  // Hardware back press handler
+  const { visibleData } = useAppVisibility();
+
+  // Hardware & header back press handler
   const handleBack = useCallback(() => {
+    const hasDashboard =
+      Boolean(
+        getAppConfig().constants.enableDashboard ||
+          visibleData?.enableDashboardV2 === 1 ||
+          visibleData?.enableDashboard === 1 ||
+          visibleData?.showTabDashboard === 1 ||
+          visibleData?.showBottomNavDashboard === 1 ||
+          visibleData?.showBottomNavDashboard === true
+      ) &&
+      visibleData?.enableDashboardV2 !== 0 &&
+      visibleData?.enableDashboard !== 0 &&
+      visibleData?.showTabDashboard !== 0 &&
+      visibleData?.showBottomNavDashboard !== 0 &&
+      visibleData?.showBottomNavDashboard !== false;
+
+    if (!hasDashboard) {
+      router.replace('/(app)/(tabs)/home');
+      return;
+    }
+
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace('/(app)/(tabs)/home');
+      router.replace('/(app)/dashboard');
     }
-  }, [router]);
+  }, [router, visibleData]);
 
   useFocusEffect(
     useCallback(() => {

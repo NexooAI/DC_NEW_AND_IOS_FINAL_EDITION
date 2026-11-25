@@ -90,10 +90,15 @@ export default function TicketsScreen() {
       visibleData?.showBottomNavDashboard !== 0 &&
       visibleData?.showBottomNavDashboard !== false;
 
+    if (!hasDashboard) {
+      router.replace("/(app)/(tabs)/home");
+      return;
+    }
+
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace(hasDashboard ? "/(app)/dashboard" : "/(app)/(tabs)/home");
+      router.replace("/(app)/dashboard");
     }
   }, [router, visibleData]);
 

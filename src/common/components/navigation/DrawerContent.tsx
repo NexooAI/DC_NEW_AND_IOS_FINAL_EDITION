@@ -326,7 +326,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
       {/* Premium Header */}
       <View style={styles.headerContainer}>
         <LinearGradient
-          colors={[theme.colors.quaternary, theme.colors.primary]}
+          colors={['#850111', '#5A000B', '#3D0007']}
           style={styles.headerGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
