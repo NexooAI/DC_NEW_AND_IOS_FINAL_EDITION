@@ -98,13 +98,19 @@ export const LiveRatesCardV2: React.FC<LiveRatesCardV2Props> = ({
   const formatUpdatedDate = (rawDate?: string): string => {
     if (!rawDate) return t("today", { defaultValue: "Today" });
     try {
-      const d = new Date(rawDate);
+      let normalized = String(rawDate).trim();
+      // Treat naive SQL/ISO server timestamps (without Z or +/-offset) as UTC before converting to IST (+5:30)
+      if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(normalized)) {
+        normalized = normalized.replace(" ", "T") + "Z";
+      }
+      const d = new Date(normalized);
       if (isNaN(d.getTime())) return String(rawDate);
-      const day = d.getDate();
+      const ist = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
+      const day = ist.getUTCDate();
       const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const month = monthNames[d.getMonth()];
-      let hours = d.getHours();
-      const minutes = d.getMinutes().toString().padStart(2, "0");
+      const month = monthNames[ist.getUTCMonth()];
+      let hours = ist.getUTCHours();
+      const minutes = ist.getUTCMinutes().toString().padStart(2, "0");
       const ampm = hours >= 12 ? "PM" : "AM";
       hours = hours % 12 || 12;
       return `${day} ${month}, ${hours}:${minutes} ${ampm}`;
