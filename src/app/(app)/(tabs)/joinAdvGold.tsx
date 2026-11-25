@@ -11,6 +11,7 @@ import ResponsiveText from '@/components/ResponsiveText';
 import { responsiveUtils } from '@/utils/responsiveUtils';
 import apiClient, { advanceBookingAPI } from '@/services/api';
 import type { CreateAdvanceBookingPayload } from '@/services/api';
+import FocusAwareStatusBar from '@/common/components/FocusAwareStatusBar';
 
 const { wp, hp, rf } = responsiveUtils;
 const QUATERNARY_COLOR = theme.colors.quaternary || "#F2E6D2";
@@ -366,7 +367,7 @@ export default function JoinAdvGold() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Background */}
-      <StatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
+      <FocusAwareStatusBar barStyle="dark-content" backgroundColor={QUATERNARY_COLOR} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: QUATERNARY_COLOR }]} />
       <LinearGradient
         colors={["rgba(133,1,17,0.05)", "transparent"]}

@@ -23,6 +23,7 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import { logger } from '@/utils/logger';
+import FocusAwareStatusBar from "@/common/components/FocusAwareStatusBar";
 
 // Utility function to format date
 const formatDate = (dateString: string) => {
@@ -641,7 +642,7 @@ export default function NotificationsScreen() {
         }}
         edges={['top', 'left', 'right']}
       >
-        <StatusBar barStyle="dark-content" backgroundColor="#FCFBF7" />
+        <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FCFBF7" />
 
         {/* Premium Header Layout */}
         <View style={{

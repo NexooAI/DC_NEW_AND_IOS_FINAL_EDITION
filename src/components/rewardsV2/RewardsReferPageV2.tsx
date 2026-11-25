@@ -19,6 +19,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { useTranslation } from "@/hooks/useTranslation";
 import useGlobalStore, { useAppTheme } from "@/store/global.store";
 import { rewardsAPI, investmentAPI } from "@/services/api";
+import FocusAwareStatusBar from "@/common/components/FocusAwareStatusBar";
 
 import HeaderV2 from "./HeaderV2";
 import WalletHeroCardV2 from "./WalletHeroCardV2";
@@ -166,7 +167,7 @@ export const RewardsReferPageV2: React.FC<RewardsReferPageV2Props> = ({
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme?.colors?.background || "#FFFFFF" }]} edges={["top", "left", "right"]}>
-      <StatusBar
+      <FocusAwareStatusBar
         barStyle="dark-content"
         backgroundColor={theme?.colors?.background || "#FFFFFF"}
         translucent={false}

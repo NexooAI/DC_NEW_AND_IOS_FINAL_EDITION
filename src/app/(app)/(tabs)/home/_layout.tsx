@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import useGlobalStore, { useAppTheme } from "@/store/global.store";
 import { useEffect } from "react";
-import { Platform, StatusBar } from "react-native";
+import { Platform } from "react-native";
 
 export default function HomeLayout() {
   const theme = useAppTheme();
@@ -14,10 +14,6 @@ export default function HomeLayout() {
 
   return (
     <>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={theme.colors.background || '#fafafa'}
-      />
       <Stack
         screenOptions={{
           headerShown: true,

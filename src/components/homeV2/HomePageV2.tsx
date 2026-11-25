@@ -15,6 +15,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useAppVisibility } from "@/hooks/useAppVisibility";
 import useGlobalStore, { useAppTheme } from "@/store/global.store";
 import StatusView from "@/components/StatusView";
+import FocusAwareStatusBar from "@/common/components/FocusAwareStatusBar";
 import { resolveRateChange, syncRateHistory } from "@/utils/rateComparison";
 
 // Home V2 Modular Components
@@ -278,7 +279,10 @@ export const HomePageV2: React.FC<HomePageV2Props> = ({
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <StatusBar barStyle="light-content" backgroundColor="#850111" />
+      <FocusAwareStatusBar
+        barStyle="light-content"
+        backgroundColor={theme.colors.primary || "#850111"}
+      />
 
       {/* 1. Header (Always visible) */}
       <HeaderV2 />

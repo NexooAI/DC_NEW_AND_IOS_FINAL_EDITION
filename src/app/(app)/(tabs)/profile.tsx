@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import * as ImagePicker from "expo-image-picker";
 import useGlobalStore, { useAppTheme } from "@/store/global.store";
+import FocusAwareStatusBar from "@/common/components/FocusAwareStatusBar";
 import { useTranslation } from "@/hooks/useTranslation";
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -652,7 +653,7 @@ const ProfileScreen = () => {
   return (
     <AuthGuard>
       <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
-        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || "#F2E6D2"} />
+        <FocusAwareStatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || "#F2E6D2"} />
         <KeyboardAvoidingView
           style={styles.keyboardAvoid}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
