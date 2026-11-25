@@ -46,24 +46,39 @@ export const FlashNewsV2: React.FC<FlashNewsV2Props> = ({
 
   // Pulse animation for Flash badge icon
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     const pulse = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 0.35,
-          duration: 650,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 650,
-          useNativeDriver: true,
-        }),
+        Animated.parallel([
+          Animated.timing(pulseAnim, {
+            toValue: 0.25,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1.15,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]),
       ])
     );
     pulse.start();
     return () => pulse.stop();
-  }, [pulseAnim]);
+  }, [pulseAnim, scaleAnim]);
 
   // Handle measurement of current text width
   const handleTextLayout = useCallback((e: LayoutChangeEvent) => {
@@ -152,20 +167,23 @@ export const FlashNewsV2: React.FC<FlashNewsV2Props> = ({
       activeOpacity={0.9}
     >
       <LinearGradient
-        colors={[primaryColor, "#4A030C"]}
+        colors={["#FFFBEB", "#FEF3C7", "#FDE68A"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.gradientBar}
       >
-        {/* Left Badge: Flash icon with pulsing glow */}
-        <View style={styles.badgeContainer}>
+        {/* Left Badge: Blinking & pulsing Flash icon */}
+        <Animated.View style={[styles.badgeContainer, { transform: [{ scale: scaleAnim }] }]}>
           <Animated.View style={{ opacity: pulseAnim }}>
-            <Ionicons name="flash" size={moderateScale(13)} color="#FACC15" />
+            <Ionicons name="megaphone" size={moderateScale(12)} color="#FACC15" />
           </Animated.View>
           <Text style={styles.badgeText}>
             {t("flashNews", { defaultValue: "FLASH NEWS" }).toUpperCase()}
           </Text>
-        </View>
+          <Animated.View style={{ opacity: pulseAnim }}>
+            <Ionicons name="flash" size={moderateScale(11)} color="#FACC15" />
+          </Animated.View>
+        </Animated.View>
 
         {/* Marquee Scrolling Text Area */}
         <View style={styles.marqueeViewport}>
@@ -211,22 +229,26 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   gradientBar: {
-    height: moderateScale(36),
+    height: moderateScale(38),
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: moderateScale(10),
+    borderTopWidth: 1,
+    borderBottomWidth: 1.5,
+    borderTopColor: "rgba(217, 119, 6, 0.35)",
+    borderBottomColor: "#D97706",
   },
   badgeContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    paddingHorizontal: moderateScale(7),
-    paddingVertical: moderateScale(3),
+    backgroundColor: "#850111",
+    paddingHorizontal: moderateScale(8),
+    paddingVertical: moderateScale(4),
     borderRadius: moderateScale(12),
     marginRight: moderateScale(8),
     gap: 4,
     borderWidth: 1,
-    borderColor: "rgba(250, 204, 21, 0.4)",
+    borderColor: "#D4AF37",
   },
   badgeText: {
     color: "#FFFFFF",
@@ -245,22 +267,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   newsText: {
-    color: "#FFFFFF",
-    fontSize: moderateScale(12),
-    fontWeight: "600",
+    color: "#780110",
+    fontSize: moderateScale(12.5),
+    fontWeight: "700",
     letterSpacing: 0.2,
   },
   counterPill: {
-    backgroundColor: "rgba(0, 0, 0, 0.25)",
+    backgroundColor: "rgba(133, 1, 17, 0.14)",
     paddingHorizontal: moderateScale(6),
     paddingVertical: moderateScale(2),
     borderRadius: moderateScale(8),
     marginLeft: moderateScale(6),
   },
   counterText: {
-    color: "rgba(255, 255, 255, 0.8)",
+    color: "#850111",
     fontSize: moderateScale(9),
-    fontWeight: "700",
+    fontWeight: "800",
   },
 });
 
