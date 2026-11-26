@@ -653,18 +653,30 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
           <View style={styles.paymentInfoRow}>
             <View style={styles.paymentInfoItem}>
               <View style={styles.paymentInfoIconContainer}>
-                <Ionicons name="time-outline" size={16} color={theme.colors.textDark} />
+                <Ionicons name="calendar-outline" size={16} color={theme.colors.textDark} />
               </View>
               <View style={styles.paymentInfoContent}>
                 <Text style={styles.paymentInfoLabel}>
-                  Frequency
+                  {(translations as any).nextDueDate || "Next Due Date"}
                 </Text>
                 <Text style={styles.paymentInfoValue}>
-                  {isHybrid
-                    ? "Hybrid"
-                    : isFlexiOrHybrid
-                      ? translations.flexi
-                      : getLocalizedText(item.paymentFrequency) || getLocalizedText(item.schemesData?.paymentFrequencyName) || "Monthly"}
+                  {(() => {
+                    if (isFlexiOrHybrid) {
+                      return (translations as any).payAnytime || "Pay Anytime";
+                    }
+                    if (!item.dueDate) {
+                      return isDepositScheme ? "One-time" : "N/A";
+                    }
+                    const parsed = new Date(item.dueDate);
+                    if (!isNaN(parsed.getTime())) {
+                      return parsed.toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      });
+                    }
+                    return String(item.dueDate);
+                  })()}
                 </Text>
               </View>
             </View>
