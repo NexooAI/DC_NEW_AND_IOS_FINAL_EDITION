@@ -471,6 +471,7 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
   const [selectedMetal, setSelectedMetal] = useState<string>(parseIncomingMetal);
 
   const [schemePlanType, setSchemePlanType] = useState<"all" | "fixed" | "flexi" | "hybrid" | "deposit" | "one-time">("all");
+  const [isPlanDropdownOpen, setIsPlanDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [allSchemes, setAllSchemes] = useState<Scheme[]>([]);
@@ -1795,121 +1796,141 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
         </ScrollView>
       </View>
 
-      {/* Plan Type Selector (All vs Fixed vs Flexi vs Deposit) - Shown if multiple plan types are available */}
-      {selectedMetal !== "all" && ([metalHasFixed, metalHasFlexi, metalHasDeposit, metalHasHybrid].filter(Boolean).length > 1 || metalHasDeposit) && (
-        <View style={styles.planTypeWrapper}>
-          <TouchableOpacity
-            onPress={() => {
+      {/* Plan Type Compact Right-Aligned Dropdown (All by default, Fixed / Flexi / Deposit / Hybrid) */}
+      {selectedMetal !== "all" && ([metalHasFixed, metalHasFlexi, metalHasDeposit, metalHasHybrid].filter(Boolean).length > 1 || metalHasDeposit) && (() => {
+        const planOptions: Array<{
+          key: "all" | "fixed" | "flexi" | "deposit" | "hybrid";
+          label: string;
+          count: number;
+          icon: string;
+          onSelect: () => void;
+        }> = [
+          {
+            key: "all",
+            label: t("allOnly") || "All",
+            count: planTypeCounts.all,
+            icon: "grid-outline",
+            onSelect: () => {
               setSchemePlanType("all");
               setUserSelectedTab(true);
               setActiveTab(t("allOnly") || "All");
-            }}
-            style={[styles.planTypeButton, schemePlanType === "all" && styles.planTypeButtonActive]}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="grid-outline" size={15} color={schemePlanType === "all" ? "#FFF" : "#4A0007"} />
-            <Text style={[styles.planTypeText, schemePlanType === "all" && styles.planTypeTextActive]}>
-              {t("allOnly") || "All"}
-            </Text>
-            <View style={[styles.cornerCountBadge, schemePlanType === "all" && styles.cornerCountBadgeActive]}>
-              <Text style={[styles.cornerCountBadgeText, schemePlanType === "all" && styles.cornerCountBadgeTextActive]}>
-                {planTypeCounts.all}
-              </Text>
-            </View>
-          </TouchableOpacity>
+            },
+          },
+          ...(metalHasFixed ? [{
+            key: "fixed" as const,
+            label: t("Fixed") || "Fixed",
+            count: planTypeCounts.fixed,
+            icon: "calendar-outline",
+            onSelect: () => {
+              setSchemePlanType("fixed");
+              setUserSelectedTab(true);
+              const firstFixed = availableTabs.find(tab => tab.toLowerCase() !== "flexi" && tab.toLowerCase() !== "deposit" && tab.toLowerCase() !== "one-time");
+              if (firstFixed) setActiveTab(firstFixed);
+            },
+          }] : []),
+          ...(metalHasFlexi ? [{
+            key: "flexi" as const,
+            label: t("Flexi") || "Flexi",
+            count: planTypeCounts.flexi,
+            icon: "infinite-outline",
+            onSelect: () => {
+              setSchemePlanType("flexi");
+              setUserSelectedTab(true);
+              setActiveTab("Flexi");
+            },
+          }] : []),
+          ...(metalHasDeposit ? [{
+            key: "deposit" as const,
+            label: t("Deposit") || "Deposit",
+            count: planTypeCounts.deposit,
+            icon: "cash-outline",
+            onSelect: () => {
+              setSchemePlanType("deposit");
+              setUserSelectedTab(true);
+              setActiveTab(t("Deposit") || "Deposit");
+            },
+          }] : []),
+          ...(metalHasHybrid ? [{
+            key: "hybrid" as const,
+            label: t("Hybrid") || "Hybrid",
+            count: planTypeCounts.hybrid,
+            icon: "git-branch-outline",
+            onSelect: () => {
+              setSchemePlanType("hybrid");
+              setUserSelectedTab(true);
+              setActiveTab("Hybrid");
+            },
+          }] : []),
+        ];
+        const activeOption = planOptions.find(opt => opt.key === schemePlanType) || planOptions[0];
 
-          {metalHasFixed && (
+        return (
+          <View style={styles.planDropdownWrapper}>
             <TouchableOpacity
-              onPress={() => {
-                setSchemePlanType("fixed");
-                setUserSelectedTab(true);
-                const firstFixed = availableTabs.find(t => t.toLowerCase() !== "flexi" && t.toLowerCase() !== "deposit" && t.toLowerCase() !== "one-time");
-                if (firstFixed) {
-                  setActiveTab(firstFixed);
-                }
-              }}
-              style={[styles.planTypeButton, schemePlanType === "fixed" && styles.planTypeButtonActive]}
+              onPress={() => setIsPlanDropdownOpen(prev => !prev)}
+              style={styles.planDropdownTrigger}
               activeOpacity={0.8}
             >
-              <Ionicons name="calendar-outline" size={15} color={schemePlanType === "fixed" ? "#FFF" : "#4A0007"} />
-              <Text style={[styles.planTypeText, schemePlanType === "fixed" && styles.planTypeTextActive]}>
-                {t("Fixed") || "Fixed"}
-              </Text>
-              <View style={[styles.cornerCountBadge, schemePlanType === "fixed" && styles.cornerCountBadgeActive]}>
-                <Text style={[styles.cornerCountBadgeText, schemePlanType === "fixed" && styles.cornerCountBadgeTextActive]}>
-                  {planTypeCounts.fixed}
-                </Text>
+              <Ionicons name="options-outline" size={14} color="#850111" />
+              <Text style={styles.planDropdownTriggerText}>{activeOption.label}</Text>
+              <View style={styles.planDropdownCountBadge}>
+                <Text style={styles.planDropdownCountText}>{activeOption.count}</Text>
               </View>
+              <Ionicons
+                name={isPlanDropdownOpen ? "chevron-up" : "chevron-down"}
+                size={14}
+                color="#4A0007"
+              />
             </TouchableOpacity>
-          )}
 
-          {metalHasFlexi && (
-            <TouchableOpacity
-              onPress={() => {
-                setSchemePlanType("flexi");
-                setUserSelectedTab(true);
-                setActiveTab("Flexi");
-              }}
-              style={[styles.planTypeButton, schemePlanType === "flexi" && styles.planTypeButtonActive]}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="infinite-outline" size={15} color={schemePlanType === "flexi" ? "#FFF" : "#4A0007"} />
-              <Text style={[styles.planTypeText, schemePlanType === "flexi" && styles.planTypeTextActive]}>
-                {t("Flexi") || "Flexi"}
-              </Text>
-              <View style={[styles.cornerCountBadge, schemePlanType === "flexi" && styles.cornerCountBadgeActive]}>
-                <Text style={[styles.cornerCountBadgeText, schemePlanType === "flexi" && styles.cornerCountBadgeTextActive]}>
-                  {planTypeCounts.flexi}
-                </Text>
+            {isPlanDropdownOpen && (
+              <View style={styles.planDropdownMenu}>
+                {planOptions.map((opt) => {
+                  const isSelected = opt.key === schemePlanType;
+                  return (
+                    <TouchableOpacity
+                      key={opt.key}
+                      onPress={() => {
+                        opt.onSelect();
+                        setIsPlanDropdownOpen(false);
+                      }}
+                      style={[
+                        styles.planDropdownItem,
+                        isSelected && styles.planDropdownItemActive,
+                      ]}
+                      activeOpacity={0.75}
+                    >
+                      <View style={styles.planDropdownItemLeft}>
+                        <Ionicons
+                          name={opt.icon as any}
+                          size={14}
+                          color={isSelected ? "#850111" : "#64748B"}
+                        />
+                        <Text
+                          style={[
+                            styles.planDropdownItemText,
+                            isSelected && styles.planDropdownItemTextActive,
+                          ]}
+                        >
+                          {opt.label}
+                        </Text>
+                      </View>
+                      <Text
+                        style={[
+                          styles.planDropdownItemCount,
+                          isSelected && styles.planDropdownItemTextActive,
+                        ]}
+                      >
+                        {opt.count}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-            </TouchableOpacity>
-          )}
-
-          {metalHasDeposit && (
-            <TouchableOpacity
-              onPress={() => {
-                setSchemePlanType("deposit");
-                setUserSelectedTab(true);
-                setActiveTab(t("Deposit") || "Deposit");
-              }}
-              style={[styles.planTypeButton, schemePlanType === "deposit" && styles.planTypeButtonActive]}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="cash-outline" size={15} color={schemePlanType === "deposit" ? "#FFF" : "#4A0007"} />
-              <Text style={[styles.planTypeText, schemePlanType === "deposit" && styles.planTypeTextActive]}>
-                {t("Deposit") || "Deposit"}
-              </Text>
-              <View style={[styles.cornerCountBadge, schemePlanType === "deposit" && styles.cornerCountBadgeActive]}>
-                <Text style={[styles.cornerCountBadgeText, schemePlanType === "deposit" && styles.cornerCountBadgeTextActive]}>
-                  {planTypeCounts.deposit}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )}
-
-          {metalHasHybrid && (
-            <TouchableOpacity
-              onPress={() => {
-                setSchemePlanType("hybrid");
-                setUserSelectedTab(true);
-                setActiveTab("Hybrid");
-              }}
-              style={[styles.planTypeButton, schemePlanType === "hybrid" && styles.planTypeButtonActive]}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="git-branch-outline" size={15} color={schemePlanType === "hybrid" ? "#FFF" : "#4A0007"} />
-              <Text style={[styles.planTypeText, schemePlanType === "hybrid" && styles.planTypeTextActive]}>
-                {t("Hybrid") || "Hybrid"}
-              </Text>
-              <View style={[styles.cornerCountBadge, schemePlanType === "hybrid" && styles.cornerCountBadgeActive]}>
-                <Text style={[styles.cornerCountBadgeText, schemePlanType === "hybrid" && styles.cornerCountBadgeTextActive]}>
-                  {planTypeCounts.hybrid}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
+            )}
+          </View>
+        );
+      })()}
 
       {/* Sub-tabs for Fixed Schemes - Hidden per user request */}
       {false && selectedMetal !== "all" && schemePlanType === "fixed" && (
@@ -2427,6 +2448,93 @@ export default function SchemeList({ isNested = false }: { isNested?: boolean })
 }
 
 function getStyles(theme: any) { return StyleSheet.create({
+  planDropdownWrapper: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginHorizontal: 14,
+    marginTop: 6,
+    marginBottom: 2,
+    position: 'relative',
+    zIndex: 50,
+  },
+  planDropdownTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  planDropdownTriggerText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  planDropdownCountBadge: {
+    backgroundColor: '#FFF1F2',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  planDropdownCountText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#850111',
+  },
+  planDropdownMenu: {
+    position: 'absolute',
+    top: 38,
+    right: 0,
+    minWidth: 155,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    elevation: 10,
+    zIndex: 999,
+  },
+  planDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+  },
+  planDropdownItemActive: {
+    backgroundColor: '#FFF1F2',
+  },
+  planDropdownItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  planDropdownItemText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  planDropdownItemTextActive: {
+    color: '#850111',
+    fontWeight: '700',
+  },
+  planDropdownItemCount: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
   planTypeWrapper: {
     flexDirection: 'row',
     flexWrap: 'wrap',
