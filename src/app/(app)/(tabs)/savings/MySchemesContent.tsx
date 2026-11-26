@@ -37,6 +37,11 @@ import { formatGoldWeight } from "@/utils/imageUtils";
 import EnhancedSchemeCard from "./EnhancedSchemeCard";
 import OldGoldSchemeCard from "./OldGoldSchemeCard";
 import {
+  RollingAmountText,
+  CoinDropPotIcon,
+  AnimatedWeightText,
+} from "@/components/savings/AnimatedPortfolioWidgets";
+import {
   SkeletonSavingsCard,
   SkeletonSavingsPortfolio,
 } from "@/components/SkeletonLoader";
@@ -638,8 +643,8 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
     totalSilverWeight,
     goldInvested,
     silverInvested,
-    hasGoldScheme,
-    hasSilverScheme,
+    hasWeightGoldScheme,
+    hasWeightSilverScheme,
   } = useMemo(() => {
     return savings.reduce(
       (acc, curr) => {
@@ -648,13 +653,14 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
         const nameLower = String(curr.schemeName || "").toLowerCase();
         const isSilver = metal.includes("silver") || nameLower.includes("silver");
         const isDiamond = metal.includes("diamond") || nameLower.includes("diamond");
+        const isWeightBased = String(curr.savingType || "").toLowerCase() !== "amount" && !isDiamond;
         acc.totalInvested += paid;
-        if (isSilver) {
-          acc.hasSilverScheme = true;
+        if (isWeightBased && isSilver) {
+          acc.hasWeightSilverScheme = true;
           acc.silverInvested += paid;
           acc.totalSilverWeight += Number(curr.silverWeight || curr.goldWeight || 0);
-        } else if (!isDiamond) {
-          acc.hasGoldScheme = true;
+        } else if (isWeightBased && !isSilver) {
+          acc.hasWeightGoldScheme = true;
           acc.goldInvested += paid;
           acc.totalGoldWeight += Number(curr.goldWeight || 0);
         }
@@ -666,11 +672,14 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
         totalSilverWeight: 0,
         goldInvested: 0,
         silverInvested: 0,
-        hasGoldScheme: false,
-        hasSilverScheme: false,
+        hasWeightGoldScheme: false,
+        hasWeightSilverScheme: false,
       }
     );
   }, [savings]);
+
+  const hasBothWeightMetals = hasWeightGoldScheme && hasWeightSilverScheme;
+  const hasSingleWeightMetal = (hasWeightGoldScheme || hasWeightSilverScheme) && !hasBothWeightMetals;
 
   const availableStatusTabs = useMemo(() => {
     const counts = { Active: 0, Matured: 0, Claimed: 0, Drop: 0 };
@@ -848,77 +857,113 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
           colors={theme.colors.gradientPrimary || ["#0b162c", "#16315c", "#d4af37"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.portfolioCard, { paddingVertical: 16, paddingHorizontal: 16 }]}
+          style={[styles.portfolioCard, hasBothWeightMetals && { paddingVertical: 16, paddingHorizontal: 16 }]}
         >
-          {/* Top Row: Overall Total Invested */}
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: (hasGoldScheme || hasSilverScheme) ? 12 : 0 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <View style={styles.statIconContainer}>
-                <Image
-                  source={require("../../../../../assets/images/saveasmoneyproduct.png")}
-                  style={{ width: 20, height: 20 }}
-                />
-              </View>
-              <View>
-                <Text style={styles.statLabel}>
-                  {translations.totalInvested}
-                </Text>
-                <Text style={[styles.statValue, { fontSize: 20 }]}>
-                  ₹{totalInvested.toLocaleString("en-IN")}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Bottom Row: Gold & Silver Weight + Amount Separated */}
-          {(hasGoldScheme || hasSilverScheme) && (
-            <View
-              style={[
-                styles.portfolioStats,
-                {
-                  borderTopWidth: 1,
-                  borderTopColor: "rgba(255,255,255,0.18)",
-                  paddingTop: 12,
-                  marginTop: 2,
-                },
-              ]}
-            >
-              {hasGoldScheme && (
-                <View style={styles.statItem}>
+          {hasBothWeightMetals ? (
+            <>
+              {/* Expanded Card: Both Gold & Silver Weight Schemes exist */}
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 12 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                   <View style={styles.statIconContainer}>
                     <Image
-                      source={require("../../../../../assets/images/savegold.png")}
+                      source={require("../../../../../assets/images/saveasmoneyproduct.png")}
                       style={{ width: 20, height: 20 }}
                     />
                   </View>
+                  <View>
+                    <Text style={styles.statLabel}>
+                      {translations.totalInvested}
+                    </Text>
+                    <RollingAmountText
+                      amount={totalInvested}
+                      style={[styles.statValue, { fontSize: 20 }]}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              <View
+                style={[
+                  styles.portfolioStats,
+                  {
+                    borderTopWidth: 1,
+                    borderTopColor: "rgba(255,255,255,0.18)",
+                    paddingTop: 12,
+                    marginTop: 2,
+                  },
+                ]}
+              >
+                <View style={styles.statItem}>
+                  <View style={[styles.statIconContainer, { width: 38, height: 38 }]}>
+                    <CoinDropPotIcon metal="gold" size={32} />
+                  </View>
                   <View style={styles.statInfo}>
                     <Text style={styles.statLabel}>{translations.gold || "Gold"}</Text>
-                    <Text style={styles.statValue}>{totalGoldWeight.toFixed(3)} g</Text>
+                    <AnimatedWeightText weight={totalGoldWeight} style={styles.statValue} />
                     <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", fontWeight: "600", marginTop: 2 }}>
                       ₹{goldInvested.toLocaleString("en-IN")}
                     </Text>
                   </View>
                 </View>
-              )}
 
-              {hasGoldScheme && hasSilverScheme && <View style={styles.statDivider} />}
+                <View style={styles.statDivider} />
 
-              {hasSilverScheme && (
                 <View style={styles.statItem}>
-                  <View style={styles.statIconContainer}>
-                    <Image
-                      source={require("../../../../../assets/images/silver.png")}
-                      style={{ width: 20, height: 20 }}
-                    />
+                  <View style={[styles.statIconContainer, { width: 38, height: 38 }]}>
+                    <CoinDropPotIcon metal="silver" size={32} />
                   </View>
                   <View style={styles.statInfo}>
                     <Text style={styles.statLabel}>{t("silver") || "Silver"}</Text>
-                    <Text style={styles.statValue}>{totalSilverWeight.toFixed(3)} g</Text>
+                    <AnimatedWeightText weight={totalSilverWeight} style={styles.statValue} />
                     <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", fontWeight: "600", marginTop: 2 }}>
                       ₹{silverInvested.toLocaleString("en-IN")}
                     </Text>
                   </View>
                 </View>
+              </View>
+            </>
+          ) : (
+            /* Single-Row Compact Card: Only 1 Weight metal OR Amount-only schemes */
+            <View style={styles.portfolioStats}>
+              <View style={styles.statItem}>
+                <View style={styles.statIconContainer}>
+                  <Image
+                    source={require("../../../../../assets/images/saveasmoneyproduct.png")}
+                    style={{ width: 20, height: 20 }}
+                  />
+                </View>
+                <View style={styles.statInfo}>
+                  <Text style={styles.statLabel}>
+                    {translations.totalInvested}
+                  </Text>
+                  <RollingAmountText
+                    amount={totalInvested}
+                    style={styles.statValue}
+                  />
+                </View>
+              </View>
+
+              {hasSingleWeightMetal && (
+                <>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statItem}>
+                    <View style={[styles.statIconContainer, { width: 38, height: 38 }]}>
+                      <CoinDropPotIcon
+                        metal={hasWeightSilverScheme ? "silver" : "gold"}
+                        size={32}
+                      />
+                    </View>
+                    <View style={styles.statInfo}>
+                      <Text style={styles.statLabel}>
+                        {hasWeightSilverScheme ? (t("silver") || "Silver") : (translations.gold || "Gold")}
+                      </Text>
+                      <AnimatedWeightText
+                        weight={hasWeightSilverScheme ? totalSilverWeight : totalGoldWeight}
+                        style={styles.statValue}
+                      />
+                    </View>
+                  </View>
+                </>
               )}
             </View>
           )}
