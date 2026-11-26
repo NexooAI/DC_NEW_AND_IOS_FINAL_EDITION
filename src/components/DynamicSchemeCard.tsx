@@ -1194,8 +1194,8 @@ const DynamicSchemeCard: React.FC<DynamicSchemeCardProps> = ({
           )}
 
 
-          {/* 2-Column Grid Benefits */}
-          {!isOldGold && (
+          {/* 2-Column Grid Benefits (temporarily hidden; set SHOW_SCHEME_BENEFITS to true to re-enable) */}
+          {false && !isOldGold && (
             <View style={styles.gridSection}>
               <Text style={styles.gridSectionTitle}>{t("benefits") || "Benefits"}</Text>
               <View style={styles.benefitsGrid}>
