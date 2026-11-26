@@ -1146,14 +1146,18 @@ const SavingsDetail = () => {
   const installmentInfo = useMemo(() => {
     const rawPaid = params.monthsPaid ?? inversement?.lastInstallment ?? inversement?.monthsPaid ?? 0;
     const rawTotal = params.noOfIns ?? inversement?.chits?.noOfInstallments ?? inversement?.noOfInstallments ?? 11;
+    const freqId = Number(schemesData?.paymentFrequencyId || inversement?.scheme?.paymentFrequencyId);
+    const freqFromId = freqId === 1 ? "Daily" : freqId === 2 ? "Weekly" : "";
     const freqText =
-      params.paymentFrequency ||
       schemesData?.paymentFrequencyName ||
+      inversement?.scheme?.paymentFrequencyName ||
+      freqFromId ||
+      params.paymentFrequency ||
       inversement?.chits?.paymentFrequency ||
       params.schemeName ||
       "";
     return resolveInstallmentInfo(freqText, rawTotal, rawPaid, translations.months || "Months");
-  }, [params.monthsPaid, params.noOfIns, params.paymentFrequency, params.schemeName, inversement, schemesData?.paymentFrequencyName, translations.months]);
+  }, [params.monthsPaid, params.noOfIns, params.paymentFrequency, params.schemeName, inversement, schemesData?.paymentFrequencyName, schemesData?.paymentFrequencyId, translations.months]);
 
   const getProgressPercentage = () => {
     const total = installmentInfo.total || 1;

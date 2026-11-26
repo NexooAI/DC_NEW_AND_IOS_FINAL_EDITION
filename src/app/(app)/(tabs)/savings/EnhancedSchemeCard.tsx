@@ -145,13 +145,16 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
   };
 
   const installmentInfo = useMemo(() => {
+    const freqId = Number(item.schemesData?.paymentFrequencyId);
+    const freqFromId = freqId === 1 ? "Daily" : freqId === 2 ? "Weekly" : "";
     const freqText =
-      getLocalizedText(item.paymentFrequency) ||
       getLocalizedText(item.schemesData?.paymentFrequencyName) ||
+      freqFromId ||
+      getLocalizedText(item.paymentFrequency) ||
       getLocalizedText(item.schemeName) ||
       "";
     return resolveInstallmentInfo(freqText, item.noOfIns, item.monthsPaid, translations.monthsLabel);
-  }, [item.paymentFrequency, item.schemesData?.paymentFrequencyName, item.schemeName, item.noOfIns, item.monthsPaid, translations.monthsLabel]);
+  }, [item.paymentFrequency, item.schemesData?.paymentFrequencyName, item.schemesData?.paymentFrequencyId, item.schemeName, item.noOfIns, item.monthsPaid, translations.monthsLabel]);
 
   const progressPercentage = useMemo(() => {
     const total = installmentInfo.total || 1;

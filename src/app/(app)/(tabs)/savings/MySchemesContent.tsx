@@ -482,7 +482,14 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
             schemesData: schemeObj,
             chitData: chit,
             transactions: [],
-            paymentFrequency: item.paymentFrequency || "Monthly",
+            paymentFrequency:
+              item.paymentFrequency ||
+              (schemeObj as any).paymentFrequencyName ||
+              (Number((schemeObj as any).paymentFrequencyId || (item as any).payment_frequency_id) === 1
+                ? "Daily"
+                : Number((schemeObj as any).paymentFrequencyId || (item as any).payment_frequency_id) === 2
+                  ? "Weekly"
+                  : "Monthly"),
             rewards: item.rewards || [],
             dueDate: item.dueDate || "",
           };
@@ -625,9 +632,45 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
     [language]
   );
 
-  const totalInvested = savings.reduce((acc, curr) => acc + curr.totalPaid, 0);
-  const totalGold = savings.reduce((acc, curr) => acc + curr.goldWeight, 0);
-  const hasAmountType = savings.some((s) => s.savingType === "amount");
+  const {
+    totalInvested,
+    totalGoldWeight,
+    totalSilverWeight,
+    goldInvested,
+    silverInvested,
+    hasGoldScheme,
+    hasSilverScheme,
+  } = useMemo(() => {
+    return savings.reduce(
+      (acc, curr) => {
+        const paid = Number(curr.totalPaid) || 0;
+        const metal = String(curr.metalType || "").toLowerCase();
+        const nameLower = String(curr.schemeName || "").toLowerCase();
+        const isSilver = metal.includes("silver") || nameLower.includes("silver");
+        const isDiamond = metal.includes("diamond") || nameLower.includes("diamond");
+        acc.totalInvested += paid;
+        if (isSilver) {
+          acc.hasSilverScheme = true;
+          acc.silverInvested += paid;
+          acc.totalSilverWeight += Number(curr.silverWeight || curr.goldWeight || 0);
+        } else if (!isDiamond) {
+          acc.hasGoldScheme = true;
+          acc.goldInvested += paid;
+          acc.totalGoldWeight += Number(curr.goldWeight || 0);
+        }
+        return acc;
+      },
+      {
+        totalInvested: 0,
+        totalGoldWeight: 0,
+        totalSilverWeight: 0,
+        goldInvested: 0,
+        silverInvested: 0,
+        hasGoldScheme: false,
+        hasSilverScheme: false,
+      }
+    );
+  }, [savings]);
 
   // Determine if the user has both types (at least one Fixed and at least one Flexi/Hybrid)
   // of schemes in the currently selected status tab.
@@ -782,44 +825,85 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
   );  // Component definitions - moved before early returns
   const ListHeader = () => (
     <View style={styles.headerContainer}>
-      {!hasAmountType && savings.length > 0 && (
+      {savings.length > 0 && (
         <LinearGradient
           colors={theme.colors.gradientPrimary || ["#0b162c", "#16315c", "#d4af37"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.portfolioCard}
+          style={[styles.portfolioCard, { paddingVertical: 16, paddingHorizontal: 16 }]}
         >
-          <View style={styles.portfolioStats}>
-            <View style={styles.statItem}>
+          {/* Top Row: Overall Total Invested */}
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: (hasGoldScheme || hasSilverScheme) ? 12 : 0 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <View style={styles.statIconContainer}>
                 <Image
                   source={require("../../../../../assets/images/saveasmoneyproduct.png")}
                   style={{ width: 20, height: 20 }}
                 />
               </View>
-              <View style={styles.statInfo}>
+              <View>
                 <Text style={styles.statLabel}>
                   {translations.totalInvested}
                 </Text>
-                <Text style={styles.statValue}>
-                  ₹{totalInvested.toLocaleString()}
+                <Text style={[styles.statValue, { fontSize: 20 }]}>
+                  ₹{totalInvested.toLocaleString("en-IN")}
                 </Text>
               </View>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <View style={styles.statIconContainer}>
-                <Image
-                  source={require("../../../../../assets/images/savegold.png")}
-                  style={{ width: 20, height: 20 }}
-                />
-              </View>
-              <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>{translations.gold}</Text>
-                <Text style={styles.statValue}>{totalGold.toFixed(3)} g</Text>
-              </View>
-            </View>
           </View>
+
+          {/* Bottom Row: Gold & Silver Weight + Amount Separated */}
+          {(hasGoldScheme || hasSilverScheme) && (
+            <View
+              style={[
+                styles.portfolioStats,
+                {
+                  borderTopWidth: 1,
+                  borderTopColor: "rgba(255,255,255,0.18)",
+                  paddingTop: 12,
+                  marginTop: 2,
+                },
+              ]}
+            >
+              {hasGoldScheme && (
+                <View style={styles.statItem}>
+                  <View style={styles.statIconContainer}>
+                    <Image
+                      source={require("../../../../../assets/images/savegold.png")}
+                      style={{ width: 20, height: 20 }}
+                    />
+                  </View>
+                  <View style={styles.statInfo}>
+                    <Text style={styles.statLabel}>{translations.gold || "Gold"}</Text>
+                    <Text style={styles.statValue}>{totalGoldWeight.toFixed(3)} g</Text>
+                    <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", fontWeight: "600", marginTop: 2 }}>
+                      ₹{goldInvested.toLocaleString("en-IN")}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {hasGoldScheme && hasSilverScheme && <View style={styles.statDivider} />}
+
+              {hasSilverScheme && (
+                <View style={styles.statItem}>
+                  <View style={styles.statIconContainer}>
+                    <Image
+                      source={require("../../../../../assets/images/silver.png")}
+                      style={{ width: 20, height: 20 }}
+                    />
+                  </View>
+                  <View style={styles.statInfo}>
+                    <Text style={styles.statLabel}>{t("silver") || "Silver"}</Text>
+                    <Text style={styles.statValue}>{totalSilverWeight.toFixed(3)} g</Text>
+                    <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", fontWeight: "600", marginTop: 2 }}>
+                      ₹{silverInvested.toLocaleString("en-IN")}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
         </LinearGradient>
       )}
 
