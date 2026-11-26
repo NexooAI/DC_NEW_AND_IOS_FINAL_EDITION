@@ -672,6 +672,24 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
     );
   }, [savings]);
 
+  const availableStatusTabs = useMemo(() => {
+    const counts = { Active: 0, Matured: 0, Claimed: 0, Drop: 0 };
+    savings.forEach((item: any) => {
+      const status = item.status?.toLowerCase() || "active";
+      if (status === "active" || status === "y") counts.Active += 1;
+      else if (status === "matured") counts.Matured += 1;
+      else if (status.includes("claim") || status === "closed") counts.Claimed += 1;
+      else if (status.includes("drop") || status.includes("cancel")) counts.Drop += 1;
+    });
+    return (["Active", "Matured", "Claimed", "Drop"] as const).filter((tab) => counts[tab] > 0);
+  }, [savings]);
+
+  useEffect(() => {
+    if (availableStatusTabs.length > 0 && !availableStatusTabs.includes(selectedType)) {
+      setSelectedType(availableStatusTabs[0]);
+    }
+  }, [availableStatusTabs, selectedType]);
+
   // Determine if the user has both types (at least one Fixed and at least one Flexi/Hybrid)
   // of schemes in the currently selected status tab.
   const showSubFilter = useMemo(() => {
@@ -999,42 +1017,51 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
     }
   };
 
-  // Filter Toggle UI (4 Status Tabs + Flexi/Fixed SubToggle) placed at TOP
-  const FilterToggle = () => (
-    <View style={styles.topTabBarContainer}>
-      {/* Main Status Pill Tabs */}
-      <View style={styles.topTabBar}>
-        {["Active", "Matured", "Claimed", "Drop"].map((tab) => {
-          const isActive = selectedType === tab;
-          return (
-            <TouchableOpacity
-              key={tab}
-              style={[
-                styles.topTabItem,
-                isActive && styles.topTabActive
-              ]}
-              onPress={() => setSelectedType(tab as any)}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name={getTabIcon(tab) as any}
-                size={14}
-                color={isActive ? (theme.colors.secondary || "#FFD700") : (isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.45)")}
-              />
-              <Text
-                style={[
-                  styles.topTabText,
-                  isActive && styles.topTabActiveText,
-                ]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-              >
-                {getTabLabel(tab)}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+  // Filter Toggle UI (Status Tabs shown only when non-Active or multiple statuses exist + Flexi/Fixed SubToggle)
+  const showStatusTabsRow =
+    availableStatusTabs.length > 1 ||
+    (availableStatusTabs.length === 1 && availableStatusTabs[0] !== "Active");
+
+  const FilterToggle = () => {
+    if (!showStatusTabsRow && !showSubFilter) return null;
+
+    return (
+      <View style={styles.topTabBarContainer}>
+        {/* Main Status Pill Tabs */}
+        {showStatusTabsRow && (
+          <View style={styles.topTabBar}>
+            {availableStatusTabs.map((tab) => {
+              const isActive = selectedType === tab;
+              return (
+                <TouchableOpacity
+                  key={tab}
+                  style={[
+                    styles.topTabItem,
+                    isActive && styles.topTabActive
+                  ]}
+                  onPress={() => setSelectedType(tab as any)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={getTabIcon(tab) as any}
+                    size={14}
+                    color={isActive ? (theme.colors.secondary || "#FFD700") : (isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.45)")}
+                  />
+                  <Text
+                    style={[
+                      styles.topTabText,
+                      isActive && styles.topTabActiveText,
+                    ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                  >
+                    {getTabLabel(tab)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
 
       {/* Sub Filter: Flexi vs Fixed Pill Tabs */}
       {showSubFilter && (
@@ -1078,6 +1105,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
       )}
     </View>
   );
+  };
 
   // Skeleton loading state component
   const SkeletonLoadingState = () => (
