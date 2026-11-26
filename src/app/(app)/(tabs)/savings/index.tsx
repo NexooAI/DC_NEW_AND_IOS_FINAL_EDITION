@@ -17,6 +17,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import FocusAwareStatusBar from "@/common/components/FocusAwareStatusBar";
 
 import MySchemesContent from "./MySchemesContent";
 import JoinSchemesContent from "../home/schemes";
@@ -66,7 +67,7 @@ export default function SchemesHub() {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
+            <FocusAwareStatusBar barStyle="dark-content" backgroundColor={theme.colors.quaternary || '#F2E6D2'} />
             <View style={[styles.headerArea, { backgroundColor: theme.colors.quaternary || '#F2E6D2' }]}>
                 <SafeAreaView edges={["top"]} style={{ backgroundColor: "transparent" }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10 }}>

@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { formatGoldWeight } from "@/utils/imageUtils";
+import { resolveInstallmentInfo } from "@/utils/schemeInstallments";
 import { useTranslation } from "@/hooks/useTranslation";
 import { theme } from "@/constants/theme";
 import api from "@/services/api";
@@ -143,11 +144,22 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
     }
   };
 
+  const installmentInfo = useMemo(() => {
+    const freqId = Number(item.schemesData?.paymentFrequencyId);
+    const freqFromId = freqId === 1 ? "Daily" : freqId === 2 ? "Weekly" : "";
+    const freqText =
+      getLocalizedText(item.schemesData?.paymentFrequencyName) ||
+      freqFromId ||
+      getLocalizedText(item.paymentFrequency) ||
+      getLocalizedText(item.schemeName) ||
+      "";
+    return resolveInstallmentInfo(freqText, item.noOfIns, item.monthsPaid, translations.monthsLabel);
+  }, [item.paymentFrequency, item.schemesData?.paymentFrequencyName, item.schemesData?.paymentFrequencyId, item.schemeName, item.noOfIns, item.monthsPaid, translations.monthsLabel]);
+
   const progressPercentage = useMemo(() => {
-    const monthsPaid = Number(item.monthsPaid) || 0;
-    const totalMonths = Number(item.noOfIns) || 1;
-    return Math.round((monthsPaid / totalMonths) * 100);
-  }, [item.monthsPaid, item.noOfIns]);
+    const total = installmentInfo.total || 1;
+    return Math.min(100, Math.round((installmentInfo.paid / total) * 100));
+  }, [installmentInfo]);
 
   const isHybrid = useMemo(() => {
     const frequency = (getLocalizedText(item.paymentFrequency) || "").toLowerCase();
@@ -641,18 +653,30 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
           <View style={styles.paymentInfoRow}>
             <View style={styles.paymentInfoItem}>
               <View style={styles.paymentInfoIconContainer}>
-                <Ionicons name="time-outline" size={16} color={theme.colors.textDark} />
+                <Ionicons name="calendar-outline" size={16} color={theme.colors.textDark} />
               </View>
               <View style={styles.paymentInfoContent}>
                 <Text style={styles.paymentInfoLabel}>
-                  Frequency
+                  {(translations as any).nextDueDate || "Next Due Date"}
                 </Text>
                 <Text style={styles.paymentInfoValue}>
-                  {isHybrid
-                    ? "Hybrid"
-                    : isFlexiOrHybrid
-                      ? translations.flexi
-                      : getLocalizedText(item.paymentFrequency) || getLocalizedText(item.schemesData?.paymentFrequencyName) || "Monthly"}
+                  {(() => {
+                    if (isFlexiOrHybrid) {
+                      return (translations as any).payAnytime || "Pay Anytime";
+                    }
+                    if (!item.dueDate) {
+                      return isDepositScheme ? "One-time" : "N/A";
+                    }
+                    const parsed = new Date(item.dueDate);
+                    if (!isNaN(parsed.getTime())) {
+                      return parsed.toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      });
+                    }
+                    return String(item.dueDate);
+                  })()}
                 </Text>
               </View>
             </View>
@@ -844,8 +868,8 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                 <View style={styles.progressStats}>
                   <Text style={styles.progressMonths}>
                     {isFlexiOrHybrid
-                      ? `${item.monthsPaid} ${translations.paid}`
-                      : `${item.monthsPaid}/${item.noOfIns} ${translations.monthsLabel}`}
+                      ? `${installmentInfo.paid} ${translations.paid}`
+                      : `${installmentInfo.paid}/${installmentInfo.total} ${installmentInfo.unitLabel}`}
                   </Text>
                 </View>
               </View>
@@ -881,7 +905,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                       />
                       <Text style={styles.monthLabel}>{translations.pending}</Text>
                       <Text style={styles.monthValue}>
-                        {Number(item.noOfIns) - Number(item.monthsPaid)}
+                        {installmentInfo.pending}
                       </Text>
                     </View>
                     <View style={styles.monthItem}>
@@ -889,7 +913,7 @@ const EnhancedSchemeCard: React.FC<EnhancedSchemeCardProps> = ({
                         style={[styles.monthDot, { backgroundColor: "#850111" }]}
                       />
                       <Text style={styles.monthLabel}>{translations.total}</Text>
-                      <Text style={styles.monthValue}>{item.noOfIns}</Text>
+                      <Text style={styles.monthValue}>{installmentInfo.total}</Text>
                     </View>
                   </>
                 )}

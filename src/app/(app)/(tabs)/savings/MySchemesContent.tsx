@@ -37,6 +37,11 @@ import { formatGoldWeight } from "@/utils/imageUtils";
 import EnhancedSchemeCard from "./EnhancedSchemeCard";
 import OldGoldSchemeCard from "./OldGoldSchemeCard";
 import {
+  RollingAmountText,
+  CoinDropPotIcon,
+  AnimatedWeightText,
+} from "@/components/savings/AnimatedPortfolioWidgets";
+import {
   SkeletonSavingsCard,
   SkeletonSavingsPortfolio,
 } from "@/components/SkeletonLoader";
@@ -482,7 +487,14 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
             schemesData: schemeObj,
             chitData: chit,
             transactions: [],
-            paymentFrequency: item.paymentFrequency || "Monthly",
+            paymentFrequency:
+              item.paymentFrequency ||
+              (schemeObj as any).paymentFrequencyName ||
+              (Number((schemeObj as any).paymentFrequencyId || (item as any).payment_frequency_id) === 1
+                ? "Daily"
+                : Number((schemeObj as any).paymentFrequencyId || (item as any).payment_frequency_id) === 2
+                  ? "Weekly"
+                  : "Monthly"),
             rewards: item.rewards || [],
             dueDate: item.dueDate || "",
           };
@@ -625,9 +637,67 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
     [language]
   );
 
-  const totalInvested = savings.reduce((acc, curr) => acc + curr.totalPaid, 0);
-  const totalGold = savings.reduce((acc, curr) => acc + curr.goldWeight, 0);
-  const hasAmountType = savings.some((s) => s.savingType === "amount");
+  const {
+    totalInvested,
+    totalGoldWeight,
+    totalSilverWeight,
+    goldInvested,
+    silverInvested,
+    hasWeightGoldScheme,
+    hasWeightSilverScheme,
+  } = useMemo(() => {
+    return savings.reduce(
+      (acc, curr) => {
+        const paid = Number(curr.totalPaid) || 0;
+        const metal = String(curr.metalType || "").toLowerCase();
+        const nameLower = String(curr.schemeName || "").toLowerCase();
+        const isSilver = metal.includes("silver") || nameLower.includes("silver");
+        const isDiamond = metal.includes("diamond") || nameLower.includes("diamond");
+        const isWeightBased = String(curr.savingType || "").toLowerCase() !== "amount" && !isDiamond;
+        acc.totalInvested += paid;
+        if (isWeightBased && isSilver) {
+          acc.hasWeightSilverScheme = true;
+          acc.silverInvested += paid;
+          acc.totalSilverWeight += Number(curr.silverWeight || curr.goldWeight || 0);
+        } else if (isWeightBased && !isSilver) {
+          acc.hasWeightGoldScheme = true;
+          acc.goldInvested += paid;
+          acc.totalGoldWeight += Number(curr.goldWeight || 0);
+        }
+        return acc;
+      },
+      {
+        totalInvested: 0,
+        totalGoldWeight: 0,
+        totalSilverWeight: 0,
+        goldInvested: 0,
+        silverInvested: 0,
+        hasWeightGoldScheme: false,
+        hasWeightSilverScheme: false,
+      }
+    );
+  }, [savings]);
+
+  const hasBothWeightMetals = hasWeightGoldScheme && hasWeightSilverScheme;
+  const hasSingleWeightMetal = (hasWeightGoldScheme || hasWeightSilverScheme) && !hasBothWeightMetals;
+
+  const availableStatusTabs = useMemo(() => {
+    const counts = { Active: 0, Matured: 0, Claimed: 0, Drop: 0 };
+    savings.forEach((item: any) => {
+      const status = item.status?.toLowerCase() || "active";
+      if (status === "active" || status === "y") counts.Active += 1;
+      else if (status === "matured") counts.Matured += 1;
+      else if (status.includes("claim") || status === "closed") counts.Claimed += 1;
+      else if (status.includes("drop") || status.includes("cancel")) counts.Drop += 1;
+    });
+    return (["Active", "Matured", "Claimed", "Drop"] as const).filter((tab) => counts[tab] > 0);
+  }, [savings]);
+
+  useEffect(() => {
+    if (availableStatusTabs.length > 0 && !availableStatusTabs.includes(selectedType)) {
+      setSelectedType(availableStatusTabs[0]);
+    }
+  }, [availableStatusTabs, selectedType]);
 
   // Determine if the user has both types (at least one Fixed and at least one Flexi/Hybrid)
   // of schemes in the currently selected status tab.
@@ -782,44 +852,121 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
   );  // Component definitions - moved before early returns
   const ListHeader = () => (
     <View style={styles.headerContainer}>
-      {!hasAmountType && savings.length > 0 && (
+      {savings.length > 0 && (
         <LinearGradient
           colors={theme.colors.gradientPrimary || ["#0b162c", "#16315c", "#d4af37"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.portfolioCard}
+          style={[styles.portfolioCard, hasBothWeightMetals && { paddingVertical: 16, paddingHorizontal: 16 }]}
         >
-          <View style={styles.portfolioStats}>
-            <View style={styles.statItem}>
-              <View style={styles.statIconContainer}>
-                <Image
-                  source={require("../../../../../assets/images/saveasmoneyproduct.png")}
-                  style={{ width: 20, height: 20 }}
-                />
+          {hasBothWeightMetals ? (
+            <>
+              {/* Expanded Card: Both Gold & Silver Weight Schemes exist */}
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 12 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <View style={styles.statIconContainer}>
+                    <Image
+                      source={require("../../../../../assets/images/saveasmoneyproduct.png")}
+                      style={{ width: 20, height: 20 }}
+                    />
+                  </View>
+                  <View>
+                    <Text style={styles.statLabel}>
+                      {translations.totalInvested}
+                    </Text>
+                    <RollingAmountText
+                      amount={totalInvested}
+                      style={[styles.statValue, { fontSize: 20 }]}
+                    />
+                  </View>
+                </View>
               </View>
-              <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>
-                  {translations.totalInvested}
-                </Text>
-                <Text style={styles.statValue}>
-                  ₹{totalInvested.toLocaleString()}
-                </Text>
+
+              <View
+                style={[
+                  styles.portfolioStats,
+                  {
+                    borderTopWidth: 1,
+                    borderTopColor: "rgba(255,255,255,0.18)",
+                    paddingTop: 12,
+                    marginTop: 2,
+                  },
+                ]}
+              >
+                <View style={styles.statItem}>
+                  <View style={[styles.statIconContainer, { width: 38, height: 38 }]}>
+                    <CoinDropPotIcon metal="gold" size={32} />
+                  </View>
+                  <View style={styles.statInfo}>
+                    <Text style={styles.statLabel}>{translations.gold || "Gold"}</Text>
+                    <AnimatedWeightText weight={totalGoldWeight} style={styles.statValue} />
+                    <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", fontWeight: "600", marginTop: 2 }}>
+                      ₹{goldInvested.toLocaleString("en-IN")}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.statDivider} />
+
+                <View style={styles.statItem}>
+                  <View style={[styles.statIconContainer, { width: 38, height: 38 }]}>
+                    <CoinDropPotIcon metal="silver" size={32} />
+                  </View>
+                  <View style={styles.statInfo}>
+                    <Text style={styles.statLabel}>{t("silver") || "Silver"}</Text>
+                    <AnimatedWeightText weight={totalSilverWeight} style={styles.statValue} />
+                    <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", fontWeight: "600", marginTop: 2 }}>
+                      ₹{silverInvested.toLocaleString("en-IN")}
+                    </Text>
+                  </View>
+                </View>
               </View>
+            </>
+          ) : (
+            /* Single-Row Compact Card: Only 1 Weight metal OR Amount-only schemes */
+            <View style={styles.portfolioStats}>
+              <View style={styles.statItem}>
+                <View style={styles.statIconContainer}>
+                  <Image
+                    source={require("../../../../../assets/images/saveasmoneyproduct.png")}
+                    style={{ width: 20, height: 20 }}
+                  />
+                </View>
+                <View style={styles.statInfo}>
+                  <Text style={styles.statLabel}>
+                    {translations.totalInvested}
+                  </Text>
+                  <RollingAmountText
+                    amount={totalInvested}
+                    style={styles.statValue}
+                  />
+                </View>
+              </View>
+
+              {hasSingleWeightMetal && (
+                <>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statItem}>
+                    <View style={[styles.statIconContainer, { width: 38, height: 38 }]}>
+                      <CoinDropPotIcon
+                        metal={hasWeightSilverScheme ? "silver" : "gold"}
+                        size={32}
+                      />
+                    </View>
+                    <View style={styles.statInfo}>
+                      <Text style={styles.statLabel}>
+                        {hasWeightSilverScheme ? (t("silver") || "Silver") : (translations.gold || "Gold")}
+                      </Text>
+                      <AnimatedWeightText
+                        weight={hasWeightSilverScheme ? totalSilverWeight : totalGoldWeight}
+                        style={styles.statValue}
+                      />
+                    </View>
+                  </View>
+                </>
+              )}
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <View style={styles.statIconContainer}>
-                <Image
-                  source={require("../../../../../assets/images/savegold.png")}
-                  style={{ width: 20, height: 20 }}
-                />
-              </View>
-              <View style={styles.statInfo}>
-                <Text style={styles.statLabel}>{translations.gold}</Text>
-                <Text style={styles.statValue}>{totalGold.toFixed(3)} g</Text>
-              </View>
-            </View>
-          </View>
+          )}
         </LinearGradient>
       )}
 
@@ -915,42 +1062,51 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
     }
   };
 
-  // Filter Toggle UI (4 Status Tabs + Flexi/Fixed SubToggle) placed at TOP
-  const FilterToggle = () => (
-    <View style={styles.topTabBarContainer}>
-      {/* Main Status Pill Tabs */}
-      <View style={styles.topTabBar}>
-        {["Active", "Matured", "Claimed", "Drop"].map((tab) => {
-          const isActive = selectedType === tab;
-          return (
-            <TouchableOpacity
-              key={tab}
-              style={[
-                styles.topTabItem,
-                isActive && styles.topTabActive
-              ]}
-              onPress={() => setSelectedType(tab as any)}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name={getTabIcon(tab) as any}
-                size={14}
-                color={isActive ? (theme.colors.secondary || "#FFD700") : (isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.45)")}
-              />
-              <Text
-                style={[
-                  styles.topTabText,
-                  isActive && styles.topTabActiveText,
-                ]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-              >
-                {getTabLabel(tab)}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+  // Filter Toggle UI (Status Tabs shown only when non-Active or multiple statuses exist + Flexi/Fixed SubToggle)
+  const showStatusTabsRow =
+    availableStatusTabs.length > 1 ||
+    (availableStatusTabs.length === 1 && availableStatusTabs[0] !== "Active");
+
+  const FilterToggle = () => {
+    if (!showStatusTabsRow && !showSubFilter) return null;
+
+    return (
+      <View style={styles.topTabBarContainer}>
+        {/* Main Status Pill Tabs */}
+        {showStatusTabsRow && (
+          <View style={styles.topTabBar}>
+            {availableStatusTabs.map((tab) => {
+              const isActive = selectedType === tab;
+              return (
+                <TouchableOpacity
+                  key={tab}
+                  style={[
+                    styles.topTabItem,
+                    isActive && styles.topTabActive
+                  ]}
+                  onPress={() => setSelectedType(tab as any)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={getTabIcon(tab) as any}
+                    size={14}
+                    color={isActive ? (theme.colors.secondary || "#FFD700") : (isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.45)")}
+                  />
+                  <Text
+                    style={[
+                      styles.topTabText,
+                      isActive && styles.topTabActiveText,
+                    ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                  >
+                    {getTabLabel(tab)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
 
       {/* Sub Filter: Flexi vs Fixed Pill Tabs */}
       {showSubFilter && (
@@ -994,6 +1150,7 @@ export default function MySchemesContent({ isNested = false }: { isNested?: bool
       )}
     </View>
   );
+  };
 
   // Skeleton loading state component
   const SkeletonLoadingState = () => (
