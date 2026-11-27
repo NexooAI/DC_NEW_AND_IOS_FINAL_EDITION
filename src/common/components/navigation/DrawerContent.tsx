@@ -326,7 +326,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
       {/* Premium Header */}
       <View style={styles.headerContainer}>
         <LinearGradient
-          colors={[theme.colors.quaternary, theme.colors.primary]}
+          colors={[theme.colors.primary, theme.colors.primaryDark || theme.colors.primary]}
           style={styles.headerGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -358,7 +358,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
                 </Text>
                 {user?.email && (
                   <View style={styles.emailContainer}>
-                    <Ionicons name="mail-outline" size={10} color={theme.colors.whiteOverlayLight} style={{ marginRight: 4 }} />
+                    <Ionicons name="mail-outline" size={10} color="rgba(255, 255, 255, 0.85)" style={{ marginRight: 4 }} />
                     <Text style={styles.userEmail} numberOfLines={1}>
                       {user.email}
                     </Text>
@@ -554,6 +554,7 @@ const getStyles = (
     width: '100%',
     overflow: 'hidden',
     borderBottomRightRadius: 24,
+    backgroundColor: theme.colors.primary,
   },
   headerGradient: {
     paddingHorizontal: 20,
@@ -575,11 +576,11 @@ const getStyles = (
     height: 48,
     borderRadius: 24,
     borderWidth: 2,
-    borderColor: theme.colors.whiteOverlayLight,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
     overflow: 'hidden',
     backgroundColor: theme.colors.surfaceElevated,
     elevation: 4,
-    shadowColor: theme.colors.shadow,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -621,17 +622,17 @@ const getStyles = (
   },
   greetingText: {
     fontSize: 11,
-    color: theme.colors.textPrimary,
+    color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 2,
     fontWeight: '500',
   },
   userName: {
     fontSize: 16,
     fontWeight: '800', // Extra bold for premium feel
-    color: theme.colors.textPrimary,
+    color: '#FFFFFF',
     marginBottom: 4,
     letterSpacing: 0.5,
-    textShadowColor: theme.colors.overlayLight,
+    textShadowColor: 'rgba(0, 0, 0, 0.25)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
@@ -641,7 +642,7 @@ const getStyles = (
   },
   userEmail: {
     fontSize: 11,
-    color: theme.colors.whiteOverlayLight,
+    color: 'rgba(255, 255, 255, 0.85)',
   },
   decorativeCircle: {
     position: 'absolute',
@@ -650,7 +651,7 @@ const getStyles = (
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: theme.colors.whiteOverlayVeryLight,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   decorativeCircleSmall: {
     position: 'absolute',
@@ -659,7 +660,7 @@ const getStyles = (
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: theme.colors.whiteOverlayVeryLight,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   scrollContent: {
     paddingTop: 8,
